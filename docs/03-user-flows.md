@@ -1,0 +1,277 @@
+# 03 — User Flows (ข้อเสนอหลัก)
+
+## 0. ข้อสังเกตสำคัญก่อนเข้า flow
+
+Flow ที่คุณร่างไว้ (Brand → Project → Phase/ตึก → Model Type) **ถูกต้องในฐานะ "ลำดับการกรอกครั้งแรก"**
+แต่มี 3 เรื่องที่ต้องเพิ่มไม่งั้นระบบจะใช้จริงไม่ได้:
+
+| ปัญหาของ flow แบบ wizard ล้วน | ทางแก้ |
+|-------------------------------|--------|
+| **1. Wizard ดีตอน setup ครั้งแรก แต่แย่ตอนแก้ประจำวัน** — คนจะไม่ยอมคลิกผ่าน 4 ขั้นเพื่อเปลี่ยนรูปเดียว | ทำ **2 โหมด**: `Setup Wizard` (ครั้งแรก, guided) และ `Manage` (hub-and-spoke, กระโดดแก้ตรงจุด) ใช้ข้อมูลชุดเดียวกัน |
+| **2. ถ้าอัปโหลดรูปได้เฉพาะในขั้นตอน จะเกิดรูปซ้ำเต็มระบบ** — โลโก้แบรนด์เดียวจะถูกอัปซ้ำ 7 ครั้งใน 7 โครงการ ขัดกับ `entity_assets` ที่ออกแบบให้ผูกหลายบริบทได้ | เพิ่ม **Asset Library** เป็นหน้ากลาง: *อัปครั้งเดียว ผูกได้ทุกที่* ทุกขั้นตอนของ wizard เลือกจาก Library ได้ (หรืออัปใหม่ซึ่งจะเข้า Library อัตโนมัติ) |
+| **3. ไม่มีจุดเริ่มจาก REM** — ถ้าให้พิมพ์ชื่อโครงการเอง จะได้ record ที่ไม่มี REM anchor แล้วต้องมา map ย้อนหลัง ซึ่งคือปัญหาที่แผนพยายามแก้ตั้งแต่แรก | เพิ่ม **Step 0: เลือกโครงการจาก REM** — ทุก record เกิดจาก REM เสมอ crosswalk จึงสมบูรณ์ตั้งแต่วินาทีแรก |
+
+และ **Promotion แยกเป็น flow ของตัวเอง** ไม่อยู่ใน wizard ของโครงการ เพราะ (ก) ขอบเขตข้าม/เหนือโครงการ (ข) วงจรชีวิตสั้นกว่ามาก (ค) ต้องมีผู้อนุมัติคนละคน
+
+---
+
+## 1. แผนที่รวมทุก Flow
+
+```mermaid
+flowchart TD
+    LOGIN["Login / เลือก Role"] --> HOME["Home: My Projects<br/>+ % ความครบถ้วน<br/>+ งานค้าง"]
+
+    HOME --> A["Flow A<br/>Setup Wizard<br/>Brand→Project→เฟส/ตึก→Model"]
+    HOME --> B["Flow B<br/>Asset Library"]
+    HOME --> C["Flow C<br/>Campaign & Promotion"]
+    HOME --> D["Flow D<br/>REM Drift Inbox"]
+    HOME --> E["Flow E<br/>Publish / Release"]
+    HOME --> F["Flow F<br/>Content Gap Queue"]
+
+    A --> REVIEW["Review + Completeness Check"]
+    C --> REVIEW
+    REVIEW --> PREVIEW["Preview<br/>(signed token)"]
+    PREVIEW --> E
+    E --> LIVE["Website + Chatbot"]
+    LIVE -.->|no-answer / 404| F --> A
+    D -.->|REM เปลี่ยน| A
+```
+
+---
+
+## 2. Flow A — Setup Wizard (flow หลักตามที่คุณร่าง + ปรับปรุง)
+
+```mermaid
+flowchart LR
+    S0["0· เลือกจาก REM"] --> S1["1· Brand"]
+    S1 --> S2["2· Project"]
+    S2 --> S3["3· Location<br/>& Facility"]
+    S3 --> S4["4· เฟส / ตึก / ชั้น / โซน"]
+    S4 --> S5["5· Model Type"]
+    S5 --> S6["6· Content & FAQ"]
+    S6 --> S7["7· Compliance"]
+    S7 --> S8["8· Review"]
+    S8 --> S9["9· Preview"]
+    S9 --> S10["10· Publish"]
+```
+
+> ขั้นที่ **1, 2, 4, 5** = ที่คุณร่างไว้ · ขั้นที่ **0, 3, 6, 7, 8, 9, 10** = ที่เสนอเพิ่ม
+
+### Step 0 — เลือกโครงการจาก REM *(เพิ่มใหม่)*
+- แสดงรายการโครงการจาก REM ที่ยังไม่มีใน Hub
+- เลือกแล้วระบบสร้าง shell record พร้อม `project_id_rem`, `project_name_rem`, `company_id_rem` ครบ
+- ระบบเสนอ **brand ที่น่าจะใช่** จาก `company_id_rem` ให้ยืนยัน
+- ถ้าโครงการยังไม่มีใน REM → มีทางออก "สร้างแบบ Pre-REM" ที่ **บังคับ map ภายหลังก่อน publish**
+
+### Step 1 — Brand
+| Field | ที่มา | หมายเหตุ |
+|-------|-------|----------|
+| `brand_name`, `public_company_name` | Admin | — |
+| `company_id_rem` / `company_name_rem` | **REM (read-only)** | ห้ามแก้ |
+| Logo | Asset Library / Upload / **Paste link** | รองรับหลายเวอร์ชัน: ปกติ, ขาว, ดำ, favicon → ใช้ `asset_role` แยก |
+| Brand guideline, brand story | Upload / link | เข้า RAG ได้ |
+
+> **ข้อเสนอ:** Brand เป็น master data ที่สร้าง **ครั้งเดียวโดย Admin** ไม่ควรให้ Editor สร้างใหม่ระหว่างทำโครงการ (ไม่งั้นจะได้ "SENA", "เสนา", "Sena Dev" เป็น 3 brand) — ใน wizard จึงเป็น **เลือก** ไม่ใช่ **สร้าง** และมีปุ่ม "ขอสร้างแบรนด์ใหม่" ที่ส่งให้ Admin อนุมัติ
+
+### Step 2 — Project
+| Field | ที่มา | หมายเหตุ |
+|-------|-------|----------|
+| `project_name_rem` | REM | **แสดงแบบอ่านอย่างเดียว ตลอดเวลา** |
+| `public_project_name` (th/en) | **default = ชื่อ REM** | ✅ ตรงตามที่คุณต้องการ — แก้ได้ เมื่อแก้ระบบจะตั้ง `name_source='marketing_override'` |
+| `slug`, `meta_title`, `meta_description` | auto-suggest จากชื่อ | แก้ได้, ถ้าเปลี่ยน slug ระบบสร้าง redirect ให้ |
+| `product_type`, `project_status` | REM default, override ได้ | — |
+| Assets | **หลายไฟล์** | `thumbnail`(1), `hero`(1), `gallery`(n), `video`(n), `brochure`(n), `master_plan`(n), `virtual_tour`(link) |
+
+**การอัปโหลดรองรับ 3 ทางเสมอ** (ตามที่คุณระบุ): `Upload ไฟล์` · `เลือกจาก Asset Library` · `Paste URL`
+→ **Paste URL ระบบจะดึงไฟล์มาเก็บที่ Hub ให้อัตโนมัติ** แล้วเสิร์ฟจาก Hub (ดู [02 §6.1](02-data-model.md)) ป้องกันลิงก์ตาย
+
+### Step 3 — Location & Facility *(เพิ่มใหม่)*
+- ปักหมุดบนแผนที่ (แก้พิกัดจาก REM ได้ เพราะ REM มักเพี้ยน)
+- เลือก Facility จาก **checklist ที่ควบคุมคำศัพท์** + ใส่รายละเอียดเพิ่ม
+- Nearby places: BTS/MRT/โรงเรียน/ห้าง พร้อมระยะทาง + เวลาเดินทาง
+- **ทำไมต้องมีขั้นนี้:** ตัวกรองบนเว็บ ("ใกล้ BTS", "มีสระ") และคำถามยอดฮิตของ bot ("มีสระว่ายน้ำไหม") ต้องตอบจาก structured data ไม่ใช่ RAG
+
+### Step 4 — เฟส / ตึก / ชั้น / โซน *(ตามที่คุณร่าง + ทำให้เป็น tree)*
+- UI เป็น **tree editor** เพิ่ม node ได้ตามชนิดของ product:
+  - **คอนโด:** เฟส → ตึก (กี่ชั้น, กี่ยูนิต, ลิฟต์) → ชั้น
+  - **แนวราบ:** เฟส → โซน/คลัสเตอร์ (กี่แปลง)
+- ทุก node แนบ asset ได้: `phase_plan`, `building_plan`, `floor_plan`, `master_plan` (**ผังหมู่บ้าน**)
+- **ทางลัดสำคัญ:** ปุ่ม *"สร้างชั้น 1–8 อัตโนมัติ"* + *"ใช้ typical floor plan กับชั้น 2–8"* — เพราะไม่มีใครยอมกรอกชั้น 30 ชั้นด้วยมือ ขั้นนี้จะกลายเป็นคอขวดของ timeline ถ้าไม่มี
+
+### Step 5 — Model Type *(ตามที่คุณร่าง + เพิ่ม spec)*
+| Field | ที่มา |
+|-------|-------|
+| `rem_model_name` | REM (read-only) |
+| `public_model_name` (th/en) | **default = ชื่อ REM** แก้ได้ ✅ |
+| ผูกกับเฟส/ตึกไหน | เลือกจาก tree ของ Step 4 |
+| **สเปก**: ห้องนอน, ห้องน้ำ, พื้นที่ใช้สอย, เนื้อที่ดิน (ตร.ว.), หน้ากว้าง, ชั้น, ที่จอดรถ, ห้องพิเศษ | Marketing กรอก (REM prefill ถ้ามี) |
+| Assets | `model_floor_plan`(n), `model_thumbnail`(1), `gallery`(n), `virtual_tour` |
+| Variants | A / A1 / A2 |
+
+> ⚠️ **จุดที่แผนเดิมพลาดมากที่สุด** — ถ้าไม่กรอกสเปกตรงนี้ chatbot จะตอบคำถามสเปกไม่ได้เลยทุกคำถาม
+
+### Step 6 — Content & FAQ *(เพิ่มใหม่)*
+- แก้เป็น **section** ไม่ใช่ textarea ก้อนเดียว: ภาพรวม / จุดเด่น / ทำเลและการเดินทาง / แนวคิดการออกแบบ / ส่วนกลาง / เงื่อนไขการผ่อนดาวน์
+- FAQ: เพิ่มเอง หรือ **ดึงจาก FAQ template กลาง** แล้วแก้เฉพาะโครงการ
+- มี toggle `rag_eligible` ต่อ section (เช่น ข้อความภายในไม่ให้เข้า bot)
+- **ผลพลอยได้:** section เหล่านี้กลายเป็น RAG chunk คุณภาพสูงทันทีโดยไม่ต้อง chunk ด้วย algorithm
+
+### Step 7 — Compliance *(เพิ่มใหม่)*
+- เลขที่ใบอนุญาต, สถานะ EIA, ข้อความกำกับโฆษณา
+- ทำที่นี่ครั้งเดียว → เว็บ/บอท/โบรชัวร์ใช้ข้อความเดียวกันทุกที่
+
+### Step 8 — Review + Completeness
+- แสดง **% ความครบถ้วน** และรายการที่ยังขาด พร้อมลิงก์กระโดดไปแก้
+- **บล็อก publish** ถ้า required field ไม่ครบ (gate ดีกว่า fallback)
+- แสดง diff เทียบกับ version ที่ live อยู่
+
+### Step 9 — Preview
+- เปิดหน้าเว็บจริงด้วย **signed preview token** ที่ชี้ไป `version_id` ที่ยังไม่ publish
+- มี Chatbot preview: ถามคำถามทดสอบกับเนื้อหา draft ได้ก่อนปล่อยจริง
+
+### Step 10 — Publish
+- เลือก **publish ทันที** หรือ **ตั้งเวลา**
+- ถ้า Editor ≠ Publisher → ส่งเข้า approval queue
+- Publish เป็น **release เดียว** (atomic) + ปุ่ม **Rollback** ตลอด 24 ชม. แรก
+
+---
+
+## 3. Flow B — Asset Library *(เพิ่มใหม่ แต่จำเป็น)*
+
+```mermaid
+flowchart LR
+    UP["Upload / Paste URL /<br/>Bulk drag ทั้งโฟลเดอร์"] --> MIRROR["Mirror เข้า hub-originals<br/>+ checksum"]
+    MIRROR --> DEDUP{"checksum ซ้ำ?"}
+    DEDUP -->|ซ้ำ| REUSE["เสนอใช้ไฟล์เดิม"]
+    DEDUP -->|ใหม่| META["กรอก metadata:<br/>type, สิทธิ์การใช้,<br/>วันหมดอายุสิทธิ์"]
+    META --> RENDER["สร้าง renditions อัตโนมัติ"]
+    RENDER --> LIB["Asset Library"]
+    REUSE --> LIB
+    LIB --> BIND["ผูกกับ entity:<br/>เลือก role + ลำดับ + alt text"]
+```
+
+- **Dedup ด้วย checksum** — ถ้าไม่มี คุณจะได้ไฟล์ซ้ำหลายร้อยใบภายในเดือนแรก
+- **ผูกหลายบริบทได้** — รูป 1 ใบเป็น `gallery` ของโครงการ และ `hero` ของ model type พร้อมกัน โดยมี alt text คนละอัน
+- **แจ้งเตือนสิทธิ์ใกล้หมดอายุ 30 วันล่วงหน้า** (สัญญานักแสดง/ช่างภาพ) → ป้องกันการใช้ภาพเกินสิทธิ์
+- **Bulk upload ตาม naming convention** เช่น `PROJ-KITH-RSU__model__TYPE-A__floorplan__01.jpg` แล้วระบบ pre-map ให้ → นี่คือสิ่งที่จะช่วยให้ป้อนข้อมูล 7 โครงการทันกำหนด
+
+---
+
+## 4. Flow C — Campaign & Promotion *(ตอบคำถามเรื่อง Corporate / Brand / Project)*
+
+```mermaid
+flowchart TD
+    START["สร้าง Promotion"] --> SCOPE{"ระดับขอบเขต"}
+    SCOPE -->|Corporate| SC["ใช้ทุกแบรนด์ทุกโครงการ"]
+    SCOPE -->|Brand| SB["เลือกแบรนด์"]
+    SCOPE -->|Project| SP["เลือกโครงการ"]
+    SCOPE -->|Model Type| SM["เลือกแบบบ้าน/ห้อง"]
+    SC --> EXC["ระบุข้อยกเว้น<br/>(exclude list)"]
+    SB --> EXC
+    SP --> EXC
+    SM --> EXC
+    EXC --> CAMP["ผูกเข้า Campaign<br/>(เช่น SENA Grand Sale)"]
+    CAMP --> BEN["สิทธิประโยชน์ + เงื่อนไข<br/>+ ข้อความกำกับทางกฎหมาย"]
+    BEN --> ART["แนบ artwork / banner"]
+    ART --> RULE["กติกาซ้อนโปรฯ<br/>stackable + priority"]
+    RULE --> LEGAL["อนุมัติโดย Legal"]
+    LEGAL --> SCHED["ตั้งเวลาเริ่ม–สิ้นสุด"]
+    SCHED --> LIVE["Live ผ่าน Promotion API"]
+    LIVE -->|ถึง ends_at| AUTO["หมดอายุอัตโนมัติ<br/>+ purge cache ทันที"]
+```
+
+รายละเอียดเต็มและกฎการ resolve อยู่ใน **[04-promotions.md](04-promotions.md)**
+
+---
+
+## 5. Flow D — REM Drift Inbox *(เพิ่มใหม่)*
+
+```mermaid
+flowchart LR
+    SYNC["Nightly REM Sync"] --> CMP{"เทียบ fingerprint"}
+    CMP -->|เหมือนเดิม| OK["in_sync"]
+    CMP -->|เปลี่ยน| INBOX["Drift Inbox"]
+    CMP -->|หายไป| MISS["source_missing<br/>ยังไม่ unpublish"]
+    INBOX --> DEC{"Marketing ตัดสิน"}
+    DEC -->|ชื่อการตลาดคงเดิม| KEEP["ยืนยัน — REM เปลี่ยน<br/>แต่ public name ไม่เปลี่ยน"]
+    DEC -->|ต้องเปลี่ยนตาม| UPD["แก้ public name → เข้าคิว publish"]
+    DEC -->|โครงการปิดจริง| ARCH["Archive"]
+    MISS --> ALERT["เตือนหลังครบ 7 วัน"]
+```
+
+**หลักการที่ต้องยึด:** REM เปลี่ยน **ไม่เคย** แก้ข้อมูล public โดยอัตโนมัติ — ระบบแค่ *แจ้ง* ให้คนตัดสิน
+
+---
+
+## 6. Flow E — Publish / Release + Rollback
+
+```mermaid
+flowchart LR
+    EDIT["Editor แก้หลายจุด"] --> SET["รวมเป็น Release เดียว"]
+    SET --> GATE{"Completeness<br/>ครบ?"}
+    GATE -->|ไม่ครบ| BLOCK["บล็อก + บอกว่าขาดอะไร"]
+    GATE -->|ครบ| APV{"Publisher อนุมัติ"}
+    APV -->|ไม่ผ่าน| BACK["ตีกลับพร้อมเหตุผล"]
+    APV -->|ผ่าน| FLIP["flip pointer<br/>ใน transaction เดียว"]
+    FLIP --> HOOK["ยิง webhook →<br/>เว็บ/บอท purge cache"]
+    HOOK --> RAGQ["เข้าคิว RAG reindex<br/>(delete chunk เก่า → ใส่ใหม่)"]
+    FLIP -.->|พบปัญหา| RB["Rollback: flip กลับ"]
+```
+
+---
+
+## 7. Screen Inventory (16 หน้า)
+
+| # | หน้าจอ | Role | MVP? |
+|---|--------|------|------|
+| 1 | Login / SSO | ทุกคน | ✅ |
+| 2 | Home — โครงการของฉัน + % ครบถ้วน + งานค้าง | ทุกคน | ✅ |
+| 3 | REM Picker (Step 0) | Editor | ✅ |
+| 4 | Brand Manager | Admin | ✅ |
+| 5 | Project Editor (Step 2) | Editor | ✅ |
+| 6 | Location & Facility (Step 3) | Editor | ✅ |
+| 7 | Structure Tree Editor (Step 4) | Editor | ✅ |
+| 8 | Model Type Editor (Step 5) | Editor | ✅ |
+| 9 | Content & FAQ Editor (Step 6) | Editor | ✅ |
+| 10 | **Asset Library** + bulk upload | Editor | ✅ |
+| 11 | Review & Completeness (Step 8) | Editor / Publisher | ✅ |
+| 12 | Preview (web + chatbot) | ทุกคน | 🟡 |
+| 13 | Publish Queue / Release + Rollback | Publisher | ✅ |
+| 14 | **Campaign & Promotion Manager** | Editor / Legal | ✅ |
+| 15 | REM Drift Inbox | Editor | 🟡 |
+| 16 | Content Gap Queue | Editor | ⬜ Phase 2 |
+
+## 8. Role × สิทธิ์
+
+| หน้าที่ | Viewer | Editor | Publisher | Legal | Admin |
+|---------|:---:|:---:|:---:|:---:|:---:|
+| ดูข้อมูล | ✅ | ✅ | ✅ | ✅ | ✅ |
+| แก้ draft / อัปโหลด asset | | ✅ | ✅ | | ✅ |
+| ยืนยัน REM crosswalk | | ✅ | ✅ | | ✅ |
+| Publish / Rollback | | | ✅ | | ✅ |
+| อนุมัติโปรโมชั่น (legal) | | | | ✅ | ✅ |
+| จัดการ brand / taxonomy / user | | | | | ✅ |
+
+> **ข้อเสนอเรื่องขอบเขต:** แผนเดิมตัด multi-level approval ออกจาก scope ซึ่งถูกต้องสำหรับ content ทั่วไป
+> แต่ควรมีข้อยกเว้น **เฉพาะ Promotion และ Compliance** ที่ต้องผ่าน Legal — เพราะเป็นจุดเดียวที่ความผิดพลาดมีผลทางกฎหมาย ไม่ใช่แค่ผลเชิงภาพลักษณ์
+
+## 9. Flow F — Chatbot Query Routing (ฝั่ง consumer)
+
+```mermaid
+flowchart TD
+    Q["คำถามลูกค้า"] --> RES["/resolve → ระบุโครงการ/แบบ<br/>จาก alias + fuzzy"]
+    RES --> CLS{"ประเภทคำถาม"}
+    CLS -->|ห้องว่าง| T1["REM API (proxy)"]
+    CLS -->|ราคา| T2["Price API + price_as_of"]
+    CLS -->|สเปก/ห้องนอน/พื้นที่| T3["model_types — SQL"]
+    CLS -->|ขอแปลน/รูป| T4["Asset API"]
+    CLS -->|Facility| T5["facilities — structured"]
+    CLS -->|โปรโมชั่น| T6["Promotion API<br/>(ห้ามมาจาก RAG)"]
+    CLS -->|จุดเด่น/นโยบาย/FAQ| T7["RAG + citation"]
+    T1 & T2 & T3 & T4 & T5 & T6 & T7 --> GUARD{"Guardrail:<br/>ทุกตัวเลขมีที่มา?"}
+    GUARD -->|ไม่ผ่าน| NOANS["ตอบว่ายังไม่มีข้อมูล<br/>+ เสนอส่งต่อเจ้าหน้าที่"]
+    GUARD -->|ผ่าน| ANS["ตอบพร้อมอ้างอิง + version"]
+    NOANS --> GAP["บันทึกเข้า content_gaps"]
+```
+
+**ส่วนที่เพิ่มจากตาราง routing เดิม:** ขั้น `/resolve` ข้างหน้า (ไม่งั้น bot ไม่รู้ว่าลูกค้าหมายถึงโครงการไหน) และ **guardrail ตรวจว่าทุกตัวเลขในคำตอบสืบกลับไปหา structured source ได้** — ป้องกันการแต่งราคา/โปรฯ ซึ่งเป็นความเสี่ยงที่ร้ายแรงที่สุดของ chatbot อสังหาฯ
