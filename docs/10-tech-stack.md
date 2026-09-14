@@ -38,20 +38,24 @@ flowchart TD
         WEB["apps/web — Next.js<br/>ISR + on-demand revalidate"]
         ADMIN["apps/admin — Next.js<br/>Marketing back office"]
     end
-    subgraph GCP["Google Cloud Run · asia-southeast1"]
-        API["FastAPI — Published + Admin API"]
-        WORKER["Worker — pgmq consumer"]
-        JOBS["Cloud Run Jobs<br/>REM sync · Sheets sync · RAG ingest"]
+    subgraph HOST["Hostinger VPS — เครื่องเดียวกับ DW"]
+        DW[("Data Warehouse<br/>มี connectivity ไป REM อยู่แล้ว")]
+        API["FastAPI — Published + Admin API<br/>container แยก มี resource limit"]
+        WORKER["Workers — pgmq consumer<br/>mirror asset · renditions"]
+        JOBS["Batch jobs<br/>DW→Hub sync · Sheets sync · RAG ingest"]
     end
     subgraph SUPA["Supabase · ap-southeast-1"]
         PG[("PostgreSQL<br/>hub · public_api · staging<br/>rag · audit · internal")]
-        STO[("Storage<br/>originals · published<br/>documents · temp")]
+        STO[("Storage")]
         AUTH["Auth + RLS"]
     end
-    REM[("REM — SQL Server<br/>on-prem")]
-    SHEET[("Google Sheet<br/>read-only")]
-    LLM["Claude API"]
+    REM[("REM — SQL Server on-prem")]
+    SHEET[("Google Sheet — read-only")]
+    LLM["OpenAI API"]
 
+    REM -->|pipeline ที่มีอยู่แล้ว| DW
+    DW -->|อ่านจาก bronze layer| JOBS
+    SHEET --> JOBS
     ADMIN -->|supabase-js CRUD| PG
     ADMIN -->|transactional ops| API
     WEB --> API
@@ -60,14 +64,13 @@ flowchart TD
     API --> LLM
     WORKER --> PG
     JOBS --> PG
-    REM --> JOBS
-    SHEET --> JOBS
     AUTH --> PG
     API -->|webhook revalidateTag| WEB
 ```
 
-**กฎเรื่อง region:** Supabase, Cloud Run และ Vercel functions ต้องอยู่ Singapore ทั้งหมด
+**กฎเรื่อง region:** Supabase, Vercel functions และ VPS ที่รัน API ควรอยู่ Singapore หรือใกล้เคียงให้มากที่สุด
 ถ้า DB อยู่คนละทวีปกับ API ค่า p95 500 ms ตาม `NFR-01` จะพังทันทีโดยไม่เกี่ยวกับภาษาที่เลือก
+→ **ต้องยืนยันก่อนว่า VPS ของ Hostinger อยู่ภูมิภาคไหน** ถ้าอยู่ยุโรปหรือสหรัฐ ต้องพิจารณาย้าย API (ไม่ใช่ job) มาใกล้ Supabase
 
 ---
 
@@ -112,7 +115,7 @@ pymssql หรือ pyodbc          REM (SQL Server)
 google-api-python-client     Google Sheets (read-only)
 pythainlp                    ตัดคำไทยสำหรับ lexical index
 pymupdf + pdfplumber         อ่าน brochure
-anthropic                    Claude API
+openai                       OpenAI API (หรือ AzureOpenAI)
 pytest + testcontainers      tests
 ruff + pyright               lint + types
 ```
@@ -125,24 +128,60 @@ ruff + pyright               lint + types
 | **Publish / rollback** | **FastAPI เท่านั้น** | เป็น transaction หลายขั้น (`VER-03`, `VER-04`) |
 | **Mirror-on-ingest** | **FastAPI เท่านั้น** | fetch ภายนอก + checksum + เขียน storage (`ASSET-06`) |
 | **Public API** | **FastAPI เท่านั้น** | ต้องมี envelope, `as_of`, change feed, webhook |
-| Sync jobs | Cloud Run Jobs | long-running |
+| Sync jobs | Hostinger VPS (เครื่องเดียวกับ DW) | long-running |
 
 > เงื่อนไขที่ทำให้แบ่งแบบนี้ปลอดภัย: **invariant ทุกข้ออยู่ใน DB constraint** ไม่ใช่ใน application code
 > ถ้าไม่ทำตามนั้น การมีสองทางเขียนจะกลายเป็นช่องโหว่ทันที
 
-### Deployment
+### Deployment — Hostinger (เครื่องเดียวกับ DW)
 
-| ส่วน | ที่ไหน |
-|------|--------|
-| API | Cloud Run (asia-southeast1), min instances 1 เพื่อเลี่ยง cold start |
-| Worker | Cloud Run service แยก · image เดียวกัน คนละ entrypoint · consume `pgmq` |
-| Batch jobs | Cloud Run Jobs + Cloud Scheduler (REM sync รายคืน, Sheets sync รายวัน, RAG ingest, link health รายสัปดาห์) |
-| REM connectivity | ต้องมี VPC connector + VPN/Interconnect ไป on-prem — **เป็น infra dependency ที่ยังไม่ยืนยัน (`Q-02`)** |
+| ส่วน | รันที่ไหน | หมายเหตุ |
+|------|-----------|----------|
+| Batch jobs | **Hostinger VPS** — DW→Hub sync, Sheets sync, RAG ingest, link health | ใช้เครื่องและ ops ที่มีอยู่แล้ว ไม่ต้องเพิ่ม vendor |
+| Workers (event สั้น) | **Hostinger VPS** — consume `pgmq` | mirror asset, สร้าง rendition, reindex เอกสารเดี่ยว |
+| API | **Hostinger VPS** — container แยก **ที่มี resource limit แข็ง** | ดูข้อควรระวังด้านล่าง |
+| Web / Admin | Vercel `sin1` | ไม่เปลี่ยน |
 
-> **สร้าง mock adapter หลัง interface เดียวกันตั้งแต่วันแรก** เพื่อไม่ให้งานทั้งหมดติดรอ network ไปหา REM
+**รันด้วย Docker Compose + systemd** (หรือ scheduler ตัวที่ DW ใช้อยู่แล้ว — ถ้ามี Airflow/Dagster/cron อยู่ ให้ใช้ตัวเดิม อย่าเพิ่มตัวที่สอง)
 
-**เลือกงานเข้า queue อย่างไร:** งานที่มีตารางเวลาแน่นอนและรันนาน → Cloud Run Jobs (สังเกตการณ์ง่าย ไม่ต้องดูแล broker)
-งานที่เกิดจาก event และสั้น (mirror รูป 1 ใบ, reindex เอกสาร 1 ชิ้น) → `pgmq` ใน Postgres เดิม ไม่ต้องเพิ่มระบบใหม่
+### ข้อควรระวังของการอยู่เครื่องเดียวกับ DW
+
+| ความเสี่ยง | ทำไมสำคัญ | การป้องกัน |
+|-----------|-----------|-----------|
+| **แย่ง CPU/RAM กับ DW ETL** | RAG ingest (parse PDF + OCR + embedding) กินทรัพยากรหนัก ถ้าชนกับหน้าต่าง ETL ของ DW จะกระทบงานที่มีอยู่เดิม | ตั้ง `mem_limit` / `cpus` ต่อ container ใน Compose · จัดตารางให้ RAG ingest อยู่คนละหน้าต่างกับ ETL |
+| **Blast radius — job เจ๊งลาก DW ไปด้วย** | process ที่ OOM บนเครื่องที่ไม่มี limit จะทำให้ทั้งเครื่องล่ม รวมถึง DW ที่งานอื่นพึ่งอยู่ | container แยกต่อ service + hard limit · ตัว RAG/OCR ให้ limit แน่นที่สุด |
+| **API ล่มพร้อม DW** | ถ้า API อยู่เครื่องเดียวกัน เวลา DW มีปัญหา เว็บจะไม่มีข้อมูลสด | **ISR ของ Vercel ช่วยไว้** — เว็บจะ degrade เป็นเนื้อหาเก่า ไม่ใช่ล่ม ซึ่งรับได้สำหรับเว็บ content · แต่ถ้างบพอ **แนะนำให้แยก API ไป VPS เล็กอีกตัว** |
+| **ไม่มี autoscale** | โหลดพุ่งแล้วขยายไม่ได้ | สำหรับ batch ไม่เป็นปัญหาและถูกกว่าด้วย · ฝั่ง read ให้ Vercel ISR + CDN รับโหลดแทน API |
+
+> **ต้องรู้ก่อนตัดสินขั้นสุดท้าย:** VPS ตัวนี้ **กี่ vCPU / RAM เท่าไร / ดิสก์เหลือเท่าไร / อยู่ภูมิภาคไหน**
+> ถ้า RAM ต่ำกว่า 8 GB ไม่ควรเอา API ไปอยู่รวม ให้แยก VPS เล็กอีกตัว
+
+---
+
+## 4.5 REM เข้าผ่าน DW ไม่ต่อตรง ⭐
+
+ข้อมูลใหม่ที่เปลี่ยนการออกแบบ: **DW มี pipeline ที่ดึงจาก REM อยู่แล้ว** (ปัจจุบันนำเข้า `Sys_REM_PromotionContract`
+และ `Sys_REM_Master_Promotion`) และ job ของ Hub จะรันบนเครื่องเดียวกับ DW
+
+```mermaid
+flowchart LR
+    REM[("REM · SQL Server")] -->|pipeline เดิม ขยายเพิ่ม| BRONZE["DW bronze / raw layer"]
+    BRONZE -->|Hub อ่านจากชั้นนี้| STG["staging.* ใน Supabase"]
+    BRONZE --> GOLD["DW gold / dim layer<br/>(งานวิเคราะห์)"]
+    STG --> HUB["hub.*"]
+```
+
+**ผลที่ตามมา 3 ข้อ**
+
+1. **Hub ไม่ต้องเปิด connection ไป REM เอง** → ปัญหา VPN/VPC ที่เคยระบุไว้เป็นตัวบล็อก (`Q-02`) หายไป
+2. **ขยาย pipeline เดิมของ DW แทนการสร้างทางเชื่อมที่สอง** — สิ่งที่ต้องเพิ่มคือ `Sys_Prom_Promotion`, `Sys_Prom_PromotionDetails`, `Sys_Prom_PromotionUnits` ซึ่งตรงกับที่ audit เสนอไว้พอดี · การมีจุดเชื่อม REM สองจุดจะขัดกับ `ARCH-01` (หนึ่ง field มีเจ้าของระบบเดียว)
+3. **ต้องอ่านจาก bronze/raw ไม่ใช่ gold/dim** ⚠️ — ถ้าอ่านจาก gold ความหมายที่ DW ตีความไว้จะติดมาด้วย แล้ว `ARCH-02` จะกลายเป็น *"mirror สิ่งที่ DW ตีความว่าเป็น REM"* ไม่ใช่ mirror REM จริง
+
+> ตัวอย่างที่เจอมาแล้วว่าทำไมข้อ 3 สำคัญ: คอลัมน์ `Project ID` ในชีตรายงานโฆษณาไม่ได้เก็บ ProjectID ของ REM
+> แต่เก็บรหัสแคมเปญ ([09 §2.4](09-ads-registry-integration.md)) — ชั้นที่ผ่านการตีความแล้วมีความหมายเพี้ยนได้เสมอ
+
+**ข้อควรระวังเรื่องความสด:** DW น่าจะรันรายคืน ซึ่งตรงกับ `REM-01` (nightly) อยู่แล้ว
+แต่ถ้าวันหน้าต้องการใกล้ real-time จะถูกจำกัดด้วยรอบของ DW → ถ้าจำเป็นค่อยเพิ่มเส้นตรงเฉพาะ entity ที่ต้องการ
 
 ---
 
@@ -178,7 +217,7 @@ const ttl = Math.min(300, secondsUntilBangkokMidnight())
 
 | เรื่อง | เลือกอะไร | เหตุผล |
 |--------|-----------|--------|
-| Region ของ function | `sin1` | ใกล้ Supabase และ Cloud Run |
+| Region ของ function | `sin1` | ใกล้ Supabase |
 | รูปภาพ | **Supabase image transformation** ไม่ใช่ Vercel Image Optimization | ระบบเดียว คิดค่าใช้จ่ายรวมกับ storage และตรงกับ `ASSET-12` ที่ให้บันทึก recipe ไว้ · ตั้ง custom loader ของ `next/image` ชี้ไป Supabase |
 | Runtime | Node (ไม่ใช่ Edge) สำหรับหน้าที่คุย DB | ต้องใช้ driver เต็ม |
 
@@ -220,35 +259,47 @@ set hnsw.iterative_scan = 'relaxed_order';
 5. metadata pre-filter บังคับทุกครั้ง: project, model, content_domain, language, effective window
 ```
 
-### Embedding model — ยังไม่ฟันธง ให้ eval ตัดสิน
+### Embedding model — OpenAI (สอดคล้องกับ LLM)
 
-**Anthropic ไม่มี embeddings endpoint** จึงต้องใช้ผู้ให้บริการอื่น ตัวเลือกที่ควรทดสอบ:
-Cohere `embed-multilingual-v3` · OpenAI `text-embedding-3-large` · Google multilingual embedding · BGE-M3 (self-host)
+เมื่อ LLM เป็น OpenAI อยู่แล้ว การใช้ embedding ของเจ้าเดียวกันเป็นค่าเริ่มต้นที่สมเหตุสมผล — key เดียว บิลเดียว vendor เดียว
+`text-embedding-3-large` (3072 มิติ ปรับลดได้) เป็นตัวตั้งต้น
 
-**ผมไม่แนะนำตัวใดตัวหนึ่งโดยไม่มีตัวเลข** เพราะคุณภาพภาษาไทยต่างกันมากและ benchmark สาธารณะไม่ตรงกับ domain อสังหาฯ
-วิธีที่ถูกคือ: สร้าง golden set ตาม `RAG-17` (ต้องทำอยู่แล้ว) → ทดสอบ 2 ตัว → เลือกจาก recall@5 จริง
+**แต่ยังต้องวัดกับภาษาไทยจริงก่อนล็อก** — สร้าง golden set ตาม `RAG-17` (ต้องทำอยู่แล้ว) แล้วเทียบ recall@5 กับอย่างน้อยอีกหนึ่งตัว
+(BGE-M3 self-host เป็นตัวเทียบที่ดีเพราะฟรีและแข็งกับภาษาไทย) ถ้าผลไม่ต่างกันมาก ให้เลือก OpenAI เพราะ ops ง่ายกว่า
 
-> **ข้อควรระวัง:** เปลี่ยน embedding model = ต้อง reindex ทั้งหมด `RAG-08` จึงบังคับให้เก็บ `embedding_model` ต่อ chunk อยู่แล้ว
-> ให้ออกแบบ pipeline ให้ reindex ทั้งชุดได้ตั้งแต่แรก อย่าทำให้มันเป็นงานใหญ่
+> **ข้อควรระวัง:** เปลี่ยน embedding model = reindex ทั้งหมด `RAG-08` จึงบังคับให้เก็บ `embedding_model` ต่อ chunk
+> ให้ออกแบบ pipeline ให้ reindex ทั้งชุดได้ตั้งแต่แรก และเก็บ `dimensions` ไว้ด้วยเพราะ index ของ pgvector ผูกกับจำนวนมิติ
 
-### Generation — Claude
+### Generation — OpenAI
 
-| รายการ | ค่า |
-|--------|-----|
-| โมเดลหลัก | **Claude Opus 5** — `claude-opus-5` · context 1M · $5 / $25 ต่อ 1M token |
-| Thinking | `thinking: {type: "adaptive"}` · คุมความลึกด้วย `output_config: {effort: ...}` |
-| SDK | `anthropic` (Python) |
-| ตัวเลือกลดต้นทุน | Claude Sonnet 5 — `claude-sonnet-5` · $2 / $10 — **เป็นการตัดสินใจของทีม ไม่ใช่ default** |
+บริษัทซื้อ **OpenAI (ChatGPT Luna 5.3)** ไว้แล้ว จึงใช้ตัวนั้น
 
-**Prompt caching เป็นตัวลดต้นทุนที่ใหญ่ที่สุดของ chatbot** — system prompt กับ tool definition นิ่ง ให้ cache ไว้
-แล้ววาง context ที่เปลี่ยนทุก request (คำถาม, retrieved chunks) ไว้หลัง breakpoint สุดท้าย
-ตรวจว่าได้ผลจริงด้วย `usage.cache_read_input_tokens` — ถ้าเป็น 0 ตลอดแปลว่ามีอะไรทำให้ cache พังเงียบ ๆ
+> ⚠️ **หมายเหตุความถูกต้อง:** ผมไม่มีข้อมูลที่เชื่อถือได้เกี่ยวกับโมเดลชื่อนี้ (น่าจะออกหลังข้อมูลที่ผมมี)
+> จึง **ไม่ระบุ context window, ราคา, หรือความสามารถของมันในเอกสารนี้** เพื่อไม่ให้มีตัวเลขที่แต่งขึ้นไปอยู่ในสเปก
+> ให้ทีมเติมจากเอกสารทางการของ OpenAI · ส่วนที่ออกแบบไว้ด้านล่างไม่ขึ้นกับตัวเลขเหล่านั้น
 
-**Batch API ลดค่าใช้จ่าย 50%** — ใช้กับงานที่ไม่ต้องตอบทันที เช่น รัน golden set, งาน extract เนื้อหาเป็นชุด
+```
+openai            Python SDK (ใช้ AzureOpenAI client ถ้า deploy ผ่าน Azure)
+```
 
-**Tool use คือกลไกที่บังคับ routing** — ตาราง routing ใน requirement แปลงเป็น tool definition ตรง ๆ:
+**ออกแบบให้เปลี่ยนโมเดลได้โดยไม่รื้อ** — ชื่อโมเดลอยู่ใน config ไม่ใช่ในโค้ด และหุ้มด้วย adapter บาง ๆ ตัวเดียว
+เหตุผลไม่ใช่เพื่อรองรับหลายเจ้า แต่เพราะ**เวอร์ชันโมเดลของเจ้าเดียวกันก็เปลี่ยนบ่อย** และ `RAG-08` ต้องบันทึกว่าคำตอบมาจากโมเดลไหน
+
+| สิ่งที่ต้องยืนยันก่อนเขียนโค้ด | กระทบอะไร |
+|-------------------------------|-----------|
+| **มี API access จริงหรือเป็นแค่ seat ของ ChatGPT** | ⚠️ **สำคัญที่สุด** — ChatGPT Enterprise (ที่นั่ง) กับ OpenAI API (คีย์) เป็นคนละผลิตภัณฑ์และคนละสัญญา ถ้าซื้อแค่ที่นั่ง จะเอามาต่อ chatbot ไม่ได้ |
+| deploy ผ่าน OpenAI ตรง หรือ Azure OpenAI | เปลี่ยน client class, endpoint, และวิธี auth |
+| รองรับ function/tool calling และ parallel tool calls ไหม | **การ routing ทั้งหมดพึ่งข้อนี้** (`RAG-11`) ถ้าไม่รองรับต้องเปลี่ยนวิธี orchestrate |
+| รองรับ structured output / JSON schema ไหม | ใช้บังคับรูปแบบคำตอบและการแนบ citation |
+| context window เท่าไร | กำหนดว่าใส่ chunk ได้กี่ชิ้น และต้องมี rerank ไหม |
+| มี prompt caching ไหม และคิดราคาอย่างไร | ตัวลดต้นทุนที่ใหญ่ที่สุดของ chatbot |
+| rate limit / quota ที่ซื้อไว้ | กำหนดว่าต้องมีคิวหรือ throttle ฝั่งเราไหม |
+
+**Tool use คือกลไกที่บังคับ routing** — ตาราง routing ในสเปกแปลงเป็น function definition ตรง ๆ:
 `get_promotions(project_id, as_of)` · `get_model_specs(project_id, bedrooms, ...)` · `get_availability(project_id)` · `search_knowledge(query, project_id)`
-`RAG-11` (ห้ามตอบราคา/ห้องว่าง/โปรฯ จาก RAG) จึงถูกบังคับด้วยการออกแบบ tool ไม่ใช่ด้วยคำสั่งใน prompt
+`RAG-11` (ห้ามตอบราคา/ห้องว่าง/โปรฯ จาก RAG) จึงถูกบังคับด้วย**การออกแบบ tool** ไม่ใช่ด้วยคำสั่งใน prompt
+
+**งานที่ไม่ต้องตอบทันทีให้ใช้ batch endpoint** ถ้าแพ็กเกจที่ซื้อมีให้ — เช่นรัน golden set, งาน extract เนื้อหาเป็นชุด
 
 > Chatbot อยู่คนละ repo (`sena_ai_chatbot_mkt`) — Hub มีหน้าที่ให้ retrieval endpoint กับ structured tool ส่วน conversation loop เป็นของ repo นั้น
 
@@ -291,11 +342,11 @@ async def test_expired_promotion_disappears_without_any_job(consumer_conn, db):
 |--------|--------|
 | Supabase Pro + compute | $25 + ตามขนาด instance |
 | Vercel Pro | $20 ต่อ seat |
-| Cloud Run (API min-instance 1 + worker + jobs) | $20–60 |
-| Claude API | ตามการใช้งาน — ขึ้นกับจำนวนบทสนทนาและ cache hit rate |
+| Hostinger VPS | **มีอยู่แล้ว** — อาจต้องอัปเกรดถ้า RAM ไม่พอ |
+| OpenAI API | ตามสัญญาที่บริษัทซื้อไว้ |
 | Embeddings | ค่าใช้จ่ายครั้งแรกตอน index ครั้งเดียว แล้วค่อนข้างต่ำ |
 
-> เป็นตัวเลขคร่าว ๆ สำหรับตั้งงบ ไม่ใช่ข้อผูกพัน ตัวแปรที่ผันผวนที่สุดคือปริมาณการใช้ Claude API
+> เป็นตัวเลขคร่าว ๆ สำหรับตั้งงบ ไม่ใช่ข้อผูกพัน ตัวแปรที่ผันผวนที่สุดคือปริมาณการใช้ LLM
 
 ---
 
@@ -309,7 +360,9 @@ async def test_expired_promotion_disappears_without_any_job(consumer_conn, db):
 | Admin CRUD | **supabase-js ตรงไป PostgREST** · งาน transaction ผ่าน FastAPI | กลาง — ประหยัดเวลามาก แต่ต้องมี DB constraint ครบจริง |
 | Frontend | **Next.js 15 App Router บน Vercel** monorepo | สูง |
 | Vector store | **pgvector ในฐานเดียวกัน** | สูง — `RAG-05` บังคับ |
-| Embedding model | **ยังไม่ตัดสิน** — ให้ golden set ตัดสิน | ตั้งใจเว้นไว้ |
-| LLM | **Claude Opus 5** (`claude-opus-5`) | สูง |
-| Backend hosting | **Cloud Run asia-southeast1** | กลาง — Fly.io Singapore ก็ใช้ได้ ขึ้นกับว่าองค์กรอยู่ cloud ไหน |
-| Job runner | **Cloud Run Jobs + Cloud Scheduler** · `pgmq` สำหรับ event สั้น | กลาง |
+| REM access | **ผ่าน bronze layer ของ DW ไม่ต่อตรง** | สูง — ตัดปัญหา VPN และเหลือจุดเชื่อมเดียว |
+| Embedding model | **OpenAI `text-embedding-3-large`** เป็นค่าตั้งต้น · ยืนยันด้วย golden set | กลาง |
+| LLM | **OpenAI — ตามที่บริษัทซื้อไว้** หุ้มด้วย adapter, ชื่อโมเดลอยู่ใน config | กำหนดโดยองค์กร |
+| Job / worker hosting | **Hostinger VPS เครื่องเดียวกับ DW** | สูง — ใช้ของที่มีอยู่ |
+| API hosting | **Hostinger เช่นกัน แต่ container แยกและมี resource limit** · แยก VPS ถ้า RAM < 8 GB | กลาง — รอสเปกเครื่อง |
+| Job runner | **scheduler ตัวที่ DW ใช้อยู่แล้ว** · `pgmq` สำหรับ event สั้น | กลาง |

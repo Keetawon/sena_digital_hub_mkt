@@ -487,7 +487,7 @@ Each MUST be answered by the named owner before the dependent requirements can b
 | # | Question | Blocks | Owner |
 |---|---|---|---|
 | Q-01 | Which 7 projects are the pilot set (by name and REM ID)? | Content collection, PROMO-51 | Marketing |
-| Q-02 | How is REM accessible — API, replica, or export? Is there a sandbox? | REM-01..12 | IT / REM owner |
+| Q-02 | REM access — **partially answered:** the existing data warehouse already ingests from REM and Hub jobs will run on the same host, so Hub reads REM through the DW's **bronze/raw** layer rather than connecting to REM directly. Remaining: can the DW pipeline be extended to land `Sys_Prom_Promotion`, `Sys_Prom_PromotionDetails`, `Sys_Prom_PromotionUnits`, and is a raw (untransformed) layer exposed? | REM-01..12, PROMO-01..07 | IT / DW owner |
 | Q-03 | Which promotion fields may be shown to customers and to AI? | PROMO-26, SEC-06 | Data owner |
 | Q-04 | Who is the named publisher and who is the named legal approver? | SEC-03, SEC-04, PROMO-27 | Marketing / Legal |
 | Q-05 | How should promotions with no end date be handled operationally (323 rows affected)? | PROMO-13, PROMO-52 | Data owner |
@@ -499,6 +499,9 @@ Each MUST be answered by the named owner before the dependent requirements can b
 | Q-11 | Does the consuming website already exist, or is it new? | CONT-13, CONT-14 | Web team |
 | Q-12 | Is MVP Thai-only or Thai + English? | I18N-02, content volume | Marketing |
 | Q-13 | Who owns content for each project (for notifications and review cadence)? | OBS-01, REM-12 | Marketing |
+| Q-14 | **Does the company hold OpenAI *API* access (a key or an Azure OpenAI deployment), or only ChatGPT seats?** These are different products under different contracts; seats cannot power a chatbot. | All RAG generation | IT / procurement |
+| Q-15 | For the licensed model: does it support function/tool calling and parallel tool calls, structured outputs, and prompt caching? What is its context window and rate limit? | RAG-11, RAG-12, retrieval depth, cost | IT |
+| Q-16 | Hostinger VPS specification — vCPU, RAM, free disk, and region? Below ~8 GB RAM the API should not share the box with DW ETL and RAG ingestion. | Deployment topology, NFR-01 | IT |
 
 ---
 
