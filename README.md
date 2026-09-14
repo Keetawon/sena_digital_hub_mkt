@@ -14,6 +14,12 @@ flowchart LR
     RAG --> BOT
 ```
 
+## Requirements
+
+**[REQUIREMENTS.md](REQUIREMENTS.md)** — implementation specification in English, self-contained,
+with numbered testable requirements (P0/P1/P2), acceptance criteria and open questions.
+ส่งให้ engineering agent หรือทีม dev ได้โดยไม่ต้องอ่านเอกสารอื่นประกอบ
+
 ## เอกสารออกแบบ
 
 | เอกสาร | เนื้อหา |
