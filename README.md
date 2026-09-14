@@ -26,6 +26,7 @@ flowchart LR
 | [05 — Published Content API](docs/05-api-contract.md) | endpoint, response envelope, change feed, security |
 | [06 — RAG](docs/06-rag.md) | แก้บั๊ก stale chunk, hybrid retrieval ภาษาไทย, eval metrics |
 | [07 — แผนส่งมอบ](docs/07-delivery-plan.md) | vertical slice, descope levers, DoD, ความเสี่ยง |
+| [08 — **Promotion: REM + Ads**](docs/08-promotion-integration.md) | เชื่อม Promotion 7,676 รายการจาก REM, แยก Offer ออกจาก Public Promotion, เชื่อมกับการลงทะเบียน Ads |
 
 ## สรุปสั้นที่สุด
 

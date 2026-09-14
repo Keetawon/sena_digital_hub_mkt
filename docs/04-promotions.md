@@ -1,5 +1,11 @@
 # 04 — Campaign & Promotion
 
+> ⚠️ **เอกสารนี้ถูกแก้บางส่วนโดย [08-promotion-integration.md](08-promotion-integration.md)** (14 ก.ย. 2026)
+> หลังตรวจ REM พบว่ามี Promotion อยู่แล้ว 7,676 รายการ ซึ่งเปลี่ยนข้อสรุปเรื่องเจ้าของข้อมูล:
+> **REM เป็น SoR ของ *Offer* (สิทธิ์ที่ Sales ให้ได้จริง) ส่วน Hub เป็น SoR ของ *Public Promotion* (สิ่งที่เราพูดต่อสาธารณะ)**
+> ส่วนที่ยังใช้ได้ทั้งหมดในเอกสารนี้คือ **แนวคิด Campaign/Promotion 2 ชั้น (§1), กฎ resolve และ precedence (§4), และกฎความปลอดภัย (§5)**
+> ส่วนที่ถูกแทนที่คือ **`scope_level` แบบ enum เดี่ยวใน §2–§3** → เปลี่ยนเป็นความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID
+
 > แผนเดิมไม่มี data model ของโปรโมชั่นเลย มีเพียงคำว่า "Approved Promotion API" และ asset_role `promotion`
 > ทั้งที่โปรโมชั่นคือข้อมูลที่ **ลูกค้าถามมากที่สุด เปลี่ยนบ่อยที่สุด และมีความเสี่ยงทางกฎหมายสูงสุด**
 
@@ -24,7 +30,12 @@ flowchart TD
     NODE --> MODEL["Model Type<br/>เฉพาะแบบบ้าน/ห้อง"]
 ```
 
-ยิ่งลงลึก **ความจำเพาะ (specificity) ยิ่งสูง** → ใช้ตัดสินเวลาโปรฯ ชนกัน
+ยิ่งลงลึก **ความจำเพาะ (specificity) ยิ่งสูง** → ใช้ตัดสินเวลาโปรฯ ชนกัน (กฎนี้ยังใช้ได้ ดู §4)
+
+> **แก้ไข:** ลำดับชั้นนี้ใช้ได้เฉพาะธุรกิจอสังหาฯ แต่ **ใช้กับ Solar / EV / LivNex / Corporate ไม่ได้** เพราะธุรกิจเหล่านั้นไม่มีโครงการ
+> โมเดลที่ถูกต้องคือ **ความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID** — `COMPANY | BUSINESS | BRAND | PROJECT_GROUP | PROJECT | UNIT`
+> พร้อม `project_applicability = APPLIES | NOT_APPLICABLE | UNKNOWN` ดู [08 §7](08-promotion-integration.md)
+> (`scope_level` ด้านล่างคือรูปแบบเดิมที่ถูกแทนที่แล้ว เก็บไว้เพื่อให้เห็นที่มาของกฎ precedence)
 
 **สำคัญ: ต้องมีทั้ง include และ exclude** — ในทางปฏิบัติ โปรฯ ระดับ corporate มักมีข้อยกเว้นเสมอ
 (*"ฟรีค่าโอนทุกโครงการ ยกเว้นโครงการ A และ B"*) ถ้าไม่มี exclude list ทีมจะเลี่ยงไปสร้างโปรฯ ระดับ project ซ้ำ ๆ 30 อัน แล้วบำรุงรักษาไม่ไหว
@@ -83,6 +94,10 @@ create table hub.promotion_targets (
 
 Artwork / banner ผูกผ่าน `entity_assets` ด้วย `entity_type='promotion'` (ใช้กลไกเดิมได้เลย)
 
+> **แก้ไข:** ตาราง `hub.promotions` ด้านบนถูกแทนที่ด้วย `hub.public_promotions` + `hub.promotion_entity_links`
+> ใน [08 §7](08-promotion-integration.md) โดย `mode='exclude'` กลายเป็น `relationship_role='EXCLUDED_FROM'`
+> และเพิ่ม `staging.source_offers` เป็นกระจกของ REM ที่ Hub ห้ามแก้
+
 ## 4. กฎการ Resolve — "โครงการนี้มีโปรฯ อะไรบ้าง"
 
 ```
@@ -100,6 +115,10 @@ Artwork / banner ผูกผ่าน `entity_assets` ด้วย `entity_type
    ถ้า stackable=true  → คืนทั้งหมดที่ซ้อนกันได้
 7. แต่ละรายการคืน applies_via เพื่อบอกว่าได้สิทธิ์เพราะ scope ไหน
 ```
+
+> กฎ 7 ข้อนี้ **ยังใช้ได้ทั้งหมด** เพียงเปลี่ยนแหล่งของขั้นที่ 1–2 จาก `scope_level` + `promotion_targets`
+> ไปเป็น `hub.promotion_entity_links` ที่ `mapping_status='CONFIRMED'` — และเพิ่มขั้นที่ 4 ว่าต้องผ่าน **data approval ด้วย ไม่ใช่แค่ legal**
+> ข้อสังเกต: ข้อเสนอของ REM audit **ไม่มีกฎลำดับเมื่อโปรฯ ชนกันเลย** ส่วนนี้จึงเป็นสิ่งที่เอกสารนี้เติมให้
 
 `applies_via` สำคัญมากสำหรับ chatbot — บอทต้องพูดได้ว่า *"โปรฯ นี้เป็นโปรฯ ทั้งบริษัท ไม่ใช่เฉพาะโครงการนี้"* ซึ่งช่วยลด dispute หน้างานขายได้จริง
 

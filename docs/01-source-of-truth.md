@@ -13,6 +13,7 @@
 ## 2. System of Record Matrix ⭐
 
 > นี่คือเอกสารที่ควร "เซ็นรับ" ร่วมกันระหว่าง Marketing / IT / REM Owner ก่อนเริ่มพัฒนา
+> *(แก้ไข 14 ก.ย. 2026 — แยกแถว Promotion เป็นสองแถวหลังตรวจ REM พบว่ามี Promotion อยู่แล้ว 7,676 รายการ ดู [08](08-promotion-integration.md))*
 
 | ข้อมูล | System of Record | บทบาทของ Hub | Consumer เรียกจาก | เขียนได้โดย |
 |--------|------------------|--------------|-------------------|-------------|
@@ -23,7 +24,8 @@
 | **Asset ทุกชนิด** (รูป, วิดีโอ, แปลน, brochure) | **Hub** | **owner** | Hub | Editor → Publisher |
 | **คำบรรยาย / จุดเด่น / FAQ** | **Hub** | **owner** | Hub | Editor → Publisher |
 | **Facility / Nearby / Map pin** | **Hub** | **owner** | Hub | Editor → Publisher |
-| **Promotion / Campaign** | **Hub** | **owner** | Hub (live API) | Editor → Legal → Publisher |
+| **Promotion — *Offer*** (สิทธิ์ที่ Sales ให้ได้จริง) | **REM** + ระบบ BU อื่น | mirror (read-only) | Hub | sync job เท่านั้น |
+| **Promotion — *Public Promotion*** (สิ่งที่เราพูดต่อสาธารณะ) | **Hub** | **owner** | Hub (live API) | Editor → Data Owner → Legal → Publisher |
 | SEO (slug, meta, og:image) | **Hub** | **owner** | Hub | Editor |
 | **ห้องว่าง / Unit availability** | **REM** | **ไม่เก็บเด็ดขาด** | REM API (ผ่าน Hub proxy) | — |
 | **ราคา (list / current)** | **REM / Pricing** | cache snapshot + `price_as_of` | Hub proxy (มี freshness) | sync job |
