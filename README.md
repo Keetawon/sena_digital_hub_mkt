@@ -34,6 +34,7 @@ with numbered testable requirements (P0/P1/P2), acceptance criteria and open que
 | [07 — แผนส่งมอบ](docs/07-delivery-plan.md) | vertical slice, descope levers, DoD, ความเสี่ยง |
 | [08 — **Promotion: REM + Ads**](docs/08-promotion-integration.md) | เชื่อม Promotion 7,676 รายการจาก REM, แยก Offer ออกจาก Public Promotion, เชื่อมกับการลงทะเบียน Ads |
 | [09 — **Ads Registry**](docs/09-ads-registry-integration.md) | อ่าน Google Sheet ของทีม content แบบไม่แก้ไฟล์, เชื่อมด้วย URL ปลายทาง, UTM กับ Meta campaign id |
+| [10 — **Tech Stack**](docs/10-tech-stack.md) | FastAPI vs Rust, Supabase, Next.js บน Vercel, pgvector, Claude, deployment และ CI |
 
 ## สรุปสั้นที่สุด
 
