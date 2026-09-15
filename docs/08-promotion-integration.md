@@ -1,5 +1,10 @@
 # 08 — Promotion: เชื่อม REM + Ads Registration เข้า Digital Hub
 
+> **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) มีผลเหนือข้อเสนอเดิม Phase 1 (ก.ย.–ต.ค.) มีเฉพาะ SENA residential 7 โครงการ
+> โมเดล association ข้าม BU, source-neutral product model, Flow B สำหรับ standalone BU, ตัวอย่าง Solar API และ adapter ของ BU อื่นเป็นแบบอนาคต ไม่ใช่ MVP และไม่ต้องสร้าง BU workspace หรือ chatbot ข้าม BU ใน Phase 1; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1
+> ผล audit ที่กล่าวถึง Solar Roof / EV Charger ในโปรฯ บ้านยังคงเป็นหลักฐานของสิทธิประโยชน์ residential ไม่ใช่การเปิดใช้ standalone Solar/EV BU ส่วน Ads ให้ใช้แนวทาง read-only ใน [09](09-ads-registry-integration.md)
+> Website/landing page เป็น commercial frontend ของทีมเว็บไซต์แยก; Hub รับผิดชอบข้อมูลโปรโมชั่น, field mapping, API documentation/sample payloads/test access, change feed และ HMAC webhook support พร้อม consumer harness ส่วนโค้ดหน้าเว็บ, rendering/routing/cache implementation, hosting และ go-live เป็นของทีมเว็บไซต์
+
 > อ้างอิงผลตรวจ REM แบบ read-only เมื่อ 14 ก.ย. 2026
 > เอกสารนี้**แก้ข้อสรุปเดิมใน [04-promotions.md](04-promotions.md)** เรื่องเจ้าของข้อมูลโปรโมชั่น
 
@@ -43,11 +48,11 @@
 
 ---
 
-## 3. สิ่งที่ audit ทำถูกและควรรับมาทั้งหมด
+## 3. ข้อค้นพบจาก audit — ใช้ตามขอบเขตของแต่ละ phase
 
 | # | ข้อค้นพบ | ทำไมถึงสำคัญ |
 |---|---------|--------------|
-| 1 | **Promotion ต้องเป็น source-neutral ไม่บังคับ ProjectID** | ถูกต้อง และแก้ข้อจำกัดของ [04](04-promotions.md) เดิมของผมที่ผูก scope กับโครงสร้างโครงการเป็นหลัก — Solar / EV / LivNex / Corporate ไม่มี ProjectID และ**ห้ามสร้าง ProjectID ปลอม** |
+| 1 | **Promotion แบบ source-neutral ไม่บังคับ ProjectID (อนาคต)** | ใช้พิจารณาหลัง Phase 1 สำหรับ Solar / EV / LivNex / Corporate ที่ไม่มี ProjectID และ**ห้ามสร้าง ProjectID ปลอม**; ไม่บังคับให้สร้างโมเดลหลาย BU ก่อนส่งมอบ SENA |
 | 2 | **`project_applicability` = APPLIES / NOT_APPLICABLE / UNKNOWN** | ข้อเสนอที่ดีที่สุดในเอกสารทั้งฉบับ — แยก *"ไม่เกี่ยวกับโครงการ"* ออกจาก *"ยังหาโครงการไม่เจอ"* ค่าว่างตอบสองอย่างนี้ไม่ได้ และถ้าปนกันเมื่อไร AI จะตอบผิดทันที |
 | 3 | **แยกสถานะเป็น 5 ตัว ไม่รวมเป็น status เดียว** | ดีกว่า `lifecycle_status` ตัวเดียวที่ผมเสนอไว้ใน 04 — ขอรับมาใช้แทน |
 | 4 | **`temporal_status` คำนวณจาก `as_of` ไม่เก็บเป็นค่าคงที่** | ถูกมาก สถานะเวลาเป็น *ฟังก์ชันของคำถาม* ไม่ใช่คุณสมบัติของแถว |
@@ -100,9 +105,9 @@ Sys_Prom_Promotion "ซื้อบ้าน... รับ Solar Roof ฟรี"
 audit สรุปถูกว่าเป็นรายการสิทธิ์/สินค้า ไม่ใช่ campaign — ซึ่งแปลว่ามันคือ **แคตตาล็อกของแถมที่มีอยู่แล้ว**
 → ใช้เป็น **seed ของ `offer_type_taxonomy`** ได้ทันที (G7) ไม่ต้องนั่งคิดรายการ offer type เองตั้งแต่ศูนย์
 
-**กฎที่ต้องบังคับ:** `business` ของ promotion มาจาก `bridge_promotion_entity` ที่คนยืนยันแล้วเท่านั้น
+**กฎการจำแนก:** ห้ามอนุมานธุรกิจจากของแถม; ในโมเดลหลาย BU สำหรับอนาคต `business` ของ promotion มาจาก `bridge_promotion_entity` ที่คนยืนยันแล้วเท่านั้น ส่วน Phase 1 จำกัด SENA residential โดยไม่ต้องสร้าง bridge ข้าม BU
 **ห้ามอนุมานจากชื่อ promotion หรือจากชื่อ offer item เด็ดขาด** — และควรเขียนเป็น test case ใน golden set ของ chatbot ตรง ๆ
-(*"โปรโมชั่น Solar มีอะไรบ้าง"* → ต้องตอบว่ายังไม่มีโปรฯ ของธุรกิจ Solar แบบเดี่ยว ไม่ใช่หยิบ 47 รายการโปรฯ บ้านมาตอบ)
+(*"โปรโมชั่น Solar มีอะไรบ้าง"* → ใน Phase 1 ให้แจ้งว่า standalone Solar อยู่นอกขอบเขตและเสนอส่งต่อ ไม่หยิบ 47 รายการโปรฯ บ้านมาตอบ และไม่สรุปว่า Solar ไม่มีโปรโมชั่น)
 
 ---
 
@@ -126,6 +131,8 @@ audit สรุปถูกว่าเป็นรายการสิทธ�
 ---
 
 ## 7. สถาปัตยกรรม 6 ชั้น
+
+> แผนภาพและ SQL ด้านล่างเก็บเป็นแบบอ้างอิงอนาคต ส่วน source/target ของ Solar, EV, LivNex และการสร้าง standalone promotion ไม่ใช่งาน Phase 1; schema สำหรับ SENA ให้ยึด REQUIREMENTS.md
 
 ```mermaid
 flowchart TD
@@ -264,9 +271,11 @@ flowchart LR
     APV --> PUB["Publish เป็น release + ตั้งเวลา"]
 ```
 
-### 8.2 Flow B — โปรฯ ที่ไม่มีต้นทาง (Solar / EV / Corporate / LivNex)
+### 8.2 Flow B — แบบอนาคตสำหรับ standalone BU (นอก Phase 1)
 
-สร้างที่ Hub ตรง ๆ ข้ามชั้น 1–4 ทั้งหมด ผูก target เป็น `BUSINESS` หรือ `BRAND` และตั้ง `project_applicability = NOT_APPLICABLE`
+ข้อเสนอเดิมสำหรับ Solar / EV / Corporate / LivNex ด้านล่างไม่ใช่ทางลัดให้เริ่ม BU เหล่านี้ใน Phase 1; Solar พิจารณาใน Phase 2 หลัง 31 ต.ค. 2026 ส่วนการ author โปรโมชั่น SENA ให้ยึด REQUIREMENTS.md
+
+แบบอนาคต: สร้างที่ Hub ตรง ๆ ข้ามชั้น 1–4 ทั้งหมด ผูก target เป็น `BUSINESS` หรือ `BRAND` และตั้ง `project_applicability = NOT_APPLICABLE`
 ต่อ source adapter ทีหลังเมื่อเจอระบบต้นทางจริง **โดยไม่ต้องแก้ schema และไม่ต้องสร้างหน้าใหม่** — แค่เพิ่มแถวใน `public_promotion_sources`
 
 ### 8.3 Flow C — ต้นทางปิดรายการ (G10)
@@ -318,7 +327,7 @@ flowchart LR
 | ลำดับ | วิธี | `match_method` | ใช้ได้เลยไหม |
 |:---:|------|----------------|--------------|
 | 1 | เลือกจาก dropdown ตอนลงทะเบียน | `REGISTRATION` | ✅ CONFIRMED ทันที |
-| 2 | Landing page เป็นหน้าโปรฯ ที่ Hub publish | `LANDING_PAGE` | ✅ CONFIRMED ทันที |
+| 2 | Landing page ภายนอกมี mapping ที่ยืนยันแล้วไปยังโปรฯ ที่ Hub publish เป็นข้อมูล | `LANDING_PAGE` | ✅ CONFIRMED ทันที |
 | 3 | UTM พา promotion code มา | `UTM` | ✅ CONFIRMED ถ้า code ตรง |
 | 4 | Naming convention ของ campaign | `NAME_CONVENTION` | ⚠️ CANDIDATE จนกว่าจะอนุมัติกฎการตั้งชื่อ |
 | 5 | เทียบชื่อแบบ fuzzy | `FUZZY` | ⚠️ CANDIDATE เท่านั้น ห้าม auto-confirm |
@@ -363,6 +372,8 @@ where p.deleted_at is null
 
 ### API
 
+> ตัวอย่าง `business_id=SOLAR` และ Solar response ด้านล่างเป็นตัวอย่างอนาคตเท่านั้น วันที่ ก.ย. 2026 เป็นข้อมูลสมมติเดิม ไม่ใช่กำหนดเปิด Solar API; Phase 1 เปิดเฉพาะ SENA residential ตาม REQUIREMENTS.md
+
 ```http
 GET /v1/promotions?as_of=2026-09-14
 GET /v1/promotions?business_id=SOLAR&as_of=2026-09-14
@@ -402,7 +413,7 @@ GET /v1/entities/{entity_type}/{entity_id}/promotions
 5. **`UNKNOWN` ≠ `NOT_APPLICABLE`** — ถ้า `project_applicability = UNKNOWN` ให้บอกว่ายังยืนยันไม่ได้ว่าใช้กับโครงการนี้ไหม แล้วเสนอส่งต่อเจ้าหน้าที่ **ห้ามเดาว่าใช้ได้**
 6. **ตัวเลขทุกตัวมาจาก `offer_items`** ห้ามคำนวณส่วนลดสุทธิเอง
 
-**Golden question ที่ต้องเพิ่ม:** *"โปรโมชั่น Solar มีอะไรบ้าง"* (ต้องไม่หยิบโปรฯ บ้านที่แถม Solar) · *"โปรฯ นี้หมดเมื่อไร"* กับรายการที่ไม่มี EndDate · *"โครงการ X มีโปรฯ ไหม"* กับรายการที่ `UNKNOWN`
+**Golden question ที่ต้องเพิ่ม:** *"โปรโมชั่น Solar มีอะไรบ้าง"* (Phase 1 แจ้งว่า standalone Solar อยู่นอกขอบเขตและเสนอส่งต่อ; ไม่หยิบโปรฯ บ้านที่แถม Solar และไม่อ้างว่าไม่มีโปรฯ Solar) · *"โปรฯ นี้หมดเมื่อไร"* กับรายการที่ไม่มี EndDate · *"โครงการ X มีโปรฯ ไหม"* กับรายการที่ `UNKNOWN`
 
 ---
 
@@ -422,24 +433,24 @@ GET /v1/entities/{entity_type}/{entity_id}/promotions
 | 3 | ฟิลด์ใดให้ลูกค้า/AI เห็นได้ | ออกแบบ `visibility` และ schema `internal` ไม่ได้ (G6) |
 | 4 | ใครอนุมัติก่อน publish | สร้าง role และ approval flow ไม่ได้ (G3) |
 | 5 | โปรฯ ที่ไม่มีวันสิ้นสุดทำอย่างไร | 323 รายการค้างคิว ปลดล็อกไม่ได้ (G4) |
-| 1 | Solar/EV แบบเดี่ยวอยู่ระบบใด | เขียน adapter ไม่ได้ — **แต่ไม่บล็อก MVP** เพราะ Flow B (§8.2) ให้สร้างที่ Hub ตรง ๆ ได้ก่อน |
+| 1 | Solar/EV แบบเดี่ยวอยู่ระบบใด | เป็นคำถามหลัง Phase 1; **ไม่บล็อก SENA MVP** เพราะทั้ง adapter และ standalone authoring ของ BU เหล่านี้อยู่นอกขอบเขต |
 
 ---
 
 ## 12. ข้อเสนอขอบเขต
 
-**ทำในรอบนี้**
+**รายละเอียดสำหรับ SENA Phase 1 — จัด milestone ตาม [07](07-delivery-plan.md)**
 - Adapter ของ REM 4 ตาราง → bronze → normalize
 - Triage queue จำกัด scope ที่ 7 โครงการนำร่อง
-- `promotion_entity_links` พร้อม `EXCLUDED_FROM` และ `project_applicability` 3 ค่า
+- targeting และ `EXCLUDED_FROM` สำหรับ 7 โครงการ SENA ตาม REQUIREMENTS.md; ไม่ต้องสร้าง association model ข้าม BU
 - `public_promotions` + citation + artwork + versioned publish + rollback
 - ด่าน 6 ข้อที่ view + auto-unpublish เมื่อต้นทางปิด
 - `offer_type_taxonomy` seed จาก `Sys_REM_Master_Promotion`
 - API พร้อม `as_of` และ cache ที่ไม่ข้ามเที่ยงคืน
-- `campaign_promotion_links` **schema + API ให้ฟอร์ม Ads เรียกใช้** (ตัวฟอร์มเป็นงานของทีม Ads)
+- `campaign_promotion_links` สำหรับโฆษณา SENA ตามแนวทางอ่านชีตอย่างเดียวใน [09](09-ads-registry-integration.md); แถว nonresidential จัดเป็น `OUT_OF_SCOPE` ได้โดยไม่สร้าง BU หรือ promotion
 
 **ยังไม่ทำ**
-- Adapter ของ Solar / EV / LivNex (รอยืนยันต้นทาง — ใช้ Flow B ไปก่อน)
+- Adapter และ standalone authoring ของ Solar / EV / LivNex (ไม่ใช้ Flow B ใน Phase 1; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026)
 - Fuzzy matching ระหว่าง campaign กับ promotion
 - การคำนวณราคาสุทธิหลังหักโปรฯ
 - โมเดลจัดสรร Ads spend ทุกชนิด

@@ -1,5 +1,7 @@
 # 05 — Published Content API
 
+> **ขอบเขตปัจจุบัน:** Hub เตรียมข้อมูลจาก Marketing และ enterprise DW เพื่อส่งเนื้อหาและ asset ที่อนุมัติแล้วให้เว็บไซต์เชิงพาณิชย์และ AI ผ่าน API ทีม Hub รับผิดชอบ field mapping, เอกสาร/ตัวอย่าง API, test consumer, change feed, signed webhook และการช่วยเชื่อมต่อฝั่ง Hub ทีมเว็บไซต์รับผิดชอบ frontend, โค้ดเรียก API/cache ในเว็บไซต์, hosting, locale UI, SEO rendering และการเปิดเว็บไซต์ ทดสอบการส่งมอบข้อมูลได้ผ่าน API client และ controlled consumer harness ดู [REQUIREMENTS](../REQUIREMENTS.md) และ [แผนส่งมอบ](07-delivery-plan.md)
+
 ## 1. สิ่งที่ปรับจากแผนเดิม
 
 | แผนเดิม | ปัญหา | ข้อเสนอ |
@@ -74,7 +76,7 @@ POST   /v1/admin/import                   # bulk CSV/XLSX
 ```
 
 `fallback_indicator` สำคัญ: แผนเดิมพูดถึง "fallback เมื่อข้อมูลไม่ครบ" แต่ไม่ได้บอกว่าใครตัดสิน
-→ **Hub เป็นคนบอก** ว่าอะไรขาด เว็บจึงไม่ต้องเดา และจะไม่ไปดึงรูปจากแหล่งอื่นมาแทนเอง
+→ **Hub เป็นคนบอก** ว่าอะไรขาดให้ consumer ใช้ตาม contract การนำไปแสดงในเว็บไซต์เป็นงานของทีม consumer ภายนอก
 
 ## 4. การบังคับ "Published เท่านั้น" ที่ระดับ DB
 
@@ -111,7 +113,7 @@ GET /v1/changes?since=2026-09-20T10:00:00Z&types=project,promotion
 Webhook ไปยัง consumer ที่ลงทะเบียน (ลงลายเซ็น HMAC):
 `content.published` · `content.rolled_back` · `promotion.activated` · `promotion.expired` · `asset.replaced`
 
-**กติกา:** `promotion.expired` ต้องยิงภายใน 60 วินาทีหลังหมดอายุ และ consumer ต้อง purge cache ทันที
+**กติกา Hub:** `promotion.expired` ต้องยิงภายใน 60 วินาทีหลังหมดอายุ และส่ง cache contract ที่ไม่เกิน 300 วินาทีหรือข้ามวันตาม REQUIREMENTS ทดสอบด้วย endpoint และ cache client ที่ควบคุมได้ ส่วนการ purge cache ของเว็บไซต์จริงเป็นหน้าที่ของ consumer ภายนอก ไม่ใช่งานพัฒนาในโครงการนี้
 
 ## 6. Security
 
@@ -121,3 +123,16 @@ Webhook ไปยัง consumer ที่ลงทะเบียน (ลงล
 - Preview token: JWT อายุ 30 นาที ผูกกับ `version_id` + user
 - Idempotency-Key บังคับบน admin POST ทุกตัว
 - Rate limit: อ่าน 600 req/min ต่อ key, เขียน 60 req/min
+
+## 7. การส่งมอบข้อมูลให้ทีมเว็บไซต์
+
+ตาม `API-17` / `A-21` ทีม Hub และทีมเว็บไซต์ตรวจสัญญาข้อมูลร่วมกันก่อน core Hub handoff วันที่เป้าหมาย 16 ต.ค. โดยไม่ต้องรอสร้างหรือเปิดเว็บไซต์จริง
+
+| สิ่งส่งมอบของ Hub | หลักฐาน |
+|---|---|
+| Field mapping และ content checklist | ระบุ field ที่เว็บไซต์ต้องใช้, source owner (DW/Marketing), entity/API path, required/optional, ข้อมูลที่ยังขาดและผู้รับผิดชอบสำหรับ 7 โครงการ |
+| Rich content และ asset ที่เผยแพร่แล้ว | ตัวอย่าง response ของ project/model, รายละเอียด/FAQ, รูป/แปลน/brochure, โปรฯ และ legal terms, SEO metadata และ locale/fallback พร้อม stable ID, version และ freshness |
+| เอกสารและตัวอย่างใช้งาน API | Versioned API schema และคำสั่งที่ทำซ้ำได้สำหรับอ่านข้อมูล, authentication, pagination/filter, errors, expiry/cache, change feed และ HMAC webhook; ไม่ใส่ secret จริงในเอกสาร |
+| Consumer onboarding และผลทดสอบ | เตรียม restricted test consumer ตามสิทธิ์เดิม ทดสอบ published-only/expiry/cache/webhook ด้วย harness และบันทึกผล review/ข้อบกพร่องของข้อมูลหรือ API ให้ทีม Hub แก้ |
+
+Marketing เติมข้อมูลและสื่อที่ตนเป็นเจ้าของผ่าน back office ส่วน enterprise facts ที่ผิดส่งให้เจ้าของ source แก้ ข้อมูลบังคับที่ขาดยังคงขวาง publication; ช่องว่าง optional ระบุไว้ใน contract ทีมเว็บไซต์นำข้อมูลไป render และดูแลโค้ด integration ของตนเอง การจัดเตรียมข้อมูลไม่รวมการสร้าง page builder หรือเว็บไซต์เชิงพาณิชย์ใน Hub

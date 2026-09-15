@@ -1,5 +1,10 @@
 # 09 — เชื่อม Ads Registry (Google Sheet) เข้ากับ Digital Hub
 
+> **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) มีผลเหนือข้อเสนอเดิม Phase 1 (ก.ย.–ต.ค.) ทำเฉพาะ SENA residential 7 โครงการ
+> Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026; EV/LivNex และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1 แถวโฆษณาเหล่านี้เก็บเป็น raw audit และจัดเป็น `OUT_OF_SCOPE` ได้โดยไม่สร้างหรือ map BU, product, promotion หรือ workspace ของธุรกิจนั้น
+> โมเดลหลาย BU และตัวอย่าง nonresidential ด้านล่างเป็นแบบอนาคต ไม่ใช่งาน MVP; โฆษณา corporate ใช้ใน Phase 1 ได้เฉพาะเมื่อยืนยันว่าเกี่ยวข้องกับโครงการ SENA ในขอบเขต
+> URL/landing page เป็น commercial frontend ของทีมเว็บไซต์แยก; Hub ยังรับผิดชอบการเตรียมข้อมูลและ mapping ที่ยืนยันแล้ว รวมถึง API documentation/sample payloads/test access และ change feed/webhook support ฝั่ง Hub ส่วนโค้ดหน้าเว็บ, rendering/routing/cache implementation, hosting และ go-live เป็นของทีมเว็บไซต์
+
 > อ่านจากไฟล์จริง `Working file_for content team` เมื่อ 14 ก.ย. 2026 (read-only)
 > เอกสารนี้แทนที่ข้อเสนอ "เพิ่ม dropdown ในฟอร์ม" ใน [08 §9](08-promotion-integration.md) เพราะข้อมูลจริงบอกว่าไม่จำเป็นต้องแก้ชีตเลย
 
@@ -85,19 +90,19 @@ flowchart LR
     POST --> META
 ```
 
-**หัวใจคือ URL ปลายทาง** — เพราะ Digital Hub เป็นเจ้าของ slug ของเว็บอยู่แล้ว ([01](01-source-of-truth.md))
-URL จึงแปลงกลับเป็น entity ได้แบบ deterministic:
+**หัวใจคือ URL ปลายทาง** — เก็บ mapping ที่ยืนยันแล้วระหว่าง URL ภายนอกกับ Hub entity โดยไม่ต้องเป็นเจ้าของหรือแก้เว็บไซต์
+URL ที่มี mapping จึงแปลงกลับเป็น entity ได้แบบ deterministic:
 
 | URL ที่พบในชีต | แปลงเป็น |
 |----------------|----------|
 | `sena.co.th/project/cozi-ladprao-107` | `PROJECT` |
 | `sena.co.th/brands/cozi` · `/brands/sena-kith` | `BRAND` |
-| `senasolarenergy.com` | `BUSINESS = SOLAR` |
-| `livnex.sena.co.th` | `BUSINESS = LIVNEX` |
-| `tradecar.sena.co.th` | `BUSINESS/CAMPAIGN = TRADE_IN` |
-| `campaign.sena.co.th/pricelimit` · `/easy-buy` | `CAMPAIGN landing page` |
+| `senasolarenergy.com` | Phase 1: `OUT_OF_SCOPE`; `BUSINESS = SOLAR` เป็นแบบ Phase 2 |
+| `livnex.sena.co.th` | Phase 1: `OUT_OF_SCOPE`; `BUSINESS = LIVNEX` เป็นแบบอนาคต |
+| `tradecar.sena.co.th` | `CAMPAIGN = TRADE_IN` เฉพาะเมื่อยืนยันว่าเกี่ยวกับโครงการ SENA ในขอบเขต; ไม่ต้องสร้าง BUSINESS |
+| `campaign.sena.co.th/pricelimit` · `/easy-buy` | `CAMPAIGN landing page` เฉพาะส่วนที่ยืนยันว่าเกี่ยวกับโครงการ SENA ในขอบเขต |
 
-→ ตารางที่ต้องดูแลมีแค่ **`landing_page_map` ประมาณ 20 แถว อยู่ใน Hub ไม่ใช่ในชีต** และแคมเปญใหม่เพิ่มเดือนละไม่กี่แถว
+→ **`landing_page_map` อยู่ใน Hub ไม่ใช่ในชีต**; ประมาณ 20 แถวเป็นการประเมินจากชีตเต็มเดิม ส่วน Phase 1 map เฉพาะ SENA ในขอบเขต แถว nonresidential ไม่ต้องมี Hub entity
 นี่คือเหตุผลที่ข้อเสนอเดิม (เพิ่ม dropdown ในฟอร์ม) **ไม่จำเป็นอีกต่อไป**
 
 ---
@@ -202,6 +207,9 @@ https://campaign.sena.co.th/pricelimit
 
 ## 7. สถาปัตยกรรมที่เสนอ — อ่านอย่างเดียว ไม่แตะชีต
 
+> SQL/แผนภาพเก็บแบบเดิมไว้เป็นข้อมูลอ้างอิง `BUSINESS` และตัวอย่าง URL nonresidential เป็นแบบอนาคต; Phase 1 จัดแถวดังกล่าวเป็น `OUT_OF_SCOPE` ก่อนขั้น entity mapping และไม่ส่งเข้าคิวบังคับสร้าง BU หรือ promotion
+> ค่า `business_unit` ที่ parse จาก campaign เก็บเป็น observed prefix ของต้นทางเท่านั้น ไม่ต้องมี BU registry; รายงาน coverage ต้องแยกจำนวนในขอบเขต, unresolved และ `OUT_OF_SCOPE` พร้อมตัวหารตาม ADS-11 / A-15 ใน REQUIREMENTS.md
+
 ```sql
 -- ชั้น staging: กระจกของชีต ห้ามเขียนกลับ
 create table staging.ads_registry_rows (
@@ -276,7 +284,7 @@ flowchart LR
     LINKS --> RPT["รายงาน spend ต่อ promotion<br/>ใช้ is_primary เท่านั้น"]
 ```
 
-**งานที่ Marketing ต้องทำเพิ่ม** มีแค่อย่างเดียว: เมื่อ URL ใหม่โผล่ใน inbox ให้ระบุว่ามันคือ entity อะไร — เดือนละไม่กี่ครั้ง และทำใน Hub ไม่ใช่ในชีต
+**งานที่ Marketing ต้องทำเพิ่ม:** เมื่อ URL ใหม่โผล่ใน inbox ให้ยืนยันว่าอยู่ในขอบเขต SENA หรือไม่; map เฉพาะ URL ในขอบเขต ส่วน nonresidential เลือก `OUT_OF_SCOPE` ได้โดยไม่สร้าง entity และไม่แก้ชีต
 
 ---
 
@@ -290,8 +298,7 @@ flowchart LR
 | **Chatbot ตอบได้ว่าโปรฯ ที่เห็นในโฆษณาคืออันไหน** | ลูกค้าทักมาจากโฆษณา → `meta_ad_id` → promotion |
 | **ตรวจ Ads ที่ชี้ไปหน้า 404** | `destination_url` ที่ไม่มีใน Hub |
 
-> ประเด็นที่สามน่าสนใจที่สุดในเชิงธุรกิจ — **มีการลงเงินโฆษณา LivNex และ Solar อยู่แล้ว แต่ Digital Hub ยังไม่มีเนื้อหาของสองธุรกิจนี้เลย**
-> เป็นหลักฐานสนับสนุนว่า Flow B ใน [08 §8.2](08-promotion-integration.md) (สร้าง Public Promotion ที่ Hub โดยไม่ต้องรอ REM) ควรทำตั้งแต่รอบแรก ไม่ใช่รอ adapter
+> ผล audit เรื่องโฆษณา LivNex/Solar คงไว้เป็นข้อมูลวางแผนอนาคต ไม่ทำให้ต้องสร้างเนื้อหาหรือใช้ Flow B ใน [08 §8.2](08-promotion-integration.md) ใน Phase 1; Solar เริ่ม Phase 2 หลัง 31 ต.ค. 2026 ส่วนแถว nonresidential จัดเป็น `OUT_OF_SCOPE`
 
 ---
 
@@ -302,20 +309,21 @@ flowchart LR
 3. **ไฟล์นี้ไฟล์เดียวหรือมีต่อปี/ต่อไตรมาส** — ถ้าแยกไฟล์ ต้องมีทะเบียนไฟล์
 4. **GA4 เก็บ `meta_*_id` หรือยัง** (§6 ข้อ 1) — น่าจะเป็นช่องว่างที่ใหญ่ที่สุด
 5. **ช่องทางอื่นนอกจาก Facebook มี UTM template หรือยัง** — TikTok เห็นในชีตแล้วแต่ไม่เห็น template
-6. **ใครดูแล `landing_page_map`** — ควรเป็นคนเดียวกับที่ดูแล slug ของเว็บ
+6. **ใครดูแล `landing_page_map`** — ระบุเจ้าของในทีม Hub/Marketing ให้ประสานทีมเว็บไซต์และยืนยัน mapping ระหว่าง URL กับ Hub entity; Hub จัดเตรียมข้อมูลและ API support ส่วนการเปลี่ยน route/slug บนเว็บไซต์เป็นของทีมเว็บไซต์
 
 ---
 
 ## 10. ขอบเขตที่เสนอ
 
-**ทำในรอบนี้**
+**ทำเฉพาะ SENA ใน Phase 1 ตาม milestone ใน [07](07-delivery-plan.md)**
 - Adapter อ่านชีตแบบ read-only + snapshot + dedupe + parse `campaign_code`
-- `landing_page_map` และ URL Inbox
+- `landing_page_map` และ URL Inbox สำหรับ SENA; nonresidential จัดเป็น `OUT_OF_SCOPE` โดยไม่ต้องสร้างหรือ map BU
 - `ad_campaigns` เป็นทะเบียนพร้อมการเตือนรหัสที่ไม่รู้จัก
 - สร้าง `campaign_promotion_links` จาก URL และทะเบียนแคมเปญ
 - การเตือนสองข้อแรกใน §8
 
 **ยังไม่ทำ**
+- Mapping, standalone promotion authoring และ workspace ของ Solar/EV/LivNex หรือ BU อื่นที่ไม่ใช่ residential; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026
 - เขียนกลับเข้าชีต (ไม่ทำเลยตามที่ตกลง)
 - ดึง Meta Ads API และ GA4 เข้ามา join ผลลัพธ์ (รอยืนยัน §6)
 - โมเดลจัดสรร spend ทุกชนิด

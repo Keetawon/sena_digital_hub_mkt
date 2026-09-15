@@ -19,6 +19,8 @@
 
 ทุก field ที่แสดงต่อสาธารณะเก็บเป็น `jsonb` keyed ด้วย BCP-47 locale
 
+> ผู้ใช้ภายในเป็นคนไทยทั้งหมด: Admin UI และภาษาเริ่มต้นของการกรอกข้อมูลใช้ไทย ส่วน JSONB locale, metadata และข้อมูล Marketing/enterprise ที่เผยแพร่ได้ยังเป็นความสามารถของ Hub API พร้อม field mapping ให้ทีมเว็บไซต์ การ render ภาษา, UI และ routing ของ commercial frontend เป็นงานทีมเว็บไซต์แยกตาม [REQUIREMENTS](../REQUIREMENTS.md)
+
 ```sql
 -- ตัวอย่างค่า
 {"th": "เสนา คิทท์ รังสิต", "en": "SENA Kith Rangsit"}

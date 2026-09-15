@@ -45,7 +45,7 @@ commit;
 | Brochure PDF | layout-aware ตามหัวข้อ + OCR เฉพาะหน้าที่เป็นภาพ |
 | `facilities`, `nearby_places` | **ไม่ต้อง chunk** — ตอบจาก structured API |
 
-ทุก chunk ต้องมี `citation_label` + **URL ที่คลิกกลับไปหาแหล่งจริงได้** (แผนเดิมมี label แต่ไม่มี URL)
+ทุก chunk ต้องมี `citation_label` + **URL ที่คลิกกลับไปหาแหล่งจริงได้** (แผนเดิมมี label แต่ไม่มี URL) ใช้ URL ของเอกสาร/เวอร์ชันหรือ API ของ Hub ตามสิทธิ์เข้าถึง ไม่ต้องสร้างหน้าเว็บไซต์ภายนอกเพื่อรองรับ citation
 
 ## 4. Content Domain Deny-list — บังคับที่ระดับ DB
 

@@ -1,6 +1,10 @@
 # 10 — Tech Stack
 
-> อ้างอิงข้อกำหนดใน [REQUIREMENTS.md](../REQUIREMENTS.md) · ปรับปรุง 2026-09-14
+> อ้างอิงข้อกำหนดใน [REQUIREMENTS.md](../REQUIREMENTS.md) · ปรับปรุงขอบเขต 2026-09-15
+
+> **ขอบเขตและกำหนดส่งปัจจุบัน (15 ก.ย. 2026):** [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) มีผลเหนือข้อเสนอ stack และกำหนด MVP เดิม Phase 1 (ก.ย.–ต.ค.) มีเฉพาะ SENA residential 7 โครงการ: internal pilot 30 ก.ย. → core SENA Hub 16 ต.ค. → SENA AI pilot 30 ต.ค. 2026
+> Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1; ไม่ต้องสร้าง BU workspace, chatbot ข้าม BU, product model กลาง หรือ adapter ของ BU อื่นใน Phase 1
+> **ขอบเขตเว็บไซต์:** Hub มี frontend เฉพาะ Admin ภาษาไทย และรับผิดชอบข้อมูล Marketing/enterprise ของ SENA ที่เผยแพร่ได้, field mapping, API documentation/sample payloads/test access และ change feed/webhook integration support ฝั่ง Hub ให้ทีมเว็บไซต์ ส่วน commercial frontend, rendering/routing/cache implementation, hosting และ go-live เป็นของทีมเว็บไซต์แยก; chatbot ยังอยู่ repo แยก
 
 ---
 
@@ -13,7 +17,7 @@
 | 1 | **งานตัดคำไทยและอ่านเอกสารเป็น ecosystem ของ Python ล้วน** | `RAG-10` บังคับให้ตัดคำไทยก่อน index เพราะ PostgreSQL ไม่มี text-search configuration สำหรับภาษาไทย → ต้องใช้ PyThaiNLP (`newmm`) และงานอ่าน brochure ต้องใช้ PyMuPDF / pdfplumber / OCR ถ้าใช้ Rust ต้อง FFI หรือเขียนใหม่ทั้งหมด **ข้อนี้ข้อเดียวก็ตัดสินแล้ว** |
 | 2 | **workload เป็น I/O-bound ไม่ใช่ CPU-bound** | เวลาหมดไปกับ round-trip ไป Postgres, fetch ไฟล์, และเรียก LLM — ข้อได้เปรียบด้านความเร็วของ Rust ไม่โผล่ออกมาเลย `NFR-01` (p95 < 500 ms) ทำได้สบายทั้งคู่ |
 | 3 | **REM เป็น SQL Server** | Python มี `pyodbc` / `pymssql` ที่โตเต็มที่ ฝั่ง Rust (`tiberius`) ใช้ได้แต่ ecosystem บางกว่ามาก |
-| 4 | **เหลือเวลา 16 วันถึง MVP** | FastAPI แถม OpenAPI schema + Pydantic validation มาให้ฟรี ซึ่งตรงกับ `API-06` (response envelope) และใช้ generate TypeScript client ให้ frontend ได้เลย |
+| 4 | **ส่งมอบเป็นสาม milestone ตามแผนปัจจุบัน** | FastAPI แถม OpenAPI schema + Pydantic validation มาให้ฟรี ซึ่งตรงกับ `API-06` (response envelope) และใช้ generate TypeScript client ให้ frontend ได้เลย; 30 ก.ย. เป็น internal pilot ไม่ใช่ MVP ทั้งระบบ |
 | 5 | **ตรรกะส่วนใหญ่อยู่ใน Postgres อยู่แล้ว** | `ARCH-07` บังคับว่าการกรอง published ต้องอยู่ที่ view และ grant ไม่ใช่ที่โค้ด → ชั้น API บางมาก ภาษาที่ใช้จึงยิ่งมีผลน้อย ซึ่งเป็นเหตุผลให้เลือกอันที่เขียนเสร็จเร็วกว่า |
 
 **Rust จะชนะเมื่อไร** — เมื่อมี hot path ที่เป็น CPU-bound จริง (transcode รูปจำนวนมาก, rerank หนัก ๆ) หรือทีมเป็น Rust-native อยู่แล้ว
@@ -35,8 +39,7 @@
 ```mermaid
 flowchart TD
     subgraph VERCEL["Vercel · region sin1"]
-        WEB["apps/web — Next.js<br/>ISR + on-demand revalidate"]
-        ADMIN["apps/admin — Next.js<br/>Marketing back office"]
+        ADMIN["apps/admin — Next.js<br/>Marketing back office ภาษาไทย"]
     end
     subgraph HOST["Hostinger VPS — เครื่องเดียวกับ DW"]
         DW[("Data Warehouse<br/>มี connectivity ไป REM อยู่แล้ว")]
@@ -52,20 +55,25 @@ flowchart TD
     REM[("REM — SQL Server on-prem")]
     SHEET[("Google Sheet — read-only")]
     LLM["OpenAI API"]
+    subgraph CONSUMERS["External consumers — งานพัฒนาแยกจาก Hub"]
+        EXTERNAL["Commercial website / Partner<br/>frontend โดยทีมแยก · Hub สนับสนุน API"]
+        BOT["AI Chatbot<br/>sena_ai_chatbot_mkt"]
+    end
 
     REM -->|pipeline ที่มีอยู่แล้ว| DW
     DW -->|อ่านจาก bronze layer| JOBS
     SHEET --> JOBS
     ADMIN -->|supabase-js CRUD| PG
     ADMIN -->|transactional ops| API
-    WEB --> API
+    EXTERNAL -.->|published API contract| API
+    BOT -->|retrieval / structured API| API
     API --> PG
     API --> STO
     API --> LLM
     WORKER --> PG
     JOBS --> PG
     AUTH --> PG
-    API -->|webhook revalidateTag| WEB
+    API -.->|HMAC webhook contract| EXTERNAL
 ```
 
 **กฎเรื่อง region:** Supabase, Vercel functions และ VPS ที่รัน API ควรอยู่ Singapore หรือใกล้เคียงให้มากที่สุด
@@ -127,7 +135,7 @@ ruff + pyright               lint + types
 | Admin CRUD ธรรมดา (แก้ชื่อ, แก้ field) | **supabase-js ตรงไปที่ PostgREST** | ประหยัดเวลาเขียน boilerplate มาก และ RLS คุมให้อยู่แล้ว |
 | **Publish / rollback** | **FastAPI เท่านั้น** | เป็น transaction หลายขั้น (`VER-03`, `VER-04`) |
 | **Mirror-on-ingest** | **FastAPI เท่านั้น** | fetch ภายนอก + checksum + เขียน storage (`ASSET-06`) |
-| **Public API** | **FastAPI เท่านั้น** | ต้องมี envelope, `as_of`, change feed, webhook |
+| **Public API + integration support ฝั่ง Hub** | **FastAPI เท่านั้น** | envelope, `as_of`, change feed, webhook พร้อม field mapping, เอกสาร, sample payloads และ test access สำหรับทีมเว็บไซต์ |
 | Sync jobs | Hostinger VPS (เครื่องเดียวกับ DW) | long-running |
 
 > เงื่อนไขที่ทำให้แบ่งแบบนี้ปลอดภัย: **invariant ทุกข้ออยู่ใน DB constraint** ไม่ใช่ใน application code
@@ -140,7 +148,7 @@ ruff + pyright               lint + types
 | Batch jobs | **Hostinger VPS** — DW→Hub sync, Sheets sync, RAG ingest, link health | ใช้เครื่องและ ops ที่มีอยู่แล้ว ไม่ต้องเพิ่ม vendor |
 | Workers (event สั้น) | **Hostinger VPS** — consume `pgmq` | mirror asset, สร้าง rendition, reindex เอกสารเดี่ยว |
 | API | **Hostinger VPS** — container แยก **ที่มี resource limit แข็ง** | ดูข้อควรระวังด้านล่าง |
-| Web / Admin | Vercel `sin1` | ไม่เปลี่ยน |
+| Admin ภาษาไทย | Vercel `sin1` | `apps/admin` เท่านั้น |
 
 **รันด้วย Docker Compose + systemd** (หรือ scheduler ตัวที่ DW ใช้อยู่แล้ว — ถ้ามี Airflow/Dagster/cron อยู่ ให้ใช้ตัวเดิม อย่าเพิ่มตัวที่สอง)
 
@@ -150,8 +158,8 @@ ruff + pyright               lint + types
 |-----------|-----------|-----------|
 | **แย่ง CPU/RAM กับ DW ETL** | RAG ingest (parse PDF + OCR + embedding) กินทรัพยากรหนัก ถ้าชนกับหน้าต่าง ETL ของ DW จะกระทบงานที่มีอยู่เดิม | ตั้ง `mem_limit` / `cpus` ต่อ container ใน Compose · จัดตารางให้ RAG ingest อยู่คนละหน้าต่างกับ ETL |
 | **Blast radius — job เจ๊งลาก DW ไปด้วย** | process ที่ OOM บนเครื่องที่ไม่มี limit จะทำให้ทั้งเครื่องล่ม รวมถึง DW ที่งานอื่นพึ่งอยู่ | container แยกต่อ service + hard limit · ตัว RAG/OCR ให้ limit แน่นที่สุด |
-| **API ล่มพร้อม DW** | ถ้า API อยู่เครื่องเดียวกัน เวลา DW มีปัญหา เว็บจะไม่มีข้อมูลสด | **ISR ของ Vercel ช่วยไว้** — เว็บจะ degrade เป็นเนื้อหาเก่า ไม่ใช่ล่ม ซึ่งรับได้สำหรับเว็บ content · แต่ถ้างบพอ **แนะนำให้แยก API ไป VPS เล็กอีกตัว** |
-| **ไม่มี autoscale** | โหลดพุ่งแล้วขยายไม่ได้ | สำหรับ batch ไม่เป็นปัญหาและถูกกว่าด้วย · ฝั่ง read ให้ Vercel ISR + CDN รับโหลดแทน API |
+| **API ล่มพร้อม DW** | ถ้า API อยู่เครื่องเดียวกัน เวลา DW มีปัญหา Admin และ consumers อาจเรียกข้อมูลไม่ได้ | ตรวจ uptime และการกู้คืน API; ถ้าทรัพยากรไม่พอให้แยก API ไป VPS อีกตัว การ cache ของเว็บไซต์ภายนอกไม่ใช่มาตรการที่ Hub รับประกัน |
+| **ไม่มี autoscale** | โหลดพุ่งแล้วขยายไม่ได้ | จำกัดทรัพยากร batch และ rate limit ต่อ consumer; ทดสอบโหลด read API โดยตรงตาม NFR-01 |
 
 > **ต้องรู้ก่อนตัดสินขั้นสุดท้าย:** VPS ตัวนี้ **กี่ vCPU / RAM เท่าไร / ดิสก์เหลือเท่าไร / อยู่ภูมิภาคไหน**
 > ถ้า RAM ต่ำกว่า 8 GB ไม่ควรเอา API ไปอยู่รวม ให้แยก VPS เล็กอีกตัว
@@ -185,41 +193,31 @@ flowchart LR
 
 ---
 
-## 5. Frontend — Next.js บน Vercel
+## 5. Admin frontend ภาษาไทย — Next.js บน Vercel
 
-> Vercel คือที่โฮสต์ ส่วน framework ที่แนะนำคือ **Next.js 15 App Router**
+> Vercel คือที่โฮสต์ Admin ส่วน framework ที่แนะนำคือ **Next.js 15 App Router**; ไม่มี public website app ในงานส่งมอบนี้
 
 ```
-monorepo (pnpm workspaces + Turborepo)
-├─ apps/web        เว็บสาธารณะ — ISR
-├─ apps/admin      back office ของ Marketing
-├─ packages/ui     design system ร่วม (Tailwind + shadcn/ui)
-├─ packages/api    TypeScript client — generate จาก OpenAPI ของ FastAPI
-└─ packages/types  shared types
+apps/admin/
+└─ src/
+   ├─ app/          หน้าจอ Admin ภาษาไทย
+   ├─ components/   Admin UI (Tailwind + shadcn/ui)
+   └─ lib/api/      TypeScript client/types จาก OpenAPI ของ FastAPI
 ```
 
-**ข้อดีที่ได้ฟรี:** `openapi-typescript` generate client จาก schema ของ FastAPI → ถ้า backend เปลี่ยน field แล้ว frontend ไม่ได้แก้ **TypeScript จะ error ตอน build** ไม่ใช่ไปพังบน production
+`openapi-typescript` generate client จาก schema ของ FastAPI เพื่อให้ Admin ตรวจพบ field ที่เปลี่ยนตอน build; เก็บ UI/client/types ภายใน Admin app ก่อน ยังไม่ต้องแยก shared packages หรือเพิ่ม Turborepo สำหรับ frontend เดียว
 
-### Cache invalidation — จุดที่ต้องทำให้ถูก
+### Consumer contract — expiry, TTL และ webhook
 
-นี่คือส่วนที่ตอบ `API-11` และ `API-12` ซึ่งเป็นข้อกำหนดที่มีความเสี่ยงทางกฎหมายติดมาด้วย
+Hub ยังคงรับผิดชอบ `API-10`–`API-12`: published views ตัดข้อมูลหมดอายุตามเวลา, promotion responses มี TTL ไม่เกิน 300 วินาทีและ `cache_expires_at` ไม่ข้ามเที่ยงคืน Asia/Bangkok, webhook ลงลายเซ็น HMAC และแจ้ง expiry ภายใน 60 วินาที
 
-```ts
-// apps/web — webhook รับจาก Hub
-// tag ต่อ entity: project:{id} · promotion:{id} · brand:{id}
-revalidateTag(`promotion:${id}`)   // เรียกเมื่อได้ promotion.expired / activated
-
-// หน้าโปรโมชั่น — TTL ต้องไม่ข้ามเที่ยงคืนเวลาไทย
-// เพราะ temporal_status คำนวณจากวันที่ คำตอบที่ cache ไว้จะผิดทันทีที่ข้ามวัน
-export const revalidate = false   // พึ่ง tag เป็นหลัก
-const ttl = Math.min(300, secondsUntilBangkokMidnight())
-```
+Hub จัดเตรียม field mapping, API documentation, sample payloads และ test access ให้ทีมเว็บไซต์ พร้อมช่วยตรวจการใช้ change feed/webhook ผ่าน consumer harness: response ก่อน/หลัง expiry, TTL และขอบเขตเวลา, HMAC และการรับ webhook รวมถึง TTL ใน cache จำลอง งานนี้เป็น integration support ฝั่ง Hub; โค้ด rendering/routing/cache และการเปิด commercial frontend เป็นความรับผิดชอบทีมเว็บไซต์และไม่ใช่เงื่อนไขผ่าน acceptance ของ Hub
 
 | เรื่อง | เลือกอะไร | เหตุผล |
 |--------|-----------|--------|
-| Region ของ function | `sin1` | ใกล้ Supabase |
-| รูปภาพ | **Supabase image transformation** ไม่ใช่ Vercel Image Optimization | ระบบเดียว คิดค่าใช้จ่ายรวมกับ storage และตรงกับ `ASSET-12` ที่ให้บันทึก recipe ไว้ · ตั้ง custom loader ของ `next/image` ชี้ไป Supabase |
-| Runtime | Node (ไม่ใช่ Edge) สำหรับหน้าที่คุย DB | ต้องใช้ driver เต็ม |
+| Region ของ Admin function | `sin1` | ใกล้ Supabase |
+| Asset preview / rendition | **Supabase image transformation** | ใช้ใน Admin และ asset API พร้อมบันทึก recipe ตาม `ASSET-12`; ไม่มีงาน image loader ของเว็บไซต์ภายนอก |
+| Admin runtime | Node สำหรับ server-side operations | ใช้กับ Admin เท่านั้น |
 
 ### Admin UI
 
@@ -309,13 +307,13 @@ openai            Python SDK (ใช้ AzureOpenAI client ถ้า deploy ผ�
 
 | ด้าน | เครื่องมือ |
 |------|-----------|
-| Error tracking | Sentry (ทั้ง FastAPI และ Next.js) |
+| Error tracking | Sentry (FastAPI และ Next.js Admin) |
 | Logs | Cloud Logging แบบ structured JSON |
 | DB metrics | Supabase dashboard + `pg_stat_statements` |
 | Uptime | synthetic check บน `/v1/projects` ทุก 5 นาที |
-| CI | GitHub Actions — ruff, pyright, pytest, ตรวจ migration drift, `pnpm build` |
+| CI | GitHub Actions — ruff, pyright, pytest, ตรวจ migration drift, build `apps/admin` และ consumer contract harness |
 | DB preview | Supabase branching ต่อ PR |
-| Web preview | Vercel preview deployment ต่อ PR |
+| Admin preview | Vercel preview deployment ของ `apps/admin` ต่อ PR |
 
 ### เทสต์ที่ต้องเป็นอัตโนมัติ ไม่ใช่ตรวจด้วยตา
 
@@ -341,7 +339,7 @@ async def test_expired_promotion_disappears_without_any_job(consumer_conn, db):
 | รายการ | ประมาณ |
 |--------|--------|
 | Supabase Pro + compute | $25 + ตามขนาด instance |
-| Vercel Pro | $20 ต่อ seat |
+| Vercel Pro — Admin เท่านั้น | $20 ต่อ seat |
 | Hostinger VPS | **มีอยู่แล้ว** — อาจต้องอัปเกรดถ้า RAM ไม่พอ |
 | OpenAI API | ตามสัญญาที่บริษัทซื้อไว้ |
 | Embeddings | ค่าใช้จ่ายครั้งแรกตอน index ครั้งเดียว แล้วค่อนข้างต่ำ |
@@ -358,7 +356,7 @@ async def test_expired_promotion_disappears_without_any_job(consumer_conn, db):
 | ORM | **ไม่ใช้ ORM หนัก** · asyncpg + SQL · SQLAlchemy เฉพาะ CRUD | สูง |
 | Migration | **Supabase CLI + SQL** | สูง |
 | Admin CRUD | **supabase-js ตรงไป PostgREST** · งาน transaction ผ่าน FastAPI | กลาง — ประหยัดเวลามาก แต่ต้องมี DB constraint ครบจริง |
-| Frontend | **Next.js 15 App Router บน Vercel** monorepo | สูง |
+| Admin frontend | **Next.js 15 App Router ภาษาไทย บน Vercel** · `apps/admin` | สูง |
 | Vector store | **pgvector ในฐานเดียวกัน** | สูง — `RAG-05` บังคับ |
 | REM access | **ผ่าน bronze layer ของ DW ไม่ต่อตรง** | สูง — ตัดปัญหา VPN และเหลือจุดเชื่อมเดียว |
 | Embedding model | **OpenAI `text-embedding-3-large`** เป็นค่าตั้งต้น · ยืนยันด้วย golden set | กลาง |

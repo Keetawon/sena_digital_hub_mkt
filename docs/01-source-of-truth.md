@@ -1,5 +1,9 @@
 # 01 — สถาปัตยกรรม Source of Truth
 
+> **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) มีผลเหนือเอกสารนี้ Phase 1 (ก.ย.–ต.ค.) มีเฉพาะ SENA residential 7 โครงการ
+> ระบบและการแบ่งสิทธิ์ข้าม BU เป็นแนวทางอนาคต ไม่ต้องสร้าง BU workspace, chatbot ข้าม BU, product model กลาง หรือ adapter ของ BU อื่นใน Phase 1; Solar เริ่ม Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1
+> เว็บไซต์ใน matrix/แผนภาพเป็น commercial frontend ที่ทีมเว็บไซต์แยกพัฒนาและโฮสต์; Hub ยังรับผิดชอบข้อมูล Marketing/enterprise ในขอบเขต, field mapping, API และ integration support ฝั่ง Hub ส่วน rendering/routing/cache implementation และ website go-live เป็นของทีมเว็บไซต์
+
 ## 1. หลักการ 7 ข้อ
 
 1. **หนึ่ง field มีเจ้าของระบบเดียว** — ห้ามมีสองระบบเขียน field เดียวกัน
@@ -15,6 +19,8 @@
 > นี่คือเอกสารที่ควร "เซ็นรับ" ร่วมกันระหว่าง Marketing / IT / REM Owner ก่อนเริ่มพัฒนา
 > *(แก้ไข 14 ก.ย. 2026 — แยกแถว Promotion เป็นสองแถวหลังตรวจ REM พบว่ามี Promotion อยู่แล้ว 7,676 รายการ ดู [08](08-promotion-integration.md))*
 
+Hub จัดเตรียมทั้งเนื้อหา Marketing ที่ Hub เป็นเจ้าของและข้อมูล enterprise ของ SENA ที่ได้รับอนุมัติให้เผยแพร่ผ่าน API โดยข้อมูล REM ที่รับผ่าน DW bronze/raw ยังคงมี REM เป็นเจ้าของต้นทาง พร้อม provenance และ freshness; DW เป็นทางรับข้อมูล ไม่ใช่สิทธิ์ให้ Hub แก้ค่าต้นทาง การจัดเตรียมข้อมูลเหล่านี้ให้ทีมเว็บไซต์อยู่ในขอบเขต Hub
+
 | ข้อมูล | System of Record | บทบาทของ Hub | Consumer เรียกจาก | เขียนได้โดย |
 |--------|------------------|--------------|-------------------|-------------|
 | Company / Project / Model **ID** | **REM** | mirror (read-only) | Hub | sync job เท่านั้น |
@@ -24,7 +30,7 @@
 | **Asset ทุกชนิด** (รูป, วิดีโอ, แปลน, brochure) | **Hub** | **owner** | Hub | Editor → Publisher |
 | **คำบรรยาย / จุดเด่น / FAQ** | **Hub** | **owner** | Hub | Editor → Publisher |
 | **Facility / Nearby / Map pin** | **Hub** | **owner** | Hub | Editor → Publisher |
-| **Promotion — *Offer*** (สิทธิ์ที่ Sales ให้ได้จริง) | **REM** + ระบบ BU อื่น | mirror (read-only) | Hub | sync job เท่านั้น |
+| **Promotion — *Offer*** (สิทธิ์ที่ Sales ให้ได้จริง) | **REM** (ระบบ BU อื่นเป็นแนวทางหลัง Phase 1) | mirror (read-only) | Hub | sync job เท่านั้น |
 | **Promotion — *Public Promotion*** (สิ่งที่เราพูดต่อสาธารณะ) | **Hub** | **owner** | Hub (live API) | Editor → Data Owner → Legal → Publisher |
 | SEO (slug, meta, og:image) | **Hub** | **owner** | Hub | Editor |
 | **ห้องว่าง / Unit availability** | **REM** | **ไม่เก็บเด็ดขาด** | REM API (ผ่าน Hub proxy) | — |
@@ -61,6 +67,7 @@
 - Breaking change แจ้งล่วงหน้า ≥ 30 วัน และรัน 2 version ขนานกัน (`/v1`, `/v2`)
 - ข้อมูล Draft / Archived / Expired ไม่หลุดออก public API — บังคับด้วย DB view ไม่ใช่ if ใน application code
 - มี `GET /changes?since=` ให้ consumer sync แบบ delta และมี webhook สำหรับ invalidation ทันทีในกรณีโปรโมชั่น
+- สนับสนุนทีมเว็บไซต์ด้วย field mapping, API documentation, sample payloads, test access และการทดสอบ change feed/HMAC webhook ฝั่ง Hub โดยไม่ต้องพัฒนา commercial frontend ใน repo นี้
 
 **Consumer รับปาก:**
 - ไม่ hardcode เนื้อหา ไม่ cache promotion เกิน TTL ที่ Hub กำหนด (`cache_control` มาใน response)

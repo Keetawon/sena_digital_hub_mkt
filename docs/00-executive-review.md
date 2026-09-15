@@ -1,5 +1,10 @@
 # 00 — รีวิวแผน Codex และช่องว่างที่ควรปิด
 
+> **ขอบเขตและกำหนดส่งปัจจุบัน (15 ก.ย. 2026):** ยึด [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) เหนือข้อเสนอและลำดับความสำคัญเดิมในเอกสารนี้
+> Phase 1 (ก.ย.–ต.ค.) ครอบคลุมเฉพาะ SENA residential 7 โครงการ: internal pilot 30 ก.ย. → core SENA Hub 16 ต.ค. → SENA AI pilot 30 ต.ค. 2026
+> Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026; ธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1 เช่นกัน
+> Hub รับผิดชอบ back office ภาษาไทย, ข้อมูล Marketing และ enterprise ของ SENA ที่อนุมัติให้เผยแพร่, field mapping, API/เอกสาร/ตัวอย่าง/test access และ change feed/webhook support สำหรับทีมเว็บไซต์; ทีมเว็บไซต์แยกรับผิดชอบ commercial frontend, rendering/routing/cache implementation, hosting และ go-live โดยใช้ consumer harness ตรวจสัญญาฝั่ง Hub ตาม REQUIREMENTS.md
+
 > เอกสารนี้รีวิวแผน **SENA Digital Hub & AI Knowledge Platform** ฉบับ Codex
 > โดยยึดวัตถุประสงค์หลัก: *เป็น Source of Truth เดียวสำหรับ Website, Chatbot และ Consumer อื่น ๆ*
 
@@ -14,7 +19,7 @@
 | 3 | **Asset Registry กลาง + polymorphic `entity_assets`** | รูปหนึ่งใบผูกได้หลายบริบท ถูกต้องตามหลัก DAM |
 | 4 | **Published-only API + effective date** | กัน Draft/Expired หลุดออก public |
 | 5 | **ตาราง Routing: คำถามไหนไป Structured API คำถามไหนไป RAG** | เป็น architectural instinct ที่ถูก — ราคา/ห้องว่าง/โปรฯ ต้องไม่มาจาก RAG |
-| 6 | **มี Out-of-scope list ชัดเจน** | วินัยที่ดีสำหรับ deadline 19 วัน |
+| 6 | **มี Out-of-scope list ชัดเจน** | วินัยที่ดีสำหรับกำหนดส่งแต่ละช่วง |
 
 ---
 
@@ -77,7 +82,7 @@
 6. **Mirror ทุก URL ที่ paste เข้ามา** เข้า `hub-originals` แล้วเสิร์ฟจาก Hub เสมอ
 7. **ทำ i18n ตั้งแต่วันแรก** (JSONB locale, `th` บังคับ, fallback en→th) แม้จะยังกรอกแค่ไทย
 8. **แก้ RAG pipeline ให้เป็น delete-then-insert ต่อ document version** + hybrid retrieval + metadata pre-filter บังคับ
-9. **เปลี่ยน plan จากแนวนอนเป็น Vertical Slice** — ให้ 1 โครงการวิ่งครบ chain ภายใน 15 ก.ย. แล้วค่อยขยายเป็น 7
+9. **เปลี่ยน plan จากแนวนอนเป็น Vertical Slice** — ให้ 1 โครงการวิ่งครบ chain สำหรับ internal pilot 30 ก.ย. แล้วขยายตาม [แผนส่งมอบปัจจุบัน](07-delivery-plan.md)
 10. **เริ่มเก็บ content ขนานไปตั้งแต่วันนี้** ด้วย intake template — เพราะ critical path จริงคือข้อมูล ไม่ใช่โค้ด
 
 ---
@@ -86,4 +91,4 @@
 
 แผนเดิมวางงานแบบ **แนวนอน** (schema → storage → admin → API → test) ซึ่งแปลว่า *ไม่มีอะไรทำงานได้เลยจนถึงสัปดาห์สุดท้าย* และวันที่ 30 ก.ย. คือวันแรกที่จะรู้ว่าพลาดตรงไหน
 
-จากวันนี้ (11 ก.ย.) เหลือ **19 วัน** ถึง MVP — ข้อเสนอปรับแผนและ descope levers อยู่ใน [07-delivery-plan.md](07-delivery-plan.md)
+ข้อสังเกตนี้มาจากแผนวันที่ 11 ก.ย. 2026; กำหนด MVP เดิมถูกแทนที่ด้วยสาม milestone ใน [07-delivery-plan.md](07-delivery-plan.md) แล้ว โดย 30 ก.ย. เป็น internal pilot ไม่ใช่วันส่งมอบทั้งระบบ

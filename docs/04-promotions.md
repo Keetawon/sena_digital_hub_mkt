@@ -1,10 +1,13 @@
 # 04 — Campaign & Promotion
 
+> **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** ยึด [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) เหนือข้อความและตัวอย่างเดิม Phase 1 (ก.ย.–ต.ค.) มีเฉพาะโปรโมชั่น SENA residential ที่เกี่ยวกับ 7 โครงการนำร่อง
+> โมเดล association ข้าม BU และการสร้างโปรโมชั่น standalone ของ Solar/EV/LivNex เป็นแบบอนาคต ไม่ใช่งาน MVP; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1 ไม่ต้องสร้าง BU workspace, chatbot ข้าม BU, product model กลาง หรือ adapter เพิ่มเพื่อรองรับตัวอย่างเหล่านี้
+
 > ⚠️ **เอกสารนี้ถูกแก้บางส่วนโดย [08-promotion-integration.md](08-promotion-integration.md)** (14 ก.ย. 2026)
 > หลังตรวจ REM พบว่ามี Promotion อยู่แล้ว 7,676 รายการ ซึ่งเปลี่ยนข้อสรุปเรื่องเจ้าของข้อมูล:
 > **REM เป็น SoR ของ *Offer* (สิทธิ์ที่ Sales ให้ได้จริง) ส่วน Hub เป็น SoR ของ *Public Promotion* (สิ่งที่เราพูดต่อสาธารณะ)**
 > ส่วนที่ยังใช้ได้ทั้งหมดในเอกสารนี้คือ **แนวคิด Campaign/Promotion 2 ชั้น (§1), กฎ resolve และ precedence (§4), และกฎความปลอดภัย (§5)**
-> ส่วนที่ถูกแทนที่คือ **`scope_level` แบบ enum เดี่ยวใน §2–§3** → เปลี่ยนเป็นความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID
+> ส่วนที่เสนอให้เปลี่ยนคือ **`scope_level` แบบ enum เดี่ยวใน §2–§3** → ความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID เป็นแนวทางอนาคต; targeting ที่ต้องทำใน Phase 1 ให้ยึด REQUIREMENTS.md
 
 > แผนเดิมไม่มี data model ของโปรโมชั่นเลย มีเพียงคำว่า "Approved Promotion API" และ asset_role `promotion`
 > ทั้งที่โปรโมชั่นคือข้อมูลที่ **ลูกค้าถามมากที่สุด เปลี่ยนบ่อยที่สุด และมีความเสี่ยงทางกฎหมายสูงสุด**
@@ -32,8 +35,8 @@ flowchart TD
 
 ยิ่งลงลึก **ความจำเพาะ (specificity) ยิ่งสูง** → ใช้ตัดสินเวลาโปรฯ ชนกัน (กฎนี้ยังใช้ได้ ดู §4)
 
-> **แก้ไข:** ลำดับชั้นนี้ใช้ได้เฉพาะธุรกิจอสังหาฯ แต่ **ใช้กับ Solar / EV / LivNex / Corporate ไม่ได้** เพราะธุรกิจเหล่านั้นไม่มีโครงการ
-> โมเดลที่ถูกต้องคือ **ความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID** — `COMPANY | BUSINESS | BRAND | PROJECT_GROUP | PROJECT | UNIT`
+> **แนวทางหลัง Phase 1:** ลำดับชั้นนี้ใช้กับอสังหาฯ; ธุรกิจ Solar / EV / LivNex และแคมเปญ corporate ที่ไม่เกี่ยวกับโครงการต้องพิจารณาขอบเขตต่างหาก
+> โมเดลที่เสนอสำหรับอนาคตคือ **ความสัมพันธ์หลายเป้าหมายที่ไม่บังคับ ProjectID** — `COMPANY | BUSINESS | BRAND | PROJECT_GROUP | PROJECT | UNIT`
 > พร้อม `project_applicability = APPLIES | NOT_APPLICABLE | UNKNOWN` ดู [08 §7](08-promotion-integration.md)
 > (`scope_level` ด้านล่างคือรูปแบบเดิมที่ถูกแทนที่แล้ว เก็บไว้เพื่อให้เห็นที่มาของกฎ precedence)
 
@@ -159,8 +162,8 @@ GET /v1/campaigns/{code}
 }
 ```
 
-## 7. ขอบเขต MVP
+## 7. ขอบเขต Phase 1 — SENA residential
 
-**ทำในรอบนี้:** scope 5 ระดับ + include/exclude, campaign grouping, legal approval, ตั้งเวลาเริ่ม–จบ, auto-expire, artwork, API + webhook purge
+**ทำตาม REQUIREMENTS.md และแผนส่งมอบ:** โปรโมชั่นที่เกี่ยวกับ 7 โครงการ SENA ใช้ `COMPANY | BRAND | PROJECT_GROUP | PROJECT | MODEL | UNIT`, include/exclude, campaign grouping, approval, ตั้งเวลาเริ่ม–จบ, auto-expire, artwork, API + webhook purge โดยไม่มี `BUSINESS` ใน Phase 1
 
-**ยังไม่ทำ:** คำนวณราคาสุทธิหลังหักโปรฯ (ต้องต่อ pricing engine), โปรฯ เฉพาะบุคคล/โค้ดส่วนลดรายคน (แตะ PDPA), A/B test, การจองสิทธิ์โปรฯ
+**ยังไม่ทำ:** โปรโมชั่น standalone ของ Solar/EV/LivNex และ BU อื่นที่ไม่ใช่ residential, คำนวณราคาสุทธิหลังหักโปรฯ (ต้องต่อ pricing engine), โปรฯ เฉพาะบุคคล/โค้ดส่วนลดรายคน (แตะ PDPA), A/B test, การจองสิทธิ์โปรฯ

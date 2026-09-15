@@ -1,15 +1,20 @@
 # SENA Digital Hub & AI Knowledge Platform
 
 ศูนย์กลางข้อมูลโครงการและ Digital Assets ที่ทำหน้าที่เป็น **Source of Truth เดียว**
-สำหรับ Website, AI Chatbot และ consumer อื่น ๆ
+รวบรวมข้อมูลจาก Marketing และข้อมูลธุรกิจผ่าน DW เพื่อเตรียมและเผยแพร่ข้อมูลคุณภาพให้เว็บไซต์เชิงพาณิชย์ขององค์กรและ AI Chatbot โดยทีมเว็บไซต์รับผิดชอบตัวเว็บไซต์
+
+**Current scope (15 September 2026): build the Thai back office and rich content platform for SENA residential — 7 pilot projects — to feed the enterprise commercial websites and SENA AI pilot.** The Hub collects enterprise data through DW and Marketing content through forms, uploads and imports, then validates, enriches, approves and publishes it. It owns content/assets/promotions, stored SEO and locale metadata, APIs and the website data handoff, including Hub-side integration support. The separate website team owns commercial page design, frontend code, hosting, rendering and launch. All internal staff are Thai-speaking; the interface and default authoring language are Thai. Solar is entirely deferred to Phase 2 after October. EV, LivNex and other non-residential BUs are also outside Phase 1; no cross-BU workspace or generic product framework is required now.
+
+Planning targets: **30 September — one-project internal pilot · 16 October — core residential Hub · 30 October — SENA AI pilot**. Phase 2 has no committed launch date. These targets replace the earlier combined September MVP and depend on acceptance checks and the staffing/access assumptions in [REQUIREMENTS §1.3](REQUIREMENTS.md#13-delivery-milestones) and [the delivery plan](docs/07-delivery-plan.md). The requirements take precedence over historical examples elsewhere in `docs/`.
 
 ```mermaid
 flowchart LR
-    REM[("REM")] --> HUB
-    MKT["Marketing Admin"] --> HUB
-    HUB[("Digital Hub<br/>Supabase")] --> API["Published API"]
+    REM[("Enterprise facts<br/>REM")] --> DW[("Existing DW")]
+    DW --> HUB
+    MKT["Marketing<br/>Thai back office · forms · uploads"] --> HUB
+    HUB[("Digital Hub<br/>Validate · enrich · approve")] --> API["Published content and assets<br/>API and integration handoff"]
     HUB --> RAG["RAG Index"]
-    API --> WEB["Website"]
+    API --> WEB["Enterprise commercial websites<br/>built by the website team"]
     API --> BOT["Chatbot"]
     RAG --> BOT
 ```
@@ -34,7 +39,7 @@ with numbered testable requirements (P0/P1/P2), acceptance criteria and open que
 | [07 — แผนส่งมอบ](docs/07-delivery-plan.md) | vertical slice, descope levers, DoD, ความเสี่ยง |
 | [08 — **Promotion: REM + Ads**](docs/08-promotion-integration.md) | เชื่อม Promotion 7,676 รายการจาก REM, แยก Offer ออกจาก Public Promotion, เชื่อมกับการลงทะเบียน Ads |
 | [09 — **Ads Registry**](docs/09-ads-registry-integration.md) | อ่าน Google Sheet ของทีม content แบบไม่แก้ไฟล์, เชื่อมด้วย URL ปลายทาง, UTM กับ Meta campaign id |
-| [10 — **Tech Stack**](docs/10-tech-stack.md) | FastAPI vs Rust, Supabase, Next.js บน Vercel, pgvector, Claude, deployment และ CI |
+| [10 — **Tech Stack**](docs/10-tech-stack.md) | FastAPI, Supabase, Thai admin บน Next.js/Vercel, pgvector, OpenAI, deployment และ CI |
 
 ## สรุปสั้นที่สุด
 

@@ -1,5 +1,16 @@
 # 03 — User Flows (ข้อเสนอหลัก)
 
+## ภาษาการใช้งานและขอบเขต
+
+ทีม SENA ภายใน **พูดภาษาไทย 100%** จึงใช้หน้าจอและข้อความช่วยเหลือภาษาไทย **งานของทีมนี้คือสร้าง back office และแพลตฟอร์มข้อมูล Hub** เพื่อรวบรวมข้อมูล Marketing และข้อมูลองค์กรในขอบเขต SENA residential, ตรวจ/อนุมัติ และส่งข้อมูลที่สมบูรณ์ให้เว็บไซต์เชิงพาณิชย์ขององค์กรและ chatbot
+
+**Hub-side integration อยู่ใน scope:** ประสาน field mapping และ content/API contract กับทีมเว็บไซต์, จัดทำตัวอย่าง payload และรับ feedback ของข้อมูลที่ขาด ส่วน website frontend, design, hosting, page rendering และ integration code ฝั่งเว็บไซต์เป็นงานของทีมเว็บไซต์ การเปิดเว็บไซต์จริงไม่ใช่ gate ของ Hub; พิสูจน์สัญญาข้อมูลด้วย API/test consumer และ cache harness
+
+- **Admin ใช้ภาษาไทย:** ชื่อเมนู, label, ปุ่ม, คำแนะนำ, validation/error messages, การแจ้งเตือน และรายงานตรวจ/อนุมัติต้องเป็นภาษาไทย ส่วนชื่อ API, field และ role identifiers ในเอกสารนี้เป็นคำสำหรับ implementation ไม่ใช่ข้อความที่ต้องแสดงให้พนักงานอ่าน
+- **เริ่มเขียน content ใน `th`:** ชื่อสาธารณะ, คำอธิบาย, FAQ, โปรฯ, คำบรรยายภาพและ alt text เริ่มที่ภาษาไทย หากมีเนื้อหาภาษาอื่นส่งมา ให้แก้และตรวจ locale นั้นในหน้าจอภาษาไทยผ่าน approval/publish flow เดิม การมีข้อความหรือ AI draft ไม่ถือว่าผ่านอนุมัติแล้ว
+- **ภาษาใน API:** ใช้ `th` เป็นค่าเริ่มต้นและตอบตาม locale ที่ consumer ขอ พร้อม fallback metadata ตามสัญญา API ไม่อนุมานภาษาจากสัญชาติหรือประเทศ ทดสอบด้วย API/test consumer ได้โดยไม่ต้องแก้เว็บไซต์
+- หากภายหลังมี **AI ช่วยเสนอข้อความให้พนักงาน** รวมถึงคำบรรยายภาพ ให้เสนอภาษาไทยเป็นค่าเริ่มต้นและให้คนตรวจตาม flow เดิม ข้อนี้กำหนดภาษาเท่านั้น ไม่เพิ่มฟีเจอร์ AI ใหม่ในแผนส่งมอบ
+
 ## 0. ข้อสังเกตสำคัญก่อนเข้า flow
 
 Flow ที่คุณร่างไว้ (Brand → Project → Phase/ตึก → Model Type) **ถูกต้องในฐานะ "ลำดับการกรอกครั้งแรก"**
@@ -13,27 +24,37 @@ Flow ที่คุณร่างไว้ (Brand → Project → Phase/ตึ
 
 และ **Promotion แยกเป็น flow ของตัวเอง** ไม่อยู่ใน wizard ของโครงการ เพราะ (ก) ขอบเขตข้าม/เหนือโครงการ (ข) วงจรชีวิตสั้นกว่ามาก (ค) ต้องมีผู้อนุมัติคนละคน
 
+### Intake → ตรวจช่องว่าง → อนุมัติ → ส่งมอบข้อมูลให้ consumer
+
+1. Marketing ส่ง content/assets ผ่าน intake template หรือ back office; ข้อมูลองค์กรจาก REM รับผ่าน DW bronze/raw ตามสิทธิ์และเจ้าของข้อมูลเดิม
+2. ทำ field mapping กับข้อมูลที่ทีมเว็บไซต์ต้องใช้ ระบุ source, required fields และเจ้าของข้อมูลที่ยังขาด ไม่ให้ source sync เขียนทับ public content
+3. ผู้รับผิดชอบเติมข้อมูลผ่าน flow แก้ไข/ตรวจความครบถ้วน และผ่าน data/legal approval ที่เกี่ยวข้องก่อน publish
+4. ส่งตัวอย่างข้อมูลที่อนุมัติแล้วครอบคลุม project, model, assets, FAQ, documents, promotions, SEO metadata และ locale พร้อม API/auth/cache/webhook contract ให้ทีมเว็บไซต์นำไปเชื่อมต่อ
+5. รับ missing-field feedback กลับเป็น checklist พร้อมเจ้าของงาน ให้ Marketing หรือผู้ดูแล source แก้และเผยแพร่ใหม่ การมีหน้าจอ queue แบบเต็มเป็น optional แต่การรับ/ติดตามช่องว่างข้อมูลและส่งมอบ contract ต้องมี; ไม่รอ website frontend หรือ go-live
+
 ---
 
 ## 1. แผนที่รวมทุก Flow
 
 ```mermaid
 flowchart TD
-    LOGIN["Login / เลือก Role"] --> HOME["Home: My Projects<br/>+ % ความครบถ้วน<br/>+ งานค้าง"]
+    LOGIN["เข้าสู่ระบบ / เลือกบทบาท"] --> HOME["หน้าหลัก: โครงการของฉัน<br/>+ % ความครบถ้วน<br/>+ งานค้าง"]
 
-    HOME --> A["Flow A<br/>Setup Wizard<br/>Brand→Project→เฟส/ตึก→Model"]
-    HOME --> B["Flow B<br/>Asset Library"]
-    HOME --> C["Flow C<br/>Campaign & Promotion"]
-    HOME --> D["Flow D<br/>REM Drift Inbox"]
-    HOME --> E["Flow E<br/>Publish / Release"]
-    HOME --> F["Flow F<br/>Content Gap Queue"]
+    HOME --> A["Flow A<br/>ตั้งค่าโครงการครั้งแรก<br/>แบรนด์→โครงการ→เฟส/ตึก→แบบบ้าน/ห้อง"]
+    HOME --> B["Flow B<br/>คลังสื่อ"]
+    HOME --> C["Flow C<br/>แคมเปญและโปรโมชั่น"]
+    HOME --> D["Flow D<br/>ตรวจข้อมูลที่เปลี่ยนจาก REM"]
+    HOME --> E["Flow E<br/>เผยแพร่ชุดเนื้อหา"]
+    HOME --> F["Flow F<br/>รายการข้อมูลที่ยังขาด"]
 
-    A --> REVIEW["Review + Completeness Check"]
+    A --> REVIEW["ตรวจทานและตรวจความครบถ้วน"]
     C --> REVIEW
-    REVIEW --> PREVIEW["Preview<br/>(signed token)"]
+    REVIEW --> PREVIEW["ดูตัวอย่าง<br/>(signed token)"]
     PREVIEW --> E
-    E --> LIVE["Website + Chatbot"]
-    LIVE -.->|no-answer / 404| F --> A
+    E --> LIVE["Published API<br/>+ chatbot consumer"]
+    LIVE -.->|no-answer / API 404| F --> A
+    LIVE --> HANDOFF["ส่ง API contract และตัวอย่างข้อมูล<br/>ให้ทีมเว็บไซต์"]
+    HANDOFF -.->|feedback ข้อมูลที่ขาด| F
     D -.->|REM เปลี่ยน| A
 ```
 
@@ -43,22 +64,22 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    S0["0· เลือกจาก REM"] --> S1["1· Brand"]
-    S1 --> S2["2· Project"]
-    S2 --> S3["3· Location<br/>& Facility"]
+    S0["0· เลือกจาก REM"] --> S1["1· แบรนด์"]
+    S1 --> S2["2· โครงการ"]
+    S2 --> S3["3· ทำเล<br/>และสิ่งอำนวยความสะดวก"]
     S3 --> S4["4· เฟส / ตึก / ชั้น / โซน"]
-    S4 --> S5["5· Model Type"]
-    S5 --> S6["6· Content & FAQ"]
-    S6 --> S7["7· Compliance"]
-    S7 --> S8["8· Review"]
-    S8 --> S9["9· Preview"]
-    S9 --> S10["10· Publish"]
+    S4 --> S5["5· แบบบ้าน/ห้อง"]
+    S5 --> S6["6· เนื้อหาและคำถามที่พบบ่อย"]
+    S6 --> S7["7· ข้อมูลกำกับโฆษณา"]
+    S7 --> S8["8· ตรวจทาน"]
+    S8 --> S9["9· ดูตัวอย่าง"]
+    S9 --> S10["10· เผยแพร่"]
 ```
 
 > ขั้นที่ **1, 2, 4, 5** = ที่คุณร่างไว้ · ขั้นที่ **0, 3, 6, 7, 8, 9, 10** = ที่เสนอเพิ่ม
 
 ### Step 0 — เลือกโครงการจาก REM *(เพิ่มใหม่)*
-- แสดงรายการโครงการจาก REM ที่ยังไม่มีใน Hub
+- แสดงรายการโครงการจาก REM ผ่าน DW bronze/raw ที่ยังไม่มีใน Hub
 - เลือกแล้วระบบสร้าง shell record พร้อม `project_id_rem`, `project_name_rem`, `company_id_rem` ครบ
 - ระบบเสนอ **brand ที่น่าจะใช่** จาก `company_id_rem` ให้ยืนยัน
 - ถ้าโครงการยังไม่มีใน REM → มีทางออก "สร้างแบบ Pre-REM" ที่ **บังคับ map ภายหลังก่อน publish**
@@ -77,8 +98,8 @@ flowchart LR
 | Field | ที่มา | หมายเหตุ |
 |-------|-------|----------|
 | `project_name_rem` | REM | **แสดงแบบอ่านอย่างเดียว ตลอดเวลา** |
-| `public_project_name` (th/en) | **default = ชื่อ REM** | ✅ ตรงตามที่คุณต้องการ — แก้ได้ เมื่อแก้ระบบจะตั้ง `name_source='marketing_override'` |
-| `slug`, `meta_title`, `meta_description` | auto-suggest จากชื่อ | แก้ได้, ถ้าเปลี่ยน slug ระบบสร้าง redirect ให้ |
+| `public_project_name` (`th` เริ่มต้น; locale อื่นเมื่อมีเนื้อหาส่งมา) | **default = ชื่อ REM** | แก้ได้ เมื่อแก้ระบบจะตั้ง `name_source='marketing_override'` |
+| `slug`, `meta_title`, `meta_description` | auto-suggest จากชื่อ | แก้ได้; เมื่อเปลี่ยน slug เก็บ old-to-new slug metadata ให้ consumer ไม่รวมการ deploy HTTP redirect บนเว็บไซต์ |
 | `product_type`, `project_status` | REM default, override ได้ | — |
 | Assets | **หลายไฟล์** | `thumbnail`(1), `hero`(1), `gallery`(n), `video`(n), `brochure`(n), `master_plan`(n), `virtual_tour`(link) |
 
@@ -89,7 +110,7 @@ flowchart LR
 - ปักหมุดบนแผนที่ (แก้พิกัดจาก REM ได้ เพราะ REM มักเพี้ยน)
 - เลือก Facility จาก **checklist ที่ควบคุมคำศัพท์** + ใส่รายละเอียดเพิ่ม
 - Nearby places: BTS/MRT/โรงเรียน/ห้าง พร้อมระยะทาง + เวลาเดินทาง
-- **ทำไมต้องมีขั้นนี้:** ตัวกรองบนเว็บ ("ใกล้ BTS", "มีสระ") และคำถามยอดฮิตของ bot ("มีสระว่ายน้ำไหม") ต้องตอบจาก structured data ไม่ใช่ RAG
+- **ทำไมต้องมีขั้นนี้:** API filters ("ใกล้ BTS", "มีสระ") และคำถามยอดฮิตของ bot ("มีสระว่ายน้ำไหม") ต้องตอบจาก structured data ไม่ใช่ RAG
 
 ### Step 4 — เฟส / ตึก / ชั้น / โซน *(ตามที่คุณร่าง + ทำให้เป็น tree)*
 - UI เป็น **tree editor** เพิ่ม node ได้ตามชนิดของ product:
@@ -102,7 +123,7 @@ flowchart LR
 | Field | ที่มา |
 |-------|-------|
 | `rem_model_name` | REM (read-only) |
-| `public_model_name` (th/en) | **default = ชื่อ REM** แก้ได้ ✅ |
+| `public_model_name` (`th` เริ่มต้น; locale อื่นเมื่อมีเนื้อหาส่งมา) | **default = ชื่อ REM** แก้ได้ |
 | ผูกกับเฟส/ตึกไหน | เลือกจาก tree ของ Step 4 |
 | **สเปก**: ห้องนอน, ห้องน้ำ, พื้นที่ใช้สอย, เนื้อที่ดิน (ตร.ว.), หน้ากว้าง, ชั้น, ที่จอดรถ, ห้องพิเศษ | Marketing กรอก (REM prefill ถ้ามี) |
 | Assets | `model_floor_plan`(n), `model_thumbnail`(1), `gallery`(n), `virtual_tour` |
@@ -118,16 +139,17 @@ flowchart LR
 
 ### Step 7 — Compliance *(เพิ่มใหม่)*
 - เลขที่ใบอนุญาต, สถานะ EIA, ข้อความกำกับโฆษณา
-- ทำที่นี่ครั้งเดียว → เว็บ/บอท/โบรชัวร์ใช้ข้อความเดียวกันทุกที่
+- ทำที่นี่ครั้งเดียว → API ส่งข้อความที่อนุมัติแล้วให้ chatbot และ consumer ภายนอกใช้ตรงกัน
 
 ### Step 8 — Review + Completeness
 - แสดง **% ความครบถ้วน** และรายการที่ยังขาด พร้อมลิงก์กระโดดไปแก้
 - **บล็อก publish** ถ้า required field ไม่ครบ (gate ดีกว่า fallback)
 - แสดง diff เทียบกับ version ที่ live อยู่
+- ใช้คำอธิบายและรายงานอนุมัติภาษาไทย เช่น "กรุณาระบุภาพหลักก่อนเผยแพร่" และแสดง locale ของเนื้อหาที่กำลังตรวจอย่างชัดเจน
 
-### Step 9 — Preview
-- เปิดหน้าเว็บจริงด้วย **signed preview token** ที่ชี้ไป `version_id` ที่ยังไม่ publish
-- มี Chatbot preview: ถามคำถามทดสอบกับเนื้อหา draft ได้ก่อนปล่อยจริง
+### Step 9 — Preview ภายใน Hub
+- ดูเนื้อหาหรือ API payload ภายใน Hub ด้วย **signed preview token** ที่ชี้ไป `version_id` ที่ยังไม่ publish; ไม่รวมการสร้างหรือเชื่อมหน้า preview ของเว็บไซต์
+- การทดสอบ chatbot เชื่อมผ่าน repository `sena_ai_chatbot_mkt` และข้อมูลที่เผยแพร่ในสภาพแวดล้อมทดสอบ ไม่ส่ง draft เข้า production RAG index
 
 ### Step 10 — Publish
 - เลือก **publish ทันที** หรือ **ตั้งเวลา**
@@ -213,7 +235,7 @@ flowchart LR
     GATE -->|ครบ| APV{"Publisher อนุมัติ"}
     APV -->|ไม่ผ่าน| BACK["ตีกลับพร้อมเหตุผล"]
     APV -->|ผ่าน| FLIP["flip pointer<br/>ใน transaction เดียว"]
-    FLIP --> HOOK["ยิง webhook →<br/>เว็บ/บอท purge cache"]
+    FLIP --> HOOK["ยิง webhook →<br/>test consumer/บอท purge cache"]
     HOOK --> RAGQ["เข้าคิว RAG reindex<br/>(delete chunk เก่า → ใส่ใหม่)"]
     FLIP -.->|พบปัญหา| RB["Rollback: flip กลับ"]
 ```
@@ -224,22 +246,22 @@ flowchart LR
 
 | # | หน้าจอ | Role | MVP? |
 |---|--------|------|------|
-| 1 | Login / SSO | ทุกคน | ✅ |
-| 2 | Home — โครงการของฉัน + % ครบถ้วน + งานค้าง | ทุกคน | ✅ |
-| 3 | REM Picker (Step 0) | Editor | ✅ |
-| 4 | Brand Manager | Admin | ✅ |
-| 5 | Project Editor (Step 2) | Editor | ✅ |
-| 6 | Location & Facility (Step 3) | Editor | ✅ |
-| 7 | Structure Tree Editor (Step 4) | Editor | ✅ |
-| 8 | Model Type Editor (Step 5) | Editor | ✅ |
-| 9 | Content & FAQ Editor (Step 6) | Editor | ✅ |
-| 10 | **Asset Library** + bulk upload | Editor | ✅ |
-| 11 | Review & Completeness (Step 8) | Editor / Publisher | ✅ |
-| 12 | Preview (web + chatbot) | ทุกคน | 🟡 |
-| 13 | Publish Queue / Release + Rollback | Publisher | ✅ |
-| 14 | **Campaign & Promotion Manager** | Editor / Legal | ✅ |
-| 15 | REM Drift Inbox | Editor | 🟡 |
-| 16 | Content Gap Queue | Editor | ⬜ Phase 2 |
+| 1 | เข้าสู่ระบบ / SSO | ทุกคน | ✅ |
+| 2 | หน้าหลัก — โครงการของฉัน + % ครบถ้วน + งานค้าง | ทุกคน | ✅ |
+| 3 | เลือกโครงการจาก REM (Step 0) | Editor | ✅ |
+| 4 | จัดการแบรนด์ | Admin | ✅ |
+| 5 | แก้ไขโครงการ (Step 2) | Editor | ✅ |
+| 6 | ทำเลและสิ่งอำนวยความสะดวก (Step 3) | Editor | ✅ |
+| 7 | จัดการเฟส/ตึก/ชั้น/โซน (Step 4) | Editor | ✅ |
+| 8 | แก้ไขแบบบ้าน/ห้อง (Step 5) | Editor | ✅ |
+| 9 | เนื้อหาและคำถามที่พบบ่อย (Step 6) | Editor | ✅ |
+| 10 | **คลังสื่อ** + อัปโหลดหลายไฟล์ | Editor | ✅ |
+| 11 | ตรวจทานและความครบถ้วน (Step 8) | Editor / Publisher | ✅ |
+| 12 | ดูตัวอย่างเนื้อหา/API ภายใน Hub | ทุกคน | 🟡 |
+| 13 | คิวเผยแพร่ / ชุดเนื้อหา / ย้อนกลับ | Publisher | ✅ |
+| 14 | **จัดการแคมเปญและโปรโมชั่น** | Editor / Legal | ✅ |
+| 15 | ตรวจข้อมูลที่เปลี่ยนจาก REM | Editor | 🟡 |
+| 16 | รายการข้อมูลที่ยังขาด | Editor | ⬜ P1 — optional Phase 1 UI; การ log ของ RAG ยังต้องมีตาม [REQUIREMENTS.md](../REQUIREMENTS.md) |
 
 ## 8. Role × สิทธิ์
 
@@ -256,6 +278,8 @@ flowchart LR
 > แต่ควรมีข้อยกเว้น **เฉพาะ Promotion และ Compliance** ที่ต้องผ่าน Legal — เพราะเป็นจุดเดียวที่ความผิดพลาดมีผลทางกฎหมาย ไม่ใช่แค่ผลเชิงภาพลักษณ์
 
 ## 9. Flow F — Chatbot Query Routing (ฝั่ง consumer)
+
+Chatbot เป็น consumer ใน repository แยก `sena_ai_chatbot_mkt` และยังอยู่ในขอบเขต AI pilot ตามแผนเดิม ใช้ภาษาไทยเป็นค่าเริ่มต้นและส่ง locale ที่ consumer ขอไปกับ API พร้อมจัดการ fallback ตามสัญญา การทดสอบคำถามภาษาอังกฤษตาม golden set ใช้หลักฐานภาษาไทยที่เผยแพร่แล้วได้ ไม่ใช่คำมั่นว่าจะเปิด content ทุกภาษา และไม่อนุมานภาษาจากประเทศของผู้ถาม
 
 ```mermaid
 flowchart TD
