@@ -1,0 +1,5 @@
+# Preserve catalog checksums across Windows checkouts.
+data/google-fonts.csv text eol=lf
+data/google-font-licenses.json text eol=lf
+data/icons.csv text eol=lf
+data/phosphor-icons-upstream.json text eol=lf
