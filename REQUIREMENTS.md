@@ -1,6 +1,6 @@
 # SENA Digital Hub & AI Knowledge Platform — Requirements Specification
 
-**Version** 1.3 · **Date** 2026-09-15 · **Status** Draft for implementation — SENA residential back office and content supply for commercial websites and AI
+**Version** 1.9 · **Date** 2026-09-21 · **Status** Draft for implementation — SENA residential back office and content supply for commercial websites and AI
 
 **Audience:** engineering agent / implementation team. This document is self-contained — it does not
 assume access to prior design conversations.
@@ -30,6 +30,8 @@ Solar is deferred entirely to **Phase 2, after 2026-10-31**. Standalone Solar co
 
 Use the residential brand/project/model structure. Phase 1 MUST NOT introduce a generic cross-BU product model, BU registry, or tenant/workspace framework for anticipated Phase 2 needs. Later extensions will be designed from confirmed Phase 2 requirements; schema changes are allowed then. This scope and §1.3 supersede broader BU examples and earlier dates in the design documents.
 
+**20 September decision:** distinguish a Hub-owned **Marketing Unit Type (แบบขาย)** from each exact REM project model. Several REM models may support one commercial type; an acquired project's coarse REM model may support several separately evidenced commercial types. Company is optional source context in the Marketing workflow, not the project's navigation parent or a new Marketing completion task. [18 — Marketing types and amenities](docs/18-marketing-types-and-amenities.md) defines this contract, the initial draft-only increment, and deferred verification/publication work. These requirements are not a claim that the new catalogue, amenities, four-level FAQs or complete coverage workflow have already shipped.
+
 ### 1.1 Systems in the landscape
 
 | System | Role | Access |
@@ -52,13 +54,15 @@ Use the residential brand/project/model structure. Phase 1 MUST NOT introduce a 
 
 ### 1.3 Delivery milestones
 
+**Capacity update, 18 September 2026:** the business owner confirmed one full-time developer assisted by Codex/agents. The two-developer dates below are retained as the original baseline, not a current capacity commitment. See the [dated status and proposed KPI forecast](docs/15-status-kpi-plan-20260918.md) for the provisional delivery scenario and 25 September review. No acceptance criteria or business deadlines are changed by that proposal.
+
 These are planning targets, assuming two full-time developers, DW support, named content/publishing/legal owners, required service access by 18 September, website-team participation in data-contract review, and coordination with the separate chatbot repository for the AI pilot. A running commercial website or its deployment is not required for Hub acceptance. Hub-side integration is verified with an API test client and a controlled webhook/cache test harness, together with the website data handoff in A-21. Acceptance evidence, not the calendar alone, determines readiness.
 
 | Target | Milestone | Required outcome |
 |---|---|---|
 | 2026-09-18 | Scope and access checkpoint | Identify the 7 residential projects, source/content owners and website integration contact; confirm source access and promotion rules; begin residential content intake and website field-contract review. |
 | 2026-09-30 | Limited internal pilot | One real residential project, its minimum publishable model/assets/disclaimer, and an approved residential promotion complete the author → approve → publish → API → withdraw/rollback workflow. Required permissions and publishing gates remain enforced. |
-| 2026-10-16 | Core SENA Hub MVP | All non-RAG P0 requirements, except the AI dependencies listed below, and A-01..A-16 plus A-19..A-21, for the 7 residential projects, including website-ready content/API handoff. |
+| 2026-10-16 | Core SENA Hub MVP | All non-RAG P0 requirements, except the AI dependencies listed below, and A-01..A-16 plus A-19..A-22, for the 7 residential projects, including website-ready content/API handoff. |
 | 2026-10-30 | SENA residential AI pilot | RAG requirements, their quality gates, A-17..A-20, evaluated on the 7 residential projects without requiring a commercial website launch. |
 | After 2026-10-31 | Phase 2 | Solar and any other non-residential expansion are separately scoped after Phase 1 acceptance; no delivery date is committed. |
 
@@ -86,12 +90,14 @@ produces a system that cannot be corrected later.
 | Term | Definition |
 |---|---|
 | **REM name** | The name of a project/model as stored in REM. **Read-only in this system. MUST NEVER be overwritten.** |
-| **Public name** | The marketing-approved customer-facing name. Owned by Digital Hub. Defaults to the REM name but is editable. |
+| **Public name** | The marketing-approved customer-facing name, owned by Digital Hub. Project defaults come from verified Gold commercial names under CONT-11; brand/canonical-model defaults retain their REM provenance. New Marketing type names are separately authored or explicitly reviewed source suggestions. All public wording remains editable and requires publication approval. |
+| **Project slug** | A URL-friendly technical content identifier, separate from official/commercial names and from the immutable public API key. Show it in advanced integration settings, not as “ชื่ออ้างอิงโครงการ” among the primary name fields. |
 | **Offer** | An operational entitlement (discount, free transfer fee, gift) that sales can apply to a contract. **REM is the system of record.** ~7,676 rows exist. |
 | **Public Promotion** | The marketing communication about one or more offers — title, artwork, legal terms. **Digital Hub is the system of record.** Expect dozens, not thousands. |
 | **Project node** | Any element of a project's spatial hierarchy: phase, building, floor, zone, or cluster. |
-| **Model type** | A unit or house type (e.g. a 2-bedroom layout), with queryable specifications. |
-| **Entity** | Any addressable object: brand, project, project node, model type, public promotion. |
+| **REM project model** | An exact source `(ProjectID, ModelID)` such as `A1-1`, retaining its complete suffix and original name. REM `ModelTypeID`, REM `UnitTypeID` and individual `UnitID` are separate concepts. Existing canonical model records/public IDs keep this meaning. |
+| **Marketing Unit Type / แบบขาย** | A Hub-owned commercial presentation with its own stable ID, name, specifications, content and assets. It may reference one or several exact REM project models; several types may reference one coarse REM model. A source association records lineage, not verified unit membership or operational eligibility. |
+| **Entity** | Any addressable object: fixed SENA residential content context, brand, project, project node, canonical REM model, Marketing Unit Type, public promotion. The fixed residential context is not a generic BU registry. |
 | **Consumer** | A registered API client (website, chatbot, partner). |
 | **Structured data** | Data answerable by SQL/API (specs, prices, promotions, facilities). |
 | **RAG content** | Narrative content answerable by retrieval (highlights, FAQ, policies). |
@@ -158,16 +164,23 @@ REM record). An Offer may be cited by zero Public Promotions (most of the 7,676 
 |---|:-:|---|
 | REM-01 | P0 | The system MUST ingest REM data into `staging` on a nightly schedule and on demand. |
 | REM-02 | P0 | REM-sourced records MUST be stored with `source_snapshot_at` and a `source_fingerprint` (hash of the source payload). |
-| REM-03 | P0 | A crosswalk table MUST map REM model IDs to public model IDs with: `match_method` (ID / EXACT_NAME / NORMALIZED / FUZZY / MANUAL), `match_confidence`, `match_status` (SUGGESTED / CONFIRMED / REJECTED), `verified_by`, `verified_at`. |
+| REM-03 | P0 | Canonical crosswalks MUST retain exact `(ProjectID, ModelID)` and existing public model IDs with `match_method` (ID / EXACT_NAME / NORMALIZED / FUZZY / MANUAL), `match_confidence`, `match_status` (SUGGESTED / CONFIRMED / REJECTED), `verified_by`, `verified_at`. Marketing Unit Type source associations MUST be separate, project-scoped, auditable relationships; they MUST NOT replace canonical crosswalks or claim that lineage review verifies unit membership. |
 | REM-04 | P0 | Matching MUST be attempted in this order: REM ID → previously approved mapping → normalized name → fuzzy. |
 | REM-05 | P0 | Confidence thresholds MUST be: ≥0.95 auto-suggest with bulk-confirm affordance; 0.75–0.95 present as candidates requiring selection; <0.75 no suggestion, manual review only. |
 | REM-06 | P0 | The system MUST NOT auto-confirm any mapping. A human MUST confirm. |
 | REM-07 | P0 | AI/heuristics MAY propose public names. They MUST NOT set them. |
-| REM-08 | P0 | Every Hub project and model record MUST originate from a REM selection. A "Pre-REM" creation path MAY exist but such records MUST NOT be publishable until mapped. |
+| REM-08 | P0 | Every residential project and canonical REM model MUST originate from a REM selection. Marketing Unit Types MAY be drafted, singly or in a bulk set, within a selected residential project before their source associations are resolved. Publication requires reviewed source lineage and adequate approved content evidence; unresolved unit membership MUST prevent operational price, inventory and promotion-eligibility claims. A project awaiting REM registration remains unpublishable. The initial commercial draft increment MUST NOT bypass existing publication gates. |
 | REM-09 | P0 | When a fingerprint changes, the system MUST set `drift_status = 'source_changed'`, record it in a drift queue, and MUST NOT modify any public field. |
 | REM-10 | P0 | When a REM record disappears, the system MUST set `drift_status = 'source_missing'` and MUST NOT auto-unpublish. It MUST alert after 7 days. |
 | REM-11 | P0 | The sync job MUST distinguish "record genuinely removed" from "sync failed" by comparing total record counts before committing. A failed sync MUST NOT be treated as deletions. |
 | REM-12 | P1 | The drift queue MUST be visible in the admin UI with the changed fields shown side by side. |
+| REM-13 | P0 | The intake contract MUST identify each field's source table/column, complete key, business meaning, unit where applicable, owner, editability and missing/conflict handling. Source IDs, separate business codes and internal names MUST be preserved without replacing Hub UUIDs or stable public IDs. Source-owned values MUST remain distinct from Hub-owned supplements and explicitly permitted overrides. |
+| REM-14 | P0 | The 20 September commercial-type decision refines the earlier “Unit Type = ModelID” shorthand: every source model MUST retain its complete REM `(ProjectID, ModelID)` key, while a Marketing Unit Type has separate Hub identity and explicit source associations. Preserve source codes exactly, including L/R suffixes; `ModelName`, `ModelTypeID`, `UnitTypeID` and individual `UnitID` MUST NOT replace the model key. Missing UnitTypeID is not a model-identity blocker. Grouping MUST NOT merge source keys, infer approved specifications, or auto-confirm crosswalks under REM-06. |
+| REM-15 | P0 | Project-form enrichment MUST use a verified `gold.dim_project` snapshot keyed by exact `project_id`, with source payload, timestamp, fingerprint and verification provenance. Commercial fields come from the governed commercial Sheet through DW and MUST NOT impersonate REM brand-master identity. Missing or conflicting scalar values MUST remain explicit gaps. Refresh/default application MUST preserve saved Marketing edits and use the expected draft revision to reject stale writes. |
+| REM-16 | P0 | `gold.dim_project_model` MAY supply commercial names and source metadata, but its grain is `(project_id, model_name)` with `model_ids` lineage. Intake MUST retain every underlying `(ProjectID, ModelID)` and MUST NOT create a fake scalar ModelID, merge distinct source codes, or infer approved specifications from aggregated areas. |
+| REM-17 | P0 | Where commercial types share a coarse source model, operational resolution MUST use separately reviewed unit membership or a verified partition rule with evidence and scope. It MUST detect overlap and unassigned units, count each eligible unit once, and MUST NOT copy a source model's totals, prices or promotion eligibility onto every commercial type. Neither a source link, matching name nor content approval establishes a partition. Verified unit-partition authoring is outside the initial draft catalogue increment. |
+
+The verified mappings, current implementation gaps and future source-ownership policy are recorded in [13 — Source identity and field ownership](docs/13-source-field-ownership.md). REM remains mandatory for Phase 1 project/source-model identities; Hub-owned commercial types use the reviewed relationships above. This does not add another BU, a source adapter, or a publishable project without REM registration.
 
 ---
 
@@ -177,21 +190,26 @@ REM record). An Offer may be cited by zero Public Promotions (most of the 7,676 
 
 | ID | P | Requirement |
 |---|:-:|---|
-| CONT-01 | P0 | Brands MUST store `brand_name`, `public_company_name`, REM `company_id`/`company_name` (read-only), and status. |
+| CONT-01 | P0 | Brands MUST have an internal UUID, stable opaque `public_brand_id`, REM `rem_brand_id` and original brand names (read-only), editable public `brand_name`/description with Thai content, slug and status. REM identifiers MUST remain strings, including leading zeros. A brand MUST NOT be assumed to belong to one project company. |
 | CONT-02 | P0 | Brands MUST support multiple logo variants distinguished by asset role (e.g. `logo_primary`, `logo_white`, `logo_mono`, `favicon`). |
 | CONT-03 | P0 | Brands MUST be created by `admin` only. The project wizard MUST offer selection of an existing brand, plus a request-new-brand action routed to an admin. |
+| CONT-04 | P0 | The Hub MUST stage the REM brand dictionary (`Sys_Master_Brands`) through the DW and retain source timestamps, fingerprints and deletion flags. Brand identity MUST NOT be inferred from project names or commercial-sheet labels. Editors/admins MAY edit Hub-owned brand content and logos; publisher approval is required to expose changes. |
+| CONT-05 | P0 | A project's brand association MUST match its verified REM `BrandID`; missing, deleted or mismatched source brands MUST block publication. Brand and project-recorded company are separate relationships. Any future public reclassification needs an explicitly approved override policy; this slice MUST NOT silently rewrite REM structure. |
+| CONT-06 | P0 | Project releases MUST freeze their approved brand version/content. Brand draft edits or a later brand release MUST NOT silently change a published project. Withdrawal of the brand, invalid source mapping, or invalid rights for referenced logos MUST make dependent published content unavailable. Brand publication, withdrawal and rollback MUST be audited. |
 
 ### 7.2 Project
 
 | ID | P | Requirement |
 |---|:-:|---|
-| CONT-10 | P0 | Projects MUST store: `project_id` (internal UUID), `project_id_rem`, `public_project_id` (stable, opaque, never reused), `slug`, `project_name_rem` (read-only), `public_name` (i18n), `name_source` (`rem_default` \| `marketing_override`), `brand_id`, `product_type`, `address`, `latitude`, `longitude`, `project_status`, `source_updated_at`. |
-| CONT-11 | P0 | `public_name` MUST default to `project_name_rem` on creation and MUST be editable. Editing MUST set `name_source = 'marketing_override'`. |
+| CONT-10 | P0 | Projects MUST store: `project_id` (internal UUID), `project_id_rem`, `public_project_id` (stable, opaque, never reused), `slug`, `project_name_rem` (read-only), `public_name` (i18n), `name_source` (`unset` \| `dw_default` \| historical `rem_default` \| `marketing_override`), `brand_id`, source `rem_brand_id`, available source `rem_company_id`/company names (read-only), `product_type`, `address`, `latitude`, `longitude`, `project_status`, `source_updated_at`. Company MUST be secondary/collapsed reference metadata, not a required Marketing input, navigation parent or content-completeness task. Changes of management MUST NOT recreate project/type/asset identities. This does not waive source integrity, legal disclosure or promotion-target rules. Any approved public company wording MUST remain project-specific. |
+| CONT-11 | P0 | On new project creation, `public_name.th` and `public_name.en` MUST default from verified `gold.dim_project.commercial_project_name` and `commercial_project_name_eng`, respectively, and remain editable. Missing/conflicting commercial defaults MUST remain a visible gap rather than silently substituting the REM name. Preserve historical `rem_default` provenance and existing drafts; applying newly available defaults MUST NOT overwrite saved Marketing wording. Editing MUST set `name_source = 'marketing_override'`; record Gold default provenance separately from REM defaults. |
 | CONT-12 | P0 | The public API path key MUST be `public_project_id`. `project_id_rem` MUST be returned as an attribute but MUST NOT appear in public URLs. |
 | CONT-13 | P0 | Projects MUST store content metadata: `slug`, `meta_title`, `meta_description`, `og_image_asset_id`, and expose it through the API. Implementing website SEO tags, routes or pages is outside scope. |
 | CONT-14 | P1 | Changing a `slug` MUST retain old-to-new slug metadata for consumers. Implementing HTTP redirects in an external website is outside scope. |
 | CONT-15 | P0 | Coordinates from REM MUST be editable in the Hub (REM coordinates are frequently inaccurate). This is an explicit exception to ARCH-02 and MUST be recorded as an override. |
 | CONT-16 | P1 | Price fields MUST be stored as a snapshot with `price_from`, `price_as_of`, `price_source`. They MUST NOT be presented as live prices. |
+| CONT-17 | P0 | Add/Edit project MUST display the exact ordered fields in [17 — Project form and plans](docs/17-project-form-and-plans.md#ordered-project-fields): commercial brand, ProjectID, REM project group, REM Thai name, commercial Thai name, REM English name, commercial English name, Thai address, English address, latitude, longitude. Source identity/name fields MUST be read-only; commercial names, both addresses and coordinates MUST be editable. Address defaults MUST concatenate the requested nonblank components, with the common `postcode` used for English because `postcode_eng` is absent from the inspected Gold contract. |
+| CONT-18 | P0 | The project workspace MUST use three tabs: `ข้อมูลโครงการ`, `แบบที่อยู่อาศัย`, and `เผยแพร่และประวัติ`. Project image/plan upload MUST appear directly below project details. Model entry MUST show project selection/context before details, images and layout plans. Primary field order MUST remain unchanged on narrow screens; source, editable and approval context MUST be visibly labelled. Switching tabs MUST preserve unsaved form state. Saving, model confirmation, asset-rights approval and publication MUST remain distinct actions. |
 
 ### 7.3 Spatial hierarchy
 
@@ -204,24 +222,27 @@ REM record). An Offer may be cited by zero Public Promotions (most of the 7,676 
 | CONT-24 | P0 | `attrs` SHOULD carry type-specific fields: building → `floors_above`, `floors_below`, `units_total`, `elevators`; floor → `floor_number`, `units_on_floor`, `is_typical_floor`; zone → `plots_total`. |
 | CONT-25 | P0 | The editor MUST provide bulk floor creation ("create floors 1–N") and "apply this typical floor plan to floors X–Y". Manual entry of every floor is not acceptable. |
 | CONT-26 | P0 | Subtree queries MUST be answerable in one query using the `path` column. |
+| CONT-27 | P0 | Master plans MUST belong to the project or applicable phase. Building/floor plans MUST record spatial applicability through project nodes; one approved plan MAY apply to multiple floors. The bounded local project/model attachment slice MUST NOT be described as complete building/floor applicability management. |
 
-### 7.4 Model type
+### 7.4 Marketing Unit Types and canonical REM models
 
 | ID | P | Requirement |
 |---|:-:|---|
-| CONT-30 | P0 | Model types MUST store queryable specifications: `bedrooms` (numeric, supports 2.5), `bathrooms`, `usable_area_sqm`, `land_area_sqwah`, `frontage_m`, `depth_m`, `storeys`, `parking_spaces`, `ceiling_height_m`, `functional_rooms` (JSONB), `product_form`. |
-| CONT-31 | P0 | Model types MUST store `rem_model_id`, `public_model_id` (unique), `slug`, `public_name` (i18n), `name_source`, and optional `node_id` when the model is specific to one phase or building. |
-| CONT-32 | P0 | The system MUST be able to answer, by SQL and via API filters, queries such as "all model types in project X with ≥3 bedrooms and ≥2 parking spaces". |
-| CONT-33 | P1 | Layout variants (A / A1 / A2 — mirrored or differently extended plans) MUST be representable without duplicating the whole model type. |
+| CONT-30 | P0 | Marketing Unit Types MUST support queryable specifications: `bedrooms` (numeric, supports 2.5), `bathrooms`, `kitchens`, kitchen configuration, `usable_area_sqm`, `land_area_sqwah`, `frontage_m`, `depth_m`, `storeys`, `parking_spaces`, `ceiling_height_m`, `functional_rooms` (JSONB), `product_form`. Show fields applicable to the selected product form. Unknown is not zero. Verified varying areas MAY be an explicit range with its meaning/unit; do not average heterogeneous plans or select the first source value. Differences in room counts/layout MUST remain visible through appropriate sub-type/variant details before claiming a common specification. |
+| CONT-31 | P0 | A Marketing Unit Type MUST have its own internal UUID and stable opaque public identifier, owning project, editable public name (i18n), description and specification provenance. Source links MUST support multiple exact REM models per type and multiple commercial types per coarse source model within the same project. Keep canonical `rem_model_id`/`public_model_id`, source evidence, existing assets and historical releases intact; never reinterpret an existing public model ID as a newly aggregated type. Source associations are not verified unit partitions. |
+| CONT-32 | P0 | The system MUST be able to answer, by SQL and via API filters, queries such as "all approved Marketing Unit Types in project X with ≥3 bedrooms and ≥2 parking spaces". Unknown or varying specifications MUST NOT be asserted to satisfy a filter without an explicit applicable rule. Draft catalogue endpoints alone do not meet public API acceptance. |
+| CONT-33 | P1 | Where the same REM ModelID has different layouts by building/floor, a model MUST support separate layout variants with their own plan assets/revisions and explicit spatial applicability, without duplicating its REM identity. Distinct real REM codes (including A/A1/A2 or L/R codes) MUST remain distinct canonical source mappings. A shared model or commercial name alone MUST NOT imply identical drawings. Variant assignment and detailed applicability UI are secondary to the initial project/model workflow. |
+| CONT-34 | P0 | Within the selected project, Marketing MUST see a type summary list with name, specifications, source-link count and explicit gaps. An accessible expandable editor MUST group details, images/plans and source references, with draft save/cancel and unsaved-change protection. Multiple house-plan files MUST support order, floor labels and stated applicability; upload belongs inside the editor, while asset selection/preview MAY use a dialog. Upload alone MUST NOT approve rights or applicability. |
+| CONT-35 | P0 | “Add types as a set” MUST bulk-create independent commercial draft records after row validation; a set is an entry aid, not a new mandatory hierarchy. Each record retains its own ID, details, plans, source associations and review state. Do not create fake REM IDs for acquired-project sub-types. Publication/API support for commercial types MUST explicitly freeze approved content, lineage and plan applicability; initial draft storage MUST NOT silently enter existing public snapshots. |
 
 ### 7.5 Narrative content, facilities, location, compliance
 
 | ID | P | Requirement |
 |---|:-:|---|
 | CONT-40 | P0 | Narrative content MUST be stored as discrete sections (`hub.content_sections`) keyed by `entity_type`, `entity_id`, `section_key`, each with heading, markdown body per locale, sort order, and a `rag_eligible` flag. A single free-text `description` column is not acceptable. |
-| CONT-41 | P0 | Facilities MUST reference a controlled vocabulary table (`facility_taxonomy`) so that "does it have a pool?" is answerable as a structured query, not by text search. |
+| CONT-41 | P0 | Project amenities MUST reference a controlled vocabulary table so that "does it have a pool?" is answerable as a structured query. Marketing supplies explicit `present`, `absent`, `planned` or `unknown` status; an omitted checkbox is not evidence of absence. Support details, location/shared-building applicability, access restrictions/hours where relevant, linked media, owner and review metadata. Expected amenities depend on project type; a missing/unknown answer is a gap, not a requirement that every project physically provide every amenity. |
 | CONT-42 | P0 | Nearby places MUST store `category`, `name` (i18n), `transit_line`, `distance_m`, `travel_time_min`, `travel_mode`, coordinates, and `is_highlight`. |
-| CONT-43 | P0 | FAQs MUST be stored as discrete question/answer records scoped to project and optionally model, with approver and effective dates. |
+| CONT-43 | P0 | FAQs MUST be discrete question/answer records scoped to the fixed SENA residential context, brand, project or Marketing Unit Type, with source/evidence, approver and effective/review dates. Shared answers require explicit applicability and versioned references; they MUST NOT be copied or automatically inherited across all descendants. Changes MUST identify affected content without mutating historical releases. Completeness is measured against expected topics, not FAQ counts. Four-level FAQ authoring/review is a later increment than the initial commercial draft catalogue; it MUST NOT introduce a generic BU registry. |
 | CONT-44 | P1 | Projects MUST store compliance fields: `license_no`, `license_issued_at`, `eia_status`, `land_title_no`, `ad_disclaimer` (i18n), `reviewed_by`, `reviewed_at`. |
 | CONT-45 | P1 | The API MUST return the approved compliance text for consumers to reuse. Rendering that text in external websites or printed material is owned by those consumers. |
 | CONT-46 | P1 | Entity aliases MUST be storable (`hub.entity_aliases`) with `alias`, `locale`, `alias_type` (former_name / nickname / misspelling / transliteration / rem_name) and `source`, indexed for trigram search. |
@@ -263,6 +284,8 @@ Staff-interface language and content locale are separate. The staff application 
 | ASSET-13 | P1 | Video assets MUST record `provider` (youtube / vimeo / upload), `provider_video_id` and a poster frame. |
 | ASSET-14 | P1 | `virtual_tour` MUST be a supported asset type (360 tours are standard in this industry). |
 | ASSET-15 | P1 | When `rights_status` implies a licence expiry, the system MUST notify the asset owner 30 days before `effective_to`. |
+| ASSET-16 | P0 | The local catalogue workflow MUST distinguish project `master_plan`, model `floor_plan`, and project/model image roles. Model-targeted bindings MUST verify the model belongs to the selected project. Plan/image upload or draft attachment MUST NOT imply reviewed rights, confirmed model mapping or publication. Approved releases MUST freeze the relevant model assets and retain existing rights/expiry/withdrawal access gates. |
+| ASSET-17 | P0 | Each project media role MUST support multiple files, including `hero`, `thumbnail`, `master_plan`, `floor_plan` and `brochure`. Staff MUST be able to select several compatible files together, provide Thai alternative text per file, and append them without silently replacing existing bindings. Partial failures MUST identify unfinished files and allow retry without duplicating successful bindings. Project text being edited MUST survive media saves. At most one primary binding remains enforced where applicable; adding further files MUST NOT imply additional primary bindings or publication approval. |
 
 ---
 
@@ -277,8 +300,8 @@ Staff-interface language and content locale are separate. The staff application 
 | VER-05 | P0 | Lifecycle states MUST be: `draft`, `in_review`, `approved`, `scheduled`, `published`, `expired`, `archived`. |
 | VER-06 | P0 | `expired` MUST be derived from time in the published view, not set by a job. |
 | VER-07 | P0 | A publish readiness gate MUST block publishing when required fields are missing. Required fields per entity type MUST be configurable in `hub.publish_requirements`. |
-| VER-08 | P0 | For a project, the minimum required set MUST include: `public_name.th`, `slug`, `address`, coordinates, a `thumbnail` asset, a `hero` asset, at least one published model type, and `ad_disclaimer`. |
-| VER-09 | P0 | The admin UI MUST display a completeness percentage and an itemised list of what is missing, each item linking to the field. |
+| VER-08 | P0 | For a project, the minimum required set MUST include: `public_name.th`, `slug`, `address`, coordinates, a `thumbnail` asset, a `hero` asset, at least one approved model in the release, and `ad_disclaimer`. Existing canonical-model gates remain enforced while commercial types are draft-only; introducing commercial types into releases requires their own reviewed content, lineage and rights gates, with no silent reinterpretation of existing releases. |
+| VER-09 | P0 | The admin UI MUST distinguish collection coverage, reviewed/current coverage and boolean publication eligibility. A percentage MUST use a versioned, applicable expected-item denominator, with numerator/denominator shown; arbitrary deductions per missing item are not completeness. Until that checklist exists, show concrete collected counts and named gaps without a completeness percentage. Each actionable gap MUST link to its field/entity; unresolved source/type coverage MUST remain visible rather than disappear from the denominator. |
 | VER-10 | P1 | Scheduled publishing MUST be supported via `scheduled_at`. |
 | VER-11 | P1 | Preview MUST be supported by requesting a specific `version_id` with a signed preview token (JWT, ≤30 min TTL, bound to version and user). |
 | VER-12 | P1 | A diff view between the draft and the currently published version MUST be available. |
@@ -347,6 +370,8 @@ Verified read-only on 2026-09-14. These are historical source observations, not 
 | PROMO-35 | P0 | `match_method` MUST be recorded. A `ProjectID` obtained from `Sys_Prom_PromotionUnits` is direct evidence and MAY be `CONFIRMED` automatically. A project inferred from a name prefix MUST be `CANDIDATE` only. |
 | PROMO-36 | P0 | Public promotion applicability MUST be established from confirmed residential associations, never inferred from promotion or offer-item names. No BU classification registry is required in Phase 1. |
 | PROMO-37 | P0 | A solar or EV item appearing inside a housing promotion MUST remain an offer item (`offer_type = SOLAR_PACKAGE` / `EV_CHARGER`) on that residential promotion. It MUST NOT create standalone Solar/EV content, a BU record, or a separate product catalogue. |
+
+The existing `MODEL` target denotes its canonical source-model identity. A new Marketing Unit Type or shared source association MUST NOT silently change that target's meaning or inherit unit-level eligibility; commercial-type operational resolution requires REM-17 verification. Company as secondary editor context under CONT-10 does not remove legal or promotion applicability requirements.
 
 ### 11.6 Resolution
 
@@ -493,13 +518,13 @@ The Phase 1 assistant serves SENA residential projects only. All RAG P0 requirem
 
 Each item MUST be demonstrated, not asserted.
 
-A-01..A-16 and A-21 apply to the 16 October core Hub milestone; A-17..A-18 apply to the 30 October AI pilot. A-19 and A-20 apply to every Phase 1 milestone. The smaller 30 September pilot demonstrates the one-project workflow in §1.3 and the delivery plan without bypassing security, approvals, or publication gates. Website data-contract review and Hub-side handoff are in scope; commercial website code, hosting and launch/UAT are not acceptance dependencies.
+A-01..A-16 and A-21..A-22 apply to the 16 October core Hub milestone; A-17..A-18 apply to the 30 October AI pilot. A-19 and A-20 apply to every Phase 1 milestone. The smaller 30 September pilot demonstrates the one-project workflow in §1.3 and the delivery plan, including its approved brand, without bypassing security, approvals, or publication gates. Website data-contract review and Hub-side handoff are in scope; commercial website code, hosting and launch/UAT are not acceptance dependencies.
 
 | # | Acceptance test |
 |---|---|
 | A-01 | Marketing staff create and publish all 7 pilot projects unaided. |
-| A-02 | Every published project and model type has a confirmed REM crosswalk entry (100%, no candidates). |
-| A-03 | Every model type in the 7 projects has bedrooms, bathrooms and usable area populated. |
+| A-02 | Every published project/canonical REM model has a confirmed REM crosswalk (100%, no candidates). Before commercial types enter public releases, demonstrate reviewed exact source lineage and approved content evidence; unresolved unit partitions cannot expose commercial-type operational prices, inventory or promotion eligibility. Draft-only types do not satisfy publication acceptance. |
+| A-03 | Every canonical model and every expected commercial type in the 7-project intake has verified bedrooms, bathrooms and usable area (or an explicitly evidenced area range where applicable), with no unknown values hidden through grouping or omission. Track expected commercial-type coverage and source-model/unit coverage separately; source row counts alone cannot prove the commercial catalogue complete. |
 | A-04 | A URL pasted into any asset field is fetched into Hub storage; the public API returns a Hub URL and no external URL appears anywhere in API output. |
 | A-05 | Twelve edits across four entities are published as one release; a consumer polling during the publish never observes a partial state. |
 | A-06 | That release is rolled back and the consumer returns to the previous state, verified by response payload comparison. |
@@ -518,6 +543,7 @@ A-01..A-16 and A-21 apply to the 16 October core Hub milestone; A-17..A-18 apply
 | A-19 | Phase 1 authoring and publication reject standalone non-residential content/promotions. Public APIs return only the in-scope residential catalogue; unsupported BU filters are rejected. Approved residential offers may retain solar/EV benefit items without creating a separate BU or product catalogue. |
 | A-20 | Thai-speaking staff complete project entry, image upload, validation correction, promotion review and publication using Thai interface text and help. New content defaults to `th`; technical identifiers and original source values remain intact. |
 | A-21 | Demonstrate the website handoff with a restricted test consumer: retrieve representative approved project/model content, images/floor plans/brochures, FAQs, promotions/legal terms and SEO/locale metadata with stable IDs and version/freshness information. Review the field-to-source/API mapping with the website team, resolve required-field gaps for the 7 projects, and record owners for optional gaps. Deliver the API/authentication/cache/change-feed/webhook guide with reproducible examples and test evidence. This verifies data readiness and Hub-side integration without building or launching a commercial website. |
+| A-22 | Admin creates a brand from a staged REM identity; editor creation and admin publication are rejected. An editor edits Thai content and attaches approved logo variants; publisher releases and rolls back it. Demonstrate two projects under one brand with separate source companies, reject a source-brand mismatch, preserve published project payloads across brand draft edits/new releases, and block dependent access after brand withdrawal or referenced-logo rights revocation. An editor's missing-brand request reaches the admin queue and its resolution is audited. |
 
 ---
 
@@ -529,6 +555,8 @@ A-01..A-16 and A-21 apply to the 16 October core Hub milestone; A-17..A-18 apply
 
 Also deferred: enterprise DAM migration · JD API automation · multi-level approval workflows beyond the promotion legal gate · image similarity search and image embeddings · advanced AI auto-tagging · migration of legacy assets for all 93 projects · Meta/GA4 creative performance analytics · real-time availability guarantees · net price calculation after promotions · per-customer promotion codes · A/B testing · ad spend allocation models · CRM/CDP integration and customer-specific advertising. Phase 2 requires a separate scope and estimate; November is the earliest planning window, not a promised Solar launch.
 
+**Future source ownership:** a non-residential business may use another approved enterprise catalogue, an owner-governed spreadsheet, or a catalogue governed directly in Hub when no master exists. Any such path requires its own source/field ownership and approval contract; it MUST NOT manufacture REM IDs or bypass the residential REM requirement. Preserve stable Hub/public identities when later linking another source. This is a Phase 2 policy, not a requirement to build generic source or product infrastructure in Phase 1.
+
 ---
 
 ## 19. Open questions blocking implementation
@@ -537,7 +565,7 @@ Each MUST be answered by the named owner before the dependent requirements can b
 
 | # | Question | Blocks | Owner |
 |---|---|---|---|
-| Q-01 | Which 7 projects are the pilot set (by name and REM ID)? | Content collection, PROMO-51 | Marketing |
+| Q-01 | **Selection changed, 18 September:** the user now selects only `HYABC` (เฟล็กซี่ สาทร - เจริญนคร เฟส 1) for current intake, replacing `KUBON` and `B_PO`; see the [HYABC source review](docs/16-pilot-intake-hyabc.md). Which six additional projects complete the unchanged seven-project pilot? The former two-project evidence remains historical. Source selection does not confirm individual model crosswalks or authorize publication. | Content collection, PROMO-51 | Marketing |
 | Q-02 | REM access — **partially answered:** the existing data warehouse already ingests from REM and Hub jobs will run on the same host, so Hub reads REM through the DW's **bronze/raw** layer rather than connecting to REM directly. Remaining: can the DW pipeline be extended to land `Sys_Prom_Promotion`, `Sys_Prom_PromotionDetails`, `Sys_Prom_PromotionUnits`, and is a raw (untransformed) layer exposed? | REM-01..12, PROMO-01..07 | IT / DW owner |
 | Q-03 | Which promotion fields may be shown to customers and to AI? | PROMO-26, SEC-06 | Data owner |
 | Q-04 | Who is the named publisher and who is the named legal approver? | SEC-03, SEC-04, PROMO-27 | Marketing / Legal |
@@ -560,7 +588,7 @@ Each MUST be answered by the named owner before the dependent requirements can b
 
 1. **Scope and intake (15–18 September):** identify the 7 SENA residential projects, source access and owners; review website data needs and create the field/source/gap checklist; finalize the residential model and publication requirements. No Solar discovery or BU framework work.
 2. **Working residential pilot (21–30 September):** select one real project from REM; include its minimum model, required assets and disclaimer; author an approved residential promotion; publish through protected views and consume the API. Include versioning, publish sets, withdrawal and rollback from the start. Table count is not a constraint: the pilot MUST satisfy VER-08 and required approvals.
-3. **Core Hub (1–16 October):** expand to 7 projects; complete project nodes, model specifications, content, facilities, compliance, bulk import, residential promotion resolution and source reconciliation. Complete residential ads mapping/alerts, Hub change-feed/webhook/cache contracts and the website data/API handoff using a test consumer, then demonstrate A-01..A-16 and A-19..A-21. Commercial website application implementation remains with the website team.
+3. **Core Hub (1–16 October):** expand to 7 projects; complete project nodes, model specifications, content, facilities, compliance, bulk import, residential promotion resolution and source reconciliation. Complete residential ads mapping/alerts, Hub change-feed/webhook/cache contracts and the website data/API handoff using a test consumer, then demonstrate A-01..A-16 and A-19..A-22. Commercial website application implementation remains with the website team.
 4. **SENA AI pilot (19–30 October):** ingestion, retrieval, structured tools, evaluation and human handoff for the 7 residential projects; demonstrate A-17..A-20 and RAG quality gates with the separate chatbot repository, without website delivery.
 5. **Phase 2 (after October):** scope Solar and any other BU expansion using confirmed needs and a separate estimate.
 

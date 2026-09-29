@@ -16,6 +16,8 @@
 
 ## 2. System of Record Matrix ⭐
 
+Field-level source evidence and current intake gaps are maintained in [13 — Source identity and field ownership](13-source-field-ownership.md). REM ownership here applies to SENA residential. Other businesses may use a different approved master or a governed Hub catalogue in Phase 2; that policy does not relax residential mapping gates or add other BU infrastructure now.
+
 > นี่คือเอกสารที่ควร "เซ็นรับ" ร่วมกันระหว่าง Marketing / IT / REM Owner ก่อนเริ่มพัฒนา
 > *(แก้ไข 14 ก.ย. 2026 — แยกแถว Promotion เป็นสองแถวหลังตรวจ REM พบว่ามี Promotion อยู่แล้ว 7,676 รายการ ดู [08](08-promotion-integration.md))*
 
@@ -23,7 +25,7 @@ Hub จัดเตรียมทั้งเนื้อหา Marketing ท�
 
 | ข้อมูล | System of Record | บทบาทของ Hub | Consumer เรียกจาก | เขียนได้โดย |
 |--------|------------------|--------------|-------------------|-------------|
-| Company / Project / Model **ID** | **REM** | mirror (read-only) | Hub | sync job เท่านั้น |
+| Company / Brand / Project / Model **ID** และความสัมพันธ์โครงการกับ Brand/Company | **REM ผ่าน DW** | mirror (read-only); Brand กับ Company แยกกัน | Hub | sync job เท่านั้น |
 | ชื่อโครงการ/แบบบ้าน **ตาม REM** | **REM** | mirror (read-only) | Hub (เป็น attribute) | sync job เท่านั้น |
 | โครงสร้าง Phase/Building/Floor | **REM** (ถ้ามี) / **Hub** (ถ้า REM ไม่มี) | mirror + เติมส่วนที่ REM ไม่มี | Hub | sync + Editor |
 | **ชื่อทางการตลาด (Public Name)** | **Hub** | **owner** | Hub | Editor → Publisher |

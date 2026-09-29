@@ -195,7 +195,7 @@ flowchart LR
 
 ## 5. Admin frontend ภาษาไทย — Next.js บน Vercel
 
-> Vercel คือที่โฮสต์ Admin ส่วน framework ที่แนะนำคือ **Next.js 15 App Router**; ไม่มี public website app ในงานส่งมอบนี้
+> Vercel คือที่โฮสต์ Admin ส่วน implementation เริ่มวันที่ 16 ก.ย. ใช้ **Next.js 16.3.5 App Router / React 19.3.0** ตาม lockfile แทน baseline Next.js 15 เดิม; ไม่มี public website app ในงานส่งมอบนี้ ดูวิธีรัน local ใน [11](11-local-development.md)
 
 ```
 apps/admin/
@@ -356,7 +356,7 @@ async def test_expired_promotion_disappears_without_any_job(consumer_conn, db):
 | ORM | **ไม่ใช้ ORM หนัก** · asyncpg + SQL · SQLAlchemy เฉพาะ CRUD | สูง |
 | Migration | **Supabase CLI + SQL** | สูง |
 | Admin CRUD | **supabase-js ตรงไป PostgREST** · งาน transaction ผ่าน FastAPI | กลาง — ประหยัดเวลามาก แต่ต้องมี DB constraint ครบจริง |
-| Admin frontend | **Next.js 15 App Router ภาษาไทย บน Vercel** · `apps/admin` | สูง |
+| Admin frontend | **Next.js 16.3.5 App Router ภาษาไทย** · `apps/admin` · วางแผนโฮสต์บน Vercel | สูง |
 | Vector store | **pgvector ในฐานเดียวกัน** | สูง — `RAG-05` บังคับ |
 | REM access | **ผ่าน bronze layer ของ DW ไม่ต่อตรง** | สูง — ตัดปัญหา VPN และเหลือจุดเชื่อมเดียว |
 | Embedding model | **OpenAI `text-embedding-3-large`** เป็นค่าตั้งต้น · ยืนยันด้วย golden set | กลาง |
