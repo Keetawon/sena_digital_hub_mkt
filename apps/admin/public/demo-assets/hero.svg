@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">ภาพหลักจำลองสำหรับทดสอบ</title>
+  <desc id="desc">เส้นอาคารเชิงสัญลักษณ์ ไม่ใช่ภาพโครงการจริง</desc>
+  <rect width="1200" height="700" fill="#eaf0e5"/>
+  <circle cx="890" cy="200" r="100" fill="#d8e3cf"/>
+  <path d="M0 570h1200v130H0z" fill="#dfe8d7"/>
+  <g stroke="#6b8870" stroke-width="5" fill="#f6f8f1" stroke-linejoin="round">
+    <path d="m320 540 0-200 160-125 160 125v200z"/>
+    <path d="M640 350h250v190H640z"/>
+    <path d="m286 355 194-151 194 151" fill="none"/>
+    <path d="M441 418h78v122M359 375h49v58h-49zM551 375h49v58h-49zM698 400h55v75h-55zM791 400h55v75h-55z" fill="#d4dfca"/>
+  </g>
+  <path d="M175 540h845" stroke="#6b8870" stroke-width="5"/>
+  <text x="600" y="635" text-anchor="middle" fill="#2b6247" font-size="26" font-family="Tahoma, sans-serif">ภาพจำลองสำหรับทดสอบ · ไม่ใช่โครงการจริง</text>
+</svg>

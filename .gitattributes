@@ -1,0 +1,2 @@
+# Applied migrations are checksummed from exact file bytes; never convert line endings.
+supabase/migrations/*.sql -text

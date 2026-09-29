@@ -1,0 +1,55 @@
+.registry-shell { max-width: 1440px; margin: auto; padding: 24px; min-height: 100vh; }
+.registry-shell :focus-visible, .registry-card :focus-visible { outline: 2px solid var(--action); outline-offset: 2px; box-shadow: 0 0 0 2px var(--surface); }
+.registry-shell button:disabled, .registry-card button:disabled { opacity: 1; color: var(--muted); background: var(--surface-warm); cursor: not-allowed; }
+.registry-shell nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.registry-shell nav a { min-height: 44px; padding: 8px 12px; text-decoration: underline; text-underline-offset: 4px; color: var(--action); }
+.registry-shell nav a[aria-current="page"] { color: var(--ink); background: var(--surface-warm); border-radius: 8px; font-weight: 600; }
+.registry-banner { padding: 16px 20px; background: var(--surface-warm); border: 1px solid var(--line-strong); border-radius: 10px; margin: 20px 0; }
+.registry-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 16px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 8px; font-size: 1rem; }
+.registry-button:hover:not(:disabled) { background: var(--surface-warm); }
+.registry-button.primary { background: var(--action); border-color: var(--action); color: var(--surface); }
+.registry-button.primary:hover:not(:disabled) { background: var(--primary-strong); }
+.registry-input { display: block; width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); color: var(--ink); margin-top: 6px; line-height: 1.6; }
+.registry-picker { position: relative; min-width: 0; }
+.registry-options { position: absolute; top: 100%; left: 0; right: 0; z-index: 4; max-height: 290px; overflow: auto; margin-top: 6px; padding: 6px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); box-shadow: 0 12px 32px var(--shadow-raised); transform-origin: top; }
+.registry-options button { position: relative; display: block; width: 100%; padding: 10px; min-height: 44px; border: 0; border-radius: 6px; background: var(--surface); color: var(--ink); text-align: left; }
+.registry-picker-highlight { position: absolute; inset: 0; background: var(--surface-warm); border-radius: 6px; }
+.registry-options button:hover, .registry-options button[aria-selected="true"] { background: var(--surface-warm); }
+.registry-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-top: 20px; }
+.registry-table { width: 100%; border-collapse: collapse; table-layout: fixed; font: var(--text-small)/1.6 var(--font-table); }
+.registry-table th { text-align: left; background: var(--surface-warm); }
+.registry-table th, .registry-table td { padding: 16px 12px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.registry-table th:first-child { width: 24%; }
+.registry-table button { text-align: left; color: var(--action); text-decoration: underline; text-underline-offset: 4px; border: 0; padding: 8px 0; min-height: 44px; background: transparent; }
+.registry-row-summary { border-radius: 8px; background: var(--surface); }
+.registry-dialog { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; margin: 0; padding: 24px; background: transparent; color: var(--ink); overflow: auto; }
+.registry-dialog::backdrop { background: transparent; }
+.registry-backdrop { position: fixed; inset: 0; background: var(--scrim); }
+.registry-card { position: relative; width: min(900px, 100%); margin: 4vh auto; padding: 28px; background: var(--surface); border-radius: 16px; box-shadow: 0 16px 60px var(--shadow-raised); overflow-wrap: anywhere; }
+.registry-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; border-bottom: 1px solid var(--line); }
+.registry-tabs button { position: relative; border: 0; background: transparent; min-height: 48px; padding: 10px; color: var(--muted); }
+.registry-tabs button[aria-selected="true"] { color: var(--action); font-weight: 600; }
+.registry-tab-indicator { position: absolute; bottom: 0; height: 3px; left: 0; right: 0; background: var(--action); }
+.registry-name { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-ui); padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-warm); margin: 12px 0; }
+.registry-error { color: var(--danger); border-left: 3px solid var(--danger); padding: 12px; margin: 16px 0; background: var(--surface); }
+.registry-check { display: flex; gap: 12px; align-items: center; min-height: 48px; padding: 8px; }
+.registry-check input { width: 20px; height: 20px; accent-color: var(--action); }
+.registry-detail-list { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px 20px; }
+.registry-detail-list dt { color: var(--muted); }
+.registry-detail-list dd { margin: 0; }
+.registry-steps { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.registry-steps li { padding: 10px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line-strong); }
+.registry-steps li[aria-current="step"] { background: var(--gold); font-weight: 600; }
+@media (max-width: 640px) {
+  .registry-shell { padding: 16px; }
+  .registry-panel, .registry-card { padding: 16px; }
+  .registry-dialog { padding: 12px; }
+  .registry-table, .registry-table tbody, .registry-table tr, .registry-table td { display: block; width: 100%; }
+  .registry-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .registry-table tr { border: 1px solid var(--line-strong); border-radius: 10px; margin: 12px 0; padding: 12px; }
+  .registry-table td { border: 0; padding: 4px; }
+  .registry-table td::before { content: attr(data-label) " "; color: var(--muted); }
+  .registry-detail-list { grid-template-columns: 1fr; gap: 4px; }
+  .registry-detail-list dd { margin-bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .registry-shell *, .registry-card * { scroll-behavior: auto; } }

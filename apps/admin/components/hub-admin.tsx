@@ -1,0 +1,528 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import type { LocalRole } from "@/lib/local-session";
+import { request } from "./hub-request";
+import { ProjectAssets, type AssetBinding } from "./project-assets";
+import { ProjectFacilities, type Facilities } from "./project-facilities";
+import { CommercialTypes, type CommercialType } from "./commercial-types";
+import { BrandWorkspace, BrandRequestDialog, ProjectBrandCard, type Brand, type BrandSummary } from "./brand-admin";
+
+type Localized = { th?: string; [locale: string]: string | undefined };
+type Readiness = { ready: boolean; percent: number; missing: { field: string; message: string }[] };
+type SourceEvidence = { source_record: Record<string, unknown> | null; intake_manifest_sha256: string | null };
+type GoldModelGroup = { model_ids?: string[]; model_name?: string; model_name_eng?: string | null; model_type_ids?: string[]; minimum_model_area?: number | null; maximum_model_area?: number | null; model_attribute_variant?: boolean; technical_model_count?: number };
+type GoldSource = { model_groups?: GoldModelGroup[]; record: Record<string, string | number | null>; source_relation: string; source_snapshot_at: string; source_fingerprint: string; provenance: Record<string, unknown> };
+type Model = {
+  id: string; public_model_id: string; rem_model_id: string; model_name_rem: string;
+  public_name: Localized; bedrooms: number | null; bathrooms: number | null;
+  usable_area_sqm: number | null; parking_spaces: number | null;
+  match_status: "SUGGESTED" | "CONFIRMED" | "REJECTED";
+  match_method: string; match_confidence: number; verified_by: string | null; verified_at: string | null;
+  source_updated_at: string | null; source_snapshot_at: string;
+} & SourceEvidence;
+type SourceProject = SourceEvidence & { rem_project_id: string; project_name_rem: string; source_updated_at: string | null; source_snapshot_at: string; source_fingerprint: string; model_count: number; public_project_id: string | null; rem_brand_id: string | null; rem_company_id: string | null; brand_name_rem: string | null; company_name_rem: string | null };
+type SourceModel = SourceEvidence & { rem_model_id: string; model_name_rem: string; source_updated_at: string | null; public_model_id: string | null };
+type ModelAction = { type: "edit" | "review"; model: Model } | { type: "add" };
+export type Project = {
+  public_project_id: string; public_name: Localized; slug: string; updated_at: string;
+  published_version_id: string | null; publication_available: boolean; readiness: Readiness;
+  address?: Localized; latitude?: number | null; longitude?: number | null;
+  ad_disclaimer?: Localized; meta_title?: Localized; meta_description?: Localized;
+  brand_id?: string | null; brand_summary?: BrandSummary | null;
+  gold_source?: GoldSource | null;
+  gold_prefill_changes?: { public_name?: Localized; address?: Localized; latitude?: number; longitude?: number };
+  source?: SourceEvidence & { rem_project_id: string; project_name_rem: string; source_updated_at: string | null; source_snapshot_at?: string; rem_brand_id?: string | null; rem_company_id?: string | null; brand_name_rem?: string | null; company_name_rem?: string | null };
+  models?: Model[]; assets?: AssetBinding[]; facilities?: Facilities; commercial_types?: CommercialType[];
+};
+type Version = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload: Project };
+type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; meta_title: string; meta_description: string };
+type ProjectTab = "content" | "models" | "versions";
+type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
+const roles: Record<LocalRole, string> = { editor: "ผู้แก้ไขข้อมูล", publisher: "ผู้เผยแพร่", viewer: "ผู้อ่านข้อมูล", admin: "ผู้ดูแลระบบ", online_staff: "ทีมออนไลน์", agency_kin: "เอเจนซี KIN", agency_combay: "เอเจนซี COMBAY" };
+const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
+const matchLabels = { SUGGESTED: "รอตรวจสอบ", CONFIRMED: "ยืนยันแล้ว", REJECTED: "ปฏิเสธการจับคู่" };
+const labels: Record<string, string> = { public_name: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)", public_name_en: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (English)", slug: "รหัส URL (slug)", address: "ที่อยู่โครงการ (ไทย)", address_en: "Project address (English)", latitude: "ละติจูด", longitude: "ลองจิจูด", ad_disclaimer: "ข้อความกำกับโฆษณา", meta_title: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", meta_description: "คำอธิบายย่อ" };
+
+function Icon({ name, size = 20 }: { name: "grid" | "arrow" | "check" | "clock" | "document" | "image" | "shield" | "chevron" | "alert" | "building" | "save"; size?: number }) {
+  const paths = {
+    grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+    arrow: <><path d="M4 12h16M14 6l6 6-6 6" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    document: <><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" /></>,
+    image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8" cy="8" r="1" /><path d="m3 17 5-5 4 4 3-3 6 6" /></>,
+    shield: <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z" /><path d="m8 12 3 3 5-6" /></>,
+    chevron: <path d="m9 5 7 7-7 7" />,
+    alert: <><path d="M12 3 2 21h20zM12 9v5M12 17h.01" /></>,
+    building: <><path d="M4 21V6l8-3v18M12 9h8v12M2 21h20M7 8v2M7 13v2M16 12v2M16 17v2" /></>,
+    save: <><path d="M4 3h13l4 4v14H3V3zM7 3v6h9V3M7 21v-8h10v8" /></>,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "ยังไม่มีข้อมูล";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(date);
+}
+
+function sourceProvenance(source: SourceEvidence) {
+  return source.intake_manifest_sha256 != null ? "สำเนา REM ที่ตรวจสอบหลักฐานแล้ว · ต้องตรวจเนื้อหาและการจับคู่ก่อนเผยแพร่ · ยังไม่ใช่ DW สด" : "ข้อมูลจำลองสำหรับเครื่องพัฒนา";
+}
+
+function sourceDate(value?: string | null) {
+  return value ? formatDate(value) : "ยังยืนยันเวลา/เขตเวลาต้นทางไม่ได้";
+}
+
+function RawModelEvidence({ source }: { source: SourceEvidence }) {
+  if (!source.source_record || source.intake_manifest_sha256 == null) return null;
+  return <><div><dt>ModelTypeID ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.model_type_id ?? "—")}</dd></div><div><dt>ModelArea ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.model_area ?? "—")} · ยังไม่ยืนยันหน่วยและความหมาย ห้ามใช้แทนพื้นที่ใช้สอยที่ตรวจสอบแล้ว</dd></div></>;
+}
+
+function draftFrom(project: Project): Draft {
+  return { public_name: project.public_name?.th ?? "", public_name_en: project.public_name?.en ?? "", slug: project.slug ?? "", address: project.address?.th ?? "", address_en: project.address?.en ?? "", latitude: project.latitude?.toString() ?? "", longitude: project.longitude?.toString() ?? "", ad_disclaimer: project.ad_disclaimer?.th ?? "", meta_title: project.meta_title?.th ?? "", meta_description: project.meta_description?.th ?? "" };
+}
+
+export function HubAdmin({ localMode, initialRole, projectId, brandId = null, view = null }: { localMode: boolean; initialRole: LocalRole | null; projectId: string | null; brandId?: string | null; view?: string | null }) {
+  const [role, setRole] = useState<LocalRole | null>(initialRole);
+  const [switching, setSwitching] = useState(false);
+  const [sessionError, setSessionError] = useState("");
+  const [hasUnsavedDraft, setHasUnsavedDraft] = useState(false);
+  const brandsView = Boolean(brandId || view === "brands");
+
+  async function selectRole(nextRole: LocalRole) {
+    if (hasUnsavedDraft && !window.confirm("มีข้อมูลร่างที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนบัญชีทดสอบหรือไม่?")) return;
+    setSwitching(true); setSessionError("");
+    try {
+      const response = await fetch("/api/local-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: nextRole }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message ?? "เปลี่ยนบัญชีทดสอบไม่สำเร็จ");
+      setHasUnsavedDraft(false); setRole(nextRole);
+      if (nextRole === "online_staff" || nextRole.startsWith("agency_")) window.location.assign("/ads/registry");
+    } catch (error) { setSessionError(error instanceof Error ? error.message : "เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
+    finally { setSwitching(false); }
+  }
+
+  return <div className="app-shell">
+    <a className="skip-link" href="#main-content">ข้ามไปยังเนื้อหา</a>
+    <aside className="sidebar" aria-label="เมนูหลัก">
+      <a className="wordmark" href="/" aria-label="SENA Digital Hub หน้ารวมโครงการ"><span className="sena">SENA<span className="brand-dot">.</span></span><span className="wordmark-caption">DIGITAL HUB</span></a>
+      <div className="workspace-label">พื้นที่ทำงาน</div>
+      <nav><a href="/" className={`nav-link ${!brandsView ? "active" : ""}`} aria-current={!brandsView && !projectId ? "page" : undefined}><Icon name="grid" /><span>โครงการที่อยู่อาศัย</span><Icon name="chevron" size={15} /></a><a href="/?view=brands" className={`nav-link ${brandsView ? "active" : ""}`} aria-current={brandsView && !brandId ? "page" : undefined}><Icon name="building" /><span>แบรนด์ที่อยู่อาศัย</span><Icon name="chevron" size={15} /></a></nav>
+      <a href="/ads/registry" className="nav-link"><Icon name="document" /><span>ทะเบียนแคมเปญ</span></a>
+      <div className="sidebar-footer"><span className="scope-label">SENA RESIDENTIAL</span><p>ข้อมูลที่ดูแลร่วมกัน<br />เพื่อเผยแพร่อย่างมั่นใจ</p><div className="sidebar-rule" /><span className="small-text">ระบบหลังบ้านสำหรับทีมงาน</span></div>
+    </aside>
+    <div className="main-shell">
+      <header className="topbar"><div className="breadcrumb"><span>พื้นที่ทำงาน</span><Icon name="chevron" size={14} /><span>{brandsView ? "ข้อมูลแบรนด์" : "ข้อมูลโครงการ"}</span></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{role === "publisher" ? "ผ" : role === "viewer" ? "อ" : role === "admin" ? "ด" : "ท"}</span><span>{role ? roles[role] : "ยังไม่ได้เลือกบัญชี"}</span></div></header>
+      {localMode && <div className="local-banner" role="note"><div className="local-note"><Icon name="shield" size={18} /><span><strong>พื้นที่ทดสอบในเครื่อง</strong> · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด</span></div><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={role ?? ""} disabled={switching} onChange={event => void selectRole(event.target.value as LocalRole)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roles).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}
+      <main id="main-content" tabIndex={-1}>
+        {sessionError && <div className="notice error" role="alert">{sessionError}</div>}
+        {!localMode ? <SetupNotice /> : !role ? <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยินดีต้อนรับสู่พื้นที่ทดสอบ</p><h1>เริ่มจากบทบาทของคุณ</h1><p className="muted">ทดลองจัดเตรียมข้อมูลและตรวจสอบความพร้อมก่อนเผยแพร่<br className="desktop-only" /> เลือกบัญชีทดสอบเพื่อเริ่มใช้งาน บัญชีเหล่านี้ไม่ใช่ระบบเข้าสู่ระบบจริง</p><div className="role-cards">{(Object.keys(roles) as LocalRole[]).map(value => <button key={value} className="role-card" disabled={switching} onClick={() => void selectRole(value)}><Icon name={value === "editor" ? "document" : value === "publisher" ? "shield" : "grid"} /><strong>{roles[value]}</strong><span>{value === "editor" ? "แก้ไขและบันทึกข้อมูลร่าง" : value === "publisher" ? "ตรวจสอบ เผยแพร่ และคืนค่า" : value === "admin" ? "จัดการแบรนด์ คำขอ และข้อมูลร่าง" : "อ่านข้อมูลและตรวจสอบสถานะ"}</span><Icon name="arrow" /></button>)}</div></section> : brandsView ? <BrandWorkspace key={`${role}-${brandId || "overview"}`} brandId={brandId} role={role} onDirtyChange={setHasUnsavedDraft} /> : projectId ? <ProjectDetail key={`${projectId}-${role}`} projectId={projectId} role={role} onDirtyChange={setHasUnsavedDraft} /> : <ProjectOverview key={role} role={role} />}
+      </main>
+      <footer className="page-footer"><span>SENA Digital Hub</span><span>จัดเตรียม · ตรวจสอบ · เผยแพร่</span></footer>
+    </div>
+  </div>;
+}
+
+function SetupNotice() {
+  return <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยังไม่เปิดใช้งาน</p><h1>กรุณาตั้งค่าการเข้าสู่ระบบ</h1><p className="muted">ระบบนี้ยังไม่พร้อมให้บุคลากรเข้าสู่ระบบจริง<br />ผู้ดูแลต้องตั้งค่าการยืนยันตัวตนก่อนใช้งาน ขณะนี้ยังไม่มีการเข้าถึงข้อมูล</p></section>;
+}
+
+function ProjectOverview({ role }: { role: LocalRole }) {
+  const [showSources, setShowSources] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [brandFilter, setBrandFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { setProjects(await request<Project[]>("v1/admin/projects")); }
+    catch (error) { setError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ"); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+
+  const brandOptions = [...new Map(projects.flatMap(project => project.brand_summary ? [[project.brand_summary.id, project.brand_summary] as const] : [])).values()];
+  const filteredProjects = projects.filter(project => !brandFilter || (brandFilter === "unassigned" ? !project.brand_id : project.brand_id === brandFilter));
+
+  return <>
+    <div className="page-heading"><div><p className="eyebrow">ข้อมูลสำหรับเผยแพร่</p><h1>โครงการที่อยู่อาศัย</h1><p className="muted">ดูแลข้อมูลโครงการให้ครบถ้วน ก่อนส่งต่อให้ผู้ใช้งานข้อมูล</p></div><span className="scope-pill"><span />SENA Residential</span></div>
+    <div className="section-heading"><h2>โครงการในพื้นที่ทำงาน {!loading && !error && <span className="count">{projects.length}</span>}</h2><button className="button secondary" aria-expanded={showSources} aria-controls="source-picker" onClick={() => setShowSources(value => !value)}>{showSources ? "ปิดรายการต้นทาง" : "เลือกโครงการจากต้นทาง"}</button></div>
+    {showSources && <SourceProjects role={role} />}
+    <div className="form-field brand-filter"><label htmlFor="project-brand-filter">กรองโครงการตามแบรนด์</label><select id="project-brand-filter" value={brandFilter} onChange={event => setBrandFilter(event.target.value)}><option value="">ทุกแบรนด์</option><option value="unassigned">ยังไม่ได้เลือกแบรนด์</option>{brandOptions.map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id}</option>)}</select></div>
+    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !filteredProjects.length ? <div className="empty-state"><Icon name="building" size={36} /><h2>{brandFilter ? "ไม่มีโครงการที่ตรงกับตัวกรองแบรนด์" : "ยังไม่มีโครงการในพื้นที่ทำงาน"}</h2><p>{brandFilter ? "เลือกทุกแบรนด์เพื่อดูโครงการทั้งหมด" : "เลือกโครงการจากรายการต้นทางเพื่อเริ่มจัดเตรียมข้อมูลร่าง"}</p></div> : <div className="project-grid">{filteredProjects.map(project => <a className="project-card" key={project.public_project_id} href={`/?project=${encodeURIComponent(project.public_project_id)}`}><div className="project-card-art" aria-hidden="true"><div className="art-frame"><Icon name="building" size={58} /></div><span className="sample-stamp">โครงการในพื้นที่ทำงาน</span></div><div className="project-card-body"><div className="project-card-meta"><span className="small-text muted">{project.brand_summary?.public_name.th || "ยังไม่ได้เลือกแบรนด์"}</span><StatusBadge project={project} /></div><h3>{project.public_name?.th || "โครงการที่ยังไม่ระบุชื่อ"}</h3><p className="project-id">{project.public_project_id}</p><div className="readiness-summary"><span>เงื่อนไขการเผยแพร่</span><strong>{project.readiness?.ready ? "ผ่านรายการตรวจสอบ" : `${project.readiness?.missing.length ?? 0} รายการรอตรวจสอบ`}</strong></div><div className="project-card-footer"><span className="small-text muted"><Icon name="clock" size={14} />{formatDate(project.updated_at)}</span><span className="open-project">จัดการข้อมูล<Icon name="arrow" size={18} /></span></div></div></a>)}</div>}
+    <div className="information-strip"><Icon name="document" /><p><strong>แก้ไขข้อมูลร่างได้โดยไม่กระทบข้อมูลที่เผยแพร่</strong><br /><span className="muted">ผู้เผยแพร่ตรวจสอบความพร้อมก่อนเผยแพร่ทุกครั้ง และเรียกคืนเวอร์ชันก่อนหน้าได้</span></p></div>
+  </>;
+}
+
+function SourceProjects({ role }: { role: LocalRole }) {
+  const [sources, setSources] = useState<SourceProject[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<Record<string, string>>({});
+  const [requestSource, setRequestSource] = useState<SourceProject | null>(null);
+  const [notice, setNotice] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const [sourceRows, brandRows] = await Promise.all([request<SourceProject[]>("v1/admin/sources/projects"), request<Brand[]>("v1/admin/brands")]); setSources(sourceRows); setBrands(brandRows); }
+    catch (error) { setError(error instanceof Error ? error.message : "โหลดรายการต้นทางไม่สำเร็จ"); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  async function select(source: SourceProject) {
+    setPending(source.rem_project_id); setError("");
+    try {
+      const created = await request<Project>("v1/admin/projects", "POST", { rem_project_id: source.rem_project_id, ...(selectedBrands[source.rem_project_id] ? { brand_id: selectedBrands[source.rem_project_id] } : {}) });
+      window.location.assign(`/?project=${encodeURIComponent(created.public_project_id)}`);
+    } catch (error) { setError(error instanceof Error ? error.message : "สร้างข้อมูลร่างไม่สำเร็จ"); setPending(null); }
+  }
+  const query = search.trim().toLocaleLowerCase("th");
+  const filtered = sources.filter(source => `${source.rem_project_id} ${source.project_name_rem}`.toLocaleLowerCase("th").includes(query));
+  return <section className="panel" id="source-picker" aria-labelledby="source-picker-title">
+    <div className="panel-heading"><div><h2 id="source-picker-title">เลือกจากข้อมูลต้นทาง</h2><p>ตรวจแหล่งข้อมูลของแต่ละรายการ · ยังไม่ได้เชื่อม DW สด</p></div><Icon name="document" /></div>
+    <div className="panel-body">
+      <p className="read-only-note">การเลือกจะสร้างข้อมูลร่างพร้อมแบบที่อยู่อาศัยจากต้นทาง ทุกแบบต้องได้รับการตรวจสอบก่อนเผยแพร่ ชื่อและรหัสต้นทางแก้ไขไม่ได้</p>
+      <div className="form-field"><label htmlFor="source-search">ค้นหาชื่อหรือรหัสโครงการต้นทาง</label><input id="source-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>
+      {notice && <p className="notice success" role="status">{notice}</p>}
+      {error && <div className="notice error" role="alert">{error}<button className="button secondary" onClick={() => void load()}>โหลดรายการใหม่</button></div>}
+      {loading ? <LoadingState /> : <><p className="small-text muted" role="status">พบ {filtered.length} โครงการ</p><ul className="source-cards">{filtered.map(source => <li key={source.rem_project_id}>
+        <div><h3>{source.project_name_rem}</h3><p className="small-text source-code">{source.rem_project_id} · {source.model_count} แบบที่อยู่อาศัย</p><p className="small-text muted">แบรนด์ต้นทาง: {source.brand_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_brand_id || "ไม่ระบุ"}</p><details><summary className="small-text muted">ข้อมูลบริษัทจากต้นทาง</summary><p className="small-text muted">{source.company_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_company_id || "ไม่ระบุ"}</p></details><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {formatDate(source.source_snapshot_at)}</p></div>
+        {source.public_project_id ? <a className="button secondary" href={`/?project=${encodeURIComponent(source.public_project_id)}`}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending)} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
+      </li>)}</ul>{!filtered.length && <p className="muted">ไม่พบโครงการที่ตรงกับการค้นหา</p>}</>}
+      {requestSource && <BrandRequestDialog sourceId={requestSource.rem_brand_id} initialName={requestSource.brand_name_rem || ""} onCancel={() => setRequestSource(null)} onCreated={() => { setRequestSource(null); setNotice("ส่งคำขอเพิ่มแบรนด์แล้ว สร้างโครงการเป็นข้อมูลร่างและเลือกแบรนด์ภายหลังได้"); }} />}
+    </div>
+  </section>;
+}
+
+function StatusBadge({ project }: { project: Project }) {
+  const unavailable = Boolean(project.published_version_id) && project.publication_available === false;
+  return <span className={`status-badge ${project.publication_available ? "published" : "draft"}`}><span />{unavailable ? "หยุดแสดงผ่าน API" : project.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</span>;
+}
+function LoadingState() { return <div className="loading-state" role="status"><span className="spinner" />กำลังโหลดข้อมูล…</div>; }
+function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
+
+function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [versionsError, setVersionsError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [action, setAction] = useState<Action | null>(null);
+  const [modelAction, setModelAction] = useState<ModelAction | null>(null);
+  const [tab, setTab] = useState<ProjectTab>("content");
+  const [navigationTarget, setNavigationTarget] = useState<string | null>(null);
+  const [mediaModelId, setMediaModelId] = useState("");
+  const [commercialDirty, setCommercialDirty] = useState(false);
+  const [facilitiesDirty, setFacilitiesDirty] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Draft, string>>>({});
+  const [conflict, setConflict] = useState(false);
+  const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
+  const canEdit = role === "editor" || role === "admin";
+  const canPublish = role === "publisher";
+  const dirty = Boolean(project && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(project)));
+  const relatedDirty = commercialDirty || facilitiesDirty;
+  const anyDirty = dirty || relatedDirty;
+  useEffect(() => { onDirtyChange(anyDirty); return () => onDirtyChange(false); }, [anyDirty, onDirtyChange]);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(""); setConflict(false);
+    try {
+      const data = await request<Project>(base);
+      setProject(data); setDraft(draftFrom(canEdit ? { ...data, ...data.gold_prefill_changes } : data));
+      try { setVersions(await request<Version[]>(`${base}/versions`)); setVersionsError(""); }
+      catch (error) { setVersionsError(error instanceof Error ? error.message : "โหลดประวัติไม่สำเร็จ"); }
+    } catch (error) { setError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ"); }
+    finally { setLoading(false); }
+  }, [base, canEdit]);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (!anyDirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [anyDirty]);
+  useEffect(() => {
+    if (!navigationTarget) return;
+    const target = document.getElementById(navigationTarget);
+    const disclosure = target?.closest("details");
+    if (disclosure) disclosure.open = true;
+    target?.scrollIntoView({ block: navigationTarget.endsWith("-panel") ? "start" : "center" });
+    target?.focus({ preventScroll: true });
+    setNavigationTarget(null);
+  }, [tab, navigationTarget]);
+
+  async function save(event?: FormEvent, nextTab?: ProjectTab) {
+    event?.preventDefault();
+    if (!draft || !project || !canEdit || relatedDirty) return;
+    const errors: Partial<Record<keyof Draft, string>> = {};
+    if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) errors.slug = "ใช้ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง เช่น sena-example";
+    if (draft.latitude && (!Number.isFinite(Number(draft.latitude)) || Math.abs(Number(draft.latitude)) > 90)) errors.latitude = "กรอกค่าระหว่าง -90 ถึง 90";
+    if (draft.longitude && (!Number.isFinite(Number(draft.longitude)) || Math.abs(Number(draft.longitude)) > 180)) errors.longitude = "กรอกค่าระหว่าง -180 ถึง 180";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) { revealField(Object.keys(errors)[0]); return; }
+    setSaving(true); setError(""); setNotice("");
+    try {
+      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude === "" ? null : Number(draft.latitude), longitude: draft.longitude === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer }, meta_title: { ...project.meta_title, th: draft.meta_title }, meta_description: { ...project.meta_description, th: draft.meta_description } };
+      const data = await request<Project>(base, "PATCH", payload);
+      setProject(data); setDraft(draftFrom(data)); setNotice("บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม"); setConflict(false);
+      if (nextTab) goToTab(nextTab);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "บันทึกไม่สำเร็จ");
+      if ((error as { status?: number }).status === 409) setConflict(true);
+    } finally { setSaving(false); }
+  }
+
+  function goToTab(next: ProjectTab) {
+    setTab(next);
+    setNavigationTarget(`${next}-panel`);
+  }
+
+  function acceptMediaUpdate(data: Project) {
+    // Media saves change the revision, not the project form. A conflict reload
+    // may contain somebody else's text: keep the old revision so it cannot be overwritten.
+    if (dirty && project && JSON.stringify(draftFrom(data)) !== JSON.stringify(draftFrom(project))) {
+      setError("ข้อมูลโครงการถูกแก้ไขจากที่อื่น ข้อความที่คุณกำลังแก้ไขยังอยู่ กรุณาตรวจข้อมูลล่าสุดก่อนบันทึก");
+      setConflict(true);
+      return;
+    }
+    setProject(data);
+    if (!dirty) setDraft(draftFrom(data));
+  }
+
+  async function runAction(reason: string) {
+    if (!action) return;
+    await request(`${base}/${action.type}`, "POST", { change_reason: reason, ...(action.version ? { version_id: action.version.version_id } : {}) });
+    const success = action.type === "publish" ? "เผยแพร่ข้อมูลแล้ว ผู้ใช้งาน API จะเห็นเวอร์ชันนี้" : action.type === "withdraw" ? "ถอนการเผยแพร่แล้ว ผู้ใช้งาน API จะไม่เห็นโครงการนี้" : `คืนค่าการเผยแพร่เป็นเวอร์ชัน ${action.version?.version_no} แล้ว`;
+    setAction(null); await load(); setNotice(success);
+  }
+
+  function revealField(name: string) {
+    const anchor = missingAnchor(name);
+    const linkedModel = project?.models?.find(model => name.split(".").some(part => part === model.id || part === model.public_model_id));
+    if (anchor === "models" && linkedModel) setMediaModelId(linkedModel.public_model_id);
+    setTab(anchor === "models" ? "models" : "content");
+    setNavigationTarget(anchor);
+  }
+
+  if (loading) return <LoadingState />;
+  if (!project || !draft) return <><a className="back-link" href="/">← กลับไปยังโครงการทั้งหมด</a><ErrorState message={error} retry={load} /></>;
+  const readiness = project.readiness ?? { ready: false, percent: 0, missing: [] };
+
+  function field(name: keyof Draft, multiline = false, help?: string) {
+    const common = { id: name, name, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); }, "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
+    return <div className="form-field"><label htmlFor={name}>{labels[name]}</label>{multiline ? <textarea {...common} rows={name === "ad_disclaimer" ? 4 : 3} maxLength={name === "meta_description" ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
+  }
+
+  function sourceField(name: string, label: string) {
+    const value = project?.gold_source?.record[name];
+    return <div className="form-field source-field"><label htmlFor={`gold-${name}`}>{label}<span className="field-chip">อ่านอย่างเดียว</span></label><input id={`gold-${name}`} readOnly value={value == null || value === "" ? "ยังไม่มีข้อมูลจาก DW" : String(value)} /></div>;
+  }
+  const tabs: { id: ProjectTab; label: string; icon: "document" | "building" | "shield" }[] = [{ id: "content", label: "ข้อมูลโครงการ", icon: "document" }, { id: "models", label: "แบบที่อยู่อาศัย", icon: "building" }, { id: "versions", label: "เผยแพร่และประวัติ", icon: "shield" }];
+  const sortedModels = [...(project.models ?? [])].sort((a, b) => a.rem_model_id.localeCompare(b.rem_model_id, "en", { numeric: true }));
+  const mediaModel = sortedModels.find(model => model.public_model_id === mediaModelId) ?? sortedModels[0];
+  const goldModelGroups = mediaModel ? project.gold_source?.model_groups?.filter(group => group.model_ids?.includes(mediaModel.rem_model_id)) ?? [] : [];
+  const sourceWarnings = project.gold_source?.provenance.quality_warnings;
+  const goldQualityWarnings = Array.isArray(sourceWarnings) ? sourceWarnings.filter((warning): warning is string => typeof warning === "string" && warning.trim().length > 0) : [];
+  const missingGroups = [
+    { label: "ข้อมูลโครงการ", items: readiness.missing.filter(item => !/model|brand|hero|thumbnail|asset/i.test(item.field)) },
+    { label: "แบรนด์และสื่อ", items: readiness.missing.filter(item => !/model/i.test(item.field) && /brand|hero|thumbnail|asset/i.test(item.field)) },
+    { label: "แบบที่อยู่อาศัย", items: readiness.missing.filter(item => /model/i.test(item.field)) },
+  ];
+
+  return <>
+    <a className="back-link" href="/"><span aria-hidden="true">←</span>โครงการทั้งหมด</a>
+    <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={project} /></div>
+    {notice && <div className="notice success" role="status"><Icon name="check" />{notice}</div>}
+    {error && <div className="notice error" role="alert"><div><strong>{error}</strong>{conflict && <p>ข้อมูลร่างของคุณยังอยู่ กรุณาคัดลอกข้อความที่ต้องการเก็บ ก่อนโหลดข้อมูลล่าสุด</p>}</div>{conflict && <button className="button secondary" onClick={() => void load()}>โหลดข้อมูลล่าสุด</button>}</div>}
+    <div className="project-readiness-strip" aria-label="สรุปความพร้อม"><div><strong>{readiness.ready ? "ผ่านเงื่อนไขการเผยแพร่ชุดปัจจุบัน" : "ยังมีเงื่อนไขก่อนเผยแพร่"}</strong><span>{readiness.ready ? "ข้อมูลที่บันทึกผ่านรายการตรวจสอบแล้ว" : `เหลือ ${readiness.missing.length} รายการที่ต้องตรวจสอบ`}</span></div><button className="button text-button" onClick={() => { setTab("versions"); requestAnimationFrame(() => document.getElementById("versions-tab")?.focus()); }}>ตรวจความพร้อม<Icon name="arrow" size={17} /></button></div>
+    <p className="project-flow-hint">เริ่มจากข้อมูลและสื่อโครงการ → จัดเตรียมแบบที่อยู่อาศัย → ตรวจความพร้อมก่อนส่งต่อ</p>
+    <div className="detail-tabs project-tabs" role="tablist" aria-label="ส่วนงานโครงการ">{tabs.map((item, index) => <button key={item.id} id={`${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => goToTab(item.id)} onKeyDown={event => { const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0; if (!offset && event.key !== "Home" && event.key !== "End") return; event.preventDefault(); const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length].id; setTab(next); document.getElementById(`${next}-tab`)?.focus(); }}><span className="workflow-step" aria-hidden="true">{index + 1}</span>{item.label}{item.id === "models" && <span className="tab-count">{project.commercial_types?.length ?? 0}</span>}</button>)}</div>
+    <div className="project-workspace">
+      <div id="content-panel" role="tabpanel" tabIndex={-1} aria-labelledby="content-tab" hidden={tab !== "content"}>
+        <form id="project-details-form" onSubmit={save} noValidate>
+          <section className="panel project-details" aria-labelledby="project-details-title"><div className="panel-heading"><div><span className="section-chip">รายละเอียดโครงการ</span><h2 id="project-details-title">ชื่อและที่ตั้งโครงการ</h2><p>ตรวจข้อมูลอ้างอิงจาก DW แล้วปรับชื่อและที่อยู่สำหรับการสื่อสาร</p></div><span className="language-chip">ไทย · English</span></div><div className="panel-body">
+            {!canEdit && <p className="read-only-note"><Icon name="shield" size={16} />บัญชีนี้อ่านข้อมูลได้ การแก้ไขเป็นหน้าที่ของผู้แก้ไขข้อมูล</p>}
+            {!project.gold_source && <p className="read-only-note">ยังไม่มีสำเนา gold.dim_project ที่ตรวจสอบแล้ว จึงยังแสดงหรือเติมค่าเริ่มต้นจาก DW ไม่ได้ ข้อมูลร่างที่เคยบันทึกไว้ยังคงเดิม</p>}
+            {canEdit && project.gold_prefill_changes && Object.keys(project.gold_prefill_changes).length > 0 && dirty && <p className="read-only-note" role="note">เติมค่าเริ่มต้นจาก DW ในช่องที่ยังไม่ได้กรอกให้แล้ว กรุณาตรวจสอบและกดบันทึกข้อมูลร่าง ค่าเหล่านี้ยังไม่ได้บันทึกหรือเผยแพร่</p>}
+            {project.gold_source && <details className="prefill-preview"><summary>ดูค่าอ้างอิงจาก DW</summary><p className="field-help">ระบบเสนอค่าเริ่มต้นในช่องที่ยังไม่ได้กรอก ข้อมูลที่ทีมงานแก้แล้วจะคงเดิม ตรวจสอบก่อนบันทึกข้อมูลร่าง</p><dl className="snapshot-list">{["commercial_project_name", "commercial_project_name_eng", "moo", "soi", "road", "subdistrict", "district", "province", "postcode", "moo_eng", "soi_eng", "road_eng", "subdistrict_eng", "district_eng", "province_eng", "latitude", "longitude"].map(key => <div key={key}><dt>{key}</dt><dd>{String(project.gold_source?.record[key] ?? "—")}</dd></div>)}</dl><p className="field-help">ที่อยู่อังกฤษใช้รหัสไปรษณีย์เดียวกับภาษาไทย เพราะต้นทางไม่มี postcode_eng</p></details>}
+            {goldQualityWarnings.length > 0 && <div className="inline-warning" role="note" aria-label="ข้อควรตรวจสอบจาก DW"><strong>ข้อควรตรวจสอบจาก DW</strong><ul>{goldQualityWarnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
+            <div className="project-fields">
+              {sourceField("commercial_brand", "แบรนด์")}
+              {sourceField("project_id", "รหัสโครงการ")}
+              {sourceField("rem_project_group_id", "รหัสกลุ่มโครงการ")}
+              {sourceField("project_name", "ชื่อโครงการไทยจาก REM")}
+              {field("public_name", false, "ชื่อที่ใช้สื่อสารกับลูกค้า แก้ไขได้โดยไม่เปลี่ยนชื่อทางการจาก REM")}
+              {sourceField("project_name_eng", "ชื่อโครงการ (Eng) จาก REM")}
+              {field("public_name_en")}
+              {field("address", true)}
+              {field("address_en", true)}
+              {field("latitude", false, project.gold_source?.record.latitude == null ? "ต้นทาง DW ยังไม่มีละติจูด กรุณาระบุพิกัดที่ตรวจสอบแล้ว" : undefined)}
+              {field("longitude", false, project.gold_source?.record.longitude == null ? "ต้นทาง DW ยังไม่มีลองจิจูด กรุณาระบุพิกัดที่ตรวจสอบแล้ว" : undefined)}
+            </div>
+          </div></section>
+        </form>
+        <ProjectAssets project={project} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} />
+        <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+        <details className="panel project-settings"><summary><span>ข้อมูลประกอบและการเชื่อมต่อ</span><span className="muted small-text">ข้อความกำกับ · SEO · รหัส URL</span></summary><div className="panel-body">{field("ad_disclaimer", true, "กรอกข้อความที่ได้รับการตรวจสอบแล้ว ไม่ใช้คำแนะนำจากระบบแทนการอนุมัติ")}{field("meta_title")}{field("meta_description", true)}{field("slug", false, "รหัสข้อความสำหรับ URL ที่ทีมเว็บไซต์นำไปใช้ได้ เช่น flexi-sathon ผู้ดูแลเป็นผู้กำหนด แยกจากรหัสโครงการ REM และชื่อคอมเมอเชียล ใช้อักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง")}</div></details>
+        <details className="panel project-settings" id="source"><summary><span>ข้อมูลต้นทางและการผูกแบรนด์</span><span className="muted small-text">อ่านหลักฐานและตรวจการเชื่อมโยง</span></summary><dl className="source-list"><div><dt>รหัสโครงการ REM</dt><dd>{project.source?.rem_project_id ?? "—"}</dd></div><div><dt>ชื่อโครงการต้นทาง</dt><dd>{project.source?.project_name_rem ?? "—"}</dd></div><div><dt>ปรับปรุงข้อมูลต้นทาง</dt><dd>{sourceDate(project.source?.source_updated_at)}</dd></div><div><dt>แหล่งข้อมูล REM</dt><dd>{project.source ? sourceProvenance(project.source) : "ยังไม่มีข้อมูลต้นทาง"}</dd></div>{project.source?.source_snapshot_at && <div><dt>เวลาสกัดสำเนา REM</dt><dd>{formatDate(project.source.source_snapshot_at)}</dd></div>}{project.gold_source && <><div><dt>แหล่งข้อมูล DW</dt><dd>{project.gold_source.source_relation}</dd></div><div><dt>เวลาสกัดสำเนา DW</dt><dd>{formatDate(project.gold_source.source_snapshot_at)}</dd></div><div><dt>หลักฐาน DW</dt><dd>{JSON.stringify(project.gold_source.provenance)}</dd></div></>}</dl><ProjectBrandCard project={project} role={role} disabled={anyDirty || saving} onChanged={data => { setProject(data); setDraft(draftFrom(data)); }} /></details>
+      </div>
+      <div id="models-panel" role="tabpanel" tabIndex={-1} aria-labelledby="models-tab" hidden={tab !== "models"}>
+        <section className="panel model-project-context"><div className="panel-body"><div><span className="section-chip">โครงการที่เลือก</span><h2>{project.public_name.th || project.source?.project_name_rem || "โครงการนี้"}</h2><p className="muted small-text">{project.source?.rem_project_id} · แบบทั้งหมดอยู่ภายใต้โครงการนี้</p></div><a className="button secondary" href="/" onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลโครงการที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนโครงการหรือไม่?")) event.preventDefault(); }}>เปลี่ยนโครงการ</a></div></section>
+        <CommercialTypes project={project} role={role} disabled={dirty || facilitiesDirty || saving} onDirtyChange={setCommercialDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+        <details className="panel project-settings"><summary><span>รหัสแบบและข้อมูลอ้างอิง REM</span><span className="muted small-text">ตรวจรหัสต้นทางแยกจากแบบขาย</span></summary>
+    <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>ตรวจรหัสต้นทางและข้อมูลชุดเผยแพร่เดิม ใช้ส่วนแบบขายด้านบนเพื่อเตรียมเนื้อหาใหม่</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
+      {canEdit && <><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "add" })}>เลือกแบบเพิ่มเติมจากต้นทาง</button>{dirty && <p className="field-help">บันทึกข้อมูลโครงการก่อนจัดการแบบที่อยู่อาศัย</p>}</>}
+      {Boolean(sortedModels.length) && <div className="form-field model-selection"><label htmlFor="model-selection">เลือกแบบที่ต้องการจัดการ</label><select id="model-selection" value={mediaModel?.public_model_id ?? ""} onChange={event => setMediaModelId(event.target.value)}>{sortedModels.map(model => { const name = model.public_name.th || model.model_name_rem; return <option key={model.public_model_id} value={model.public_model_id}>{name === model.rem_model_id ? name : `${name} · ${model.rem_model_id}`}</option>; })}</select></div>}
+      {!project.models?.length ? <p className="muted">ยังไม่มีข้อมูลแบบที่อยู่อาศัย</p> : project.models.filter(model => model.public_model_id === mediaModel?.public_model_id).map(model => <article className={`model-card ${mediaModel?.public_model_id === model.public_model_id ? "selected-model" : ""}`} key={model.public_model_id} aria-label={model.public_name.th || model.rem_model_id}>
+        <div className="model-card-heading"><h3>{model.public_name.th || "แบบที่ยังไม่ระบุชื่อ"}</h3><span className={`match-status ${model.match_status.toLowerCase()}`}>{matchLabels[model.match_status]}</span></div>
+        <p className="small-text muted source-code">{model.public_model_id}</p>
+        <dl className="model-source"><div><dt>ชื่อแบบต้นทาง (อ่านอย่างเดียว)</dt><dd>{model.model_name_rem}</dd></div><div><dt>รหัสแบบ REM</dt><dd>{model.rem_model_id}</dd></div></dl>
+        <details className="gold-model-evidence"><summary>ข้อมูลแบบจาก DW สำหรับตรวจสอบ</summary>{!goldModelGroups.length ? <p className="field-help">ยังไม่มีข้อมูล gold.dim_project_model ที่จับคู่กับรหัสแบบนี้ ยังคงใช้ข้อมูล REM เดิมเพื่อรอตรวจสอบ</p> : <>{(goldModelGroups.length > 1 || goldModelGroups.some(group => group.model_attribute_variant)) && <p className="inline-warning">ต้นทางมีหลายกลุ่มหรือหลายรูปแบบ ต้องตรวจสอบความแตกต่างก่อนใช้ข้อมูล</p>}{goldModelGroups.map((group, index) => <dl className="snapshot-list" key={index}><div><dt>ชื่อแบบจาก DW</dt><dd>{group.model_name || "—"} · {group.model_name_eng || "—"}</dd></div><div><dt>รหัสแบบในกลุ่ม</dt><dd>{group.model_ids?.join(", ") || "—"}</dd></div><div><dt>ModelTypeID</dt><dd>{group.model_type_ids?.join(", ") || "—"}</dd></div><div><dt>ช่วงพื้นที่ต้นทาง (ยังไม่ยืนยันหน่วยและความหมาย)</dt><dd>{group.minimum_model_area ?? "—"} – {group.maximum_model_area ?? "—"}</dd></div></dl>)}<p className="field-help">กลุ่มจาก DW ใช้ประกอบการตรวจสอบ ไม่เติมพื้นที่ใช้สอยหรือยืนยันการจับคู่อัตโนมัติ</p></>}</details>
+        <div className="model-specs"><span>{model.bedrooms ?? "—"} ห้องนอน</span><span>{model.bathrooms ?? "—"} ห้องน้ำ</span><span>{model.usable_area_sqm ?? "—"} ตร.ม.</span><span>{model.parking_spaces ?? "—"} ที่จอดรถ</span></div>
+        {model.match_status === "REJECTED" && <p className="field-help">แบบนี้จะไม่รวมในการเผยแพร่ครั้งใหม่ ยืนยันการจับคู่อีกครั้งได้หากตรวจสอบแล้วว่าถูกต้อง</p>}
+        {model.verified_at && <p className="small-text muted review-evidence">ยืนยันเมื่อ {formatDate(model.verified_at)}<br />โดย {model.verified_by}</p>}
+        <div className="model-actions"><button className="button secondary" onClick={() => { setMediaModelId(model.public_model_id); requestAnimationFrame(() => document.getElementById("model-media")?.scrollIntoView({ block: "start" })); }}>รูปภาพและแปลนของแบบนี้</button></div>
+        {canEdit && <div className="model-actions"><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "edit", model })}>แก้ไขรายละเอียดแบบ</button><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "review", model })}>ตรวจสอบการจับคู่</button></div>}
+      </article>)}
+    </div></section>
+
+        {mediaModel && <div id="model-media" className="model-media" tabIndex={-1}><div className="model-media-context"><span className="section-chip">สื่อของแบบที่เลือก</span><h2>{mediaModel.public_name.th || mediaModel.rem_model_id} · {project.source?.rem_project_id}</h2><p className="field-help">ไฟล์ผูกกับโครงการและรหัสแบบนี้ หากมีแปลนต่างกันตามอาคารหรือชั้น ให้ระบุอาคารและชั้นในคำอธิบายไฟล์ การกำหนดขอบเขตอาคาร/ชั้นแบบโครงสร้างจะเพิ่มภายหลัง</p></div><ProjectAssets key={mediaModel.public_model_id} project={project} model={{ public_model_id: mediaModel.public_model_id, name: mediaModel.public_name.th || mediaModel.rem_model_id }} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} /></div>}
+        </details>
+      </div>
+      <div id="versions-panel" role="tabpanel" tabIndex={-1} aria-labelledby="versions-tab" hidden={tab !== "versions"}>
+        <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.missing.length} รายการ</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><p className="small-text muted">{canPublish ? "การเผยแพร่จะบันทึกข้อมูลเป็นเวอร์ชันพร้อมเหตุผล" : "ผู้เผยแพร่เป็นผู้ยืนยันก่อนส่งข้อมูลออกผ่าน API"}</p>{canPublish && <div><button className="button primary" disabled={!readiness.ready || anyDirty || saving} onClick={() => setAction({ type: "publish" })}>เผยแพร่ข้อมูล<Icon name="arrow" size={18} /></button>{project.published_version_id && <button className="button text-button" onClick={() => setAction({ type: "withdraw" })}>ถอนการเผยแพร่</button>}</div>}</div></div></section>
+<section className="panel" id="publication-history"><div className="panel-heading"><div><h2>ประวัติการเผยแพร่</h2><p>ทุกเวอร์ชันเก็บข้อมูล ณ เวลาที่เผยแพร่ไว้สำหรับตรวจสอบ</p></div></div><div className="panel-body">{versionsError ? <ErrorState message={versionsError} retry={load} /> : !versions.length ? <div className="empty-state compact"><Icon name="clock" size={32} /><h3>ยังไม่มีเวอร์ชันที่เผยแพร่</h3><p>เมื่อเผยแพร่ครั้งแรก ประวัติจะปรากฏที่นี่</p></div> : <ol className="version-list">{versions.map(version => <li key={version.version_id}><div className="version-marker">{version.version_no}</div><div className="version-content"><div className="version-heading"><h3>เวอร์ชัน {version.version_no}</h3>{version.version_id === project.published_version_id && <span className="status-badge published">เวอร์ชันที่เลือก</span>}</div><p>{version.change_reason || "ไม่ได้ระบุเหตุผล"}</p><p className="small-text muted">{formatDate(version.published_at)} · {version.publisher || "ผู้เผยแพร่"}</p><details><summary>ดูข้อมูลที่บันทึกในเวอร์ชันนี้</summary><dl className="snapshot-list"><div><dt>ชื่อโครงการ</dt><dd>{version.payload?.public_name?.th ?? "—"}</dd></div><div><dt>ที่อยู่</dt><dd>{version.payload?.address?.th ?? "—"}</dd></div><div><dt>ข้อความกำกับโฆษณา</dt><dd>{version.payload?.ad_disclaimer?.th ?? "—"}</dd></div></dl></details>{canPublish && version.version_id !== project.published_version_id && <button className="button secondary" onClick={() => setAction({ type: "rollback", version })}>คืนค่าเวอร์ชันนี้</button>}</div></li>)}</ol>}</div></section>
+      </div>
+      <div className="save-bar project-save-bar">
+        <div className="workflow-feedback" role="status"><span className={`save-dot ${anyDirty ? "unsaved" : ""}`} /><span>{saving ? "กำลังบันทึก…" : error ? "บันทึกไม่สำเร็จ กรุณาตรวจข้อความแจ้งเตือน" : relatedDirty ? "บันทึกหรือยกเลิกรายการที่กำลังแก้ไขก่อนทำขั้นตอนถัดไป" : dirty ? "มีข้อมูลที่ยังไม่ได้บันทึก" : tab === "content" ? "ข้อมูลร่างโครงการเป็นปัจจุบัน · ถัดไปจัดเตรียมแบบที่อยู่อาศัย" : tab === "models" ? "ถัดไปตรวจความพร้อมของข้อมูลที่บันทึกแล้ว" : "การบันทึกร่างยังไม่ใช่การเผยแพร่"}</span></div>
+        <div className="workflow-actions">
+          {tab !== "content" && <button className="button secondary" onClick={() => goToTab(tab === "models" ? "content" : "models")}>ย้อนกลับ</button>}
+          {canEdit && <button type="submit" form="project-details-form" className="button secondary" disabled={!dirty || relatedDirty || saving}><Icon name="save" />{saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"}</button>}
+          {tab !== "versions" && <button className="button primary" disabled={relatedDirty || saving} onClick={() => { const next = tab === "content" ? "models" : "versions"; if (dirty && canEdit) void save(undefined, next); else goToTab(next); }}>{dirty && canEdit ? "บันทึกและไปต่อ" : tab === "content" ? "ถัดไป: แบบที่อยู่อาศัย" : "ถัดไป: ตรวจความพร้อม"}<Icon name="arrow" size={18} /></button>}
+        </div>
+      </div>
+    </div>
+    {modelAction && <ModelDialog action={modelAction} project={project} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
+    {action && <ActionDialog action={action} projectName={project.public_name.th ?? "โครงการนี้"} onCancel={() => setAction(null)} onConfirm={runAction} />}
+  </>;
+}
+
+function ModelDialog({ action, project, onCancel, onSaved, onReload }: {
+  action: ModelAction; project: Project; onCancel: () => void; onSaved: (data: Project) => void; onReload: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const summary = useRef<HTMLDivElement>(null);
+  const model = action.type === "add" ? null : action.model;
+  const initial = { public_name: model?.public_name.th ?? "", bedrooms: model?.bedrooms?.toString() ?? "", bathrooms: model?.bathrooms?.toString() ?? "", usable_area_sqm: model?.usable_area_sqm?.toString() ?? "", parking_spaces: model?.parking_spaces?.toString() ?? "" };
+  const [values, setValues] = useState(initial);
+  const [sources, setSources] = useState<SourceModel[]>([]);
+  const [sourceId, setSourceId] = useState("");
+  const [loading, setLoading] = useState(action.type === "add");
+  const [decision, setDecision] = useState<"CONFIRMED" | "REJECTED">("CONFIRMED");
+  const [reason, setReason] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [validationAttempt, setValidationAttempt] = useState(0);
+  const [conflict, setConflict] = useState(false);
+  const dirty = JSON.stringify(initial) !== JSON.stringify(values) || Boolean(reason || sourceId);
+  const base = `v1/admin/projects/${encodeURIComponent(project.public_project_id)}`;
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  useEffect(() => {
+    if (action.type !== "add") return;
+    let active = true;
+    request<SourceModel[]>(`${base}/source-models`).then(data => { if (active) setSources(data.filter(source => !source.public_model_id)); }).catch(error => { if (active) setError(error.message); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [action.type, base]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  useEffect(() => { summary.current?.focus(); }, [error, validationAttempt]);
+  const canDiscard = () => !dirty || window.confirm("มีข้อมูลแบบที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?");
+  function cancel() { if (!pending && canDiscard()) onCancel(); }
+  const fieldLabels = { public_name: "ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)", bedrooms: "จำนวนห้องนอน", bathrooms: "จำนวนห้องน้ำ", usable_area_sqm: "พื้นที่ใช้สอย (ตร.ม.)", parking_spaces: "จำนวนที่จอดรถ" };
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setError(""); setConflict(false);
+    const errors: Record<string, string> = {};
+    if (action.type === "edit") {
+      for (const name of ["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"] as const) {
+        const raw = values[name].trim(); const value = Number(raw);
+        if (raw && (!Number.isFinite(value) || value < 0 || (name === "usable_area_sqm" && value <= 0) || (name === "parking_spaces" && !Number.isInteger(value)))) {
+          errors[name] = name === "usable_area_sqm" ? "ระบุพื้นที่มากกว่า 0 หรือเว้นว่างไว้ในฉบับร่าง" : name === "parking_spaces" ? "ระบุจำนวนเต็มตั้งแต่ 0 ขึ้นไป" : "ระบุตัวเลขตั้งแต่ 0 ขึ้นไป รองรับทศนิยม";
+        }
+      }
+    } else if (action.type === "review" && !reason.trim()) errors.reason = "ระบุเหตุผลจากการตรวจสอบ";
+    else if (action.type === "add" && !sourceId) errors.source = "เลือกแบบจากต้นทางก่อน";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) { setValidationAttempt(value => value + 1); return; }
+    setPending(true);
+    try {
+      let data: Project;
+      if (action.type === "edit" && model) {
+        const numbers = Object.fromEntries((["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"] as const).map(key => [key, values[key].trim() ? Number(values[key]) : null]));
+        data = await request<Project>(`${base}/models/${model.public_model_id}`, "PATCH", { updated_at: project.updated_at, public_name: { ...model.public_name, th: values.public_name }, ...numbers });
+      } else if (action.type === "review" && model) {
+        data = await request<Project>(`${base}/models/${model.public_model_id}/review`, "POST", { updated_at: project.updated_at, decision, change_reason: reason.trim() });
+      } else {
+        data = await request<Project>(`${base}/models`, "POST", { rem_model_id: sourceId, updated_at: project.updated_at });
+      }
+      onSaved(data);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "บันทึกไม่สำเร็จ");
+      setConflict((error as { status?: number }).status === 409);
+      setPending(false);
+    }
+  }
+  const title = action.type === "edit" ? "แก้ไขรายละเอียดแบบ" : action.type === "review" ? "ตรวจสอบการจับคู่แบบ" : "เลือกแบบจากต้นทาง";
+  return <dialog ref={dialog} className="action-dialog model-dialog" aria-labelledby="model-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}>
+    <form onSubmit={submit} noValidate><h2 id="model-dialog-title">{title}</h2>
+      {(error || Object.keys(fieldErrors).length > 0) && <div className="notice error model-error-summary" role="alert" tabIndex={-1} ref={summary}><strong>{error || "กรุณาตรวจข้อมูลที่ระบุ"}</strong>{Object.keys(fieldErrors).length > 0 && <ul>{Object.entries(fieldErrors).map(([field, message]) => <li key={field}><a href={`#model-${field}`}>{message}</a></li>)}</ul>}{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" onClick={() => { if (canDiscard()) onReload(); }}>โหลดข้อมูลล่าสุด</button></>}</div>}
+      {model && <dl className="snapshot-list"><div><dt>โครงการต้นทาง</dt><dd>{project.source?.project_name_rem} · {project.source?.rem_project_id}</dd></div><div><dt>ชื่อแบบต้นทาง (อ่านอย่างเดียว)</dt><dd>{model.model_name_rem}</dd></div><div><dt>รหัสแบบ REM</dt><dd>{model.rem_model_id}</dd></div><div><dt>แหล่งข้อมูล</dt><dd>{sourceProvenance(model)}</dd></div><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(model.source_updated_at)}</dd></div><div><dt>เวลาสกัดสำเนาต้นทาง</dt><dd>{formatDate(model.source_snapshot_at)}</dd></div><RawModelEvidence source={model} />{action.type === "review" && <div><dt>ชื่อแบบที่ใช้เผยแพร่</dt><dd>{model.public_name.th || "ยังไม่ระบุชื่อ"}</dd></div>}</dl>}
+      {action.type === "edit" && <><p className="field-help">เว้นข้อมูลที่ยังไม่ทราบไว้ได้ การเผยแพร่ต้องมีชื่อไทย ห้องนอน ห้องน้ำ และพื้นที่ใช้สอยครบถ้วน</p><div className="model-edit-fields">{(Object.keys(fieldLabels) as (keyof typeof values)[]).map(name => <div className="form-field" key={name}>
+        <label htmlFor={`model-${name}`}>{fieldLabels[name]}</label><input id={`model-${name}`} value={values[name]} disabled={pending} inputMode={name === "public_name" ? "text" : name === "parking_spaces" ? "numeric" : "decimal"} maxLength={name === "public_name" ? 250 : 20} aria-invalid={Boolean(fieldErrors[name])} aria-describedby={fieldErrors[name] ? `model-${name}-error` : undefined} onChange={event => { setValues(previous => ({ ...previous, [name]: event.target.value })); setFieldErrors(previous => { const next = { ...previous }; delete next[name]; return next; }); }} />{fieldErrors[name] && <p className="field-error" id={`model-${name}-error`}>{fieldErrors[name]}</p>}
+      </div>)}</div></>}
+      {action.type === "review" && <><p className="field-help">ตรวจสอบว่าแบบนี้ตรงกับชื่อและรหัสต้นทาง การยืนยันนี้รับรองการจับคู่เท่านั้น</p>
+        <fieldset className="review-options" disabled={pending}><legend>ผลการตรวจสอบ</legend><label><input type="radio" name="decision" checked={decision === "CONFIRMED"} onChange={() => setDecision("CONFIRMED")} />ยืนยันว่าจับคู่ถูกต้อง</label><label><input type="radio" name="decision" checked={decision === "REJECTED"} onChange={() => setDecision("REJECTED")} />ปฏิเสธการจับคู่</label></fieldset>
+        {decision === "REJECTED" && <p className="inline-warning" role="status">แบบนี้จะไม่รวมในการเผยแพร่ครั้งใหม่{project.published_version_id ? " หากเวอร์ชันที่เผยแพร่อยู่ใช้แบบนี้ โครงการจะหยุดแสดงผ่าน API ทันที ต้องแก้ไขการจับคู่หรือเผยแพร่เวอร์ชันที่ถูกต้องเพื่อให้กลับมาแสดง" : " ต้องมีแบบที่ยืนยันและข้อมูลครบอย่างน้อยหนึ่งแบบก่อนเผยแพร่"}</p>}
+        <div className="form-field"><label htmlFor="model-reason">เหตุผลในการตรวจสอบ</label><textarea id="model-reason" value={reason} disabled={pending} maxLength={1000} rows={3} aria-invalid={Boolean(fieldErrors.reason)} aria-describedby={fieldErrors.reason ? "model-reason-error" : undefined} onChange={event => setReason(event.target.value)} />{fieldErrors.reason && <p className="field-error" id="model-reason-error">{fieldErrors.reason}</p>}</div>
+      </>}
+      {action.type === "add" && (loading ? <LoadingState /> : sources.length ? <div className="form-field"><label htmlFor="model-source">แบบที่ยังไม่ได้เลือกในโครงการนี้</label><select id="model-source" disabled={pending} value={sourceId} aria-invalid={Boolean(fieldErrors.source)} aria-describedby={fieldErrors.source ? "model-source-error" : undefined} onChange={event => setSourceId(event.target.value)}><option value="">เลือกแบบ</option>{sources.map(source => <option key={source.rem_model_id} value={source.rem_model_id}>{source.model_name_rem} · {source.rem_model_id}</option>)}</select>{fieldErrors.source && <p id="model-source-error" className="field-error">{fieldErrors.source}</p>}<p className="field-help">แบบที่เลือกจะอยู่ในสถานะรอตรวจสอบ</p>{sources.filter(source => source.rem_model_id === sourceId).map(source => <div key={source.rem_model_id}><p className="field-help">{sourceProvenance(source)}</p><dl className="snapshot-list"><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(source.source_updated_at)}</dd></div><RawModelEvidence source={source} /></dl></div>)}</div> : !error && <p className="muted">ไม่มีแบบใหม่จากต้นทาง แบบที่เลือกแล้วแสดงอยู่ในรายการโครงการ</p>)}
+      <div className="dialog-actions"><button type="button" className="button secondary" disabled={pending} onClick={cancel}>ยกเลิก</button><button type="submit" className="button primary" disabled={pending || loading || (action.type === "add" && !sourceId)}>{pending ? "กำลังบันทึก…" : action.type === "edit" ? "บันทึกรายละเอียดแบบ" : action.type === "review" ? "บันทึกผลตรวจสอบ" : "เพิ่มแบบที่เลือก"}</button></div>
+    </form>
+  </dialog>;
+}
+
+function missingAnchor(field: string) {
+  const root = field.split(".")[0];
+  if (/brand/i.test(field)) return "project-brand";
+  if (/model/i.test(field)) return "models";
+  if (/hero|thumbnail|asset/i.test(field)) return "assets";
+  if (/rem|source|crosswalk/i.test(field)) return "source";
+  return root in labels ? root : "content-panel";
+}
+
+function ActionDialog({ action, projectName, onCancel, onConfirm }: { action: Action; projectName: string; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [reason, setReason] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!reason.trim()) { setError("กรุณาระบุเหตุผลเพื่อเก็บไว้ในประวัติ"); return; }
+    setPending(true); setError("");
+    try { await onConfirm(reason.trim()); }
+    catch (error) { setError(error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ"); setPending(false); }
+  }
+  return <dialog ref={dialog} className="action-dialog" aria-labelledby="action-title" aria-describedby="action-description" onCancel={event => { event.preventDefault(); if (!pending) onCancel(); }}><form onSubmit={submit}><div className="section-icon"><Icon name={action.type === "withdraw" ? "alert" : "shield"} size={26} /></div><h2 id="action-title">{actionLabels[action.type]}{action.version ? ` ${action.version.version_no}` : ""}</h2><p id="action-description">{action.type === "publish" ? `เผยแพร่ข้อมูลโครงการชุดปัจจุบันของ “${projectName}” โดยยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวกฉบับร่าง` : action.type === "withdraw" ? `“${projectName}” จะไม่แสดงผ่าน API จนกว่าจะเผยแพร่อีกครั้ง ข้อมูลร่างและประวัติยังอยู่` : `ผู้ใช้งาน API จะเห็นข้อมูลเวอร์ชัน ${action.version?.version_no} โดยข้อมูลร่างยังคงเดิม`}</p><div className="form-field"><label htmlFor="change-reason">เหตุผลในการดำเนินการ</label><textarea id="change-reason" rows={3} value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} disabled={pending} required autoFocus /></div>{error && <div className="notice error" role="alert">{error}</div>}<div className="dialog-actions"><button type="button" className="button secondary" onClick={onCancel} disabled={pending}>ยกเลิก</button><button type="submit" className={`button ${action.type === "withdraw" ? "danger" : "primary"}`} disabled={pending || !reason.trim()}>{pending ? "กำลังดำเนินการ…" : `ยืนยัน${actionLabels[action.type]}`}</button></div></form></dialog>;
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="350" viewBox="0 0 600 350" role="img" aria-labelledby="title desc">
+  <title id="title">ภาพย่อจำลองสำหรับทดสอบ</title>
+  <desc id="desc">เส้นอาคารเชิงสัญลักษณ์ ไม่ใช่ภาพโครงการจริง</desc>
+  <rect width="600" height="350" fill="#eaf0e5"/>
+  <circle cx="300" cy="145" r="105" fill="#f1f5ed" stroke="#ccd9c4"/>
+  <g stroke="#6b8870" stroke-width="3" fill="none" stroke-linejoin="round">
+    <path d="m232 204 0-92 68-53 68 53v92zM217 120l83-65 83 65M282 153h36v51M249 137h22v26h-22zM329 137h22v26h-22zM207 204h186"/>
+  </g>
+  <text x="300" y="298" text-anchor="middle" fill="#2b6247" font-size="17" font-family="Tahoma, sans-serif">ภาพจำลองสำหรับทดสอบ · ไม่ใช่โครงการจริง</text>
+</svg>

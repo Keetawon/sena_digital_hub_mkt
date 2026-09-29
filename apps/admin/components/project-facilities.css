@@ -1,0 +1,14 @@
+.facility-list{display:grid;gap:0;margin-top:20px}.facility-item{padding:18px 0;border-top:1px solid var(--line)}.facility-row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.facility-row>div{flex:1;min-width:150px}.facility-row h3{margin:0;font-size: var(--text-body)}.facility-row p{margin:4px 0 0}.facility-status{border-radius:7px;padding:5px 10px;font-size: var(--text-small);background:var(--surface-soft);color:var(--muted)}.facility-status.unknown{background:var(--warning-soft);color:var(--warning-strong)}.facility-status.present{background:var(--success-soft);color:var(--success-strong)}.facility-status.planned{background:var(--info-soft);color:var(--info-strong)}.facility-editor{margin-top:18px;padding:20px;background:var(--surface-soft);border-radius:10px}.facility-editor fieldset{border:0;margin:0;padding:0}.facility-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}.facility-description{white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:8px}.facility-evidence{font-size: var(--text-label);margin-top:10px;overflow-wrap:anywhere}.facility-evidence summary{cursor:pointer;color:var(--muted)}@media(max-width:520px){.facility-editor{padding:14px}.facility-row .button{margin-left:auto}.facility-actions .button{flex:1}}
+.project-facilities .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.facility-status-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;min-width:0;border:0;margin:14px 0 0;padding:0}
+.facility-status-option{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);font-size:var(--text-label);line-height:1.5;cursor:pointer}
+.facility-status-option input{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--primary)}
+.facility-status-option:has(input:checked){background:var(--primary-soft);border-color:var(--primary);font-weight:600}
+.facility-status-option:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+.facility-status-options:disabled .facility-status-option{cursor:not-allowed;opacity:.6}
+.facility-row .button{min-height:44px}
+.facility-editor>.field-help{margin:0 0 12px}
+.facility-detail-fields{margin-bottom:16px}
+.facility-detail-fields>summary{min-height:44px;padding:10px 0;cursor:pointer;font-size:var(--text-label);color:var(--ink);line-height:1.5}
+.facility-detail-fields[open]>summary{margin-bottom:8px}
+@media(max-width:520px){.facility-status-options{grid-template-columns:repeat(2,minmax(0,1fr))}.facility-status-option{justify-content:flex-start;padding:10px 12px}}
