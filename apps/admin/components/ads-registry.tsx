@@ -4,6 +4,7 @@ import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/r
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
+import { HubShell } from "./hub-shell";
 import { DropdownPop, RegistryRowSummary, RowToCard } from "./registry-motion";
 import "./ads-registry.css";
 
@@ -59,10 +60,8 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
       setDirty(false); window.location.assign(screen === "new" ? "/ads/registry" : window.location.pathname);
     } catch (err) { setError(message(err)); setSwitching(false); }
   }
-  return <div className="registry-shell text-ink">
-    <a href="#registry-title" className="skip-link">ข้ามไปยังเนื้อหา</a>
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5"><a className="text-action font-semibold" href="/">SENA Digital Hub</a><nav aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>ทะเบียนแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{canWrite(initialRole) && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav></header>
-    {localMode && <div className="flex flex-wrap items-center justify-between gap-4 py-4"><p className="text-muted">พื้นที่ทดสอบในเครื่อง</p><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" className="registry-input" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}
+  return <HubShell section="registry" registry roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
+    <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{canWrite(initialRole) && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
     <h1 id="registry-title" tabIndex={-1}>{screen === "new" ? "ลงทะเบียนแคมเปญ" : screen === "inbox" ? "ส่งคืนรหัสแคมเปญ" : "ทะเบียนแคมเปญ"}</h1>
     <p className="text-muted">{screen === "inbox" ? "ส่งรหัสบัญชีและแคมเปญจากแพลตฟอร์มให้ตรงกับชื่อที่ได้รับ" : "ชื่อกลางสำหรับเปิดแคมเปญและเชื่อมรหัสบนแพลตฟอร์ม"}</p>
     {!settings?.sena_h_approved && <aside className="registry-banner" aria-label="สถานะการอนุมัติรูปแบบชื่อ"><strong>รออนุมัติรูปแบบชื่อ</strong><p>{settings?.test_mode ? "ข้อมูลทดสอบ ห้ามใช้เปิดแคมเปญจริง" : "ยังไม่เปิดการออกชื่อสำหรับใช้งานจริง"}</p></aside>}
@@ -73,7 +72,7 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
       <p className="text-muted mt-3">ทีมออนไลน์ลงทะเบียนและออกชื่อได้ ส่วนเอเจนซีอ่านเฉพาะชื่อของตนเองและส่งคืนรหัสแคมเปญ</p>
       <div className="flex flex-wrap gap-3 mt-5">{(["online_staff", "agency_kin", "agency_combay"] as const).map(role => <button key={role} type="button" className={`registry-button${role === "online_staff" ? " primary" : ""}`} disabled={switching} onClick={() => void changeRole(role)}>ใช้บัญชีทดสอบ{roleLabels[role]}</button>)}<a className="registry-button" href="/">กลับไปงานข้อมูลโครงการ</a></div>
     </section> : loading ? <p role="status">กำลังโหลดข้อมูล…</p> : settings && (screen === "new" ? canWrite(initialRole) ? <RegistrationWizard settings={settings} vocab={vocab} onDirty={setDirty} /> : <p role="alert">บัญชีนี้ส่งคืนรหัสและอ่านชื่อของตนเองได้เท่านั้น</p> : <RegistryList role={initialRole} settings={settings} vocab={vocab} inbox={screen === "inbox"} onDirty={setDirty} />)}
-  </div>;
+  </HubShell>;
 }
 
 function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRole; settings: Settings; vocab: Vocab[]; inbox: boolean; onDirty: (dirty: boolean) => void }) {

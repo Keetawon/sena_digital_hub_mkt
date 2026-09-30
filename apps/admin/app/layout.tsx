@@ -15,8 +15,8 @@ const notoSansThai = localFont({
 const googleSans = Google_Sans({ subsets: ["thai", "latin"], display: "swap", variable: "--font-google-sans", adjustFontFallback: false });
 
 export const metadata: Metadata = {
-  title: "SENA Digital Hub · จัดการข้อมูลโครงการ",
-  description: "ระบบหลังบ้านสำหรับจัดเตรียม ตรวจสอบ และเผยแพร่ข้อมูลโครงการที่อยู่อาศัย SENA",
+  title: "SENA Digital Hub · ข้อมูลโครงการและทะเบียนแคมเปญ",
+  description: "พื้นที่ทำงานสำหรับจัดการข้อมูลโครงการ แบรนด์ และทะเบียนชื่อแคมเปญ SENA",
   robots: { index: false, follow: false },
 };
 

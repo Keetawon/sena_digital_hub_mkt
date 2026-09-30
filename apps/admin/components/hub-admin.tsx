@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
+import { HubShell } from "./hub-shell";
 import { ProjectAssets, type AssetBinding } from "./project-assets";
 import { ProjectFacilities, type Facilities } from "./project-facilities";
 import { CommercialTypes, type CommercialType } from "./commercial-types";
@@ -104,25 +105,10 @@ export function HubAdmin({ localMode, initialRole, projectId, brandId = null, vi
     finally { setSwitching(false); }
   }
 
-  return <div className="app-shell">
-    <a className="skip-link" href="#main-content">ข้ามไปยังเนื้อหา</a>
-    <aside className="sidebar" aria-label="เมนูหลัก">
-      <a className="wordmark" href="/" aria-label="SENA Digital Hub หน้ารวมโครงการ"><span className="sena">SENA<span className="brand-dot">.</span></span><span className="wordmark-caption">DIGITAL HUB</span></a>
-      <div className="workspace-label">พื้นที่ทำงาน</div>
-      <nav><a href="/" className={`nav-link ${!brandsView ? "active" : ""}`} aria-current={!brandsView && !projectId ? "page" : undefined}><Icon name="grid" /><span>โครงการที่อยู่อาศัย</span><Icon name="chevron" size={15} /></a><a href="/?view=brands" className={`nav-link ${brandsView ? "active" : ""}`} aria-current={brandsView && !brandId ? "page" : undefined}><Icon name="building" /><span>แบรนด์ที่อยู่อาศัย</span><Icon name="chevron" size={15} /></a></nav>
-      <a href="/ads/registry" className="nav-link"><Icon name="document" /><span>ทะเบียนแคมเปญ</span></a>
-      <div className="sidebar-footer"><span className="scope-label">SENA RESIDENTIAL</span><p>ข้อมูลที่ดูแลร่วมกัน<br />เพื่อเผยแพร่อย่างมั่นใจ</p><div className="sidebar-rule" /><span className="small-text">ระบบหลังบ้านสำหรับทีมงาน</span></div>
-    </aside>
-    <div className="main-shell">
-      <header className="topbar"><div className="breadcrumb"><span>พื้นที่ทำงาน</span><Icon name="chevron" size={14} /><span>{brandsView ? "ข้อมูลแบรนด์" : "ข้อมูลโครงการ"}</span></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{role === "publisher" ? "ผ" : role === "viewer" ? "อ" : role === "admin" ? "ด" : "ท"}</span><span>{role ? roles[role] : "ยังไม่ได้เลือกบัญชี"}</span></div></header>
-      {localMode && <div className="local-banner" role="note"><div className="local-note"><Icon name="shield" size={18} /><span><strong>พื้นที่ทดสอบในเครื่อง</strong> · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด</span></div><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={role ?? ""} disabled={switching} onChange={event => void selectRole(event.target.value as LocalRole)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roles).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}
-      <main id="main-content" tabIndex={-1}>
+  return <HubShell section={brandsView ? "brands" : "projects"} roleLabel={role ? roles[role] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><div className="local-note"><Icon name="shield" size={18} /><span><strong>พื้นที่ทดสอบในเครื่อง</strong> · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด</span></div><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={role ?? ""} disabled={switching} onChange={event => void selectRole(event.target.value as LocalRole)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roles).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}>
         {sessionError && <div className="notice error" role="alert">{sessionError}</div>}
         {!localMode ? <SetupNotice /> : !role ? <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยินดีต้อนรับสู่พื้นที่ทดสอบ</p><h1>เริ่มจากบทบาทของคุณ</h1><p className="muted">ทดลองจัดเตรียมข้อมูลและตรวจสอบความพร้อมก่อนเผยแพร่<br className="desktop-only" /> เลือกบัญชีทดสอบเพื่อเริ่มใช้งาน บัญชีเหล่านี้ไม่ใช่ระบบเข้าสู่ระบบจริง</p><div className="role-cards">{(Object.keys(roles) as LocalRole[]).map(value => <button key={value} className="role-card" disabled={switching} onClick={() => void selectRole(value)}><Icon name={value === "editor" ? "document" : value === "publisher" ? "shield" : "grid"} /><strong>{roles[value]}</strong><span>{value === "editor" ? "แก้ไขและบันทึกข้อมูลร่าง" : value === "publisher" ? "ตรวจสอบ เผยแพร่ และคืนค่า" : value === "admin" ? "จัดการแบรนด์ คำขอ และข้อมูลร่าง" : "อ่านข้อมูลและตรวจสอบสถานะ"}</span><Icon name="arrow" /></button>)}</div></section> : brandsView ? <BrandWorkspace key={`${role}-${brandId || "overview"}`} brandId={brandId} role={role} onDirtyChange={setHasUnsavedDraft} /> : projectId ? <ProjectDetail key={`${projectId}-${role}`} projectId={projectId} role={role} onDirtyChange={setHasUnsavedDraft} /> : <ProjectOverview key={role} role={role} />}
-      </main>
-      <footer className="page-footer"><span>SENA Digital Hub</span><span>จัดเตรียม · ตรวจสอบ · เผยแพร่</span></footer>
-    </div>
-  </div>;
+  </HubShell>;
 }
 
 function SetupNotice() {

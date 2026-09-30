@@ -1,6 +1,6 @@
 # 22 — Hub assistant and UI
 
-Date: 29 September 2026 (Asia/Bangkok). Status: **P1 implemented and verified locally; human Thai readability acceptance pending**.
+Updated: 30 September 2026 (Asia/Bangkok). Status: **P1 implemented locally; current theme: Emerald & Champagne (§1.3); human Thai readability acceptance pending**.
 This slice covers the SENA-H registry list, registration wizard and agency ID-return
 inbox. [Doc 19 §5.1](19-campaign-naming-registry.md#51-registry-schema-sena-h-implemented-in-p1)
 owns identity, permissions and issuing. [The priority plan](ads/PHASE1_PRIORITIES.md)
@@ -8,13 +8,17 @@ owns sequencing. P1.0 itself changed documentation only. The owner has now autho
 P1.1–P1.5, approved an Online-supplied per-boost corporate LABEL, and confirmed that
 agencies see only their own names and return IDs only.
 
-## 1. Flip7 → Tailwind v4 tokens
+## 1. Theme tokens → Tailwind v4
+
+**Current visual direction:** the owner's luxury green-and-gold request supersedes the
+Flip7 palette. §1.3 defines the current values and measured contrast. The original
+Flip7 table and §1.1–1.2 remain historical implementation evidence.
 
 `apps/admin/styles/tokens.css` remains the value source. P1.1 adds `tailwindcss` v4,
 `@tailwindcss/postcss` and `motion`; no Tailwind JavaScript configuration or new component
 library. Use top-level `@theme inline` aliases so utility classes resolve existing CSS
-variables. The Flip7 mapping below is implemented; the previous InsightDeck values
-are replaced only where the mapping calls for it. Existing token names remain
+variables. The Flip7 mapping below was the first P1 implementation, replacing the
+previous InsightDeck values. Existing token names remain
 defined and existing component CSS stays in place.
 
 | Value token in tokens.css | Value | Tailwind theme alias | Use / compatibility |
@@ -36,8 +40,8 @@ defined and existing component CSS stays in place.
 | `--line` | existing `#E2E8F0` | `--color-line` | Decorative row dividers only; not the sole input boundary |
 
 Keep remaining `--primary-*`, `--secondary-*`, `--tertiary-*`, `--art-*`, status-soft/line,
-brand-ink/accent, shadow and scrim names working for existing screens. They are retained
-compatibility values, not a license to use unmeasured pairs on new registry screens.
+brand-ink/accent, shadow and scrim names working for existing screens. The Hub integration
+in §1.2 remaps the compatibility aliases to Flip7; semantic status values remain distinct.
 P1.1 keeps existing component CSS. Tailwind Preflight can affect existing controls/table
 borders: the existing Playwright suite is included in the verification run.
 
@@ -115,6 +119,146 @@ print(f"{(b + .05) / (a + .05):.4f}:1")
 # Actual output: 5.1507:1
 ```
 
+### 1.2 Shared Hub navigation and theme, 30 September 2026
+
+The owner requested the naming registry in the Digital Hub menu and the registry's
+theme, fonts and motion throughout the existing Hub. This is an authorized P1 UI
+integration; it adds no P2–P5 workflows or financial features.
+
+`HubShell` supplies one main navigation, header, skip link, main landmark and footer
+for projects, brands and all three registry screens. The registry link now sits inside
+`เมนูหลัก` alongside the two residential sections. The selected section remains marked
+on detail/wizard/inbox pages. Registry subnavigation uses `รายการชื่อแคมเปญ`,
+`ส่งคืนรหัสแคมเปญ` and the existing role-gated `ลงทะเบียนแคมเปญ` link. On small screens
+the menu wraps above the content, with no horizontal scrolling or fixed text heights.
+
+Navigation retains the caller's role. Entering the registry with a residential account
+still shows the explicit Online/agency test-account choices, and its API access remains
+denied. The existing local role selectors, dirty-form guards, registry approval banner
+and agency restrictions keep their behavior.
+
+Existing CSS uses compatibility aliases rather than a second palette:
+
+| Alias group | Mapping |
+|---|---|
+| primary soft / hover soft / line | warm / canvas / line-strong |
+| secondary / strong / soft / hover soft / line | action / ink / warm / warm / line |
+| tertiary / strong / soft / line | ink / ink / gold / gold |
+| art background / surface / line | brand / warm / line-strong |
+
+Shared controls use dark teal primary actions, ink secondary text, visible line-strong
+boundaries and 8px corners; panels use 12px corners. The local-test banner and selected
+navigation use warm surfaces. Gold accents always use ink text. Disabled buttons retain
+legible text instead of reducing the whole button's opacity. Brand wordmark colors and
+semantic success/warning/error/info tokens remain distinct.
+
+All these text pairs already appear in §1.1 except the two compatibility combinations
+below. Recomputed using the same sRGB formula with Python on 30 September 2026:
+
+| Foreground | Background | Measured ratio | Use |
+|---|---|---:|---|
+| `#115E59` primary-strong | `#FFF8E7` warm | 7.1620:1 | Existing section labels on warm panels |
+| `#115E59` primary-strong | `#EFF8F7` canvas | 7.0202:1 | Existing dark-teal labels on canvas |
+
+The root already loads Google Sans Thai and the self-hosted Noto fallback; no second
+font loader is added. Headings and controls share Google Sans across both modules.
+Dense residential source/snapshot lists, model specifications and facts now use the
+same Noto-first 15px/1.6 stack as registry tables. The human readability protocol in §2
+remains open.
+
+### 1.3 Emerald & Champagne — luxury green and gold, 30 September 2026
+
+Owner-requested color design for the existing Hub. Deep emerald anchors navigation
+and project artwork; ivory keeps tables and forms comfortable for sustained work.
+Brushed brass adds thin rules, selected-menu markers and small accents. Champagne
+surfaces highlight context. Solid colors keep contrast predictable; no metallic text,
+shimmer, background photography or transparency behind data is needed.
+
+| Token | Value | Role |
+|---|---|---|
+| canvas | `#F6F3EB` | Ivory workspace |
+| surface | `#FFFEFA` | Porcelain cards, forms, tables |
+| surface-warm | `#EFE8D8` | Champagne table headers and contextual panels |
+| ink | `#14291F` | Deep green body text |
+| muted / read-only | `#53645A` | Supporting text |
+| sidebar | `#102D23` | Deep emerald navigation |
+| sidebar-active | `#214536` | Selected/hovered navigation and artwork medallions |
+| sidebar-ink | `#F6F1E4` | Ivory navigation text |
+| sidebar-muted | `#C1CEBC` | Supporting navigation text |
+| sidebar-line | `#49614B` | Decorative navigation separator |
+| brand | `#214D39` | Forest-green project artwork; use light foregrounds |
+| action / primary-strong | `#18523D` / `#103A2C` | Primary action / hover |
+| gold | `#BDA36B` | Brushed-brass fills and decorative rules; ink text on fills |
+| gold-light | `#D8C28D` | Gold text and focus on dark green |
+| gold-strong | `#7A622A` | Gold labels/indicators on light surfaces |
+| line / line-strong | `#DCD6C7` / `#788477` | Decorative separators / control boundaries |
+| success-strong | `#0F6444` | Status text, darkened for champagne backgrounds |
+| coral-strong / danger | `#A43B27` | Error text and destructive actions |
+
+Compatibility aliases from §1.2 continue to work. Artwork's surface now maps to
+sidebar-active and its decorative line to gold; its icon and label use gold-light.
+The wordmark uses ivory and gold on the sidebar. Navigation focus uses gold-light
+with a sidebar-colored gap; ordinary control focus remains dark green with a porcelain
+gap. Gold never replaces readable text or becomes the sole status indicator.
+
+Typography, sizes, spacing, menu structure, registration behavior and reduced-motion
+rules are retained. Existing Google Sans Thai headings and Noto Thai data typography
+carry the same appearance through every screen. Motion remains quiet and brief.
+
+Measured with the sRGB formula in §1.1 before applying the palette. Ratios below are
+computed, not copied from a palette reference; text requires 4.5:1 and UI edges 3:1.
+
+| Foreground | Background | Measured ratio | Decision |
+|---|---|---:|---|
+| `#14291F` ink | `#FFFEFA` surface | 15.2258:1 | Body text |
+| `#14291F` ink | `#F6F3EB` canvas | 13.8570:1 | Body text |
+| `#14291F` ink | `#EFE8D8` warm | 12.5882:1 | Panel/table text |
+| `#53645A` muted | `#FFFEFA` surface | 6.2334:1 | Supporting text |
+| `#53645A` muted | `#F6F3EB` canvas | 5.6731:1 | Supporting text |
+| `#53645A` muted | `#EFE8D8` warm | 5.1536:1 | Supporting/disabled text |
+| `#FFFEFA` surface | `#18523D` action | 8.9961:1 | Button text; inverse pair also passes |
+| `#FFFEFA` surface | `#103A2C` hover | 12.5083:1 | Hover button text |
+| `#18523D` action | `#F6F3EB` canvas | 8.1873:1 | Links/focus |
+| `#18523D` action | `#EFE8D8` warm | 7.4377:1 | Links/focus |
+| `#214D39` brand | `#FFFEFA` surface | 9.5223:1 | Existing facility control accent |
+| `#214D39` brand | `#F6F3EB` canvas | 8.6663:1 | Existing facility focus |
+| `#214D39` brand | `#EFE8D8` warm | 7.8728:1 | Selected facility control edge |
+| `#103A2C` primary-strong | `#F6F3EB` canvas | 11.3838:1 | Existing section labels |
+| `#103A2C` primary-strong | `#EFE8D8` warm | 10.3415:1 | Existing section labels |
+| `#F6F1E4` sidebar-ink | `#102D23` sidebar | 13.0981:1 | Navigation text |
+| `#F6F1E4` sidebar-ink | `#214536` active | 9.4562:1 | Hover navigation text |
+| `#C1CEBC` sidebar-muted | `#102D23` sidebar | 9.0192:1 | Sidebar supporting text |
+| `#D8C28D` gold-light | `#102D23` sidebar | 8.4557:1 | Gold labels/focus |
+| `#D8C28D` gold-light | `#214536` active | 6.1046:1 | Selected navigation/artwork text |
+| `#D8C28D` gold-light | `#214D39` brand | 5.5009:1 | Artwork foreground |
+| `#7A622A` gold-strong | `#FFFEFA` surface | 5.7675:1 | Gold text/indicators |
+| `#7A622A` gold-strong | `#F6F3EB` canvas | 5.2490:1 | Gold text/indicators |
+| `#7A622A` gold-strong | `#EFE8D8` warm | 4.7684:1 | Gold text/indicators |
+| `#14291F` ink | `#BDA36B` gold | 6.3034:1 | Gold badge/step text |
+| `#14291F` ink | `#EF6C4A` coral | 5.0589:1 | Retained attention-fill text |
+| `#788477` line-strong | `#FFFEFA` surface | 3.8783:1 | Control edge only |
+| `#788477` line-strong | `#F6F3EB` canvas | 3.5297:1 | Control edge only |
+| `#788477` line-strong | `#EFE8D8` warm | 3.2065:1 | Control edge only |
+| `#A43B27` danger | `#FFFEFA` surface | 6.4357:1 | Error text; inverse button pair passes |
+| `#A43B27` danger | `#F6F3EB` canvas | 5.8572:1 | Error text |
+| `#A43B27` danger | `#EFE8D8` warm | 5.3209:1 | Error text |
+| `#A43B27` danger | `#FEF2F2` danger-soft | 5.9372:1 | Existing error panels |
+| `#0F6444` success | `#FFFEFA` surface | 7.1102:1 | Success text |
+| `#0F6444` success | `#F6F3EB` canvas | 6.4710:1 | Success text |
+| `#0F6444` success | `#EFE8D8` warm | 5.8785:1 | Success text |
+| `#0F6444` success | `#ECFDF5` success-soft | 6.8116:1 | Existing success badges |
+| `#92400E` warning | `#EFE8D8` warm | 5.8086:1 | Retained warning text |
+| `#1D4ED8` info | `#EFE8D8` warm | 5.4903:1 | Retained info text |
+| `#BDA36B` gold | `#FFFEFA` surface | 2.4155:1 | Reject for text/essential edges; decoration only |
+| `#BDA36B` gold | `#214536` active | 4.3749:1 | Reject normal text; use gold-light |
+| `#18523D` action | `#102D23` sidebar | 1.6271:1 | Reject sidebar focus; use gold-light |
+
+The earlier danger/success shades measured 4.4132:1 and 4.4927:1 on champagne and
+were darkened as above. Semantic status backgrounds and wording remain distinct.
+ui-ux-pro-max's luxury/premium palette search supports restrained gold accents on
+neutral surfaces; its generic marketing hero, glass and Latin font suggestions do
+not fit this Thai administration interface and are not applied.
+
 ## 2. Google Sans Thai and dense-table readability
 
 Inspected installed Next.js 16.3.5's `next/dist/compiled/@next/font/dist/google/index.d.ts`:
@@ -186,6 +330,9 @@ the timings below define the Hub interaction choices.
 | Wizard cascading picker | `DropdownPop`: scale .96→1 and opacity, 140ms; origin at trigger | Search/checkbox list with visible labels, arrows/Enter/Esc as appropriate. Closing restores trigger focus. For ≥2 selection use checkboxes, never a hover-only menu. Reduced motion: scale off, instant or ≤100ms fade. |
 | Wizard step change and preview | Static step panels, optional ≤150ms opacity | Next focuses step heading; validation failure focuses error summary. Announce latest preview politely without moving focus; no row morph or decorative slide. Reduced motion: instant. |
 | ID-return inbox → binding card | Reuse `RowToCard`, same backdrop and tabs | First editable field receives focus; save announces outcome. Deep link contains code/tab only, no sensitive form inputs. Reduced motion same as list. |
+| Shared Hub workspaces and residential tabs | 180ms content opacity; existing data renders immediately | No delayed loading, focus or data changes. Reduced motion: no entry animation. |
+| Residential dialogs / backdrop | Scale .96→1 with opacity, 140ms; backdrop fade 180ms | Retain native dialog focus/Esc and existing form guards. Reduced motion: instant. |
+| Project, brand and role cards / buttons | Pointer hover raises cards by 2px; button press scales to .98; 140ms | No table-cell or layout dimensions animate. Hover only on hover-capable devices; no transforms with reduced motion. |
 
 Proposed list URL: `/ads/registry?registration=SN2600101Y&tab=names`, retaining
 search/filter/page on close. A direct link loads the permitted detail without needing
@@ -398,6 +545,55 @@ the existing local-session proxy for local testing. The API supports verified pr
 JWT role/agency claims, but connecting a production browser sign-in/session remains a
 deployment prerequisite; local demo role selection is never enabled outside local mode.
 
+### 5.2 Shared Hub integration verification, 30 September 2026
+
+Actual commands on the updated local production build:
+
+| Command | Result |
+|---|---|
+| `npm.cmd run typecheck --prefix apps/admin` | Exit 0; `tsc --noEmit` |
+| `npm.cmd run build --prefix apps/admin` | Exit 0; compiled successfully; existing Google Sans automatic-metric warning remains |
+| `npm.cmd run test:ui -- tests/ui/hub-navigation.spec.ts tests/ui/ads-registry.spec.ts` | `9 passed (29.9s)` |
+| `npm.cmd run test:ui` | `54 passed (2.2m)` |
+
+The three new navigation tests cover all main sections and registry subpages, selected
+menu state, explicit role preservation, keyboard links, and 375px with 200% root text
+size and reduced motion. Existing tests still cover issuing, agency isolation, dialog
+focus, dirty forms, media uploads, publishing and rollback. No API/database source
+changed, and backend/database test suites were not rerun for this UI-only integration.
+
+Inspected desktop project list, project detail, registry list and mobile registry
+screenshots. Browser measurements found no horizontal overflow in these samples and
+no runtime errors in the project-list/registry checks. Chromium rendered-font evidence
+shows Google Sans 18pt for both Thai page headings and Noto Sans Thai at 15px for an
+expanded residential source-data label. The first source-font probe targeted collapsed
+content and returned no glyphs; the recorded Noto result is from the visible label.
+Human readability acceptance is still pending; the automated 200% check changes root
+text size and does not claim native browser zoom coverage.
+
+The local web server was restarted with the updated build. No Supabase migration,
+deployment, commit or push was performed as part of this UI integration.
+
+### 5.3 Luxury palette verification, 30 September 2026
+
+After applying §1.3, typecheck and production build both exited 0. The existing Google
+Sans automatic-metric warning remains; the explicit Thai font setup is unchanged.
+`npm.cmd run test:ui -- tests/ui/hub-navigation.spec.ts tests/ui/ads-registry.spec.ts`
+returned **`9 passed (29.8s)`**, including mobile 200% text, reduced motion, role
+preservation, agency isolation and the registration flows. The full 54-test result in
+§5.2 predates this color change; it was not rerun for the palette-only follow-up.
+
+Browser-computed text/background checks sampled 29 pairs across projects, registry
+and wizard; all exceeded 4.5:1, with a minimum of **4.7684:1**. Keyboard focus in the
+sidebar renders a solid 2px gold-light outline. Registry widths 1440, 768 and 375px had
+no horizontal document overflow, and the completed browser smoke check reported zero
+runtime errors. Desktop project, registry, wizard and mobile registry screenshots were
+visually inspected. These are sampled engineering checks, not a full accessibility audit.
+
+The local production server now serves the Emerald & Champagne design. The change is
+limited to palette tokens, shared/sidebar styling, registry accents and this document;
+earlier uncommitted navigation changes are preserved. Nothing was committed or pushed.
+
 ## 6. Assistant — TODO (owner P5)
 
 Headed placeholder only. Design tools, panel, citations, streaming and Thai evaluation
@@ -415,7 +611,8 @@ Headed placeholder only; pending DW read-back contract.
 
 Headed placeholder only; pending access and hosting decisions.
 
-## 10. Other ads screens / wider UI refresh — TODO (outside P1)
+## 10. Other ads screens — TODO (outside P1)
 
-P2–P5 own their respective screens above. Remaining financial flows and broader UI
-refresh belong to separately scheduled P6; no design or implementation starts here.
+P2–P5 own their respective screens above. Remaining financial flows and additional
+redesign belong to separately scheduled P6. The owner-requested shared navigation/theme
+integration in §1.2 is limited to existing Hub screens and the P1 naming registry.

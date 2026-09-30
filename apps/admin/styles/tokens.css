@@ -9,46 +9,53 @@
   --text-body: 1.0625rem;
   --text-subheading: 1.125rem;
   --text-heading: 1.25rem;
-  /* Flip7; measured pairs and compatibility aliases: docs/22. */
-  --canvas: #eff8f7;
-  --surface: #ffffff;
-  --surface-warm: #fff8e7;
+  /* Emerald & Champagne; measured pairs: docs/22 section 1.3. */
+  --canvas: #f6f3eb;
+  --surface: #fffefa;
+  --surface-warm: #efe8d8;
   --surface-soft: var(--surface-warm);
-  --sidebar: var(--surface);
-  --ink: #0f172a;
-  --muted: #475569;
-  --read-only: #475569;
-  --line: #e2e8f0;
-  --line-strong: #64748b;
+  --sidebar: #102d23;
+  --sidebar-active: #214536;
+  --sidebar-ink: #f6f1e4;
+  --sidebar-muted: #c1cebc;
+  --sidebar-line: #49614b;
+  --ink: #14291f;
+  --muted: #53645a;
+  --read-only: var(--muted);
+  --line: #dcd6c7;
+  --line-strong: #788477;
 
-  --brand: #2ba8a2;
-  --action: #177a75;
-  --gold: #ffd23f;
+  --brand: #214d39;
+  --action: #18523d;
+  --gold: #bda36b;
+  --gold-light: #d8c28d;
+  --gold-strong: #7a622a;
   --coral: #ef6c4a;
-  --coral-strong: #b8442a;
+  --coral-strong: #a43b27;
   --primary: var(--brand);
   --primary-action: var(--action);
-  --primary-strong: #115e59;
-  --primary-soft: #f0fdfa;
-  --primary-hover-soft: #ccfbf1;
-  --primary-line: #99f6e4;
-  --secondary: #9333ea;
-  --secondary-strong: #7e22ce;
-  --secondary-soft: #faf5ff;
-  --secondary-hover-soft: #f3e8ff;
-  --secondary-line: #d8b4fe;
-  --tertiary: #ec4899;
-  --tertiary-strong: #be185d;
-  --tertiary-soft: #fdf2f8;
-  --tertiary-line: #fbcfe8;
-  --art-background: var(--primary-hover-soft);
-  --art-surface: var(--primary-soft);
-  --art-line: var(--primary-line);
+  --primary-strong: #103a2c;
+  /* Compatibility aliases keep every Hub screen on the registry palette. */
+  --primary-soft: var(--surface-warm);
+  --primary-hover-soft: var(--canvas);
+  --primary-line: var(--line-strong);
+  --secondary: var(--action);
+  --secondary-strong: var(--ink);
+  --secondary-soft: var(--surface-warm);
+  --secondary-hover-soft: var(--surface-warm);
+  --secondary-line: var(--line);
+  --tertiary: var(--ink);
+  --tertiary-strong: var(--ink);
+  --tertiary-soft: var(--gold);
+  --tertiary-line: var(--gold);
+  --art-background: var(--brand);
+  --art-surface: var(--sidebar-active);
+  --art-line: var(--gold);
   --focus: var(--primary-action);
 
   /* Semantic status colors stay distinct from navigation and actions. */
   --success: #10b981;
-  --success-strong: #047857;
+  --success-strong: #0f6444;
   --success-soft: #ecfdf5;
   --success-line: #a7f3d0;
   --warning: #f59e0b;
@@ -64,10 +71,10 @@
   --info-soft: #eff6ff;
   --info-line: #bfdbfe;
 
-  --brand-ink: #1e4634;
-  --brand-accent: #2b6247;
-  --shadow-soft: #0f172a0f;
-  --shadow-raised: #0f172a30;
-  --shadow-sticky: #0f172a08;
-  --scrim: #0f172a66;
+  --brand-ink: var(--sidebar-ink);
+  --brand-accent: var(--gold-light);
+  --shadow-soft: #102d230f;
+  --shadow-raised: #102d2330;
+  --shadow-sticky: #102d2308;
+  --scrim: #102d2366;
 }

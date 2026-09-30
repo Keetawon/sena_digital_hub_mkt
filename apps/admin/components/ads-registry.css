@@ -1,10 +1,11 @@
-.registry-shell { max-width: 1440px; margin: auto; padding: 24px; min-height: 100vh; }
+.registry-shell { min-width: 0; }
+.registry-subnav { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
 .registry-shell :focus-visible, .registry-card :focus-visible { outline: 2px solid var(--action); outline-offset: 2px; box-shadow: 0 0 0 2px var(--surface); }
 .registry-shell button:disabled, .registry-card button:disabled { opacity: 1; color: var(--muted); background: var(--surface-warm); cursor: not-allowed; }
 .registry-shell nav { display: flex; gap: 8px; flex-wrap: wrap; }
 .registry-shell nav a { min-height: 44px; padding: 8px 12px; text-decoration: underline; text-underline-offset: 4px; color: var(--action); }
-.registry-shell nav a[aria-current="page"] { color: var(--ink); background: var(--surface-warm); border-radius: 8px; font-weight: 600; }
-.registry-banner { padding: 16px 20px; background: var(--surface-warm); border: 1px solid var(--line-strong); border-radius: 10px; margin: 20px 0; }
+.registry-shell nav a[aria-current="page"] { color: var(--gold-strong); background: var(--surface-warm); border-radius: 8px; font-weight: 600; }
+.registry-banner { padding: 16px 20px; background: var(--surface-warm); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 10px; margin: 20px 0; }
 .registry-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 16px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); border-radius: 8px; font-size: 1rem; }
 .registry-button:hover:not(:disabled) { background: var(--surface-warm); }
 .registry-button.primary { background: var(--action); border-color: var(--action); color: var(--surface); }
@@ -41,7 +42,6 @@
 .registry-steps li { padding: 10px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line-strong); }
 .registry-steps li[aria-current="step"] { background: var(--gold); font-weight: 600; }
 @media (max-width: 640px) {
-  .registry-shell { padding: 16px; }
   .registry-panel, .registry-card { padding: 16px; }
   .registry-dialog { padding: 12px; }
   .registry-table, .registry-table tbody, .registry-table tr, .registry-table td { display: block; width: 100%; }
