@@ -19,6 +19,7 @@ from . import assets as asset_files
 from .facilities import register_facility_routes
 from .commercial_types import register_commercial_routes
 from .ads import register_ads_routes
+from .finance import register_finance_routes
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -735,4 +736,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_facility_routes(app, admin, writer, database, detail)
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_ads_routes(app, authentication, database, settings)
+    register_finance_routes(app, authentication, database)
     return app

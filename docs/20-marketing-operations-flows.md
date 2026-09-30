@@ -1,10 +1,35 @@
 # 20 — Marketing operations: end-to-end business flows and how to wire them
 
-Date: 29 September 2026. Status: **proposed design**; nothing is built or changed. It
+Date: 29 September 2026; slice update 30 September. Status: **broader process target**;
+P1 and the bounded expanded P2 slice are implemented locally, as noted below. It
 extends [19 — campaign naming registry](19-campaign-naming-registry.md). Evidence comes from
 read-only reviews of the DW bronze/gold tables, the `INVOICE Ads` ledger and the
 `Media Plan-FanpageSENA 2026` workbook (DW audit
 `docs/audit/campaign_name_2026_review_2026-09-28.md`, section "Cross-source wiring test").
+
+**30 September 2026 slice note:** this document remains the broader process target.
+P1 implementation is recorded in [doc 19](19-campaign-naming-registry.md); its SENA-H
+contract supersedes the historical memo-first/SENA-7 issuing references here. The
+owner approved **expanded P2 implementation** in [doc 23](23-media-lines-and-memo-register.md)
+and doc 24 after the P2.0 design review.
+For that minimum BF-2 slice, group lines retain exact phase-level financial children;
+memo-to-lines equality is a visible reconciliation finding rather than a database
+equality constraint (partial imports and unallocated program funds are preserved).
+Memo evidence is a manual document number/link, not a PDF upload. Agencies receive
+no P2 line/memo/budget access under confirmed Q12. These explicit P2 refinements do
+not start the later archive, actuals, procurement or payment flows below.
+
+**Replacement card-paid addendum, 30 September:** [doc 24](24-card-costs-and-recurring-commitments.md)
+expands P2 to mirror the Media team's classified card sheet read-only,
+register account mappings and recurring commitments, classify costs by type and
+payment method, retain canonical memo aliases and allocate prepayments by covered
+month. Approved budgets, cash charges and monthly allocations are separate measures.
+This is a limited BF-0/BF-2/BF-8 extension, not the full bill/payment workflow or DW
+actuals. Bank fees retain their separate funding/authority question; a statement
+entry does not put them into a marketing budget automatically. Media's source process
+is unchanged. P4 will add private statement OCR/confirmation/classification and
+LINE OA count matching; statements and OCR text must never enter any RAG namespace.
+The owner replied `P2.0 approved — implement expanded P2`; no P4 build is authorized.
 
 ## 1. The problem in one picture
 

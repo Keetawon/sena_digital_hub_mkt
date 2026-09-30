@@ -26,6 +26,8 @@ try {
   console.log('PASS: facility taxonomy, known absence, stale writes and private draft collection');
   await connection.query(await readFile(new URL('../supabase/tests/ads_registry.sql', import.meta.url), 'utf8'));
   console.log('PASS: ads registry agency isolation, frozen names, native binding and DW export permissions');
+  await connection.query(await readFile(new URL('../supabase/tests/ads_media_lines.sql', import.meta.url), 'utf8'));
+  console.log('PASS: ads finance role isolation, revisions, memos, assignments, imports and private exports');
 } finally {
   await connection.end();
 }

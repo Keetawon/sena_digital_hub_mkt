@@ -98,7 +98,9 @@ end $$;
 reset role;
 update ads.scope_code set status='ACTIVE' where scope_id='40000000-0000-0000-0000-000000000001';
 do $$ declare original integer; begin
-  assert (select count(*) from pg_class where relnamespace='ads'::regnamespace and relkind='r' and relrowsecurity and relforcerowsecurity)=8, 'Not all eight tables FORCE RLS';
+  assert (select count(*) from pg_class where relnamespace='ads'::regnamespace and relkind='r'
+    and relname in('vocab','scope_code','scope_member','campaign_registration','campaign_name','native_binding','code_sequence','setting')
+    and relrowsecurity and relforcerowsecurity)=8, 'Not all eight registry tables FORCE RLS';
   assert not exists(select 1 from pg_roles where rolname in ('ads_registry_writer','ads_export_owner') and (rolsuper or rolbypassrls or rolcanlogin)), 'Unsafe function/view owner';
   begin update ads.campaign_name set utm_campaign='FORGED' where code=current_setting('test.ads_a'); raise exception 'Privileged UTM changed'; exception when check_violation then null; end;
   begin update ads.campaign_registration set label='FORGED' where code=current_setting('test.ads_a'); raise exception 'Frozen registration changed'; exception when check_violation then null; end;

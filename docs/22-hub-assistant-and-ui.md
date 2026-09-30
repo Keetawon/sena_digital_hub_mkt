@@ -599,9 +599,80 @@ earlier uncommitted navigation changes are preserved. Nothing was committed or p
 Headed placeholder only. Design tools, panel, citations, streaming and Thai evaluation
 in P5; no assistant API, prompt or component is authorized in P1.
 
-## 7. Media lines and memo register — TODO (owner P2)
+## 7. Media lines and memo register — approved P2 contract (owner P2)
 
-Headed placeholder only; no screens or financial controls designed here.
+**30 September 2026: expanded P2.0 approved for implementation.** The owner's reply
+was `P2.0 approved — implement expanded P2`. The data, permissions, API and acceptance
+contract is [doc 23](23-media-lines-and-memo-register.md), expanded by
+[doc 24](24-card-costs-and-recurring-commitments.md). Reuse the current Emerald &
+Champagne semantic tokens (§1.3), Google Sans headings and Noto Sans Thai dense tables
+(§2); implement P2 screens without changing the existing palette or font contract.
+
+| Screen | Proposed Thai controls and behavior |
+|---|---|
+| Memo register — `ทะเบียน Memo` | Search `เลข Memo`; show BUD, gross and mirrored status. `บันทึก Memo` opens the staff form; `ยืนยันข้อมูลที่บันทึก` confirms transcription. Clearly state `Hub บันทึกสถานะจาก E-memo ไม่ได้อนุมัติ Memo`; no memo-approval button or file upload. |
+| Monthly lines — `รายการงบรายเดือน` | Visible filters `เดือน`, `เอเจนซี`, `BUD`, `ขอบเขต`; retain filter state in the URL. Distinguish current applicable revisions, pending revisions and unresolved evidence with Thai text, not color alone. Group totals and phase children must not appear as additive budgets; show full-period program budgets separately. |
+| Line detail — `รายละเอียดรายการงบ` | Row-to-card detail with `ภาพรวม`, `เฟสและ Memo`, `ชื่อแคมเปญที่เชื่อม`, `รุ่นและประวัติ`. `เชื่อมชื่อแคมเปญ` requires explicit staff selection, then `ยืนยันการเชื่อม` for the SN, month and target revision. Suggestions are labelled `รายการที่แนะนำ`; ambiguous matches remain unassigned. |
+| Registration detail — `รายการงบรายเดือน` | Staff-only financial context on the existing SN detail: month, assigned line, memo reference and applicable revision. `ยังไม่เชื่อม` offers `เลือกรายการงบ`; preserve every issued name and the pending SENA-H approval banner. |
+| Corrections queue — `รายการแก้ไขรหัส` | Show observed code, month range, agency, per-month target and review status. Staff use `เสนอการแก้ไข`; only admin may use `อนุมัติการแก้ไขรหัส` after reviewing evidence. This approves a crosswalk, never a memo. `นำรายการที่เลือกไปใช้` requires a separate explicit action; proposals never apply automatically. |
+
+Only `online_staff` and `admin` receive these financial screens and fields. Agencies
+retain their own P1 names and ID-return flow; they receive no lines, amounts, memos,
+approver names, evidence, corrections or financial counts through UI or API.
+
+Reuse §3 row/card, backdrop, tab and dropdown timing. Cards have stable deep links
+containing IDs and safe filter values only; opening moves focus inside, Esc/close/Back
+restores the opener, and dirty forms retain the existing confirmation guard. Reduced
+motion removes transforms and shared-layout morphs; data renders immediately. Forms
+have visible Thai labels, inline errors and a focused error summary. Status, loading,
+empty and permission states are Thai; codes stay verbatim, months follow Asia/Bangkok,
+and dense tables retain the Thai readability and mobile checks in §§2 and 5.
+
+### 7.1 Account registries, commitments and card-cost review — expanded P2.0
+
+The latest card-paid addendum replaces the earlier one. These screens are included in
+the explicitly approved expanded P2 implementation; financial access remains staff-only.
+Reuse the tokens, fonts, focus behavior, deep
+links and reduced-motion rules above. Source account IDs use text inputs, remain
+verbatim and retain leading zeros; dates and monthly coverage follow Asia/Bangkok.
+
+| Screen | Proposed Thai controls and behavior |
+|---|---|
+| Ad-account registry — `ทะเบียนบัญชีโฆษณา` | Search platform/account ID; show `ขอบเขต`, `BUD`, `เอเจนซี`, `เริ่มใช้`, `สิ้นสุด`. `กฎแบ่ง BUD` shows each reviewed share, effective dates and an exact-sum preview; unresolved mappings show `รอยืนยันการจับคู่`. Descriptor evidence alone must not silently change a verified mapping. |
+| Channel-account registry — `ทะเบียนบัญชีช่องทาง` | LINE OA account/project or scope, `แพ็กเกจ`, `ยอดที่คาดต่อครั้ง` and validity dates. Explain `รายการในใบแจ้งยอดอาจระบุบัญชี OA ไม่ได้`; the shared descriptor is not an account identifier. No inferred project assignment. |
+| Commitments — `ภาระค่าใช้จ่ายประจำ` | Vendor/account, scope/BUD, plan, `รายเดือน` / `รายปี`, amount per cycle, payment method, start/end, memo coverage and cap. State `ไม่ใช่แคมเปญ จึงไม่มีชื่อ SENA-H หรือรหัส SN`. Detail separates `ยอดชำระ`, `ต้นทุนรับรู้รายเดือน` and `วงเงินที่อนุมัติ`; annual prepaid coverage shows all covered months and the exact-total remainder explicitly. |
+| Memo identity — `เลข Memo และชื่ออ้างอิง` | Keep one canonical number and separately reviewed aliases with evidence. A proposed alias that differs in serial shows `เลขลำดับต่างกัน ต้องตรวจสอบเอกสาร`; do not auto-merge `M.COM037/69` with `M.COM033_69`. Alias approval is identity review, never memo approval. |
+| Card-sheet import — `นำเข้าค่าใช้จ่ายบัตรบริษัท` | A trusted operator validates the sanitized CSV/manifest and explicitly applies it through the local CLI in [P2 import format](ads/P2_IMPORT_FORMAT.md). The browser reviews the resulting receipt, source/tab/row provenance, exact-header profile and Thai issues. Summary displays source total, statement control and difference. Staff explicitly confirm or replace eligible reviewed batches; quarantined conflicts require review. The CLI reports harmless replay. No browser upload/apply control or source-sheet write is provided. |
+| Cost review — `ตรวจสอบรายการค่าใช้จ่าย` | Explicit `ประเภทต้นทุน` and `วิธีชำระเงิน` selectors drive `เอกสารประกอบที่ต้องใช้`. Show pending Finance acceptance of the requirement matrix. Use Thai display labels while retaining stored codes: MEDIA/AGENCY_FEE/CHANNEL/TOOL/BANK_FEE and CORPORATE_CARD/AGENCY_PO_INVOICE/PLATFORM_INVOICE/BANK_TRANSFER. Account, BUD, memo and commitment matches require evidence; no forced SN field for subscriptions. |
+
+Cost labels: `MEDIA` = `สื่อโฆษณา`, `AGENCY_FEE` = `ค่าบริการเอเจนซี`, `CHANNEL` =
+`ช่องทาง`, `TOOL` = `เครื่องมือ`, `BANK_FEE` = `ค่าธรรมเนียมธนาคาร`. Payment labels:
+`CORPORATE_CARD` = `บัตรบริษัท`, `AGENCY_PO_INVOICE` = `ใบสั่งซื้อและใบแจ้งหนี้เอเจนซี`,
+`PLATFORM_INVOICE` = `ใบแจ้งหนี้แพลตฟอร์ม`, `BANK_TRANSFER` = `โอนเงินธนาคาร`.
+
+Amounts and statuses must remain understandable without color. Tables display cash,
+monthly recognition and budgets in separate labelled columns/cards and never one
+combined "spend" total. Confirmation distinguishes accepting source transcription
+from approving a memo, budget or payment. Imports use a focused error summary and
+row-level errors with safe source coordinates; discarded card digits/PII never appear
+in previews, toasts, URLs or diagnostics. No statement PDF upload or OCR button is
+part of P2. Q21 must establish any Media-to-`online_staff` role mapping before real
+access is provisioned; agencies receive none of these screens or amounts.
+
+### 7.2 Card-statement review — design boundary only (owner P4)
+
+Future flow: `อัปโหลดใบแจ้งยอด` → `รอตรวจสอบข้อความ` → `ตรวจสอบยอดรวม` →
+`ทีมมีเดียยืนยันรายการ` → `จัดประเภทตามกฎ`. A scanned five-page statement needs OCR;
+extracted rows are DRAFT until totals and Media confirmation pass. The LINE OA review
+groups eligible charges by `วันที่เรียกเก็บ` and `จำนวนเงิน`, compares actual and
+expected counts, and explains `จำนวนตรงกัน` or `จำนวนไม่ตรง ต้องตรวจสอบ`.
+Identical rows are interchangeable only after doc 24's eligibility/count checks;
+row order must never imply account identity. Cash amounts come from validated rows.
+
+Implementation belongs to the P4 document pipeline. Statements remain restricted to
+marketing-ops roles, never appear in any RAG search/assistant document index, and
+external OCR/LLM processing waits for Q7. File access, confirmation authority and
+retention are not inferred from the user's ability to see a P2 cost row.
 
 ## 8. Line actuals and exception screens — TODO (owner P3)
 
@@ -609,7 +680,10 @@ Headed placeholder only; pending DW read-back contract.
 
 ## 9. E-memo archive and search — TODO (owner P4)
 
-Headed placeholder only; pending access and hosting decisions.
+E-memo archive/search remains a headed placeholder pending access and hosting
+decisions. The separate statement-processing design is in doc 24 and §7.2; implement
+it in P4, with **no statement RAG indexing**. Memo-search scope does not grant statement
+access or permission to send statement PII to an external OCR/LLM service.
 
 ## 10. Other ads screens — TODO (outside P1)
 

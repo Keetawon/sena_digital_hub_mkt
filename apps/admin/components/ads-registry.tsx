@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
 import { HubShell } from "./hub-shell";
+import { RegistrationMonthlyLines } from "./finance-actions";
 import { DropdownPop, RegistryRowSummary, RowToCard } from "./registry-motion";
 import "./ads-registry.css";
 
@@ -60,7 +61,7 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
       setDirty(false); window.location.assign(screen === "new" ? "/ads/registry" : window.location.pathname);
     } catch (err) { setError(message(err)); setSwitching(false); }
   }
-  return <HubShell section="registry" registry roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
+  return <HubShell section="registry" registry finance={canWrite(initialRole)} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
     <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{canWrite(initialRole) && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
     <h1 id="registry-title" tabIndex={-1}>{screen === "new" ? "ลงทะเบียนแคมเปญ" : screen === "inbox" ? "ส่งคืนรหัสแคมเปญ" : "ทะเบียนแคมเปญ"}</h1>
     <p className="text-muted">{screen === "inbox" ? "ส่งรหัสบัญชีและแคมเปญจากแพลตฟอร์มให้ตรงกับชื่อที่ได้รับ" : "ชื่อกลางสำหรับเปิดแคมเปญและเชื่อมรหัสบนแพลตฟอร์ม"}</p>
@@ -159,7 +160,7 @@ function RegistrationDetail({ detail, tab, setTab, role, vocab, settings, dirty,
     setTab(next); document.getElementById(`tab-${next}`)?.focus();
   }}>{item.label}{tab === item.key && <motion.span className="registry-tab-indicator" layoutId="registry-tab" transition={{ duration: reduce ? 0 : .22 }} />}</button>)}</div>
     <motion.div layout={!reduce} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
-      {tab === "details" ? <><dl className="registry-detail-list"><dt>ขอบเขต</dt><dd>{detail.scope.scope_code} · {detail.scope.label_th}</dd><dt>สมาชิกขอบเขต</dt><dd>{detail.members.map(member => member.member_id).join(", ") || "ยังไม่มีสมาชิก"}</dd><dt>วัตถุประสงค์</dt><dd>{detail.registration.objective}</dd><dt>เอเจนซี</dt><dd>{detail.registration.agency}</dd><dt>ออกชื่อเมื่อ</dt><dd>{date(detail.names[0]?.issued_at)} (เวลาประเทศไทย)</dd></dl><p className="mt-5 text-muted">การออกชื่อไม่ได้อนุมัติงบประมาณ ขอบเขตร่วมไม่ได้หมายถึงการแบ่งยอดตามสมาชิก</p></> : tab === "names" ? <><LaunchPacks names={detail.names} />{canWrite(role) && <VariantForm detail={detail} vocab={vocab} settings={settings} onUpdated={onUpdated} />}</> : <BindingForm detail={detail} vocab={vocab} onDirty={onDirty} onUpdated={onUpdated} />}
+      {tab === "details" ? <><dl className="registry-detail-list"><dt>ขอบเขต</dt><dd>{detail.scope.scope_code} · {detail.scope.label_th}</dd><dt>สมาชิกขอบเขต</dt><dd>{detail.members.map(member => member.member_id).join(", ") || "ยังไม่มีสมาชิก"}</dd><dt>วัตถุประสงค์</dt><dd>{detail.registration.objective}</dd><dt>เอเจนซี</dt><dd>{detail.registration.agency}</dd><dt>ออกชื่อเมื่อ</dt><dd>{date(detail.names[0]?.issued_at)} (เวลาประเทศไทย)</dd></dl><p className="mt-5 text-muted">การออกชื่อไม่ได้อนุมัติงบประมาณ ขอบเขตร่วมไม่ได้หมายถึงการแบ่งยอดตามสมาชิก</p>{canWrite(role) && <RegistrationMonthlyLines code={detail.registration.code} />}</> : tab === "names" ? <><LaunchPacks names={detail.names} />{canWrite(role) && <VariantForm detail={detail} vocab={vocab} settings={settings} onUpdated={onUpdated} />}</> : <BindingForm detail={detail} vocab={vocab} onDirty={onDirty} onUpdated={onUpdated} />}
     </motion.div>
   </>;
 }
