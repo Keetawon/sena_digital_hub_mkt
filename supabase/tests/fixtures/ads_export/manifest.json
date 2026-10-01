@@ -1,0 +1,1486 @@
+{
+  "format_version": 1,
+  "environment": "local-test",
+  "source_key": "hub",
+  "synthetic_only": true,
+  "exported_at": "2026-10-01T02:18:31.061Z",
+  "hub_commit": "488698177e570a4e2cc9b334793a951819a385f2",
+  "transaction": {
+    "role": "dw_hub_reader",
+    "isolation": "repeatable read",
+    "read_only": true,
+    "timezone": "UTC",
+    "snapshot_shared_with_provenance_checks": true
+  },
+  "date_semantics": "Business months are first-day Asia/Bangkok dates; timestamp strings are UTC.",
+  "serialization": "JSON arrays; numeric/bigint and nested monetary fields are decimal strings; source IDs remain text. View nullability is catalog-declared, not inferred from the sample.",
+  "synthetic_provenance_checks": {
+    "scope_members": "passed",
+    "scope_provenance": "passed",
+    "registration_labels": "passed",
+    "native_ids": "passed",
+    "memo_evidence": "passed",
+    "line_members": "passed",
+    "account_ids": "passed",
+    "mapping_evidence": "passed",
+    "commitment_vendor": "passed",
+    "correction_evidence": "passed",
+    "statement_evidence": "passed",
+    "card_import_provenance": "passed",
+    "ledger_import_provenance": "passed",
+    "cost_provenance": "passed"
+  },
+  "migration_checksums": [
+    {
+      "file": "202609160001_core_slice.sql",
+      "sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd",
+      "normalized_lf_sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd"
+    },
+    {
+      "file": "202609160002_model_edit_lock.sql",
+      "sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5",
+      "normalized_lf_sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5"
+    },
+    {
+      "file": "202609160003_source_selection.sql",
+      "sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa",
+      "normalized_lf_sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa"
+    },
+    {
+      "file": "202609160004_publication_availability.sql",
+      "sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181",
+      "normalized_lf_sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181"
+    },
+    {
+      "file": "202609160005_asset_library.sql",
+      "sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f",
+      "normalized_lf_sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f"
+    },
+    {
+      "file": "202609160006_brands.sql",
+      "sha256": "fc643f143c8453002a054164cb43db792fa7d83f90fb3dcf5e8bad8381ae2e3e",
+      "normalized_lf_sha256": "77c29cc4a9d1a73619a43a03cc307cf000a9faa26757784719606352a13c78b2"
+    },
+    {
+      "file": "202609180007_pilot_intake.sql",
+      "sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe",
+      "normalized_lf_sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe"
+    },
+    {
+      "file": "202609180008_project_gold_prefill.sql",
+      "sha256": "5d63e273b79209626700fa8d48c598270ac977c585f3dcf01178f65eede889e4",
+      "normalized_lf_sha256": "434ba3e39086dfa49944efa9cedf86d37597e96c96b10a2cb970af1b4d44e6e6"
+    },
+    {
+      "file": "202609180009_model_media.sql",
+      "sha256": "d8228ca2529132c07793ebaed4da06888fc977d9b23017b9e0cfaae4272da36e",
+      "normalized_lf_sha256": "6f98be46f07bbff3b4aa0276541711d54538d7ac8dd9ea9cd51f6cc96cb065aa"
+    },
+    {
+      "file": "202609200010_marketing_unit_types.sql",
+      "sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87",
+      "normalized_lf_sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87"
+    },
+    {
+      "file": "202609200011_project_facilities.sql",
+      "sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99",
+      "normalized_lf_sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99"
+    },
+    {
+      "file": "202609200012_project_gold_preview.sql",
+      "sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1",
+      "normalized_lf_sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1"
+    },
+    {
+      "file": "202609210013_project_media_collections.sql",
+      "sha256": "38954d0ac2b962111134a8b55face2d6b552ca5e0df344d73075061634afe452",
+      "normalized_lf_sha256": "791cc2c51e6bf5ff3f60898e00e769e2993f84dbbbdfe01fc33d37b169095dfc"
+    },
+    {
+      "file": "202609290014_ads_registry.sql",
+      "sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b",
+      "normalized_lf_sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b"
+    },
+    {
+      "file": "202609300015_ads_media_lines_memos.sql",
+      "sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6",
+      "normalized_lf_sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6"
+    }
+  ],
+  "generator_checksums": [
+    {
+      "file": "scripts/export-dw-fixtures.mjs",
+      "sha256": "b88d1b4af45d31f5082fe7ea3fc080dec7b39d12004d78f0719a945d47944dd0",
+      "normalized_lf_sha256": "b88d1b4af45d31f5082fe7ea3fc080dec7b39d12004d78f0719a945d47944dd0"
+    },
+    {
+      "file": "scripts/seed-dw-contract.mjs",
+      "sha256": "af4f6f38d23ff0a9c1e3fdb02f0107ecbc8a0752c30cbccf7cf019c7a79ac7b4",
+      "normalized_lf_sha256": "af4f6f38d23ff0a9c1e3fdb02f0107ecbc8a0752c30cbccf7cf019c7a79ac7b4"
+    }
+  ],
+  "views": [
+    {
+      "view": "ads_export.ad_account",
+      "destination": "hub__ad_account",
+      "file": "ad_account.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "platform",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "mapping_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "agency",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud_splits",
+          "postgres_type": "jsonb",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "valid_from",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "valid_to",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "closed_on",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "effective_valid_to",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 5,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "1caf9b40c9e7b0a076f660c39c0a9ddff8622f191dbf976132a06f8360a3ea98"
+    },
+    {
+      "view": "ads_export.campaign_name",
+      "destination": "hub__campaign_name",
+      "file": "campaign_name.json",
+      "columns": [
+        {
+          "name": "name_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "variant",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "template_version",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "frozen_name",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "utm_campaign",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "utm_id_note",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "issued_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 87,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "6f8c653ca71abffe82de51c006c29c4f5a7bee06ff9bafea3d91e9df7fa16388"
+    },
+    {
+      "view": "ads_export.campaign_registration",
+      "destination": "hub__campaign_registration",
+      "file": "campaign_registration.json",
+      "columns": [
+        {
+          "name": "code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "sequence_year",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "sequence_no",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "objective",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "agency",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "variant",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "label",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "created_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "cancelled_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 76,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "fced34d40c513777973ab435960dc3767ff6a1c2fc883bc31aad1985141c4032"
+    },
+    {
+      "view": "ads_export.channel_account",
+      "destination": "hub__channel_account",
+      "file": "channel_account.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "channel",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "mapping_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "plan",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "expected_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "valid_from",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "valid_to",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "closed_on",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "effective_valid_to",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 1,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "b969b80616f4e00df76c301201fec11f68e75ecf3c6f4e68d0b9246125f33945"
+    },
+    {
+      "view": "ads_export.correction",
+      "destination": "hub__correction",
+      "file": "correction.json",
+      "columns": [
+        {
+          "name": "correction_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "target_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "observed_code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "agency",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "line_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "review_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "target_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "applied_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_applied",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 1,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "7df0c198211747564bb2d4a07d4325ac33e59e8eef2b22f468db52f78bcb0b74"
+    },
+    {
+      "view": "ads_export.cost_allocation",
+      "destination": "hub__cost_allocation",
+      "file": "cost_allocation.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "cost_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "allocation_set_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "version_no",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "direction",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "cost_type",
+          "postgres_type": "ads.cost_type",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "payment_method",
+          "postgres_type": "ads.payment_method",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_mapping_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "commitment_occurrence_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "method",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_applicable",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 38,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "f4319c716964d41fb006216935a8c150f84102ff732a03add5a6df886e9b218c"
+    },
+    {
+      "view": "ads_export.cost_record",
+      "destination": "hub__cost_record",
+      "file": "cost_record.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "occurrence_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "statement_control_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "interpretation",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "item_no",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "cost_type",
+          "postgres_type": "ads.cost_type",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "payment_method",
+          "postgres_type": "ads.payment_method",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "direction",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "charge_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "posting_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_mapping_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "commitment_occurrence_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "line_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "document_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "attribution_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "refund_of",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_applicable",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 13,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "cb1422724ebc7a7550cca531b4d2a299c8fb8805786761eb8f39ae872a1696bc"
+    },
+    {
+      "view": "ads_export.line_assignment",
+      "destination": "hub__line_assignment",
+      "file": "line_assignment.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "line_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "acknowledged_revision_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "correction_target_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "ended_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_current",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 10,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "149d1b96a3b30dcc38078fa31ef04b7108774c291e9ffda40dc298bc10125456"
+    },
+    {
+      "view": "ads_export.media_line",
+      "destination": "hub__media_line",
+      "file": "media_line.json",
+      "columns": [
+        {
+          "name": "line_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "kind",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "agency",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "program_ref",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "period_start_month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "period_end_month",
+          "postgres_type": "ads.finance_month",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "source_kind",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "state",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "archived_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "revision_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "revision_no",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "revision_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "permitted_scope_ids",
+          "postgres_type": "uuid[]",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "permitted_agencies",
+          "postgres_type": "text[]",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "component_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "component_kind",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "rem_project_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "formatted_mapping",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "gross_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "media_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "fee_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "fee_po_ref",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "origin",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "frozen_memo_no",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_material_version",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "frozen_memo_bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "frozen_memo_gross",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "frozen_memo_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "frozen_memo_approval_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "updated_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_applicable",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "budget_items",
+          "postgres_type": "jsonb",
+          "nullable": true,
+          "fixture_encoding": "json_array; amount=decimal_string"
+        }
+      ],
+      "row_count": 15,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "cab1875ec9e2bda912dd11afabd9afa91d3a905c02f4171f908b3fc85ae7e690"
+    },
+    {
+      "view": "ads_export.memo",
+      "destination": "hub__memo",
+      "file": "memo.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_no",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "series",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "requesting_bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "gross_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "media_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "fee_amount",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "cost_breakdown",
+          "postgres_type": "jsonb",
+          "nullable": true,
+          "fixture_encoding": "json_array; amount=decimal_string"
+        },
+        {
+          "name": "mirrored_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "approval_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "record_status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "material_version",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "source",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "row_version",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "created_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "updated_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 11,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "2513ef5de41484bf1cc9d1729c00c1cb4d07c932ea6a9b997dad4cb44ac69ca1"
+    },
+    {
+      "view": "ads_export.memo_identifier",
+      "destination": "hub__memo_identifier",
+      "file": "memo_identifier.json",
+      "columns": [
+        {
+          "name": "id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "identifier",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "kind",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 13,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "a80af4853810f8bcca93eb06fa2a9c5c4ad36ceb839a8e02264df99d04bc2310"
+    },
+    {
+      "view": "ads_export.native_binding",
+      "destination": "hub__native_binding",
+      "file": "native_binding.json",
+      "columns": [
+        {
+          "name": "platform",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "campaign_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "name_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "method",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bound_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 34,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "5b3556160a6c778b64e4c03b67501351f2c889be44e8531b69dd244bf07af8b2"
+    },
+    {
+      "view": "ads_export.recurring_commitment",
+      "destination": "hub__recurring_commitment",
+      "file": "recurring_commitment.json",
+      "columns": [
+        {
+          "name": "commitment_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "state",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "version_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "version_no",
+          "postgres_type": "integer",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "account_mapping_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "bud_splits",
+          "postgres_type": "jsonb",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "plan",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "cost_type",
+          "postgres_type": "ads.cost_type",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "payment_method",
+          "postgres_type": "ads.payment_method",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "amount_per_cycle",
+          "postgres_type": "numeric(14,2)",
+          "nullable": true,
+          "fixture_encoding": "decimal_string"
+        },
+        {
+          "name": "frequency",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "start_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "end_date",
+          "postgres_type": "date",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "is_applicable",
+          "postgres_type": "boolean",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "memo_covers",
+          "postgres_type": "jsonb",
+          "nullable": true,
+          "fixture_encoding": "json_array; cap_amount=decimal_string"
+        }
+      ],
+      "row_count": 6,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "8e60188095bd73fe2ff68e420c7fc171d155122fc5930ce387c211a94d4195a4"
+    },
+    {
+      "view": "ads_export.scope_code",
+      "destination": "hub__scope_code",
+      "file": "scope_code.json",
+      "columns": [
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "scope_code",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "kind",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "label_th",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "label_en",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "parent_group_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "home_bud",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "status",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "source_snapshot",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "source_fingerprint",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 9,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "f615b7930ee5b8c3278ae293a1f1506c0ec2d964b51e5517563436bf52c97e71"
+    },
+    {
+      "view": "ads_export.scope_member",
+      "destination": "hub__scope_member",
+      "file": "scope_member.json",
+      "columns": [
+        {
+          "name": "scope_id",
+          "postgres_type": "uuid",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "member_type",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "member_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "parent_group_id",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "name_alias",
+          "postgres_type": "text",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "source_snapshot",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "effective_from",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        },
+        {
+          "name": "effective_to",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true,
+          "fixture_encoding": "json"
+        }
+      ],
+      "row_count": 11,
+      "exported_at": "2026-10-01T02:18:31.061Z",
+      "sha256": "f88f9eb8fb535d489d2c75e07baa3e8bed4c6d8f74a586a91bc1f6d344a35e2e"
+    }
+  ]
+}

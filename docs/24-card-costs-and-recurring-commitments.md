@@ -232,9 +232,10 @@ on every imported cost/line row. A reviewed alias can resolve a noncanonical
 separator format without modifying source text. Online proposes, admin confirms
 with evidence; alias confirmation is not approval of the underlying memo.
 
-`M.COM037/69` could be a punctuation variant of `M.COM037_69`, but the owner's example
-`M.COM037/69` versus `M.COM033_69` also changes **037 to 033**. Q23 must establish
-whether that is an evidenced alias, a transcription error or two different memos.
+**Owner clarification, 1 October 2026:** `M.COM037/69` and `M.COM033_69` are
+different memo numbers from an illustrative example. Q23 asks whether
+`M.COM037/69` and `M.COM037_69` are the same identifier under the authoritative
+slash/underscore notation rule. The serial stays **037** in that question.
 Do not merge them, replace digits, strip separators indiscriminately or auto-confirm
 a suggested alias. Unknown/unconfirmed aliases remain unresolved; real source facts
 and previously linked canonical IDs remain unchanged. Retiring an alias blocks new

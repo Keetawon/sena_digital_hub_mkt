@@ -1,0 +1,15 @@
+[
+  {"id": "0a44cbcf-6791-41c3-b82c-f66537bb2e9d", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "0a3dffc5-1aad-42f7-9824-3ea864026c24", "identifier": "MO3607239"},
+  {"id": "15c2d47f-e4ab-4df9-8534-199a81224f03", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "e2d00279-830a-47b4-b7be-7c012365e9db", "identifier": "MO7003001"},
+  {"id": "23059f4e-8434-4667-9db7-ef4bc3d520c9", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "2829a2dc-c807-43c1-9f1c-dd45ee98bd85", "identifier": "MO9610998"},
+  {"id": "39e84efd-c71e-444e-a7bc-3dc0f43fd7a6", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "f8c11ec8-07d4-4014-a5dc-73a9f2cf66c5", "identifier": "MO5912634"},
+  {"id": "3c8e6674-cc41-4e25-937f-7f77dffd7035", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "950009e2-079d-4fd1-a848-eaa34a8a97d0", "identifier": "MO5212034"},
+  {"id": "944204a7-d031-47b8-a081-1fd01d8efaad", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "3ba2e675-f20d-4008-8f55-1a08ca92692c", "identifier": "MO2501484"},
+  {"id": "afd741ae-4e8a-4a89-bc7c-cb1ff1cc4d8e", "kind": "ALIAS", "status": "CONFIRMED", "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0", "identifier": "SYNTHETIC-ALIAS-efc6d8963a724eeeb783987281c94c9c"},
+  {"id": "b04ae989-5f5e-4432-881b-3007f4361ade", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0", "identifier": "MO4107711"},
+  {"id": "cf4f2d2f-9e0d-4f82-8427-54f159eee5c8", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "40242c9f-6204-4051-8468-28255295c44b", "identifier": "MO9610997"},
+  {"id": "d303addb-429f-4634-a04d-2b1b64568d20", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "d3bb6720-9730-4029-a52a-7376273a2332", "identifier": "MO8603867"},
+  {"id": "d974f9df-4843-47f2-84af-4c808f222660", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "9ee44307-0011-4fea-b84e-3bb97c4440fc", "identifier": "MO9303360"},
+  {"id": "e44c4b0d-8300-42c0-a885-307892cbb7b1", "kind": "ALIAS", "status": "CONFIRMED", "memo_id": "2829a2dc-c807-43c1-9f1c-dd45ee98bd85", "identifier": "SYNTHETIC-DW-ANNUAL-ALIAS"},
+  {"id": "ffe925f2-000e-4d48-bc3e-83cde018028b", "kind": "CANONICAL", "status": "CONFIRMED", "memo_id": "c209d56b-2b39-4a37-a7f7-a08838211614", "identifier": "MO2709301"}
+]

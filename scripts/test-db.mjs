@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { provisionDwReader } from './provision-dw-reader.mjs';
 
+// Only the fixed local TEST login; never print or pass its password to a command.
+await provisionDwReader();
 const config = JSON.parse(await readFile(new URL('../.local/development.json', import.meta.url), 'utf8'));
 const connection = new pg.Client({ host: '127.0.0.1', user: 'postgres', password: config.adminPassword, port: 55432, database: 'sena_hub_local' });
 try {
@@ -28,6 +31,8 @@ try {
   console.log('PASS: ads registry agency isolation, frozen names, native binding and DW export permissions');
   await connection.query(await readFile(new URL('../supabase/tests/ads_media_lines.sql', import.meta.url), 'utf8'));
   console.log('PASS: ads finance role isolation, revisions, memos, assignments, imports and private exports');
+  await connection.query(await readFile(new URL('../supabase/tests/dw_reader.sql', import.meta.url), 'utf8'));
+  console.log('PASS: local DW login, fifteen export views, private-table isolation and read-only enforcement');
 } finally {
   await connection.end();
 }

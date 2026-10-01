@@ -1,0 +1,13 @@
+[
+  {"scope_id": "30000000-0000-0000-0000-000000000001", "member_id": "C-DEMO-TEST1", "name_alias": null, "member_type": "GROUP", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000002", "member_id": "C-DEMO-TEST2", "name_alias": null, "member_type": "GROUP", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000003", "member_id": "00001", "name_alias": null, "member_type": "PHASE", "effective_to": null, "effective_from": null, "parent_group_id": "C-DEMO-TEST1", "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000004", "member_id": "00002", "name_alias": null, "member_type": "PHASE", "effective_to": null, "effective_from": null, "parent_group_id": "C-DEMO-TEST1", "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000005", "member_id": "TESTCONTENT", "name_alias": null, "member_type": "CORPORATE", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000006", "member_id": "000TESTBRAND", "name_alias": null, "member_type": "BRAND", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "30000000-0000-0000-0000-000000000007", "member_id": "TESTUNIT", "name_alias": null, "member_type": "BU", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "812397af-0f2d-4629-9ca0-f3b59cc23c42", "member_id": "C-DEMO-TEST1", "name_alias": null, "member_type": "GROUP", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "812397af-0f2d-4629-9ca0-f3b59cc23c42", "member_id": "C-DEMO-TEST2", "name_alias": null, "member_type": "GROUP", "effective_to": null, "effective_from": null, "parent_group_id": null, "source_snapshot": null},
+  {"scope_id": "8223692b-02f5-474f-aed9-788b7eeb3c6d", "member_id": "00001", "name_alias": null, "member_type": "PHASE", "effective_to": null, "effective_from": null, "parent_group_id": "C-DEMO-TEST1", "source_snapshot": null},
+  {"scope_id": "8223692b-02f5-474f-aed9-788b7eeb3c6d", "member_id": "00002", "name_alias": null, "member_type": "PHASE", "effective_to": null, "effective_from": null, "parent_group_id": "C-DEMO-TEST1", "source_snapshot": null}
+]

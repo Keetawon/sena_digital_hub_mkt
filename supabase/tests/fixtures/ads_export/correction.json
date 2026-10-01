@@ -1,0 +1,3 @@
+[
+  {"month": "2096-10-01", "agency": "KIN", "line_id": "ae4cf2b2-a88e-449a-9819-29b85b9581ce", "target_id": "e0192ba0-e1b6-45dc-bee7-afa2f177bf7b", "applied_at": "2026-10-01T02:13:15.620785+00:00", "is_applied": true, "correction_id": "049a2980-f042-4b21-b8c9-f2e9bb59d5c1", "observed_code": "C-DEMO-OLD99", "review_status": "APPROVED", "target_status": "APPLIED"}
+]

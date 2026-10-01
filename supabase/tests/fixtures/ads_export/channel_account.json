@@ -1,0 +1,3 @@
+[
+  {"id": "6e41ecd8-06ff-4d46-8de7-214af0e44884", "bud": "C1", "plan": "SYNTHETIC-MONTHLY", "status": "CONFIRMED", "channel": "LINE_OA", "scope_id": "30000000-0000-0000-0000-000000000001", "valid_to": "2097-01-01", "closed_on": null, "account_id": "000000DWTESTCHANNEL", "mapping_id": "7f133363-ff91-4a47-95df-7d8415d256df", "valid_from": "2096-01-01", "expected_amount": "100.00", "effective_valid_to": "2097-01-01"}
+]

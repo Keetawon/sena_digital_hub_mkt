@@ -76,6 +76,45 @@ npm.cmd run dev --prefix apps/admin
 
 Open **http://127.0.0.1:3000**. Choose a labelled test role. Edit as an editor, then switch to the publisher to verify publication and rollback. API health is at **http://127.0.0.1:8000/health**; every data endpoint requires authentication. Demo services must stay bound to loopback; do not expose or tunnel this configuration.
 
+## Local DW TEST reader
+
+After `dev:db` has applied migrations 0014 and 0015:
+
+```powershell
+npm.cmd run dev:dw-reader
+# Explicit rotation only, when needed:
+npm.cmd run dev:dw-reader -- --rotate
+```
+
+The script accepts only the optional `--rotate` flag and refuses any target other
+than **127.0.0.1:55432/sena_hub_local**. It reads the local administrator credential
+from `.local/development.json` and provisions the dedicated `dw_hub_reader` login
+with only `ads_export_reader` membership, two connections and a read-only default.
+It checks all 15 export views, private-table/column denial, forbidden role changes
+and failed writes with and without the read-only default. `npm.cmd run test:db`
+also provisions/verifies the login and runs the SQL security regression.
+
+The only successful script output is the path to ignored `.local/dw-reader.json`.
+Its fields are `host`, `port`, `database`, `username`, `password`, `created_at`,
+`environment: local-test` and `rotated_at` after explicit rotation. First-run passwords
+use 32 random bytes encoded as base64url (43 characters); ordinary reruns retain them.
+Keep this file local and access-controlled. A local DW consumer reads it directly
+using its connection library; never paste its contents or place a password/URL in
+a shell argument. Rotation requires the consumer to reload the file.
+
+Read all 15 `ads_export` views in one **REPEATABLE READ, READ ONLY** transaction.
+Decode THB decimals exactly, preserve text IDs and follow the applicability/grain
+rules in [doc 23 §8](23-media-lines-and-memo-register.md#8-implemented-read-only-dw-export-contract)
+and [doc 24](24-card-costs-and-recurring-commitments.md). Frozen synthetic examples
+and their manifest live in [the fixture directory](../supabase/tests/fixtures/ads_export/README.md).
+Use a separate DW TEST source/dataset; no TEST fact becomes production history.
+
+The login works only while this workstation's local PostgreSQL is running. It is
+not a hosted Supabase login and does not authorize tunneling or production access.
+Hosted/shared-test and production provisioning are separate, approved deployment
+steps with their own credentials and acceptance. No DW files or external systems
+are modified by this command.
+
 ## Try source selection and model review
 
 To reproduce the reviewed intake after starting PostgreSQL and applying migration 007:

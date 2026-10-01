@@ -534,7 +534,7 @@ long Thai subjects, mixed Thai/ASCII codes, multiple BUDs, narrow/mobile widths,
 Thai reviewers before production acceptance; do not claim a design review is a
 completed browser/readability test.
 
-## 8. Read-only DW export proposal
+## 8. Implemented read-only DW export contract
 
 Extend the **0014 `ads_export_owner` / `ads_export_reader` pattern** with explicit
 column grants, forced-RLS SELECT policies and security-barrier views. Existing P1
@@ -547,7 +547,7 @@ the names below are proposed DW destinations, not tables/jobs created in the DW 
 | Hub view → proposed DW table | Grain / explicit exported fields |
 |---|---|
 | `ads_export.media_line` → `hub__media_line` | One **revision component**, key `(line_id, revision_id, component_id)`. IDs, kind, state/archive timestamp, revision number/status, `is_applicable`, scope/group/phase IDs, month or program/period, allowed scope/agency codes, BUD, component gross/optional split, frozen memo ID/number/material version/BUD/gross/status/approval date, fee-PO reference, nonpersonal update timestamp. Frozen memo gross is reference evidence, never an additive component measure. No duplicated parent gross. |
-| `ads_export.line_assignment` → `hub__line_assignment` | One assignment-history row: ID, SN code, month, line ID, acknowledged revision, ACTIVE/ENDED, review-required flag, correction-target ID if any, nonpersonal timestamps. No amounts, names, reasons or actors. |
+| `ads_export.line_assignment` → `hub__line_assignment` | One assignment-history row: `id`, `code`, `month`, `line_id`, `acknowledged_revision_id`, ACTIVE/ENDED `status`, `correction_target_id`, `ended_at`, and nullable Boolean `is_current`. Require `is_current IS TRUE` for current resolution; false/null is not an eligible assignment. There is no exported `review_required`, creation/start time, amount, name, reason or actor. |
 | `ads_export.memo` → `hub__memo` | One memo: ID, memo number/series, requesting BUD, gross/optional split, mirrored/record status, approval date, source MANUAL, row/material versions and update timestamp. **No subject, approver names/decisions, evidence reference, notes or actor UUIDs.** |
 | `ads_export.correction` → `hub__correction` | One approved/retired correction-month target: IDs, observed code, agency, month, target line, approval/application/retirement state and nonpersonal `applied_at` timestamp. No evidence, reasons or proposer/approver identity. Only APPLIED, non-retired targets are eligible for downstream resolution. |
 
@@ -562,6 +562,34 @@ period budget per month. The export carries history so consumers can reconcile
 changes. Correction exports do not override confirmed native bindings or turn an
 ambiguous match into an automatic assignment. DW actuals, findings, jobs and source
 registration are separate owner work under Q3; no deployment is claimed here.
+
+### 8.1 Local TEST login and frozen contract fixtures — 1 October 2026
+
+`npm.cmd run dev:dw-reader` provisions `dw_hub_reader` only on
+`127.0.0.1:55432/sena_hub_local`. It inherits only `ads_export_reader`, has a two-connection
+limit, no elevated role attributes, and defaults transactions to read-only. Private
+base tables, staging, audit, application functions and write privileges are denied.
+The default is defense in depth: ACL checks also run with read-only disabled.
+
+The generated password and connection fields live only in ignored
+`.local/dw-reader.json`; the command prints its path, never its contents. Re-running
+keeps the password. `npm.cmd run dev:dw-reader -- --rotate` explicitly rotates it;
+the DW consumer must reload the local file afterward. Do not put the password in
+chat, Git, connection-string command arguments, fixture manifests or logs. This is
+a loopback credential for a DW process on the same workstation, not a remote service.
+Hosted/shared-test and production provisioning require a separate approved step.
+
+The checked-in [fixture manifest](../supabase/tests/fixtures/ads_export/manifest.json)
+freezes all **15** P1/P2 views from one repeatable-read, read-only reader transaction.
+It records exact columns/types, row counts, export time, migration checksums and the
+Hub source commit. Fixture files are explicitly synthetic TEST contract deliverables;
+they must never populate production datasets. Follow the fixture README for
+reproduction and exact-decimal decoding. No DW repository was changed.
+
+The owner reports that the DW P1 intake/contract has been pushed. This local handoff
+supplies its requested TEST credential and P2 examples; it does not attest a completed
+DW run, production source acceptance or deployed P3 marts. See [local setup](11-local-development.md#local-dw-test-reader)
+and Q3 for the remaining integration acceptance.
 
 ## 9. Verification contract
 
