@@ -52,7 +52,7 @@ async function fixture(page: Page) {
     if (url.searchParams.get('condition') === 'UNAVAILABLE') items = items.filter(row => row.condition_present == null);
     return route.fulfill({ json: { data: { items, total: items.length, meta } } });
   });
-  return { posts, document, finding };
+  return { posts, document, finding, actuals };
 }
 
 test('P3 denies financial screens and API to agencies and residential-only roles', async ({ page }) => {
@@ -101,11 +101,11 @@ test('loaded DW TEST generation reads through the real proxy, API and actuals de
 });
 
 test('actuals preserve unknown metrics and stale synthetic source times, with deep links and focus return', async ({ page }) => {
-  await fixture(page); await page.goto('/ads/actuals');
+  await fixture(page); await page.goto('/ads/actuals?month=2356-04-01');
   await expect(page.getByRole('heading', { name: 'ผลใช้จ่ายรายเดือน', exact: true })).toBeVisible();
   const snapshotStatus = page.getByLabel('สถานะข้อมูลจากคลังข้อมูล');
   await expect(snapshotStatus).toContainText('ข้อมูลตัวอย่าง · TEST');
-  await expect(snapshotStatus).toContainText('2356');
+  await expect(snapshotStatus).toContainText('ไม่ใช้ยืนยันความสดของข้อมูลจริง');
   await expect(snapshotStatus).toContainText('ข้อมูลยังไม่อัปเดต');
   await page.getByLabel('รายการที่มี BUD นี้').fill('SID');
   await expect(page).toHaveURL(/bud=SID/);
@@ -215,7 +215,7 @@ test('exception workflow acknowledges and resolves without clearing immutable DW
 test('P3 details remain readable and keyboard accessible on mobile with reduced motion', async ({ page }) => {
   await fixture(page); await page.setViewportSize({ width: 375, height: 812 }); await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; }));
-  await page.goto('/ads/actuals');
+  await page.goto('/ads/actuals?month=2356-04-01');
   const opener = page.getByRole('button', { name: 'C-SYNTH-UI', exact: true });
   await opener.focus(); await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog');
@@ -229,4 +229,48 @@ test('P3 proxy rejects unsupported queries, mutations, oversized page and malfor
   await session(page);
   for (const path of ['actuals?limit=101', 'actuals?month=2356-04-01&month=2356-05-01', 'actuals?private=true', 'actuals/not-a-uuid', `findings/${findingKey}?month=2356-04-01`]) expect((await page.request.get(`${api}/${path}`)).status()).toBe(404);
   expect((await page.request.post(`${api}/document-tracking/${documentKey}/review`, { headers: { Origin: origin }, data: {} })).status()).toBe(404);
+});
+
+test('actuals default to the Bangkok month while explicit months and clearing to all remain stable', async ({ page }) => {
+  await fixture(page);
+  // UTC is still September; Bangkok has crossed into October.
+  await page.clock.setFixedTime(new Date('2026-09-30T17:30:00Z'));
+  const requests: URL[] = [];
+  page.on('request', request => { const url = new URL(request.url()); if (url.pathname === `${api}/actuals`) requests.push(url); });
+  await page.goto('/ads/actuals');
+  await expect(page.getByLabel('เดือนที่แสดง')).toHaveValue('2026-10');
+  await expect(page).toHaveURL(/month=2026-10-01/);
+  await expect.poll(() => requests.length).toBeGreaterThan(0);
+  expect(requests.every(url => url.searchParams.get('month') === '2026-10-01')).toBe(true);
+  await expect(page.getByRole('button', { name: 'รอคำตอบ Q45', exact: true })).toBeVisible();
+
+  await page.goto('/ads/actuals?month=2356-04-01');
+  await expect(page.getByLabel('เดือนที่แสดง')).toHaveValue('2356-04');
+  await expect(page.getByRole('button', { name: 'C-SYNTH-UI', exact: true })).toBeVisible();
+  await page.getByLabel('เดือนที่แสดง').fill('');
+  await expect(page).toHaveURL(/month=$/);
+  await expect.poll(() => requests.at(-1)?.searchParams.has('month')).toBe(false);
+  await page.reload();
+  await expect(page.getByLabel('เดือนที่แสดง')).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'C-SYNTH-UI', exact: true })).toBeVisible();
+  await page.goto('/ads/documents');
+  await expect(page.getByLabel('เดือนที่แสดง')).toHaveValue('');
+});
+
+test('only explicitly marked Hub-authored synthetic rows receive local-demo provenance', async ({ page }) => {
+  const data = await fixture(page);
+  data.actuals[0].quality_codes = [...data.actuals[0].quality_codes, 'LOCAL_SYNTHETIC_DEMO'];
+  data.actuals[0].dimension.quality_codes = ['LOCAL_SYNTHETIC_DEMO'];
+  data.finding.observed.source_kind = 'LOCAL_SYNTHETIC_DEMO';
+  await page.goto('/ads/actuals?month=2356-04-01');
+  const group = page.getByRole('row').filter({ has: page.getByRole('button', { name: 'C-SYNTH-UI', exact: true }) });
+  await expect(group).toContainText('ข้อมูลตัวอย่างที่สร้างใน Hub');
+  // The separate historical period line has no local provenance marker.
+  const historical = page.getByRole('row').filter({ has: page.getByRole('button', { name: 'CORP-UI-PERIOD', exact: true }) });
+  await expect(historical).not.toContainText('ข้อมูลตัวอย่างที่สร้างใน Hub');
+  await group.getByRole('button', { name: 'C-SYNTH-UI', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('ข้อมูลตัวอย่างที่สร้างใน Hub');
+  await expect(page.getByRole('dialog')).not.toContainText('ข้อมูลยังไม่พร้อมเปรียบเทียบ (LOCAL_SYNTHETIC_DEMO)');
+  await page.goto(`/ads/exceptions?finding=${findingKey}&month=2356-04-01`);
+  await expect(page.getByRole('dialog')).toContainText('ข้อมูลตัวอย่างที่สร้างใน Hub');
 });

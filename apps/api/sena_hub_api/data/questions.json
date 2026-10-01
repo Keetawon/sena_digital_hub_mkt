@@ -23,7 +23,7 @@
         "question": "Does E-memo offer an API/webhook, read-only view, or scheduled export? Confirm fields, external status/approver decision times, document references and access. For manual P2, which document number/link and reviewer checks are acceptable evidence, including missing individual decision details?",
         "owner": "IT E-memo owner + Online operations owner",
         "blocks": "**P2 manual-mirror go-live/evidence acceptance and later automated ingestion; not P2 coding** after design approval. An unavailable API does not block the accepted manual path.",
-        "default": "Build MANUAL mirror against synthetic fixtures. Evidence is text only: E-memo number/link, no upload or fetching. Keep real use blocked until the manual evidence policy is accepted. Hub never approves a memo; API/export automation and P4 remain later."
+        "default": "Build MANUAL mirror against synthetic fixtures. Evidence is text only: E-memo number/link, no upload or fetching. Keep real use blocked until the manual evidence policy is accepted. Hub never approves a memo. API/export automation and real E-memo access remain pending; P4 now provides a synthetic local archive only, separately from the P2 text-reference mirror."
       }
     },
     {
@@ -321,7 +321,7 @@
         "question": "How should multiple funding sources, cross-group paying BUDs and pooled project contributions fund D/E or other scopes? Who owns contribution amounts/weights and reconciliation of partially allocated memo balances? Distinguish these from the newly requested ad-account BUD split rule.",
         "owner": "Online finance operations + Marketing/BUD owners + DW model owner",
         "blocks": "No synthetic P2 coding block. Blocks go-live of affected funding/allocation paths and any claim of distributed pool spend.",
-        "default": "P2 now designs and, after approval, implements explicit reviewed ad-account BUD split rules with validity dates and exact amount preservation (doc 24/Q24). This does not allocate D/E scope spend among member projects or authorize a broader `funding_contribution` model. No inferred weights; unresolved matches remain unresolved. Memo differences stay visible findings; never invent balancing lines."
+        "default": "P2 implements explicit reviewed ad-account BUD split rules with validity dates and exact amount preservation (doc 24/Q24). This does not allocate D/E scope spend among member projects or authorize a broader `funding_contribution` model. No inferred weights; unresolved matches remain unresolved. Memo differences stay visible findings; never invent balancing lines."
       }
     },
     {
@@ -547,7 +547,7 @@
         "question": "Accept the four P3 mart schemas/keys (including the DW adapter for differing grains), manifest and read-back versions, TEST/production separation, cadence, complete-snapshot semantics and retention of generations/evidence. Is **2026-10-01** the agreed first Hub-owned operating month, and how is earlier history labelled? Return a TEST ingestion/read-back receipt for the Task A fixture manifest.",
         "owner": "DW model/platform owner + Hub integration owner + Marketing ledger owner",
         "blocks": "Real integrated P3 acceptance, cutover, retention and freshness claims; not design or approved synthetic coding.",
-        "default": "Demo consumes the verified hub-p3-test-v1 four-mart package, snapshot 2026-10-01T04:05:27.770130+00:00, using manual localhost-only imports. UUID strings and nullable UNAVAILABLE finding evidence are explicit TEST adapter defaults. Propose daily 07:00 Asia/Bangkok snapshots and stale marking after 36 hours against source watermarks, with all four marts atomically published and explicit coverage; no scheduler or evidence deletion is activated. Future synthetic dates are labelled demo, not fresh real data. October cutover remains inactive until approved; pre-Hub history stays historical/unassigned unless explicitly imported as Hub-owned. Production retention/contract acceptance remains open. A conservative global refresh notice follows any P1/P2 source write after the Hub watermark; no local rematching. DW ec2a182 coverage months stay frozen; presentation uses Task 6 demo-seed months."
+        "default": "The verified DW baseline is the hub-p3-test-v1 four-mart package, snapshot 2026-10-01T04:05:27.770130+00:00, imported manually on localhost. Task 6 adds the clearly labelled Hub-authored October synthetic generation 44f70de5-40bb-46af-827e-5c797f4bcc68; this is not a new DW delivery or production acceptance. UUID strings and nullable UNAVAILABLE finding evidence are explicit TEST adapter defaults. Propose daily 07:00 Asia/Bangkok snapshots and stale marking after 36 hours against source watermarks, with all four marts atomically published and explicit coverage; no scheduler or evidence deletion is activated. Future synthetic dates are labelled demo, not fresh real data. October cutover remains inactive until approved; pre-Hub history stays historical/unassigned unless explicitly imported as Hub-owned. Production retention/contract acceptance remains open. A conservative global refresh notice follows any P1/P2 source write after the Hub watermark; no local rematching. DW ec2a182 coverage months stay frozen; presentation uses Task 6 demo-seed months."
       }
     },
     {
@@ -967,6 +967,35 @@
         "owner": "Marketing promotion owner + IT data owner",
         "blocks": "Historical-answer support, not current demo reads.",
         "default": "Current Bangkok-time structured promotion reads only; recheck expiry before delivering the answer. Label draft versus published eligibility. Do not infer past availability from current public views or RAG. Return no answer for unsupported historical requests."
+      }
+    },
+    {
+      "id": "Q45",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของเดโมการตลาดและผู้ดูแลข้อมูล",
+      "question_th": "ใครยืนยันชุดข้อมูลและเดือนสำหรับนำเสนอ ก่อนเปลี่ยนจากเดโมเป็นข้อมูลจริง?",
+      "default_th": "ใช้ข้อมูลตัวอย่างเดือนตุลาคม 2569 ที่ผูกกับ HYABC และ FLEXI เฉพาะในเครื่อง แยกจากหลักฐาน DW ที่เก็บเดิม Memo ตัวอย่างหนึ่งรายการยืนยันด้วยหลักฐานทดสอบเพื่อสาธิตค้นหา ใบแจ้งยอดยังรอตรวจจริงในเดโม รันซ้ำไม่ล้างงานหรือเพิ่มค่าใช้จ่ายซ้ำ",
+      "links": [
+        {
+          "href": "/ads/actuals?month=2026-10-01",
+          "label": "ผลใช้จ่ายเดือนตัวอย่าง"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "เอกสารตัวอย่าง"
+        },
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์ตัวอย่าง"
+        }
+      ],
+      "doc": {
+        "id_label": "Q45",
+        "question": "Who accepts the presentation dataset, demonstration month and replacement of synthetic content before real use?",
+        "owner": "Marketing demo owner + project/brand steward + Finance/Media reviewer",
+        "blocks": "Real data/content acceptance, not the local demo pack.",
+        "default": "Use a localhost-only coherent HYABC/FLEXI October 2026 seed with explicit synthetic provenance. A sample scope association is not reviewed DW master acceptance. Keep the original DW package unchanged; a new local synthetic P3 generation preserves finding identities and original observation dates, with unevaluated carry-forward findings UNAVAILABLE. Show the current Bangkok month by default and pin October presentation links. One pristine memo V1 is preconfirmed through normal controls with synthetic fixture-review evidence for restricted search; the statement stays DRAFT for source review and links the existing exact ten-row THB 4812.00 batch after confirmation. A separate September THB 120.00 debit supplies its refund origin; annual commitment coverage uses a separate memo. Never add platform media to card cash or cash to monthly recognition. Replays preserve saved edits and newer snapshots, with conflicts stopping rather than resetting data. No automatic publication or real approval."
       }
     }
   ]

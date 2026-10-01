@@ -230,15 +230,20 @@ def test_real_import_replay_conflict_and_failed_rows_preserve_last_good():
         await outer.start()
         try:
             await connection.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
-            # Read only aggregate current metadata as local administrator before dropping privilege.
+            # Read the current TEST generation as local administrator before dropping privilege.
             current_at = await connection.fetchval('SELECT max(snapshot_at) FROM staging.ads_actuals_batch WHERE status=$1', 'APPLIED')
+            # A complete replacement must retain every current finding identity,
+            # including the coherent demo's additions beyond the frozen package.
+            baseline = await connection.fetchrow('SELECT b.manifest,b.relations FROM staging.ads_actuals_current c JOIN staging.ads_actuals_batch b ON b.id=c.batch_id')
+            base_manifest = baseline['manifest'] if baseline else package.manifest
+            base_relations = baseline['relations'] if baseline else package.relations
             stamp = max(current_at or datetime.now(timezone.utc), datetime.now(timezone.utc)) + timedelta(seconds=1)
             await connection.execute('SET LOCAL ROLE admin')
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", stage.ADMIN_ACTOR)
             current = await connection.fetchval('SELECT ads.actuals_current_snapshot()')
 
             def generation(when):
-                manifest, relations = copy.deepcopy(package.manifest), copy.deepcopy(package.relations)
+                manifest, relations = copy.deepcopy(base_manifest), copy.deepcopy(base_relations)
                 identifier, timestamp = str(uuid4()), when.isoformat()
                 manifest.update(snapshot_id=identifier, snapshot_at=timestamp, exported_at=timestamp)
                 for entry in manifest['relations']:
@@ -268,8 +273,8 @@ def test_real_import_replay_conflict_and_failed_rows_preserve_last_good():
             assert await connection.fetchval('SELECT ads.actuals_current_snapshot()') == manifest['snapshot_id']
             # Inspect counts as the connection owner, then rollback all test batches/history.
             await connection.execute('RESET ROLE')
-            assert await connection.fetchval('SELECT count(*) FROM staging.ads_actuals_dim WHERE batch_id=$1', accepted['batch_id']) == 13
-            assert await connection.fetchval('SELECT count(*) FROM staging.ads_actuals_finding WHERE batch_id=$1', accepted['batch_id']) == 73
+            assert await connection.fetchval('SELECT count(*) FROM staging.ads_actuals_dim WHERE batch_id=$1', accepted['batch_id']) == len(base_relations['dim_media_line'])
+            assert await connection.fetchval('SELECT count(*) FROM staging.ads_actuals_finding WHERE batch_id=$1', accepted['batch_id']) == len(base_relations['fact_marketing_ops_finding'])
             assert await connection.fetchval('SELECT count(*) FROM staging.ads_actuals_dim WHERE batch_id=$1', failed['batch_id']) == 0
         finally:
             await outer.rollback()

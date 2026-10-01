@@ -4,8 +4,16 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 select set_config('app.change_reason','Synthetic archive SQL contract',true);
 -- Keep these worker claims isolated from any queued local demonstration.
 update ads.archive_document set legal_hold=true where not legal_hold;
-select set_config('test.archive_memo_result',jsonb_build_object('pages',jsonb_build_array(jsonb_build_object('page',1,'method','TEXT','text','SYNTHETIC MEMO MO2610902','confidence',null)),
- 'fields',jsonb_build_object('memo_no','MO2610902','subject','Synthetic archive SQL memo','requesting_bud','C1','gross_amount','12000.00','mirrored_status','APPROVED','approval_date','2026-10-01','period_start','2026-10-01','period_end','2026-10-31'),
+-- The persistent walkthrough owns MO2610901/MO2610902. Select an unused test
+-- identifier; never weaken the archive's duplicate-memo/link requirement.
+do $$ declare memo_no text;begin
+ select 'MO9912'||lpad(n::text,3,'0') into memo_no from generate_series(100,999) n
+ where not exists(select 1 from ads.memo_identifier i where i.identifier='MO9912'||lpad(n::text,3,'0')) order by n limit 1;
+ assert memo_no is not null,'No isolated SQL-test memo identifier available';
+ perform set_config('test.archive_memo_no',memo_no,true);
+end $$;
+select set_config('test.archive_memo_result',jsonb_build_object('pages',jsonb_build_array(jsonb_build_object('page',1,'method','TEXT','text','SYNTHETIC MEMO '||current_setting('test.archive_memo_no'),'confidence',null)),
+ 'fields',jsonb_build_object('memo_no',current_setting('test.archive_memo_no'),'subject','Synthetic archive SQL memo','requesting_bud','C1','gross_amount','12000.00','mirrored_status','APPROVED','approval_date','2026-10-01','period_start','2026-10-01','period_end','2026-10-31'),
  'field_sources',(select jsonb_object_agg(k,jsonb_build_object('page',1,'confidence',null)) from unnest(array['memo_no','subject','requesting_bud','gross_amount','mirrored_status','approval_date','period_start','period_end']) k),
  'rows','[]'::jsonb,'controls','{}'::jsonb)::text,true);
 select ads.archive_register_fixture(jsonb_build_object('fixture_id','sql-archive-memo-v1','document_type','E_MEMO','label_th','บันทึกข้อความสังเคราะห์ SQL','sha256',repeat('1',64),'byte_size',123,'mime','application/pdf','filename','SYNTHETIC-SQL-MEMO.pdf','page_count',1,'storage_key','memo/sha256/'||repeat('1',64)||'.pdf','pipeline_version','sql-archive-v1'),
@@ -63,7 +71,7 @@ do $$ declare d jsonb;body jsonb;begin
  assert d#>>'{application,target_type}'='MEMO','P2 memo handoff missing';
  assert ads.archive_command('apply',(d->>'id')::uuid,body)->>'operation_status'='NOOP','Application replay duplicated financial record';
  assert ads.finance_read('memos',d#>>'{application,target_id}')->>'record_status'='DRAFT','Transcription confirmation approved P2 memo';
- assert(ads.archive_search('MO2610902')->>'total')::integer=1,'Confirmed applied memo missing from exact search';
+ assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=1,'Confirmed applied memo missing from exact search';
  perform set_config('test.archive_p2_memo',d#>>'{application,target_id}',true);
  begin perform ads.archive_command('hold',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','held',true,'reason','Staff cannot hold'));assert false,'Staff placed legal hold';exception when insufficient_privilege then null;end;
  perform set_config('test.archive_memo_version',d->>'current_version_id',true);
@@ -72,7 +80,7 @@ reset role;
 do $$ begin
  update ads.memo set mirrored_status='CANCELLED' where id=current_setting('test.archive_p2_memo')::uuid;
  set local role online_staff;
- assert(ads.archive_search('MO2610902')->>'total')::integer=0,'P2 status change left stale source facts in search';
+ assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=0,'P2 status change left stale source facts in search';
  reset role;
  update ads.memo set mirrored_status='APPROVED' where id=current_setting('test.archive_p2_memo')::uuid;
 end $$;
@@ -80,12 +88,12 @@ set local role admin;
 do $$ declare d jsonb;claim jsonb;begin
  d:=ads.archive_read(current_setting('test.archive_memo')::uuid);
  d:=ads.archive_command('hold',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','held',true,'reason','Synthetic legal hold'));
- assert(ads.archive_search('MO2610902')->>'total')::integer=0,'Held memo remained indexed';
+ assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=0,'Held memo remained indexed';
  begin perform ads.archive_receive(jsonb_build_object('fixture_id','sql-archive-memo-v2','document_id',d->'id','expected_revision',d->'revision'));assert false,'Held source version changed';exception when check_violation then null;end;
  d:=ads.archive_command('hold',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','held',false,'reason','Synthetic authorized release'));
  d:=ads.archive_receive(jsonb_build_object('fixture_id','sql-archive-memo-v2','document_id',d->'id','expected_revision',d->'revision'));
  assert jsonb_array_length(d->'versions')=2,'Old immutable evidence lost';
- assert(ads.archive_search('MO2610902')->>'total')::integer=0,'Old version remained in search after new source receipt';
+ assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=0,'Old version remained in search after new source receipt';
  claim:=ads.archive_claim('SQL-UNAVAILABLE',120);
  d:=ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,null,'OCR_UNAVAILABLE');
  assert d#>>'{job,status}'='FAILED' and d->'extraction'='null'::jsonb,'Unavailable engine fabricated extraction';

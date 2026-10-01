@@ -251,6 +251,49 @@ leave the machine while Q36 is pending. External SDK tracing is disabled. A key 
 never shown in capabilities, browser responses or logs. Missing configuration is a
 visible remark, not a successful live-model result. No deployment is performed.
 
+### Coherent presentation pack (Task 6)
+
+With the local database running and Hub migrations applied, seed the presentation
+dataset with one command:
+
+```powershell
+npm.cmd run dev:demo
+```
+
+The command refuses any target except `127.0.0.1:55432/sena_hub_local`. It reuses
+the residential, assistant and document seeds, adding synthetic monthly lines,
+SN assignments, memo links, the exact demonstration card charges, an annual
+commitment and a validated local synthetic P3 snapshot. It preserves saved content
+and original DW fixtures, and never changes `sena_h_approved`. No publication or
+external API/Sheet/DW write occurs. Generated receipts, packages and document bytes
+stay under ignored `.local/`; they are not deployment artifacts or credentials.
+
+October 2026 is the pinned presentation month. Normal actuals navigation defaults
+to the current Bangkok month, while explicit historical and all-month filters
+remain available. The local synthetic generation is labelled separately from the
+retained DW TEST evidence; a receipt time does not make old or future synthetic
+observations fresh production data.
+
+The known memo V1 is prepared for restricted search using explicitly synthetic
+fixture-review evidence through the normal confirmation/linking controls. The
+statement remains DRAFT for source comparison and explicit human confirmation in
+the walkthrough. Link it to the existing ten-row batch after review; creating a
+second batch would count the same cash twice. The statement total is THB 4,812.00;
+a separate September THB 120.00 debit supplies its refund origin. Annual cash and
+monthly recognition remain separate. LINE OA stays unattributed.
+
+Rerun the command to resume an interrupted local OCR stage. It preserves edited
+records and refuses conflicting seed data or a newer read-back generation instead
+of resetting them. It processes only the original seeded document/version pairs;
+presenter-queued newer versions and legal holds remain untouched and can leave the
+receipt partial. It does not process another document's queued job. A worker
+failure after the business seed commits is reported as partial completion; it is
+not described as a rollback. Follow [the Thai presentation script](ads/DEMO_SCRIPT_TH.md)
+for the 15–20 minute flow, role switches, receipt links and questions to raise.
+
 `scripts/local-db.mjs` and the synthetic seed are development conveniences. Production must use a separately provisioned database, a dedicated NOINHERIT runtime login, verified Supabase identities and controlled asset storage. Do not run the seed against a shared Supabase project. This slice uses server APIs for draft writes; direct browser-to-PostgREST writes are not enabled.
 
-The schema is an initial subset, not a frozen production model. In particular, the sample asset registry and single-project releases must be extended to the full content/asset/publish-set contract before pilot acceptance. See [the delivery plan](07-delivery-plan.md) for the remaining milestones.
+The schema remains a local demo contract, not production acceptance. Atomic
+multi-entity releases are implemented for the demo; real asset rights, content,
+privacy and consumer rollout still need their recorded owner decisions. See
+[the delivery plan](07-delivery-plan.md) for the remaining milestones.

@@ -5,6 +5,19 @@ Each task is committed and pushed separately after its five required checks. Onl
 local TEST/synthetic data is used; external source systems remain read-only.
 No deployment, real-document upload or production approval is implied.
 
+| Task | Pushed commit | Main decision remarks |
+|---|---|---|
+| 0 — decisions and assistant scope | `87e61c9` | Q36–Q38; Q18/Q20 owner-deferred |
+| 1 — shared remarks and questions page | `1394c5c` | Q39 and synchronized Q1–Q39 catalog |
+| 2 — P3 TEST read-back and workflows | `259f1e5` | Q24–Q28; preserved DW TEST provenance |
+| 3 — residential demo and atomic releases | `dba493f` | Q40/Q41; labelled synthetic content |
+| 4 — local synthetic archive | `ccea0e6` | Q7/Q29/Q30; no external processing |
+| 5 — staff assistant and grouped sidebar | `0fec5a9` | Q36/Q38/Q42–Q44; caller permissions and confirmed drafts |
+
+Task 6 is the commit containing the final section and walkthrough below; its hash
+is reported in the delivery message after commit. The individual sections retain
+real command output, including failed attempts and their fixes.
+
 ## Task 0 — recorded decisions
 
 Recorded P3.0/P4.0 approval, demo-first defaults, the expanded staff-only assistant,
@@ -358,3 +371,151 @@ not alter application permissions. The complete rerun is recorded below.
 Final Edge verification returned `129 passed (6.2m)`, exit 0, including the
 questions-page regression and the grouped-sidebar accessibility cases. All five
 required Task 5 commands passed before commit.
+
+## Task 6 — coherent demo pack: design before code
+
+Task 5 was pushed as `0fec5a9` after all five checks passed. Reuse the existing local seed helpers and guarded P1/P2/P3/P4
+functions behind one `npm.cmd run dev:demo` command. Refuse any database other
+than `127.0.0.1:55432/sena_hub_local`; retain source identifiers, saved content and
+the false SENA-H approval setting. Seed only missing or exact seed-owned records.
+A changed seed-owned financial record or newer current read-back is a conflict,
+not permission to reset it. Replays must not duplicate names, costs, versions,
+jobs or assignments. Generated receipts/packages/PDFs remain in ignored `.local/`.
+
+Use HYABC and FLEXI's existing identities with explicitly synthetic marketing
+content and a local-only sample scope association; a staged project row is not
+acceptance of the DW group master. October 2026 is the presentation month. Group
+and brand-pool budgets remain distinct, linked to synthetic memo MO2610901 with
+gross THB 12,000; no invented funding contribution. A separate memo covers the
+annual plugin commitment. Seed the exact ten statement occurrences, signed net
+THB 4,812, plus a separately labelled September THB 120 debit as the existing P2
+refund-origin requirement. Preserve cash, monthly recognition and platform spend
+as different measures. LINE OA remains three CHANNEL occurrences in the
+unattributed bucket, without account matching.
+
+Build a new Hub-authored local synthetic P3 generation using the same closed
+validator and atomic apply function. Keep the original DW fixture bytes intact,
+retain all current finding keys and original business/source observation dates,
+and mark carried-forward unevaluated findings UNAVAILABLE rather than clearing
+them. New October scenarios carry explicit LOCAL_SYNTHETIC_DEMO provenance.
+Generation metadata describes the local package, never a new DW delivery.
+A current-generation change after seed creation must stop replay instead of
+overwriting newer evidence. Actuals without a month select the current Bangkok
+month; explicit historical/all-month filters still work. Presentation links pin
+October 2026 so the script remains repeatable after October.
+
+Install the known synthetic documents and run the normal bounded local worker.
+A pristine seed-owned memo V1 may be preconfirmed through the normal archive
+controls using an explicitly synthetic fixture-review actor/evidence, then linked
+to the existing memo so restricted search can be demonstrated. This is neither
+a real human review nor E-memo approval. Preserve human edits; leave the statement
+DRAFT for the walkthrough's real source comparison and explicit confirmation.
+Its eventual LINK_CARD action must link the existing batch, never add expenses.
+Do not queue memo V2 until the presenter chooses to demonstrate versioning.
+OCR runs after the seed transaction; a worker failure is reported as partial
+completion with a resumable replay, not a rolled-back business seed.
+
+Q45 records these presentation/seed defaults. The Thai 15–20 minute walkthrough
+uses receipt identifiers, names a question and accountable owner at each stop,
+and distinguishes fake-model coverage from an optional provider demo. No
+publication, external processing, deployment or production approval occurs
+automatically. Verification includes seed replay, preserved-edit conflicts,
+snapshot and monetary controls, existing role boundaries and the five full suites.
+
+The implementation adds no migration. It reuses the existing guarded functions;
+the scoped worker additionally refuses foreign queued/retry/running jobs before claiming
+work. An exclusive document-table lock covers the preflight and claim transaction,
+including foreign lease expiry; ordinary reads remain available and the lock is
+released before extraction. Normal worker behavior is unchanged. The
+real importer integration now clones the current complete TEST generation so it
+retains new finding identities as well as frozen fixture identities; the pure
+fixture validation remains strict and unchanged.
+
+Focused checks returned `3 passed in 2.90s` for finance, including a real outer
+rollback with unchanged final table counts/pointer; `18 passed in 5.98s` for the
+orchestrator's rollback preparation/replay and memo-link integration; and
+`28 passed, 2 skipped in 3.33s` for the final seed/worker unit checks. Those two skipped
+opt-in cases are enabled in final full verification. Question API checks returned
+`20 passed, 1 warning in 1.91s`. Admin typecheck/build exited 0, with the existing
+Google Sans warning; focused Edge returned `12 passed (24.5s)`.
+
+The first real `npm.cmd run dev:demo` exited 0 with `status=READY`,
+`business_seed_committed=true`, `stage=COMPLETE`, and actuals `APPLIED`. The second
+run exited 0 with `status=READY`, finance/actuals `NOOP`, the same issued codes,
+snapshot, bytes and linked memo. No missing residential fields were overwritten.
+Memo V1 is CONFIRMED/search-ready with explicitly synthetic fixture-review evidence;
+the statement stays DRAFT, with no automatic card handoff. Its already extracted
+pages were reused, so these two seed executions did not rerun OCR.
+
+The local package snapshot is `44f70de5-40bb-46af-827e-5c797f4bcc68`, with
+15 dimension / 20 bridge / 10 monthly / 75 finding rows (120 total). Fingerprint:
+`b6490a83ab277893b1d149d43128805ea7044669d8118ac0571a589bb66df7e9`.
+The retained 73 findings and their original observations were not discarded.
+The manifest records `0fec5a9`'s full hash as Hub base/schema provenance, before
+the Task 6 commit; it does not claim that commit contains the new seed files.
+The finance seed's exact bytes are separately recorded as SHA-256
+`8b51eae0ddd02f285147f3b1644704fdd34f83b09f569677c5fd0ace5137d576`.
+Generated package files and `.local/hub-demo/receipt.json` remain ignored.
+
+The two names were issued server-side as `SN2600318C` and `SN2600319T` for the
+group and brand pool. Memo MO2610901 reserves THB 10,000 + 2,000; platform demo
+spend is THB 2,400 / 600, with 12 / 3 leads and THB 200 CPL. Card cash and monthly
+recognition are separate. The October statement has ten occurrences/net THB 4,812,
+including three unassigned CHANNEL rows of THB 299. The annual plugin has THB 1,200
+cash and twelve THB 100 allocations, covered by a separate memo. A September
+THB 120 debit is the refund origin, not another October expense. All amounts and
+observations in this pack are synthetic, not production budget or performance.
+
+The first full database run encountered an archive SQL-test collision with the
+persistent demo's MO2610902. The test now selects an unused synthetic MO9912
+identifier inside its rollback transaction and uses it consistently for extraction
+and search assertions. The application's duplicate-memo protection is unchanged.
+The complete rerun exited 0, including SQL/RLS, all concurrency checks and frozen
+export checks (`pass 2`, `fail 0`).
+
+The initial full API run returned `1066 passed, 1 warning in 211.61s (0:03:31)`
+with all seven opt-in integration/OCR flags enabled. Final review then identified
+a demo-replay preservation gap: a newer version on the same allowed document could
+be claimed, and a held/newer statement could satisfy the receipt's READY check.
+The scoped worker now checks exact seeded document/version pairs under the same
+claim lock and verifies the claimed version before commit. The orchestrator
+preserves changed versions; held/newer statement versions cannot mark the pack
+READY. The ordinary worker remains unchanged. Focused checks after this fix returned
+`38 passed, 2 skipped in 3.85s`; the real rollback cases are enabled in the final
+full API run below.
+
+A read-only Edge rehearsal opened every receipt link with HTTP 200. The two
+October lines matched their seeded budget/spend/leads/CPL; memo search returned
+MO2610901 and THB 12,000; the statement showed five source pages, ten occurrences,
+THB 4,812 and DRAFT status. Desktop and 390px checks found no horizontal overflow
+or JavaScript errors. This rehearsal made no financial/content writes. Screenshots
+remain in ignored `artifacts/demo-rehearsal/`.
+
+Final Task 6 verification on this workstation:
+
+| Command | Actual result |
+|---|---|
+| `npm.cmd run typecheck --prefix apps/admin` | Exit 0, `tsc --noEmit` |
+| `npm.cmd run build --prefix apps/admin` | Exit 0; existing Google Sans fallback-metrics warning |
+| `npm.cmd run test:db` | Exit 0; SQL/RLS and all concurrency checks passed; frozen export tests `pass 2`, `fail 0` |
+| `uv run --project apps/api --env-file apps/api/.env pytest apps/api/tests` | `1076 passed, 1 warning in 193.53s (0:03:13)`; all seven opt-in flags enabled, including the real V2 preservation rollback regression |
+| `PLAYWRIGHT_CHANNEL=msedge npm.cmd run test:ui` | `131 passed (6.5m)`, exit 0 |
+| `npm.cmd run check:questions` | `Question catalog/document rows agree: 45 IDs` |
+| Final `npm.cmd run dev:demo` replay | Exit 0; `READY`, `COMPLETE`, finance/actuals `NOOP`; same snapshot and SN codes; memo `SEARCH_READY`, statement `DRAFT`, `sena_h_approved=false` |
+
+The API warning is the dependency's deprecated AnyIO BlockingPortal alias. The
+final Python-only scoped-worker fix is covered by the complete API rerun; the
+previously checked admin bundle and SQL schema did not change. All seven flags
+were `HUB_ACTUALS_IMPORT_TEST`, `HUB_PROMOTIONS_TEST`, `HUB_ARCHIVE_TEST`,
+`HUB_DOCUMENT_OCR_TEST`, `HUB_ASSISTANT_TEST`, `HUB_DEMO_FINANCE_TEST` and
+`HUB_DEMO_TEST`, each set to `1`.
+
+Q45 adds the seed/presentation default; Q1/Q15/Q25 documentation wording now
+distinguishes implemented synthetic functions from pending real integrations.
+There are 39 pending questions, four resolved and two owner-deferred. Q18/Q20
+remain absent from the pending page. The original DW manifest SHA-256 remains
+`a72f9aaa407128780a71b93bd7b0f50ed60a05dac7ba6af7a95a5f68dc6197ae`.
+No new migration, remote provisioning, deployment, external model request or
+production approval was performed. Task 6 completes the authorized demo order;
+historical priority P6 workflows and real-data/hosting/provider acceptance remain
+outside this delivery.

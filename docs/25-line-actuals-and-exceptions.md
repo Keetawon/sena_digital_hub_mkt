@@ -956,3 +956,21 @@ revision/state, asks staff to refresh the read-back. The private helper reads on
 audit table identity/write time and exposes one boolean; it does not calculate a
 new match or expose audit actors, rows or evidence. An unrelated source change can
 therefore show the same refresh notice. Q25 retains this demo default.
+
+### Task 6 presentation dataset
+
+The coherent demo command described in [the implementation report](ads/DEMO_IMPLEMENTATION_20261001.md#task-6--coherent-demo-pack-design-before-code)
+adds explicitly synthetic October 2026 scenarios for HYABC/FLEXI. Its package is
+authored locally for presentation, not delivered by the DW. It uses the existing
+closed TEST validator and atomic generation publication; it does not implement
+runtime matching or calculate new operational DW findings. All original frozen
+bytes, business months, source observation dates and finding identities remain
+available as evidence. Retained findings not evaluated by the demo are UNAVAILABLE,
+not silently cleared. Q45 records presentation ownership and the replay/conflict
+default. Generation receipt time is never a claim of fresh platform/REM data.
+
+The actuals screen initially selects the current Asia/Bangkok month when the URL
+has no month choice. An explicit month or all-month choice remains authoritative.
+The Thai walkthrough pins October 2026 links so the far-future contract coverage
+does not become the presentation's default month. No cutover, cadence, retention
+or production integration decision is activated by this local dataset.

@@ -1,11 +1,15 @@
 # Ads workstream: phase-1 priorities (updated 1 October 2026)
 
-Status: **P1 and expanded P2 implemented and verified locally, 30 September 2026**.
+Status: **P1/P2 and all demo-first Tasks 0–6 implemented and verified locally,
+1 October 2026**. The demo pack is seeded and its replay is READY.
 **Owner decisions, 1 October 2026: P3.0 approved; P4.0 approved; DEMO-FIRST.**
 The execution order below supersedes the earlier design-only gates and schedule
 assumptions. Build working demos on synthetic/TEST data; record unresolved decisions
 with a documented default and a Thai `รอคำตอบ` remark rather than waiting for answers.
 These are engineering approvals, not production, privacy or financial approvals.
+See the [per-task verification report](DEMO_IMPLEMENTATION_20261001.md) and the
+[Thai demo walkthrough](DEMO_SCRIPT_TH.md). The demo pack is Task 6 below, not the
+historical priority P6 for later financial workflows.
 
 ## Current authorized execution order — 1 October 2026
 
@@ -42,6 +46,10 @@ Q18 and Q20 are deferred by owner and excluded from the questions presentation p
 
 ## Historical plan and approvals
 
+The instructions in this section and the dated P1/P2 breakdowns below describe
+earlier execution gates. The 1 October demo-first order above supersedes their
+stop/design-only/no-commit instructions; they do not withdraw the current approvals.
+
 The owner replied `P2.0 approved — implement expanded P2`.
 Schedule option 3 (P1–P5), selected on 29 September, remains the delivery direction.
 The owner set the **campaign naming registry
@@ -55,8 +63,8 @@ authorizes implementation of [P2.0](../23-media-lines-and-memo-register.md), wit
 latest [card-paid costs and recurring commitments addendum](../24-card-costs-and-recurring-commitments.md)
 replacing the earlier card-paid addendum. The
 [P2 implementation report](P2_IMPLEMENTATION_20260930.md) records all five passing
-checks, refinements and outstanding go-live gates. Execution stops after P2;
-P3–P6 implementation has not started. Continue building on SENA-H and demo it to
+checks, refinements and outstanding go-live gates. At that checkpoint execution
+stopped after P2 and P3–P6 implementation had not started. Continue building on SENA-H and demo it to
 P'Note; no pattern approval is recorded. `sena_h_approved` remains false and production
 issuing remains blocked.
 
@@ -68,9 +76,9 @@ also authorizes explicit-path commits and a normal push to `origin/main` after t
 required checks pass. The follow-up addendum requires **Task 0 and Task A to be
 pushed separately before docs 25 and 21**: motion `4886981` and DW handoff `30972d0`
 are now pushed. The fixture manifest records source commit `4886981`, not its own
-future commit. No P3/P4 implementation is authorized by this instruction.
-Wait for `P3.0 approved` / `P4.0 approved`; implementation stays **P3 → P4**, one
-priority at a time. P5/P6 remain deferred. The local handoff does not authorize
+future commit. That handoff instruction alone did not authorize P3/P4 implementation;
+the subsequent approvals and Tasks 0–6 now govern the synthetic demo. Historical
+priority P6 remains later work. The local handoff does not authorize
 hosted/production credentials, real document uploads or changes to external sources.
 
 Inputs: [19](../19-campaign-naming-registry.md) §4.2 SENA-H, [20](../20-marketing-operations-flows.md)
@@ -83,7 +91,7 @@ BF-0/BF-2/BF-5/BF-12, owner decisions of 29–30 September. Skills: `.agents/ski
 | **P1** | **Naming registry (SENA-H)** | Design slice → schema → code/name/UTM API → registration + agency ID-return screens → DW snapshot contract | C (registry tables), D, E, B (tokens/fonts/motion + registry screens only) | ~2 weeks | P'Note approves SENA-H; brand token KITH vs SENA-KITH; DW source key `hub` |
 | P2 | Media lines, memo register, card costs and recurring commitments | P2.0 design → ledger and Media card-sheet imports; group lines/phase children and revisions; memo mirror/aliases; monthly SN assignments; corrections; cost/payment classification and document matrix; account registries; commitments/caps and prepaid recognition | C (line/memo tables), expanded by the 30 Sep addendum | **Re-estimate required**; original ~1.5 weeks does not cover the expanded scope | Q1 manual evidence/access; Q4 ledger headers; Q5 correction authority; Q18–Q24 card/channel/Finance acceptance; affected-path gates in docs 23/24 |
 | P3 | Line actuals, C5/C6 exceptions and document tracking | P3.0 design → DW gold → Hub staging/read-back; monthly document-reference matrix and copy-follow-up log | B (line actuals screen), expanded 1 Oct | Original ~1 week predates document tracking; re-estimate | Q25/Q26 DW contract, metrics and cutover; Q24/Q27 document matrix/due rules; optional Q28 agency projection. DW builds current media lines from `hub__media_line`, not a second ledger ingestion |
-| P4 | E-memo archive/search and restricted statement pipeline | E-memo private upload/versions, text + Thai OCR and restricted memo search; separate card-statement extraction → DRAFT rows → per-page counts/total checks → Media confirms → rule classification. LINE OA reconciliation waits for Q20 per-account evidence. Statements never enter RAG | A, C (`ads.memo_document`), statement pipeline added 30 Sep | Original ~2 weeks predates the statement addition; re-estimate with P2 | E-memo access; Q7 before real uploads/external processing; Q20 OA evidence; Q21 Media roles; Q22 statement controls; Q29 retention; Q30 engine/reviewer acceptance |
+| P4 | E-memo archive/search and restricted statement pipeline | Implemented synthetic local versions, text/OCR, reviewed handoff and restricted memo search. Private R2, real E-memo ingestion and production Thai OCR acceptance remain later gates. Statements never enter RAG. LINE OA matching/review is owner-deferred under Q18/Q20; CHANNEL costs remain unattributed | A, C (`ads.memo_document`), statement pipeline added 30 Sep | Original ~2 weeks predates the statement addition; re-estimate with P2 | E-memo access; Q7 before real uploads/external processing; Q21 Media roles; Q22 statement controls; Q29 retention; Q30 engine/reviewer acceptance |
 | P5 | One internal Hub assistant (scope revised 1 Oct) | Agents SDK in FastAPI, 13 permission-preserving tools across residential/ads/documents, streaming panel, Thai golden set; confirmed draft-text proposals follow read-only v1 | B (assistant), expanded residential scope | Re-estimate; no unchanged delivery date claimed | Q36 real-data API consent; Q37 hosting region; Q38 model/key; synthetic demo proceeds |
 | P6 | UI refresh and later flows | Motion spec on remaining screens, Thai readability result applied; later: QT/PO, bills, payment package, budget forecast (BF-3/8/9/1) | B (remaining) | Later | Business priority after P5 |
 
@@ -102,6 +110,8 @@ Go-live gate for P1: P'Note's approval of SENA-H recorded. Until then, issue cod
 test environments only.
 
 ## P2 authorization and design gate — 30 September 2026
+
+Historical authorization; the later demo-first order supersedes the stopping rules.
 
 The owner first authorized Task 0 decision updates and P2.0 docs only, then explicitly
 approved the expanded design with `P2.0 approved — implement expanded P2`. Implement
@@ -134,12 +144,12 @@ build the later QT/PO, bill-approval or payment-package workflows. No P3 actuals
 read-back, BF-1 targets or broader project `funding_contribution` implementation is
 included. Ad-account BUD splitting is explicitly included by the latest addendum.
 
-The statement PDF/storage/OCR pipeline and date/amount-count reconciliation of LINE
-OA charges are **designed now, implemented with P4**. Identical eligible rows may
-be assigned only when the expected counts match; mismatches require review.
-Statements are restricted to marketing-ops roles and never indexed in RAG. No
-upload, external processing or real evidence import is authorized by this design
-slice; external OCR/LLM processing awaits the Q7 DPO decision.
+The statement PDF/storage/OCR pipeline was designed in P2 and is now implemented
+as a synthetic local P4 demo. The owner subsequently deferred LINE OA account
+matching and its review screen (Q18/Q20); preserve its unattributed CHANNEL costs.
+Statements are restricted to marketing-ops roles and never indexed in RAG. Real
+uploads, external processing and evidence imports remain outside the demo;
+external OCR/LLM processing awaits the Q7 DPO decision.
 
 **The implementation gate is satisfied.** Complete P2 schema → API → UI → tests
 against the expanded approved design. Use synthetic fixtures, run all five required checks and

@@ -186,13 +186,45 @@ async def local_connection():
         await db.close()
 
 
-async def work_once(db, *, worker_id='local-synthetic-worker') -> dict:
+async def work_once(db, *, worker_id='local-synthetic-worker', allowed_document_ids=None, allowed_document_versions=None) -> dict:
     from .document_storage import read_document
+    if allowed_document_versions is not None and (allowed_document_ids is None or set(allowed_document_versions) != set(allowed_document_ids)):
+        raise DocumentStorageError('DEMO_SCOPE_INVALID')
     async def rpc(sql, *args):
         async with db.transaction():
+            if 'ads.archive_claim(' in sql and allowed_document_ids is not None:
+                await db.execute('RESET ROLE')
+                await db.execute('SELECT hub.require_demo_seeder()')
+                await db.execute('SELECT pg_advisory_xact_lock(1560022)')
+                # Scoped demo claims alone serialize document mutations through the
+                # preflight/claim transaction; ordinary SELECT readers remain available.
+                await db.execute('LOCK TABLE ads.archive_document IN EXCLUSIVE MODE')
+                if allowed_document_versions is not None:
+                    selections = sorted(allowed_document_versions.items())
+                    changed = await db.fetchval('''SELECT EXISTS(SELECT 1
+                        FROM unnest($1::uuid[],$2::uuid[]) AS expected(document_id,version_id)
+                        LEFT JOIN ads.archive_document d ON d.id=expected.document_id
+                        WHERE d.id IS NULL OR d.current_version_id IS DISTINCT FROM expected.version_id)''',
+                        [UUID(document) for document, _ in selections], [UUID(version) for _, version in selections])
+                    if changed:
+                        raise DocumentStorageError('DEMO_VERSION_CONFLICT')
+                foreign = await db.fetchval('''SELECT EXISTS(SELECT 1 FROM ads.archive_document d
+                    JOIN ads.archive_job j ON j.version_id=d.current_version_id
+                    WHERE NOT d.legal_hold AND d.id<>ALL($1::uuid[])
+                    AND j.status IN('QUEUED','RETRY','RUNNING'))''',
+                    [UUID(value) for value in allowed_document_ids])
+                if foreign:
+                    # archive_claim also expires old leases; exclude those side effects too.
+                    raise DocumentStorageError('DEMO_QUEUE_CONFLICT')
             await db.execute('SET LOCAL ROLE ads_document_worker')
             await db.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000042',true)")
-            return await db.fetchval(sql, *args)
+            result = await db.fetchval(sql, *args)
+            if 'ads.archive_claim(' in sql and result is not None and allowed_document_ids is not None and str(result['document_id']) not in allowed_document_ids:
+                # Roll the claim back; a demo command must not consume another user's queue.
+                raise DocumentStorageError('DEMO_QUEUE_CONFLICT')
+            if 'ads.archive_claim(' in sql and result is not None and allowed_document_versions is not None and str(result['version_id']) != allowed_document_versions[str(result['document_id'])]:
+                raise DocumentStorageError('DEMO_VERSION_CONFLICT')
+            return result
     job = await rpc('SELECT ads.archive_claim($1,120)', worker_id)
     if job is None:
         return {'status': 'IDLE'}
