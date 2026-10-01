@@ -590,19 +590,7 @@ main:focus { outline: none; }
 .source-list > div, .snapshot-list > div { font-size: inherit; }
 .page-footer { flex-wrap: wrap; gap: 8px 20px; }
 
-@keyframes hub-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes hub-pop-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: no-preference) {
-  main, [role="tabpanel"]:not([hidden]) { animation: hub-fade-in .18s ease-out; }
-  .action-dialog[open] { animation: hub-pop-in .14s ease-out; }
-  .action-dialog[open]::backdrop { animation: hub-fade-in .18s ease-out; }
-  .ct-detail:not([hidden]) { animation: hub-fade-in .15s ease-out; }
-  .project-card, .brand-card, .role-card, .button, .registry-button { transition: transform .14s ease-out; }
-  .button:active:not(:disabled), .registry-button:active:not(:disabled) { transform: scale(.98); }
-}
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .project-card:hover, .brand-card:hover, .role-card:hover { transform: translateY(-2px); }
-}
+/* Motion lives in styles/motion.css, imported after this file in the root layout. */
 @media (max-width: 720px) {
   .sidebar nav { gap: 8px; }
   .sidebar .nav-link { flex: 1 1 180px; justify-content: flex-start; }

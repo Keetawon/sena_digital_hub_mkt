@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Google_Sans } from "next/font/google";
 import { HubMotion } from "@/components/registry-motion";
 import "./globals.css";
+import "../styles/motion.css";
 
 const notoSansThai = localFont({
   src: "./fonts/NotoSansThai-Variable.ttf",

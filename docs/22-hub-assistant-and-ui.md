@@ -203,7 +203,7 @@ gap. Gold never replaces readable text or becomes the sole status indicator.
 
 Typography, sizes, spacing, menu structure, registration behavior and reduced-motion
 rules are retained. Existing Google Sans Thai headings and Noto Thai data typography
-carry the same appearance through every screen. Motion remains quiet and brief.
+carry the same appearance through every screen. Motion follows the Apple-inspired language in §3: brief, springy and never blocking.
 
 Measured with the sRGB formula in §1.1 before applying the palette. Ratios below are
 computed, not copied from a palette reference; text requires 4.5:1 and UI edges 3:1.
@@ -313,26 +313,36 @@ Readability protocol, to perform with the P1.4 screens:
    Until Thai reviewers are available, Noto-first table bodies are the default; font
    implementation can continue, but readability acceptance remains pending.
 
-## 3. Registry motion and interaction spec
+## 3. Hub motion and interaction spec
 
-P1.1 supplies `DropdownPop` and `RowToCard`, with an app-level client boundary
-for `<MotionConfig reducedMotion="user">`. Content renders immediately. Never animate
-table-cell width/height, page camera zoom or blur. Layout projection may transform the
-floating card; text/content can crossfade without distorting a live HTML table row.
-[MotionConfig behavior](https://motion.dev/docs/react-motion-config) informs the wrapper;
-the timings below define the Hub interaction choices.
+**Owner request, 1 October 2026:** replace the quiet P1.1 motion with an Apple-inspired
+language that makes page changes, loading, input and responses feel physical and
+responsive. The tokens and rules live in `apps/admin/styles/motion.css` (imported after
+`globals.css`); the shared primitives stay in `components/registry-motion.tsx`.
 
-| Screen / interaction | Motion | Focus, URL and reduced-motion behavior |
+Principles: motion explains what happened and where things came from; it never delays
+data or blocks input. Only opacity, transform and a brief entrance blur animate; table
+cells, widths and heights never do, and text is never stretched by a non-uniform scale.
+Springs replace linear timing (CSS `linear()` samples of damping 0.8 and 0.62, with cubic
+fallbacks). Durations: press 110ms, quick 180ms, base 320ms, entrance 460ms, spring
+≈520ms; list stagger 38ms, capped after seven items.
+
+| Moment | Motion | Focus, URL and reduced-motion behavior |
 |---|---|---|
-| Registry list → detail | Matching `layoutId` for the row's visual summary and floating card; spring stiffness ~400, damping ~35, perceived ≤300ms | A real link/button inside the semantic row opens it. Move focus to the card heading/first control; contain tab focus. Back/close/Esc restores the exact opener; if filtered away, focus list heading. |
-| List/inbox backdrop | Opacity 0→1, 180ms; no animated blur | Outside click closes read-only detail; background is inert while open. With an unsaved binding form, retain draft and ask before discard. Reduced motion: 0–100ms fade. |
-| Detail card tabs | Card `layout`, content opacity and shared-layout tab underline, 220ms | Thai tabs `รายละเอียด`, `ชื่อและลิงก์ติดตาม`, `รหัสบนแพลตฟอร์ม`; tablist keyboard behavior. Reduced motion: instant layout/underline and no transform. |
-| Wizard cascading picker | `DropdownPop`: scale .96→1 and opacity, 140ms; origin at trigger | Search/checkbox list with visible labels, arrows/Enter/Esc as appropriate. Closing restores trigger focus. For ≥2 selection use checkboxes, never a hover-only menu. Reduced motion: scale off, instant or ≤100ms fade. |
-| Wizard step change and preview | Static step panels, optional ≤150ms opacity | Next focuses step heading; validation failure focuses error summary. Announce latest preview politely without moving focus; no row morph or decorative slide. Reduced motion: instant. |
-| ID-return inbox → binding card | Reuse `RowToCard`, same backdrop and tabs | First editable field receives focus; save announces outcome. Deep link contains code/tab only, no sensitive form inputs. Reduced motion same as list. |
-| Shared Hub workspaces and residential tabs | 180ms content opacity; existing data renders immediately | No delayed loading, focus or data changes. Reduced motion: no entry animation. |
-| Residential dialogs / backdrop | Scale .96→1 with opacity, 140ms; backdrop fade 180ms | Retain native dialog focus/Esc and existing form guards. Reduced motion: instant. |
-| Project, brand and role cards / buttons | Pointer hover raises cards by 2px; button press scales to .98; 140ms | No table-cell or layout dimensions animate. Hover only on hover-capable devices; no transforms with reduced motion. |
+| Page change between workspaces | Cross-document View Transition: the old page dims, shrinks to 98.5% and blurs out in 200ms; the shell cross-fades; the new page's sections rise 12px out of a 6px blur, staggered | Plain links keep full navigation, URLs and history. Browsers without the API navigate instantly. Reduced motion: no transition and no entrance. |
+| Data arriving | Rows, cards and metrics rise 8px and fade in one after another; the active sidebar item settles with a small spring | Data is rendered as soon as it arrives; the animation never postpones it. Reduced motion: instant. |
+| Loading | iOS-style petal activity indicator beside the existing Thai loading text; shimmering skeleton rows (decorative, `aria-hidden`) while a list has no rows yet; full-page loading text fades in only after 150ms to avoid flicker | The live-region text is unchanged. Reduced motion: the indicator ticks slowly and the shimmer stops. |
+| Input focus | The 3px focus ring settles from 7px away onto the field with a soft halo | Ring width and colour are unchanged; forced-colours mode keeps the native outline. Reduced motion: instant ring. |
+| Invalid input / rejected step | Fields with `aria-invalid="true"` shake briefly; error summaries drop in, then shake once | Focus still moves to the error summary as before. Reduced motion: no shake. |
+| Busy action | Buttons with `aria-busy="true"` show the activity indicator and a light sweep while saving | Label text (`กำลังบันทึก…`) stays; buttons remain disabled while busy. |
+| Success response | Success notices pop with a spring and draw their check; keyed status text re-pops on every new message inside a stable live region | Announcements are unchanged. Reduced motion: instant. |
+| Buttons and cards | Press scales to 96% quickly and springs back; primary buttons gain a soft glow on hover; cards lift 3px with a spring | Hover effects only on hover-capable devices; no transforms with reduced motion. |
+| Registry list → detail card | The card grows out of its source row with a uniform spring scale (no stretched text) above a frosted backdrop; a direct link rises 18px into place | Focus moves to the card heading; Esc/Back/close restore the opener as before. Reduced motion: instant card, 80ms backdrop fade. |
+| Cascading picker (`DropdownPop`) | Drops 6px from the trigger and scales from 95% on a spring; closes in 120ms | Keyboard behavior unchanged. Reduced motion: opacity only. |
+| Residential dialogs, tabs and disclosures | Dialogs pop on a spring above a frosted backdrop; tab panels and opened `<details>` content rise 8px | Native dialog focus/Esc and form guards unchanged. Reduced motion: instant. |
+
+The frosted backdrop blur is static; only its opacity animates. Motion is not an
+accessibility manager: native dialog, focus and URL handling remain as specified below.
 
 Proposed list URL: `/ads/registry?registration=SN2600101Y&tab=names`, retaining
 search/filter/page on close. A direct link loads the permitted detail without needing
