@@ -1,5 +1,10 @@
 # 04 — Campaign & Promotion
 
+> **1 October 2026 local demo implementation:** [Doc 26](26-residential-demo-and-atomic-release.md)
+> implements per-project structured promotion drafts, separate data/Legal review,
+> immutable snapshots, read-time expiry and atomic residential releases. Broader
+> targeting and external consumer deployment described below remain future work.
+
 > **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** ยึด [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) เหนือข้อความและตัวอย่างเดิม Phase 1 (ก.ย.–ต.ค.) มีเฉพาะโปรโมชั่น SENA residential ที่เกี่ยวกับ 7 โครงการนำร่อง
 > โมเดล association ข้าม BU และการสร้างโปรโมชั่น standalone ของ Solar/EV/LivNex เป็นแบบอนาคต ไม่ใช่งาน MVP; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1 ไม่ต้องสร้าง BU workspace, chatbot ข้าม BU, product model กลาง หรือ adapter เพิ่มเพื่อรองรับตัวอย่างเหล่านี้
 

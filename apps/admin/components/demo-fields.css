@@ -1,0 +1,1 @@
+.demo-fields { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .6rem; max-width: 100%; padding: .35rem .6rem; margin-block: .5rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--surface-warm); color: var(--ink); font-size: var(--text-small); line-height: 1.6; overflow-wrap: anywhere; }

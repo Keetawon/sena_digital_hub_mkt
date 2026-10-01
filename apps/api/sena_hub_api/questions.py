@@ -16,8 +16,8 @@ def load_catalog(path: Path = CATALOG_PATH) -> dict:
     if not isinstance(catalog, dict) or set(catalog) != {"schema_version", "questions"} or type(catalog["schema_version"]) is not int or catalog["schema_version"] != 1:
         raise ValueError("Invalid question catalog version")
     entries = catalog["questions"]
-    if not isinstance(entries, list) or len(entries) < 39:
-        raise ValueError("Question catalog must retain all Q1–Q39 decisions")
+    if not isinstance(entries, list) or len(entries) < 41:
+        raise ValueError("Question catalog must retain all Q1–Q41 decisions")
     ids = []
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) != {*PRESENTATION_FIELDS, "doc"}:
@@ -48,7 +48,7 @@ def load_catalog(path: Path = CATALOG_PATH) -> dict:
             if not isinstance(href, str) or not href.startswith("/") or href.startswith("//") or "\\" in href or re.search(r"[\x00-\x20]", href):
                 raise ValueError("Question links must be local Hub routes")
             parts = urlsplit(href)
-            if parts.scheme or parts.netloc or parts.path not in {"/", "/questions", "/ads/registry", "/ads/registry/new", "/ads/finance", "/ads/actuals", "/ads/documents", "/ads/exceptions"}:
+            if parts.scheme or parts.netloc or parts.path not in {"/", "/questions", "/ads/registry", "/ads/registry/new", "/ads/finance", "/ads/actuals", "/ads/documents", "/ads/exceptions", "/promotions", "/releases"}:
                 raise ValueError("Unknown affected-screen route")
             if not isinstance(label, str) or not re.search(r"[\u0e00-\u0e7f]", label):
                 raise ValueError("Question link needs a Thai label")

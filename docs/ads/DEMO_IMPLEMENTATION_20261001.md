@@ -170,3 +170,57 @@ Final Task 2 verification on this workstation:
 and all ordered-column/hash/count checks passed again after implementation.
 The local approval-setting query confirmed `sena_h_approved=false`. No DW writes,
 hosted provisioning, real data or external source-system access occurred.
+
+## Task 3 — residential demo: design before code
+
+Task 2 was pushed as `259f1e5`. The next slice follows
+[doc 26](../26-residential-demo-and-atomic-release.md): per-project structured
+promotions with read-time expiry, one transactional brand/project/model/promotion
+release and guarded whole-release rollback, and gap-only synthetic HYABC/FLEXI
+content with visible field provenance. Q40/Q41 record the local review and release
+defaults; real legal approval and consumer deployment remain separate decisions.
+
+Implementation adds `/promotions` and `/releases`, per-project review-bound
+promotion snapshots and read-time expiry, and an atomic release history. Models
+remain part of their project snapshot. Normal editorial publication remains strict;
+the explicit local demo mode uses a seeder-owned synthetic asset/model selection.
+The seed preserves HYABC's two unapproved original assets and thirteen suggested
+source models, fills only empty marketing fields and labels each introduced field.
+`npm.cmd run dev:residential-demo` is the local residential seed step; Task 6 will
+compose it into the complete demo. Q40/Q41 capture these defaults; the catalog now
+has 41 entries and still omits owner-deferred Q18/Q20 from the presentation page.
+
+Preliminary checks (not the final Task 3 gate): promotion API, seed unit checks and
+question tests returned `91 passed, 1 skipped, 2 warnings in 8.34s`; the opt-in seed
+database check was deliberately skipped until migration 0021 is ready. The first
+admin build exited 0 with the existing Google Sans fallback-metrics warning.
+
+Migration 0021 was first rehearsed inside a rollback-only transaction. That caught
+one ambiguous `payload` reference in promotion readiness, fixed before application.
+The final rehearsal passed schema, SQL/RLS cases, HYABC seed/replay, complete demo
+release and rollback. Only then was 0021 applied; no forward correction migration
+was needed. The persisted seed returned `SEEDED` twice, with eight introduced field
+paths initially and none on replay. The integration check verifies original model
+records, bindings and asset rights remain identical and saved user edits survive.
+
+The mixed SQL release case includes brand, project with model edits and two
+promotions. One invalid member leaves all prior pointers/history intact. Successful
+publication includes the model draft; rollback restores all previous snapshots
+without rewriting the draft, and rejects later independent publication. Concurrent
+releases and a draft edit racing publication both reject the stale operation.
+
+Final Task 3 verification:
+
+| Command | Actual result |
+|---|---|
+| `npm.cmd run typecheck --prefix apps/admin` | Exit 0, `tsc --noEmit` |
+| `npm.cmd run build --prefix apps/admin` | Exit 0; `/promotions` and `/releases` built; existing Google Sans fallback-metrics warning |
+| `npm.cmd run test:db` | Exit 0; all previous SQL/RLS and concurrency checks, mixed residential release/rollback, two new concurrency cases and frozen fixture checks passed (`pass 2`, `fail 0`) |
+| API pytest with `HUB_ACTUALS_IMPORT_TEST=1` and `HUB_PROMOTIONS_TEST=1` | `924 passed, 2 warnings in 80.29s (0:01:20)` |
+| `PLAYWRIGHT_CHANNEL=msedge npm.cmd run test:ui` | `101 passed (5.4m)`, exit 0 |
+
+The focused Edge suite passed eleven tests. An earlier focused attempt overlapped
+the server restart and reported eight connection refusals plus one pass; it was
+rerun once the server was ready. Desktop and 390px screenshots of the real seeded
+pages were inspected; there is no horizontal page overflow. The approval-setting
+query still returns `sena_h_approved=false`.

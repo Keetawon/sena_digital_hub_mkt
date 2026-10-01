@@ -6,6 +6,10 @@ const sections = [
   { id: "brands", href: "/?view=brands", label: "แบรนด์ที่อยู่อาศัย", path: "M4 21V6l8-3v18M12 9h8v12M2 21h20M7 8v2M7 13v2M16 12v2M16 17v2" },
   { id: "registry", href: "/ads/registry", label: "ทะเบียนแคมเปญ", path: "M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" },
 ] as const;
+const contentSections = [
+  { id: "promotions", href: "/promotions", label: "โปรโมชันโครงการ" },
+  { id: "releases", href: "/releases", label: "ชุดเผยแพร่ข้อมูล" },
+] as const;
 const financialSections = [
   { id: "finance", href: "/ads/finance", label: "งบและค่าใช้จ่าย" },
   { id: "actuals", href: "/ads/actuals", label: "ผลใช้จ่ายรายเดือน" },
@@ -13,10 +17,11 @@ const financialSections = [
   { id: "exceptions", href: "/ads/exceptions", label: "รายการที่ต้องตรวจสอบ" },
 ] as const;
 
-export function HubShell({ section, roleLabel, toolbar, children, staff, registry = false, finance = false }: {
-  section: typeof sections[number]["id"] | typeof financialSections[number]["id"] | "questions";
+export function HubShell({ section, roleLabel, toolbar, children, staff, residential = false, registry = false, finance = false }: {
+  section: typeof sections[number]["id"] | typeof financialSections[number]["id"] | typeof contentSections[number]["id"] | "questions";
   roleLabel: string;
   staff: boolean;
+  residential?: boolean;
   toolbar?: ReactNode;
   children: ReactNode;
   registry?: boolean;
@@ -30,12 +35,13 @@ export function HubShell({ section, roleLabel, toolbar, children, staff, registr
       <nav aria-label="เมนูหลัก">{sections.map(item => <a key={item.id} href={item.href} className={`nav-link${section === item.id ? " active" : ""}`} aria-current={section === item.id ? "page" : undefined}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={item.path} /></svg><span>{item.label}</span>
       </a>)}</nav>
+      {residential && <nav aria-label="งานเนื้อหาที่อยู่อาศัย">{contentSections.map(item => <a key={item.id} className={`nav-link${section === item.id ? " active" : ""}`} href={item.href} aria-current={section === item.id ? "page" : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4" /></svg><span>{item.label}</span></a>)}</nav>}
       {finance && <nav className="finance-sidebar" aria-label="งานงบและค่าใช้จ่าย">{financialSections.map(item => <a key={item.id} className={`nav-link${section === item.id ? " active" : ""}`} href={item.href} aria-current={section === item.id ? "page" : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" aria-hidden="true"><path d="M4 3h16v18H4zM8 7h8M8 11h8M8 15h3M15 15h1" /></svg><span>{item.label}</span></a>)}</nav>}
       {staff && <nav aria-label="คำถามของทีมงาน"><a className={`nav-link${section === "questions" ? " active" : ""}`} href="/questions" aria-current={section === "questions" ? "page" : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9 9a3 3 0 1 1 4 2.8c-.7.3-1 .7-1 1.7M12 17h.01" /></svg><span>คำถามที่รอคำตอบ</span></a></nav>}
       <div className="sidebar-footer"><span className="scope-label">ข้อมูลและแคมเปญ</span><p>พื้นที่ทำงานร่วมกัน<br />สำหรับทีมการตลาด</p><div className="sidebar-rule" /><span className="small-text">ระบบหลังบ้านสำหรับทีมงาน</span></div>
     </aside>
     <div className="main-shell">
-      <header className="topbar"><div className="breadcrumb"><span>พื้นที่ทำงาน</span><span aria-hidden="true">/</span><span>{section === "questions" ? "คำถามที่รอคำตอบ" : financialSections.find(item => item.id === section)?.label ?? sections.find(item => item.id === section)?.label}</span></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
+      <header className="topbar"><div className="breadcrumb"><span>พื้นที่ทำงาน</span><span aria-hidden="true">/</span><span>{section === "questions" ? "คำถามที่รอคำตอบ" : contentSections.find(item => item.id === section)?.label ?? financialSections.find(item => item.id === section)?.label ?? sections.find(item => item.id === section)?.label}</span></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
       {toolbar}
       <main id="main-content" className={registry ? "registry-shell" : undefined} tabIndex={-1}>{children}</main>
       <footer className="page-footer"><span>SENA Digital Hub</span><span>ข้อมูลโครงการ · ทะเบียนแคมเปญ</span></footer>

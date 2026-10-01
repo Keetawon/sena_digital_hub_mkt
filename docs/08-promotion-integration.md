@@ -1,5 +1,10 @@
 # 08 — Promotion: เชื่อม REM + Ads Registration เข้า Digital Hub
 
+> **1 October 2026 local demo implementation:** see [Doc 26](26-residential-demo-and-atomic-release.md)
+> for the per-project promotion/release contract and synthetic HYABC/FLEXI selection.
+> REM remains read-only; the demo does not ingest real offers or implement external
+> website delivery. Structured promotions remain outside retrieval indexes.
+
 > **ขอบเขตปัจจุบัน (15 ก.ย. 2026):** [REQUIREMENTS.md](../REQUIREMENTS.md) และ [07-delivery-plan.md](07-delivery-plan.md) มีผลเหนือข้อเสนอเดิม Phase 1 (ก.ย.–ต.ค.) มีเฉพาะ SENA residential 7 โครงการ
 > โมเดล association ข้าม BU, source-neutral product model, Flow B สำหรับ standalone BU, ตัวอย่าง Solar API และ adapter ของ BU อื่นเป็นแบบอนาคต ไม่ใช่ MVP และไม่ต้องสร้าง BU workspace หรือ chatbot ข้าม BU ใน Phase 1; Solar อยู่ Phase 2 หลัง 31 ต.ค. 2026 และธุรกิจอื่นที่ไม่ใช่ residential อยู่นอก Phase 1
 > ผล audit ที่กล่าวถึง Solar Roof / EV Charger ในโปรฯ บ้านยังคงเป็นหลักฐานของสิทธิประโยชน์ residential ไม่ใช่การเปิดใช้ standalone Solar/EV BU ส่วน Ads ให้ใช้แนวทาง read-only ใน [09](09-ads-registry-integration.md)

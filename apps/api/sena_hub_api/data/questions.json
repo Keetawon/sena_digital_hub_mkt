@@ -827,6 +827,56 @@
         "blocks": "Production ownership/access acceptance, not the demo.",
         "default": "All five SENA staff roles may read generic policy questions; no record-level budget, memo or personal data is included. Agencies/service consumers are denied. Domain screens keep existing ACLs. Pending entries are grouped by P'Note, Finance, DPO, Media, Marketing and IT; resolved Q9–Q12 and owner-deferred Q18/Q20 are excluded. One catalog generates the English documentation rows and Thai UI projection; CI fails on drift."
       }
+    },
+    {
+      "id": "Q40",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของข้อมูลการตลาดและฝ่ายกฎหมาย",
+      "question_th": "ใครยืนยันข้อมูลและข้อความกฎหมายของโปรโมชั่น และใครตรวจแทนข้อมูลตัวอย่างของ HYABC ก่อนใช้งานจริง?",
+      "default_th": "เดโมใช้หลักฐานตรวจทานข้อมูลและกฎหมายที่ระบุว่าเป็นตัวอย่าง ผู้เผยแพร่บันทึกแยกกันก่อนเผยแพร่ การแก้ไขโปรโมชั่นทำให้ต้องตรวจใหม่ เติมเฉพาะช่องที่ขาดและติดป้ายข้อมูลตัวอย่าง ชุดเผยแพร่โหมดเดโมเลือกเฉพาะภาพและแบบสังเคราะห์ที่ตรวจแล้ว โดยเก็บภาพและแบบเดิมที่ยังไม่อนุมัติไว้ครบ ไม่ถือว่าอนุมัติข้อมูลจริง",
+      "links": [
+        {
+          "href": "/promotions",
+          "label": "โปรโมชั่นโครงการ"
+        },
+        {
+          "href": "/",
+          "label": "ข้อมูลโครงการและ HYABC"
+        }
+      ],
+      "doc": {
+        "id_label": "Q40",
+        "question": "Who owns data and Legal review of per-project public promotions, and who replaces/reviews missing HYABC/FLEXI demo content before real use?",
+        "owner": "Marketing content owner + Legal + residential project steward",
+        "blocks": "Real promotion/content approval and production acceptance, not the synthetic demo.",
+        "default": "Editors maintain per-project drafts; publishers record separate current-version data and Legal review evidence before publication. Local demo evidence is explicitly synthetic, never real Legal consent. Material edits invalidate both reviews. Fill only missing HYABC/FLEXI fields, preserve saved edits/source identities, keep per-field synthetic provenance in snapshots/API and Thai badges. Promotions remain structured, outside RAG, and expire at read time; no new REM ingestion or cross-BU targeting. Existing unapproved HYABC assets and thirteen suggested models remain untouched. An explicit local-only demo release selects seeder-marked synthetic assets and one added synthetic model, runs normal readiness/rights checks, and labels its alternate snapshot and excluded-original counts. Ordinary publication is unchanged."
+      }
+    },
+    {
+      "id": "Q41",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของระบบเผยแพร่และทีมเว็บไซต์",
+      "question_th": "ทีมเว็บไซต์จะรับรุ่นเผยแพร่พร้อมกันอย่างไร และใครอนุมัติขอบเขตการย้อนคืนทั้งชุดก่อนใช้งานจริง?",
+      "default_th": "เดโมเผยแพร่แบรนด์ โครงการพร้อมแบบ และโปรโมชั่นเป็นธุรกรรมเดียว ต้องตรงกับรุ่นที่ตรวจแล้ว ย้อนคืนทั้งชุดได้เมื่อยังไม่มีการเผยแพร่ใหม่และผ่านเงื่อนไขปัจจุบัน ยังไม่ส่งข้อมูลหรือแจ้งเตือนไประบบภายนอก",
+      "links": [
+        {
+          "href": "/releases",
+          "label": "ชุดเผยแพร่และประวัติ"
+        },
+        {
+          "href": "/promotions",
+          "label": "โปรโมชั่นโครงการ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q41",
+        "question": "Confirm consumer rollout/change-feed ownership and whole-release rollback policy for a brand/project/model/promotion release.",
+        "owner": "IT publishing owner + website consumer owner + Marketing publisher",
+        "blocks": "External consumer rollout and production policy, not local transactional publication.",
+        "default": "One local database transaction publishes the selected brand/project/promotion set; model edits belong to the project snapshot. Require expected draft revisions and publication pointers with stable locks. A failed member changes no pointer. Whole-set rollback requires unchanged current pointers and current rights/source/validity eligibility; it cannot override later work or revive expired content. Preserve an immutable release/member history. No deployment or external webhook delivery in this task."
+      }
     }
   ]
 }

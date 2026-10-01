@@ -2,3 +2,6 @@
 export function isHubStaff(role: unknown): boolean {
   return typeof role === "string" && ["editor", "publisher", "viewer", "admin", "online_staff"].includes(role);
 }
+export function isContentStaff(role: unknown): boolean {
+  return typeof role === "string" && ["editor", "publisher", "viewer", "admin"].includes(role);
+}

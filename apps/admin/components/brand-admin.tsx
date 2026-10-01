@@ -5,10 +5,11 @@ import type { LocalRole } from "@/lib/local-session";
 import type { Project } from "./hub-admin";
 import { AssetDialog, ProjectAssets, type AssetBinding } from "./project-assets";
 import { request } from "./hub-request";
+import { DemoFields } from "./demo-fields";
 
 type Localized = { th?: string; [locale: string]: string | undefined };
 export type BrandSource = { rem_brand_id: string; brand_name_rem: string; brand_name_en_rem: string | null; is_deleted: boolean; source_updated_at: string | null; source_snapshot_at: string; source_fingerprint: string; source_record: Record<string, unknown> | null; intake_manifest_sha256: string | null; public_brand_id?: string | null };
-export type BrandSummary = { id: string; public_brand_id: string; rem_brand_id: string; public_name: Localized; status: "active" | "inactive"; publication_available: boolean };
+export type BrandSummary = { demo_fields?: unknown; id: string; public_brand_id: string; rem_brand_id: string; public_name: Localized; status: "active" | "inactive"; publication_available: boolean };
 export type Brand = BrandSummary & {
   description: Localized; slug: string; updated_at: string; published_version_id: string | null;
   readiness: { ready: boolean; percent: number; missing: { field: string; message: string }[] };
@@ -52,7 +53,7 @@ function BrandOverview({ role }: { role: LocalRole }) {
     <div className="section-heading"><h2>แบรนด์ในพื้นที่ทำงาน {!loading && !error && <span className="count">{brands.length}</span>}</h2><button className="button secondary" aria-expanded={sources} aria-controls="brand-source-picker" onClick={() => setSources(!sources)}>{sources ? "ปิดต้นทางแบรนด์" : "ดูแบรนด์จากต้นทาง"}</button></div>
     {sources && <BrandSourcePicker role={role} />}
     <div className="form-field"><label htmlFor="brand-search">ค้นหาชื่อหรือรหัสแบรนด์</label><input id="brand-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>
-    {loading ? <Loading /> : error ? <LoadError error={error} retry={load} /> : !filtered.length ? <div className="empty-state compact"><h2>{search ? "ไม่พบแบรนด์ที่ตรงกับการค้นหา" : "ยังไม่มีแบรนด์ในพื้นที่ทำงาน"}</h2><p>ผู้ดูแลระบบเลือกแบรนด์จากต้นทางได้ หรือส่งคำขอให้ตรวจสอบแบรนด์ที่ต้องการ</p></div> : <div className="brand-grid">{filtered.map(brand => <a className="brand-card panel" key={brand.id} href={brandHref(brand.public_brand_id)}><div className="brand-card-heading"><h3>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h3><BrandStatus brand={brand} /></div><p className="small-text muted source-code">รหัสแบรนด์ REM {brand.rem_brand_id}</p><p>{brand.description?.th || "ยังไม่มีคำอธิบายแบรนด์"}</p><p className="small-text muted">{brand.status === "active" ? "ข้อมูลร่าง: เปิดใช้งาน" : "ข้อมูลร่าง: ปิดใช้งาน"} · พร้อม {brand.readiness?.percent ?? 0}%</p><span className="open-project">จัดการแบรนด์ <span aria-hidden="true">→</span></span></a>)}</div>}
+    {loading ? <Loading /> : error ? <LoadError error={error} retry={load} /> : !filtered.length ? <div className="empty-state compact"><h2>{search ? "ไม่พบแบรนด์ที่ตรงกับการค้นหา" : "ยังไม่มีแบรนด์ในพื้นที่ทำงาน"}</h2><p>ผู้ดูแลระบบเลือกแบรนด์จากต้นทางได้ หรือส่งคำขอให้ตรวจสอบแบรนด์ที่ต้องการ</p></div> : <div className="brand-grid">{filtered.map(brand => <a className="brand-card panel" key={brand.id} href={brandHref(brand.public_brand_id)}><DemoFields fields={brand.demo_fields} /><div className="brand-card-heading"><h3>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h3><BrandStatus brand={brand} /></div><p className="small-text muted source-code">รหัสแบรนด์ REM {brand.rem_brand_id}</p><p>{brand.description?.th || "ยังไม่มีคำอธิบายแบรนด์"}</p><p className="small-text muted">{brand.status === "active" ? "ข้อมูลร่าง: เปิดใช้งาน" : "ข้อมูลร่าง: ปิดใช้งาน"} · พร้อม {brand.readiness?.percent ?? 0}%</p><span className="open-project">จัดการแบรนด์ <span aria-hidden="true">→</span></span></a>)}</div>}
     <BrandRequests role={role} brands={brands} />
   </>;
 }
@@ -186,7 +187,7 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
   const readiness = brand.readiness ?? { ready: false, percent: 0, missing: [] };
   return <>
     <a className="back-link" href="/?view=brands">← แบรนด์ทั้งหมด</a>
-    <div className="page-heading detail-heading"><div><p className="eyebrow source-code">ข้อมูลแบรนด์ / {brand.public_brand_id}</p><h1>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h1><p className="muted">ปรับปรุงล่าสุด {date(brand.updated_at)}</p></div><BrandStatus brand={brand} /></div>
+    <div className="page-heading detail-heading"><div><p className="eyebrow source-code">ข้อมูลแบรนด์ / {brand.public_brand_id}</p><h1>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={brand.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {date(brand.updated_at)}</p></div><BrandStatus brand={brand} /></div>
     {notice && <p className="notice success" role="status">{notice}</p>}
     {error && <div className="notice error model-error-summary" role="alert" tabIndex={-1} ref={errorSummary}><strong>{error}</strong>{conflict && <><p>ข้อความที่กรอกยังอยู่ คัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button className="button secondary" onClick={() => { if (!dirty || window.confirm("ทิ้งการแก้ไขและโหลดข้อมูลแบรนด์ล่าสุดหรือไม่?")) void load(); }}>โหลดข้อมูลแบรนด์ล่าสุด</button></>}</div>}
     <div className="detail-tabs" role="tablist" aria-label="ข้อมูลแบรนด์">{(["content", "versions"] as const).map(value => <button key={value} id={`brand-${value}-tab`} role="tab" aria-selected={tab === value} aria-controls={`brand-${value}-panel`} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={event => { if (["ArrowLeft", "ArrowRight"].includes(event.key)) { event.preventDefault(); const next = value === "content" ? "versions" : "content"; setTab(next); document.getElementById(`brand-${next}-tab`)?.focus(); } }}>{value === "content" ? "ข้อมูลและโลโก้แบรนด์" : "ประวัติการเผยแพร่แบรนด์"}</button>)}</div>
