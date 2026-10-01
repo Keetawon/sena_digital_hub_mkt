@@ -294,3 +294,67 @@ fixture checks (`pass 2`, `fail 0`). API pytest with all four opt-in integration
 flags returned `981 passed, 2 warnings in 168.42s (0:02:48)`. Edge returned
 `113 passed (5.7m)`. The 41 question IDs agree between the catalog and this decision
 register, and `sena_h_approved` remains false. No live external service was called.
+
+## Task 5 — staff assistant and grouped navigation
+
+Task 4 was pushed as `ccea0e6`. The before-code assistant note is doc 22 section
+6.8; the owner subsequently requested grouped sidebar navigation in the same next
+commit without a separate design note. This replaces the finance divider and
+single workspace label, retaining role visibility and using existing motion tokens.
+
+The locked API environment installs `openai-agents==0.22.3`. One SDK agent exposes
+thirteen typed read-only readers; each opens a short caller-RLS transaction.
+The model selects run-owned fact IDs and the server renders values and citations.
+Current source versions, promotion eligibility and caller identity are checked
+before answer delivery and again when citations are opened. No raw prompts or
+documents are recorded in run audits. Statements are excluded from retrieval.
+
+V2 has a separate local SDK proposal tool, visible diff and explicit once-only
+confirmation through normal draft functions. It can edit only the three existing
+synthetic text paths documented in Q43. The local fake proposal deliberately adds
+a sample-content label; it is not evidence of live-model copywriting quality.
+Other locales, source markers and publication pointers remain unchanged.
+
+Migration 0023 was rehearsed with SQL/RLS assertions inside a rollback before
+application. SHA-256: `8cd7bb7ca78de9e901b052a408d607ca3fe2bea2493105423d067c41e1068f15`.
+The full database command then exited 0, including both new concurrency cases:
+same-proposal confirmation applies once; different stale proposals cannot overwrite
+a confirmed draft. Frozen DW fixture checks remained `pass 2`, `fail 0`.
+
+The fictional assistant seed returned the same project on replay without mutation.
+The SDK suite returned `33 passed in 4.05s`, including all thirteen real typed tool
+schemas, a real caller-RLS project read and a simulated provider boundary check.
+The latter uses a test double, not the OpenAI API. The real provider check has not
+run; no external request or deployment is part of these verification results.
+Q36/Q38 and new Q42–Q44 explain the egress, model, retrieval, draft and temporal
+defaults. Q18/Q20 remain owner-deferred and absent from the questions page.
+
+Final admin typecheck and production build exited 0; the existing Google Sans
+fallback-metrics warning remains. The full database command exited 0, including
+SQL/RLS assertions, both assistant concurrency cases and frozen DW fixture checks
+(`pass 2`, `fail 0`). Full API pytest with all five opt-in integration/OCR flags
+returned `1041 passed, 1 warning in 188.73s (0:03:08)`.
+
+The real thirteen-reader integration returned `1 passed in 1.43s`: every reader
+returned nonempty caller-RLS data and all fixture changes were rolled back. The
+HTTP proposal/citation integration returned `1 passed in 5.37s`, covering explicit
+confirmation, replay, stale drafts and actor ownership with rollback verification.
+Focused assistant/navigation Edge checks returned `19 passed (39.0s)`.
+
+Desktop and 390px visual review found and fixed sidebar-trigger contrast and
+mixed-source demo provenance. Sample badges now identify individual synthetic
+fields without relabelling original REM identifiers. Exact-version source links
+returned HTTP 200; inspected screens had no horizontal overflow or JavaScript
+errors. The 44 question IDs agree between catalog and documentation, and
+`sena_h_approved` remains false. A presence-only check found no configured OpenAI
+API key; no real provider request or live-model quality evaluation was run.
+
+The first complete Edge run returned `1 failed, 128 passed (6.1m)`: the existing
+questions-page test still located the removed one-off navigation label. The test
+now checks the named current question link in the shared menu and explicitly
+checks financial links are absent for residential-only roles. This change does
+not alter application permissions. The complete rerun is recorded below.
+
+Final Edge verification returned `129 passed (6.2m)`, exit 0, including the
+questions-page regression and the grouped-sidebar accessibility cases. All five
+required Task 5 commands passed before commit.

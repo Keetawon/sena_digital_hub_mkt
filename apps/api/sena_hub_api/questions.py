@@ -16,8 +16,8 @@ def load_catalog(path: Path = CATALOG_PATH) -> dict:
     if not isinstance(catalog, dict) or set(catalog) != {"schema_version", "questions"} or type(catalog["schema_version"]) is not int or catalog["schema_version"] != 1:
         raise ValueError("Invalid question catalog version")
     entries = catalog["questions"]
-    if not isinstance(entries, list) or len(entries) < 41:
-        raise ValueError("Question catalog must retain all Q1–Q41 decisions")
+    if not isinstance(entries, list) or len(entries) < 44:
+        raise ValueError("Question catalog must retain all Q1–Q44 decisions")
     ids = []
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) != {*PRESENTATION_FIELDS, "doc"}:

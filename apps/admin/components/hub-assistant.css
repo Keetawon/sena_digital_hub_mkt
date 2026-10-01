@@ -1,0 +1,26 @@
+.assistant-trigger { width: 100%; border: 0; background: transparent; text-align: left; }
+.sidebar .assistant-trigger { color: var(--sidebar-ink); }
+.assistant-panel.action-dialog { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(660px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 16px 0 0 16px; padding: 24px; overflow-y: auto; scroll-padding: 24px; }
+.assistant-heading, .assistant-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.assistant-heading h2 { margin: 0; }
+.assistant-panel :focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+.assistant-panel :is(input, select, textarea) { max-width: 100%; }
+.assistant-panel .form-field { margin: 16px 0; }
+.assistant-note, .assistant-context, .assistant-turn, .assistant-proposal { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; }
+.assistant-note, .assistant-context { background: var(--surface-warm); }
+.assistant-panel p { overflow-wrap: anywhere; }
+.assistant-panel .assistant-note p, .assistant-panel .assistant-context p { margin: 0 0 8px; }
+.assistant-questions, .assistant-citations { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.assistant-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.assistant-answer { white-space: pre-wrap; font-family: var(--font-table); }
+.assistant-meta { color: var(--muted); font-size: var(--text-small); }
+.assistant-meta dl, .assistant-diff { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 12px 0; }
+.assistant-meta dt, .assistant-diff dt { font-weight: 600; }
+.assistant-meta dd, .assistant-diff dd { margin: 0; overflow-wrap: anywhere; }
+.assistant-diff dd { padding: 12px; background: var(--surface-warm); border: 1px solid var(--line); border-radius: 8px; white-space: pre-wrap; }
+.assistant-turn h3 { margin: 0 0 12px; font-size: var(--text-body); }
+.assistant-answer-block + .assistant-answer-block { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.assistant-citation-link { display: block; padding: 12px 0; color: var(--action); text-decoration: underline; }
+.assistant-composer { margin-top: 20px; }
+@media (prefers-reduced-motion: no-preference) { .assistant-panel.action-dialog[open] { animation: hub-sheet var(--dur-enter) var(--ease-spring) backwards; } }
+@media (max-width: 640px) { .assistant-panel.action-dialog { border-radius: 0; padding: 20px 16px; } .assistant-fields { grid-template-columns: minmax(0, 1fr); } }

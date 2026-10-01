@@ -23,7 +23,6 @@
 .finance-caption { margin-top: 12px; color: var(--muted); }
 .finance-status { display: inline-block; padding: 3px 8px; background: var(--surface-warm); border: 1px solid var(--line); border-radius: 5px; }
 .finance-value { overflow-wrap: anywhere; }
-.finance-sidebar { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
 @media (max-width: 640px) {
   .finance-grid { grid-template-columns: minmax(0, 1fr); }
   .finance-fieldset { padding: 12px; }

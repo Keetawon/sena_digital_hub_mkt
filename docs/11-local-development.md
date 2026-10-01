@@ -234,6 +234,23 @@ Set `HUB_DOCUMENT_OCR_TEST=1` for the real local OCR test and
 not enable external processing. See [doc 21](21-ememo-archive-and-search.md#12-task-4-implementation-note--before-code)
 for the local archive boundary and pending production decisions.
 
+### Internal assistant demo (Task 5)
+
+Migration 0023 adds private actor-owned run metadata, citations and explicitly
+confirmed synthetic draft proposals. `npm.cmd run dev:assistant-demo` installs a
+separate wholly fictional project for the fixed live golden question. It never
+rewrites HYABC or approves existing data for external processing; a changed fixture
+fails closed. The side panel uses the deterministic local SDK model for free-text
+questions. Fake mode still runs the normal typed readers under the calling role.
+
+Optional live mode reads `OPENAI_API_KEY` from the ignored API environment and
+`HUB_ASSISTANT_MODEL` (default `gpt-5.4-mini-2026-03-17`). It accepts only fixed
+synthetic golden questions and verifies the exact fictional business projection
+before provider input. No real internal data, arbitrary prompts or user history
+leave the machine while Q36 is pending. External SDK tracing is disabled. A key is
+never shown in capabilities, browser responses or logs. Missing configuration is a
+visible remark, not a successful live-model result. No deployment is performed.
+
 `scripts/local-db.mjs` and the synthetic seed are development conveniences. Production must use a separately provisioned database, a dedicated NOINHERIT runtime login, verified Supabase identities and controlled asset storage. Do not run the seed against a shared Supabase project. This slice uses server APIs for draft writes; direct browser-to-PostgREST writes are not enabled.
 
 The schema is an initial subset, not a frozen production model. In particular, the sample asset registry and single-project releases must be extended to the full content/asset/publish-set contract before pilot acceptance. See [the delivery plan](07-delivery-plan.md) for the remaining milestones.

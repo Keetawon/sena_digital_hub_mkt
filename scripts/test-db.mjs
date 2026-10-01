@@ -37,6 +37,8 @@ try {
   console.log('PASS: promotion reviews and expiry, synthetic provenance, atomic releases and guarded rollback');
   await connection.query(await readFile(new URL('../supabase/tests/document_archive.sql', import.meta.url), 'utf8'));
   console.log('PASS: private synthetic archive, worker leases, source provenance, confirmation and separate P2 handoff');
+  await connection.query(await readFile(new URL('../supabase/tests/assistant.sql', import.meta.url), 'utf8'));
+  console.log('PASS: assistant actor ownership, private citations and explicit once-only synthetic draft proposals');
   await connection.query(await readFile(new URL('../supabase/tests/dw_reader.sql', import.meta.url), 'utf8'));
   console.log('PASS: local DW login, fifteen export views, private-table isolation and read-only enforcement');
 } finally {

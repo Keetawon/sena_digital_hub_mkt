@@ -29,11 +29,14 @@ test('all five staff roles read the same pending questions without changing fina
     await page.goto('/questions');
     await expect(page.getByRole('heading', { name: 'คำถามที่รอคำตอบ', exact: true })).toBeVisible();
     await expect(page.locator('.question-card')).toHaveCount(ids.length);
-    await expect(page.getByRole('navigation', { name: 'คำถามของทีมงาน' }).getByRole('link')).toHaveAttribute('aria-current', 'page');
+    const navigation = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
+    await expect(navigation.getByRole('link', { name: 'คำถามที่รอคำตอบ', exact: true })).toHaveAttribute('aria-current', 'page');
     for (const id of excluded) await expect(page.locator(`article#${id}`)).toHaveCount(0);
     if (['editor', 'publisher', 'viewer'].includes(role)) {
       expect((await page.request.get('/api/hub/v1/admin/ads/memos')).status()).toBe(403);
-      await expect(page.getByRole('navigation', { name: 'งานงบและค่าใช้จ่าย', exact: true })).toHaveCount(0);
+      for (const label of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ']) {
+        await expect(navigation.getByRole('link', { name: label, exact: true, includeHidden: true })).toHaveCount(0);
+      }
     }
   }
   for (const label of ['พี่โน้ต', 'ฝ่ายการเงิน', 'เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล', 'ทีมมีเดีย', 'ทีมการตลาด', 'ทีมไอที']) {
@@ -49,7 +52,7 @@ test('agency and unrecognized service sessions cannot fetch or render staff ques
     page.on('request', capture);
     await page.goto('/questions');
     await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน', exact: true })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'คำถามของทีมงาน' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'คำถามที่รอคำตอบ', exact: true, includeHidden: true })).toHaveCount(0);
     await expect(page.locator('.question-card')).toHaveCount(0);
     expect(requests).toEqual([]);
     page.off('request', capture);

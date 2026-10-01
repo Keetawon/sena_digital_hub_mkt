@@ -13,9 +13,13 @@ async function enter(page: Page, role: 'admin' | 'editor', path = '/') {
 async function activeSection(page: Page, name: string) {
   const navigation = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await expect(navigation).toBeVisible();
-  await expect(navigation.getByRole('link')).toHaveCount(3);
   await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
   await expect(navigation.getByRole('link', { name, exact: true })).toHaveAttribute('aria-current', 'page');
+}
+
+async function reveal(page: Page, group: string) {
+  const button = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('button', { name: group, exact: true });
+  if (await button.count() && await button.getAttribute('aria-expanded') === 'false') await button.click();
 }
 
 test('shared Hub menu connects projects, brands and every registry screen', async ({ page }) => {
@@ -25,6 +29,7 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await menu.getByRole('link', { name: 'แบรนด์ที่อยู่อาศัย', exact: true }).click();
   await expect(page).toHaveURL(/\?view=brands$/);
   await activeSection(page, 'แบรนด์ที่อยู่อาศัย');
+  await reveal(page, 'งานโฆษณาและงบ');
   await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   await activeSection(page, 'ทะเบียนแคมเปญ');
@@ -39,6 +44,7 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await activeSection(page, 'ทะเบียนแคมเปญ');
   await expect(registry.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toBeVisible();
+  await reveal(page, 'ข้อมูลโครงการและแบรนด์');
   await menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true }).click();
   await activeSection(page, 'โครงการที่อยู่อาศัย');
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('admin');
@@ -55,6 +61,7 @@ test('opening the registry from the shared menu preserves the residential role',
   await expect(page.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toHaveCount(0);
   expect(registryRequests).toEqual([]);
   expect((await page.request.get(`${api}/registrations`)).status()).toBe(403);
+  await reveal(page, 'ข้อมูลโครงการและแบรนด์');
   await page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true }).click();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
 });
@@ -68,6 +75,7 @@ test('shared navigation stays keyboard accessible at 375px with large Thai text 
   await enter(page, 'admin');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   for (const name of ['โครงการที่อยู่อาศัย', 'แบรนด์ที่อยู่อาศัย', 'ทะเบียนแคมเปญ']) {
+    await reveal(page, name === 'ทะเบียนแคมเปญ' ? 'งานโฆษณาและงบ' : 'ข้อมูลโครงการและแบรนด์');
     const link = menu.getByRole('link', { name, exact: true });
     await link.focus();
     await expect(link).toBeFocused();
@@ -85,4 +93,26 @@ test('shared navigation stays keyboard accessible at 375px with large Thai text 
   await page.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true }).click();
   await activeSection(page, 'ทะเบียนแคมเปญ');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('sidebar groups toggle independently, persist and always open the active group on load', async ({ page }) => {
+  await enter(page, 'admin'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลโครงการและแบรนด์', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
+  await expect(content).toHaveAttribute('aria-expanded', 'true'); await expect(ads).toHaveAttribute('aria-expanded', 'false'); await ads.click(); await content.click(); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await expect(content).toHaveAttribute('aria-expanded', 'false');
+  const contentId = await content.getAttribute('aria-controls'); await expect(page.locator(`[id="${contentId}"]`)).toHaveAttribute('inert', ''); await expect(menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true })).not.toBeVisible();
+  await page.goto('/questions'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await expect(content).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลโครงการและแบรนด์/แบรนด์ที่อยู่อาศัย');
+  const paths = await menu.locator('a.nav-link svg path').evaluateAll(elements => elements.map(element => element.getAttribute('d'))); expect(new Set(paths).size).toBe(paths.length);
+});
+
+test('collapsed children are skipped by keyboard and storage errors never prevent navigation', async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get: () => { throw new DOMException('Storage unavailable', 'SecurityError'); } }); });
+  await enter(page, 'admin'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลโครงการและแบรนด์', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
+  await expect(content).toHaveAttribute('aria-expanded', 'true'); await content.focus(); await page.keyboard.press('Space'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await page.keyboard.press('Tab'); await expect(ads).toBeFocused(); await page.keyboard.press('Enter'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click(); await activeSection(page, 'ทะเบียนแคมเปญ');
+});
+
+test('agency keeps direct registry access and never receives financial, publication or staff-only links', async ({ page }) => {
+  expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role: 'agency_kin' } })).ok()).toBeTruthy(); await page.goto('/ads/registry'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
+  await expect(menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true })).toHaveCount(0); await expect(menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
+  for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่นโครงการ', 'ชุดเผยแพร่ข้อมูล', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
+  await reveal(page, 'ข้อมูลโครงการและแบรนด์'); await expect(menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true })).toBeVisible();
 });

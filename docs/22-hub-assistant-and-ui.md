@@ -130,7 +130,20 @@ for projects, brands and all three registry screens. The registry link now sits 
 `เมนูหลัก` alongside the two residential sections. The selected section remains marked
 on detail/wizard/inbox pages. Registry subnavigation uses `รายการชื่อแคมเปญ`,
 `ส่งคืนรหัสแคมเปญ` and the existing role-gated `ลงทะเบียนแคมเปญ` link. On small screens
-the menu wraps above the content, with no horizontal scrolling or fixed text heights.
+the menu sits above the content, with no horizontal scrolling or fixed text heights.
+
+The owner's 1 October navigation update supersedes the single workspace label and
+one-off finance sidebar divider. Use independently collapsible `ข้อมูลโครงการและแบรนด์`
+and `งานโฆษณาและงบ` groups, followed by the direct `คำถามที่รอคำตอบ` link. Preserve
+role visibility, hide empty groups and render a single visible child as a direct
+link. Each item has its own icon; breadcrumb text is group / page. Group buttons
+have `aria-expanded`, `aria-controls`, visible keyboard focus and a chevron. Open
+the current group on load; restore the other group's browser-local preference
+with every storage access guarded by try/catch. An unavailable store falls back to
+the current group being open. Collapsed children are inert/hidden to keyboard
+navigation. Animate grid rows from 0fr to 1fr and rotate the chevron with the
+existing motion tokens; reduced motion is instant. Mobile groups and children
+remain vertical, never a horizontal wrapping row.
 
 Navigation retains the caller's role. Entering the registry with a residential account
 still shows the explicit Online/agency test-account choices, and its API access remains
@@ -852,6 +865,54 @@ with available server credentials/model and the permitted data mode, and report
 `not run` with the concrete reason when unavailable. Run the normal API/DB/admin/UI
 checks and Thai keyboard/reduced-motion tests for implementation. Human Thai
 readability remains separate acceptance evidence.
+
+### 6.8 Task 5 implementation note — 1 October 2026, before code
+
+Use one Agents SDK agent and the thirteen typed read-only tools above. Every tool
+opens a short caller-RLS transaction; no transaction spans a model wait. The model
+selects opaque, run-owned fact IDs; the server renders Thai answers, typed values,
+citations and mandatory draft/published, scope, synthetic and freshness caveats.
+Unknown IDs, numeric prose and model-generated URLs never become factual answers.
+Retrieved text is evidence, not instructions. Do not combine card cash, recognition
+and platform spend. Promotions are current Bangkok-time reads, checked again before
+answer delivery; historical promotion availability is not inferred (Q44).
+
+The deterministic SDK fake model supports local free-text demo questions. Live mode
+uses only server-owned golden questions and wholly fictional fixture projections
+read through the same RLS tools and compared with explicit synthetic expectations.
+Changing a fixture disables that live case; there is no fallback to HYABC's mixed
+real/synthetic data. Neither arbitrary typed prompts nor local user edits leave the
+machine while Q36 is pending. A key alone does not authorize real-data egress.
+Default configurable model: `gpt-5.4-mini-2026-03-17`, verified against the official
+model documentation ([model reference](https://developers.openai.com/api/docs/models/gpt-5.4-mini));
+60-second run, six turns, eight tool calls, bounded results.
+External SDK tracing and sensitive trace capture are disabled (Q38).
+
+SSE emits safe progress immediately and validated answer blocks only. Cancellation
+stops model work; actor-owned run/citation records cannot be read across users.
+Audit only actor, tool/source identities, timing, outcome and configuration, never
+raw prompts or documents. Citation access rechecks current domain permissions.
+The local demo uses separate permission-filtered lexical content/ads/memo retrieval
+surfaces; this is not the production hybrid retrieval acceptance claim (Q42).
+Source prose is displayed as a quoted excerpt, never used as a price, availability,
+specification or financial calculation. Per-field synthetic markers distinguish
+mixed HYABC content from the wholly fictional live golden fixture. Only that fixed
+project-summary case is enabled for the live demo; all thirteen tools are exercised
+with the local SDK model. The v2 local proposal tool visibly adds a sample-content
+label to existing draft text; it does not claim live-model copywriting quality.
+
+V2 is a separate proposal/diff/confirm flow, not a write capability in the v1 agent.
+Only existing synthetic draft text paths are eligible: project `meta_title.th` and
+`meta_description.th`, brand `description.th` (Q43). Respect normal domain write
+roles. Preserve other locales, provenance markers and publication pointers. Store
+the exact source revision, old scalar and proposed text; explicit confirmation
+rechecks ownership, permission and staleness, applies once through the normal draft
+function and audits the result. No arbitrary patch, financial field or publish tool.
+
+Acceptance includes all five staff roles and denied roles, source/version and
+numeric traps, prompt injection, cancellation, promotion expiry, statement exclusion,
+proposal replay/staleness and keyboard/reduced-motion UI. Fake-model metrics and
+any available live-model measurements are reported separately.
 
 ## 7. Media lines and memo register — approved P2 contract (owner P2)
 

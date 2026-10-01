@@ -24,6 +24,7 @@ from .questions import register_question_routes
 from .actuals import register_actuals_routes
 from .promotions import register_promotion_routes
 from .archive import register_archive_routes
+from .assistant import register_assistant_routes
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -745,4 +746,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_actuals_routes(app, authentication, database, settings)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)
     register_archive_routes(app, authentication, database, settings)
+    register_assistant_routes(app, authentication, database, settings)
     return app

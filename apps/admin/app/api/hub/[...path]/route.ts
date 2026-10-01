@@ -31,6 +31,10 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const method = request.method as keyof typeof allowed;
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   if (questionsRead && !isHubStaff(role)) return error("ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน", 403);
+  const assistantRead = method === "GET" && new RegExp(`^v1/admin/assistant/(?:config|runs/${financeId}(?:/citations/${financeId})?|proposals/${financeId})$`).test(path);
+  const assistantWrite = method === "POST" && new RegExp(`^v1/admin/assistant/(?:runs(?:/${financeId}/cancel)?|proposals(?:/(?:suggest|${financeId}/confirm))?)$`).test(path);
+  const assistantRun = assistantWrite && path === "v1/admin/assistant/runs";
+  if ((assistantRead || assistantWrite) && !isHubStaff(role)) return error("ไม่มีสิทธิ์ใช้งานผู้ช่วยภายใน", 403);
   const contentRead = method === "GET" && new RegExp(`^v1/admin/(?:promotions(?:/${financeId})?|releases(?:/(?:candidates|${financeId}))?)$`).test(path);
   const promotionDraft = method === "POST" && path === "v1/admin/promotions" || method === "PATCH" && new RegExp(`^v1/admin/promotions/${financeId}$`).test(path);
   const contentPublish = method === "POST" && new RegExp(`^v1/admin/(?:promotions/${financeId}/(?:review|publish|withdraw)|releases/(?:publish|${financeId}/rollback))$`).test(path);
@@ -47,7 +51,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || questionsRead || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(allowed[method]?.test(path) || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const adsFilters = path === "v1/admin/ads/scopes" ? ["kind", "parent_group_id"] : path === "v1/admin/ads/registrations" ? ["q", "limit", "offset", "agency", "status", "binding_status"] : [];
@@ -97,7 +101,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   }
   if (method !== "GET") {
     if (upload && role === "viewer") return error("บัญชีผู้อ่านไม่สามารถอัปโหลดไฟล์ได้", 403);
-    const limit = upload ? maxUploadBytes : 100_000;
+    const limit = upload ? maxUploadBytes : assistantWrite ? 20_000 : 100_000;
     const length = request.headers.get("content-length");
     if (length && (!/^\d+$/.test(length) || Number(length) > limit)) return error("ข้อมูลมีขนาดเกินกำหนด", 413);
     if (upload) {
@@ -131,12 +135,30 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       try { JSON.parse(body); } catch { return error("รูปแบบข้อมูลไม่ถูกต้อง", 400); }
     }
   }
+  const streamAbort = assistantRun ? new AbortController() : null;
+  const cancelStream = () => streamAbort?.abort();
+  const streamTimer = assistantRun ? setTimeout(cancelStream, 75_000) : null;
+  if (assistantRun) request.signal.addEventListener("abort", cancelStream, { once: true });
+  const releaseStream = () => { if (streamTimer) clearTimeout(streamTimer); request.signal.removeEventListener("abort", cancelStream); };
   try {
     const upstream = await fetch(new URL(`${path}${request.nextUrl.search}`, `${base.origin}/`), {
       method, body, cache: "no-store", redirect: "error",
       headers,
-      signal: AbortSignal.timeout(upload ? 30_000 : 15_000),
+      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : AbortSignal.timeout(upload ? 30_000 : 15_000),
     });
+    if (assistantRun && upstream.ok) {
+      if (!upstream.body || !upstream.headers.get("Content-Type")?.startsWith("text/event-stream")) { releaseStream(); streamAbort?.abort(); return error("ไม่ได้รับข้อมูลผู้ช่วยในรูปแบบที่รองรับ", 502); }
+      const reader = upstream.body.getReader();
+      const stream = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          try { const chunk = await reader.read(); if (chunk.done) { releaseStream(); reader.releaseLock(); controller.close(); } else controller.enqueue(chunk.value); }
+          catch (failure) { releaseStream(); streamAbort?.abort(); controller.error(failure); }
+        },
+        async cancel() { releaseStream(); streamAbort?.abort(); await reader.cancel().catch(() => {}); },
+      });
+      return new NextResponse(stream, { status: upstream.status, headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "private, no-store, no-transform", "X-Accel-Buffering": "no", "X-Content-Type-Options": "nosniff" } });
+    }
+    releaseStream();
     if (upstream.ok && archivePage) {
       if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/png") return error("รูปแบบหน้าหลักฐานไม่ถูกต้อง กรุณาเปิดไฟล์ต้นฉบับ", 502);
       return new NextResponse(upstream.body, { status: upstream.status, headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'" } });
@@ -152,6 +174,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     const data = await upstream.json();
     return NextResponse.json(data, { status: upstream.status, headers: { "Cache-Control": "no-store" } });
   } catch {
+    releaseStream(); streamAbort?.abort();
     return error("เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", 502);
   }
 }
