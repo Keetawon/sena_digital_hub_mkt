@@ -3,6 +3,8 @@
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { LocalRole } from "@/lib/local-session";
+import { isHubStaff } from "@/lib/staff";
+import { PendingQuestion } from "./pending-question";
 import { request } from "./hub-request";
 import { HubShell } from "./hub-shell";
 import { RegistrationMonthlyLines } from "./finance-actions";
@@ -61,11 +63,12 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
       setDirty(false); window.location.assign(screen === "new" ? "/ads/registry" : window.location.pathname);
     } catch (err) { setError(message(err)); setSwitching(false); }
   }
-  return <HubShell section="registry" registry finance={canWrite(initialRole)} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
+  return <HubShell section="registry" staff={localMode && isHubStaff(initialRole)} registry finance={canWrite(initialRole)} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
     <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{canWrite(initialRole) && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
     <h1 id="registry-title" tabIndex={-1}>{screen === "new" ? "ลงทะเบียนแคมเปญ" : screen === "inbox" ? "ส่งคืนรหัสแคมเปญ" : "ทะเบียนแคมเปญ"}</h1>
     <p className="text-muted">{screen === "inbox" ? "ส่งรหัสบัญชีและแคมเปญจากแพลตฟอร์มให้ตรงกับชื่อที่ได้รับ" : "ชื่อกลางสำหรับเปิดแคมเปญและเชื่อมรหัสบนแพลตฟอร์ม"}</p>
     {!settings?.sena_h_approved && <aside className="registry-banner" aria-label="สถานะการอนุมัติรูปแบบชื่อ"><strong>รออนุมัติรูปแบบชื่อ</strong><p>{settings?.test_mode ? "ข้อมูลทดสอบ ห้ามใช้เปิดแคมเปญจริง" : "ยังไม่เปิดการออกชื่อสำหรับใช้งานจริง"}</p></aside>}
+    {localMode && isHubStaff(initialRole) && <PendingQuestion id="Q2" />}
     {error && <div className="registry-error" role="alert">{error}<button className="registry-button ml-3" onClick={() => void load()}>ลองอีกครั้ง</button></div>}
     {!localMode ? <p>กรุณาตั้งค่าการเข้าสู่ระบบก่อนใช้งาน</p> : !initialRole || !canRead(initialRole) ? <section className="registry-panel" aria-labelledby="registry-access-title">
       <h2 id="registry-access-title">เลือกบัญชีสำหรับทะเบียนแคมเปญ</h2>

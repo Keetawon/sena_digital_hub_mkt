@@ -7,6 +7,8 @@
     "dev:migrate": "node scripts/local-migrations.mjs",
     "dev:dw-reader": "node scripts/provision-dw-reader.mjs",
     "dev:dw-fixtures": "node scripts/export-dw-fixtures.mjs",
+    "check:questions": "python scripts/sync-questions.py --check",
+    "sync:questions": "python scripts/sync-questions.py --write",
     "test:ui": "playwright test",
     "test:db": "node scripts/test-db.mjs && node supabase/tests/concurrent_model.mjs && node supabase/tests/concurrent_asset.mjs && node supabase/tests/concurrent_brand.mjs && node supabase/tests/concurrent_ads_code.mjs && node supabase/tests/concurrent_ads_line_revision.mjs && node --test supabase/tests/dw_fixtures.test.mjs"
   },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback, localRequestOrigin } from "@/lib/local-session";
+import { isHubStaff } from "@/lib/staff";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
@@ -28,10 +29,12 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (!role) return error("กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
   const path = (await context.params).path.join("/");
   const method = request.method as keyof typeof allowed;
+  const questionsRead = method === "GET" && path === "v1/admin/questions";
+  if (questionsRead && !isHubStaff(role)) return error("ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน", 403);
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(allowed[method]?.test(path) || questionsRead || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const adsFilters = path === "v1/admin/ads/scopes" ? ["kind", "parent_group_id"] : path === "v1/admin/ads/registrations" ? ["q", "limit", "offset", "agency", "status", "binding_status"] : [];

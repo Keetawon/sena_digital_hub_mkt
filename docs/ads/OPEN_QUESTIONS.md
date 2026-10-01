@@ -51,9 +51,10 @@ P1 and expanded P2 implementation/reports are complete under the approved contra
 in [doc 23](../23-media-lines-and-memo-register.md) and
 [doc 24](../24-card-costs-and-recurring-commitments.md). The 30 Sep card-paid and
 recurring-commitment addendum replaced the earlier card-paid addendum and allocated
-features to P2 and later P4. The current 1 Oct authorization is the motion/local DW
-handoff and P3.0/P4.0 designs. The LINE OA evidence gate is tightened in Q20. Wait for
-separate P3/P4 implementation approvals, in that order.
+features to P2 and later P4. On 1 Oct the owner approved P3.0/P4.0 and the demo-first
+Tasks 0–6 after the motion/local DW handoff. LINE OA account attribution is deferred
+by owner under Q18/Q20. Proceed in the recorded task order with synthetic defaults;
+no separate engineering approval is pending.
 
 ## Additional P2.0 questions — proposed defaults, not business approvals
 
@@ -151,3 +152,4 @@ Future public use requires published-only adapters and a separate public index.
 | Q36 | May real internal content, retrieved passages, prompts and tool results be sent to the OpenAI API? Approve data categories, redaction, processing location, retention and access under the DPO review; API access alone is not consent. | DPO + Marketing data owner + IT security | Real internal-data API processing, not the synthetic demo or fake-model CI. Q7 still governs documents/OCR. | Only clearly synthetic demo content may reach the API. Disable external SDK tracing; never send statements, approver PII or credentials. Domain authorization applies before retrieval. Fail closed for real/internal content until an explicit approved policy is implemented. |
 | Q37 | Which Hostinger VPS region will host the API, assistant and workers, and what cross-border processing/access terms are approved? | IT infrastructure owner + DPO | Deployment and real-data hosting approval; deployment is out of this task. | Localhost TEST execution only. Architecture remains Supabase + Vercel admin + Hostinger VPS; no region is assumed, no infrastructure is provisioned. |
 | Q38 | Which API model, usage limit and operational owner should the live assistant demo use? Will an API key be supplied in ignored `apps/api/.env`? | IT API owner + Marketing product owner | Live-model demo when a key is absent; never blocks fake-model CI or the rest of the demo. | Read the key only from server environment, never return/log it. Use a configurable supported model with a bounded tool budget; show a Thai `รอคำตอบ` remark when unavailable. CI always uses an explicit deterministic fake model and never makes external requests. Record the chosen model/version during Task 5; no real-data egress before Q36. |
+| Q39 | Confirm the person/group responsible for keeping the demo question catalog current and whether all five internal staff roles should see the policy presentation page. | Marketing product owner + IT identity owner | Production ownership/access acceptance, not the demo. | All five SENA staff roles may read generic policy questions; no record-level budget, memo or personal data is included. Agencies/service consumers are denied. Domain screens keep existing ACLs. Pending entries are grouped by P'Note, Finance, DPO, Media, Marketing and IT; resolved Q9–Q12 and owner-deferred Q18/Q20 are excluded. One catalog generates the English documentation rows and Thai UI projection; CI fails on drift. |

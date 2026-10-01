@@ -1,0 +1,824 @@
+{
+  "schema_version": 1,
+  "questions": [
+    {
+      "id": "Q1",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของระบบ E-memo และหัวหน้าทีมออนไลน์",
+      "question_th": "E-memo มี API ข้อมูลส่งออก หรือเอกสารอ้างอิงแบบใดที่ทีมงานเข้าถึงและตรวจสอบได้?",
+      "default_th": "เดโมใช้ข้อมูลสังเคราะห์และบันทึกเลขหรือลิงก์อ้างอิงด้วยตนเอง Hub ไม่อนุมัติ Memo และยังไม่เปิดใช้ข้อมูลจริงก่อนยืนยันหลักฐานที่ยอมรับได้",
+      "links": [
+        {
+          "href": "/ads/finance?view=memos",
+          "label": "ทะเบียน Memo"
+        }
+      ],
+      "doc": {
+        "id_label": "Q1",
+        "question": "Does E-memo offer an API/webhook, read-only view, or scheduled export? Confirm fields, external status/approver decision times, document references and access. For manual P2, which document number/link and reviewer checks are acceptable evidence, including missing individual decision details?",
+        "owner": "IT E-memo owner + Online operations owner",
+        "blocks": "**P2 manual-mirror go-live/evidence acceptance and later automated ingestion; not P2 coding** after design approval. An unavailable API does not block the accepted manual path.",
+        "default": "Build MANUAL mirror against synthetic fixtures. Evidence is text only: E-memo number/link, no upload or fetching. Keep real use blocked until the manual evidence policy is accepted. Hub never approves a memo; API/export automation and P4 remain later."
+      }
+    },
+    {
+      "id": "Q2",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "พี่โน้ต เจ้าของรูปแบบชื่อ ร่วมกับเจ้าของงานและทีมออนไลน์",
+      "question_th": "พี่โน้ตอนุมัติรูปแบบ SENA-H และการเก็บ Memo กับ PO แยกจากชื่อแคมเปญหรือไม่?",
+      "default_th": "สร้างและสาธิตต่อได้โดยใช้ข้อมูลทดสอบ รูปแบบชื่อยังรออนุมัติจากพี่โน้ต การออกชื่อใช้งานจริงยังถูกปิด และ Sheet คงใช้ V1",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q2 — build/demo authorized; pattern approval pending",
+        "question": "Owner decision **30 Sep 2026**: keep building on SENA-H and demo it to P'Note. P'Note has **not** approved `LABEL__OBJECTIVE__SCOPE__AGENCY__CODE[__VARIANT]` or removal of memo/PO from the name. Record his eventual decision/evidence separately.",
+        "owner": "P'Note, pattern owner; product owner + Online lead arrange demo; Hub admin records decision",
+        "blocks": "**Production name issuing/go-live**, not authorized local/shared-test development or P2.0 design. Owner engineering authorization is not P'Note approval.",
+        "default": "`sena_h_approved=false`; show `รออนุมัติรูปแบบชื่อ`; production issue API rejects; test-only issue/copy labelled. Sheet stays V1 and external launch approval stays in force."
+      }
+    },
+    {
+      "id": "Q3",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของคลังข้อมูลและผู้ดูแลการเชื่อมต่อ Hub",
+      "question_th": "คลังข้อมูลรับชุดทดสอบครบแล้วหรือไม่ และจะยืนยันแหล่งข้อมูล hub สิทธิ์อ่านและรอบส่งข้อมูลจริงเมื่อใด?",
+      "default_th": "ใช้บัญชีอ่านอย่างเดียวและชุดข้อมูลสังเคราะห์ 15 views ที่ตรึงไว้ แยก TEST จากระบบจริง การส่งมอบในเครื่องไม่ใช่หลักฐานว่าคลังข้อมูลรับสำเร็จหรืออนุญาตระบบจริงแล้ว",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q3 — local handoff pushed",
+        "question": "Owner reports DW commits `faaa297` / `44f04b3` finished the 15-view intake against Hub `e029630`, pending this Hub handoff. Return the DW TEST live-ingestion/fixture receipt using the frozen manifest. Confirm production `hub` access/cadence and separately approve `adinv`/`mplan` when needed. Supply reviewed master bridge evidence.",
+        "owner": "DW source-registry/data-platform owner + Hub integration owner",
+        "blocks": "No synthetic coding block. Blocks claimed end-to-end DW acceptance and real integrated delivery. P3 read-back contract is Q25; pre-Hub sources do not recreate Hub-owned lines.",
+        "default": "Task A is pushed as `30972d0`: local `dw_hub_reader` and frozen 15-view synthetic fixtures whose manifest source commit is `4886981`. No completed live DW run or hosted/production grant is claimed. Keep TEST isolated; take one consistent snapshot and preserve applicability/grain. No statement descriptors, PII or evidence in exports; no DW repo changes."
+      }
+    },
+    {
+      "id": "Q4",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของตารางงบ ทีมออนไลน์ และผู้ดูแล BUD",
+      "question_th": "ใครยืนยันแม่แบบตารางงบรายเดือน ชื่อหัวคอลัมน์ และคอลัมน์เลข Memo ที่อนุญาตให้นำเข้า?",
+      "default_th": "ใช้หัวคอลัมน์สังเคราะห์ตามชื่อที่กำหนด หากไม่มีเลข Memo ให้คงว่าง ไม่เดาตำแหน่งหรือเติมเลขแทน และตัดข้อมูลเลขบัตรก่อนเก็บหรือนำเข้า",
+      "links": [
+        {
+          "href": "/ads/finance?view=ledger-imports",
+          "label": "ประวัตินำเข้ารายการงบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q4",
+        "question": "Who owns the frozen monthly ledger template and optional `เลข Memo` column? Supply dated exact headers for ProjectID, BUD and agency, confirm evidenced `Formatted Mapping`, `BUDGET ONLINE การตลาดให้`, `เลข PO`, and approve sanitized CSV/manifest plus any corporate program/period profile.",
+        "owner": "Marketing ledger owner + Online + ADMIN BUD",
+        "blocks": "**P2 real ledger-import acceptance/go-live; not P2 coding** after design approval. Later finance reconciliation also depends on the template.",
+        "default": "Synthetic exact-header profile only; no real import without a reviewed profile. Missing optional memo stays null/DRAFT; never fill it in. Reject missing required/ambiguous headers and unexpected columns. Exclude card last-4 before capture/hash/logging. Never edit the Sheet or guess by position."
+      }
+    },
+    {
+      "id": "Q5",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของงานการตลาดแต่งตั้งผู้ดูแลอนุมัติการแก้ไขรหัส",
+      "question_th": "ใครมีอำนาจอนุมัติการแก้ไขรหัส และต้องใช้หลักฐานจากเจ้าของรายการใดบ้าง?",
+      "default_th": "รายการเริ่มเป็นข้อเสนอ ผู้ดูแลตรวจอนุมัติก่อนทีมออนไลน์เลือกนำไปใช้เป็นรายเดือน ยังไม่นำการแก้ไขจริงไปใช้จนกว่าจะยืนยันผู้มีอำนาจ รหัสบางปูที่ขัดกันยังถูกระงับ",
+      "links": [
+        {
+          "href": "/ads/finance?view=corrections",
+          "label": "รายการแก้ไขรหัส"
+        }
+      ],
+      "doc": {
+        "id_label": "Q5",
+        "question": "Who is authorized to hold the admin correction-approver responsibility, what evidence must affected line owners confirm, and who reviews the per-month targets/application receipts?",
+        "owner": "Marketing owner appoints named admin/steward; proposed P'Note/steward + affected line owner",
+        "blocks": "**P2 correction use/financial-join go-live; not P2 coding** after design approval. Synthetic admin approval tests can proceed.",
+        "default": "PROPOSED by default; only admin can approve with evidence, then Online/admin explicitly applies selected months. Until authority is confirmed, apply no real corrections. No automatic overwrite; `C-MIBF-BNGPU` / `C-MIGD-BNGPU` stay blocked. P1 binding collisions remain 409."
+      }
+    },
+    {
+      "id": "Q6",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "พี่โน้ต ผู้ดูแลแบรนด์ และเจ้าของข้อมูล REM",
+      "question_th": "รหัสแบรนด์ที่อนุมัติคือ KITH หรือ SENA-KITH และใช้ BrandID กับชื่อภาษาอังกฤษใด?",
+      "default_th": "ยังไม่เปิดใช้ขอบเขตแบรนด์ที่มีข้อสงสัย ไม่เลือกรหัสแทนเจ้าของ เมื่อยืนยันแล้วใช้รหัสหลักหนึ่งค่าและเก็บชื่ออื่นเป็นชื่ออ้างอิง",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q6",
+        "question": "Which canonical brand token is approved: `KITH` or `SENA-KITH`? Confirm exact REM BrandID, English display label, alias and other proposed brands' activation.",
+        "owner": "P'Note/brand steward + REM brand-data owner",
+        "blocks": "No generic P1 coding block. Blocks issuing affected production brand scopes; full P1 brand acceptance remains open.",
+        "default": "Keep affected brand scope(s) PROPOSED/non-issuable; do not choose a canonical token silently. After decision activate one and retain the other only as alias; preserve BrandID `000006` as text when verified."
+      }
+    },
+    {
+      "id": "Q7",
+      "status": "PENDING",
+      "owner_group": "dpo",
+      "owner_th": "DPO ฝ่ายกฎหมาย เจ้าของข้อมูล และผู้ดูแลระบบคลาวด์",
+      "question_th": "Supabase ที่เก็บไฟล์ สำรองข้อมูล และบริการประมวลผลอยู่ที่ใด และอนุญาตข้อมูลจริงหรือการส่งข้อมูลข้ามประเทศอย่างไร?",
+      "default_th": "ถือว่ายังไม่ยืนยันสถานที่ ใช้ข้อมูลสังเคราะห์เท่านั้นก่อนมีคำตัดสินที่บันทึกไว้ เอกสารบัตรจำกัดสิทธิ์และไม่เข้า RAG ห้ามถือว่าชื่อผู้ให้บริการหรือปลายทางยืนยันถิ่นที่เก็บข้อมูล",
+      "links": [
+        {
+          "href": "/questions#Q7",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q7",
+        "question": "Where are the actual Supabase project/database, storage/backups and proposed R2 bucket hosted? Confirm access/processing locations, retention and responsible controllers/processors. Card statements include cardholder name, company address and partial card number: what DPO decision and transfer arrangements are required before external OCR/LLM processing, especially outside Thailand or at unknown locations?",
+        "owner": "IT/cloud owner + DPO/Legal + data owner",
+        "blocks": "No synthetic local P1/P2 coding block. Blocks real shared/production personal/approval data use pending hosting assessment and P4 statement/PDF processing.",
+        "default": "Treat location as unverified; synthetic fixtures only until approved deployment evidence exists. No statement upload/OCR in P2; statements are restricted to marketing-ops roles and never indexed in any RAG namespace. Do not infer Thailand residency from provider name, endpoint or a bucket hint. This is a decision request, not a legal compliance finding."
+      }
+    },
+    {
+      "id": "Q8",
+      "status": "PENDING",
+      "owner_group": "media",
+      "owner_th": "ผู้ซื้อสื่อ Google เจ้าของเว็บและแบบฟอร์ม เจ้าของ CRM และคลังข้อมูล",
+      "question_th": "ใครใส่ utm_id={campaignid} และทดสอบว่ารหัสผ่านหน้าเว็บ แบบฟอร์ม และ CRM จนเชื่อมในคลังข้อมูลได้?",
+      "default_th": "ชุดข้อมูลเปิดแคมเปญมีค่ามาโครและหมายเหตุ แต่ยังไม่ถือว่าการเก็บรหัสสำเร็จ utm_id ไม่ใช่ SN และไม่มีการแก้เว็บ CRM หรือ REM จากหน้านี้",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q8",
+        "question": "Who adds Google `utm_id={campaignid}` to the final URL suffix and proves the campaign ID survives redirects, landing forms and CRM capture? Provide a test click → captured field → DW join example and destination field mapping.",
+        "owner": "Google buyer/agency + website/form owner + CRM owner; DW verifies join",
+        "blocks": "No P1 registry/launch-pack coding block. Blocks claimed Google lead-attribution go-live/C7 coverage, not every P1 naming feature.",
+        "default": "Include the literal macro and Thai capture note in the server pack; `utm_id` never becomes an SN code. Mark capture unverified. Do not change websites/CRM/REM or claim attribution is fixed by issuing UTM."
+      }
+    },
+    {
+      "id": "Q9",
+      "status": "RESOLVED",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์และทีมออนไลน์",
+      "question_th": "รูปแบบย่อยหลายชื่อใช้ SN เดียวกันเพื่อเชื่อมงบได้หรือไม่?",
+      "default_th": "ยืนยันแล้ว รูปแบบย่อยใช้ SN เดียวกัน แต่ละชื่อคงเดิมหลังออกชื่อและไม่เพิ่มงบซ้ำ การเปลี่ยนขอบเขต วัตถุประสงค์ เอเจนซี หรือชื่อหลักต้องใช้ CODE ใหม่",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q9 — identity confirmed",
+        "question": "Owner confirmed following doc 19: one CODE may have multiple frozen campaign_name variants, retaining the grouping for budget matching. `registration.variant` remains the initial/default and native bindings select exact `name_id`.",
+        "owner": "Product owner (29 September 2026); P'Note retains pattern approval",
+        "blocks": "Shared-SN identity is resolved and implemented in P1. P2.0 proposes the monthly relationship without splitting SN identity.",
+        "default": "Scope/objective/agency/label changes require a new CODE. Variants never edit an issued name or multiply a line budget."
+      }
+    },
+    {
+      "id": "Q10",
+      "status": "RESOLVED",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์และทีมออนไลน์ผู้ยืนยันเนื้อหา",
+      "question_th": "LABEL ของบูสต์องค์กรใช้ชื่อเนื้อหาที่ทีมออนไลน์จัดหาและยืนยันแล้วได้หรือไม่?",
+      "default_th": "ยืนยันแล้ว รับชื่อเนื้อหาพร้อมคำยืนยันเฉพาะ CORP ระบบสร้างและตรึงชื่อเต็มให้เอง",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q10 — confirmed",
+        "question": "Owner approved an Online-supplied, approved per-boost corporate content label.",
+        "owner": "Product owner (29 September 2026); Online supplies the approved label",
+        "blocks": "Resolved for implementation; actual label approval remains Online's responsibility.",
+        "default": "CORP accepts validated `content_label` plus approval assertion; other scopes use server-derived labels. The server generates and freezes the complete name."
+      }
+    },
+    {
+      "id": "Q11",
+      "status": "RESOLVED",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของงานการตลาดและผู้พัฒนา",
+      "question_th": "เลือกขอบเขตงาน P1–P5 และเดินหน้าเดโมตามลำดับหรือไม่?",
+      "default_th": "ยืนยันแล้ว P1/P2 เสร็จในเครื่องและอนุมัติเดโม Tasks 0–6 ใช้ค่าเริ่มต้นที่บันทึกไว้ กำหนดการเดิมยังไม่ใช่ประมาณการใหม่ของขอบเขตที่เพิ่มขึ้น",
+      "links": [
+        {
+          "href": "/questions#Q11",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q11 — selected option 3; expanded P2 completed",
+        "question": "Owner selected schedule P1–P5. On **30 Sep**, the owner authorized P2.0 documentation, expanded P2 with card-paid costs/accounts/commitments, then replied `P2.0 approved — implement expanded P2`.",
+        "owner": "Product/Marketing delivery owner + developer",
+        "blocks": "Schedule direction and P2 engineering authorization resolved; expanded scope needs a new estimate and formal residential re-baseline remains separate.",
+        "default": "The original ~1.5-week P2 allowance and ~8.5-week total displacement are historical scenarios, not enlarged-scope forecasts. The 30 Sep instruction stopped after P2 verification/report; that work is complete. On 1 Oct the owner approved P3.0/P4.0 and the demo-first Tasks 0–6, including the expanded internal assistant. Implement documented synthetic defaults without waiting for business answers. REQUIREMENTS/doc 15 forecasts remain unchanged pending formal re-baselining."
+      }
+    },
+    {
+      "id": "Q12",
+      "status": "RESOLVED",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ ผู้ดูแลสิทธิ์ IT และหัวหน้าทีมออนไลน์",
+      "question_th": "เอเจนซีดูเฉพาะชื่อของตนเองและส่งคืนรหัส โดยทีมออนไลน์กับผู้ดูแลเป็นผู้ออกชื่อใช่หรือไม่?",
+      "default_th": "ยืนยันแล้ว ใช้สิทธิ์จากข้อมูลที่เซิร์ฟเวอร์เชื่อถือ บัญชีสาธิตใช้เฉพาะในเครื่อง การเตรียมบัญชีจริงและการทดสอบความอ่านง่ายภาษาไทยยังเป็นเงื่อนไขก่อนใช้งานจริง",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q12 — matrix confirmed",
+        "question": "Agencies return IDs only and see only their own agency's names; online_staff/admin issue. Provisioning of verified claims, production browser sign-in/session and named Thai reviewers remains open.",
+        "owner": "Product owner (29 September 2026) + IT identity admin + Online lead",
+        "blocks": "Matrix resolved; real identity setup/browser session and Thai readability evidence still block production acceptance.",
+        "default": "Explicit app_metadata claims, deny missing/unknown mappings; local synthetic Online and two agency actors. Noto-first table bodies pending Thai review; no client-selected agency authorization. The existing local-session browser bridge remains local-only."
+      }
+    },
+    {
+      "id": "Q13",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "พี่โน้ต ผู้ดูแลขอบเขต และเจ้าของผลิตภัณฑ์",
+      "question_th": "ต้องการให้ผู้ดูแลตั้งชื่อ ZONE ที่อ่านง่ายแทนรหัสแฮชหรือไม่?",
+      "default_th": "คง ZONE ที่ระบบสร้างจากชุดสมาชิก ไม่มีหน้าตั้งชื่อใหม่หรือเปลี่ยนชื่อที่ออกแล้ว หากต้องการให้ทำเป็นคำขอเปลี่ยนแปลงแยกต่างหาก",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q13",
+        "question": "Should the steward be able to assign a readable ZONE slug instead of the current `ZONE-<12 uppercase hex of SHA-256(member signature)>`? If so, define uniqueness, immutable issued-token handling and authorization in a separate change request.",
+        "owner": "P'Note/pattern owner + scope steward + product owner",
+        "blocks": "No P2 coding or go-live block for current hash tokens. Blocks only a future readable-slug feature.",
+        "default": "Keep migration 0014 behavior. Doc 19's old `ZONE-COZI-PET4` example is corrected to a computed hash example. No slug editor, grammar change or rename of issued names."
+      }
+    },
+    {
+      "id": "Q14",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของ E-memo ผู้ดูแล BUD และทีมออนไลน์",
+      "question_th": "รูปแบบเลข Memo ความยาวเลขลำดับ ปี และข้อยกเว้นใดเป็นข้อกำหนดจริง?",
+      "default_th": "ใช้รูปแบบตัวอย่างกับข้อมูลสังเคราะห์ เก็บเลขตามต้นทางและไม่เดาวันที่ ชื่ออ้างอิงอื่นต้องมีหลักฐานและการตรวจสอบก่อนยืนยัน",
+      "links": [
+        {
+          "href": "/ads/finance?view=memos",
+          "label": "ทะเบียน Memo"
+        }
+      ],
+      "doc": {
+        "id_label": "Q14",
+        "question": "Confirm authoritative memo formats, serial lengths, year conventions and exceptions for BUD `MO<YYMM><NNN>` and corporate `M.COM<NNN>_<BE yy>`; doc 19 §9 treats them as unconfirmed. Which alternate notations are accepted as aliases of the same external document?",
+        "owner": "IT E-memo owner + ADMIN BUD + Online operations owner",
+        "blocks": "No synthetic P2 coding block. Blocks production validation/activation of real memo records until accepted.",
+        "default": "Candidate canonical regexes in doc 23, source MANUAL and no inferred dates. Keep observed aliases verbatim with evidence and review under doc 24; never infer identity from punctuation or a similar serial. Q23 covers slash versus underscore for the same serial."
+      }
+    },
+    {
+      "id": "Q15",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "ทีมงบการตลาด เจ้าของ BUD และผู้ออกแบบข้อมูลคลัง",
+      "question_th": "งบร่วมหลาย BUD และหลายโครงการควรแบ่งเงินและกระทบยอดอย่างไร?",
+      "default_th": "ใช้เฉพาะกติกาแบ่ง BUD ของบัญชีที่ตรวจสอบแล้ว ไม่เดาสัดส่วนงบหรือกระจายยอด D/E ให้สมาชิก ส่วนต่าง Memo แสดงให้ตรวจสอบและไม่สร้างรายการชดเชยเอง",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q15",
+        "question": "How should multiple funding sources, cross-group paying BUDs and pooled project contributions fund D/E or other scopes? Who owns contribution amounts/weights and reconciliation of partially allocated memo balances? Distinguish these from the newly requested ad-account BUD split rule.",
+        "owner": "Online finance operations + Marketing/BUD owners + DW model owner",
+        "blocks": "No synthetic P2 coding block. Blocks go-live of affected funding/allocation paths and any claim of distributed pool spend.",
+        "default": "P2 now designs and, after approval, implements explicit reviewed ad-account BUD split rules with validity dates and exact amount preservation (doc 24/Q24). This does not allocate D/E scope spend among member projects or authorize a broader `funding_contribution` model. No inferred weights; unresolved matches remain unresolved. Memo differences stay visible findings; never invent balancing lines."
+      }
+    },
+    {
+      "id": "Q16",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโปรแกรมองค์กร ทีมออนไลน์ และผู้ดูแล BUD",
+      "question_th": "โปรแกรมองค์กร ช่วงเวลา ขอบเขต เอเจนซี และ BUD ของ BU ต้องอ้างอิงชุดใด?",
+      "default_th": "เลือกโปรแกรมอย่างชัดเจน งบองค์กรใช้ SID และนับงบทั้งช่วงเพียงครั้งเดียว BU ไม่ถูกเปลี่ยนเป็น SID อัตโนมัติ เดโมใช้ความสัมพันธ์สังเคราะห์",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q16",
+        "question": "What is the authoritative corporate program reference, period and permitted scope/agency mapping? For BU scopes such as `BU-SOLAR`, what approved BUD/vocab and program mapping applies?",
+        "owner": "Corporate content/Online program owner + BUD/vocab steward",
+        "blocks": "No generic P2 coding block. Blocks affected corporate/BU production line activation until mapping evidence is available.",
+        "default": "Explicit manual program selection; corporate BUD SID; preserve full-period budget once. BU never silently becomes SID; do not seed SOLAR merely from an example. Synthetic mappings only until verified."
+      }
+    },
+    {
+      "id": "Q17",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของตารางงบ ผู้ดูแลข้อมูลโครงการผ่านคลังข้อมูล และทีมออนไลน์",
+      "question_th": "ความสัมพันธ์เฟสกับกลุ่มและรายการงบต่อเฟส เดือน เอเจนซีครบถ้วนหรือไม่?",
+      "default_th": "เก็บกลุ่มพร้อมเฟสทางการเงินที่ตรงต้นทาง B ต้องมีเฟสที่เลือกและ C ต้องครบทุกเฟส รายการซ้ำหรือข้อมูลขัดกันแยกไว้ตรวจสอบ ไม่รวมยอดหรือจับคู่โดยเดา",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q17",
+        "question": "Confirm completeness/ownership of phase-to-group bridges and how to handle multiple ledger rows or memo splits within one REM phase/month/agency. Which phase coverage supports B/C assignment?",
+        "owner": "Marketing ledger owner + REM master steward via DW + Online operations",
+        "blocks": "No synthetic P2 coding block. Blocks real imports/assignments with unresolved grain, bridge or member coverage.",
+        "default": "Group parent with exact phase children; unique phase/month/agency, retain each child's BUD/memo/PO. B needs its exact phase and C all selected phases. Quarantine duplicate/conflicting grain; no arbitrary sum, fuzzy phase match or partial C assignment."
+      }
+    },
+    {
+      "id": "Q18",
+      "status": "DEFERRED",
+      "owner_group": "media",
+      "owner_th": "เจ้าของช่องทาง ทีมการตลาด และฝ่ายการเงิน",
+      "question_th": "ใครเป็นเจ้าของงบ LINE OA และใช้งบจากที่ใด?",
+      "default_th": "เจ้าของงานเลื่อนเรื่องนี้ไว้ เก็บทุกรายการเป็น CHANNEL ในกลุ่ม LINE OA (ยังไม่แยกบัญชี) รักษายอดแต่ละแถวและยอดใบแจ้งยอด ไม่มีหน้าจับคู่หรือเดาบัญชี",
+      "links": [
+        {
+          "href": "/ads/finance?view=cost-records",
+          "label": "ค่าใช้จ่ายตามเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q18 — deferred by owner, 1 Oct",
+        "question": "LINE OA budget ownership and ledger/separate-budget policy are parked by the owner.",
+        "owner": "Media/channel operations owner + Marketing/BUD budget owner + Finance",
+        "blocks": "No demo blocker; real account attribution/budget activation remains deferred. Exclude from the `คำถามที่รอคำตอบ` page.",
+        "default": "Keep all LINE OA card rows as CHANNEL costs in one unattributed `LINE OA (ยังไม่แยกบัญชี)` bucket, preserving each row and statement reconciliation. No inferred account/scope/BUD or matching-review screen. Commitments remain separate from campaigns/SNs."
+      }
+    },
+    {
+      "id": "Q19",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของกระบวนการ E-memo ผู้ดูแล BUD และเจ้าของบริการประจำ",
+      "question_th": "Memo ครอบคลุมรอบสมัครบริการหรือรายเดือน และวงเงินกับช่วงเวลาครอบคลุมเท่าใด?",
+      "default_th": "ระบุช่วงเวลาครอบคลุมและวงเงินอย่างชัดเจน Memo เดียวครอบคลุมหลายรอบได้โดยไม่ทำสำเนารายเดือน ไม่เดาช่วงเวลาจากเลข Memo หรือวันที่เรียกเก็บ",
+      "links": [
+        {
+          "href": "/ads/finance?view=commitments",
+          "label": "ภาระผูกพันประจำ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q19",
+        "question": "Is one memo issued per subscription period or per month? Can one memo cover several commitments, and what date range and cap does it authorize?",
+        "owner": "E-memo process owner + ADMIN BUD + subscription/Media owner",
+        "blocks": "No synthetic P2 coding block. Blocks real commitment-to-memo acceptance and cap enforcement policy.",
+        "default": "Support explicit period coverage and cap, including monthly coverage; never infer the period from the memo number or a recurring charge. One period memo can cover the approved commitment period without creating monthly copies. Annual recognition is separate from cash payment and memo-cap consumption (Q24)."
+      }
+    },
+    {
+      "id": "Q20",
+      "status": "DEFERRED",
+      "owner_group": "media",
+      "owner_th": "ผู้ดูแล LINE OA และทีมช่องทาง",
+      "question_th": "มีหลักฐานการเรียกเก็บแยกบัญชี LINE OA และกติกากระทบยอดหรือไม่?",
+      "default_th": "เจ้าของงานเลื่อนเรื่องนี้ไว้ เก็บ CHANNEL ใน LINE OA (ยังไม่แยกบัญชี) ไม่จับคู่ด้วยจำนวน ชื่อรายการ หรือลำดับแถว และไม่มีหน้าตรวจจับคู่บัญชี",
+      "links": [
+        {
+          "href": "/ads/finance?view=cost-records",
+          "label": "ค่าใช้จ่ายตามเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q20 — deferred by owner, 1 Oct",
+        "question": "Per-account LINE OA evidence/export and account reconciliation are parked by the owner.",
+        "owner": "LINE OA administrator + Media/channel operations + vendor/platform contact",
+        "blocks": "No demo blocker; account matching remains deferred. Exclude from the `คำถามที่รอคำตอบ` page.",
+        "default": "Retain CHANNEL rows in the single unattributed `LINE OA (ยังไม่แยกบัญชี)` bucket. No count/descriptor-based assignment, account-matching review screen or inferred account mapping. Preserve row amounts so statement totals reconcile. Revisit only when the owner reopens this work."
+      }
+    },
+    {
+      "id": "Q21",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของทีมการตลาด ผู้ดูแลสิทธิ์ IT และเจ้าของข้อมูล",
+      "question_th": "ทีม Media ใช้บทบาท online_staff หรือไม่ และใครยืนยันรายการบัตรหรือดูเอกสารได้?",
+      "default_th": "ไม่เพิ่มสิทธิ์หรือถือว่าสองบทบาทเหมือนกันโดยอัตโนมัติ เดโมใช้บัญชีสังเคราะห์ ข้อมูลการเงินและใบแจ้งยอดยังจำกัดตามสิทธิ์เดิม",
+      "links": [
+        {
+          "href": "/ads/finance?view=card-imports",
+          "label": "ค่าใช้จ่ายผ่านบัตร"
+        }
+      ],
+      "doc": {
+        "id_label": "Q21",
+        "question": "Is the Media team the same operational role as `online_staff`? Who may maintain accounts/commitments, import and confirm card rows, and view restricted statements?",
+        "owner": "Product/Marketing operations owner + IT identity admin + data owner",
+        "blocks": "No synthetic P2 coding block. Blocks real user provisioning and Media confirmation workflow go-live.",
+        "default": "No automatic role grant, role alias or expansion of agency access. Test with synthetic `online_staff`/admin actors; retain existing staff-only financial access. Require an explicit owner-approved mapping before provisioning Media users; statements remain limited to approved marketing-ops roles."
+      }
+    },
+    {
+      "id": "Q22",
+      "status": "PENDING",
+      "owner_group": "media",
+      "owner_th": "เจ้าของตาราง Media และผู้รับผิดชอบกระทบยอดบัตร",
+      "question_th": "หัวคอลัมน์ รหัสรายการ และยอดควบคุมบัตรหมายถึงยอดค่าใช้จ่ายหรือยอดคงค้างอย่างไร?",
+      "default_th": "ใช้ตัวอย่างสังเคราะห์ เก็บเดบิตและเครดิตแยกกัน ยอดไม่ตรงหรือความหมายของยอดยังไม่ชัดเจนจะยืนยันไม่ได้ การนำเข้าซ้ำไม่เพิ่มยอดและไม่เก็บเลขบัตร",
+      "links": [
+        {
+          "href": "/ads/finance?view=card-imports",
+          "label": "ค่าใช้จ่ายผ่านบัตร"
+        }
+      ],
+      "doc": {
+        "id_label": "Q22",
+        "question": "Supply the monthly card-sheet exact headers/profile, durable source/row IDs, statement control identifiers and the reconciliation equation. Does the reported total mean transaction charges or balance due, and how are opening balances, payments, refunds/credits, fees, foreign currency and THB conversion represented?",
+        "owner": "Media sheet owner + Finance/card reconciliation owner",
+        "blocks": "No synthetic P2 coding block. Blocks real card-import and statement-reconciliation acceptance.",
+        "default": "Use synthetic exact-header fixtures and separately entered control metadata. Keep signed charges/credits, source IDs as text and sanitized raw-row hashes. Do not assume all future sheet totals equal balance due because this supplied sample does. Unknown controls/currency or nonzero differences prevent confirmation; replays are harmless, conflicts quarantined. P2 imported rows, hashes and logs exclude card number/last-4 and discarded personal fields; P4's restricted original PDF is a separate contract."
+      }
+    },
+    {
+      "id": "Q23",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของ E-memo ผู้ดูแล BUD และผู้ดูแลเลขอ้างอิง",
+      "question_th": "M.COM037/69 กับ M.COM037_69 เป็น Memo เดียวกันต่างรูปแบบการเขียนหรือไม่?",
+      "default_th": "เก็บรูปแบบเดิมและรอหลักฐานก่อนยืนยันชื่ออ้างอิง เลขลำดับ 037 กับ 033 เป็นคนละเลข ห้ามรวมวงเงินหรือปรับเครื่องหมายแล้วถือว่าเป็นเอกสารเดียวกัน",
+      "links": [
+        {
+          "href": "/ads/finance?view=memos",
+          "label": "ทะเบียน Memo"
+        }
+      ],
+      "doc": {
+        "id_label": "Q23 — notation question corrected 1 Oct",
+        "question": "Are `M.COM037/69` and `M.COM037_69` (slash versus underscore, **same serial 037**) the same external memo identifier? Supply the E-memo notation rule and evidence before approving an alias. The earlier `M.COM037/69` versus `M.COM033_69` example contains **different memo numbers**, not an unresolved identity claim.",
+        "owner": "E-memo owner + ADMIN BUD + memo steward",
+        "blocks": "No synthetic coding block. Blocks real use of an affected separator alias until notation/evidence is accepted, not unrelated memos.",
+        "default": "Preserve exact observed notation; no automatic punctuation normalization or alias confirmation. Keep serials 037 and 033 as different memo identities and never combine their caps/budgets. Same-serial notation aliases still require the existing explicit evidence/admin review."
+      }
+    },
+    {
+      "id": "Q24",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของนโยบายบัญชี เจ้าของ BUD และทีมออนไลน์กับ Media",
+      "question_th": "ยืนยันชุดเอกสารตามประเภทต้นทุนและวิธีจ่าย การแบ่งค่าใช้จ่ายล่วงหน้า และกติกาวงเงินได้หรือไม่?",
+      "default_th": "เดโมใช้ตารางเอกสารที่ยังเป็นข้อเสนอ การแบ่งค่าใช้จ่ายต้องรักษายอดถึงสตางค์ แยกเงินที่เรียกเก็บ ค่าใช้จ่ายตามเดือน และงบ ไม่เพิ่มยอดหรือวงเงินซ้ำ",
+      "links": [
+        {
+          "href": "/ads/finance?view=document-requirements",
+          "label": "เอกสารประกอบค่าใช้จ่าย"
+        }
+      ],
+      "doc": {
+        "id_label": "Q24",
+        "question": "Approve the document requirements for each `(cost type, payment method)` pair, the monthly recognition policy for prepaid costs (coverage boundaries and remainder cents), account BUD split rules and approval ownership, and commitment/memo cap consumption rules.",
+        "owner": "Finance/accounting policy owner + Marketing/BUD owner + Online/Media operations owner",
+        "blocks": "No synthetic P2 coding block. Blocks claiming finance completeness and real split/prepaid/cap go-live for affected paths.",
+        "default": "Implement the proposed, versioned doc 24 matrix and synthetic examples; unapproved real requirements remain pending. Never treat every card payment as agency PO/invoice or require an SN for CHANNEL/TOOL commitments. Proposed monthly recognition preserves exact total by distributing residual satang one each to the earliest covered months (`1199.99` over 12 months = eleven `100.00` months, then `99.99`); explicit reviewed account splits also preserve exact total. Cash, recognition and budget are separate measures; no guessed split or double-counted memo cap."
+      }
+    },
+    {
+      "id": "Q25",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของแบบจำลองคลังข้อมูล ผู้ดูแล Hub และเจ้าของตารางงบ",
+      "question_th": "รับรองข้อมูลส่งกลับสี่ชุด รอบอัปเดต การเก็บประวัติ และเดือนเริ่มใช้งาน Hub เมื่อใด?",
+      "default_th": "ใช้ TEST และชุดข้อมูลครบรุ่นเดียวกัน เสนอส่งทุกวัน 07:00 เวลาประเทศไทยและเตือนเก่าเกิน 36 ชั่วโมง วันที่ 1 ตุลาคมยังไม่เปิดใช้ระบบจริงอัตโนมัติ เดือนเก่าที่ Hub นำเข้าแล้วยังเป็นข้อมูลของ Hub",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q25",
+        "question": "Accept the four P3 mart schemas/keys (including the DW adapter for differing grains), manifest and read-back versions, TEST/production separation, cadence, complete-snapshot semantics and retention of generations/evidence. Is **2026-10-01** the agreed first Hub-owned operating month, and how is earlier history labelled? Return a TEST ingestion/read-back receipt for the Task A fixture manifest.",
+        "owner": "DW model/platform owner + Hub integration owner + Marketing ledger owner",
+        "blocks": "Real integrated P3 acceptance, cutover, retention and freshness claims; not design or approved synthetic coding.",
+        "default": "Propose daily 07:00 Asia/Bangkok snapshots, all four marts atomically published, an explicit complete month range and stale marking after 36 hours against source watermarks. No scheduled evidence deletion until a bounded retention policy is accepted. October remains inactive until approved and readiness is satisfied; no activation by date alone. Pre-Hub platform history stays historical/unassigned where no Hub line exists; no independent ledger feed is assumed. Earlier months explicitly imported into the Hub remain Hub-owned."
+      }
+    },
+    {
+      "id": "Q26",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของการระบุที่มาในคลังข้อมูล ทีมวิเคราะห์ออนไลน์ และฝ่ายการเงิน",
+      "question_th": "ยืนยันกติกาจับคู่ เวลาอ้างอิง ยอดสื่อ ผู้สนใจ และตัวหารที่ใช้คำนวณ CPL หรือไม่?",
+      "default_th": "ID ที่ผูกใน Hub มีลำดับสูงสุด แสดงความขัดแย้งและไม่เดาการจับคู่ ต้องมีรายการเชื่อม SN ตามเดือนที่ใช้ได้ ข้อมูลหรือเวลาที่ไม่ทราบคงว่างและแยกเงินบัตรจากยอดสื่อ",
+      "links": [
+        {
+          "href": "/ads/finance?view=media-lines",
+          "label": "รายการงบรายเดือน"
+        }
+      ],
+      "doc": {
+        "id_label": "Q26",
+        "question": "Confirm CODE/binding match labels, evidenced `effective_at` versus DW `recorded_at`, C5/C6 rule ownership/codes, historical naming-enforcement policy, spend currency/tax/refund basis, lead definition/deduplication and late corrections. What approved media-budget basis and corporate-period phasing can support % used/CPL?",
+        "owner": "DW attribution/model owner + Online analytics owner + Finance",
+        "blocks": "Metric/matching/control production acceptance and any claimed historical as-of or complete lead attribution; not design.",
+        "default": "Confirmed native binding wins; show conflicts, never remap to make approval checks pass. Use current explicit SN-month assignments and applied corrections; unresolved remains unresolved. Missing effective time stays null; observation time cannot replace it. Propose narrow financial C5 and identity/scope C6, with naming diagnostics separate and no retroactive SENA-H enforcement. Cash, platform media and monthly cost stay separate; unknown denominators/coverage are null."
+      }
+    },
+    {
+      "id": "Q27",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของนโยบายฝ่ายการเงิน ผู้ดูแล BUD และทีมออนไลน์",
+      "question_th": "ใครตรวจยืนยันเอกสาร กำหนดวันครบกำหนด หรืออนุญาตยกเว้นเอกสารแต่ละชนิด?",
+      "default_th": "อ่านเลขอ้างอิงเดิมโดยไม่กรอกซ้ำ การมีเลขยังไม่ใช่ตรวจสอบแล้ว เมื่อไม่มีกติกาวันครบกำหนดให้แสดงว่ายังไม่ทราบ การคัดลอกข้อความบันทึกว่า COPIED ไม่ใช่ส่งแล้ว",
+      "links": [
+        {
+          "href": "/ads/finance?view=document-requirements",
+          "label": "เอกสารประกอบค่าใช้จ่าย"
+        }
+      ],
+      "doc": {
+        "id_label": "Q27",
+        "question": "Confirm Q24's document matrix version, requirement owner, due rule/calendar/grace periods, verification authority/evidence and exemption reasons. Which existing imported fields can attest a reference or verification?",
+        "owner": "Finance policy owner + ADMIN BUD + Online operations owner",
+        "blocks": "Production document-completeness, VERIFIED and overdue claims; not design.",
+        "default": "Read current P2 memo/fee-PO/card evidence references without re-keying or importing new QT/bill/payment blocks. Mere reference = REFERENCE_RECORDED. No configured approved due rule means due/overdue unknown; do not assume C9's 19th deadline. VERIFIED requires an authorized explicit attestation to the exact existing reference/source version. NOT_REQUIRED needs a reason under an approved rule. Copies are logged as COPIED, never SENT."
+      }
+    },
+    {
+      "id": "Q28",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของงานการตลาด ผู้ดูแลสิทธิ์ IT และเจ้าของสิทธิ์คลังข้อมูล",
+      "question_th": "จะให้เอเจนซีดูยอดใช้จ่ายเฉพาะส่วนของตนหรือไม่ โดยแยกงานร่วมหลายเอเจนซีอย่างไร?",
+      "default_th": "คงสิทธิ์เดิม เอเจนซีไม่มีข้อมูลการเงิน หากอนุมัติภายหลังต้องแยกส่วนของเอเจนซีได้จริงและไม่เผยงบ Memo เอกสาร หรือยอดของผู้อื่น",
+      "links": [
+        {
+          "href": "/questions#Q28",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q28",
+        "question": "Should a later P3 agency projection expose its own line spend, and what constitutes an agency-owned slice on multi-agency corporate/shared lines?",
+        "owner": "Product/Marketing owner + IT identity owner + DW access owner",
+        "blocks": "Optional agency actuals go-live; not staff-only P3 coding after approval.",
+        "default": "Retain P1 own-name/ID permissions and P2 financial denial. No agency actuals access by default. If separately approved, expose only a verified own-agency spend projection with no budgets, memos, document references or other-agency aggregates/counts. Ambiguous/shared lines remain denied until a safe attribution contract exists."
+      }
+    },
+    {
+      "id": "Q29",
+      "status": "PENDING",
+      "owner_group": "dpo",
+      "owner_th": "เจ้าของเอกสารการเงิน ฝ่ายกฎหมาย DPO และผู้ดูแลที่เก็บข้อมูล",
+      "question_th": "เอกสาร ต้นฉบับ ผลถอดข้อมูล และประวัติต้องเก็บนานเท่าใด ใครสั่งระงับหรืออนุมัติการลบ?",
+      "default_th": "ยังไม่ลบหลักฐานจริงอัตโนมัติก่อนกำหนดนโยบาย การระงับทางกฎหมายมีผลต่อรุ่นและสำรองข้อมูล การลบผลค้นหาที่หมดสิทธิ์ไม่ใช่การลบต้นฉบับ",
+      "links": [
+        {
+          "href": "/questions#Q29",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q29",
+        "question": "Approve retention periods and triggering dates by original, extraction draft, confirmed data, sanitized derivative, index chunk and audit receipt; identify legal-hold authority, disposal approval, backup expiry and access-review responsibilities.",
+        "owner": "Finance records owner + Legal/DPO + IT storage owner",
+        "blocks": "Real P4 retention/disposal go-live; not design or approved synthetic coding.",
+        "default": "No automatic physical evidence deletion while policy is unresolved. Legal hold suspends disposal across versions and backups; authorized removal of stale/ineligible search chunks does not dispose of the evidence. Do not claim indefinite retention is compliant. No real storage until Q7 and retention ownership are accepted."
+      }
+    },
+    {
+      "id": "Q30",
+      "status": "PENDING",
+      "owner_group": "media",
+      "owner_th": "ผู้กระทบยอดบัตร เจ้าของ E-memo ทีมออนไลน์ IT และ DPO",
+      "question_th": "ใครยืนยันชุดทดสอบเอกสาร ตรวจคำตอบจริง และเลือกเครื่องมือถอดข้อมูลกับเกณฑ์ความแม่นยำ?",
+      "default_th": "เปรียบเทียบเครื่องมือด้วยเอกสารที่อนุญาตเท่านั้น ยังไม่อ้างผลทดสอบหรือเลือกผู้ชนะ การส่งภายนอกใช้ API หลัง Q7 และการปกปิดข้อมูล ไม่ใช้เว็บ ChatGPT",
+      "links": [
+        {
+          "href": "/questions#Q30",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q30",
+        "question": "Who owns the private evaluation corpus of three statements and ten memos, independently verifies row/field ground truth, confirms transcriptions and accepts engine thresholds, accuracy, confirmation time, runtime and cost? Which redaction reviewer and API configuration are approved?",
+        "owner": "Media/card reconciliation owner + E-memo/Online operations owner + IT platform owner + DPO for processing",
+        "blocks": "Real evaluation, engine selection and P4 confirmation go-live; not approved synthetic coding.",
+        "default": "Keep Tesseract/PaddleOCR/EasyOCR/Typhoon OCR and OpenAI vision as candidates, pin selected versions at evaluation, and report no invented benchmark. External processing only through an approved API after Q7 and locally verified masking; never the ChatGPT web app. Extraction confirmation is separate from P2 financial confirmation and external memo approval."
+      }
+    },
+    {
+      "id": "Q31",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ผู้ดูแลข้อมูลโครงการผ่านคลังข้อมูล เจ้าของตารางงบ และ BUD ที่เกี่ยวข้อง",
+      "question_th": "กลุ่ม C-MIBF-BNGPU กับ C-MIGD-BNGPU และเฟส 00412 กับ 00401 ใช้ความสัมพันธ์ใดในแต่ละเดือน?",
+      "default_th": "แยกข้อมูลขัดกันไว้ตรวจสอบ ไม่รวม เปลี่ยนชื่อ หรือแก้อัตโนมัติ รอหลักฐานกลุ่มกับเฟสที่เจ้าของข้อมูลยืนยันและคงรหัสต้นทาง",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q31",
+        "question": "Resolve `C-MIBF-BNGPU` / `C-MIGD-BNGPU` with dated group/phase bridge evidence. Retained DW notes place phase `00412` under conflicting Sheet/REM groups and leave phase `00401` without an REM group; what is the authoritative membership for each affected month?",
+        "owner": "REM/project master steward via DW + ledger owner + affected BUD owner",
+        "blocks": "Real affected-scope import/assignment and financial matching; not unrelated synthetic coding.",
+        "default": "Quarantine conflicting membership; no fuzzy merge, silent rename or auto-correction. A correction uses Q5's approved authority and evidence. Preserve IDs/issued names and require a fresh reviewed bridge."
+      }
+    },
+    {
+      "id": "Q32",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ผู้ดูแลชื่อโครงการและแบรนด์ เจ้าของข้อมูลคลัง และหัวหน้าทีมออนไลน์",
+      "question_th": "ชื่อภาษาอังกฤษของกลุ่มที่ไม่ผ่านกติกา ASCII และความยาวควรใช้ชื่อที่อนุมัติใด?",
+      "default_th": "แสดงเหตุผลให้ผู้ดูแลตรวจ ไม่แปล ตัดอักขระ ย่อชื่อ หรือใช้รหัสแทนชื่อเอง และไม่เปลี่ยนไวยากรณ์ SENA-H",
+      "links": [
+        {
+          "href": "/ads/registry",
+          "label": "ทะเบียนแคมเปญ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q32",
+        "question": "Supply approved English labels passing the existing Hub ASCII/length rules for `C-BRTF-4BGKE`, `C-NCID-PKSTN`, `C-SKTH-PKPT7`, `T-BRPA-BWSRC`, `T-JTWN-SRIST`. Retained labels contain respectively a Thai mark, `@`, excess length, `&`, and Thai text.",
+        "owner": "Project/brand naming steward + DW master-data owner + Online lead",
+        "blocks": "Acceptance of those master-data rows and affected new scope imports; not current issued-name operation or generic coding.",
+        "default": "Show the exact validation findings for steward review. Do not translate, strip characters, truncate, replace the label with the code or change the SENA-H grammar. A phase alias does not repair its group's invalid label."
+      }
+    },
+    {
+      "id": "Q33",
+      "status": "PENDING",
+      "owner_group": "media",
+      "owner_th": "เจ้าของบัญชี Google Ads และผู้ดูแลบัญชีในคลังข้อมูล",
+      "question_th": "บัญชี Google 1789352841 เป็นบัญชีใหม่ รหัสผิด หรืออยู่นอกชุดข้อมูลที่ตกลงกัน?",
+      "default_th": "คงสถานะยังไม่ยืนยัน การไม่พบในข้อมูลเก่าไม่ได้แปลว่าบัญชีไม่มีอยู่ ห้ามแทนด้วยรหัสคล้ายกันหรือเดา BUD ต้องมีหลักฐานบัญชีและช่วงเวลาที่ใช้",
+      "links": [
+        {
+          "href": "/ads/finance?view=ad-accounts",
+          "label": "ทะเบียนบัญชีโฆษณา"
+        }
+      ],
+      "doc": {
+        "id_label": "Q33",
+        "question": "Google account `1789352841` is absent from the DW's retained seed. Is it a new advertiser account, a typo, or outside the agreed inventory? Supply current platform-account evidence, scope/BUD, agency and validity.",
+        "owner": "Media/Google Ads account owner + DW account steward",
+        "blocks": "Activation/attribution of that account; not unrelated accounts or synthetic coding.",
+        "default": "Keep unresolved. Absence from a dated seed is not proof the account does not exist. Do not substitute a similar ID, infer a BUD or create a live mapping. Preserve the ID as text."
+      }
+    },
+    {
+      "id": "Q34",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของขอบเขตงานการตลาดและการเงิน เจ้าของธุรกิจ Solar และทีม Media",
+      "question_th": "ค่าใช้จ่ายบัญชี SENA Solar Energy อยู่ในขอบเขต Hub หรือไม่ และใครรับผิดชอบ BUD กับช่วงเวลา?",
+      "default_th": "ยังไม่รวมกับยอดรายการที่ระบุได้จนกว่าจะยืนยันขอบเขต ชื่อบัญชีในข้อมูลเก่าไม่ใช่การอนุมัติงบ และไม่สลับบัญชีกับรหัสที่ยังไม่พบ",
+      "links": [
+        {
+          "href": "/ads/finance?view=ad-accounts",
+          "label": "ทะเบียนบัญชีโฆษณา"
+        }
+      ],
+      "doc": {
+        "id_label": "Q34",
+        "question": "Is SENA Solar Energy Google account `1795870642` spend in the Hub's financial scope, and who owns its BUD, agency and covered dates if so?",
+        "owner": "Marketing/Finance scope owner + Solar business owner + Media account steward",
+        "blocks": "Inclusion and mapping of Solar spend in production Hub totals; not generic coding.",
+        "default": "Flag scope pending and exclude it from attributed Hub line totals, while retaining authorized source reconciliation separately. A seed label is not a budget approval; do not treat it as account `1789352841`."
+      }
+    },
+    {
+      "id": "Q35",
+      "status": "PENDING",
+      "owner_group": "media",
+      "owner_th": "เจ้าของแคมเปญ Media กับออนไลน์ ผู้ดูแลการระบุที่มา และ BUD",
+      "question_th": "บัญชี Google ที่ VIVA และ VELA ใช้ร่วมกันมี CODE แยกทุกแคมเปญครบหรือไม่?",
+      "default_th": "ใช้ CODE เพื่อแยก VIVA กับ VELA ไม่ใช้ชื่อบัญชีหรือสัดส่วนเดา ID ที่ผูกไว้มีลำดับสูงสุดและต้องมีรายการเชื่อม SN ตามเดือนที่ใช้ได้",
+      "links": [
+        {
+          "href": "/ads/finance?view=ad-accounts",
+          "label": "ทะเบียนบัญชีโฆษณา"
+        }
+      ],
+      "doc": {
+        "id_label": "Q35",
+        "question": "For the shared SENA VIVA / VELA Google account (retained seed `4311741342`), confirm per-campaign CODE coverage and the exception owner for missing/conflicting codes.",
+        "owner": "Media/Online campaign owner + DW attribution owner + project/BUD steward",
+        "blocks": "Complete project attribution on the shared account; not correctly evidenced campaigns.",
+        "default": "Owner rule: use CODE, never the shared account, to distinguish VIVA from VELA. A confirmed native binding retains precedence and supplies the evidenced registration CODE. Require its eligible monthly line assignment; missing/conflicting identity remains unresolved. Never allocate by account label, ratio or arbitrary scope fallback."
+      }
+    },
+    {
+      "id": "Q36",
+      "status": "PENDING",
+      "owner_group": "dpo",
+      "owner_th": "DPO เจ้าของข้อมูลการตลาด และฝ่ายความปลอดภัย IT",
+      "question_th": "อนุญาตให้ส่งเนื้อหาภายใน ข้อความค้นคืน คำถาม และผลเครื่องมือไป OpenAI API ภายใต้เงื่อนไขใด?",
+      "default_th": "ส่งได้เฉพาะข้อมูลเดโมที่เป็นสังเคราะห์อย่างชัดเจน ปิดการติดตามภายนอก ไม่ส่งใบแจ้งยอด ข้อมูลผู้อนุมัติ หรือข้อมูลลับ และยังไม่ส่งข้อมูลจริงก่อนมีนโยบายที่อนุมัติ",
+      "links": [
+        {
+          "href": "/questions#Q36",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q36",
+        "question": "May real internal content, retrieved passages, prompts and tool results be sent to the OpenAI API? Approve data categories, redaction, processing location, retention and access under the DPO review; API access alone is not consent.",
+        "owner": "DPO + Marketing data owner + IT security",
+        "blocks": "Real internal-data API processing, not the synthetic demo or fake-model CI. Q7 still governs documents/OCR.",
+        "default": "Only clearly synthetic demo content may reach the API. Disable external SDK tracing; never send statements, approver PII or credentials. Domain authorization applies before retrieval. Fail closed for real/internal content until an explicit approved policy is implemented."
+      }
+    },
+    {
+      "id": "Q37",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของโครงสร้างพื้นฐาน IT และ DPO",
+      "question_th": "Hostinger VPS จะอยู่ภูมิภาคใด และอนุญาตการประมวลผลกับการเข้าถึงข้ามประเทศอย่างไร?",
+      "default_th": "รันเฉพาะ TEST บน localhost สถาปัตยกรรมยังเป็น Supabase กับ Vercel และ Hostinger VPS ไม่มีการเดาภูมิภาคหรือสร้างระบบโฮสต์จากงานนี้",
+      "links": [
+        {
+          "href": "/questions#Q37",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q37",
+        "question": "Which Hostinger VPS region will host the API, assistant and workers, and what cross-border processing/access terms are approved?",
+        "owner": "IT infrastructure owner + DPO",
+        "blocks": "Deployment and real-data hosting approval; deployment is out of this task.",
+        "default": "Localhost TEST execution only. Architecture remains Supabase + Vercel admin + Hostinger VPS; no region is assumed, no infrastructure is provisioned."
+      }
+    },
+    {
+      "id": "Q38",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของ API ฝ่าย IT และเจ้าของผลิตภัณฑ์การตลาด",
+      "question_th": "เดโมผู้ช่วยใช้โมเดล งบการใช้งาน และผู้รับผิดชอบใด และมี API key ฝั่งเซิร์ฟเวอร์พร้อมหรือยัง?",
+      "default_th": "เก็บ key เฉพาะสภาพแวดล้อมเซิร์ฟเวอร์ ไม่คืนค่าหรือบันทึกลง log หากยังไม่มีให้แสดงรอคำตอบ การทดสอบอัตโนมัติใช้โมเดลจำลองและไม่ส่งคำขอภายนอก",
+      "links": [
+        {
+          "href": "/questions#Q38",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q38",
+        "question": "Which API model, usage limit and operational owner should the live assistant demo use? Will an API key be supplied in ignored `apps/api/.env`?",
+        "owner": "IT API owner + Marketing product owner",
+        "blocks": "Live-model demo when a key is absent; never blocks fake-model CI or the rest of the demo.",
+        "default": "Read the key only from server environment, never return/log it. Use a configurable supported model with a bounded tool budget; show a Thai `รอคำตอบ` remark when unavailable. CI always uses an explicit deterministic fake model and never makes external requests. Record the chosen model/version during Task 5; no real-data egress before Q36."
+      }
+    },
+    {
+      "id": "Q39",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์การตลาดและผู้ดูแลสิทธิ์ IT",
+      "question_th": "ใครดูแลรายการคำถาม และยืนยันให้เจ้าหน้าที่ SENA ทั้งห้าบทบาทดูหน้านโยบายนี้หรือไม่?",
+      "default_th": "เดโมให้เจ้าหน้าที่ทั้งห้าบทบาทอ่านคำถามทั่วไป ไม่รวมข้อมูลรายการงบ Memo หรือข้อมูลส่วนบุคคล ปฏิเสธเอเจนซีและผู้ใช้บริการภายนอก และคงสิทธิ์ของแต่ละหน้าตามเดิม",
+      "links": [
+        {
+          "href": "/questions#Q39",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q39",
+        "question": "Confirm the person/group responsible for keeping the demo question catalog current and whether all five internal staff roles should see the policy presentation page.",
+        "owner": "Marketing product owner + IT identity owner",
+        "blocks": "Production ownership/access acceptance, not the demo.",
+        "default": "All five SENA staff roles may read generic policy questions; no record-level budget, memo or personal data is included. Agencies/service consumers are denied. Domain screens keep existing ACLs. Pending entries are grouped by P'Note, Finance, DPO, Media, Marketing and IT; resolved Q9–Q12 and owner-deferred Q18/Q20 are excluded. One catalog generates the English documentation rows and Thai UI projection; CI fails on drift."
+      }
+    }
+  ]
+}
