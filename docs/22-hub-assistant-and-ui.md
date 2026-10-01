@@ -339,7 +339,7 @@ fallbacks). Durations: press 110ms, quick 180ms, base 320ms, entrance 460ms, spr
 | Buttons and cards | Press scales to 96% quickly and springs back; primary buttons gain a soft glow on hover; cards lift 3px with a spring | Hover effects only on hover-capable devices; no transforms with reduced motion. |
 | Registry list → detail card | The card grows out of its source row with a uniform spring scale (no stretched text) above a frosted backdrop; a direct link rises 18px into place | Focus moves to the card heading; Esc/Back/close restore the opener as before. Reduced motion: instant card, 80ms backdrop fade. |
 | Cascading picker (`DropdownPop`) | Drops 6px from the trigger and scales from 95% on a spring; closes in 120ms | Keyboard behavior unchanged. Reduced motion: opacity only. |
-| Residential dialogs, tabs and disclosures | Dialogs pop on a spring above a frosted backdrop; tab panels and opened `<details>` content rise 8px | Native dialog focus/Esc and form guards unchanged. Reduced motion: instant. |
+| Residential dialogs, tabs and disclosures | Dialogs rise 18px like a sheet (translate only, so control sizes never scale) above a frosted backdrop; tab panels and opened `<details>` content rise 8px | Native dialog focus/Esc and form guards unchanged. Reduced motion: instant. |
 
 The frosted backdrop blur is static; only its opacity animates. Motion is not an
 accessibility manager: native dialog, focus and URL handling remain as specified below.

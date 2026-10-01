@@ -30,7 +30,8 @@
 @keyframes hub-pop { from { opacity: 0; transform: translateY(6px) scale(.94); } to { opacity: 1; transform: none; } }
 @keyframes hub-drop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes hub-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes hub-pill { from { opacity: .4; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes hub-pill { from { opacity: .4; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes hub-sheet { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes hub-shake { 0%, 100% { transform: none; } 14% { transform: translateX(-6px); } 30% { transform: translateX(5px); } 46% { transform: translateX(-4px); } 62% { transform: translateX(2px); } 78% { transform: translateX(-1px); } }
 @keyframes hub-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
 @keyframes hub-activity { to { transform: rotate(360deg); } }
@@ -97,7 +98,7 @@ button[aria-busy="true"]::before { content: ""; width: 16px; height: 16px; }
 
   /* Buttons: a quick press, a springy release and a soft glow on primary actions. */
   .button, .registry-button, .registry-table button, .open-project, .nav-link {
-    transition: transform var(--dur-spring) var(--ease-bounce), background-color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), color var(--dur-quick) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+    transition: transform 420ms var(--ease-spring), background-color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), color var(--dur-quick) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
   }
   .button:active:not(:disabled), .registry-button:active:not(:disabled) { transform: scale(.96); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
   .nav-link:active { transform: scale(.98); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
@@ -119,8 +120,9 @@ button[aria-busy="true"]::before { content: ""; width: 16px; height: 16px; }
   .inline-warning, .notice:not(.success, .error) { animation: hub-rise var(--dur-base) var(--ease-out) backwards; }
   [aria-invalid="true"] { animation: hub-shake .44s var(--ease-out); }
 
-  /* Native dialogs pop with a spring above a frosted backdrop. */
-  .action-dialog[open] { animation: hub-pop var(--dur-spring) var(--ease-spring) backwards; }
+  /* Native dialogs rise like a sheet above a frosted backdrop; translate only, so
+     control sizes are never scaled while the dialog settles. */
+  .action-dialog[open] { animation: hub-sheet 420ms var(--ease-spring) backwards; }
   .action-dialog[open]::backdrop { animation: hub-fade var(--dur-base) var(--ease-out) backwards; }
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
