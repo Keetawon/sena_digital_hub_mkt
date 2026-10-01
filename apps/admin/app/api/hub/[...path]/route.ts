@@ -38,10 +38,16 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const operationsRead = method === "GET" && new RegExp(`^v1/admin/ads/(?:actuals(?:/${financeId})?|(?:document-tracking|findings)(?:/[a-f0-9]{64})?)$`).test(path);
   const operationsWrite = method === "POST" && /^v1\/admin\/ads\/(?:document-tracking\/[a-f0-9]{64}\/follow-ups|findings\/[a-f0-9]{64}\/workflow)$/.test(path);
   if ((operationsRead || operationsWrite) && !["online_staff", "admin"].includes(role)) return error("ไม่มีสิทธิ์เข้าถึงผลการตลาดและเอกสาร", 403);
+  const archiveRead = method === "GET" && new RegExp(`^v1/admin/ads/archive(?:/(?:fixtures|search|${financeId}(?:/(?:file|page))?))?$`).test(path);
+  const archiveWrite = method === "POST" && new RegExp(`^v1/admin/ads/archive(?:/${financeId}/(?:retry|confirm|apply|hold))?$`).test(path);
+  const archiveFile = archiveRead && path.endsWith("/file");
+  const archivePage = archiveRead && path.endsWith("/page");
+  if ((archiveRead || archiveWrite) && !["online_staff", "admin"].includes(role)) return error("ไม่มีสิทธิ์เข้าถึงคลังเอกสาร", 403);
+  if (archiveWrite && path.endsWith("/hold") && role !== "admin") return error("การกำหนดให้เก็บรักษาเอกสารต้องดำเนินการโดยผู้ดูแลระบบ", 403);
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || questionsRead || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(allowed[method]?.test(path) || questionsRead || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const adsFilters = path === "v1/admin/ads/scopes" ? ["kind", "parent_group_id"] : path === "v1/admin/ads/registrations" ? ["q", "limit", "offset", "agency", "status", "binding_status"] : [];
@@ -57,7 +63,14 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     && (!query.has("limit") || /^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!))
     && (!query.has("offset") || /^(?:\d{1,5}|100000)$/.test(query.get("offset")!))
     && (!query.has("demo_mode") || /^(?:true|false)$/.test(query.get("demo_mode")!));
-  if (request.nextUrl.search && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !(method === "GET" && path === "v1/projects"
+  const archiveFilters = path === "v1/admin/ads/archive" ? ["document_type", "month", "bud", "status", "limit", "offset"] : path === "v1/admin/ads/archive/search" ? ["q", "series", "bud", "month", "limit", "offset"] : archiveFile ? ["version_id", "page", "download"] : archivePage ? ["version_id", "page"] : [];
+  const validArchiveQuery = archiveRead && [...query.keys()].every(key => archiveFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200)
+    && (!query.has("limit") || /^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!))
+    && (!query.has("offset") || /^(?:\d{1,5}|100000)$/.test(query.get("offset")!))
+    && (!query.has("version_id") || new RegExp(`^${financeId}$`).test(query.get("version_id")!))
+    && (!query.has("page") || /^[1-9]\d{0,2}$/.test(query.get("page")!))
+    && (!query.has("download") || /^(?:true|false)$/.test(query.get("download")!));
+  if (request.nextUrl.search && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);
@@ -77,6 +90,11 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const upload = method === "POST" && path === "v1/admin/assets";
   let body: string | ArrayBuffer | undefined;
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (archiveFile && request.headers.has("range")) {
+    const range = request.headers.get("range")!;
+    if (!/^bytes=(?:\d{1,12}-\d{0,12}|-\d{1,12})$/.test(range)) return error("ไม่รองรับช่วงข้อมูลไฟล์นี้", 416);
+    headers.Range = range;
+  }
   if (method !== "GET") {
     if (upload && role === "viewer") return error("บัญชีผู้อ่านไม่สามารถอัปโหลดไฟล์ได้", 403);
     const limit = upload ? maxUploadBytes : 100_000;
@@ -119,9 +137,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       headers,
       signal: AbortSignal.timeout(upload ? 30_000 : 15_000),
     });
-    if (upstream.ok && method === "GET" && path.endsWith("/file")) {
-      const downloadHeaders = new Headers({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'", "X-Frame-Options": "DENY" });
-      for (const name of ["Content-Type", "Content-Disposition", "Content-Length"]) {
+    if (upstream.ok && archivePage) {
+      if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/png") return error("รูปแบบหน้าหลักฐานไม่ถูกต้อง กรุณาเปิดไฟล์ต้นฉบับ", 502);
+      return new NextResponse(upstream.body, { status: upstream.status, headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'" } });
+    }
+    if ((upstream.ok || archiveFile && upstream.status === 416) && method === "GET" && path.endsWith("/file")) {
+      const downloadHeaders = new Headers({ "Cache-Control": archiveFile ? "private, no-store" : "no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": archiveFile ? "default-src 'none'; sandbox; frame-ancestors 'self'" : "default-src 'none'; sandbox; frame-ancestors 'none'", "X-Frame-Options": archiveFile ? "SAMEORIGIN" : "DENY" });
+      for (const name of ["Content-Type", "Content-Disposition", "Content-Length", ...(archiveFile ? ["Content-Range", "Accept-Ranges"] : [])]) {
         const value = upstream.headers.get(name);
         if (value) downloadHeaders.set(name, value);
       }

@@ -12,6 +12,10 @@
         {
           "href": "/ads/finance?view=memos",
           "label": "ทะเบียน Memo"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -133,11 +137,15 @@
       "owner_group": "dpo",
       "owner_th": "DPO ฝ่ายกฎหมาย เจ้าของข้อมูล และผู้ดูแลระบบคลาวด์",
       "question_th": "Supabase ที่เก็บไฟล์ สำรองข้อมูล และบริการประมวลผลอยู่ที่ใด และอนุญาตข้อมูลจริงหรือการส่งข้อมูลข้ามประเทศอย่างไร?",
-      "default_th": "ถือว่ายังไม่ยืนยันสถานที่ ใช้ข้อมูลสังเคราะห์เท่านั้นก่อนมีคำตัดสินที่บันทึกไว้ เอกสารบัตรจำกัดสิทธิ์และไม่เข้า RAG ห้ามถือว่าชื่อผู้ให้บริการหรือปลายทางยืนยันถิ่นที่เก็บข้อมูล",
+      "default_th": "รับเฉพาะเอกสารสังเคราะห์ที่ตรวจแฮชแล้ว เก็บและประมวลผลในเครื่อง ไม่มีการส่งออกไปยัง OCR หรือ LLM ภายนอก ห้ามอัปโหลดข้อมูลจริงจนกว่าจะยืนยันสถานที่จัดเก็บและการประมวลผล รายการบัตรไม่เข้าสู่ดัชนีค้นหาใด ๆ",
       "links": [
         {
           "href": "/questions#Q7",
           "label": "คำถามที่รอคำตอบ"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -145,7 +153,7 @@
         "question": "Where are the actual Supabase project/database, storage/backups and proposed R2 bucket hosted? Confirm access/processing locations, retention and responsible controllers/processors. Card statements include cardholder name, company address and partial card number: what DPO decision and transfer arrangements are required before external OCR/LLM processing, especially outside Thailand or at unknown locations?",
         "owner": "IT/cloud owner + DPO/Legal + data owner",
         "blocks": "No synthetic local P1/P2 coding block. Blocks real shared/production personal/approval data use pending hosting assessment and P4 statement/PDF processing.",
-        "default": "Treat location as unverified; synthetic fixtures only until approved deployment evidence exists. No statement upload/OCR in P2; statements are restricted to marketing-ops roles and never indexed in any RAG namespace. Do not infer Thailand residency from provider name, endpoint or a bucket hint. This is a decision request, not a legal compliance finding."
+        "default": "Treat location as unverified; synthetic fixtures only until approved deployment evidence exists. No statement upload/OCR in P2; statements are restricted to marketing-ops roles and never indexed in any RAG namespace. Do not infer Thailand residency from provider name, endpoint or a bucket hint. This is a decision request, not a legal compliance finding. Owner-approved Task 4 accepts known synthetic fixture hashes only, with private ignored local storage and local processing; no real upload, hosted R2 provisioning or external OCR/LLM call."
       }
     },
     {
@@ -432,6 +440,10 @@
         {
           "href": "/ads/finance?view=card-imports",
           "label": "ค่าใช้จ่ายผ่านบัตร"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -453,6 +465,10 @@
         {
           "href": "/ads/finance?view=card-imports",
           "label": "ค่าใช้จ่ายผ่านบัตร"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -474,6 +490,10 @@
         {
           "href": "/ads/finance?view=memos",
           "label": "ทะเบียน Memo"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -608,6 +628,10 @@
         {
           "href": "/questions#Q29",
           "label": "คำถามที่รอคำตอบ"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -615,7 +639,7 @@
         "question": "Approve retention periods and triggering dates by original, extraction draft, confirmed data, sanitized derivative, index chunk and audit receipt; identify legal-hold authority, disposal approval, backup expiry and access-review responsibilities.",
         "owner": "Finance records owner + Legal/DPO + IT storage owner",
         "blocks": "Real P4 retention/disposal go-live; not design or approved synthetic coding.",
-        "default": "No automatic physical evidence deletion while policy is unresolved. Legal hold suspends disposal across versions and backups; authorized removal of stale/ineligible search chunks does not dispose of the evidence. Do not claim indefinite retention is compliant. No real storage until Q7 and retention ownership are accepted."
+        "default": "No automatic physical evidence deletion while policy is unresolved. Legal hold suspends disposal across versions and backups; authorized removal of stale/ineligible search chunks does not dispose of the evidence. Do not claim indefinite retention is compliant. No real storage until Q7 and retention ownership are accepted. Synthetic demo has no physical-delete action; admin places/releases a legal hold with a reason, blocking further processing and search while evidence remains retained."
       }
     },
     {
@@ -624,11 +648,15 @@
       "owner_group": "media",
       "owner_th": "ผู้กระทบยอดบัตร เจ้าของ E-memo ทีมออนไลน์ IT และ DPO",
       "question_th": "ใครยืนยันชุดทดสอบเอกสาร ตรวจคำตอบจริง และเลือกเครื่องมือถอดข้อมูลกับเกณฑ์ความแม่นยำ?",
-      "default_th": "เปรียบเทียบเครื่องมือด้วยเอกสารที่อนุญาตเท่านั้น ยังไม่อ้างผลทดสอบหรือเลือกผู้ชนะ การส่งภายนอกใช้ API หลัง Q7 และการปกปิดข้อมูล ไม่ใช้เว็บ ChatGPT",
+      "default_th": "เดโมใช้การอ่านข้อความใน PDF และ Windows OCR ภาษาอังกฤษที่ติดตั้งในเครื่องกับใบแจ้งยอดสังเคราะห์เท่านั้น ยังไม่มีชุด OCR ภาษาไทย จึงไม่อ้างผลกับเอกสารสแกนภาษาไทย ค้น Memo ที่ยืนยันและตรวจข้อความแล้วแบบคำตรงในเครื่อง ไม่มี embeddings หรือการเรียกโมเดลภายนอก",
       "links": [
         {
           "href": "/questions#Q30",
           "label": "คำถามที่รอคำตอบ"
+        },
+        {
+          "href": "/ads/archive",
+          "label": "คลังเอกสารตัวอย่าง"
         }
       ],
       "doc": {
@@ -636,7 +664,7 @@
         "question": "Who owns the private evaluation corpus of three statements and ten memos, independently verifies row/field ground truth, confirms transcriptions and accepts engine thresholds, accuracy, confirmation time, runtime and cost? Which redaction reviewer and API configuration are approved?",
         "owner": "Media/card reconciliation owner + E-memo/Online operations owner + IT platform owner + DPO for processing",
         "blocks": "Real evaluation, engine selection and P4 confirmation go-live; not approved synthetic coding.",
-        "default": "Keep Tesseract/PaddleOCR/EasyOCR/Typhoon OCR and OpenAI vision as candidates, pin selected versions at evaluation, and report no invented benchmark. External processing only through an approved API after Q7 and locally verified masking; never the ChatGPT web app. Extraction confirmation is separate from P2 financial confirmation and external memo approval."
+        "default": "Keep Tesseract/PaddleOCR/EasyOCR/Typhoon OCR and OpenAI vision as candidates, pin selected versions at evaluation, and report no invented benchmark. External processing only through an approved API after Q7 and locally verified masking; never the ChatGPT web app. Extraction confirmation is separate from P2 financial confirmation and external memo approval. Demo default: installed Windows OCR en-US for image-only English synthetic statements, pypdf for text layers, deterministic field extraction and confirmed sanitized memo lexical search. Thai OCR/vector retrieval remain evaluation work; unsupported OCR returns an explicit unavailable job, never fixture ground truth disguised as extracted output. No confidence percentage is invented."
       }
     },
     {

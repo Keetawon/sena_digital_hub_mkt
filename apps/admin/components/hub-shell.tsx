@@ -14,6 +14,7 @@ const financialSections = [
   { id: "finance", href: "/ads/finance", label: "งบและค่าใช้จ่าย" },
   { id: "actuals", href: "/ads/actuals", label: "ผลใช้จ่ายรายเดือน" },
   { id: "documents", href: "/ads/documents", label: "ติดตามเอกสาร" },
+  { id: "archive", href: "/ads/archive", label: "คลังเอกสาร" },
   { id: "exceptions", href: "/ads/exceptions", label: "รายการที่ต้องตรวจสอบ" },
 ] as const;
 

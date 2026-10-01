@@ -1,9 +1,9 @@
 # 21 — E-memo archive, statement extraction and restricted search (P4.0)
 
-Date: **1 October 2026 (Asia/Bangkok)**. Status: **design for owner review**.
-The owner authorized P4.0 design only. Wait for `P4.0 approved` and finish P3 before
-implementing this pipeline. No migration, upload, OCR run, external model call or
-real-document evaluation is performed by this design task. P1/P2 behavior, issued
+Date: **1 October 2026 (Asia/Bangkok)**. Status: **approved synthetic/local demo**.
+The owner approved P4.0 and demo-first implementation on 1 October. P3 is complete;
+Task 3's residential slice was pushed as `dba493f` before this area begins. Real
+uploads, external OCR/model calls and deployment remain blocked. P1/P2 behavior, issued
 names, the SENA-H grammar and `sena_h_approved=false` stay unchanged.
 
 Read with [doc 23](23-media-lines-and-memo-register.md),
@@ -204,7 +204,12 @@ batch per statement, and all cost/allocation revisions and history intact.
 Do not add a second raw-parent expense beside typed leaves. Cash charges, monthly
 allocations, recurring forecasts and budget/memo caps remain separate measures.
 
-### 4.4 LINE OA evidence gate
+### 4.4 LINE OA owner deferral
+
+The owner parked account attribution on 1 October. Q18/Q20 are deferred and absent
+from the pending-question page. Keep statement occurrences as `CHANNEL` costs in
+the unattributed bucket `LINE OA (ยังไม่แยกบัญชี)` so totals reconcile. Do not build
+an OA matching/review screen. The following evidence discussion is future work only.
 
 The 111 reported LINE OA rows share one descriptor, which cannot identify an OA.
 **Automated reconciliation waits for per-account evidence under Q20.** A matching
@@ -387,7 +392,7 @@ results render immediately. Do not animate amounts as though they are fresh fact
 | Archive list | `คลังเอกสาร`, filters `ประเภทเอกสาร`, `เดือน`, `หน่วยธุรกิจ`, `สถานะ`; separate memo and statement results. Show `รอตรวจสอบ` versus `ยืนยันข้อมูลแล้ว`, exact version and source timestamp. Storage/processing unavailable state explains the Q7 gate in Thai. |
 | Memo review | Source page beside draft fields; `ข้อมูลจากเอกสาร`, `ค่าที่แก้ไข`, `เปิดหน้าหลักฐาน`, `ยืนยันข้อมูลที่ถอดจากเอกสาร`. Separate notice `การยืนยันข้อมูลไม่ใช่การอนุมัติบันทึกข้อความ`; warn about stale P2 versions and missing alias evidence. |
 | Statement review | Page tabs/selector with expected versus extracted counts, occurrence table, debit/credit/net/control/difference. `จำนวนรายการไม่ตรง` and `ยอดรวมไม่ตรง` link to affected pages/rows. Separate `ยืนยันข้อมูลที่ถอดจากเอกสาร` and later existing `ยืนยันชุดค่าใช้จ่าย`; never imply one button approves both. |
-| LINE OA review | `รอหลักฐานรายบัญชี`; show eligible evidence, unresolved counts and existing reviewed matches. No auto-assign button until Q20 and the rule are approved. |
+| LINE OA | No matching/review screen in the owner-approved demo. Retain `CHANNEL` costs in `LINE OA (ยังไม่แยกบัญชี)`; Q18/Q20 are deferred. |
 | Memo search | `ค้นหาบันทึกข้อความ`, Thai query input, filters memo series/BUD/month/status, results grouped by canonical memo with matched observed alias. Confirmed facets only; draft status opens the authorized review queue instead of RAG. |
 
 Search result layout:
@@ -467,5 +472,63 @@ P4 acceptance must exercise synthetic fixtures before real evaluation:
 
 P4 excludes the P5 assistant, general-purpose document chat, public indexing,
 QT/PO/bill/payment workflow construction and approval in E-memo. Do not build P4
-until `P4.0 approved`; implement P3 first after its own approval. This document adds
-no deployment permission and makes no claim that real evidence has been processed.
+outside the approved synthetic/local slice below. This document adds no deployment
+permission and makes no claim that real evidence has been processed.
+
+## 12. Task 4 implementation note — before code
+
+**Source preview refinement during verification:** Edge renders text-layer memo
+PDFs inside the authenticated sandboxed frame, but leaves image-only statements
+blank there. The statement panel therefore displays the exact embedded full-page
+raster through an authenticated, audited PNG endpoint. It accepts only the known
+single full-page image composition and preserves the source pixels; it never
+rebuilds a page from OCR fields. Unsupported layouts fail closed. Original versioned
+PDFs remain available for separate opening/download. The PDF sandbox remains intact.
+
+Use the next global migration **0022** for private archive metadata, immutable
+versions, leased jobs, extraction/review receipts and a memo-only internal index.
+Reuse P2 memo/card commands for the explicit application step. Keep transcription
+confirmation, P2 record confirmation and external approval visibly distinct.
+All mutations use fixed-local TEST guards, caller roles, optimistic revisions,
+forced RLS and audit. The only accepted inputs are generated synthetic fixture
+hashes; arbitrary uploads/URL ingestion fail closed while Q7 is pending.
+
+Store content-addressed PDFs under ignored `.local/document-archive/`, with an
+authenticated byte proxy and audited preview/download delivery. This is the local
+substitute for private R2, not a hosted R2 implementation or residency decision.
+No application deletion; admin may place/release a legal hold with a reason.
+Held processing is blocked, retained evidence remains restricted, and old memo
+chunks disappear from results immediately on version/status/permission changes.
+
+One local worker command claims bounded leases, extracts text using `pypdf`, and
+uses installed Windows OCR for the image-only English synthetic statement fixture.
+This workstation exposes `en-US` and no Thai OCR pack; confidence stays unknown
+where the engine does not report it. Thai text-layer extraction remains supported;
+Thai scanned-document accuracy and engine choice remain Q30 evaluation work.
+On hosts without this local engine, OCR jobs return an explicit safe retryable
+unavailable result rather than fabricated extracted rows. No external OCR/LLM is
+called. Microsoft's [OCR API](https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine.recognizeasync)
+provides the local image-to-text operation used here; no comparative accuracy claim.
+
+The demo uses deterministic labelled memo PDFs and an image-only, watermarked
+statement with repeated LINE OA occurrences, a credit and exact synthetic control
+totals/counts. The fixture manifest is independent validation ground truth, never
+substituted for OCR output. A wrong/missing/offsetting amount or page count blocks
+confirmation. Human corrections preserve extracted originals, page provenance and
+review evidence. Statement confirmation may link an existing P2 batch without
+another expense, or explicitly create a P2 draft batch through the current importer;
+financial confirmation remains the existing separate action.
+
+Search uses confirmed, reviewed sanitized memo fields/pages only in
+`internal_memo`, with exact identifier/alias matching plus local lexical ranking.
+The local demo has no embedding/LLM call or vector model download; semantic/vector
+evaluation remains Q30. The DB rejects statement indexing independently of API
+filters. Search numbers come from linked P2 fields, and citations reopen the exact
+version/page under a fresh permission check. `/ads/archive` provides list/review,
+safe retry, source preview, separate confirm/apply actions and memo search, using
+shared motion/remarks. Q1/Q7/Q21/Q22/Q23/Q29/Q30 remain visible defaults; Q18/Q20 do not.
+
+Acceptance includes real local image OCR, complete statement checks, hostile/unknown
+PDF denial, worker leases/replay, stale confirmation/application, no duplicate P2
+cost, memo-only index eligibility, legal hold and access audit. Run the five full
+repository checks and commit/push this slice before P5.

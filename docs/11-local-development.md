@@ -209,6 +209,31 @@ The generated API environment explicitly sets `HUB_TEST_DATABASE_URL` to the loc
 
 ## Deployment boundary
 
+### Synthetic document archive (Task 4)
+
+After applying migration 0022, install the three deterministic demonstration PDFs
+and queue the initial memo and statement with `npm.cmd run dev:document-demo`.
+Run `npm.cmd run dev:document-worker -- --drain` separately from the API, then open
+`/ads/archive` as online staff or admin. Both commands refuse any database other
+than `127.0.0.1:55432/sena_hub_local`; generated private PDFs and OCR work files stay
+under ignored `.local/document-archive/`. No network OCR, R2 provisioning or real
+uploads occur. The source hash allowlist is registered by the local seeder only.
+
+The worker reads text-layer memos and uses installed Windows.Media.Ocr for the
+image-only statement fixture. This workstation has the English OCR language;
+Thai OCR evaluation remains Q30. Missing engines produce a failed job, never a
+fabricated extraction. Review the PDF against the extracted fields, correct any
+OCR errors, explicitly confirm the transcription, then separately apply/link it
+to P2. Applying a statement creates a draft financial batch, not confirmed costs.
+The demo statement has five pages, ten occurrences and a signed total of THB
+4,812.00. Its three LINE OA rows stay in the unattributed CHANNEL bucket.
+The second memo fixture is available for an explicit new-version demonstration.
+
+Set `HUB_DOCUMENT_OCR_TEST=1` for the real local OCR test and
+`HUB_ARCHIVE_TEST=1` for the rollback database integration test. These flags do
+not enable external processing. See [doc 21](21-ememo-archive-and-search.md#12-task-4-implementation-note--before-code)
+for the local archive boundary and pending production decisions.
+
 `scripts/local-db.mjs` and the synthetic seed are development conveniences. Production must use a separately provisioned database, a dedicated NOINHERIT runtime login, verified Supabase identities and controlled asset storage. Do not run the seed against a shared Supabase project. This slice uses server APIs for draft writes; direct browser-to-PostgREST writes are not enabled.
 
 The schema is an initial subset, not a frozen production model. In particular, the sample asset registry and single-project releases must be extended to the full content/asset/publish-set contract before pilot acceptance. See [the delivery plan](07-delivery-plan.md) for the remaining milestones.

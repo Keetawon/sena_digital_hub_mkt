@@ -8,10 +8,12 @@
     "dev:dw-reader": "node scripts/provision-dw-reader.mjs",
     "dev:dw-fixtures": "node scripts/export-dw-fixtures.mjs",
     "dev:residential-demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-residential-demo.py",
+    "dev:document-demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-document-demo.py",
+    "dev:document-worker": "uv run --project apps/api --env-file apps/api/.env python scripts/run-document-worker.py",
     "check:questions": "python scripts/sync-questions.py --check",
     "sync:questions": "python scripts/sync-questions.py --write",
     "test:ui": "playwright test",
-    "test:db": "node scripts/test-db.mjs && node supabase/tests/concurrent_model.mjs && node supabase/tests/concurrent_asset.mjs && node supabase/tests/concurrent_brand.mjs && node supabase/tests/concurrent_ads_code.mjs && node supabase/tests/concurrent_ads_line_revision.mjs && node supabase/tests/concurrent_ads_actuals.mjs && node supabase/tests/concurrent_residential_release.mjs && node --test supabase/tests/dw_fixtures.test.mjs"
+    "test:db": "node scripts/test-db.mjs && node supabase/tests/concurrent_model.mjs && node supabase/tests/concurrent_asset.mjs && node supabase/tests/concurrent_brand.mjs && node supabase/tests/concurrent_ads_code.mjs && node supabase/tests/concurrent_ads_line_revision.mjs && node supabase/tests/concurrent_ads_actuals.mjs && node supabase/tests/concurrent_residential_release.mjs && node supabase/tests/concurrent_document_archive.mjs && node --test supabase/tests/dw_fixtures.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -1,0 +1,26 @@
+.archive-workspace { min-width: 0; }
+.registry-card:has(.archive-split) { width: min(1200px, 100%); max-width: calc(100vw - 32px); }
+.archive-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.archive-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; gap: 20px; margin: 20px 0; }
+.archive-evidence { min-width: 0; padding: 16px; background: var(--surface-warm); border: 1px solid var(--line); border-radius: 10px; }
+.archive-evidence iframe { width: 100%; height: 480px; border: 1px solid var(--line-strong); border-radius: 8px; margin-top: 16px; background: var(--surface); }
+.archive-source-image { margin-top: 16px; }
+.archive-source-image img { display: block; width: 100%; height: auto; border: 1px solid var(--line-strong); border-radius: 8px; }
+.archive-source-image img[hidden] { display: none; }
+.archive-review { min-width: 0; }
+.archive-review table input, .archive-review table select { min-width: 0; }
+.archive-review .registry-table th:first-child { width: 24%; }
+.archive-status { display: inline-flex; align-items: center; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-warm); color: var(--ink); font-size: var(--text-small); }
+.archive-page-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.archive-page-controls label { flex: 1; min-width: 120px; }
+.archive-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.archive-controls div { padding: 12px; border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.archive-controls dt { color: var(--muted); }
+.archive-controls dd { margin: 6px 0 0; overflow-wrap: anywhere; font-family: var(--font-table); }
+.archive-version { overflow-wrap: anywhere; }
+.archive-result { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.archive-result mark { color: var(--ink); background: var(--surface-warm); }
+.archive-result p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.archive-question-list { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 900px) { .archive-split { grid-template-columns: minmax(0, 1fr); } .archive-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .archive-filters, .archive-controls { grid-template-columns: minmax(0, 1fr); } .archive-evidence iframe { height: 360px; } }
