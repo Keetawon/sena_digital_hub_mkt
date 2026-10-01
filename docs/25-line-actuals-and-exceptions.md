@@ -1,9 +1,10 @@
 # 25 — Line actuals, exceptions and document tracking (P3.0)
 
-Date: **1 October 2026 (Asia/Bangkok)**. Status: **design for owner and DW review**.
-The owner authorized this design slice, not P3 implementation. Wait for
-`P3.0 approved` before creating migrations, staging jobs, API routes or screens.
-Implement P3 before P4, one priority at a time. P1/P2 behavior, issued names, the
+Date: **1 October 2026 (Asia/Bangkok)**. Status: **P3.0 approved for demo-first TEST implementation**.
+The owner supplied `P3.0 approved` and authorized Tasks 0–6. Section 13 records the
+implementation defaults before code; business assumptions below remain proposals
+for production and appear as `รอคำตอบ` remarks. Implement P3 before P4, one priority
+at a time. P1/P2 behavior, issued names, the
 SENA-H grammar and `sena_h_approved=false` are unchanged.
 
 Sources: [doc 19 §6](19-campaign-naming-registry.md#6-dw-integration-and-matching),
@@ -37,7 +38,8 @@ approve a budget, memo, bill or payment.
 | Online / marketing operations | Review unresolved links, reuse P2 assignment/correction actions, maintain workflow ownership, and review document references within accepted authority. |
 | Finance / business / identity owners | Approve document rules, evidence authority, lead definitions, production cutover and any future agency spend projection. |
 
-**All schemas, route names, schedules and UX in this document are proposals.** The
+**Production contracts and operating policies remain proposals.** The approved TEST
+adapter and demo defaults in §13 make this slice implementable without another pause. The
 following assumption IDs are used throughout, so a default is not mistaken for a DW
 agreement or production approval. Existing P1/P2 invariants are retained rather than
 reopened.
@@ -579,7 +581,9 @@ Proposed staff API prefix `/v1/admin/ads`:
 | `GET /findings`, `GET /findings/{key}` | C5/C6 source state plus separate local workflow/history, snapshot and match provenance. |
 | `POST /findings/{key}/workflow` | Explicit acknowledge/owner/note/resolve actions with expected workflow version. |
 
-These are proposed names; no new endpoint exists from this design. Scope and totals
+Task 2 implements these reads, follow-up copies and finding workflow for local TEST.
+The `/review` verification/waiver endpoint remains future work and is not exposed.
+Scope and totals
 are authorized server-side before serialization. Denied/missing detail uses
 `ไม่พบรายการที่มีสิทธิ์เข้าถึง`. Export-reader membership is not a browser role.
 
@@ -607,8 +611,8 @@ reviewers before go-live; synthetic screenshot checks do not establish readabili
 
 ## 10. Acceptance plan, exclusions and gate
 
-After `P3.0 approved`, agree the DW contract before implementing its consumer. Use
-synthetic fixtures only for initial build and tests; keep P1/P2 tests intact.
+The approved TEST consumer uses the verified contract and adaptations in §13. Use
+synthetic fixtures only for this build and its tests; keep P1/P2 checks intact.
 
 - Contract/staging tests: all four relation counts/checksums, exact schemas, text IDs,
   decimal precision, environment separation, foreign keys, complete snapshots,
@@ -863,5 +867,92 @@ evidence for review, not a confirmed P2 account-mapping version. Q31–Q35 go-li
 questions supplement Q25/Q26; none authorizes loading real evidence, changing scopes
 or connecting to an external system in this docs-only update.
 
-**Stop here for `P3.0 approved`.** P4 design may be reviewed separately, but no P3 or
-P4 implementation is authorized by this document.
+The original design-only stop was satisfied by the owner's 1 October approval.
+Proceed under the demo-first order; real-data and production decisions remain open.
+
+## 13. Approved demo implementation defaults — 1 October 2026
+
+This note precedes Task 2 code. The owner approved P3.0 and DEMO-FIRST; no new
+engineering gate is pending. Q24–Q28 remain visible production decisions.
+
+Read-only verification found a complete DW package at
+`data/hub-registry/p3-readback/4e7f2eaf-8807-4f39-9aa0-b4750d37211f/` in the DW repo.
+Its manifest SHA-256 is
+`a72f9aaa407128780a71b93bd7b0f50ed60a05dac7ba6af7a95a5f68dc6197ae`, snapshot
+`2026-10-01T04:05:27.770130+00:00`, contract `hub-p3-test-v1`, environment `test`,
+`synthetic_only=true`. The four arrays contain respectively 13 dimension, 17 bridge,
+8 monthly and 73 finding rows (38/38/35/36 columns). Preserve the original package
+as a frozen Hub fixture with checksums verified before copying/using it.
+
+The owner identified DW producer commit
+`ec2a182c436783adb0a641479357b792ab97523f`; its
+`docs/MARKETING_OPS_INTEGRATION.md` §5 confirms the four grains and TEST adaptations
+below. Read this as package/contract provenance, not as a claim that generated
+package bytes are committed in DW. The original manifest and arrays remain unchanged.
+The far-future months are coverage fixtures only. Task 6 must seed coherent
+presentation months and make those the demo's selected months; do not move original
+DW observations to different dates or present its future coverage as a live period.
+
+Accept this closed TEST-v1 transport: UUIDs remain lossless strings; JSON arrays stay
+arrays; catalog nullability is descriptive, while business keys are independently
+required. The finding extension `evaluation_status` is explicit: 11 conditions are
+present, 44 false and 18 UNAVAILABLE/null. Missing first/last observation times stay
+null. These differences refine the TEST adapter without activating production rules.
+Synthetic periods and watermarks through 2356 are retained with a demo label and
+cannot support a real freshness claim. Show original source watermarks separately
+from snapshot/receipt time.
+
+Use migration `202610010016_ads_actuals.sql`. The CLI validates, then applies only to
+`127.0.0.1:55432/sena_hub_local`, with one transaction and a guarded generation
+pointer. Preserve immutable source rows, exact replay, quarantine receipts, optimistic
+workflow versions, fixed-search-path guarded functions, forced RLS and audit. The
+Hub consumes DW matches and C5/C6 facts; it does not rebuild them or update DW.
+
+Q25 defaults: inactive proposed October cutover, manual TEST imports, proposed daily
+07:00 Bangkok/36-hour stale threshold only, no scheduler or deletion. Q26 defaults:
+confirmed binding precedence and nullable evidence/metrics, as computed by DW. Q24/Q27
+defaults: proposed pair matrix, reference presence only, no due rule means unknown,
+no manual verification/waiver before authority is accepted. Q28 defaults: no agency
+financial projection. These defaults are useful demo behavior, not go-live claims.
+
+The owner has deferred Q18/Q20. LINE OA costs remain CHANNEL records in one
+unattributed bucket; statement controls include them. Do not allocate accounts or
+build an OA matching-review screen. No statements or ads data enter public/RAG APIs.
+
+Local operator commands (the first is a dry run; neither connects to DW):
+
+```powershell
+uv run --project apps/api python scripts/stage-ads-actuals.py --package supabase/tests/fixtures/ads_actuals
+uv run --project apps/api python scripts/stage-ads-actuals.py --package supabase/tests/fixtures/ads_actuals --apply
+```
+
+The second command loads the existing ignored local administrator configuration,
+verifies the fixed local target, then uses the guarded apply function as `admin`.
+`--expected-current <snapshot UUID>` can pin the reviewed generation (`none` requires
+an empty pointer). Without it, the script observes the pointer immediately before
+applying; the SQL function still rejects concurrent replacement. Credentials and
+source row contents are not printed. A validation error or quarantined package is
+not a successful publication. Running an exact accepted package again is a no-op.
+
+Workflow owner selection defaults to the caller or unassigned until a trusted staff
+directory is available; it does not turn a typed UUID into verified staff membership.
+The document screen shows imported references and successful copy history, with no
+manual verification or waiver control. Its unset deadline and owner remain explicit
+unknowns under Q27; unknown deadlines are never counted as on time.
+
+Task 2 retains applied migration history through `202610010020`. The forward fixes
+preserve the existing admin ban on `staging` namespace access: operator intake RPCs
+are `ads.apply_ads_actuals` and `ads.actuals_current_snapshot`, while the underlying
+generation tables remain private in `staging`. No staff member gains base-table
+writes or audit-row access. Duplicate component budget items with the same cost and
+payment pair produce one document requirement whose version includes every item.
+
+A recurrence check uses the last explicit evaluated DW condition, skipping an
+intervening UNAVAILABLE snapshot. Unknown evidence neither clears a condition nor
+erases a previously observed clearance. Local workflow resolution still cannot
+override source findings. `context_changed` is deliberately conservative: an
+allowlisted P1/P2 source write after the Hub source watermark, or changed applicable
+revision/state, asks staff to refresh the read-back. The private helper reads only
+audit table identity/write time and exposes one boolean; it does not calculate a
+new match or expose audit actors, rows or evidence. An unrelated source change can
+therefore show the same refresh notice. Q25 retains this demo default.

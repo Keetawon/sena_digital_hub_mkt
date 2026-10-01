@@ -495,6 +495,10 @@
         {
           "href": "/ads/finance?view=document-requirements",
           "label": "เอกสารประกอบค่าใช้จ่าย"
+        },
+        {
+          "href": "/ads/documents",
+          "label": "ติดตามเอกสาร"
         }
       ],
       "doc": {
@@ -511,11 +515,11 @@
       "owner_group": "it",
       "owner_th": "เจ้าของแบบจำลองคลังข้อมูล ผู้ดูแล Hub และเจ้าของตารางงบ",
       "question_th": "รับรองข้อมูลส่งกลับสี่ชุด รอบอัปเดต การเก็บประวัติ และเดือนเริ่มใช้งาน Hub เมื่อใด?",
-      "default_th": "ใช้ TEST และชุดข้อมูลครบรุ่นเดียวกัน เสนอส่งทุกวัน 07:00 เวลาประเทศไทยและเตือนเก่าเกิน 36 ชั่วโมง วันที่ 1 ตุลาคมยังไม่เปิดใช้ระบบจริงอัตโนมัติ เดือนเก่าที่ Hub นำเข้าแล้วยังเป็นข้อมูลของ Hub",
+      "default_th": "เดโมอ่านชุด TEST ของคลังข้อมูลที่ตรวจครบทั้งสี่ตาราง นำเข้าด้วยคำสั่งที่ผู้ดูแลเรียกเท่านั้น วันที่ตัดรอบเดือนตุลาคม รอบส่ง 07:00 และเกณฑ์ข้อมูลเก่า 36 ชั่วโมงยังเป็นข้อเสนอ แสดงวันที่สังเคราะห์เป็นข้อมูลตัวอย่าง ไม่เปิดตารางงานหรือข้อมูลจริงอัตโนมัติ เมื่อข้อมูลต้นทางใน Hub เปลี่ยนจะแจ้งให้นำเข้ารอบใหม่ โดยไม่คำนวณการเชื่อมใหม่ใน Hub การนำเสนอใช้เดือนจากชุดข้อมูลตัวอย่างที่เตรียมไว้",
       "links": [
         {
-          "href": "/ads/finance?view=media-lines",
-          "label": "รายการงบรายเดือน"
+          "href": "/ads/actuals",
+          "label": "ผลใช้จ่ายรายเดือน"
         }
       ],
       "doc": {
@@ -523,7 +527,7 @@
         "question": "Accept the four P3 mart schemas/keys (including the DW adapter for differing grains), manifest and read-back versions, TEST/production separation, cadence, complete-snapshot semantics and retention of generations/evidence. Is **2026-10-01** the agreed first Hub-owned operating month, and how is earlier history labelled? Return a TEST ingestion/read-back receipt for the Task A fixture manifest.",
         "owner": "DW model/platform owner + Hub integration owner + Marketing ledger owner",
         "blocks": "Real integrated P3 acceptance, cutover, retention and freshness claims; not design or approved synthetic coding.",
-        "default": "Propose daily 07:00 Asia/Bangkok snapshots, all four marts atomically published, an explicit complete month range and stale marking after 36 hours against source watermarks. No scheduled evidence deletion until a bounded retention policy is accepted. October remains inactive until approved and readiness is satisfied; no activation by date alone. Pre-Hub platform history stays historical/unassigned where no Hub line exists; no independent ledger feed is assumed. Earlier months explicitly imported into the Hub remain Hub-owned."
+        "default": "Demo consumes the verified hub-p3-test-v1 four-mart package, snapshot 2026-10-01T04:05:27.770130+00:00, using manual localhost-only imports. UUID strings and nullable UNAVAILABLE finding evidence are explicit TEST adapter defaults. Propose daily 07:00 Asia/Bangkok snapshots and stale marking after 36 hours against source watermarks, with all four marts atomically published and explicit coverage; no scheduler or evidence deletion is activated. Future synthetic dates are labelled demo, not fresh real data. October cutover remains inactive until approved; pre-Hub history stays historical/unassigned unless explicitly imported as Hub-owned. Production retention/contract acceptance remains open. A conservative global refresh notice follows any P1/P2 source write after the Hub watermark; no local rematching. DW ec2a182 coverage months stay frozen; presentation uses Task 6 demo-seed months."
       }
     },
     {
@@ -532,11 +536,15 @@
       "owner_group": "it",
       "owner_th": "เจ้าของการระบุที่มาในคลังข้อมูล ทีมวิเคราะห์ออนไลน์ และฝ่ายการเงิน",
       "question_th": "ยืนยันกติกาจับคู่ เวลาอ้างอิง ยอดสื่อ ผู้สนใจ และตัวหารที่ใช้คำนวณ CPL หรือไม่?",
-      "default_th": "ID ที่ผูกใน Hub มีลำดับสูงสุด แสดงความขัดแย้งและไม่เดาการจับคู่ ต้องมีรายการเชื่อม SN ตามเดือนที่ใช้ได้ ข้อมูลหรือเวลาที่ไม่ทราบคงว่างและแยกเงินบัตรจากยอดสื่อ",
+      "default_th": "ID ที่ผูกใน Hub มีลำดับสูงสุด แสดงความขัดแย้งและไม่เดาการจับคู่ ต้องมีรายการเชื่อม SN ตามเดือนที่ใช้ได้ ข้อมูลหรือเวลาที่ไม่ทราบคงว่างและแยกเงินบัตรจากยอดสื่อ ผู้รับผิดชอบเรื่องที่ตรวจพบเลือกเป็นผู้ใช้งานปัจจุบันหรือยังไม่ระบุ ระหว่างรอรายชื่อทีมงานที่ยืนยันแล้ว",
       "links": [
         {
-          "href": "/ads/finance?view=media-lines",
-          "label": "รายการงบรายเดือน"
+          "href": "/ads/actuals",
+          "label": "ผลใช้จ่ายและวิธีเชื่อม"
+        },
+        {
+          "href": "/ads/exceptions",
+          "label": "รายการที่ต้องตรวจสอบ"
         }
       ],
       "doc": {
@@ -544,7 +552,7 @@
         "question": "Confirm CODE/binding match labels, evidenced `effective_at` versus DW `recorded_at`, C5/C6 rule ownership/codes, historical naming-enforcement policy, spend currency/tax/refund basis, lead definition/deduplication and late corrections. What approved media-budget basis and corporate-period phasing can support % used/CPL?",
         "owner": "DW attribution/model owner + Online analytics owner + Finance",
         "blocks": "Metric/matching/control production acceptance and any claimed historical as-of or complete lead attribution; not design.",
-        "default": "Confirmed native binding wins; show conflicts, never remap to make approval checks pass. Use current explicit SN-month assignments and applied corrections; unresolved remains unresolved. Missing effective time stays null; observation time cannot replace it. Propose narrow financial C5 and identity/scope C6, with naming diagnostics separate and no retroactive SENA-H enforcement. Cash, platform media and monthly cost stay separate; unknown denominators/coverage are null."
+        "default": "Confirmed native binding wins; show conflicts, never remap to make approval checks pass. Use current explicit SN-month assignments and applied corrections; unresolved remains unresolved. Missing effective time stays null; observation time cannot replace it. Propose narrow financial C5 and identity/scope C6, with naming diagnostics separate and no retroactive SENA-H enforcement. Cash, platform media and monthly cost stay separate; unknown denominators/coverage are null. Workflow owners default to the calling staff member or unassigned until a trusted staff directory exists; preserve an unchanged previously recorded owner."
       }
     },
     {
@@ -556,8 +564,8 @@
       "default_th": "อ่านเลขอ้างอิงเดิมโดยไม่กรอกซ้ำ การมีเลขยังไม่ใช่ตรวจสอบแล้ว เมื่อไม่มีกติกาวันครบกำหนดให้แสดงว่ายังไม่ทราบ การคัดลอกข้อความบันทึกว่า COPIED ไม่ใช่ส่งแล้ว",
       "links": [
         {
-          "href": "/ads/finance?view=document-requirements",
-          "label": "เอกสารประกอบค่าใช้จ่าย"
+          "href": "/ads/documents",
+          "label": "ติดตามเอกสาร"
         }
       ],
       "doc": {
@@ -577,8 +585,8 @@
       "default_th": "คงสิทธิ์เดิม เอเจนซีไม่มีข้อมูลการเงิน หากอนุมัติภายหลังต้องแยกส่วนของเอเจนซีได้จริงและไม่เผยงบ Memo เอกสาร หรือยอดของผู้อื่น",
       "links": [
         {
-          "href": "/questions#Q28",
-          "label": "คำถามที่รอคำตอบ"
+          "href": "/ads/actuals",
+          "label": "สิทธิ์ดูผลใช้จ่ายรายเดือน"
         }
       ],
       "doc": {

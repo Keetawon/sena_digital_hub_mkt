@@ -1,0 +1,960 @@
+{
+  "environment": "test",
+  "contract_version": "hub-p3-test-v1",
+  "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+  "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+  "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+  "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+  "synthetic_only": true,
+  "exported_at": "2026-10-01T04:05:29.962056+00:00",
+  "hub_source_commit": "488698177e570a4e2cc9b334793a951819a385f2",
+  "hub_fixture_commit": "30972d03614deda82966edd1ce056d78987d4abf",
+  "hub_design_commit": "b0348f279cfce133bcf7034c59904cc23a366938",
+  "hub_migration_checksums": [
+    {
+      "file": "202609160001_core_slice.sql",
+      "sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd",
+      "normalized_lf_sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd"
+    },
+    {
+      "file": "202609160002_model_edit_lock.sql",
+      "sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5",
+      "normalized_lf_sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5"
+    },
+    {
+      "file": "202609160003_source_selection.sql",
+      "sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa",
+      "normalized_lf_sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa"
+    },
+    {
+      "file": "202609160004_publication_availability.sql",
+      "sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181",
+      "normalized_lf_sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181"
+    },
+    {
+      "file": "202609160005_asset_library.sql",
+      "sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f",
+      "normalized_lf_sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f"
+    },
+    {
+      "file": "202609160006_brands.sql",
+      "sha256": "fc643f143c8453002a054164cb43db792fa7d83f90fb3dcf5e8bad8381ae2e3e",
+      "normalized_lf_sha256": "77c29cc4a9d1a73619a43a03cc307cf000a9faa26757784719606352a13c78b2"
+    },
+    {
+      "file": "202609180007_pilot_intake.sql",
+      "sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe",
+      "normalized_lf_sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe"
+    },
+    {
+      "file": "202609180008_project_gold_prefill.sql",
+      "sha256": "5d63e273b79209626700fa8d48c598270ac977c585f3dcf01178f65eede889e4",
+      "normalized_lf_sha256": "434ba3e39086dfa49944efa9cedf86d37597e96c96b10a2cb970af1b4d44e6e6"
+    },
+    {
+      "file": "202609180009_model_media.sql",
+      "sha256": "d8228ca2529132c07793ebaed4da06888fc977d9b23017b9e0cfaae4272da36e",
+      "normalized_lf_sha256": "6f98be46f07bbff3b4aa0276541711d54538d7ac8dd9ea9cd51f6cc96cb065aa"
+    },
+    {
+      "file": "202609200010_marketing_unit_types.sql",
+      "sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87",
+      "normalized_lf_sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87"
+    },
+    {
+      "file": "202609200011_project_facilities.sql",
+      "sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99",
+      "normalized_lf_sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99"
+    },
+    {
+      "file": "202609200012_project_gold_preview.sql",
+      "sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1",
+      "normalized_lf_sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1"
+    },
+    {
+      "file": "202609210013_project_media_collections.sql",
+      "sha256": "38954d0ac2b962111134a8b55face2d6b552ca5e0df344d73075061634afe452",
+      "normalized_lf_sha256": "791cc2c51e6bf5ff3f60898e00e769e2993f84dbbbdfe01fc33d37b169095dfc"
+    },
+    {
+      "file": "202609290014_ads_registry.sql",
+      "sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b",
+      "normalized_lf_sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b"
+    },
+    {
+      "file": "202609300015_ads_media_lines_memos.sql",
+      "sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6",
+      "normalized_lf_sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6"
+    }
+  ],
+  "covered_month_from": "2025-12-01",
+  "covered_month_to": "2356-04-01",
+  "hub_operating_from_month": null,
+  "operating_boundary_status": "PROPOSED_NOT_ACTIVATED",
+  "cadence": null,
+  "proposal_status": "TEST_IMPLEMENTED_PRODUCTION_UNAPPROVED",
+  "parser_version": "sena-h-check32-issued-exact-v1",
+  "match_rule_version": "hub-p3-test-v1",
+  "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+  "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+  "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+  "relations": [
+    {
+      "relation": "dim_media_line",
+      "file": "dim_media_line.json",
+      "columns": [
+        {
+          "name": "environment",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "contract_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "hub_snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "hub_source_snapshot_at",
+          "type": "timestamp(6) with time zone",
+          "nullable": true
+        },
+        {
+          "name": "effective_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "temporal_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "temporal_provenance",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "line_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "line_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "revision_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "hub_line_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "hub_revision_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "revision_no",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "revision_status",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "line_state",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "is_applicable",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "archived_at",
+          "type": "timestamp(6) with time zone",
+          "nullable": true
+        },
+        {
+          "name": "kind",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "scope_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "scope_code",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "agency",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "program_ref",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "period_start_month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "period_end_month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "permitted_scope_ids",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "permitted_agencies",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "components",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "approved_gross",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "approved_media",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "approved_fee",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "budget_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "typed_budget_complete",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "source_updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "quality_codes",
+          "type": "text[]",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "line_source",
+        "line_key",
+        "revision_key"
+      ],
+      "row_count": 13,
+      "file_sha256": "c7a2e8635815bcd6abbb465258111ddc3f9a4a3ce88c2ccb4c1962288b70cebb",
+      "snapshot_at": "2026-10-01T04:05:27.770130+00:00"
+    },
+    {
+      "relation": "bridge_native_campaign_media_line",
+      "file": "bridge_native_campaign_media_line.json",
+      "columns": [
+        {
+          "name": "environment",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "contract_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "hub_snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "hub_source_snapshot_at",
+          "type": "timestamp(6) with time zone",
+          "nullable": true
+        },
+        {
+          "name": "effective_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "temporal_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "temporal_provenance",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "platform",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "account_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "campaign_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "line_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "line_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "revision_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "observed_code",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "observed_name",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "registration_code",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "name_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "scope_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "agency",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "match_method",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "candidate_method",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "assignment_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "binding_name_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "correction_target_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "candidate_line_keys",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "conflict_codes",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "unresolved_reason",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "name_conformance",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "parser_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "match_rule_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "platform_source_snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "source_kind",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "source_record_refs",
+          "type": "jsonb",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "platform",
+        "account_id",
+        "campaign_id",
+        "month"
+      ],
+      "row_count": 17,
+      "file_sha256": "0f6a4bb1fb78acb377b5637f522dfd38d4f79d4060e73e2fa0ec1ecf914a5af0",
+      "snapshot_at": "2026-10-01T04:05:27.770130+00:00"
+    },
+    {
+      "relation": "fact_media_line_monthly",
+      "file": "fact_media_line_monthly.json",
+      "columns": [
+        {
+          "name": "environment",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "contract_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "hub_snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "hub_source_snapshot_at",
+          "type": "timestamp(6) with time zone",
+          "nullable": true
+        },
+        {
+          "name": "effective_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "temporal_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "temporal_provenance",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "line_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "line_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "revision_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "budget_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "approved_month_gross",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "approved_month_media",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "typed_budget_complete",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "platform_media_spend",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "platform_spend_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "platform_data_through",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "attributed_leads",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "lead_definition_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "leads_data_through",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "media_budget_used_pct",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "media_cpl",
+          "type": "numeric",
+          "nullable": true
+        },
+        {
+          "name": "comparison_reason",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "campaign_count",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "unresolved_context_count",
+          "type": "bigint",
+          "nullable": true
+        },
+        {
+          "name": "card_cash_by_type",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "card_monthly_by_type",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "financial_components",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "quality_codes",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "platform_source_snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "rem_source_snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "line_source",
+        "line_key",
+        "month"
+      ],
+      "row_count": 8,
+      "file_sha256": "b255ca719bbe36f1d6b89a6cb888c85d794690d65d2cf4388f9ffbd0c8eccc24",
+      "snapshot_at": "2026-10-01T04:05:27.770130+00:00"
+    },
+    {
+      "relation": "fact_marketing_ops_finding",
+      "file": "fact_marketing_ops_finding.json",
+      "columns": [
+        {
+          "name": "environment",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "contract_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "hub_snapshot_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "hub_source_snapshot_at",
+          "type": "timestamp(6) with time zone",
+          "nullable": true
+        },
+        {
+          "name": "effective_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "temporal_basis",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "temporal_provenance",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "finding_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "control_code",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "rule_code",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "rule_version",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "subject_kind",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "subject_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "month",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "line_source",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "line_key",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "platform",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "account_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "campaign_id",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "registration_code",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "agency",
+          "type": "character varying",
+          "nullable": true
+        },
+        {
+          "name": "condition_present",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "evaluation_status",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "severity",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "first_observed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "last_observed_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "cleared_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "expected",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "observed",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "context_refs",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "suggested_owner_role",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "match_method",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "source_snapshot_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "finding_key"
+      ],
+      "row_count": 73,
+      "file_sha256": "90db2a81edb753593656556ecdd58eba9e4a8f7f056c1372db167b28e8afacbd",
+      "snapshot_at": "2026-10-01T04:05:27.770130+00:00"
+    }
+  ],
+  "control_totals": {
+    "platform_resolved": "520.00",
+    "platform_unresolved": "90.00",
+    "card_cash": {
+      "assigned": "0.00",
+      "unassigned": "2499.99"
+    },
+    "card_monthly": {
+      "assigned": "0.00",
+      "unassigned": "2399.99"
+    },
+    "currency": "THB",
+    "additive_across_bases": false,
+    "platform_coverage_complete": true,
+    "coverage_by_basis": {
+      "platform": {
+        "covered_months": [
+          "2093-03-01",
+          "2096-10-01",
+          "2096-11-01",
+          "2356-04-01"
+        ],
+        "covered_month_from": "2093-03-01",
+        "covered_month_to": "2356-04-01"
+      },
+      "card_cash": {
+        "covered_months": [
+          "2025-12-01",
+          "2026-09-01",
+          "2027-01-01",
+          "2095-12-01"
+        ],
+        "covered_month_from": "2025-12-01",
+        "covered_month_to": "2095-12-01"
+      },
+      "card_monthly": {
+        "covered_months": [
+          "2026-01-01",
+          "2026-02-01",
+          "2026-03-01",
+          "2026-04-01",
+          "2026-05-01",
+          "2026-06-01",
+          "2026-07-01",
+          "2026-08-01",
+          "2026-09-01",
+          "2026-10-01",
+          "2026-11-01",
+          "2026-12-01",
+          "2096-01-01",
+          "2096-02-01",
+          "2096-03-01",
+          "2096-04-01",
+          "2096-05-01",
+          "2096-06-01",
+          "2096-07-01",
+          "2096-08-01",
+          "2096-09-01",
+          "2096-10-01",
+          "2096-11-01",
+          "2096-12-01"
+        ],
+        "covered_month_from": "2026-01-01",
+        "covered_month_to": "2096-12-01"
+      }
+    }
+  }
+}

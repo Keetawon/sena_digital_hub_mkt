@@ -31,6 +31,8 @@ try {
   console.log('PASS: ads registry agency isolation, frozen names, native binding and DW export permissions');
   await connection.query(await readFile(new URL('../supabase/tests/ads_media_lines.sql', import.meta.url), 'utf8'));
   console.log('PASS: ads finance role isolation, revisions, memos, assignments, imports and private exports');
+  await connection.query(await readFile(new URL('../supabase/tests/ads_actuals.sql', import.meta.url), 'utf8'));
+  console.log('PASS: TEST actuals snapshots, staff isolation, finding workflow and document follow-ups');
   await connection.query(await readFile(new URL('../supabase/tests/dw_reader.sql', import.meta.url), 'utf8'));
   console.log('PASS: local DW login, fifteen export views, private-table isolation and read-only enforcement');
 } finally {

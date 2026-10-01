@@ -1,0 +1,550 @@
+[
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "098f79dc-fe48-4062-89a0-93050c48638b",
+    "revision_key": "6924fdab-00c9-49c7-9293-0227c3e8b716",
+    "month": "2356-04-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "100.00",
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": "30.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2356-04-11T17:00:00+00:00",
+    "attributed_leads": 1,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2356-04-11T17:00:00+00:00",
+    "media_budget_used_pct": null,
+    "media_cpl": "30.00",
+    "comparison_reason": "TYPED_BUDGET_INCOMPLETE",
+    "campaign_count": 1,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "C1",
+        "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "1c8d1a02-ca4b-4271-8e2c-f835970f4763",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "POOL",
+        "rem_project_id": null,
+        "formatted_mapping": null
+      }
+    ],
+    "quality_codes": [
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "1a4f6bc0-7aed-4b30-96e7-c531c0daec4e",
+    "revision_key": "25641683-56d3-4627-b1e6-869dce3bd494",
+    "month": "2093-03-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "5000.00",
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": "50.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2093-03-11T17:00:00+00:00",
+    "attributed_leads": null,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2093-03-11T17:00:00+00:00",
+    "media_budget_used_pct": null,
+    "media_cpl": null,
+    "comparison_reason": "TYPED_BUDGET_INCOMPLETE",
+    "campaign_count": 2,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "SID",
+        "memo_id": "9ee44307-0011-4fea-b84e-3bb97c4440fc",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "f75f1e8e-8395-438b-9e75-52ee319244f2",
+        "gross_amount": "5000.00",
+        "media_amount": null,
+        "component_kind": "PHASE",
+        "rem_project_id": "00001",
+        "formatted_mapping": "C-DEMO-TEST1"
+      }
+    ],
+    "quality_codes": [
+      "LEAD_COVERAGE_UNKNOWN",
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "2a374410-78fb-45b4-9e52-053c36eb670b",
+    "revision_key": "15084972-fc7e-41e8-bc5c-a6c53177b8e5",
+    "month": "2356-04-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "100.00",
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": null,
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": null,
+    "attributed_leads": null,
+    "lead_definition_version": null,
+    "leads_data_through": null,
+    "media_budget_used_pct": null,
+    "media_cpl": null,
+    "comparison_reason": "TYPED_BUDGET_INCOMPLETE",
+    "campaign_count": 0,
+    "unresolved_context_count": 2,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "C1",
+        "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "559e1be0-aa82-40b4-a096-4a690cf16b6d",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "PHASE",
+        "rem_project_id": "00001",
+        "formatted_mapping": "C-DEMO-TEST1"
+      }
+    ],
+    "quality_codes": [
+      "PLATFORM_COVERAGE_UNKNOWN",
+      "LEAD_COVERAGE_UNKNOWN",
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": null,
+    "rem_source_snapshot_at": null
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "5c4eab3e-8798-4887-9ab7-0e96efeb6493",
+    "revision_key": "f663a9f6-e2de-4c40-926c-b5b3875619b8",
+    "month": "2356-04-01",
+    "budget_basis": "PERIOD",
+    "approved_month_gross": null,
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": "30.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2356-04-11T17:00:00+00:00",
+    "attributed_leads": 1,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2356-04-11T17:00:00+00:00",
+    "media_budget_used_pct": null,
+    "media_cpl": "30.00",
+    "comparison_reason": "PERIOD_BUDGET_UNPHASED",
+    "campaign_count": 1,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "SID",
+        "memo_id": "3ba2e675-f20d-4008-8f55-1a08ca92692c",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "8819e71f-58be-4b84-be73-f1d6d7033d51",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "PROGRAM",
+        "rem_project_id": null,
+        "formatted_mapping": null
+      }
+    ],
+    "quality_codes": [
+      "PERIOD_BUDGET_UNPHASED",
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "ae4cf2b2-a88e-449a-9819-29b85b9581ce",
+    "revision_key": "f7a1a283-1391-4290-aae5-620ac058b913",
+    "month": "2096-10-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "100.00",
+    "approved_month_media": "100.00",
+    "typed_budget_complete": true,
+    "platform_media_spend": "350.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2096-10-11T17:00:00+00:00",
+    "attributed_leads": 3,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2096-10-11T17:00:00+00:00",
+    "media_budget_used_pct": "350.00",
+    "media_cpl": "116.67",
+    "comparison_reason": null,
+    "campaign_count": 2,
+    "unresolved_context_count": 5,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "C1",
+        "memo_id": "40242c9f-6204-4051-8468-28255295c44b",
+        "fee_amount": null,
+        "fee_po_ref": "SYNTHETIC-PO-000001",
+        "budget_items": [
+          {
+            "id": "83f51946-948e-4c1c-9dae-593855d5af81",
+            "amount": "100.00",
+            "cost_type": "MEDIA",
+            "payment_method": "AGENCY_PO_INVOICE"
+          }
+        ],
+        "component_id": "519a27f0-fdf5-46d0-b945-a6947cab6ee6",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "PHASE",
+        "rem_project_id": "00001",
+        "formatted_mapping": "C-DEMO-TEST1"
+      }
+    ],
+    "quality_codes": [],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "c9f45b37-cce2-4c1f-ad48-626e50561828",
+    "revision_key": "c3ca52d0-124e-42e5-ab2b-d83ca0af7449",
+    "month": "2356-04-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "100.00",
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": "30.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2356-04-11T17:00:00+00:00",
+    "attributed_leads": 1,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2356-04-11T17:00:00+00:00",
+    "media_budget_used_pct": null,
+    "media_cpl": "30.00",
+    "comparison_reason": "TYPED_BUDGET_INCOMPLETE",
+    "campaign_count": 1,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "C1",
+        "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "ad7cc7dd-cb23-4762-8a9b-67e3b627baa4",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "POOL",
+        "rem_project_id": null,
+        "formatted_mapping": null
+      }
+    ],
+    "quality_codes": [
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "ef0b2110-5326-42e7-ae0b-ef8f9f739c72",
+    "revision_key": "249d6801-838c-49cd-99db-9c6570fff87f",
+    "month": "2086-03-01",
+    "budget_basis": "MONTH",
+    "approved_month_gross": "5000.00",
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": null,
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": null,
+    "attributed_leads": null,
+    "lead_definition_version": null,
+    "leads_data_through": null,
+    "media_budget_used_pct": null,
+    "media_cpl": null,
+    "comparison_reason": "TYPED_BUDGET_INCOMPLETE",
+    "campaign_count": 0,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "SID",
+        "memo_id": "d3bb6720-9730-4029-a52a-7376273a2332",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "38e2ed99-915f-4996-8db3-acb11a2a25c8",
+        "gross_amount": "5000.00",
+        "media_amount": null,
+        "component_kind": "PHASE",
+        "rem_project_id": "00001",
+        "formatted_mapping": "C-DEMO-TEST1"
+      }
+    ],
+    "quality_codes": [
+      "PLATFORM_COVERAGE_UNKNOWN",
+      "LEAD_COVERAGE_UNKNOWN",
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": null,
+    "rem_source_snapshot_at": null
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "line_source": "hub",
+    "line_key": "fd68f477-ea97-49e9-ad21-b9e17ef4a188",
+    "revision_key": "85d7d37a-6666-4f67-a0d9-1c11eef3cb34",
+    "month": "2356-04-01",
+    "budget_basis": "PERIOD",
+    "approved_month_gross": null,
+    "approved_month_media": null,
+    "typed_budget_complete": false,
+    "platform_media_spend": "30.00",
+    "platform_spend_basis": "SYNTHETIC_V1_THB_MEDIA_EXCL_TAX_NET_CREDITS_ASIA_BANGKOK",
+    "platform_data_through": "2356-04-11T17:00:00+00:00",
+    "attributed_leads": 1,
+    "lead_definition_version": "SYNTHETIC-REM-IDENTITY-V1",
+    "leads_data_through": "2356-04-11T17:00:00+00:00",
+    "media_budget_used_pct": null,
+    "media_cpl": "30.00",
+    "comparison_reason": "PERIOD_BUDGET_UNPHASED",
+    "campaign_count": 1,
+    "unresolved_context_count": 0,
+    "card_cash_by_type": [],
+    "card_monthly_by_type": [],
+    "financial_components": [
+      {
+        "bud": "C1",
+        "memo_id": "47f4edd4-b8ee-4154-a4af-abeb830cd5f0",
+        "fee_amount": null,
+        "fee_po_ref": null,
+        "budget_items": [],
+        "component_id": "f295141d-b60c-450d-b1c3-9b62c1be6eaa",
+        "gross_amount": "100.00",
+        "media_amount": null,
+        "component_kind": "PROGRAM",
+        "rem_project_id": null,
+        "formatted_mapping": null
+      }
+    ],
+    "quality_codes": [
+      "PERIOD_BUDGET_UNPHASED",
+      "TYPED_BUDGET_INCOMPLETE"
+    ],
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "rem_source_snapshot_at": "2356-05-01T00:00:00+00:00"
+  }
+]

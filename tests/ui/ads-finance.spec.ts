@@ -325,7 +325,7 @@ test('live synthetic memo, approved line revision and explicit SN assignment rou
   const confirmation = page.waitForResponse(response => response.url().endsWith(`/memos/${memo.id}/confirm-record`));
   await dialog.getByRole('button', { name: 'ยืนยันข้อมูลที่บันทึก', exact: true }).last().click();
   expect((await confirmation).ok()).toBeTruthy();
-  await expect(dialog.getByText('ยืนยันข้อมูลแล้ว', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('definition').filter({ hasText: /^ยืนยันข้อมูลแล้ว$/ })).toBeVisible();
   const lineResponse = await page.request.post(`${api}/media-lines`, { headers, data: { kind: 'GROUP', scope_id: scope.scope_id, month, agency: 'KIN', reason: 'ข้อมูลสังเคราะห์ทดสอบครบวงจร', components: [{ component_kind: 'PHASE', rem_project_id: '00001', formatted_mapping: 'C-DEMO-TEST1', bud: 'SID', gross_amount: '5000.00', memo_id: memo.id }] } });
   expect(lineResponse.status(), await lineResponse.text()).toBe(201);
   const line = (await lineResponse.json()).data;

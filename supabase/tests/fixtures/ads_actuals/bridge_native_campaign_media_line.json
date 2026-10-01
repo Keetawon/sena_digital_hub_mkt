@@ -1,0 +1,1099 @@
+[
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "GOOGLE",
+    "account_id": "000000DWTESTACCOUNT",
+    "campaign_id": "000000DWTESTCAMPAIGN",
+    "month": "2096-10-01",
+    "line_source": "hub",
+    "line_key": "ae4cf2b2-a88e-449a-9819-29b85b9581ce",
+    "revision_key": "f7a1a283-1391-4290-aae5-620ac058b913",
+    "observed_code": "SN2600003K",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600003K__KW-COMPETITOR",
+    "registration_code": "SN2600081V",
+    "name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "HUB_NATIVE_ID",
+    "candidate_method": null,
+    "assignment_id": "3ed13d3f-f404-48f0-bfb1-077eb5539d2c",
+    "binding_name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [
+      "BOUND_IDENTITY_CONFLICT"
+    ],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-BINDING_CONFLICT",
+        "source_key": "GOOGLE",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "GOOGLE",
+    "account_id": "000000DWTESTACCOUNT",
+    "campaign_id": "000000DWTESTCAMPAIGN",
+    "month": "2096-11-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN2600081V",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600081V",
+    "registration_code": "SN2600081V",
+    "name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "UNRESOLVED",
+    "candidate_method": "HUB_NATIVE_ID",
+    "assignment_id": null,
+    "binding_name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "correction_target_id": null,
+    "candidate_line_keys": [],
+    "conflict_codes": [],
+    "unresolved_reason": "BOUND_ASSIGNMENT_UNUSABLE",
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-11-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-BOUND_ASSIGNMENT_MISSING",
+        "source_key": "GOOGLE",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000002",
+    "month": "2096-10-01",
+    "line_source": "hub",
+    "line_key": "ae4cf2b2-a88e-449a-9819-29b85b9581ce",
+    "revision_key": "f7a1a283-1391-4290-aae5-620ac058b913",
+    "observed_code": "SN2600081V",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600081V",
+    "registration_code": "SN2600081V",
+    "name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "3ed13d3f-f404-48f0-bfb1-077eb5539d2c",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-11T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-EXACT_UNBOUND",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      },
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-EXACT-UNBOUND-DAY-TWO",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000003",
+    "month": "2096-10-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN2600081V",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600081V__KW-PRODUCT",
+    "registration_code": null,
+    "name_id": null,
+    "scope_id": null,
+    "agency": null,
+    "match_method": "UNRESOLVED",
+    "candidate_method": "SCOPE_MONTH_AGENCY",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [
+      "UNISSUED_OR_INVALID_SENA_H_NAME"
+    ],
+    "unresolved_reason": "UNISSUED_OR_INVALID_SENA_H_NAME",
+    "name_conformance": "INVALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-UNISSUED_VARIANT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000004",
+    "month": "2096-11-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN2600081V",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600081V",
+    "registration_code": "SN2600081V",
+    "name_id": "5ee99282-cd76-455f-aff4-07b1581ccae5",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "UNRESOLVED",
+    "candidate_method": "CODE",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [],
+    "conflict_codes": [],
+    "unresolved_reason": "ASSIGNMENT_UNUSABLE",
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-11-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-MISSING_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000005",
+    "month": "2096-10-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": null,
+    "observed_name": "",
+    "registration_code": null,
+    "name_id": null,
+    "scope_id": null,
+    "agency": null,
+    "match_method": "UNRESOLVED",
+    "candidate_method": "SCOPE_MONTH_AGENCY",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": "HUB_CONTEXT_UNAVAILABLE",
+    "name_conformance": "UNKNOWN",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-CONTEXT_UNAVAILABLE",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000006",
+    "month": "2096-10-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "BG-100-TEST",
+    "observed_name": "SYNTHETIC LEGACY__Leads__C-DEMO-TEST1__KIN__BG-100-TEST__LEGACY",
+    "registration_code": null,
+    "name_id": null,
+    "scope_id": null,
+    "agency": null,
+    "match_method": "UNRESOLVED",
+    "candidate_method": "SCOPE_MONTH_AGENCY",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": "EXPLICIT_ASSIGNMENT_REQUIRED",
+    "name_conformance": "LEGACY",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-SCOPE_WITHOUT_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000007",
+    "month": "2356-04-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN2600057G",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600057G",
+    "registration_code": "SN2600057G",
+    "name_id": "de15c1b5-b685-42d2-87df-33fac7fb3a5e",
+    "scope_id": "8223692b-02f5-474f-aed9-788b7eeb3c6d",
+    "agency": "KIN",
+    "match_method": "UNRESOLVED",
+    "candidate_method": "CODE",
+    "assignment_id": "3177062e-8bfa-4228-addd-ef6b2d4f0331",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "2a374410-78fb-45b4-9e52-053c36eb670b"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": "ASSIGNMENT_UNUSABLE",
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-STALE_MULTI_PHASE",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000008",
+    "month": "2356-04-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN2600056Z",
+    "observed_name": "TEST PHASE 00002__LEADS__C-DEMO-TEST1-00002__KIN__SN2600056Z",
+    "registration_code": "SN2600056Z",
+    "name_id": "9165ffac-218b-42cf-86c2-eb326b704c36",
+    "scope_id": "30000000-0000-0000-0000-000000000004",
+    "agency": "KIN",
+    "match_method": "UNRESOLVED",
+    "candidate_method": "CODE",
+    "assignment_id": "9c8ef5e1-b521-4656-96d3-78c3bab6d788",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "2a374410-78fb-45b4-9e52-053c36eb670b"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": "ASSIGNMENT_UNUSABLE",
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-STALE_PHASE",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000009",
+    "month": "2356-04-01",
+    "line_source": "hub",
+    "line_key": "098f79dc-fe48-4062-89a0-93050c48638b",
+    "revision_key": "6924fdab-00c9-49c7-9293-0227c3e8b716",
+    "observed_code": "SN2600058X",
+    "observed_name": "MULTI PROJECT__LEADS__ZONE-777F6758E4EC__KIN__SN2600058X",
+    "registration_code": "SN2600058X",
+    "name_id": "036cad5f-3657-47b1-9f92-662b0883cd47",
+    "scope_id": "812397af-0f2d-4629-9ca0-f3b59cc23c42",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "23342c8d-b7a6-441d-beea-44ef99451c50",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "098f79dc-fe48-4062-89a0-93050c48638b"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-ZONE_EXPLICIT_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000010",
+    "month": "2356-04-01",
+    "line_source": "hub",
+    "line_key": "c9f45b37-cce2-4c1f-ad48-626e50561828",
+    "revision_key": "c3ca52d0-124e-42e5-ab2b-d83ca0af7449",
+    "observed_code": "SN2600059E",
+    "observed_name": "TEST BRAND__LEADS__BRAND-TESTBRAND__KIN__SN2600059E",
+    "registration_code": "SN2600059E",
+    "name_id": "148e1470-5867-4aba-8748-18e05c07e7ad",
+    "scope_id": "30000000-0000-0000-0000-000000000006",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "ece9fcee-fc6b-4deb-ab30-137ca40adc6b",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "c9f45b37-cce2-4c1f-ad48-626e50561828"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-BRAND_EXPLICIT_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000011",
+    "month": "2356-04-01",
+    "line_source": "hub",
+    "line_key": "5c4eab3e-8798-4887-9ab7-0e96efeb6493",
+    "revision_key": "f663a9f6-e2de-4c40-926c-b5b3875619b8",
+    "observed_code": "SN2600060L",
+    "observed_name": "SYNTHETIC CONTENT__LEADS__CORP-TESTCONTENT__KIN__SN2600060L",
+    "registration_code": "SN2600060L",
+    "name_id": "de158052-070c-4ba6-9f21-796587a2e117",
+    "scope_id": "30000000-0000-0000-0000-000000000005",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "c94a2103-a5e7-4db8-b22b-f1093a803c2c",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "5c4eab3e-8798-4887-9ab7-0e96efeb6493"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-CORP_EXPLICIT_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000012",
+    "month": "2356-04-01",
+    "line_source": "hub",
+    "line_key": "fd68f477-ea97-49e9-ad21-b9e17ef4a188",
+    "revision_key": "85d7d37a-6666-4f67-a0d9-1c11eef3cb34",
+    "observed_code": "SN26000613",
+    "observed_name": "TEST UNIT__LEADS__BU-TESTUNIT__KIN__SN26000613",
+    "registration_code": "SN26000613",
+    "name_id": "b7213c27-b4ed-4bd8-a786-5e0d6e2b7094",
+    "scope_id": "30000000-0000-0000-0000-000000000007",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "737e10b3-a7a9-4e0f-ae89-ac1577ac01ca",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "fd68f477-ea97-49e9-ad21-b9e17ef4a188"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2356-04-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-BU_EXPLICIT_ASSIGNMENT",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000013",
+    "month": "2093-03-01",
+    "line_source": "hub",
+    "line_key": "1a4f6bc0-7aed-4b30-96e7-c531c0daec4e",
+    "revision_key": "25641683-56d3-4627-b1e6-869dce3bd494",
+    "observed_code": "SN2600065X",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600065X",
+    "registration_code": "SN2600065X",
+    "name_id": "52197684-e67f-45ae-8daa-718697e7d3ca",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "9f3be058-e8e1-4b9a-ae51-7b707f064000",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "1a4f6bc0-7aed-4b30-96e7-c531c0daec4e"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2093-03-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-PARTIAL_LEAD_COVERED",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000014",
+    "month": "2093-03-01",
+    "line_source": "hub",
+    "line_key": "1a4f6bc0-7aed-4b30-96e7-c531c0daec4e",
+    "revision_key": "25641683-56d3-4627-b1e6-869dce3bd494",
+    "observed_code": "SN2600065X",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN2600065X",
+    "registration_code": "SN2600065X",
+    "name_id": "52197684-e67f-45ae-8daa-718697e7d3ca",
+    "scope_id": "30000000-0000-0000-0000-000000000001",
+    "agency": "KIN",
+    "match_method": "CODE",
+    "candidate_method": null,
+    "assignment_id": "9f3be058-e8e1-4b9a-ae51-7b707f064000",
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "1a4f6bc0-7aed-4b30-96e7-c531c0daec4e"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": null,
+    "name_conformance": "SENA_H_VALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2093-03-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-PARTIAL_LEAD_MISSING",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000016",
+    "month": "2096-10-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "SN26000812",
+    "observed_name": "TEST PROJECT ONE__LEADS__C-DEMO-TEST1__KIN__SN26000812",
+    "registration_code": null,
+    "name_id": null,
+    "scope_id": null,
+    "agency": null,
+    "match_method": "UNRESOLVED",
+    "candidate_method": "SCOPE_MONTH_AGENCY",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [
+      "UNISSUED_OR_INVALID_SENA_H_NAME"
+    ],
+    "unresolved_reason": "UNISSUED_OR_INVALID_SENA_H_NAME",
+    "name_conformance": "INVALID",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-INVALID_CHECK_CHARACTER",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  },
+  {
+    "environment": "test",
+    "contract_version": "hub-p3-test-v1",
+    "snapshot_id": "4e7f2eaf-8807-4f39-9aa0-b4750d37211f",
+    "snapshot_at": "2026-10-01T04:05:27.770130+00:00",
+    "hub_snapshot_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+    "hub_source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+    "effective_at": null,
+    "recorded_at": "2026-10-01T04:04:34.040607+00:00",
+    "temporal_basis": "SNAPSHOT_ONLY",
+    "temporal_provenance": {
+      "source_kind": "HUB_SNAPSHOT",
+      "source_field": null,
+      "source_record_refs": [
+        {
+          "relation": "hub__snapshot_manifest",
+          "record_key": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b",
+          "source_key": "hub",
+          "source_field": null,
+          "source_batch_id": "f7c0f4a0-bc9a-4f1f-a010-4df34947343b"
+        }
+      ],
+      "source_snapshot_at": "2026-10-01T03:45:03.813725+00:00",
+      "effective_time_evidence_ref": null
+    },
+    "platform": "META",
+    "account_id": "000000P3SYNTHETIC",
+    "campaign_id": "000000000017",
+    "month": "2096-10-01",
+    "line_source": null,
+    "line_key": null,
+    "revision_key": null,
+    "observed_code": "C-DEMO-OLD99",
+    "observed_name": "C-DEMO-OLD99",
+    "registration_code": null,
+    "name_id": null,
+    "scope_id": null,
+    "agency": null,
+    "match_method": "UNRESOLVED",
+    "candidate_method": "APPLIED_CORRECTION",
+    "assignment_id": null,
+    "binding_name_id": null,
+    "correction_target_id": null,
+    "candidate_line_keys": [
+      "ae4cf2b2-a88e-449a-9819-29b85b9581ce"
+    ],
+    "conflict_codes": [],
+    "unresolved_reason": "EXPLICIT_ASSIGNMENT_REQUIRED",
+    "name_conformance": "LEGACY",
+    "parser_version": "sena-h-check32-issued-exact-v1",
+    "match_rule_version": "hub-p3-test-v1",
+    "platform_source_snapshot_at": "2356-05-01T00:00:00+00:00",
+    "observed_at": "2096-10-10T05:00:00+00:00",
+    "source_kind": "PLATFORM_CAMPAIGN",
+    "source_record_refs": [
+      {
+        "relation": "synthetic_campaign_daily",
+        "record_key": "SYNTHETIC-P3-APPLIED_CORRECTION_WITHOUT_IDENTITY",
+        "source_key": "META",
+        "source_field": "observed_name",
+        "source_batch_id": "SYNTHETIC-P3"
+      }
+    ]
+  }
+]

@@ -31,17 +31,23 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const method = request.method as keyof typeof allowed;
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   if (questionsRead && !isHubStaff(role)) return error("ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน", 403);
+  const operationsRead = method === "GET" && new RegExp(`^v1/admin/ads/(?:actuals(?:/${financeId})?|(?:document-tracking|findings)(?:/[a-f0-9]{64})?)$`).test(path);
+  const operationsWrite = method === "POST" && /^v1\/admin\/ads\/(?:document-tracking\/[a-f0-9]{64}\/follow-ups|findings\/[a-f0-9]{64}\/workflow)$/.test(path);
+  if ((operationsRead || operationsWrite) && !["online_staff", "admin"].includes(role)) return error("ไม่มีสิทธิ์เข้าถึงผลการตลาดและเอกสาร", 403);
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || questionsRead || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(allowed[method]?.test(path) || questionsRead || operationsRead || operationsWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const adsFilters = path === "v1/admin/ads/scopes" ? ["kind", "parent_group_id"] : path === "v1/admin/ads/registrations" ? ["q", "limit", "offset", "agency", "status", "binding_status"] : [];
   const validAdsQuery = method === "GET" && adsRead && [...query.keys()].every(key => adsFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);
   const financeFilters = financeList.test(path) ? ["q", "month", "agency", "bud", "scope_id", "status", "limit", "offset"] : path.endsWith("/line-candidates") ? ["month"] : [];
   const validFinanceQuery = method === "GET" && financeRoute && [...query.keys()].every(key => financeFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);
-  if (request.nextUrl.search && !validAdsQuery && !validFinanceQuery && !(method === "GET" && path === "v1/projects"
+  const operationsFilters = path === "v1/admin/ads/actuals" ? ["month", "agency", "scope", "bud", "limit", "offset"] : path === "v1/admin/ads/document-tracking" ? ["month", "agency", "owner", "status", "overdue", "limit", "offset"] : path === "v1/admin/ads/findings" ? ["month", "agency", "owner", "control_code", "state", "condition", "limit", "offset"] : /^v1\/admin\/ads\/(?:actuals|document-tracking)\//.test(path) ? ["month"] : [];
+  const validOperationsQuery = operationsRead && [...query.keys()].every(key => operationsFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200)
+    && (!query.has("limit") || /^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!)) && (!query.has("offset") || /^\d{1,8}$/.test(query.get("offset")!));
+  if (request.nextUrl.search && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);

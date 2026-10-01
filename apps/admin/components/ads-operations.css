@@ -1,0 +1,26 @@
+.operations-intro, .operations-caption { color: var(--muted); line-height: 1.65; }
+.operations-intro { margin-block: 1rem; max-width: 75ch; }
+.operations-caption { margin-block: .75rem; }
+.operations-questions, .operations-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.operations-actions { margin-top: 1rem; }
+.operations-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 1rem; }
+.operations-filters label { min-width: 0; }
+.operations-table { margin-top: 1rem; }
+.operations-table p { margin-block: .4rem; }
+.operations-table td { font-variant-numeric: tabular-nums; }
+.operations-actuals th:not(:first-child), .operations-actuals td:not(:first-child) { text-align: right; }
+.operations-table td:not(:first-child) strong { display: block; }
+.operations-facts { margin-block: 1rem; }
+.operations-facts dd, .operations-code { overflow-wrap: anywhere; }
+.operations-month { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.operations-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: .75rem; }
+.operations-metrics dl { background: var(--surface-warm); border-radius: .5rem; padding: 1rem; margin: 0; }
+.operations-metrics dt { color: var(--muted); }
+.operations-metrics dd { margin: .5rem 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.operations-snapshot summary, .operations-disclosure summary { min-height: 44px; padding-block: .6rem; cursor: pointer; color: var(--action); }
+.operations-costs { padding: 0; list-style: none; }
+.operations-costs li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding: .75rem; border-bottom: 1px solid var(--line); }
+.operations-note { display: block; margin-top: 1rem; }
+.operations-note textarea, .operations-message { min-height: 7rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.operations-quality { color: var(--muted); padding-left: 1.5rem; }
+@media (max-width: 640px) { .operations-filters, .operations-metrics { grid-template-columns: minmax(0, 1fr); } }
