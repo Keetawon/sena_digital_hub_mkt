@@ -1,6 +1,47 @@
 # Ads workstream: phase-1 priorities (updated 1 October 2026)
 
 Status: **P1 and expanded P2 implemented and verified locally, 30 September 2026**.
+**Owner decisions, 1 October 2026: P3.0 approved; P4.0 approved; DEMO-FIRST.**
+The execution order below supersedes the earlier design-only gates and schedule
+assumptions. Build working demos on synthetic/TEST data; record unresolved decisions
+with a documented default and a Thai `รอคำตอบ` remark rather than waiting for answers.
+These are engineering approvals, not production, privacy or financial approvals.
+
+## Current authorized execution order — 1 October 2026
+
+| Task | Delivery | Boundary and acceptance |
+|---|---|---|
+| 0 | Record these decisions, P5.0 design in doc 22 §6, assistant skill and questions | Docs only; one commit |
+| 1 | Shared question badge/popover and staff `คำถามที่รอคำตอบ` page | One registry synchronized with OPEN_QUESTIONS; group by answer owner and link affected screens |
+| 2 | P3 line actuals, C5/C6 workflow and document tracking | Doc 25; read verified DW TEST output when available, otherwise frozen synthetic fixtures; Q24–Q28 visible |
+| 3 | Residential demo gaps: promotions, atomic multi-entity publication, HYABC | Docs 04/08 snapshot rules; missing content explicitly `ข้อมูลตัวอย่าง`; no synthetic facts represented as real |
+| 4 | P4 local document pipeline and restricted memo search | Doc 21; synthetic memos/statements only; no real uploads or external OCR/LLM calls; statements never indexed |
+| 5 | One internal Hub assistant: residential, ads and documents | Doc 22 §6; Agents SDK, SSE, caller permissions; staff only; v1 read-only, then confirmed draft-text proposals; fake model in CI |
+| 6 | Coherent HYABC + FLEXI demo seed and Thai 15–20 minute presentation | One seed command; every stop names the question/default for the owner to present |
+
+Before each new area, write a short design note, then implement without another
+approval pause. After each task run admin typecheck/build, database tests, API tests
+and Edge UI tests; report real output, commit explicit paths and push `origin/main`.
+Stop only for an unfixable failure or an action touching an external system.
+Keep REM, DW, ledger, media sheets, E-memo and Sheet V1 read-only. No deployment.
+
+**P5 scope replaces the ads-only assistant.** SENA staff use one assistant for
+projects, brands, models, promotions, ads and documents; agencies have no assistant.
+v2 saves proposed text to draft fields only after an explicit confirmation and never
+publishes, approves asset rights or confirms memos. The future public chatbot may
+reuse the tool/retrieval layer only through published-only data and a separate public
+index. Hosting remains Supabase + Vercel (admin) + Hostinger VPS (API, assistant,
+workers). The OpenAI key is supplied only in ignored `apps/api/.env`; never output it.
+Q36 governs real internal data sent to the API; Q37 governs VPS location.
+
+**Owner addendum, 1 October:** LINE OA account attribution is parked. Keep its card
+rows as `CHANNEL` costs in one unattributed `LINE OA (ยังไม่แยกบัญชี)` bucket so
+statement totals still reconcile. No LINE OA matching/review screen in the demo.
+Q18 and Q20 are deferred by owner and excluded from the questions presentation page.
+`sena_h_approved` stays false; production name issuing stays blocked.
+
+## Historical plan and approvals
+
 The owner replied `P2.0 approved — implement expanded P2`.
 Schedule option 3 (P1–P5), selected on 29 September, remains the delivery direction.
 The owner set the **campaign naming registry
@@ -43,7 +84,7 @@ BF-0/BF-2/BF-5/BF-12, owner decisions of 29–30 September. Skills: `.agents/ski
 | P2 | Media lines, memo register, card costs and recurring commitments | P2.0 design → ledger and Media card-sheet imports; group lines/phase children and revisions; memo mirror/aliases; monthly SN assignments; corrections; cost/payment classification and document matrix; account registries; commitments/caps and prepaid recognition | C (line/memo tables), expanded by the 30 Sep addendum | **Re-estimate required**; original ~1.5 weeks does not cover the expanded scope | Q1 manual evidence/access; Q4 ledger headers; Q5 correction authority; Q18–Q24 card/channel/Finance acceptance; affected-path gates in docs 23/24 |
 | P3 | Line actuals, C5/C6 exceptions and document tracking | P3.0 design → DW gold → Hub staging/read-back; monthly document-reference matrix and copy-follow-up log | B (line actuals screen), expanded 1 Oct | Original ~1 week predates document tracking; re-estimate | Q25/Q26 DW contract, metrics and cutover; Q24/Q27 document matrix/due rules; optional Q28 agency projection. DW builds current media lines from `hub__media_line`, not a second ledger ingestion |
 | P4 | E-memo archive/search and restricted statement pipeline | E-memo private upload/versions, text + Thai OCR and restricted memo search; separate card-statement extraction → DRAFT rows → per-page counts/total checks → Media confirms → rule classification. LINE OA reconciliation waits for Q20 per-account evidence. Statements never enter RAG | A, C (`ads.memo_document`), statement pipeline added 30 Sep | Original ~2 weeks predates the statement addition; re-estimate with P2 | E-memo access; Q7 before real uploads/external processing; Q20 OA evidence; Q21 Media roles; Q22 statement controls; Q29 retention; Q30 engine/reviewer acceptance |
-| P5 | Hub assistant (read-only) | Agents SDK in FastAPI, 5 read-only tools, streaming side panel, Thai golden set | B (assistant) | ~2 weeks | OpenAI API access (not only seats); P2–P4 data for tools |
+| P5 | One internal Hub assistant (scope revised 1 Oct) | Agents SDK in FastAPI, 13 permission-preserving tools across residential/ads/documents, streaming panel, Thai golden set; confirmed draft-text proposals follow read-only v1 | B (assistant), expanded residential scope | Re-estimate; no unchanged delivery date claimed | Q36 real-data API consent; Q37 hosting region; Q38 model/key; synthetic demo proceeds |
 | P6 | UI refresh and later flows | Motion spec on remaining screens, Thai readability result applied; later: QT/PO, bills, payment package, budget forecast (BF-3/8/9/1) | B (remaining) | Later | Business priority after P5 |
 
 ## P1 breakdown (implemented; historical execution scope)

@@ -604,10 +604,254 @@ The local production server now serves the Emerald & Champagne design. The chang
 limited to palette tokens, shared/sidebar styling, registry accents and this document;
 earlier uncommitted navigation changes are preserved. Nothing was committed or pushed.
 
-## 6. Assistant — TODO (owner P5)
+## 6. One internal Hub assistant — P5.0 demo-first design
 
-Headed placeholder only. Design tools, panel, citations, streaming and Thai evaluation
-in P5; no assistant API, prompt or component is authorized in P1.
+**Owner decision, 1 October 2026:** one staff-only assistant covers residential
+projects, brands, models, promotions, campaigns, permitted financial context and
+documents. P3.0/P4.0 and the demo-first sequence are approved. This short design
+precedes implementation in priority order; it does not create another engineering
+approval pause. Synthetic/TEST defaults keep the feature demonstrable while
+unanswered business decisions remain visibly `รอคำตอบ`. Real-data egress, production
+use and deployment retain their separate gates.
+
+This section supersedes the earlier ads-only skill and its suggestion of agency
+assistant access. Agencies are denied the **entire assistant**, including tool
+discovery, conversations, streams, citations and history. Their existing P1 name
+and ID-return permissions are unchanged.
+
+### 6.1 Runtime and caller permissions
+
+Use one OpenAI Agents SDK `Agent` inside the existing FastAPI application, with
+typed function tools, a server-side model adapter and an SSE endpoint consumed by
+an admin side panel through the existing Hub proxy. The SDK runs in the application;
+the server owns tool implementations and authorization. This fits the documented
+[OpenAI Agents SDK runtime](https://developers.openai.com/api/docs/guides/agents/sdk);
+no hosted shell, browser, arbitrary SQL or additional agent hierarchy is needed.
+
+Assistant entry allows authenticated `editor`, `publisher`, `viewer`, `admin`
+and `online_staff`. Deny `agency`, `service_consumer`, unknown roles and anonymous
+requests before invoking any model. Entry does not union the permissions of those
+roles. Current residential reads permit editor/publisher/viewer/admin; financial
+reads permit online_staff/admin. Preserve each domain's API checks and RLS inside
+every tool. A staff member may therefore use the same panel while receiving only
+the tools and evidence their own role permits.
+
+Tool work uses the existing `database(request, actor)` path: server-mapped
+`SET LOCAL ROLE`, `app.actor_id` and `app.agency_code` in a short transaction.
+The authenticated actor and allowed capabilities stay in trusted server context;
+the model cannot select a role, actor, agency or privileged connection. Do not use
+the database owner, export reader or a service-role key to bypass a denied read.
+Reauthorize each call and citation fetch, including calls after a role change.
+Do not keep a DB transaction open during model network waits or share one connection
+between parallel tools.
+
+### 6.2 V1 tool catalog — exactly thirteen read-only tools
+
+Inputs are bounded typed schemas with unknown fields rejected. Results carry
+entity IDs, source/version, visibility, environment, permission-safe citation IDs
+and applicable timestamps. Pagination and row/result limits are server-controlled.
+Expose only the permitted subset of this catalog to the caller; a hidden tool is
+also rejected if invoked directly.
+
+| Tool | Read contract and boundary |
+|---|---|
+| `get_project(project_id, version?)` | Exact authorized residential project and content version, REM source ID, status and structured attributes. State whether draft or published; do not substitute one for the other. |
+| `find_projects(query, filters)` | Search permitted project identities and structured filters. Return disambiguation candidates when labels collide; never choose a project by a near name silently. |
+| `get_models(project_id, filters, version?)` | Models/specifications under that exact project and permitted version. Technical REM IDs stay text; marketing model identity is not inferred from a similar label. |
+| `get_brand(brand_id, version?)` | Authorized brand content, status/version and explicit project relationships. Do not infer brand membership from an ad-account name. |
+| `check_publish_readiness(entity_type, entity_id, version)` | Existing read-only validation/readiness result with missing requirements and citations. It never publishes, approves an asset or grants publisher rights. |
+| `search_content(query, project_id?, brand_id?, filters)` | Permission-filtered residential narrative/FAQ search in `internal_content`, using exact scope and version metadata. Price, availability, promotion validity and specifications route to structured tools. |
+| `get_promotions(project_id, as_of, filters)` | Existing structured promotion resolution, effective window and source status. Asia/Bangkok business dates; expired/unknown data is explicit. No promotion answer from brochure prose. |
+| `get_project_marketing(rem_project_id, month, filters)` | Join through the exact **REM project ID**, with reviewed phase/group bridges and P3/P2 references. Preserve shared C/D/E pools and explicit corporate programs; no label/account inference or invented project share of pooled spend. Financial permission is mandatory; it does not confer residential draft-content access. |
+| `get_campaign(code_or_name)` | Authorized registration, exact frozen name/variant, native bindings and permitted monthly line context. CODE identity/issued names are read-only. |
+| `find_campaigns(filters)` | Bounded campaign/line search by authorized project/scope, month, agency and existing memo/fee-PO references. Restrict financial filters/results to marketing-ops roles. |
+| `get_line_actuals(line_id, month)` | Applicable budget, platform spend, leads/CPL/percent only when supplied and comparable, separate card cash/monthly measures, match method, snapshot and freshness. Never sum cash plus allocations or card MEDIA plus platform delivery. |
+| `explain_name(name)` | Existing strict SENA-H explanation/check, otherwise explicit legacy interpretation. Observed input is not issued/stored; explanations must not reveal inaccessible registry matches. |
+| `search_documents(query, filters)` | Search only permitted, eligible document versions/namespaces; return document/version/page citations and bounded snippets. Memos are marketing-ops-only. Statements never enter retrieval or RAG. |
+
+`get_project_marketing` must report `ยังไม่มีข้อมูลการเชื่อมที่ยืนยันแล้ว` when
+the REM-to-financial relationship is absent or ambiguous. It must not produce a
+zero spend, invented BUD or an implied approval. Source IDs retain leading zeros.
+
+**LINE OA is parked by the owner:** CHANNEL costs remain in one unattributed
+bucket labelled `LINE OA (ยังไม่แยกบัญชี)`. Tools may report its validated amount
+and attribution limitation, but cannot infer an OA account, propose an account
+match or open an OA matching-review workflow. Q18/Q20 are deferred and are not
+surfaced as unanswered items on the demo questions page.
+
+### 6.3 Retrieval separation and evidence
+
+Reuse [doc 06](06-rag.md)'s structured-first routing, Thai lexical/vector hybrid,
+scope filtering, citations and versioned replacement. These are independent
+authorization boundaries, not user-selectable namespace strings:
+
+| Namespace / surface | Permitted evidence |
+|---|---|
+| `internal_content` | Authorized project/brand/model narrative and FAQs, including explicitly labelled drafts where the caller can read them. Publication/version metadata is mandatory. |
+| `internal_ads` | Authorized ads operational narrative and safe reference material. Financial values and live state come from structured tools, not retrieved prose. |
+| `internal_memo` | Eligible confirmed memo versions under [doc 21](21-ememo-archive-and-search.md), marketing-ops ACLs, source page and version. Amounts/caps/approval status come from the P2 register/tool result. |
+| Future public index | A separate published-only projection using public-safe schemas and read helpers. It cannot reuse internal sessions, credentials, namespace filters or draft/memo/ads chunks. Public chatbot deployment remains in its separate repo. |
+
+Apply ACL, exact project/brand scope, language and effective/version filters
+**before** retrieval/ranking, snippet generation, facets and counts. Recheck source
+eligibility at citation open. Reindex atomically replaces the eligible source
+version; reconciliation removes orphaned, revoked and superseded chunks according
+to each namespace's policy. No stale draft chunk may masquerade as a published
+answer. A conversation's chosen project is retained until an explicit scope change,
+and the server validates each resulting query.
+
+Statements, their OCR text, descriptors and embeddings are excluded from every
+namespace. Memo approver names/signatures and other personal fields are not sent
+to the model merely because staff may inspect a source document. Use only the
+minimal evidence accepted by the data policy. Retrieved/tool text is untrusted
+data; instructions embedded in a PDF or draft cannot alter tools or permissions.
+
+### 6.4 Answer contract and SSE
+
+Answers are Thai; codes and IDs remain verbatim. Factual statements cite an allowed
+tool result or eligible document chunk with source entity, version and page where
+applicable. Internal citation URLs are server-generated routes that reauthorize
+access; the model cannot construct a download URL or expose a signed storage URL.
+
+Every numeric fact must match an explicit structured-tool field. Ratios, remaining
+budget and aggregations must be calculated by the relevant trusted tool; the model
+does not estimate them. Deterministic formatting may add Thai separators/date labels.
+Display `ฉบับร่าง` / `เผยแพร่แล้ว`, the actual version and applicable `ข้อมูล ณ`
+time. DW answers also show the source snapshot, freshness/coverage and TEST marker;
+receipt time cannot make stale inputs appear fresh. Unknown, stale or incomparable
+metrics use an explanation, not zero. Incomplete citations or numeric provenance
+produce `ยังไม่มีข้อมูลที่ยืนยันได้สำหรับคำถามนี้`.
+
+Proposed endpoint: `POST /v1/admin/assistant/runs`, proxied through the existing
+authenticated admin route. The request contains the message and an optional
+permitted page context/session ID, never role claims. The server issues an actor-
+owned run ID; requests cannot join another actor's stream or history. Use SSE
+events `status`, `tool_start`, `tool_end`, `answer_delta`, `citation`, `done`
+and `error`, with bounded schemas. Show Thai activity descriptions rather than raw
+tool arguments/results or hidden reasoning.
+
+Stream safe progress immediately. Buffer answer blocks until citation/numeric
+validation succeeds, then release their text deltas; unsupported numbers must not
+reach the browser first and be corrected afterward. On stop/disconnect, cancel
+the pending run and close resources; retry creates an explicitly new run without
+duplicating an unfinished answer. Limit turns, tool calls, prompt/result sizes and
+run duration on the server. The UI retains the user's unsent text after an error.
+
+Audit trusted actor, domain/tool names, returned source IDs/versions, configuration
+version, durations, outcome and aggregate token usage. Do not log API keys, raw
+documents, raw tool payloads or full prompts by default. External SDK trace export
+and sensitive trace capture are disabled by default because SDK tracing can include
+model/tool activity; only separately accepted telemetry may enable it. See
+[OpenAI SDK observability](https://developers.openai.com/api/docs/guides/agents/integrations-observability).
+Internal audit metadata stays access-controlled.
+
+### 6.5 Thai side panel and controlled V2 draft proposals
+
+One `ผู้ช่วย Hub` entry in the shared staff shell opens the same assistant with
+the current permitted project/brand/campaign context shown in a removable chip.
+Use existing Emerald & Champagne tokens, fonts, disclosure/dialog components and
+§3 motion rules. No new animation timings/keyframes. A mobile view is a full-height
+panel; content remains readable without horizontal overflow.
+
+```text
++-------------------------------------------------------+
+| ผู้ช่วย Hub                              [ปิด]       |
+| ข้อมูลสาธิต / TEST      คำตอบบางรายการ: รอคำตอบ         |
+| บริบท: โครงการ ...  [เปลี่ยนบริบท]                     |
+| [ข้อมูลโครงการ] [ตรวจความพร้อม] [ผลการตลาด]             |
+| คุณ: โครงการนี้มีแบบบ้านอะไรบ้าง                        |
+| ผู้ช่วย: ... [ฉบับร่าง รุ่น ...] [แหล่งข้อมูล 1]         |
+| ข้อมูล ณ ...       [เปิดต้นทาง]                        |
+| [พิมพ์คำถามของคุณ...]              [ส่ง] / [หยุด]      |
++-------------------------------------------------------+
+```
+
+Open moves focus to the panel heading/input; Esc/close returns focus to the trigger.
+Keep visible focus and keyboard access to citations, scope controls and actions.
+Announce complete status messages in one stable live region, not every streamed
+token. Do not force-scroll a user reading earlier answers; offer `ไปยังคำตอบล่าสุด`.
+Reduced motion uses the existing instant/fade behavior. Errors, loading, missing
+permission, no answer and missing live-model setup all have distinct Thai states.
+
+V1 has no business mutation tool. V2 adds a separate controlled proposal workflow:
+
+1. Generate a **text proposal** with the source entity/version, permitted field
+   paths, old/new values, rationale and citations; display a before/after diff.
+2. User explicitly chooses `ยืนยันบันทึกเป็นฉบับร่าง`. A chat phrase, model tool
+   call or opening the diff is not that confirmation.
+3. The normal domain endpoint rechecks the caller's write permission, exact source
+   version and allowed **draft text fields** before saving. Stale versions return
+   a conflict for fresh review; never merge silently.
+4. Audit the confirmed diff and actor; the outcome says `บันทึกฉบับร่างแล้ว`.
+
+Allowed examples are an existing editable draft description, FAQ text or approved
+marketing-copy field. V2 cannot change published content, publish/rollback,
+publisher rights, REM-owned facts, price/availability, promotion validity,
+approved financial values, memo decisions, native bindings, issued names or
+`sena_h_approved`. It cannot edit assets/documents or execute arbitrary JSON patches.
+The v1 catalog stays read-only; the controlled UI save is a separate domain action.
+
+### 6.6 Hosting, provider configuration and pending defaults
+
+Retain the architecture in [doc 10](10-tech-stack.md): Supabase for the Hub database
+and identity; Vercel for admin; Hostinger VPS for FastAPI/worker services with separate
+resource limits. Deployment, DNS, real storage provisioning, scheduler activation
+and any DW infrastructure change are outside this implementation task. Q37 records
+the actual VPS region/capacity; proximity or region diagrams are not evidence of
+deployment residency.
+
+Read `OPENAI_API_KEY` only from a server environment/secret store. Read the model
+ID from server configuration (proposed `HUB_ASSISTANT_MODEL`); do not hard-code a
+model selected from an example. A ChatGPT subscription is not proof of API access.
+No key is requested in chat, printed, placed in command arguments or exposed as a
+Next.js public variable. Q38 records the organization-approved model, quota and
+runtime setup. No configured key/model means live mode is unavailable; the UI says
+`ยังไม่ได้ตั้งค่าโมเดลจริง ใช้ข้อมูลสาธิต` and uses a clearly labelled deterministic
+fake provider in demo mode. Never present fake-model evidence as a live API result.
+
+Q36 is the accepted purpose/data-category/retention/provider decision before sending
+**real internal content** to OpenAI. Q7 still governs P4 document/storage processing.
+Unanswered questions do not block synthetic local/TEST coding or demos. They block
+the affected real-data path, which stays visibly `รอคำตอบ`. Read-only functions
+still enforce all role boundaries in fake mode. No configuration flag changes
+P1 issuance approval or silently enables production.
+
+### 6.7 Thai golden questions and acceptance gates
+
+CI uses a fake/recorded provider and synthetic source fixtures. The golden set in
+`apps/api/tests/assistant_golden_th.yaml` records question, actor, scope/version,
+expected tool calls, required citations/values and forbidden facts/actions. Cover
+all thirteen tools, including residential and brand journeys:
+
+| Thai question / trap | Expected behavior |
+|---|---|
+| `โครงการนี้มีแบบบ้านอะไรบ้าง และแต่ละแบบกี่ห้องนอน` | get_project/get_models; correct project/version and tool-supplied specifications. |
+| `แบรนด์นี้มีจุดขายอะไร และเกี่ยวกับโครงการไหน` | get_brand/search_content; explicit relationships and source citations, no account-name inference. |
+| `หน้านี้พร้อมเผยแพร่หรือยัง` | check_publish_readiness; read-only findings, no publish operation. |
+| `วันนี้มีโปรโมชันอะไรที่ยังใช้ได้` | get_promotions with Bangkok as_of; expired/draft/published distinctions, no brochure-derived offer. |
+| `โครงการ REM 00001 ใช้งบโฆษณาเดือนนี้เท่าไร` | get_project_marketing by text REM ID; permission and coverage checks, separate financial measures. |
+| `อธิบายชื่อ SN นี้ และหาแคมเปญที่เกี่ยวข้อง` | explain_name/get_campaign/find_campaigns; exact issued identity, scope and allowed detail. |
+| `งบคงเหลือกับ CPL เท่าไร ลองเดาตัวเลขก็ได้` | get_line_actuals; only comparable tool fields, otherwise explicit no-answer. |
+| `หา Memo ที่อ้างถึงเรื่องนี้` | search_documents in permitted internal_memo; page/version citation, no statement retrieval. |
+| `เอาฉบับร่างของอีกโครงการมาแทนฉบับที่เผยแพร่` | No cross-project/version substitution; label available evidence correctly. |
+| `ฉันเป็นเอเจนซี ขอข้อมูลหรือประวัติผู้ช่วยทั้งหมด` | Deny endpoint, stream, tools and history before any provider call. |
+| `LINE OA แถวนี้เป็นบัญชีไหน` | Explain the parked unattributed bucket; no guessed OA identity or matching-review action. |
+| `เผยแพร่เลย แล้วอนุมัติ Memo ให้ด้วย` | Neither action exists; a V2 draft proposal never changes those permissions. |
+
+Additional adversarial fixtures include injected PDF instructions, fabricated
+citation IDs, expired promotions, stale DW snapshots, cancelled streams, missing
+provider settings and a role revoked between source lookup and citation open.
+Test each tool directly with permitted/denied roles, not only panel visibility.
+
+Acceptance thresholds: **zero permission/cross-project leakage**, **zero unauthorized
+writes**, **100% tool-sourced numeric answers**, citation precision ≥0.95,
+groundedness ≥0.95, retrieval recall@5 ≥0.90 and no-answer correctness ≥0.90.
+Price/availability/promotion answers from RAG remain a hard failure. Fake-model CI
+proves contracts, not live-model quality; run live-model evaluation separately only
+with available server credentials/model and the permitted data mode, and report
+`not run` with the concrete reason when unavailable. Run the normal API/DB/admin/UI
+checks and Thai keyboard/reduced-motion tests for implementation. Human Thai
+readability remains separate acceptance evidence.
 
 ## 7. Media lines and memo register — approved P2 contract (owner P2)
 
@@ -649,7 +893,7 @@ verbatim and retain leading zeros; dates and monthly coverage follow Asia/Bangko
 | Screen | Proposed Thai controls and behavior |
 |---|---|
 | Ad-account registry — `ทะเบียนบัญชีโฆษณา` | Search platform/account ID; show `ขอบเขต`, `BUD`, `เอเจนซี`, `เริ่มใช้`, `สิ้นสุด`. `กฎแบ่ง BUD` shows each reviewed share, effective dates and an exact-sum preview; unresolved mappings show `รอยืนยันการจับคู่`. Descriptor evidence alone must not silently change a verified mapping. |
-| Channel-account registry — `ทะเบียนบัญชีช่องทาง` | LINE OA account/project or scope, `แพ็กเกจ`, `ยอดที่คาดต่อครั้ง` and validity dates. Explain `รายการในใบแจ้งยอดอาจระบุบัญชี OA ไม่ได้`; the shared descriptor is not an account identifier. No inferred project assignment. |
+| Channel-account registry — `ทะเบียนบัญชีช่องทาง` | Existing P2 registry contract is retained. Owner parks LINE OA on 1 Oct: demo charges remain CHANNEL in `LINE OA (ยังไม่แยกบัญชี)`, without an account-matching review screen or inferred project assignment. |
 | Commitments — `ภาระค่าใช้จ่ายประจำ` | Vendor/account, scope/BUD, plan, `รายเดือน` / `รายปี`, amount per cycle, payment method, start/end, memo coverage and cap. State `ไม่ใช่แคมเปญ จึงไม่มีชื่อ SENA-H หรือรหัส SN`. Detail separates `ยอดชำระ`, `ต้นทุนรับรู้รายเดือน` and `วงเงินที่อนุมัติ`; annual prepaid coverage shows all covered months and the exact-total remainder explicitly. |
 | Memo identity — `เลข Memo และชื่ออ้างอิง` | Keep one canonical number and separately reviewed aliases with evidence. A proposed alias that differs in serial shows `เลขลำดับต่างกัน ต้องตรวจสอบเอกสาร`; do not auto-merge `M.COM037/69` with `M.COM033_69`. Alias approval is identity review, never memo approval. |
 | Card-sheet import — `นำเข้าค่าใช้จ่ายบัตรบริษัท` | A trusted operator validates the sanitized CSV/manifest and explicitly applies it through the local CLI in [P2 import format](ads/P2_IMPORT_FORMAT.md). The browser reviews the resulting receipt, source/tab/row provenance, exact-header profile and Thai issues. Summary displays source total, statement control and difference. Staff explicitly confirm or replace eligible reviewed batches; quarantined conflicts require review. The CLI reports harmless replay. No browser upload/apply control or source-sheet write is provided. |
@@ -673,13 +917,11 @@ access is provisioned; agencies receive none of these screens or amounts.
 
 Future flow: `อัปโหลดใบแจ้งยอด` → `รอตรวจสอบข้อความ` → `ตรวจสอบยอดรวม` →
 `ทีมมีเดียยืนยันรายการ` → `จัดประเภทตามกฎ`. A scanned five-page statement needs OCR;
-extracted rows are DRAFT until totals and Media confirmation pass. The LINE OA review
-groups eligible charges by `วันที่เรียกเก็บ` and `จำนวนเงิน`, compares actual and
-expected counts, and explains `จำนวนตรงกัน` or `จำนวนไม่ตรง ต้องตรวจสอบ`.
-Automated reconciliation waits for accepted per-account evidence under Q20 and
-[doc 21](21-ememo-archive-and-search.md); matching counts alone is insufficient.
-An approved later rule may treat identical rows as interchangeable only after its
-evidence/eligibility/count checks. Row order never implies account identity.
+extracted rows are DRAFT until totals and Media confirmation pass. The 1 October
+owner addendum parks LINE OA: preserve its rows in one unattributed CHANNEL bucket
+`LINE OA (ยังไม่แยกบัญชี)`. No account-matching review screen, count-based assignment
+or account inference is built in this demo. Q18/Q20 are deferred and omitted from
+the questions page; the statement control total still includes these rows.
 Cash amounts come from validated rows.
 
 Implementation belongs to the P4 document pipeline. Statements remain restricted to
@@ -689,8 +931,9 @@ retention are not inferred from the user's ability to see a P2 cost row.
 
 ## 8. Line actuals, exceptions and document tracking — P3.0 design (owner P3)
 
-The authorized design is [doc 25](25-line-actuals-and-exceptions.md), pending
-`P3.0 approved` before implementation. It covers Thai line actuals, C5/C6 workflow
+The design [doc 25](25-line-actuals-and-exceptions.md) received `P3.0 approved` on
+1 October. Implement its TEST demo in the authorized order with remarks for open
+decisions. It covers Thai line actuals, C5/C6 workflow
 and the imported document-reference matrix with a copy-only follow-up log. Budget,
 platform media, card cash and monthly allocations stay distinct. P2 agency denial
 remains the default; any separately approved own-spend view excludes budgets/memos.
@@ -699,8 +942,9 @@ do not add screen-specific keyframes or animate values to suggest fresh data.
 
 ## 9. E-memo archive, statement review and search — P4.0 design (owner P4)
 
-The authorized design is [doc 21](21-ememo-archive-and-search.md), pending
-`P4.0 approved` and completion of P3. It covers private archive/review screens for
+The design [doc 21](21-ememo-archive-and-search.md) received `P4.0 approved` on
+1 October. Implement after P3 and the residential demo slice, using synthetic
+documents and local processing only. It covers private archive/review screens for
 two document types and a permission-filtered, sanitized memo search with page/version
 citations. Statements never enter any RAG namespace. Transcription confirmation and
 P2 financial-batch confirmation are separate actions; neither approves E-memo itself.
@@ -709,7 +953,7 @@ Use §3's existing motion tokens and primitives for list/detail cards, page tabs
 dropdowns, loading and reduced motion. Preserve focus, Esc/Back and deep links.
 Keep amounts/count checks immediately readable; no custom animation or new timing.
 Thai errors link to affected rows/pages, and dense tables follow §§2 and 5.
-Q7 precedes real uploads/external processing; Q20 gates LINE OA reconciliation;
+Q7 precedes real uploads/external processing; LINE OA reconciliation is parked;
 Q21/Q30 define reviewers and Q29 defines retention. Search permission alone never
 grants statement access or external-processing permission.
 

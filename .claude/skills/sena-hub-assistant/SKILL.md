@@ -1,15 +1,15 @@
 ---
 name: sena-hub-assistant
 description: >
-  Internal Thai AI assistant inside the SENA Hub: OpenAI Agents SDK running in
-  the FastAPI app (apps/api/sena_hub_api), streaming to an admin side panel,
-  with read-only tools (search_documents, get_campaign, find_campaigns,
-  get_line_actuals, explain_name), numbers only from tools, citations, the
-  caller's own RLS permissions, and a Thai golden-question test set. Use when
-  building, testing or reviewing the assistant, its tools, prompts,
-  streaming endpoint, side panel or evals. Not the public customer chatbot
-  (separate repo sena_ai_chatbot_mkt).
+  One staff-only Thai assistant across SENA Hub projects, brands, models,
+  promotions, campaigns, financial context and permitted documents. Covers
+  OpenAI Agents SDK in FastAPI, SSE, thirteen read-only v1 tools, caller RLS,
+  separate internal retrieval namespaces, citations and Thai golden tests.
+  Agencies and public/service consumers cannot access this assistant.
+  Controlled v2 proposals can change only authorized draft text fields after
+  an explicit diff confirmation; never publishing or memo approval.
 ---
+
 
 # sena-hub-assistant (pointer)
 
