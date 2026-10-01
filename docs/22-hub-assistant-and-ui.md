@@ -914,6 +914,57 @@ numeric traps, prompt injection, cancellation, promotion expiry, statement exclu
 proposal replay/staleness and keyboard/reduced-motion UI. Fake-model metrics and
 any available live-model measurements are reported separately.
 
+### 6.9 Assistant composer discoverability — 1 October 2026, before code
+
+The owner could not find the question field. Keep the current API, permissions,
+fixed synthetic live question, context persistence, citations and draft-confirmation
+rules. Both the existing staff sidebar entry and a bottom-right `ถามผู้ช่วย`
+button open the same mounted panel; neither appears for an agency or an unselected
+role. Closing returns focus to the opener. On project pages the floating button
+clears the measured visible save-bar position, including wrapped Thai text and
+the page footer lifting the bar, rather than covering its status or actions.
+Reopening also returns to the chat tab while
+retaining an unsaved draft proposal.
+
+Use a compact header with title, mode chip, context chip/popover and close control.
+Move explanations and Q36/Q38/Q42/Q43/Q44 into initially collapsed
+`เกี่ยวกับผู้ช่วยนี้`. Separate `แชท` and `เสนอแก้ร่าง` tabs without discarding an
+unsaved proposal on tab changes. The conversation occupies the flexible middle
+scroll region; the panel itself does not scroll. The chat composer stays in a
+separate bottom row and receives focus on open. Enter sends, Shift+Enter inserts
+a newline, and composition input must not send prematurely. Live mode keeps the
+allowed-question select in that same bottom row with one concise explanation.
+
+The empty conversation offers four Thai question chips that fill, but never send,
+the local composer. Context editing reuses the current fields in a dismissible
+popover; switching modes does not send typed text or widen provider input. Reuse
+the existing semantic colors, focus rings and motion tokens. On narrow screens
+the header and controls wrap within the panel, leaving the composer visible.
+
+Verify Edge at 1366×768 and 390×844: visible initial composer and focus without
+scrolling; Enter/Shift+Enter; suggestion fill-only; both openers; context and tab
+keyboard behavior; same role visibility; live-select placement; reduced motion.
+Run admin typecheck/build and the full Edge UI suite before explicit-path commit
+and push. This change does not authorize further provider requests or API changes.
+
+Workstation verification (1 October):
+
+- `npm.cmd run typecheck --prefix apps/admin` exited 0.
+- `npm.cmd run build --prefix apps/admin` exited 0. The existing Google Sans
+  fallback-metric warning remains: `Failed to find font override values`.
+- `npm.cmd run test:ui -- tests/ui/assistant.spec.ts` with `PLAYWRIGHT_CHANNEL=msedge`
+  finished `23 passed (55.2s)`, including both requested viewports, keyboard,
+  agency/unselected denial, live-question isolation and unsaved draft retention.
+- `npm.cmd run test:ui` with `PLAYWRIGHT_CHANNEL=msedge` exited 0:
+  `141 passed (7.0m)` on the final production build.
+- Read-only visual checks at desktop/mobile and 150% Thai text confirmed the
+  pinned composer, focus, context popover and save-bar clearance. Test provider
+  requests were mocked; the real proxy check used the local fake model only.
+- An initial proxy check failed with HTTP 502 because the local API/database
+  were stopped; restarting them resolved it. The added save-bar test then caught
+  a footer-position overlap; measuring the visible bar position fixed it without
+  weakening the assertion. No API, migration or provider-rule changes were made.
+
 ## 7. Media lines and memo register — approved P2 contract (owner P2)
 
 **30 September 2026: expanded P2.0 approved for implementation.** The owner's reply
