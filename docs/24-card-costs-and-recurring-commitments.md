@@ -417,6 +417,11 @@ are not claimed to replace Google/Meta platform spend or DW reconciliation contr
 
 ## 9. P4 design only: private statements and LINE OA count matching
 
+The full authorized P4.0 design is [doc 21](21-ememo-archive-and-search.md), awaiting
+`P4.0 approved` and completion of P3 before implementation. The owner's 1 October
+instruction makes **accepted per-account evidence under Q20 a prerequisite** for
+automated LINE OA reconciliation. This supersedes the earlier count-only assumption.
+
 P4 reuses the private document pipeline's storage, version/hash, access audit and
 OCR infrastructure, **not its memo RAG indexing path**. Statement document type must
 be explicitly excluded from all RAG namespaces, including restricted memo search.
@@ -424,8 +429,9 @@ No statement image, OCR text, derived chunk or embedding is indexed. Money is re
 from validated typed rows, never retrieved prose. Marketing-ops roles alone can read
 statements or extracted drafts; signed short-lived downloads require authorization.
 
-Proposed sequence: private PDF upload → image OCR (the reported five-page file has
-no text layer) → DRAFT occurrences with page/row provenance → exact total check →
+Proposed sequence after Q7: private source receipt → text-layer extraction, or image
+OCR when absent/incomplete (the reported five-page file has no text layer) → DRAFT
+occurrences with page/row provenance → exact per-page counts and total check →
 authorized Media reviewer confirms rows → versioned rule-based classification.
 Here confirmation means **OCR transcription confirmed**. Final **financial cost-batch
 confirmation** is a separate state transition after complete typed coverage and the
@@ -435,12 +441,13 @@ occurrence counts across pages and reruns; never deduplicate identical transacti
 If a confirmed P2 sheet batch already represents this statement, compare/link the
 OCR evidence to that same control record; never import it as another expense batch.
 
-Only after reviewed expected commitments/charge dates exist, group LINE OA debits
+Only after per-account evidence, the rule and expected commitments/charge dates
+are reviewed and accepted under Q20, a future approved rule may group LINE OA debits
 by **(charge date, amount)** within the same statement/vendor/currency context.
 Remove valid prior/manual matches from both observed and expected sets consistently;
 conflicting matches go to review. Compare the **unmatched observed** occurrence count
-with eligible **unmatched expected** commitment occurrences. When counts match
-exactly and mappings/coverage are valid, auto-assign
+with eligible **unmatched expected** commitment occurrences. Once that evidence gate
+is satisfied, when counts match exactly and mappings/coverage are valid, the rule may assign
 the interchangeable rows deterministically (stable source order and commitment ID)
 and record rule/version, bucket counts and method **COUNT_MATCH**. No amount/date
 tolerance, fuzzy vendor match or assumed billing date. Already matched occurrences
@@ -450,12 +457,14 @@ This records a count-based allocation convention, **not proof that a particular
 indistinguishable row identifies one OA**. Mismatched/missing/extra counts or conflicting
 manual assignments send the whole affected bucket to review; no arbitrary partial
 match. Reprocessing is idempotent; changed commitments/rules require a reviewed new
-interpretation rather than rewriting confirmed history. Account-level LINE export
-(Q20), if available, supplies stronger identity evidence and is not guessed now.
+interpretation rather than rewriting confirmed history. Without accepted per-account
+evidence, attribution stays unresolved even when counts match. Neither the descriptor
+nor source row order supplies that missing evidence; current P2 reviewed mappings remain.
 
 Statement PII includes cardholder name, company address and partial card number.
-Real storage/access locations and any OCR/LLM processing outside Thailand require
-the **Q7 DPO decision before use**. Do not upload/send the reported PDF to any OCR or
+Real storage/access locations require the **Q7 DPO decision before any real upload**;
+external OCR/LLM processing also waits for that decision and verified local masking
+of the cardholder name, address and card-number fields. Do not upload/send the reported PDF to any OCR or
 LLM in P2, provision storage or assume provider endpoints prove residency. This is
 an owner approval gate; it is not a completed legal assessment.
 
@@ -498,4 +507,6 @@ The previous ~1.5-week P2 allowance did not include this scope; re-estimation is
 needed, with no new delivery date promised here.
 
 **Stop after expanded P2 implementation, verification and report.** The explicit
-P2.0 gate is satisfied; P4 construction, external writes, commits and pushes remain unauthorized.
+P2.0 gate is satisfied; P4 construction and external source writes remain unauthorized.
+The 1 October owner instruction separately authorizes the Task 0/A handoff and
+P3.0/P4.0 design commits/pushes; it does not authorize P3/P4 implementation.

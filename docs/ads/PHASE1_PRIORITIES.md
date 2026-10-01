@@ -1,4 +1,4 @@
-# Ads workstream: phase-1 priorities (updated 30 September 2026)
+# Ads workstream: phase-1 priorities (updated 1 October 2026)
 
 Status: **P1 and expanded P2 implemented and verified locally, 30 September 2026**.
 The owner replied `P2.0 approved — implement expanded P2`.
@@ -19,6 +19,19 @@ P3–P6 implementation has not started. Continue building on SENA-H and demo it 
 P'Note; no pattern approval is recorded. `sena_h_approved` remains false and production
 issuing remains blocked.
 
+**Owner authorization, 1 October 2026:** integrate the motion branch, verify it on
+Edge, and provide the local read-only DW TEST login plus frozen 15-view fixtures.
+Then complete **P3.0 design** in [doc 25](../25-line-actuals-and-exceptions.md) and
+**P4.0 design** in [doc 21](../21-ememo-archive-and-search.md), in that order. The owner
+also authorizes explicit-path commits and a normal push to `origin/main` after the
+required checks pass. The follow-up addendum requires **Task 0 and Task A to be
+pushed separately before docs 25 and 21**: motion `4886981` and DW handoff `30972d0`
+are now pushed. The fixture manifest records source commit `4886981`, not its own
+future commit. No P3/P4 implementation is authorized by this instruction.
+Wait for `P3.0 approved` / `P4.0 approved`; implementation stays **P3 → P4**, one
+priority at a time. P5/P6 remain deferred. The local handoff does not authorize
+hosted/production credentials, real document uploads or changes to external sources.
+
 Inputs: [19](../19-campaign-naming-registry.md) §4.2 SENA-H, [20](../20-marketing-operations-flows.md)
 BF-0/BF-2/BF-5/BF-12, owner decisions of 29–30 September. Skills: `.agents/skills/sena-*`.
 
@@ -28,8 +41,8 @@ BF-0/BF-2/BF-5/BF-12, owner decisions of 29–30 September. Skills: `.agents/ski
 |---|---|---|---|---|---|
 | **P1** | **Naming registry (SENA-H)** | Design slice → schema → code/name/UTM API → registration + agency ID-return screens → DW snapshot contract | C (registry tables), D, E, B (tokens/fonts/motion + registry screens only) | ~2 weeks | P'Note approves SENA-H; brand token KITH vs SENA-KITH; DW source key `hub` |
 | P2 | Media lines, memo register, card costs and recurring commitments | P2.0 design → ledger and Media card-sheet imports; group lines/phase children and revisions; memo mirror/aliases; monthly SN assignments; corrections; cost/payment classification and document matrix; account registries; commitments/caps and prepaid recognition | C (line/memo tables), expanded by the 30 Sep addendum | **Re-estimate required**; original ~1.5 weeks does not cover the expanded scope | Q1 manual evidence/access; Q4 ledger headers; Q5 correction authority; Q18–Q24 card/channel/Finance acceptance; affected-path gates in docs 23/24 |
-| P3 | Line actuals and exceptions read-back | DW gold → Hub staging (line actuals, C5/C6 findings) → line-actuals screen | B (line actuals screen) | ~1 week | DW marts `dim_media_line`, `fact_media_line_*` (other repo); source keys `adinv`/`mplan` |
-| P4 | E-memo archive/search and restricted statement pipeline | E-memo private upload/versions, text + Thai OCR and restricted memo search; separate card-statement upload/OCR → DRAFT rows → totals check → Media confirms → rule classification and LINE OA count reconciliation. Statements never enter RAG | A, C (`ads.memo_document`), statement pipeline added 30 Sep | Original ~2 weeks predates the statement addition; re-estimate with P2 | E-memo access; Q7 hosting/external OCR/LLM decision; Q20 OA evidence; Q21 Media roles; Q22 statement controls |
+| P3 | Line actuals, C5/C6 exceptions and document tracking | P3.0 design → DW gold → Hub staging/read-back; monthly document-reference matrix and copy-follow-up log | B (line actuals screen), expanded 1 Oct | Original ~1 week predates document tracking; re-estimate | Q25/Q26 DW contract, metrics and cutover; Q24/Q27 document matrix/due rules; optional Q28 agency projection. DW builds current media lines from `hub__media_line`, not a second ledger ingestion |
+| P4 | E-memo archive/search and restricted statement pipeline | E-memo private upload/versions, text + Thai OCR and restricted memo search; separate card-statement extraction → DRAFT rows → per-page counts/total checks → Media confirms → rule classification. LINE OA reconciliation waits for Q20 per-account evidence. Statements never enter RAG | A, C (`ads.memo_document`), statement pipeline added 30 Sep | Original ~2 weeks predates the statement addition; re-estimate with P2 | E-memo access; Q7 before real uploads/external processing; Q20 OA evidence; Q21 Media roles; Q22 statement controls; Q29 retention; Q30 engine/reviewer acceptance |
 | P5 | Hub assistant (read-only) | Agents SDK in FastAPI, 5 read-only tools, streaming side panel, Thai golden set | B (assistant) | ~2 weeks | OpenAI API access (not only seats); P2–P4 data for tools |
 | P6 | UI refresh and later flows | Motion spec on remaining screens, Thai readability result applied; later: QT/PO, bills, payment package, budget forecast (BF-3/8/9/1) | B (remaining) | Later | Business priority after P5 |
 

@@ -676,24 +676,42 @@ Future flow: `อัปโหลดใบแจ้งยอด` → `รอต�
 extracted rows are DRAFT until totals and Media confirmation pass. The LINE OA review
 groups eligible charges by `วันที่เรียกเก็บ` and `จำนวนเงิน`, compares actual and
 expected counts, and explains `จำนวนตรงกัน` or `จำนวนไม่ตรง ต้องตรวจสอบ`.
-Identical rows are interchangeable only after doc 24's eligibility/count checks;
-row order must never imply account identity. Cash amounts come from validated rows.
+Automated reconciliation waits for accepted per-account evidence under Q20 and
+[doc 21](21-ememo-archive-and-search.md); matching counts alone is insufficient.
+An approved later rule may treat identical rows as interchangeable only after its
+evidence/eligibility/count checks. Row order never implies account identity.
+Cash amounts come from validated rows.
 
 Implementation belongs to the P4 document pipeline. Statements remain restricted to
 marketing-ops roles, never appear in any RAG search/assistant document index, and
 external OCR/LLM processing waits for Q7. File access, confirmation authority and
 retention are not inferred from the user's ability to see a P2 cost row.
 
-## 8. Line actuals and exception screens — TODO (owner P3)
+## 8. Line actuals, exceptions and document tracking — P3.0 design (owner P3)
 
-Headed placeholder only; pending DW read-back contract.
+The authorized design is [doc 25](25-line-actuals-and-exceptions.md), pending
+`P3.0 approved` before implementation. It covers Thai line actuals, C5/C6 workflow
+and the imported document-reference matrix with a copy-only follow-up log. Budget,
+platform media, card cash and monthly allocations stay distinct. P2 agency denial
+remains the default; any separately approved own-spend view excludes budgets/memos.
+Reuse §3's motion tokens/primitives, focus/deep-link behavior and reduced motion;
+do not add screen-specific keyframes or animate values to suggest fresh data.
 
-## 9. E-memo archive and search — TODO (owner P4)
+## 9. E-memo archive, statement review and search — P4.0 design (owner P4)
 
-E-memo archive/search remains a headed placeholder pending access and hosting
-decisions. The separate statement-processing design is in doc 24 and §7.2; implement
-it in P4, with **no statement RAG indexing**. Memo-search scope does not grant statement
-access or permission to send statement PII to an external OCR/LLM service.
+The authorized design is [doc 21](21-ememo-archive-and-search.md), pending
+`P4.0 approved` and completion of P3. It covers private archive/review screens for
+two document types and a permission-filtered, sanitized memo search with page/version
+citations. Statements never enter any RAG namespace. Transcription confirmation and
+P2 financial-batch confirmation are separate actions; neither approves E-memo itself.
+
+Use §3's existing motion tokens and primitives for list/detail cards, page tabs,
+dropdowns, loading and reduced motion. Preserve focus, Esc/Back and deep links.
+Keep amounts/count checks immediately readable; no custom animation or new timing.
+Thai errors link to affected rows/pages, and dense tables follow §§2 and 5.
+Q7 precedes real uploads/external processing; Q20 gates LINE OA reconciliation;
+Q21/Q30 define reviewers and Q29 defines retention. Search permission alone never
+grants statement access or external-processing permission.
 
 ## 10. Other ads screens — TODO (outside P1)
 

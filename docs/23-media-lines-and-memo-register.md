@@ -563,6 +563,12 @@ changes. Correction exports do not override confirmed native bindings or turn an
 ambiguous match into an automatic assignment. DW actuals, findings, jobs and source
 registration are separate owner work under Q3; no deployment is claimed here.
 
+P3.0 read-back, matching and exception/document-tracking design is in
+[doc 25](25-line-actuals-and-exceptions.md), awaiting its implementation approval.
+The 0015 view omits lines without components, and correction exports provide
+`applied_at`, not decision/retirement timestamps. Consumers must preserve these
+availability limits rather than synthesizing fields from ingestion times.
+
 ### 8.1 Local TEST login and frozen contract fixtures — 1 October 2026
 
 `npm.cmd run dev:dw-reader` provisions `dw_hub_reader` only on
