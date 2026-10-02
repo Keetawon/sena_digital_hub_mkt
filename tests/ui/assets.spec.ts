@@ -83,6 +83,7 @@ function entry(page: Page, filename: string) {
 
 async function approve(page: Page, asset: Asset, decision: 'approved' | 'revoked') {
   await library(page);
+  await page.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true }).fill(asset.original_filename);
   await entry(page, asset.original_filename).getByRole('button', { name: 'ตรวจสอบสิทธิ์', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel(decision === 'approved' ? 'อนุมัติสิทธิ์ใช้งาน' : 'ถอนสิทธิ์ใช้งาน', { exact: true }).check();

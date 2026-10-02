@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 const stamp = '2026-10-02T07:11:04+00:00';
+const emptyCompleteness = { rows: [], counts: { total: 0, missing_data: 0, ready: 0, published: 0, published_changes: 0, not_created: 0 } };
+const responseFor = (url: string) => url.endsWith('/sources/brands') ? rows : url.endsWith('/brands/completeness') ? emptyCompleteness : [];
 const source = { brand_name_rem: 'แบรนด์สมมติจาก DW', brand_name_en_rem: 'Synthetic DW brand',
   source_updated_at: null, source_snapshot_at: stamp, source_fingerprint: 'synthetic',
   source_record: {}, intake_manifest_sha256: 'a'.repeat(64), public_brand_id: null };
@@ -17,7 +19,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await page.context().addCookies([{ name: 'sena_local_persona', value: 'admin', url: 'http://127.0.0.1:3000' }]);
     await page.route('**/api/hub/v1/admin/**', route => {
       expect(route.request().method()).toBe('GET');
-      return route.fulfill({ json: { data: route.request().url().endsWith('/sources/brands') ? rows : [] } });
+      return route.fulfill({ json: { data: responseFor(route.request().url()) } });
     });
     await page.goto('/?view=brands');
     await page.getByRole('button', { name: 'ดูแบรนด์จากต้นทาง', exact: true }).click();
@@ -50,7 +52,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
 for (const role of ['editor', 'viewer']) {
   test(`${role} cannot create DW source brands`, async ({ page }) => {
     await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
-    await page.route('**/api/hub/v1/admin/**', route => route.fulfill({ json: { data: route.request().url().endsWith('/sources/brands') ? rows : [] } }));
+    await page.route('**/api/hub/v1/admin/**', route => route.fulfill({ json: { data: responseFor(route.request().url()) } }));
     await page.goto('/?view=brands');
     await page.getByRole('button', { name: 'ดูแบรนด์จากต้นทาง', exact: true }).click();
     const picker = page.locator('#brand-source-picker');

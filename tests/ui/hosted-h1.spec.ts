@@ -140,6 +140,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
     test(`private logo upload and authenticated preview at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport); await login(page, 'editor');
       const brands = (await (await page.request.get('/api/hub/v1/admin/brands')).json()).data;
+      expect((await page.request.get('/api/hub/v1/admin/brands/bulk-preview')).status()).toBe(403);
       await page.goto(`/?brand=${brands[0].public_brand_id}`);
       const slot = page.locator('[data-logo-role="logo_white"]');
       const name = `h1-white-${randomUUID()}.svg`;

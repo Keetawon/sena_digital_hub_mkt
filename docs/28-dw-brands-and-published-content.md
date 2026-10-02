@@ -65,12 +65,163 @@ deletion status, residential count and text exception badges. The DW count uses
 closed/deleted projects; the UI states this qualification. Search includes both
 source languages and the ID. Empty, loading and retry states remain Thai.
 
-Only admin can call `hub.create_brand_from_rem(text)`; deleted and unknown rows
+Only admin can call the single-brand `hub.create_brand_from_rem(text)`; deleted and unknown rows
 fail at the database guard as well as disabling UI actions. Creation copies only
 `rem_brand_id`. Public names/descriptions start as `{}`, slug as `''`, logos empty
 and publication pointer null. Marketing supplies public content through the
 existing draft and asset workflows. Admin retains no publisher bypass. Existing
 Hub edits are never refreshed from source labels.
+
+## Confirmed local bulk drafts and completeness
+
+Migration `0028` adds a separate, explicitly confirmed **local-only** bulk action.
+It does not change the identity-only single-brand action or the publication gate.
+Both API environment guards and the database's native localhost identity guard
+refuse bulk intake outside `127.0.0.1:55432/sena_hub_local`. Hosted H1 exposes the
+staff dashboard for its synthetic records; it cannot preview or apply real bulk intake.
+
+```powershell
+npm.cmd run dev:brand-bulk
+# Only after the owner has reviewed and explicitly confirmed that exact preview:
+npm.cmd run dev:brand-bulk -- --confirm-preview <preview-sha256>
+```
+
+The preview saves all 38 reviewed rows, proposed names and slug, residential count
+and every exclusion reason in ignored `.local/brand-bulk/<preview-sha256>.json`
+and `.html`. Eligibility requires an active deletion flag, at least one residential
+reference, a nonblank Thai name and no duplicate Thai or English name. Duplicate
+comparison trims/collapses whitespace and ignores case, across all staged identities,
+including deleted identities. Missing English is permitted; no English name or
+translation is invented. Existing/archived Hub identities are always excluded.
+The reason codes are `deleted`, `unknown_status`, `blank_name`, `duplicate`,
+`no_residential_project`, `already_created` and `archived`; multiple reasons remain
+visible. An exception without a dictionary row never creates a brand.
+
+Admin reviews the preview, enters a reason and explicitly confirms before applying.
+The API accepts the displayed 64-character preview hash and literal `confirmed=true`;
+it cannot accept an alternate manifest. The database recomputes the complete preview
+under source/brand locks and rejects drift before any insertion. One transaction
+inserts each eligible brand once, records one normal admin audit entry per brand
+and stores an immutable private `hub.brand_bulk_runs` receipt. Exact receipt replay
+returns zero creations before considering later edits; it never updates existing
+brands, clears edits or publishes. A fresh preview also excludes those identities.
+
+Bulk drafts copy only exact REM-provided Thai/English public-name values and source
+identity. A suggested slug comes from the English name; missing English leaves it
+empty and collisions receive a deterministic REM-ID suffix. Descriptions and logos
+remain empty and publication pointers null. Each supplied locale is marked
+**ค่าจากต้นทาง ยังไม่ยืนยัน**, with the manifest/fingerprint/original-name
+provenance retained in staff metadata. These are editable Hub fields. Changing that
+locale's name clears its warning; saving unchanged text or changing another field
+does not. An editor/admin can explicitly confirm unchanged source names with an
+optimistic draft timestamp. Source warnings/provenance never enter published
+payloads, public exports or the asset-rights evidence.
+
+The source warning is a separate staff review check. The existing
+`hub.brand_snapshot_readiness` gate and its percentage are unchanged: required
+Thai public name, Thai description, slug, primary logo and applicable logo rights
+remain the same. No bulk operation approves names, rights or publication.
+
+The staff brand list begins with six tiles and a table containing every staged
+brand once, including uncreated identities. Its unfiltered counts mean:
+
+| Tile | Rule |
+|---|---|
+| Total | All staged identities, including synthetic/local pilot rows |
+| Missing data | Created brand whose current draft fails the existing readiness gate |
+| Ready to publish | Ready draft with no eligible publication or with content changes |
+| Published | Current consumer-eligible publication, including changed drafts |
+| Published with unpublished changes | Eligible publication whose draft marketing content differs |
+| Not created | Staged identity with no active Hub brand, with all applicable reasons |
+
+These counts overlap by design. Readiness comes from the same database function
+used to publish; published state comes from the existing consumer eligibility view.
+Draft comparison ignores source/audit/library-only evidence. The table shows exact
+REM ID, names, residential count, status, Thai-name confirmation, description,
+slug, primary logo, rights check, optional logo roles, readiness percentage,
+plain Thai missing items and last update time/actor. Uncreated records appear first,
+then drafts with the most missing required items. Staff can filter status or missing
+field and search names/ID; clicking a created row opens its existing editor.
+
+`GET /v1/admin/brands/completeness` returns `{rows, counts}`. Filters affect rows,
+while tiles retain the whole-dictionary counts. The corresponding `.csv` route
+exports the same filtered rows through the authenticated admin proxy. Its exact
+ordered columns are:
+
+```text
+name_th,name_en,rem_brand_id,public_brand_id,residential_project_count,status,name_th_confirmed,description_present,slug_present,primary_logo_present,logo_rights_valid,optional_logos,readiness_percent,missing,not_created_reasons,updated_at,updated_by
+```
+
+CSV uses UTF-8 with BOM, standard cell quoting and prefixes formula-like values for spreadsheet
+safety. IDs remain strings. It contains presence/rights booleans and role labels,
+never descriptions, rights evidence, asset IDs, file URLs or storage keys.
+
+A publisher can select only created, 100%-ready brands and explicitly confirm a
+reason for the whole selection. The dashboard calls the **existing atomic release**
+endpoint with `demo_mode=false`, each draft timestamp and current publication pointer.
+The database rechecks all members' permissions, revision, pointer and readiness;
+one not-ready/stale member refuses the entire release without partial versions or
+publication pointers. Admin cannot publish. No bulk-create action invokes this path.
+
+### Actual local creation
+
+The owner explicitly confirmed preview
+`68059dd4bbbfdc07bdd4892358bdc5c42514b7135ee4e9102ebc92e16dbf8db6`.
+At `2026-10-02T09:53:40.028Z`, it created **32 local DRAFT brands** with 32 admin
+INSERT audit entries. Immediate exact replay created zero. Readback found 32 null
+publication pointers, empty descriptions and zero logo bindings. Private receipt:
+`.local/brand-bulk/creation-receipt.json`; no real dictionary fixture is committed.
+
+Six package identities were excluded: `20` (duplicate-name exception with `22`),
+`22` (deleted, duplicate, zero residential references), `25` (already exists),
+`29` (zero residential references), `35` (unknown deletion flag and blank names),
+`37` (zero residential references). The existing `25` brand is preserved. None of
+these six was created, published or changed; the readback audit check found zero
+brand changes for these IDs after the bulk receipt timestamp. ID `35` has 67
+residential references, so its exclusion is not an absence of residential usage.
+Hosted TEST was not contacted.
+
+### Bulk/dashboard verification, 2 October 2026
+
+The rollback-only database regression uses invented source IDs. It checks every
+eligibility reason, admin/confirmation/revision guards, text identities, one audit
+per insertion, source flags on actual edits and explicit confirmation, replay after
+edits, dashboard counts against the existing readiness function, and atomic refusal
+of a mixed ready/not-ready release. A complete synthetic two-brand release passes
+through the same existing function.
+
+API coverage checks roles, the fixed manifest, strict confirmation, hosted/production
+denial before connecting, query validation, overlapping counts, filtered rows and
+the exact CSV whitelist/formula escaping. Browser coverage checks desktop/mobile
+tiles, reasons, field/status filters, ready-only selection, one atomic request,
+explicit bulk confirmation and the live authenticated CSV response.
+
+| Check | Actual result |
+|---|---|
+| Local apply / replay / protected-ID readback | 32 drafts, 32 admin INSERT audits; replay zero; zero excluded-ID changes |
+| Admin typecheck / production build | Exit 0; existing Google Sans fallback warning |
+| Full API suite | 1,227 passed, 11 skipped, one existing Starlette warning in 174.22 seconds |
+| Full `test:db` | Exit 0; all SQL/RLS/concurrency checks and five fixture/bulk contract tests passed |
+| Full local Edge UI run and final failed-case rerun | 165 passed, 14 H1 checks skipped, one localhost role-switch `ECONNRESET` in 8.1 minutes; after the transport fix, `test:ui -- --last-failed` passed the remaining case (10.8 seconds). All 166 local cases passed across these runs |
+| Isolated localhost `test:hosted-h1` | Ten Node checks, managed-permission 28-migration replay/seed checks and 14 Edge tests passed (41.1 seconds) |
+| Desktop/mobile visual review | 1366 × 768 and 390 × 844; Thai tiles/filters/table, keyboard controls and no page overflow |
+
+The first full browser run exposed an old source-picker mock that returned an
+array for the new completeness endpoint, and a rights-review test selecting an
+off-screen item among asynchronous fixture previews. Source mocks now return the
+actual dashboard shape; the rights test first searches for its exact synthetic
+file. The four affected regression cases passed in a separate rerun. Failed runs
+are not counted as final full-suite passes. Screenshots and local receipts remain
+ignored; all repository test records are synthetic.
+
+The later localhost reset occurred only in the idempotent test-persona setup
+after the upload/rights assertions had passed. That helper now permits one native
+Playwright retry for `ECONNRESET`; HTTP failures and content writes are not retried.
+Final readback at `2026-10-02T10:32:18.628Z` compared all 32 names/slugs/locale flags
+against their original preview, found zero brand versions/logo bindings and exactly
+32 INSERT audits, and compared the six excluded source/Hub rows against the private
+creation receipt. All were unchanged. Evidence stays in
+`.local/brand-bulk/final-verification.json`.
 
 ## Verification
 

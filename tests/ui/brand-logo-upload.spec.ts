@@ -31,7 +31,7 @@ function png(width = 64, height = 32) {
 }
 
 async function session(page: Page, role: string) {
-  expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy();
+  expect((await page.request.post('/api/local-session', { headers, data: { role }, maxRetries: 1 })).ok()).toBeTruthy();
 }
 
 async function fixture(page: Page) {

@@ -159,9 +159,8 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     await expect(page.locator('.detail-heading').getByText('เผยแพร่แล้ว', { exact: true })).toBeVisible();
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
     await page.goto('/?view=brands');
-    const changed = page.locator('.brand-card').filter({ has: page.getByRole('heading', { name: `${data.name} ฉบับใหม่`, exact: true }) });
-    await expect(changed.getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toBeVisible();
-    await expect(changed.getByText('เผยแพร่แล้ว', { exact: true })).toBeVisible();
+    const changed = page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: `${data.name} ฉบับใหม่`, exact: true }) });
+    await expect(changed.getByText(/เผยแพร่แล้ว · มีการแก้ไขรอเผยแพร่/)).toBeVisible();
     await changed.click();
     await role(page, 'publisher');
     await publish(page, 'เผยแพร่แบรนด์สมมติครั้งที่สอง', { before: data.name, after: `${data.name} ฉบับใหม่` });
@@ -268,7 +267,7 @@ test('brand requests, exact project association, viewer permissions and mobile l
     await expect(requestRow.getByText('รอตรวจสอบ', { exact: true })).toBeVisible();
     await role(page, 'admin');
     await expect.poll(() => page.locator('#brand-requests').evaluate(element => {
-      const grid = document.querySelector('.brand-grid');
+      const grid = document.querySelector('.brand-completeness-table');
       return !!grid && !!(element.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING);
     })).toBe(true);
     await expect(page.locator('#brand-requests .count')).not.toHaveText('0');

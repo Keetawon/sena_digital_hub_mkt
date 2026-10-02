@@ -138,6 +138,11 @@
       "name": "202610020027_hub_published_export.sql",
       "canonical_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b",
       "executed_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b"
+    },
+    {
+      "name": "202610020028_brand_completeness.sql",
+      "canonical_sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f",
+      "executed_sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f"
     }
   ]
 }

@@ -6,7 +6,8 @@ import type { Project } from "./hub-admin";
 import { AssetDialog, Preview, ProjectAssets, RightsBadge, type AssetBinding } from "./project-assets";
 import { request } from "./hub-request";
 import { DemoFields } from "./demo-fields";
-import { brandFilters, brandHasChanges, brandReviewCounts, brandReviewFields, matchesBrandFilter, useBrandReviews, type BrandFilter, type BrandSnapshot, type BrandVersion } from "./brand-review";
+import { BrandDashboard } from "./brand-dashboard";
+import { brandHasChanges, brandReviewFields, useBrandReviews, type BrandSnapshot, type BrandVersion } from "./brand-review";
 import "./brand-admin.css";
 
 type Localized = { th?: string; [locale: string]: string | undefined };
@@ -14,6 +15,7 @@ export type BrandSource = { rem_brand_id: string; brand_name_rem: string | null;
 export type BrandSummary = { demo_fields?: unknown; id: string; public_brand_id: string; rem_brand_id: string; public_name: Localized; status: "active" | "inactive"; publication_available: boolean };
 export type Brand = BrandSummary & {
   description: Localized; slug: string; updated_at: string; published_version_id: string | null;
+  unconfirmed_source_names?: string[]; source_name_provenance?: Record<string, unknown>; updated_by?: string | null;
   readiness: { ready: boolean; percent: number; missing: { field: string; message: string }[] };
   source: BrandSource; assets: AssetBinding[];
   projects: { id: string; public_project_id: string; public_name: Localized; source: { rem_project_id: string; rem_company_id: string | null; company_name_rem: string | null } }[];
@@ -39,24 +41,17 @@ export function BrandWorkspace({ brandId, role, onDirtyChange }: { brandId: stri
 }
 
 function BrandOverview({ role }: { role: LocalRole }) {
-  const { rows, loading, error, reload: load, enabled } = useBrandReviews();
+  const { rows, reload: load, enabled } = useBrandReviews();
   const brands = rows.map(row => row.brand);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<BrandFilter>("all");
   const [sources, setSources] = useState(false);
-  const counts = brandReviewCounts(rows);
-  const filtered = rows.filter(row => matchesBrandFilter(row, filter) && `${row.brand.public_name.th ?? ""} ${row.brand.rem_brand_id} ${row.brand.slug}`.toLocaleLowerCase("th").includes(search.trim().toLocaleLowerCase("th")));
   if (!enabled) return <div className="notice error" role="alert">บัญชีนี้ไม่มีสิทธิ์เปิดรายการแบรนด์ กรุณาเลือกบทบาทที่มีสิทธิ์</div>;
   return <>
     <div className="page-heading"><div><p className="eyebrow">ข้อมูลแบรนด์ที่ใช้ร่วมกัน</p><h1>แบรนด์ที่อยู่อาศัย</h1><p className="muted">จัดเตรียมชื่อ รายละเอียด และโลโก้ให้ตรวจสอบก่อนเผยแพร่</p></div><span className="scope-pill"><span />SENA Residential</span></div>
-    {role === "admin" && <BrandRequests role={role} brands={brands} />}
-    <div className="section-heading"><h2>แบรนด์ในพื้นที่ทำงาน {!loading && !error && <span className="count">{brands.length}</span>}</h2><button className="button secondary" aria-expanded={sources} aria-controls="brand-source-picker" onClick={() => setSources(!sources)}>{sources ? "ปิดต้นทางแบรนด์" : "ดูแบรนด์จากต้นทาง"}</button></div>
-    {sources && <BrandSourcePicker role={role} />}
-    <div className="form-field"><label htmlFor="brand-search">ค้นหาชื่อหรือรหัสแบรนด์</label><input id="brand-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>
-    <div className="brand-review-filters" role="group" aria-label="สถานะตรวจแบรนด์">{brandFilters.map(item => <button key={item.value} className="button secondary" aria-pressed={filter === item.value} disabled={loading || Boolean(error)} onClick={() => setFilter(item.value)}>{item.label} <span className="count">{loading || error ? "…" : counts[item.value] ?? "—"}</span></button>)}</div>
-    {!loading && !error && counts.pending === null && <p className="notice error" role="alert">โหลดข้อมูลเปรียบเทียบบางแบรนด์ไม่สำเร็จ จำนวนรอเผยแพร่และหยุดแสดงยังไม่ครบ <button className="button secondary" onClick={() => void load()}>ลองโหลดสถานะแบรนด์อีกครั้ง</button></p>}
-    <p className="field-help brand-filter-help">จำนวนเป็นสถานะของทุกแบรนด์ แบรนด์ที่เผยแพร่แล้วอาจมีการแก้ไขรอเผยแพร่ด้วย</p>
-    {loading ? <Loading /> : error ? <LoadError error={error} retry={load} /> : !filtered.length ? <div className="empty-state compact"><h2>{search || filter !== "all" ? "ไม่พบแบรนด์ที่ตรงกับตัวกรอง" : "ยังไม่มีแบรนด์ในพื้นที่ทำงาน"}</h2><p>ผู้ดูแลระบบเลือกแบรนด์จากต้นทางได้ หรือส่งคำขอให้ตรวจสอบแบรนด์ที่ต้องการ</p></div> : <div className="brand-grid">{filtered.map(({ brand, versions, error: reviewError }) => <a className="brand-card panel" key={brand.id} href={brandHref(brand.public_brand_id)}><DemoFields fields={brand.demo_fields} /><div className="brand-card-heading"><h3>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h3><BrandStatus brand={brand} changed={reviewError ? null : brandHasChanges(brand, versions)} hasHistory={versions.length > 0} /></div><p className="small-text muted source-code">รหัสแบรนด์ REM {brand.rem_brand_id}</p><p>{brand.description?.th || "ยังไม่มีคำอธิบายแบรนด์"}</p><p className="small-text muted">{brand.status === "active" ? "ข้อมูลร่าง: เปิดใช้งาน" : "ข้อมูลร่าง: ปิดใช้งาน"} · พร้อม {brand.readiness?.percent ?? 0}%</p>{(reviewError || brandHasChanges(brand, versions) === null) && <p className="field-error">ยังเปรียบเทียบเวอร์ชันที่เผยแพร่ไม่ได้</p>}<span className="open-project">จัดการแบรนด์ <span aria-hidden="true">→</span></span></a>)}</div>}
+    <BrandDashboard role={role} onChanged={load}>
+      {role === "admin" && <BrandRequests role={role} brands={brands} />}
+      <div className="section-heading"><h2>แบรนด์ในพื้นที่ทำงาน</h2><button className="button secondary" aria-expanded={sources} aria-controls="brand-source-picker" onClick={() => setSources(!sources)}>{sources ? "ปิดต้นทางแบรนด์" : "ดูแบรนด์จากต้นทาง"}</button></div>
+      {sources && <BrandSourcePicker role={role} />}
+    </BrandDashboard>
     {role !== "admin" && <BrandRequests role={role} brands={brands} />}
   </>;
 }
@@ -148,8 +143,8 @@ function ResolveBrandDialog({ item, brands, onCancel, onSaved, onReload }: { ite
   </AssetDialog>;
 }
 
-type BrandDraft = { name: string; description: string; slug: string; status: "active" | "inactive" };
-const draftFrom = (brand: Brand): BrandDraft => ({ name: brand.public_name.th ?? "", description: brand.description?.th ?? "", slug: brand.slug ?? "", status: brand.status });
+type BrandDraft = { name: string; nameEn: string; description: string; slug: string; status: "active" | "inactive" };
+const draftFrom = (brand: Brand): BrandDraft => ({ name: brand.public_name.th ?? "", nameEn: brand.public_name.en ?? "", description: brand.description?.th ?? "", slug: brand.slug ?? "", status: brand.status });
 
 function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
   const { reload: reloadReviews } = useBrandReviews();
@@ -185,7 +180,7 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
     setError(""); setConflict(false); setNotice("");
     if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) { setError("ชื่ออ้างอิงแบรนด์ใช้ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง"); document.getElementById("brand-slug")?.focus(); return; }
     setSaving(true);
-    try { update(await request<Brand>(base, "PATCH", { updated_at: brand.updated_at, public_name: { ...brand.public_name, th: draft.name }, description: { ...brand.description, th: draft.description }, slug: draft.slug, status: draft.status })); setNotice("บันทึกข้อมูลร่างแบรนด์แล้ว ข้อมูลที่เผยแพร่ยังเป็นเวอร์ชันเดิม"); }
+    try { update(await request<Brand>(base, "PATCH", { updated_at: brand.updated_at, public_name: { ...brand.public_name, th: draft.name, ...(draft.nameEn || brand.public_name.en !== undefined ? { en: draft.nameEn } : {}) }, description: { ...brand.description, th: draft.description }, slug: draft.slug, status: draft.status })); setNotice("บันทึกข้อมูลร่างแบรนด์แล้ว ข้อมูลที่เผยแพร่ยังเป็นเวอร์ชันเดิม"); }
     catch (error) { setError(message(error)); setConflict((error as { status?: number }).status === 409); }
     finally { setSaving(false); }
   }
@@ -205,8 +200,10 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
     </div><div className="detail-tabs brand-workspace-tabs" role="tablist" aria-label="ข้อมูลแบรนด์">{(["content", "versions"] as const).map(value => <button key={value} id={`brand-${value}-tab`} role="tab" aria-selected={tab === value} aria-controls={`brand-${value}-panel`} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={event => { if (["ArrowLeft", "ArrowRight"].includes(event.key)) { event.preventDefault(); const next = value === "content" ? "versions" : "content"; setTab(next); document.getElementById(`brand-${next}-tab`)?.focus(); } }}>{value === "content" ? "ข้อมูลและโลโก้แบรนด์" : "ประวัติการเผยแพร่แบรนด์"}</button>)}</div>
     {tab === "content" ? <div className="brand-workspace-content" id="brand-content-panel" role="tabpanel" aria-labelledby="brand-content-tab"><div className="detail-main">
       <form id="brand-content-form" onSubmit={save} noValidate><section className="panel"><div className="panel-heading"><div><h2>ข้อมูลแบรนด์สำหรับเผยแพร่</h2><p>ชื่อการตลาดแยกจากชื่อต้นทาง โดยคงรหัส REM เดิม</p></div><span className="language-chip">ภาษาไทย</span></div><div className="panel-body">
+        {Boolean(brand.unconfirmed_source_names?.length) && <div className="notice" role="note"><strong>ค่าจากต้นทาง ยังไม่ยืนยัน</strong><p>ชื่อ {brand.unconfirmed_source_names?.join(" / ")} เติมจาก REM และแก้ไขได้ ทีมงานตรวจชื่อก่อนใช้สื่อสาร</p>{canEdit && <button type="button" className="button secondary" disabled={dirty || saving} onClick={async () => { setSaving(true); setError(""); try { update(await request<Brand>(`${base}/confirm-source-names`, "POST", { updated_at: brand.updated_at })); setNotice("ยืนยันชื่อแบรนด์จากต้นทางแล้ว"); } catch (error) { setError(message(error)); } finally { setSaving(false); } }}>ยืนยันชื่อจากต้นทางที่ตรวจแล้ว</button>}</div>}
         {!canEdit ? <><p className="read-only-note">ข้อมูลร่างสำหรับตรวจสอบ · ผู้แก้ไขข้อมูลหรือผู้ดูแลระบบเป็นผู้แก้ไข</p><dl className="brand-review-fields"><div><dt>ชื่อแบรนด์ที่ใช้เผยแพร่</dt><dd>{draft.name || "ยังไม่ได้ระบุ"}</dd></div><div><dt>ชื่ออ้างอิงแบรนด์</dt><dd>{draft.slug || "ยังไม่ได้ระบุ"}</dd></div><div><dt>คำอธิบายแบรนด์ (ภาษาไทย)</dt><dd>{draft.description || "ยังไม่ได้ระบุ"}</dd></div><div><dt>สถานะแบรนด์ในข้อมูลร่าง</dt><dd>{draft.status === "active" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</dd></div></dl></> : <>
         <div className="form-field"><label htmlFor="brand-name">ชื่อแบรนด์ที่ใช้เผยแพร่</label><input id="brand-name" maxLength={250} disabled={!canEdit || saving} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} /></div>
+        <div className="form-field"><label htmlFor="brand-name-en">ชื่อแบรนด์ภาษาอังกฤษ</label><input id="brand-name-en" maxLength={250} disabled={!canEdit || saving} value={draft.nameEn} onChange={event => setDraft({ ...draft, nameEn: event.target.value })} /></div>
         <div className="form-field"><label htmlFor="brand-slug">ชื่ออ้างอิงแบรนด์</label><input id="brand-slug" maxLength={160} disabled={!canEdit || saving} value={draft.slug} onChange={event => setDraft({ ...draft, slug: event.target.value })} /><p className="field-help">ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง เช่น sena-example</p></div>
         <div className="form-field"><label htmlFor="brand-description">คำอธิบายแบรนด์ (ภาษาไทย)</label><textarea id="brand-description" rows={4} maxLength={20000} disabled={!canEdit || saving} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></div>
         <div className="form-field"><label htmlFor="brand-status">สถานะแบรนด์ในข้อมูลร่าง</label><select id="brand-status" disabled={!canEdit || saving} value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value as BrandDraft["status"] })}><option value="active">เปิดใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select><p className="field-help">การแก้ไขสถานะร่างยังไม่เปลี่ยนเวอร์ชันที่เผยแพร่ ใช้ถอนการเผยแพร่เมื่อต้องการหยุดส่งข้อมูลผ่าน API</p></div>

@@ -36,6 +36,7 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/brands\/bulk-(?:preview|create)$/.test(path)) return false;
   if (path.startsWith("v1/admin/assistant") || path.startsWith("v1/admin/ads/archive")) return false;
   if (!path.startsWith("v1/admin/ads/")) return true;
   if (method === "GET") return /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);

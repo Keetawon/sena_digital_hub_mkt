@@ -28,6 +28,7 @@ from .promotions import register_promotion_routes
 from .archive import register_archive_routes
 from .assistant import register_assistant_routes
 from .hosted_assets import BUCKET, HostedAssets
+from .brand_completeness import register_brand_completeness_routes
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -493,6 +494,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             brand_id = await connection.fetchval("SELECT hub.create_brand_from_rem($1)", body.rem_brand_id)
             public_id = await connection.fetchval("SELECT public_brand_id FROM hub.brands WHERE id=$1", brand_id)
             return {"data": await brand_detail(connection, public_id)}
+
+    register_brand_completeness_routes(app, admin, administrator, brand_writer, database, brand_detail, settings)
 
     @app.get("/v1/admin/brands/{public_id}")
     async def brand(public_id: str, request: Request, actor: Actor = Depends(admin)):

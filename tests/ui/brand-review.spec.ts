@@ -41,6 +41,13 @@ async function fixture(page: Page, role = 'publisher') {
     const path = new URL(route.request().url()).pathname;
     if (route.request().method() !== 'GET') { writes.push(path); return route.fulfill({ status: 409, json: { error: { message: 'ชุดทดสอบนี้อ่านข้อมูลเท่านั้น' } } }); }
     if (path === `${api}/brands`) return route.fulfill({ json: { data: rows } });
+    if (path === `${api}/brands/completeness`) {
+      const dashboardRows = rows.map((row, index) => ({ id: row.id, public_brand_id: row.public_brand_id, rem_brand_id: row.rem_brand_id, name_th: row.public_name.th, name_en: row.public_name.en, residential_project_count: 1,
+        status: row.publication_available ? index === 1 ? 'published_changes' : 'published' : row.readiness.ready ? 'ready' : 'missing_data', readiness: row.readiness,
+        checks: { name_th_confirmed: true, description: index !== 2, slug: true, primary_logo: true, logo_rights: true }, optional_logos: [], reason_codes: [], updated_at: stamp, updated_by: 'synthetic-editor',
+        publication_available: row.publication_available, has_unpublished_changes: index === 0 || index === 1, published_version_id: row.published_version_id })).sort((a, b) => b.readiness.missing.length - a.readiness.missing.length || a.rem_brand_id.localeCompare(b.rem_brand_id));
+      return route.fulfill({ json: { data: { rows: dashboardRows, counts: { total: 6, missing_data: 1, ready: 4, published: 2, published_changes: 1, not_created: 0 } } } });
+    }
     const key = path.slice(`${api}/brands/`.length).split('/')[0];
     if (path.endsWith('/versions')) return failVersions ? route.fulfill({ status: 503, json: { error: { message: 'โหลดเวอร์ชันสำหรับตรวจสอบไม่สำเร็จ' } } }) : route.fulfill({ json: { data: versions[key] ?? [] } });
     return route.fulfill({ json: { data: rows.find(row => row.public_brand_id === key) } });
@@ -58,20 +65,20 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
   test(`brand review queue has overlapping counts and publisher menu badge at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport); const data = await fixture(page); await page.goto('/?view=brands');
     const filters: [string, number, string[]][] = [
-      ['ทั้งหมด', 6, ['รอเผยแพร่ครั้งแรก', 'เผยแพร่แล้วมีชื่อใหม่', 'ยังขาดข้อมูล', 'ฉบับร่างตรงกับที่เผยแพร่', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
-      ['รอเผยแพร่', 2, ['รอเผยแพร่ครั้งแรก', 'เผยแพร่แล้วมีชื่อใหม่']],
-      ['ยังไม่พร้อม', 1, ['ยังขาดข้อมูล']],
+      ['ทั้งหมด', 6, ['ยังขาดข้อมูล', 'เผยแพร่แล้วมีชื่อใหม่', 'รอเผยแพร่ครั้งแรก', 'ฉบับร่างตรงกับที่เผยแพร่', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
+      ['พร้อมเผยแพร่', 4, ['เผยแพร่แล้วมีชื่อใหม่', 'รอเผยแพร่ครั้งแรก', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
+      ['ยังขาดข้อมูล', 1, ['ยังขาดข้อมูล']],
       ['เผยแพร่แล้ว', 2, ['เผยแพร่แล้วมีชื่อใหม่', 'ฉบับร่างตรงกับที่เผยแพร่']],
-      ['หยุดแสดง', 2, ['แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
+      ['เผยแพร่แล้วมีการแก้ไข', 1, ['เผยแพร่แล้วมีชื่อใหม่']],
     ];
     for (const [label, count, titles] of filters) {
       const filter = page.getByRole('button', { name: `${label} ${count}`, exact: true });
       await expect(filter).toBeVisible(); await filter.click(); await expect(filter).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('.brand-card h3')).toHaveText(titles);
+      await expect(page.locator('.brand-table-row td[data-label="ชื่อแบรนด์"] > a')).toHaveText(titles);
     }
     await page.getByRole('button', { name: 'ทั้งหมด 6', exact: true }).click();
-    await expect(page.locator('.brand-card').filter({ has: page.getByRole('heading', { name: 'ฉบับร่างตรงกับที่เผยแพร่', exact: true }) }).getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
-    await expect(page.locator('.brand-card').filter({ has: page.getByRole('heading', { name: 'แบรนด์ถอนการเผยแพร่', exact: true }) }).getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
+    await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'ฉบับร่างตรงกับที่เผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);
+    await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'แบรนด์ถอนการเผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);
     await openMenu(page);
     const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
     const link = menu.getByRole('link', { name: 'แบรนด์ที่อยู่อาศัย', exact: true });
@@ -102,12 +109,10 @@ test('logo content changes count as edits while readonly metadata and ordering d
 
 test('unavailable version reads stay unknown and block publication until exact snapshots reload', async ({ page }) => {
   const data = await fixture(page); data.failVersions(true); await page.goto('/?view=brands');
-  await expect(page.getByRole('button', { name: 'รอเผยแพร่ —', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'หยุดแสดง —', exact: true })).toBeVisible();
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('จำนวนรอเผยแพร่และหยุดแสดงยังไม่ครบ');
+  await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).locator('.hub-nav-count')).toHaveText('…');
-  data.failVersions(false); await page.getByRole('button', { name: 'ลองโหลดสถานะแบรนด์อีกครั้ง', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'รอเผยแพร่ 2', exact: true })).toBeVisible();
+  data.failVersions(false); await page.reload();
+  await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   data.failVersions(true); await page.goto('/?brand=brd_changed');
   const publish = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
   await expect(publish).toBeDisabled();
