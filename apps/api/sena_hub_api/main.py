@@ -6,11 +6,13 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 from uuid import UUID
+from urllib.parse import quote
 
 import asyncpg
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from starlette.exceptions import HTTPException
 
@@ -25,6 +27,7 @@ from .actuals import register_actuals_routes
 from .promotions import register_promotion_routes
 from .archive import register_archive_routes
 from .assistant import register_assistant_routes
+from .hosted_assets import BUCKET, HostedAssets
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -239,6 +242,7 @@ async def brand_detail(connection, public_id: str):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     authentication = Authentication(settings)
+    hosted_assets = HostedAssets(settings) if settings.environment == "hosted-test" else None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -250,12 +254,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except Exception:
             raise RuntimeError("เชื่อมต่อฐานข้อมูล Hub ไม่สำเร็จ กรุณาตรวจการตั้งค่าฝั่งเซิร์ฟเวอร์") from None
         try:
+            if hosted_assets:
+                async with app.state.pool.acquire() as connection:
+                    if await connection.fetchval("SELECT hub.hosted_test_profile()") is not True:
+                        raise RuntimeError("ฐานข้อมูลไม่ได้ใช้โปรไฟล์ H1 ที่ได้รับอนุญาต")
+                    async with connection.transaction():
+                        await connection.execute("SET LOCAL ROLE admin")
+                        flags = await connection.fetchval("SELECT ads.registry_settings()")
+                        issuing = await connection.fetchval("SELECT ads.test_issuing_enabled()")
+                        if flags["sena_h_approved"] is not False or issuing is not False:
+                            raise RuntimeError("H1 ต้องปิดการออกชื่อและคงสถานะรออนุมัติ")
             yield
         finally:
             await app.state.pool.close()
 
     app = FastAPI(title="SENA Hub API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.authentication = authentication
+    if hosted_assets:
+        app.add_middleware(CORSMiddleware, allow_origins=[settings.admin_origin],
+                           allow_credentials=False, allow_methods=["GET", "POST", "PATCH"],
+                           allow_headers=["Authorization", "Content-Type", "X-Filename"],
+                           expose_headers=["Content-Disposition"])
 
     @app.middleware("http")
     async def no_cache(request, call_next):
@@ -331,7 +350,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return actor
 
     def require_local_assets():
-        if settings.environment != "local":
+        if settings.environment not in {"local", "hosted-test"}:
             raise failure(503, "local_storage_only", "ระบบไฟล์ชุดนี้เปิดใช้เฉพาะสภาพแวดล้อมภายในเครื่อง")
 
     async def remove_unregistered_file(request, actor, metadata):
@@ -357,12 +376,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         require_local_assets()
         content, mime, filename = await asset_files.read_upload(request)
         content, metadata = await asyncio.to_thread(asset_files.prepare_upload, content, mime, filename)
+        if hosted_assets:
+            metadata.update(storage_provider="supabase", storage_bucket=BUCKET)
         created = False
         try:
             async with database(request, actor) as connection:
                 await connection.execute("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", metadata["checksum"])
                 result = await connection.fetchval("SELECT hub.register_uploaded_asset($1)", metadata)
-                created = await asyncio.to_thread(asset_files.install_file, content, metadata)
+                if hosted_assets:
+                    remote_metadata = {**metadata, "source_system": "hub-hosted-test"}
+                    await asyncio.to_thread(hosted_assets.install, content, remote_metadata)
+                else:
+                    created = await asyncio.to_thread(asset_files.install_file, content, metadata)
         except Exception:
             if created:
                 await remove_unregistered_file(request, actor, metadata)
@@ -392,6 +417,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             metadata = await connection.fetchval(query, asset_id)
         if metadata is None:
             raise failure(404, "file_not_found", "ไม่พบไฟล์ที่มีสิทธิ์เข้าถึง")
+        if hosted_assets:
+            content = await asyncio.to_thread(hosted_assets.read, metadata)
+            disposition = "attachment" if metadata["mime_type"] == "application/pdf" else "inline"
+            return Response(content, media_type=metadata["mime_type"], headers={
+                "Content-Disposition": f"{disposition}; filename*=utf-8''{quote(metadata['original_filename'])}",
+                "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                "Content-Security-Policy": "sandbox; default-src 'none'; frame-ancestors 'none'",
+                "X-Frame-Options": "DENY",
+            })
         path = await asyncio.to_thread(asset_files.readable_file, metadata)
         return FileResponse(path, media_type=metadata["mime_type"], filename=metadata["original_filename"],
                             content_disposition_type="attachment" if metadata["mime_type"] == "application/pdf" else "inline",
@@ -410,6 +444,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health")
     async def health():
         return {"status": "ok"}
+
+    @app.get("/v1/capabilities")
+    async def capabilities(actor: Actor = Depends(authentication)):
+        if actor.role == "service_consumer":
+            raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบจัดการ")
+        return {"data": {"environment": settings.environment,
+                         "milestone": "H1" if hosted_assets else None,
+                         "enabled": ["residential", "assets", "registry", "agency-inbox"],
+                         "deferred": ["finance", "actuals", "documents", "assistant"] if hosted_assets else [],
+                         "remark": "ยังไม่เปิดใช้ใน H1 รอความพร้อมระยะ H2 ขึ้นไป" if hosted_assets else None}}
 
     @app.get("/v1/admin/projects")
     async def projects(request: Request, actor: Actor = Depends(admin)):
@@ -748,10 +792,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_facility_routes(app, admin, writer, database, detail)
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_ads_routes(app, authentication, database, settings)
-    register_finance_routes(app, authentication, database)
     register_question_routes(app, authentication)
-    register_actuals_routes(app, authentication, database, settings)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)
-    register_archive_routes(app, authentication, database, settings)
-    register_assistant_routes(app, authentication, database, settings)
+    if hosted_assets:
+        @app.api_route("/v1/admin/ads/{deferred_path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
+        @app.api_route("/v1/admin/assistant/{deferred_path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
+        async def deferred_module(deferred_path: str, actor: Actor = Depends(authentication)):
+            raise failure(503, "hosted_h1_unavailable", "ยังไม่เปิดใช้ใน H1 รอความพร้อมระยะ H2 ขึ้นไป")
+    else:
+        register_finance_routes(app, authentication, database)
+        register_actuals_routes(app, authentication, database, settings)
+        register_archive_routes(app, authentication, database, settings)
+        register_assistant_routes(app, authentication, database, settings)
     return app

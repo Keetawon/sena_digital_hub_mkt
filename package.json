@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev:hosted-h1": "node scripts/run-hosted-h1.mjs",
+    "test:hosted-h1": "node --test tests/supabase-test-migrations.test.mjs tests/hosted-test-mock.test.mjs && node scripts/run-hosted-h1.mjs --test",
     "dev:db": "node scripts/local-db.mjs",
     "dev:migrate": "node scripts/local-migrations.mjs",
     "dev:dw-reader": "node scripts/provision-dw-reader.mjs",

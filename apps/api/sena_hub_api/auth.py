@@ -6,7 +6,7 @@ import os
 import re
 import secrets
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
 import jwt
@@ -19,6 +19,7 @@ DEMO_ROLES = (*ROLES, "online_staff", "agency_kin", "agency_combay")
 DEMO_ACTORS = {role: UUID(int=index + 1) for index, role in enumerate(ROLES)}
 ALL_DEMO_ACTORS = {role: UUID(int=index + 1) for index, role in enumerate(DEMO_ROLES)}
 DEMO_AGENCIES = {"agency_kin": "KIN", "agency_combay": "COMBAY"}
+HOSTED_TEST_REF = "eqlrtevwpyboplljgowo"
 
 
 def failure(status: int, code: str, message: str) -> HTTPException:
@@ -32,13 +33,46 @@ class Settings:
     environment: str
     demo_tokens: dict[str, str] = field(default_factory=dict, repr=False)
     supabase_url: str = ""
+    hosted_test_simulation: bool = False
+    admin_origin: str = ""
+    supabase_storage_key: str = field(default="", repr=False)
 
     def __post_init__(self):
         database = urlparse(self.database_url)
         if database.scheme not in {"postgres", "postgresql"} or not database.hostname:
             raise ValueError("กรุณากำหนด HUB_DATABASE_URL สำหรับ PostgreSQL")
-        if self.environment not in {"local", "production"}:
-            raise ValueError("กรุณากำหนด HUB_ENV เป็น local หรือ production")
+        if self.environment not in {"local", "production", "hosted-test"}:
+            raise ValueError("กรุณากำหนด HUB_ENV เป็น local, hosted-test หรือ production")
+        if self.hosted_test_simulation and self.environment != "hosted-test":
+            raise ValueError("การจำลอง H1 ต้องใช้สภาพแวดล้อม hosted-test")
+        if self.environment == "hosted-test":
+            origin = urlparse(self.admin_origin)
+            query = parse_qs(database.query, keep_blank_values=True)
+            if (database.fragment or set(query) - {"sslmode", "sslrootcert"}
+                    or any(len(values) != 1 or not values[0] for values in query.values())):
+                raise ValueError("ตัวเลือกการเชื่อมต่อฐานข้อมูล H1 ไม่ถูกต้อง")
+            if self.auth_mode != "supabase" or self.demo_tokens and any(self.demo_tokens.values()):
+                raise ValueError("ระบบทดสอบ H1 ต้องเข้าสู่ระบบด้วยบัญชี Supabase เท่านั้น")
+            if self.hosted_test_simulation:
+                if (database.hostname != "127.0.0.1" or database.port != 55434
+                        or database.path != "/hub_hosted_test_simulation"
+                        or (query and query != {"sslmode": ["disable"]})
+                        or self.supabase_url != "http://127.0.0.1:54329"
+                        or self.admin_origin != "http://127.0.0.1:3001"):
+                    raise ValueError("การจำลอง H1 ใช้ได้เฉพาะฐานข้อมูลและบริการจำลองภายในเครื่องที่กำหนด")
+            else:
+                direct = database.hostname == f"db.{HOSTED_TEST_REF}.supabase.co"
+                pooler = (database.hostname.endswith(".pooler.supabase.com")
+                          and database.username == f"hub_runtime.{HOSTED_TEST_REF}")
+                if (self.supabase_url != f"https://{HOSTED_TEST_REF}.supabase.co"
+                        or not (direct or pooler) or database.path != "/postgres" or database.port not in {None, 5432}
+                        or query.get("sslmode") != ["verify-full"]
+                        or origin.scheme != "https" or not origin.hostname):
+                    raise ValueError("ระบบทดสอบ H1 ต้องใช้โครงการที่อนุญาตและตรวจสอบ TLS เท่านั้น")
+            if (origin.path not in {"", "/"} or origin.query or origin.fragment or origin.username
+                    or database.username not in {"hub_runtime", f"hub_runtime.{HOSTED_TEST_REF}"}
+                    or len(self.supabase_storage_key) < 20):
+                raise ValueError("การตั้งค่าบัญชีระบบ พื้นที่ไฟล์ หรือที่มาของหน้าเว็บ H1 ไม่ถูกต้อง")
         if self.auth_mode == "demo":
             if self.environment != "local" or database.hostname not in {
                 "localhost", "127.0.0.1", "::1"
@@ -53,7 +87,8 @@ class Settings:
                 raise ValueError("token สาธิตทะเบียนต้องกำหนดครบทั้ง 3 บัญชีและต่างจากทุกบัญชีเดิม")
         elif self.auth_mode == "supabase":
             url = urlparse(self.supabase_url)
-            if url.scheme != "https" or not url.hostname or url.path not in {"", "/"} or url.query or url.fragment or url.username:
+            if ((url.scheme != "https" and not self.hosted_test_simulation) or not url.hostname
+                    or url.path not in {"", "/"} or url.query or url.fragment or url.username):
                 raise ValueError("กรุณากำหนด HUB_SUPABASE_URL เป็น HTTPS origin ที่เชื่อถือได้")
         else:
             raise ValueError("กรุณากำหนด HUB_AUTH_MODE เป็น demo หรือ supabase")
@@ -66,6 +101,9 @@ class Settings:
             environment=os.getenv("HUB_ENV", ""),
             demo_tokens={role: os.getenv(f"HUB_DEMO_{role.upper()}_TOKEN", "") for role in DEMO_ROLES},
             supabase_url=os.getenv("HUB_SUPABASE_URL", "").rstrip("/"),
+            hosted_test_simulation=os.getenv("HUB_HOSTED_TEST_SIMULATION", "") == "1",
+            admin_origin=os.getenv("HUB_ADMIN_ORIGIN", "").rstrip("/"),
+            supabase_storage_key=os.getenv("HUB_SUPABASE_STORAGE_KEY", ""),
         )
 
 
@@ -110,7 +148,7 @@ class Authentication:
 
     async def __call__(self, request: Request) -> Actor:
         # Do not accept client role headers, user_metadata, or the top-level JWT role.
-        if self.settings.auth_mode == "demo":
+        if self.settings.auth_mode == "demo" or self.settings.hosted_test_simulation:
             try:
                 local = bool(request.client) and ipaddress.ip_address(request.client.host).is_loopback
             except ValueError:

@@ -3,10 +3,13 @@ import { readFile, readdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import pg from 'pg';
 
-const SOURCE = 'sena-hub-supabase-test-v1';
+export const SOURCE = 'sena-hub-supabase-test-v2';
+export const PROFILE = 'hosted-test-settings-v1';
+export const PROJECT_REF = 'eqlrtevwpyboplljgowo';
 const SCHEMAS = ['hub', 'public_api', 'staging', 'audit', 'internal', 'rag', 'ads', 'ads_export'];
 const ACTORS = ['editor', 'publisher', 'viewer', 'service_consumer', 'admin', 'online_staff', 'agency'];
-const OWNERS = ['ads_registry_writer', 'ads_export_owner', 'ads_export_reader'];
+const OWNERS = ['ads_registry_writer', 'ads_export_owner', 'ads_export_reader', 'ads_finance_writer', 'ads_actuals_writer', 'ads_document_worker'];
+const OWNER_SCHEMAS = {ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging']};
 const ROLES = [...ACTORS, ...OWNERS, 'hub_runtime'];
 const HISTORY = 'hub_deployment.schema_migrations';
 const LOCK = 1936027233;
@@ -18,7 +21,7 @@ const literal = value => `'${value.replaceAll("'", "''")}'`;
 export function configuration(env, args = []) {
   if (args.some((arg, i) => arg !== '--apply' && arg !== '--project-ref' && args[i - 1] !== '--project-ref')) fail('Unknown argument. Use --project-ref <ref> and optional --apply.');
   const projectRef = env.HUB_SUPABASE_TEST_PROJECT_REF;
-  if (!projectRef || !/^[a-z]{20}$/.test(projectRef)) fail('Set HUB_SUPABASE_TEST_PROJECT_REF to the dedicated test project reference.');
+  if (projectRef !== PROJECT_REF) fail('Only the approved dedicated TEST project is accepted.');
   const namedRef = args[args.indexOf('--project-ref') + 1];
   if (!args.includes('--project-ref') || namedRef !== projectRef) fail('Provide --project-ref matching HUB_SUPABASE_TEST_PROJECT_REF.');
   const missing = ['HUB_SUPABASE_TEST_ADMIN_DATABASE_URL', 'HUB_SUPABASE_TEST_RUNTIME_PASSWORD'].filter(key => !env[key]);
@@ -76,20 +79,31 @@ export function migrationBody(sql) {
   return body;
 }
 
-export async function loadMigrations(directory = new URL('../supabase/migrations/', import.meta.url)) {
+export async function loadMigrations(directory = new URL('../supabase/migrations/', import.meta.url), profileFile = new URL('../supabase/hosted-test/profile.json', import.meta.url)) {
+  const profile = JSON.parse(await readFile(profileFile, 'utf8'));
+  if (profile.profile !== PROFILE || profile.project_ref !== PROJECT_REF || profile.environment !== 'hosted-test') fail('Unexpected hosted TEST profile identity.');
   const names = (await readdir(directory)).filter(name => /^\d{12}_.+\.sql$/.test(name)).sort();
-  if (names.length !== 14 || names.some((name, index) => Number(name.slice(8, 12)) !== index + 1)) fail('This runner is pinned to migrations 0001 through 0014 only.');
-  return Promise.all(names.map(async name => {
-    const sql = await readFile(new URL(name, directory), 'utf8');
-    return { name, checksum: createHash('sha256').update(sql).digest('hex'), body: migrationBody(sql) };
+  if (names.length !== profile.migrations.length || names.some((name,index) => name !== profile.migrations[index].name || Number(name.slice(8,12)) !== index+1)) fail('Migration inventory changed; review and version the hosted profile.');
+  return Promise.all(profile.migrations.map(async entry => {
+    const canonical = await readFile(new URL(entry.name,directory),'utf8');
+    const checksum = createHash('sha256').update(canonical).digest('hex');
+    if (checksum !== entry.canonical_sha256) fail(`Canonical migration checksum changed: ${entry.name}.`);
+    let sql=canonical;
+    if (entry.variant) {
+      if (entry.name !== '202609290014_ads_registry.sql' || entry.variant !== '202609290014_ads_registry.settings-v1.sql') fail('Unexpected migration variant.');
+      sql=await readFile(new URL(entry.variant,profileFile),'utf8');
+    }
+    const executedChecksum=createHash('sha256').update(sql).digest('hex');
+    if (executedChecksum !== entry.executed_sha256) fail(`Executed migration checksum changed: ${entry.name}.`);
+    return {name:entry.name,checksum,executedChecksum,body:migrationBody(sql)};
   }));
 }
 
-export function verifyHistory(rows, migrations, projectRef) {
-  if (rows.length > migrations.length) fail('Unexpected migration history.');
-  rows.forEach((row, index) => {
-    const migration = migrations[index];
-    if (row.name !== migration.name || row.checksum !== migration.checksum || row.project_ref !== projectRef || row.source !== SOURCE) fail('Migration history is foreign, out of order, or its file checksum changed.');
+export function verifyHistory(rows,migrations,projectRef) {
+  if(rows.length>migrations.length) fail('Unexpected migration history.');
+  rows.forEach((row,index)=>{
+    const m=migrations[index];
+    if(row.name!==m.name || row.checksum!==m.checksum || row.executed_checksum!==m.executedChecksum || row.project_ref!==projectRef || row.source!==SOURCE || row.profile!==PROFILE || row.environment!=='hosted-test') fail('Migration history is foreign, out of order, or its file checksum changed.');
   });
 }
 
@@ -102,18 +116,22 @@ async function inspect(client, migrations, config) {
   if (history.supabase && (await client.query('select 1 from supabase_migrations.schema_migrations limit 1')).rowCount) fail('Existing Supabase migration history requires explicit reconciliation.');
   if (namespaces.some(row => row.owner !== actor.name)) fail('Existing Hub schema has an unexpected owner.');
   if (!history.hub && namespaces.length) fail('Existing Hub schema has no trusted deployment history.');
-  const rows = history.hub ? (await client.query(`select name,checksum,project_ref,source from ${HISTORY} order by name`)).rows : [];
+  const rows = history.hub ? (await client.query(`select name,checksum,executed_checksum,project_ref,source,profile,environment from ${HISTORY} order by name`)).rows : [];
   verifyHistory(rows, migrations, config.projectRef);
-  if (rows.length < 14 && !(await client.query("select has_parameter_privilege(current_user,'app.ads_test_issuing','SET') as allowed")).rows[0].allowed) fail('Migration 0014 requires SET ON PARAMETER app.ads_test_issuing for the migration login. Ask the managed database administrator to grant that narrow privilege; this runner cannot self-elevate. No migration applied.');
-  if (history.hub && !(await client.query('select 1 from hub_deployment.target where project_ref=$1 and source=$2', [config.projectRef, SOURCE])).rowCount) fail('Deployment target provenance does not match this test project.');
-  const expectedSchemas = rows.length ? SCHEMAS.slice(0, rows.length === 14 ? 8 : 6) : [];
-  const actualSchemas = namespaces.map(row => row.nspname).filter(name => name !== 'hub_deployment').sort();
-  if (JSON.stringify(actualSchemas) !== JSON.stringify([...expectedSchemas].sort())) fail('Hub schemas do not match recorded migrations.');
-  const expectedRoles = [...(rows.length ? ACTORS.slice(0, rows.length >= 6 ? 5 : 4) : []), ...(rows.length === 14 ? ['online_staff', 'agency', ...OWNERS] : [])];
+  if (history.hub && !(await client.query('select 1 from hub_deployment.target where project_ref=$1 and source=$2 and profile=$3 and environment=$4',[config.projectRef,SOURCE,PROFILE,'hosted-test'])).rowCount) fail('Deployment target provenance does not match this TEST profile.');
+  const count=rows.length;
+  const expectedSchemas=count?SCHEMAS.slice(0,count>=14?8:6):[];
+  const actualSchemas=namespaces.map(row=>row.nspname).filter(name=>name!=='hub_deployment').sort();
+  if(JSON.stringify(actualSchemas)!==JSON.stringify([...expectedSchemas].sort())) fail('Hub schemas do not match recorded migrations.');
+  const expectedRoles=[...(count?ACTORS.slice(0,count>=6?5:4):[]),...(count>=14?['online_staff','agency','ads_registry_writer','ads_export_owner','ads_export_reader']:[]),...(count>=15?['ads_finance_writer']:[]),...(count>=16?['ads_actuals_writer']:[]),...(count>=22?['ads_document_worker']:[])];
+  if(count>=14) {
+    const flags=(await client.query("select key,value from ads.setting where key in ('sena_h_approved','hosted_test_issuing_enabled') order by key")).rows;
+    if(flags.length!==2 || flags.some(row=>row.value!==false)) fail('H1 requires both issuance flags false; runner never enables or resets flags.');
+  }
   const { rows: roles } = await client.query('select rolname,rolsuper,rolcreaterole,rolcreatedb,rolreplication,rolbypassrls,rolinherit,rolcanlogin from pg_roles where rolname=any($1)', [ROLES]);
   for (const role of roles) {
     if (role.rolname === 'hub_runtime') {
-      if (rows.length !== 14 || !history.hub) fail('Unexpected existing runtime login.');
+      if (rows.length !== migrations.length || !history.hub) fail('Unexpected existing runtime login.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
     if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');
   }
@@ -126,29 +144,39 @@ async function inspect(client, migrations, config) {
   return { rows, actor: actor.name, runtimeExists: roles.some(role => role.rolname === 'hub_runtime') };
 }
 
-export async function applyMigration(client, migration, config, actor) {
+export async function applyMigration(client,migration,config,actor) {
   await client.query('begin');
+  const temporaryMemberships=new Map(), temporarySchemaGrants=[];
   try {
     await client.query("set local lock_timeout='15s'; set local statement_timeout='120s'; set local standard_conforming_strings=on");
-    const isRegistry = migration.name.startsWith('202609290014_');
-    let memberships = [];
-    if (isRegistry) {
-      if (!/^create schema ads\s*;$/i.test(withoutComments(migration.body[0])) || !/^create schema ads_export\s*;$/i.test(withoutComments(migration.body[1])) || !/^do\s+\$\$/i.test(withoutComments(migration.body[4]))) fail('Registry bootstrap prefix changed; review required.');
-      await client.query(migration.body.slice(0, 5).join('\n'));
-      memberships = (await client.query('select r.rolname,m.admin_option,m.inherit_option,m.set_option,pg_get_userbyid(m.grantor) as grantor from pg_auth_members m join pg_roles r on r.oid=m.roleid where r.rolname=any($1) and m.member=current_user::regrole', [['ads_registry_writer', 'ads_export_owner']])).rows;
-      await client.query(`grant ads_registry_writer,ads_export_owner to ${identifier(actor)} with inherit true,set true`);
-      await client.query('grant create on schema ads to ads_registry_writer; grant create on schema ads_export to ads_export_owner');
-      await client.query(migration.body.slice(5).join('\n'));
-      await client.query('revoke create on schema ads from ads_registry_writer; revoke create on schema ads_export from ads_export_owner');
-      for (const role of ['ads_registry_writer', 'ads_export_owner']) {
-        const previous = memberships.find(row => row.rolname === role && row.grantor === actor);
-        if (previous) await client.query(`grant ${role} to ${identifier(actor)} with inherit ${previous.inherit_option},set ${previous.set_option}`);
-        else await client.query(`revoke ${role} from ${identifier(actor)} granted by ${identifier(actor)}`);
+    // New owner roles/schemas appear at different points in 0014/15/16. Apply the
+    // reviewed statements in order and borrow only ownership-transfer privileges.
+    for(const statement of migration.body) {
+      const existing=(await client.query('select rolname from pg_roles where rolname=any($1)',[Object.keys(OWNER_SCHEMAS)])).rows.map(row=>row.rolname);
+      for(const role of existing) {
+        if(!temporaryMemberships.has(role)) {
+          const previous=(await client.query('select m.admin_option,m.inherit_option,m.set_option from pg_auth_members m where m.roleid=$1::regrole and m.member=current_user::regrole and m.grantor=current_user::regrole',[role])).rows[0]??null;
+          temporaryMemberships.set(role,previous);
+          await client.query(`grant ${identifier(role)} to ${identifier(actor)} with inherit true,set true`);
+        }
+        for(const schema of OWNER_SCHEMAS[role]) {
+          if(!(await client.query('select 1 from pg_namespace where nspname=$1',[schema])).rowCount) continue;
+          if(!(await client.query('select has_schema_privilege($1,$2,\'CREATE\') as allowed',[role,schema])).rows[0].allowed) {
+            await client.query(`grant create on schema ${identifier(schema)} to ${identifier(role)}`);
+            temporarySchemaGrants.push([role,schema]);
+          }
+        }
       }
-    } else await client.query(migration.body.join('\n'));
-    await client.query(`insert into ${HISTORY}(name,checksum,project_ref,source) values($1,$2,$3,$4)`, [migration.name, migration.checksum, config.projectRef, SOURCE]);
+      await client.query(statement);
+    }
+    for(const [role,schema] of temporarySchemaGrants.reverse()) await client.query(`revoke create on schema ${identifier(schema)} from ${identifier(role)}`);
+    for(const [role,previous] of temporaryMemberships) {
+      if(previous) await client.query(`grant ${identifier(role)} to ${identifier(actor)} with admin ${previous.admin_option},inherit ${previous.inherit_option},set ${previous.set_option}`);
+      else await client.query(`revoke ${identifier(role)} from ${identifier(actor)} granted by ${identifier(actor)}`);
+    }
+    await client.query(`insert into ${HISTORY}(name,checksum,executed_checksum,project_ref,source,profile,environment) values($1,$2,$3,$4,$5,$6,$7)`,[migration.name,migration.checksum,migration.executedChecksum,config.projectRef,SOURCE,PROFILE,'hosted-test']);
     await client.query('commit');
-  } catch (error) { await client.query('rollback'); throw error; }
+  } catch(error) {await client.query('rollback');throw error;}
 }
 
 function scramVerifier(password) {
@@ -161,6 +189,7 @@ function scramVerifier(password) {
 }
 
 export async function runMigrations(client, config, { log = console.log, migrations } = {}) {
+  if(config.projectRef!==PROJECT_REF) fail('Only the approved dedicated TEST project is accepted.');
   migrations ??= await loadMigrations();
   let locked = false;
   try {
@@ -176,10 +205,10 @@ export async function runMigrations(client, config, { log = console.log, migrati
     await client.query('begin');
     try {
       await client.query(`create schema if not exists hub_deployment; revoke all on schema hub_deployment from public;
-        create table if not exists ${HISTORY}(name text primary key,checksum text not null,project_ref text not null,source text not null,applied_at timestamptz not null default now());
-        create table if not exists hub_deployment.target(project_ref text primary key,source text not null,runtime_ready boolean not null default false);
+        create table if not exists ${HISTORY}(name text primary key,checksum text not null,executed_checksum text not null,project_ref text not null,source text not null,profile text not null,environment text not null,applied_at timestamptz not null default now());
+        create table if not exists hub_deployment.target(project_ref text primary key,source text not null,profile text not null,environment text not null,runtime_ready boolean not null default false);
         revoke all on all tables in schema hub_deployment from public`);
-      await client.query('insert into hub_deployment.target(project_ref,source) values($1,$2) on conflict do nothing', [config.projectRef, SOURCE]);
+      await client.query('insert into hub_deployment.target(project_ref,source,profile,environment) values($1,$2,$3,$4) on conflict do nothing', [config.projectRef,SOURCE,PROFILE,'hosted-test']);
       await client.query('commit');
     } catch (error) { await client.query('rollback'); throw error; }
     for (const migration of migrations.slice(state.rows.length)) {
@@ -194,12 +223,13 @@ export async function runMigrations(client, config, { log = console.log, migrati
         await client.query(`grant ${ACTORS.join(',')} to hub_runtime with admin false,inherit false,set true`);
         const { rows: [database] } = await client.query('select current_database() as name');
         await client.query(`grant connect on database ${identifier(database.name)} to hub_runtime`);
+        await client.query('grant usage on schema hub to hub_runtime; grant execute on function hub.hosted_test_profile() to hub_runtime');
         await client.query('update hub_deployment.target set runtime_ready=true where project_ref=$1 and source=$2', [config.projectRef, SOURCE]);
         await client.query('commit');
       } catch (error) { await client.query('rollback'); throw error; }
     }
     await inspect(client, migrations, config);
-    log('Complete: 14 migration checksums verified; runtime role provisioned. No fixtures, Auth users, or test-issuing override applied.');
+    log(`Complete: ${migrations.length} canonical/executed checksums verified; runtime role provisioned. No fixtures, Auth users, or issuance override applied.`);
   } finally { if (locked) await client.query('select pg_advisory_unlock($1)', [LOCK]); }
 }
 

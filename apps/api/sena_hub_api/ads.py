@@ -124,7 +124,7 @@ def register_ads_routes(app, authentication, database, settings):
         approved = flags["sena_h_approved"]
         test_mode = settings.environment == "local" and await connection.fetchval("SELECT ads.test_issuing_enabled()")
         return {"sena_h_approved": approved is True, "test_mode": bool(test_mode),
-                "can_issue": approved is True or bool(test_mode)}
+                "can_issue": settings.environment != "hosted-test" and (approved is True or bool(test_mode))}
 
     async def selected_scope(connection, body):
         if body.scope_kind in {"C", "D"}:

@@ -4,6 +4,8 @@ import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
 import "./project-assets.css";
+import { assetFetch, useHostedSession } from "./hosted-session";
+import { AssetImage, AssetFileLink, localAssetUrl, privateAssetBlob } from "./private-assets";
 
 type Rights = "pending" | "approved" | "revoked";
 type AssetRole = "hero" | "thumbnail" | "master_plan" | "floor_plan" | "brochure" | "model_image" | "structural_plan" | "logo_primary" | "logo_white" | "logo_mono" | "favicon";
@@ -39,7 +41,7 @@ type AssetOwner = { updated_at: string; assets?: AssetBinding[]; public_project_
 const acceptedTypes = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 const maxFileSize = 10 * 1024 * 1024;
 const isSample = (asset: { public_url: string | null }) => Boolean(asset.public_url?.startsWith("/demo-assets/"));
-const fileUrl = (asset: { id: string; public_url: string | null }) => isSample(asset) ? asset.public_url! : `/api/hub/v1/admin/assets/${encodeURIComponent(asset.id)}/file`;
+const fileUrl = localAssetUrl;
 
 function AssetIcon({ pdf = false }: { pdf?: boolean }) {
   return <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{pdf ? <><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" /></> : <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8" cy="8" r="1" /><path d="m3 17 5-5 4 4 3-3 6 6" /></>}</svg>;
@@ -64,7 +66,7 @@ export function RightsBadge({ status, from, to }: { status: Rights; from?: strin
 export function Preview({ asset, alt }: { asset: { id: string; mime_type: string; public_url: string | null; original_filename: string }; alt?: string }) {
   const [failed, setFailed] = useState(false);
   const pdf = asset.mime_type === "application/pdf";
-  return <div className="asset-preview">{pdf || failed ? <span><AssetIcon pdf={pdf} />{pdf ? "เอกสาร PDF" : "โหลดภาพไม่ได้"}</span> : <img src={fileUrl(asset)} alt={alt || asset.original_filename} loading="lazy" width="480" height="280" onError={() => setFailed(true)} />}</div>;
+  return <div className="asset-preview">{pdf || failed ? <span><AssetIcon pdf={pdf} />{pdf ? "เอกสาร PDF" : "โหลดภาพไม่ได้"}</span> : <AssetImage asset={asset} alt={alt || asset.original_filename} width={480} height={280} onError={() => setFailed(true)} />}</div>;
 }
 
 export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, onProjectChanged, model, unsavedProjectDetails = false }: {
@@ -106,7 +108,7 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
 
   function boundAsset(binding: AssetBinding) {
     return <article className="asset-card" key={binding.binding_id} aria-label={`${roleLabels[binding.asset_role]}: ${binding.original_filename}`}>
-      {isBrand && binding.asset_role === "favicon" ? <div className="brand-favicon-preview">{[16, 32].map(size => <span key={size}><img src={fileUrl(binding)} alt={`${binding.alt_text?.th || "favicon"} ${size} พิกเซล`} width={size} height={size} /><small>{size} px</small></span>)}</div> : <Preview asset={binding} alt={binding.alt_text?.th} />}<div className="asset-caption"><strong>{roleLabels[binding.asset_role]}</strong>{isProject && binding.is_primary && <span className="project-media-primary">ไฟล์หลักของหมวด</span>}<span className="small-text muted">{binding.original_filename}</span><RightsBadge status={binding.rights_status} from={binding.asset_effective_from} to={binding.asset_effective_to} />{binding.alt_text?.th && <p className="small-text">{binding.alt_text.th}</p>}{isSample(binding) && <span className="sample-label">ไฟล์ตัวอย่างที่มากับระบบ</span>}<a className="asset-file-link" href={fileUrl(binding)} target="_blank" rel="noopener noreferrer">{binding.mime_type === "application/pdf" ? "ดาวน์โหลด PDF" : "เปิดภาพขนาดเต็ม"}<span className="visually-hidden"> {binding.original_filename} (เปิดในแท็บใหม่)</span></a>{canEdit && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "remove", binding })}>นำออกจาก{subject}</button>}</div>
+      {isBrand && binding.asset_role === "favicon" ? <div className="brand-favicon-preview">{[16, 32].map(size => <span key={size}><AssetImage asset={binding} alt={`${binding.alt_text?.th || "favicon"} ${size} พิกเซล`} width={size} height={size} /><small>{size} px</small></span>)}</div> : <Preview asset={binding} alt={binding.alt_text?.th} />}<div className="asset-caption"><strong>{roleLabels[binding.asset_role]}</strong>{isProject && binding.is_primary && <span className="project-media-primary">ไฟล์หลักของหมวด</span>}<span className="small-text muted">{binding.original_filename}</span><RightsBadge status={binding.rights_status} from={binding.asset_effective_from} to={binding.asset_effective_to} />{binding.alt_text?.th && <p className="small-text">{binding.alt_text.th}</p>}{isSample(binding) && <span className="sample-label">ไฟล์ตัวอย่างที่มากับระบบ</span>}<AssetFileLink asset={binding}>{binding.mime_type === "application/pdf" ? "ดาวน์โหลด PDF" : "เปิดภาพขนาดเต็ม"}<span className="visually-hidden"> {binding.original_filename} (เปิดในแท็บใหม่)</span></AssetFileLink>{canEdit && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "remove", binding })}>นำออกจาก{subject}</button>}</div>
     </article>;
   }
 
@@ -126,7 +128,7 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
       {notice && <div className="notice success asset-notice" role="status">{notice}</div>}
       {libraryOpen && isProject && canEdit && <p className="project-media-library-purpose">เลือกไฟล์สำหรับ <strong>{projectPurposes.find(item => item.role === purpose)?.label}</strong> · แสดงเฉพาะชนิดไฟล์ที่ใช้ได้</p>}
       {libraryOpen && <section className="asset-library" id={`${sectionId}-library`} data-asset-library aria-labelledby={`${sectionId}-library-title`}><div className="section-heading"><h3 id={`${sectionId}-library-title`}>คลังสื่อร่วมกัน</h3><button className="button secondary" disabled={loading} onClick={() => void loadLibrary()}>โหลดคลังสื่อใหม่</button></div><p className="muted small-text">ไฟล์หนึ่งใช้กับแบรนด์และโครงการหลายรายการได้ การอนุมัติหรือถอนสิทธิ์มีผลต่อทุกรายการที่ใช้ไฟล์นั้น</p><div className="form-field asset-search"><label htmlFor={`${sectionId}-search`}>ค้นหาชื่อไฟล์ในคลัง</label><input id={`${sectionId}-search`} type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>{error && <div className="notice error" role="alert">{error}</div>}
-        {loading ? <div className="loading-state asset-loading" role="status"><span className="spinner" />กำลังโหลดคลังสื่อ…</div> : error ? <p className="muted small-text">กดโหลดคลังสื่อใหม่เพื่อตรวจสอบรายการล่าสุด</p> : !filtered.length ? <p className="asset-empty muted">{search ? "ไม่พบไฟล์ที่ตรงกับคำค้น" : "ยังไม่มีไฟล์ในคลัง"}</p> : <><p className="small-text muted asset-result-count" role="status">พบ {filtered.length} ไฟล์</p><div className="library-grid">{filtered.map(asset => <article className="library-asset" key={asset.id} aria-label={asset.original_filename}><Preview asset={asset} /><div className="library-asset-body"><h4>{asset.original_filename}</h4><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><p className="small-text muted">{asset.mime_type === "application/pdf" ? "PDF" : asset.mime_type.replace("image/", "").toUpperCase()} · {sizeLabel(asset.file_size)}{asset.width && asset.height ? ` · ${asset.width} × ${asset.height} พิกเซล` : ""}</p>{isSample(asset) && <p className="sample-label">ไฟล์ตัวอย่างที่มากับระบบ</p>}<details className="asset-metadata"><summary>ข้อมูลไฟล์และสิทธิ์</summary><dl><div><dt>หลักฐานและเงื่อนไขสิทธิ์</dt><dd>{asset.rights_notes || "ยังไม่ได้ระบุ"}</dd></div><div><dt>เริ่มใช้สิทธิ์</dt><dd>{dateLabel(asset.effective_from)}</dd></div><div><dt>สิ้นสุดสิทธิ์</dt><dd>{asset.effective_to ? dateLabel(asset.effective_to) : "ไม่ได้ระบุวันสิ้นสุด ไม่ใช่การรับรองสิทธิ์ตลอดไป"}</dd></div><div><dt>ตรวจสิทธิ์ล่าสุด</dt><dd>{dateLabel(asset.reviewed_at)}{asset.reviewed_by && <><br />{asset.reviewed_by}</>}</dd></div>{asset.review_reason && <div><dt>เหตุผลในการตรวจสิทธิ์</dt><dd>{asset.review_reason}</dd></div>}<div><dt>รหัสตรวจสอบไฟล์</dt><dd className="checksum">{asset.checksum || "ไม่มีข้อมูล"}</dd></div></dl></details><a className="asset-file-link" href={fileUrl(asset)} target="_blank" rel="noopener noreferrer">{asset.mime_type === "application/pdf" ? "ดาวน์โหลด PDF" : "เปิดภาพขนาดเต็ม"}<span className="visually-hidden"> {asset.original_filename} (เปิดในแท็บใหม่)</span></a><div className="library-asset-actions">{canEdit && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "bind", asset })}>เลือกใช้กับ{subject}</button>}{canReview && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "review", asset })}>ตรวจสอบสิทธิ์</button>}</div></div></article>)}</div></>}
+        {loading ? <div className="loading-state asset-loading" role="status"><span className="spinner" />กำลังโหลดคลังสื่อ…</div> : error ? <p className="muted small-text">กดโหลดคลังสื่อใหม่เพื่อตรวจสอบรายการล่าสุด</p> : !filtered.length ? <p className="asset-empty muted">{search ? "ไม่พบไฟล์ที่ตรงกับคำค้น" : "ยังไม่มีไฟล์ในคลัง"}</p> : <><p className="small-text muted asset-result-count" role="status">พบ {filtered.length} ไฟล์</p><div className="library-grid">{filtered.map(asset => <article className="library-asset" key={asset.id} aria-label={asset.original_filename}><Preview asset={asset} /><div className="library-asset-body"><h4>{asset.original_filename}</h4><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><p className="small-text muted">{asset.mime_type === "application/pdf" ? "PDF" : asset.mime_type.replace("image/", "").toUpperCase()} · {sizeLabel(asset.file_size)}{asset.width && asset.height ? ` · ${asset.width} × ${asset.height} พิกเซล` : ""}</p>{isSample(asset) && <p className="sample-label">ไฟล์ตัวอย่างที่มากับระบบ</p>}<details className="asset-metadata"><summary>ข้อมูลไฟล์และสิทธิ์</summary><dl><div><dt>หลักฐานและเงื่อนไขสิทธิ์</dt><dd>{asset.rights_notes || "ยังไม่ได้ระบุ"}</dd></div><div><dt>เริ่มใช้สิทธิ์</dt><dd>{dateLabel(asset.effective_from)}</dd></div><div><dt>สิ้นสุดสิทธิ์</dt><dd>{asset.effective_to ? dateLabel(asset.effective_to) : "ไม่ได้ระบุวันสิ้นสุด ไม่ใช่การรับรองสิทธิ์ตลอดไป"}</dd></div><div><dt>ตรวจสิทธิ์ล่าสุด</dt><dd>{dateLabel(asset.reviewed_at)}{asset.reviewed_by && <><br />{asset.reviewed_by}</>}</dd></div>{asset.review_reason && <div><dt>เหตุผลในการตรวจสิทธิ์</dt><dd>{asset.review_reason}</dd></div>}<div><dt>รหัสตรวจสอบไฟล์</dt><dd className="checksum">{asset.checksum || "ไม่มีข้อมูล"}</dd></div></dl></details><AssetFileLink asset={asset}>{asset.mime_type === "application/pdf" ? "ดาวน์โหลด PDF" : "เปิดภาพขนาดเต็ม"}<span className="visually-hidden"> {asset.original_filename} (เปิดในแท็บใหม่)</span></AssetFileLink><div className="library-asset-actions">{canEdit && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "bind", asset })}>เลือกใช้กับ{subject}</button>}{canReview && <button className="button secondary" disabled={disabled} onClick={() => setDialog({ type: "review", asset })}>ตรวจสอบสิทธิ์</button>}</div></div></article>)}</div></>}
       </section>}
       <h3 className="asset-section-title">ไฟล์ของ{subject} <span className="count">{bindings.length}</span></h3>
       {isBrand ? <BrandLogoManager project={project} disabled={disabled} canEdit={canEdit} canReview={canReview} onChanged={onProjectChanged} renderBinding={boundAsset} /> : !bindings.length ? <p className="asset-empty muted">ยังไม่มีไฟล์ประกอบ{subject} {isProject ? "เลือกประเภทด้านบน แล้วอัปโหลดไฟล์ใหม่หรือเปิดคลังสื่อเพื่อใช้ไฟล์เดิม" : "เลือกไฟล์จากคลังแล้วกำหนดบทบาท"}</p> : <div className="asset-grid bound-assets">{bindings.map(boundAsset)}</div>}
@@ -183,6 +185,12 @@ function suggestLogoRole(filename: string, facts: LogoFacts): LogoRole {
 function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, canReview, onChanged, renderBinding }: {
   project: T; disabled: boolean; canEdit: boolean; canReview: boolean; onChanged: (data: T) => void; renderBinding: (binding: AssetBinding) => ReactNode;
 }) {
+  const hosted = Boolean(useHostedSession());
+  async function inspectStoredLogo(asset: Asset) {
+    if (!hosted) return inspectLogoImage(fileUrl(asset));
+    const url = URL.createObjectURL(await privateAssetBlob(asset));
+    try { return await inspectLogoImage(url); } finally { URL.revokeObjectURL(url); }
+  }
   const [alts, setAlts] = useState<Record<LogoRole, string>>(() => Object.fromEntries(brandLogoRoles.map(role => [role, logoAlt(project, role)])) as Record<LogoRole, string>);
   const [items, setItems] = useState<LogoItem[]>([]);
   const itemRef = useRef<LogoItem[]>([]);
@@ -240,7 +248,7 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
           if (!item.asset && item.file) {
             patch(item.key, { status: "uploading", error: "" });
             const result = await uploadAsset(item.file); item = { ...item, asset: result.asset, facts: { ...item.facts, width: result.asset.width ?? item.facts.width, height: result.asset.height ?? item.facts.height } }; patch(item.key, { asset: result.asset, facts: item.facts });
-            if (result.asset.mime_type === "image/svg+xml") { item.facts = { ...item.facts, ...await inspectLogoImage(fileUrl(result.asset)) }; patch(item.key, { facts: item.facts }); }
+            if (result.asset.mime_type === "image/svg+xml") { item.facts = { ...item.facts, ...await inspectStoredLogo(result.asset) }; patch(item.key, { facts: item.facts }); }
           }
           if (!item.asset) throw new Error("ไม่พบไฟล์ที่จะผูกกับแบรนด์");
           if (!matches(latest.current, item)) {
@@ -280,7 +288,7 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
     if (!libraryRole || pending || disabled || locked.current || preparingRef.current) return;
     preparingRef.current = true; setPreparing(true);
     try {
-      const inspected = await inspectLogoImage(fileUrl(asset));
+      const inspected = await inspectStoredLogo(asset);
       const rows: LogoItem[] = [{ key: nextKey.current++, asset, role: libraryRole, alt: alts[libraryRole], facts: { ...inspected, width: asset.width ?? inspected.width, height: asset.height ?? inspected.height }, status: "ready", error: "" }];
       setLibraryRole(null); setAttempted(false); replaceItems(rows); await process(rows);
     } finally { preparingRef.current = false; setPreparing(false); }
@@ -388,7 +396,7 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
 }
 
 async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {
-  const response = await fetch("/api/hub/v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
+  const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
   const body = await response.json().catch(() => null);
   if (!response.ok || !body?.data?.id) throw new Error(body?.error?.message ?? "อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
   return { asset: body.data, reused: Boolean(body.meta?.reused) };

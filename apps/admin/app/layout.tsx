@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Google_Sans } from "next/font/google";
 import { HubMotion } from "@/components/registry-motion";
+import { HostedSessionProvider } from "@/components/hosted-session";
+import { hostedConfig } from "@/lib/hosted-config";
 import "./globals.css";
 import "../styles/motion.css";
 
@@ -22,5 +24,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HubMotion>{children}</HubMotion></body></html>;
+  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HostedSessionProvider config={hostedConfig()}><HubMotion>{children}</HubMotion></HostedSessionProvider></body></html>;
 }

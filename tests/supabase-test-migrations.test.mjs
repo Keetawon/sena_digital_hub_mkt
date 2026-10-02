@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import {readFile} from 'node:fs/promises';
 import { configuration, loadMigrations, migrationBody, requireVerifiedTls, safeError, statements, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
 
-const ref = 'abcdefghijklmnopqrst';
+const ref = 'eqlrtevwpyboplljgowo';
 const env = {
   HUB_SUPABASE_TEST_PROJECT_REF: ref,
   HUB_SUPABASE_TEST_ADMIN_DATABASE_URL: `postgresql://postgres:secret@db.${ref}.supabase.co:5432/postgres?sslmode=verify-full`,
@@ -52,10 +53,12 @@ test('SQL scanner preserves quoted bodies and strips only the outer transaction'
   for (const bad of ['begin; create table a(x int);', 'begin; commit; commit;', 'begin; rollback; commit;', 'create table a(x int);', "begin; select 'unterminated; commit;"]) assert.throws(() => migrationBody(bad));
 });
 
-test('all fourteen actual migration files parse and foreign/modified/gapped history fails', async () => {
+test('all 25 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
   const migrations = await loadMigrations();
-  assert.equal(migrations.length, 14);
-  const rows = migrations.map(m => ({ name: m.name, checksum: m.checksum, project_ref: ref, source: 'sena-hub-supabase-test-v1' }));
+  assert.equal(migrations.length,25);
+  assert.notEqual(migrations[13].checksum,migrations[13].executedChecksum);
+  assert.equal(migrations.filter(m=>m.checksum!==m.executedChecksum).length,1);
+  const rows = migrations.map(m => ({ name: m.name, checksum:m.checksum,executed_checksum:m.executedChecksum,project_ref:ref,source:'sena-hub-supabase-test-v2',profile:'hosted-test-settings-v1',environment:'hosted-test' }));
   verifyHistory(rows, migrations, ref);
   verifyHistory(rows.slice(0, 5), migrations, ref);
   for (const bad of [rows.slice(1), [{ ...rows[0], checksum: 'changed' }], [{ ...rows[0], project_ref: 'z'.repeat(20) }], [{ ...rows[0], source: 'local' }]]) assert.throws(() => verifyHistory(bad, migrations, ref));
@@ -74,4 +77,31 @@ test('TLS guard checks the verified client socket when using a pooler', () => {
     assert.throws(() => requireVerifiedTls({ connection: { stream } }), /Verified TLS/);
   }
   assert.throws(() => requireVerifiedTls({}), /Verified TLS/);
+});
+
+
+test('0014 variant changes only the reviewed setting/issuance mechanism', async()=>{
+ const canonical=await readFile(new URL('../supabase/migrations/202609290014_ads_registry.sql',import.meta.url),'utf8');
+ let variant=await readFile(new URL('../supabase/hosted-test/202609290014_ads_registry.settings-v1.sql',import.meta.url),'utf8');
+ const functionBody=(sql,name)=>sql.slice(sql.indexOf(`create function ads.${name}(`),sql.indexOf('$$;',sql.indexOf(`create function ads.${name}(`))+3);
+ for(const name of ['require_issuance','test_issuing_enabled']) variant=variant.replace(functionBody(variant,name),()=>functionBody(canonical,name));
+ variant=variant.replace(/-- Hosted TEST settings profile v1[^\n]*\n-- Only the issuance[^\n]*\n/,'-- P1 only: SENA-H naming registry. No budget, memo, PO or public API objects.\n');
+ variant=variant.replace("check(key in ('sena_h_approved','hosted_test_issuing_enabled'))","check(key='sena_h_approved')");
+ variant=variant.replace("values('sena_h_approved','false','Pending pattern-owner approval'),\n('hosted_test_issuing_enabled','false','H1 issuance disabled; deployment operator only');","values('sena_h_approved','false','Pending pattern-owner approval');");
+ variant=variant.replace(/-- Profile-only permissions:[\s\S]*?(?=create policy agency_vocab)/,'');
+ assert.equal(variant.replaceAll('\r\n','\n'),canonical.replaceAll('\r\n','\n'));
+});
+
+test('hosted SQL preserves Thai approval text without encoding replacement runs', async()=>{
+ const files=[
+  '../supabase/hosted-test/202609290014_ads_registry.settings-v1.sql',
+  '../supabase/hosted-test/h1-seed.sql',
+  '../supabase/migrations/202610020025_hosted_h1_adapters.sql',
+  '../supabase/tests/hosted_h1.sql',
+ ];
+ for(const file of files){
+  const sql=await readFile(new URL(file,import.meta.url),'utf8');
+  assert.doesNotMatch(sql,/\?{3,}/,`${file} contains encoding replacement characters`);
+  if(file.includes('settings-v1')) assert.ok(sql.includes("raise exception 'รออนุมัติรูปแบบชื่อ' using errcode='42501';"));
+ }
 });

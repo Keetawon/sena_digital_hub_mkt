@@ -1,0 +1,133 @@
+{
+  "profile": "hosted-test-settings-v1",
+  "environment": "hosted-test",
+  "project_ref": "eqlrtevwpyboplljgowo",
+  "migrations": [
+    {
+      "name": "202609160001_core_slice.sql",
+      "canonical_sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd",
+      "executed_sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd"
+    },
+    {
+      "name": "202609160002_model_edit_lock.sql",
+      "canonical_sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5",
+      "executed_sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5"
+    },
+    {
+      "name": "202609160003_source_selection.sql",
+      "canonical_sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa",
+      "executed_sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa"
+    },
+    {
+      "name": "202609160004_publication_availability.sql",
+      "canonical_sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181",
+      "executed_sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181"
+    },
+    {
+      "name": "202609160005_asset_library.sql",
+      "canonical_sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f",
+      "executed_sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f"
+    },
+    {
+      "name": "202609160006_brands.sql",
+      "canonical_sha256": "fc643f143c8453002a054164cb43db792fa7d83f90fb3dcf5e8bad8381ae2e3e",
+      "executed_sha256": "fc643f143c8453002a054164cb43db792fa7d83f90fb3dcf5e8bad8381ae2e3e"
+    },
+    {
+      "name": "202609180007_pilot_intake.sql",
+      "canonical_sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe",
+      "executed_sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe"
+    },
+    {
+      "name": "202609180008_project_gold_prefill.sql",
+      "canonical_sha256": "5d63e273b79209626700fa8d48c598270ac977c585f3dcf01178f65eede889e4",
+      "executed_sha256": "5d63e273b79209626700fa8d48c598270ac977c585f3dcf01178f65eede889e4"
+    },
+    {
+      "name": "202609180009_model_media.sql",
+      "canonical_sha256": "d8228ca2529132c07793ebaed4da06888fc977d9b23017b9e0cfaae4272da36e",
+      "executed_sha256": "d8228ca2529132c07793ebaed4da06888fc977d9b23017b9e0cfaae4272da36e"
+    },
+    {
+      "name": "202609200010_marketing_unit_types.sql",
+      "canonical_sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87",
+      "executed_sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87"
+    },
+    {
+      "name": "202609200011_project_facilities.sql",
+      "canonical_sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99",
+      "executed_sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99"
+    },
+    {
+      "name": "202609200012_project_gold_preview.sql",
+      "canonical_sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1",
+      "executed_sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1"
+    },
+    {
+      "name": "202609210013_project_media_collections.sql",
+      "canonical_sha256": "38954d0ac2b962111134a8b55face2d6b552ca5e0df344d73075061634afe452",
+      "executed_sha256": "38954d0ac2b962111134a8b55face2d6b552ca5e0df344d73075061634afe452"
+    },
+    {
+      "name": "202609290014_ads_registry.sql",
+      "canonical_sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b",
+      "executed_sha256": "9531fcab0510e66dd06b7f1f674a595f7075cf9661b54b484cf7e0374c5abd44",
+      "variant": "202609290014_ads_registry.settings-v1.sql"
+    },
+    {
+      "name": "202609300015_ads_media_lines_memos.sql",
+      "canonical_sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6",
+      "executed_sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6"
+    },
+    {
+      "name": "202610010016_ads_actuals.sql",
+      "canonical_sha256": "7a6dcb257e2419373a2b9d0dc4a7190af60d3cbdda7237a9af334fb928938b36",
+      "executed_sha256": "7a6dcb257e2419373a2b9d0dc4a7190af60d3cbdda7237a9af334fb928938b36"
+    },
+    {
+      "name": "202610010017_ads_actuals_permissions.sql",
+      "canonical_sha256": "cc4b0129ee1201f7b896e1cbbad6c164d5c53e2a2ff7f9700f8e170f214e8bed",
+      "executed_sha256": "cc4b0129ee1201f7b896e1cbbad6c164d5c53e2a2ff7f9700f8e170f214e8bed"
+    },
+    {
+      "name": "202610010018_ads_actuals_recurrence.sql",
+      "canonical_sha256": "02bc11ba00d662212e3a42be598c2a975311f1a2398f1d5498222b32c3f5061d",
+      "executed_sha256": "02bc11ba00d662212e3a42be598c2a975311f1a2398f1d5498222b32c3f5061d"
+    },
+    {
+      "name": "202610010019_ads_actuals_boundaries.sql",
+      "canonical_sha256": "6453b05acdb50c31a73d8cea8f8e37145c873d3c455e88cb71c690c122967270",
+      "executed_sha256": "6453b05acdb50c31a73d8cea8f8e37145c873d3c455e88cb71c690c122967270"
+    },
+    {
+      "name": "202610010020_ads_actuals_evaluation_history.sql",
+      "canonical_sha256": "94bb6eb601499a2d8eb9fe55bb10889196b4f7be2c9941349e8858e39f36bcc9",
+      "executed_sha256": "94bb6eb601499a2d8eb9fe55bb10889196b4f7be2c9941349e8858e39f36bcc9"
+    },
+    {
+      "name": "202610010021_residential_demo_release.sql",
+      "canonical_sha256": "90b11a3ae8b077e7963f20e2ca5ed4bd420c20ce297f38f81a95f6a179bd41ac",
+      "executed_sha256": "90b11a3ae8b077e7963f20e2ca5ed4bd420c20ce297f38f81a95f6a179bd41ac"
+    },
+    {
+      "name": "202610010022_private_document_archive.sql",
+      "canonical_sha256": "663a91a24af0a01cb8e95625161c1d226e69ef86174c6d3d04b7195af0800966",
+      "executed_sha256": "663a91a24af0a01cb8e95625161c1d226e69ef86174c6d3d04b7195af0800966"
+    },
+    {
+      "name": "202610010023_staff_assistant.sql",
+      "canonical_sha256": "8cd7bb7ca78de9e901b052a408d607ca3fe2bea2493105423d067c41e1068f15",
+      "executed_sha256": "8cd7bb7ca78de9e901b052a408d607ca3fe2bea2493105423d067c41e1068f15"
+    },
+    {
+      "name": "202610020024_brand_logo_svg.sql",
+      "canonical_sha256": "2786a074a3881fbfc3c3989c910b0378db1588d8c7050fd1d1a7c333f2eba366",
+      "executed_sha256": "2786a074a3881fbfc3c3989c910b0378db1588d8c7050fd1d1a7c333f2eba366"
+    },
+    {
+      "name": "202610020025_hosted_h1_adapters.sql",
+      "canonical_sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3",
+      "executed_sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3"
+    }
+  ]
+}

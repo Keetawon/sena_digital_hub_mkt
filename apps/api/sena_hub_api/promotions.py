@@ -175,7 +175,7 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
             raise failure(422, "invalid_promotion_filter", "ตัวกรองไม่รองรับหรือระบุชื่อซ้ำ")
 
     async def rpc(request, actor, statement, *args, mutation=False):
-        if mutation and settings.environment != "local":
+        if mutation and settings.environment not in {"local", "hosted-test"}:
             raise failure(403, "promotion_demo_only", "ขั้นตอนตรวจสอบตัวอย่างเปิดใช้เฉพาะระบบภายในเครื่อง")
         async with connection(request, actor) as db:
             value = await db.fetchval(statement, *args)

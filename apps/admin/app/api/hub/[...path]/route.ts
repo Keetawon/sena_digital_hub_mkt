@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback, localRequestOrigin } from "@/lib/local-session";
 import { isContentStaff, isHubStaff } from "@/lib/staff";
+import { getHostedCaller } from "@/lib/hosted-session";
+import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
@@ -22,13 +24,19 @@ const financeAllowed = {
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const error = (message: string, status: number) => NextResponse.json({ error: { message } }, { status, headers: { "Cache-Control": "no-store" } });
-  if (!isLocalMode() || !localRequestOrigin(request)) {
+  const hosted = isHostedMode();
+  const configuration = hosted ? hostedConfig() : null;
+  if (!hosted && (!isLocalMode() || !localRequestOrigin(request))) {
     return error("ยังไม่เปิดใช้งานการยืนยันตัวตนสำหรับสภาพแวดล้อมนี้", 503);
   }
-  const role = await getLocalRole();
+  const caller = hosted ? await getHostedCaller() : null;
+  const role = hosted ? caller?.role : await getLocalRole();
   if (!role) return error("กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
   const path = (await context.params).path.join("/");
   const method = request.method as keyof typeof allowed;
+  if (hosted && !h1AllowsApi(path, method)) return error(h1Unavailable, 403);
+  // Asset bytes use a bearer-authenticated direct API request, outside Vercel limits.
+  if (hosted && (method === "POST" && path === "v1/admin/assets" || method === "GET" && /\/assets\/[^/]+\/file$/.test(path))) return error("กรุณาใช้ช่องทางรับส่งไฟล์ส่วนตัวของ TEST H1", 400);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   if (questionsRead && !isHubStaff(role)) return error("ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน", 403);
   const assistantRead = method === "GET" && new RegExp(`^v1/admin/assistant/(?:config|runs/${financeId}(?:/citations/${financeId})?|proposals/${financeId})$`).test(path);
@@ -79,15 +87,15 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);
   }
-  if (method !== "GET" && !hasSameLocalOrigin(request)) {
+  if (method !== "GET" && !(hosted ? request.headers.get("origin") === configuration!.adminOrigin : hasSameLocalOrigin(request))) {
     return error("ไม่อนุญาตคำขอจากต้นทางนี้", 403);
   }
-  const token = getRoleToken(path.startsWith("v1/admin/") ? role : "service_consumer");
+  const token = hosted ? caller?.token : getRoleToken(path.startsWith("v1/admin/") ? role : "service_consumer");
   if (!token) return error("ยังไม่ได้ตั้งค่าสิทธิ์เชื่อมต่อบนเซิร์ฟเวอร์", 503);
   let base: URL;
   try {
-    base = new URL(process.env.HUB_API_URL ?? "http://127.0.0.1:8000");
-    if (!isLoopback(base.hostname) || !["http:", "https:"].includes(base.protocol) || base.username || base.password) throw new Error();
+    base = new URL(configuration?.apiOrigin ?? process.env.HUB_API_URL ?? "http://127.0.0.1:8000");
+    if (!hosted && (!isLoopback(base.hostname) || !["http:", "https:"].includes(base.protocol) || base.username || base.password)) throw new Error();
   } catch {
     return error("การตั้งค่าที่อยู่บริการข้อมูลไม่ถูกต้อง", 503);
   }

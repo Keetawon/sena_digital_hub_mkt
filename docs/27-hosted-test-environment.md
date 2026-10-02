@@ -1,14 +1,15 @@
 # 27. Hosted TEST environment — Step 1 plan
 
-Date: **2 October 2026 (Asia/Bangkok)**. Status: **proposed; awaiting `docs/27 approved`**.
+Date: **2 October 2026 (Asia/Bangkok)**. Status: **approved for H1 local implementation and simulation; hosted execution awaits IT readiness confirmation**.
 Repository baseline: `931b67c`, including brand logo uploads and migration `0024`.
 Target: **only** Supabase project `eqlrtevwpyboplljgowo`
 (`https://eqlrtevwpyboplljgowo.supabase.co`), with synthetic data.
 
-This step writes a plan only. No hosted connection, preflight, migration, bucket,
-Auth user, seed, deployment or credential change has been performed for this step.
-The owner's latest instruction requires approval before implementation. Earlier
-permission to try the P1 test setup does not bypass this gate.
+The owner approved this document with the production and milestone additions below.
+Build and test H1 locally first. No hosted connection (including preflight),
+migration, bucket, Auth user, seed, deployment, purchase or credential change is
+authorized until the owner confirms that IT inputs and credentials are ready.
+Earlier permission to try the P1 test setup does not bypass this new gate.
 
 This plan extends the historical [P1 setup](ads/SUPABASE_TEST_SETUP.md).
 It preserves the [naming contract](19-campaign-naming-registry.md),
@@ -32,7 +33,7 @@ ERROR 42501 permission denied for parameter app.ads_test_issuing
 ```
 
 This is owner-reported evidence, not a command rerun during this planning task.
-The existing preflight **cannot pass as written**. Migration `0014` creates
+The original preflight **could not pass as written**. Migration `0014` creates
 `ads.require_issuance()` with function-local `SET app.ads_test_issuing='off'`;
 creating that configuration requires the unavailable parameter privilege.
 The historical attempt stopped before applying Hub migrations. Recheck actual
@@ -48,12 +49,12 @@ The plan does not seek superuser access or give runtime users owner privileges.
 ### 2.1 Decision: a hosted-only bootstrap variant
 
 **Keep canonical `supabase/migrations/202609290014_ads_registry.sql` unchanged.**
-After approval, add a separately reviewed, versioned SQL deployment input under
+H1 adds a separately reviewed, versioned SQL deployment input under
 `supabase/hosted-test/`, outside the normal migration scan. It replaces `0014`
 only for this allowlisted TEST project. This avoids changing an already-applied
 local migration or weakening the existing local issuance guard.
 
-The proposed variant changes only the issuance-setting mechanism:
+The variant changes only the issuance-setting mechanism:
 
 - Extend the `ads.setting` key constraint to include `hosted_test_issuing_enabled`
   alongside `sena_h_approved`; both values are JSON booleans and start **false**.
@@ -83,9 +84,9 @@ The proposed variant changes only the issuance-setting mechanism:
   clear that history.
 
 The runner must **not enable either flag** during migration, replay or user
-provisioning. A later, explicit operator action may enable the TEST flag for a
-synthetic registration exercise once the target and seed are verified, then
-disable it again. That is not P'Note's approval. Keep `sena_h_approved=false` and
+provisioning. A later milestone may propose an explicit operator action to enable
+the TEST flag for a synthetic registration exercise. **H1 never enables it**,
+including while seeding. That would not be P'Note's approval. Keep `sena_h_approved=false` and
 the Thai pending-approval banner throughout; hosted UI also identifies TEST
 data. Production issuing remains blocked. Seeded names never become production
 registrations and must never be copied into production.
@@ -105,22 +106,52 @@ canonical baseline and review its narrow diff in tests.
 | Exact hosted TEST replay | Verify canonical and executed hashes plus target/profile; no SQL reapplied and no flag/password reset. |
 | Unknown history, changed hash or other project | Refuse before mutation; require an explicit reconciliation plan. An already-applied canonical hosted `0014` is not silently relabelled as the variant. |
 | Existing local database | Original `0014` remains byte-identical, so `public.local_migrations` still matches; ordinary `dev:migrate` skips it. The local-only function GUC override remains as implemented. |
-| Fresh local database | Apply original migrations through `0024` and existing local fixtures through the existing local tools. The hosted variant is never scanned or loaded. |
+| Fresh local database | Apply canonical migrations through `0025` and existing local fixtures through the existing local tools. Canonical `0014` remains unchanged; the hosted variant is never scanned or loaded. |
 
 No local history rewrite, database rebuild or reapplication of `0014` is needed.
-Shared hosting adapters introduced later use new global migration numbers after
-`0024` (next currently `0025`), preserve local behavior, and replay normally on
+Shared hosting adapters use new global migration numbers after
+`0024` (H1 adds `0025`), preserve local behavior, and replay normally on
 local databases. They do not retroactively solve the bootstrap failure. The
 profile difference must be documented and covered by the same issuance tests.
 
 ## 3. Migration runner, storage and DW provisioning
 
+### Production path (design only)
+
+A future production Supabase project will use the same reviewed settings-table
+bootstrap mechanism for `0014`, avoiding the denied custom-parameter privilege.
+Use one explicitly versioned settings-based SQL baseline and narrowly reviewed
+profile overlays: the production profile contains only `sena_h_approved=false`,
+no TEST-setting row/key, no TEST override and no synthetic seed. Its issuance
+guard checks actual pattern approval only; `ads.test_issuing_enabled()` returns
+false. Production target identity must be separately allowlisted and approved.
+Record canonical and executed profile checksums exactly as for TEST. Do not
+implement production provisioning in H1, copy the TEST profile to production,
+or modify canonical local `0014`. A future local convergence migration can reuse
+the same settings implementation without rewriting applied history.
+
+### H1 and H2+ milestones (owner decision)
+
+| Milestone | Included | Explicit boundary |
+|---|---|---|
+| H1, implement and test locally now | Managed-permission migration profile; private residential/brand asset storage; real Supabase session integration with seven role identities simulated locally; synthetic brands, projects, promotions and atomic releases; registry browsing and agency ID-return inbox. | Issuance stays off, `sena_h_approved=false`. No real REM identifiers. No hosted requests, resources, users or seed until owner confirms IT readiness. |
+| H1, later hosted execution | Run the locally verified H1 package on the named TEST project after that confirmation; provision the seven real TEST Auth identities then. | Not authorized by document approval alone. Supabase Free and the existing VPS only; no TEST plan purchase or Vercel project. |
+| H2+ | Hosted financial operations/actuals, document tracking/archive/worker, assistant and any separately approved DW provisioning. | No implementation of their hosted adapters in H1; show unavailable Thai remarks and reject direct API access. R2/document processing and all RAG/indexing/embeddings/ingestion stay deferred. |
+
+The complete migration history still applies so schema provenance remains
+consistent, but deferred schema objects stay empty/inactive. Existing local demo
+behavior is unchanged. H1 screens use the current theme and motion tokens;
+deferred pages show `ยังไม่เปิดใช้งานใน H1` with their later milestone. Campaign
+registration controls remain disabled with the approval/issuance explanation.
+The seven identities in section 4 are local mock Auth identities for tests now,
+not accounts created in Supabase. Local simulation uses an isolated loopback
+database and Auth/storage doubles; it must never load `.env.supabase-test`.
+
 ### 3.1 Expand the reviewed migration inventory
 
-The current `scripts/supabase-test-migrations.mjs` is pinned to exactly fourteen
-files. Updating only its file count would leave incorrect history, schema, role,
-ownership and completion checks. Replace those assumptions with a reviewed,
-ordered manifest of all **24 current migrations**:
+The baseline `scripts/supabase-test-migrations.mjs` was pinned to exactly fourteen
+files. H1 replaces the file-count, history, schema, role and ownership assumptions
+with a reviewed ordered manifest of **25 migrations**, including the new adapter:
 
 | Counters | Contents |
 |---|---|
@@ -131,6 +162,7 @@ ordered manifest of all **24 current migrations**:
 | `0016–0020` | Actuals/read-back, permissions, recurrence, boundaries and evaluation history. |
 | `0021–0023` | Residential releases, private document archive and staff assistant schema. |
 | `0024` | Safe brand-logo SVG registration. |
+| `0025` | H1 private asset metadata and narrow residential environment adapters; original archive/assistant guards remain unchanged. |
 
 Discover files, but reject unreviewed additions instead of automatically applying
 whatever appears in the directory. Expand the manifest explicitly for later
@@ -154,10 +186,12 @@ replay. Operator, API, document worker and DW credentials are separate.
 
 ### 3.2 Private storage is an additional deployment resource
 
-No current migration provisions hosted buckets. Asset metadata currently permits
-`local-originals`/`hub-local`; the API stores bytes in `.local/assets`. Plan a
-forward migration plus storage adapter, retaining local support and all rights,
-eligibility, deduplication, history and audit rules.
+No current migration provisions hosted buckets. Migration `0025` retains
+`local-originals`/`hub-local` and permits `hub-test-assets`/`hub-hosted-test` only
+through the exact hosted TEST profile. The private Supabase asset adapter is
+implemented and verified against the local Storage protocol double, retaining
+all rights, eligibility, deduplication, history and audit rules. Local assets
+still use `.local/assets`; actual cloud bucket provisioning remains pending.
 
 - Residential/brand assets: a private Supabase TEST bucket, proposed name
   `hub-test-assets`, with no anonymous read/write/list policy. Authenticate and
@@ -174,17 +208,18 @@ eligibility, deduplication, history and audit rules.
   conflicting/public resource causes refusal. Provisioning R2 is a separate
   infrastructure step, not PostgreSQL SQL, and requires scoped credentials.
 
-Large uploads cannot simply keep using the current Next.js proxy: Vercel limits
-function request/response payloads to **4.5 MB**, below the Hub's 10 MiB image
-limit. Plan authenticated direct-to-API upload/file delivery on the VPS with
-strict TEST-origin CORS and existing validation, RLS and audit. The browser uses
-its user JWT, never a storage service key; normal small JSON calls can retain
-the same-origin proxy. Image/link elements cannot attach bearer headers: plan
-authenticated fetch-to-Blob previews/downloads or an equivalent reviewed private
-delivery flow, never JWTs in query strings. Verify downloads as well as uploads.
-[Vercel function limits](https://vercel.com/docs/functions/limitations#request-body-size).
+H1 implements authenticated direct-to-API upload/file delivery with strict
+TEST-origin checks and existing validation, RLS and audit. Under the VPS decision
+in section 5, those API paths share the admin's HTTPS origin and go directly
+through the reverse proxy to FastAPI. Keep transport limits compatible with the
+Hub's existing 10 MiB file limit; Vercel function limits do not apply to TEST.
+The browser uses its user JWT, never a storage service key; normal small JSON
+calls retain the Next.js proxy. Image/link elements cannot attach bearer headers, so H1
+uses authenticated fetch-to-Blob previews/downloads, never JWTs in query strings.
+Uploads and downloads are verified locally; VPS delivery and managed Storage
+policies await the approved cloud acceptance run.
 
-### 3.3 Hosted DW reader
+### 3.3 Hosted DW reader (H2+, deferred)
 
 Keep `scripts/provision-dw-reader.mjs` strictly local, including its
 `127.0.0.1:55432/sena_hub_local` refusal guard. Add a separate approved hosted
@@ -205,27 +240,29 @@ provisioning path, scoped to this project and verified TLS, for `dw_hub_reader`:
 
 ## 4. Real login and TEST identities
 
-The API already verifies Supabase ES256/RS256 JWT signatures, issuer/audience
-and trusted `app_metadata.hub_role`, plus `hub_agency` for agencies. The browser
-login and server proxy are still local-demo implementations. Adding URLs alone
-will not enable hosted login.
+The API verifies Supabase ES256/RS256 JWT signatures, issuer/audience and trusted
+`app_metadata.hub_role`, plus `hub_agency` for agencies. H1 implements browser/SSR
+login, refresh, sign-out and the verified server proxy; these are tested with the
+local Auth protocol double. Actual cloud Auth configuration and signing keys
+remain unverified until the approved hosted acceptance run.
 
-After approval, implement Supabase browser/SSR sessions, refresh, sign-out and
-allowlisted redirect URLs using the supported server-side session flow. The
-server must verify the user/session; the API independently verifies the forwarded
+The implementation uses Supabase browser/SSR sessions and allowlisted redirect
+URLs through the supported server-side session flow. The server verifies the
+user/session; the API independently verifies the forwarded
 access token. Do not authorize from an unverified cookie/session payload or
 client-selected headers. Use secure session-cookie settings appropriate to the
 SSR flow and protect cookie-authenticated mutations against cross-site requests.
 [Supabase server-side authentication](https://supabase.com/docs/guides/auth/server-side).
 
-Add an explicit `hosted-test` configuration with exact project/HTTPS API-origin
-checks: `auth.py` currently recognizes only `local` and `production`. Preserve
-the local selector behind its loopback/local-mode guard. A hosted request must
+H1 adds explicit `hosted-test` configuration with exact project/HTTPS API-origin
+checks, plus tightly bounded loopback targets for the local simulation. The
+local selector remains behind its loopback/local-mode guard. Hosted requests
 reject demo tokens, role-selector cookies and forged role headers. Do not label
 hosted TEST as local or use production mode to evade a guard. Confirm the project's
 signing algorithm is supported; do not add an HS256 fallback casually.
 
-Create the following separate, invite-only identities after approval. Names here
+Create the following separate, invite-only identities only after IT readiness
+confirmation. H1 currently simulates them locally. Names here
 are account labels, not real email addresses; IT supplies controlled test mailboxes
 and sends credentials privately. Disable public self-sign-up for this TEST app.
 
@@ -246,8 +283,9 @@ Only an authorized Auth administrator/server assigns `app_metadata`; editable
 `user_metadata` is never authority. Use the Auth UUID as audit actor and canonical
 agency vocabulary codes, not local selector aliases such as `agency_kin`.
 
-Vercel receives only the public Supabase URL/publishable key and necessary
-server-side API configuration. The browser never receives migration, database,
+The Next.js admin service on the VPS receives only the public Supabase
+URL/publishable key and necessary server-side API configuration. The browser
+never receives migration, database,
 storage or service-role secrets. The VPS API uses the restricted runtime login.
 Auth-admin provisioning and storage-service credentials stay in separate scoped
 operator/server configuration. Leave local `.env` files and credentials local;
@@ -255,30 +293,58 @@ copy no environment file wholesale to hosting or Git.
 
 ## 5. Hosting topology and remaining application work
 
-| Piece | Proposed location | Required work before hosted use |
+**Owner cost decision, 2 October 2026:** use Supabase Free and the existing
+Hostinger VPS for both admin and API. No Vercel TEST project or paid plan is
+requested. This changes the hosting plan only; the IT-readiness gate still
+applies before any hosted connection or provisioning.
+
+| Piece | Selected TEST location | Required work before hosted use |
 |---|---|---|
-| Admin | Dedicated Vercel TEST project | Real login, trusted API proxy, separate environment/redirect URLs and visible TEST/synthetic labels. No production-domain reuse. |
-| Database/Auth/assets | Existing Supabase TEST project | Versioned migration profile, private asset storage, role setup and synthetic seed; verify actual region with IT. |
-| FastAPI | Hostinger VPS | Dedicated service user, HTTPS reverse proxy, secrets, bounded DB pool, logs without tokens/bodies, health checks and restart policy. |
-| Document worker | Separate process on the VPS | Narrow `ads_document_worker` credentials, durable leases, private temporary storage, local parsing/OCR only. No web-request OCR or external model calls. |
-| Document bytes | Private R2 TEST bucket | Scoped storage adapter and separate object backup; no real upload before Q7. |
+| Admin | Same Hostinger VPS as FastAPI | Build Next.js and run `next start` as a supervised service bound to loopback, behind the HTTPS reverse proxy. Real login, trusted API proxy and visible TEST/synthetic labels; no Vercel project. |
+| Database/Auth/assets | Existing Supabase TEST project on Free | Versioned migration profile, private asset storage, role setup and synthetic seed; verify region and capacity with IT. Manually resume if paused before a demo. |
+| FastAPI | Same Hostinger VPS as admin | Separate restricted service, loopback listener, shared HTTPS origin, secrets, bounded DB pool, logs without tokens/bodies, health checks and restart policy. |
+| Document worker — H2+ | Separate process on the VPS | Deferred beyond H1: narrow `ads_document_worker` credentials, durable leases, private temporary storage, local parsing/OCR only. No web-request OCR or external model calls. |
+| Document bytes — H2+ | Private R2 TEST bucket | Deferred beyond H1: scoped storage adapter and reproducible synthetic fixtures; no real upload before Q7. |
 | Assistant | Future approved VPS TEST path | Existing guard is fixed-local. Leave disabled with a Thai remark until reviewed; no key transfer or retrieval/indexing work in this step. |
+
+Use one IT-controlled TEST hostname and HTTPS origin for the admin and Hub API:
+
+| Public path | Reverse-proxy destination |
+|---|---|
+| `/v1/*` and `/health` | FastAPI on its private loopback port; preserve the path and bearer authorization. |
+| All other paths, including `/api/hub/*`, `/login` and `/_next/*` | Next.js `next start` on its private loopback port. `/api/hub/*` retains its existing session verification and API forwarding. |
+
+Do not route all `/api/*` paths to FastAPI: the existing Next.js API routes must
+continue to verify browser sessions. Set `HUB_ADMIN_ORIGIN` and `HUB_API_URL` to
+the same public HTTPS origin (no path prefix), with matching Supabase Auth
+redirect URLs. Direct asset requests use `/v1/...` on that origin and still
+require a verified user JWT. Supabase Auth/Storage retain their own service
+URLs; this same-origin decision covers admin-to-Hub-API traffic.
+
+Only the reverse proxy exposes HTTPS publicly. Keep Node and FastAPI ports
+private, preserve host/protocol and authorization headers through trusted proxy
+configuration, and do not cache authenticated pages or private API/file responses.
+Use separate service environments and restart policies. Verify login refresh,
+JSON calls, uploads and private downloads through this routing during the later
+hosted acceptance run. Next.js documents `next start` self-hosting behind a
+reverse proxy. [Next.js self-hosting](https://nextjs.org/docs/app/guides/self-hosting).
 
 Migration success is not hosted-demo readiness. These existing safeguards need
 explicit target-aware adapters and tests, rather than deletion:
 
-- `0016` actuals and `0021` residential demo guards require the local database;
-  the residential seed helper also requires a true superuser. Archive and draft
-  assistant operations reuse local guards. Managed `postgres` cannot simply run
-  the current demo seeder.
-- `actuals.py`, `archive.py`, `assistant.py`, asset routes and the document worker
-  enforce local execution. New hosted TEST paths must verify the allowlisted
-  environment and synthetic provenance, while preserving current local behavior.
-- `ads.py` reports TEST issuance only in the local environment and blocks issue
-  requests through that result. Adapt registry settings, preview and issuance
-  checks explicitly for the approved hosted TEST profile; the SQL flag alone
-  will not enable the API. Test exact-target refusal, both flag states and the
-  unchanged pending-approval banner with `sena_h_approved=false`.
+- `0025` adds narrow residential environment adapters for the exact hosted TEST
+  profile, and H1 supplies its own synthetic seed. The original local seeder
+  still requires a true superuser and must not be run against managed Supabase.
+  The `0016` actuals, archive and draft-assistant local guards remain unchanged.
+- H1 asset routes support the exact hosted TEST profile through the private
+  adapter. `actuals.py`, `archive.py`, `assistant.py` and the document worker
+  retain their local boundaries; their hosted paths are unavailable in H1.
+  Any later adapters must preserve target checks and synthetic provenance.
+- `ads.py` preserves local TEST issuance behavior but reports `can_issue=false`
+  for hosted H1. H1 API startup requires both flags to remain false; preview and
+  issue controls are unavailable. Any later TEST issuance exercise needs an
+  explicitly approved API/UI change as well as operator controls. The Thai
+  pending-approval banner remains visible with `sena_h_approved=false`.
 - Statement OCR uses Windows OCR today. A Linux Hostinger worker needs a tested
   local OCR adapter before image-only synthetic statements can run there. Until
   ready, show the feature as unavailable; use the existing local demo for it.
@@ -289,21 +355,21 @@ explicit target-aware adapters and tests, rather than deletion:
   non-indexing confirmation path is needed before enabling that action; no RAG
   implementation is included in this plan.
 
-IT must provide the actual Supabase/VPS/storage and backup regions (Q7/Q37),
+IT must provide the actual Supabase/VPS/storage regions (Q7/Q37),
 approved account access with MFA, a restricted SSH/service account, OS/resources,
 firewall rules, outbound Supabase/storage access, domain ownership/DNS/TLS,
-secret custody, monitoring/backup owners and a billing owner. Proposed domain
-roles are separate `hub-test` and `hub-api-test` subdomains under an IT-controlled
-domain; no domain is assumed or registered here.
+secret custody, monitoring and demo-recovery owners, and the existing VPS billing
+owner. Use one `hub-test` hostname under an IT-controlled domain for both admin
+and API; no separate `hub-api-test` hostname is required. No domain is assumed
+or registered here. Confirm capacity for both services without buying an upgrade.
 
 **Temporary option:** IT may provide a time-limited dedicated TEST VM with
-persistent storage behind its approved HTTPS gateway, running the same API and
-worker processes until the Hostinger VPS is ready. It must be reachable from
-Vercel over the approved route; Vercel cannot reach workstation `localhost`.
-Apply the same secrets, access and regional review. If IT cannot provide that
-route, keep the complete presentation local; do not expose a developer machine
-through an ad-hoc public tunnel or claim that a static Vercel deployment is a
-working hosted app. No VM, tunnel or gateway is provisioned in this step.
+persistent storage behind its approved HTTPS gateway, running both the Next.js
+admin and H1 API with the same routing until Hostinger is ready. This option
+requires existing approved capacity, not a new purchase. Document workers remain
+H2+. Apply the same secrets, access and regional review. If IT cannot provide
+that environment, keep the presentation local. No VM, tunnel, gateway or Vercel
+project is provisioned in this step.
 
 ## 6. Synthetic seed and acceptance sequence
 
@@ -323,7 +389,8 @@ Q18/Q20 remain deferred, with no matching-review screen. No real ledger, card,
 DW, E-memo, publication target or email-recipient data is copied. Use demo months
 for presentation rather than far-future DW contract-coverage months.
 
-Planned order after approval:
+Phased order: steps 1–2 are authorized locally now. Steps 3–6 await the owner's
+separate IT-readiness confirmation and cover H1 only; deferred modules need H2+.
 
 1. Implement and test the bootstrap variant, full runner and profile locally in
    a disposable managed-permission simulation with no custom-parameter grant.
@@ -334,91 +401,131 @@ Planned order after approval:
 3. Reconcile actual hosted state with a read-only preflight; print target and
    safe counts/checksums only. On a clean accepted target, apply the reviewed
    manifest. Confirm both issuance flags are false before proceeding.
-4. Provision private storage, separate operator/runtime/worker/DW credentials
+4. Provision private asset storage and separate operator/runtime credentials
    and the seven Auth test identities. Validate permissions and exact replay.
-5. Apply only the approved synthetic seed. If exercising server issuance needs
-   the TEST flag, record the explicit operator enable/disable actions; approval
-   stays false. Freeze source hashes/counts for DW TEST readers.
+   Document-worker/R2 and DW provisioning remain H2+.
+5. Apply only the approved H1 synthetic seed, with SQL-generated fixture codes
+   and names inserted by the deployment operator. No issuance function is called,
+   and neither flag is enabled. The seed has explicit synthetic provenance and
+   is not a registration or approval workflow. Record source hashes/counts.
 6. Deploy isolated TEST services and run authenticated smoke/role checks. Test
    expired/forged JWTs, metadata tampering, missing role, agency boundaries,
    private downloads, sanitized SVG, per-file rights/audit, failed-migration
    rollback, checksum refusal, denied flag changes and blocked issuance while
-   off. Check desktop/mobile layouts, backups and a restore rehearsal.
+   off. Check desktop/mobile layouts, manual paused-project resume and a
+   synthetic rebuild/re-seed rehearsal under section 7.
 
 No existing `dev:migrate`, `test:db`, API integration test or UI suite is to be
 repointed at hosted TEST. Hosted smoke checks need separate explicit targets and
 synthetic-only fixtures; do not let a routine local command mutate the cloud.
 
-## 7. Cost, backups and teardown
+## 7. Cost, demo recovery and teardown
 
-Public list prices checked **2 October 2026**; USD, before taxes, exchange costs
-or excess usage. The existing project's plan and IT's contracts are not known.
-These are planning figures, not a purchase or a claim about the current bill.
+**Owner decision: Supabase Free, existing Hostinger VPS, no purchase.** The
+earlier Pro/Vercel TEST estimate and TEST backup proposal are superseded. The
+decision does not claim the current account configuration has been inspected
+or changed; that check remains behind the IT-readiness gate.
 
-| Service | Planning choice and cost |
+| Service | TEST decision and cost |
 |---|---|
-| Supabase Free | $0/month, 500 MB database and 1 GB storage; no automatic backups and may pause after a week of inactivity. Suitable for disposable small TEST with manual exports. |
-| Supabase Pro | From $25/month; one Micro project covered by included compute credit, 8 GB disk and seven days of daily backups. Extra projects/usage can add cost. Prefer for a repeatedly presented shared demo if owner accepts the bill. |
-| Vercel | Pro lists $20/month plus extra usage/seats; check existing organization entitlement. Hobby is restricted to personal, non-commercial use, so it is not the proposed SENA business-demo plan. |
-| Hostinger | Reuse IT's existing VPS if capacity permits; incremental charge is unknown. A new KVM 2 is advertised at $8.99/month equivalent, renewing at $14.99/month for two years, paid upfront; IT must confirm checkout term, region and total before buying. |
-| R2 Standard | Includes 10 GB-month, 1 million Class A and 10 million Class B operations monthly; above allowance, storage is $0.015/GB-month plus operations. Small synthetic fixtures may fit the allowance; verify account-wide use. |
+| Supabase Free | Selected: $0/month within Free limits. Keep synthetic fixtures within its 500 MB database and 1 GB file-storage allowance; accept inactivity pausing. No Pro upgrade or paid add-on. |
+| Hostinger VPS | Reuse the existing VPS for admin and API after IT confirms capacity. Existing VPS/domain costs still apply; this decision authorizes no new server or upgrade. |
+| Vercel | No TEST project, deployment, subscription or seat purchase. |
+| R2, document worker and assistant | H2+ remains deferred; no resource purchase or external model/OCR spending in H1. |
 
-Sources: [Supabase pricing](https://supabase.com/pricing),
-[Vercel pricing](https://vercel.com/pricing),
-[Vercel Hobby restrictions](https://vercel.com/docs/plans/hobby),
-[Hostinger VPS pricing](https://www.hostinger.com/vps-hosting),
-[R2 pricing](https://developers.cloudflare.com/r2/pricing/).
+Free limits and pausing were checked on **2 October 2026**.
+[Supabase pricing](https://supabase.com/pricing). No new Supabase or Vercel
+subscription cost is planned; this does not make the existing VPS or domain free.
+Revisit **Supabase Pro and, optionally, Vercel Pro only for production**, with a
+separate architecture, availability, backup/retention and budget decision.
 
-A new one-project Supabase Pro plus one-developer Vercel Pro setup therefore
-starts at approximately **$45/month**, before VPS, storage overages, domains,
-taxes and additional seats/usage. Supabase Free reduces that subtotal to $20.
-This arithmetic is an estimate, not a price cap. Retain available spend controls,
-add billing alerts and seed/storage limits; do not buy PITR or an extra platform
-plan for a disposable demo without an identified need. No OpenAI/OCR API spending
-is included; external model execution remains disabled for this hosting step.
+### Before each demo: manually resume if paused
 
-Backups are an operator responsibility even for TEST. Before a migration and
-after a presentation worth retaining, capture a protected logical database export,
-deployment manifest and separate private object backup with content hashes.
-Do not put backups in Git. On Free, schedule exports only after an operator owns
-the job; on Pro, daily backups complement an independent restore rehearsal.
-Supabase database backups omit Storage object bytes and custom-role passwords;
-reprovision secrets after restore and verify object hashes and permissions.
-Project deletion also deletes its hosted backups.
-[Supabase backup limits](https://supabase.com/docs/guides/platform/backups).
+The demo operator checks the Supabase Dashboard ahead of the presentation. If
+the Free project is paused, manually choose **Resume project**, wait until it is
+ready, and check API health, login, private assets and registry browsing. Do not
+wait until the presentation starts or add a paid upgrade/keep-alive schedule.
+A normal resume retains data/configuration; it is not a reason to reset or
+re-seed healthy data. [Supabase project pausing and resume](https://supabase.com/docs/guides/platform/free-project-pausing).
 
-Proposed TEST retention: seven rotating daily copies plus a pre-change copy,
-reviewed by IT; synthetic artifacts are reproducible. This does not establish a
-real-document retention policy or override a legal hold. Record backup location
-with Q7/Q37 and confirm who can restore it.
+### Recovery: re-seed synthetic data instead of backing it up
+
+TEST data and demo edits are disposable. Do not schedule database dumps, object
+backups, pre-change exports or rotating backup retention for this environment.
+Keep the reviewed migrations, seed generators and non-secret manifests in Git;
+keep access credentials separately in IT's secret custody. Recover lost/reset
+TEST data from those versioned inputs, not from a saved database or bucket dump.
+
+For an explicitly authorized empty/rebuilt TEST target, replay the reviewed
+profile, provision the private bucket and required role identities, regenerate
+the synthetic asset bytes, and apply the H1 seed. Verify fixture hashes/counts,
+the seven roles and both false issuance flags. Exact seed replay on an intact
+database stays a no-op; it does not erase edits or reset migration history.
+If the project cannot be resumed, agree the rebuild/target with the owner first;
+the allowlisted project guard must never be bypassed to seed a replacement.
+No destructive reset or hosted operation is authorized by this documentation
+change. Real data is still excluded; production retention and backups need
+their own decision.
 
 Teardown is a later explicit owner action against this exact TEST inventory:
-disable issuance and logins, stop worker/API and DW access, export anything the
-owner wishes to retain, remove TEST Auth identities, revoke/rotate dedicated
+disable issuance and logins, stop the TEST admin/API and any later worker/DW
+access, discard disposable synthetic data, remove TEST Auth identities, revoke/rotate dedicated
 credentials, remove TEST deployments/DNS and private buckets/objects after
 checking holds, then delete the dedicated Supabase project if authorized.
-Delete only TEST VM resources, not a shared VPS or another app. Cancel the
-relevant subscriptions separately and verify billing; resource removal does not
-prove subscription cancellation. Record destruction and backup-expiry receipts.
+Delete only TEST VM resources, not a shared VPS or another app. Cancel
+any separately approved later subscriptions and verify billing; resource removal
+does not prove subscription cancellation. No paid TEST subscription is selected
+by this plan. Record the removal inventory.
 Nothing is torn down now.
 
 ## 8. Approval scope and outstanding inputs
 
-`docs/27 approved` accepts this design for the next implementation step; it does
-not record P'Note approval, a real-data/DPO decision, or a paid-plan purchase.
-The next work must report local checks first and identify each hosted apply,
-resource provisioning or deployment step before it runs under the approved plan.
+`docs/27 approved` accepts H1 local implementation and verification; it does not
+record P'Note approval, IT readiness, a real-data/DPO decision or a paid purchase.
+Even hosted read-only preflight waits for the owner's IT-readiness confirmation.
 
 | Input | Owner | Default until answered |
 |---|---|---|
-| Accept explicit hosted `0014` profile and TEST-flag controls | Hub owner | No implementation or hosted preflight until document approval; flags stay false. |
-| Regions, access, domain/TLS, backup custody and temporary VM | IT; DPO for Q7/Q37 | Local presentation continues; no guessed infrastructure or real-data transfer. |
-| Plan/seat/VM budget and bill owner | Hub owner + IT/Finance | No purchase, upgrade or subscription change. |
+| Accept explicit hosted `0014` profile and TEST-flag controls | Hub owner | Approved for H1 local implementation; both flags stay false. Hosted preflight still waits for IT readiness. |
+| Regions, access, shared-origin domain/TLS, secret custody and demo recovery | IT; DPO for Q7/Q37 | Local presentation continues; no guessed infrastructure or real-data transfer. Synthetic TEST data is re-seeded, not backed up. |
+| TEST cost and existing VPS capacity | Hub owner + IT/Finance | Decided: Supabase Free and admin/API on the existing Hostinger VPS; no Vercel TEST project or purchase. IT capacity/access confirmation is still pending. Paid plans are revisited only for production. |
 | Test mailboxes and authorized testers | IT + Hub owner | No users or invitations created. |
 | Copy of real HYABC REM identity | IT/data owner | No; use new fictional identities. |
 | Real documents/internal-data processing | DPO/data owner, Q7/Q36 | Synthetic only; no external OCR/LLM, RAG, indexing, embeddings or ingestion work. |
 
-Planning validation consists of repository inspection and official public
-documentation. Hosted preflight, migrations, Auth, storage and smoke tests are
-**not run** in this step. The owner-supplied `42501` denial is the current result;
-the proposed variant must prove its behavior locally before any later cloud use.
+Hosted preflight, migrations, Auth provisioning, storage provisioning and cloud
+smoke tests are **not run**. Local H1 validation uses a disposable non-superuser
+PostgreSQL simulation plus loopback Auth/Storage protocol doubles. It does not
+claim a real Supabase Auth service or managed Storage policy has been tested.
+
+## 9. Local H1 package
+
+Implementation details and actual local check results are recorded in the
+[H1 implementation report](ads/H1_IMPLEMENTATION_20261002.md). Cloud
+provisioning remains pending; local simulation results do not establish that
+the hosted project's Auth, Storage policies or infrastructure are ready.
+
+Build the admin first, then run `npm.cmd run test:hosted-h1`. This creates a fresh
+disposable cluster on `127.0.0.1:55434`, reproduces the denied parameter grant,
+applies the profile, verifies replay/rollback/permissions, seeds synthetic data,
+and runs Edge against local Auth/Storage (`54329`), API (`8001`) and admin (`3001`).
+The harness refuses occupied ports and never reads `.env.supabase-test`. Private
+connection metadata stays in ignored `.local/hosted-test-simulation/current.json`.
+The normal local demo remains on ports `55432`, `8000` and `3000`.
+
+`npm.cmd run dev:hosted-h1` starts the same disposable package for a local demo;
+stop an existing H1 run before starting another. Ctrl+C stops owned processes.
+Use one of the seven `hub-test-…@example.test` accounts from
+`scripts/hosted-test-fixtures.mjs` with its clearly synthetic fixture password.
+These accounts and public fixture values cannot authenticate to any hosted project.
+The local mock models the documented SSR refresh-token reuse interval;
+it is a protocol test double, not an Auth implementation for deployment.
+[Supabase refresh behavior](https://supabase.com/docs/guides/auth/sessions).
+
+The seed creates one fictional brand, project, model and promotion, three private
+generated images, one atomic release and two campaign examples (KIN/COMBAY).
+It uses no real REM identities. An exact replay leaves existing demo edits alone;
+a changed seed checksum refuses to apply. Temporary operator policies and role
+grants are restored within the transaction. The profile and seed SQL files use
+stable bytes via `.gitattributes` so checkout line-ending conversion cannot alter
+their recorded checksums.
