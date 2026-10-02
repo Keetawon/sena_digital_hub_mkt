@@ -783,14 +783,60 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 raise failure(404, "not_published", "ไม่พบแบรนด์ที่เผยแพร่และยังใช้งานได้")
             return {"data": public_payload(row), "meta": public_meta(row)}
 
-    @app.get("/v1/projects/{public_id}")
-    async def published_project(public_id: str, request: Request, actor: Actor = Depends(consumer)):
-        check_query(request)
+    async def published_project_row(public_id, request, actor):
         async with database(request, actor) as connection:
             row = await connection.fetchrow("SELECT * FROM public_api.projects WHERE public_project_id=$1", public_id)
             if row is None:
                 raise failure(404, "not_published", "ไม่พบโครงการที่เผยแพร่และยังใช้งานได้")
-            return {"data": public_payload(row), "meta": public_meta(row)}
+            return row
+
+    @app.get("/v1/projects/{public_id}")
+    async def published_project(public_id: str, request: Request, actor: Actor = Depends(consumer)):
+        check_query(request)
+        row = await published_project_row(public_id, request, actor)
+        return {"data": public_payload(row), "meta": public_meta(row)}
+
+    @app.get("/v1/projects/{public_id}/models")
+    async def published_project_models(public_id: str, request: Request, actor: Actor = Depends(consumer)):
+        check_query(request)
+        row = await published_project_row(public_id, request, actor)
+        return {"data": row["payload"].get("models", []), "meta": public_meta(row)}
+
+    def frozen_assets(row, role, model_id=None):
+        return [asset for asset in row["payload"].get("assets", [])
+                if asset.get("public_model_id") == model_id and (role is None or asset["asset_role"] == role)]
+
+    @app.get("/v1/projects/{public_id}/assets")
+    async def published_project_assets(public_id: str, request: Request,
+                                       role: Annotated[Literal["hero", "thumbnail", "master_plan", "floor_plan", "brochure"] | None, Query()] = None,
+                                       actor: Actor = Depends(consumer)):
+        check_query(request, ("role",))
+        row = await published_project_row(public_id, request, actor)
+        return {"data": frozen_assets(row, role), "meta": public_meta(row)}
+
+    async def published_model_row(public_id, request, actor):
+        async with database(request, actor) as connection:
+            row = await connection.fetchrow(
+                "SELECT p.*, m.item AS published_model FROM public_api.projects p "
+                "CROSS JOIN LATERAL jsonb_array_elements(p.payload->'models') m(item) "
+                "WHERE m.item->>'public_model_id'=$1", public_id)
+            if row is None:
+                raise failure(404, "not_published", "ไม่พบแบบที่อยู่ในโครงการที่เผยแพร่และยังใช้งานได้")
+            return row
+
+    @app.get("/v1/models/{public_id}")
+    async def published_model(public_id: str, request: Request, actor: Actor = Depends(consumer)):
+        check_query(request)
+        row = await published_model_row(public_id, request, actor)
+        return {"data": {**row["published_model"], "public_project_id": row["public_project_id"]}, "meta": public_meta(row)}
+
+    @app.get("/v1/models/{public_id}/assets")
+    async def published_model_assets(public_id: str, request: Request,
+                                     role: Annotated[Literal["model_image", "floor_plan", "structural_plan"] | None, Query()] = None,
+                                     actor: Actor = Depends(consumer)):
+        check_query(request, ("role",))
+        row = await published_model_row(public_id, request, actor)
+        return {"data": frozen_assets(row, role, row["published_model"]["public_model_id"]), "meta": public_meta(row)}
 
     register_facility_routes(app, admin, writer, database, detail)
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)

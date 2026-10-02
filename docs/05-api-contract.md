@@ -15,6 +15,52 @@
 
 ## 2. Endpoint
 
+### Implemented published model/asset reads — 2 October 2026
+
+After the local brand slice, the next bounded core increment adds:
+
+```http
+GET /v1/projects/{public_project_id}/models
+GET /v1/projects/{public_project_id}/assets?role=hero
+GET /v1/models/{public_model_id}
+GET /v1/models/{public_model_id}/assets?role=floor_plan
+```
+
+All four require `service_consumer` and read only the existing eligible
+`public_api.projects` immutable snapshot. A model has no independent publication
+pointer: its metadata's `entity_version`/`published_at` identify the containing
+project release. Model detail adds that frozen `public_project_id` as context.
+Draft edits never supply names, specifications, bindings or files. An unavailable
+parent project (including source/brand/rights withdrawal) makes all child reads
+return 404. Unknown IDs also return 404; source IDs are never path aliases.
+
+Project assets return only bindings with no `public_model_id`; model assets require
+the exact frozen public model ID. Preserve frozen order, role, Thai alternative
+text and asset metadata. The optional exact role filter accepts project roles
+`hero`, `thumbnail`, `master_plan`, `floor_plan`, `brochure`, or model roles
+`model_image`, `floor_plan`, `structural_plan`, respectively. Unsupported or duplicate
+query parameters and wrong-scope roles return 422. Metadata, no-store caching and
+file-access controls remain those of the existing published-project API. These
+routes grant no new table, asset-file or staff permission.
+
+Verification on 2 October: 45 focused consumer-boundary/snapshot/scope/filter
+tests passed; the full API suite passed with **1,272 passed, 11 skipped** and one
+existing Starlette deprecation warning. Twelve read-only requests against the
+local eligible synthetic fixture verified one project, one frozen model, two
+project assets, an empty model-media collection, matching release metadata and
+404 responses for unpublished/unknown identities. No data migration or content
+write was required; the prior brand slice's database, build and browser results
+remain recorded in [28 — DW brands and published content](28-dw-brands-and-published-content.md).
+
+This closes four missing read paths in **API-02**, not the whole core acceptance
+gate. Amenities and Marketing Unit Types in migrations `0010`/`0011` remain private
+draft catalogue data: no current public snapshot freezes their reviewed content.
+They are not returned through these endpoints or substituted for canonical models.
+Their release/lineage/rights contract must precede consumer exposure. Spatial,
+narrative, FAQ/nearby/compliance, locale fallback, wider filters, source sync and
+change-feed/webhook gaps also remain; the full endpoint list below is the target
+contract, not a claim that every listed path has been implemented.
+
 ### สำหรับ Consumer (read-only, `service_consumer`)
 ```http
 GET /v1/brands
