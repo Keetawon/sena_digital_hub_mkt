@@ -468,7 +468,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def brand_versions(public_id: str, request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as connection:
             current = await brand_detail(connection, public_id)
-            return {"data": await connection.fetchval("SELECT hub.brand_versions($1)", UUID(current["id"]))}
+            brand_id = UUID(current["id"])
+            versions = await connection.fetchval("SELECT hub.brand_versions($1)", brand_id)
+            # Keep the existing visibility guard and metadata. Comparisons need
+            # the immutable payload, read under the same caller role and RLS.
+            payloads = {str(row["id"]): row["payload"] for row in await connection.fetch(
+                "SELECT id, payload FROM hub.brand_versions WHERE brand_id=$1", brand_id,
+            )}
+            return {"data": [{**version, "payload": payloads.get(version["version_id"])} for version in versions]}
 
     async def brand_publish_action(public_id, reason, request, actor, operation, version_id=None):
         async with database(request, actor) as connection:

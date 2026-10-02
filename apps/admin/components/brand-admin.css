@@ -1,0 +1,75 @@
+.brand-statuses { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.brand-statuses .brand-unpublished { background: var(--warning-soft); color: var(--warning-strong); border-color: var(--warning-line); }
+.brand-review-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 10px; }
+.brand-review-filters .button { min-height: 44px; gap: 8px; }
+.brand-review-filters [aria-pressed="true"] { color: var(--brand-ink); background: var(--action); border-color: var(--action); }
+.brand-review-filters [aria-pressed="true"] .count { color: var(--ink); background: var(--surface); }
+.brand-filter-help { margin-bottom: 24px; }
+.brand-detail-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 278px; grid-template-areas: "intro readiness" "tabs readiness" "content readiness"; column-gap: 26px; align-items: start; }
+.brand-detail-intro { grid-area: intro; min-width: 0; }
+.brand-workspace-tabs { grid-area: tabs; }
+.brand-workspace-content { grid-area: content; min-width: 0; }
+.brand-detail-heading { gap: 20px; }
+.brand-detail-heading > div { min-width: 0; }
+.brand-detail-heading > .brand-statuses { max-width: 330px; justify-content: flex-end; }
+.brand-source-summary { margin-top: 12px; max-width: 720px; font-size: var(--text-small); }
+.brand-source-summary summary { color: var(--muted); cursor: pointer; padding: 6px 0; overflow-wrap: anywhere; }
+.brand-source-summary .source-list { margin: 10px 0 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.brand-review-fields { margin: 0; }
+.brand-review-fields > div { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.brand-review-fields > div:first-child { padding-top: 0; }
+.brand-review-fields dt { font-size: var(--text-small); color: var(--muted); margin-bottom: 5px; }
+.brand-review-fields dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-body); }
+.brand-website-preview { margin-top: 24px; padding: 22px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; }
+.brand-website-preview .asset-preview { width: 120px; height: 90px; margin: 18px 0; }
+.brand-website-preview .asset-preview img { object-fit: contain; }
+.brand-website-preview h3 { font-size: var(--text-heading); margin: 14px 0 10px; }
+.brand-website-preview > p { overflow-wrap: anywhere; white-space: pre-wrap; }
+.brand-logo-placeholder { padding: 20px 12px; margin-top: 16px; border: 1px dashed var(--line-strong); border-radius: 6px; color: var(--muted); }
+.brand-detail-workspace > .brand-readiness { grid-area: readiness; position: sticky; top: 20px; max-height: calc(100dvh - 116px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: 2px; }
+.brand-readiness .readiness-panel { margin-bottom: 0; }
+.brand-readiness .panel-body { display: block; padding: 20px; }
+.brand-readiness-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.brand-readiness-heading h2 { font-size: var(--text-label); }
+.brand-readiness .readiness-number { font-size: 30px; margin: 0; white-space: nowrap; }
+.brand-readiness .readiness-list { margin-top: 12px; }
+.brand-readiness .publish-block { margin-top: 10px; padding-top: 12px; }
+.brand-publish-help { margin-top: 14px; font-size: var(--text-small); }
+.brand-publish-help summary { cursor: pointer; color: var(--muted); }
+.brand-publish-help p { margin-top: 10px; }
+.brand-save-bar.project-save-bar { position: sticky; bottom: 0; z-index: 5; margin-top: 12px; padding: 14px 20px; }
+.brand-required { color: var(--warning-strong); font-size: var(--text-small); }
+.action-dialog:has(.brand-comparison) { width: min(900px, calc(100vw - 32px)); }
+.brand-comparison { margin: 22px 0; }
+.brand-comparison-row { border: 1px solid var(--line); border-inline-start: 4px solid var(--line); border-radius: 6px; margin-top: 14px; padding: 14px; overflow-wrap: anywhere; }
+.brand-comparison-row.changed { border-inline-start-color: var(--gold-strong); background: var(--surface-warm); }
+.brand-comparison-row h4 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; font-size: var(--text-label); }
+.brand-change-mark { font-size: var(--text-caption); color: var(--gold-strong); }
+.brand-comparison-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 12px; }
+.brand-comparison-pair > div + div { border-inline-start: 1px solid var(--line-strong); padding-inline-start: 20px; }
+.brand-comparison-caption { font-size: var(--text-small); font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+.brand-localized-value p { white-space: pre-wrap; }
+.brand-comparison-logos { display: grid; gap: 18px; }
+.brand-comparison-logos > div { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.brand-comparison-logos .asset-preview { width: 96px; height: 72px; margin: 8px 0; }
+.brand-comparison-logos .asset-preview img { object-fit: contain; }
+.brand-comparison-logos p, .brand-comparison-logos details { font-size: var(--text-small); margin-top: 6px; }
+.brand-comparison-logos dl { margin-top: 8px; }
+.brand-comparison-logos dt { color: var(--muted); }
+.brand-comparison-logos dd { margin: 0 0 8px; }
+@media (max-width: 900px) {
+  .brand-detail-workspace { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "readiness" "tabs" "content"; }
+  .brand-detail-heading { align-items: flex-start; }
+  .brand-detail-heading > .brand-statuses { max-width: none; justify-content: flex-start; }
+  .brand-detail-workspace > .brand-readiness { position: static; max-height: none; overflow: visible; padding-bottom: 0; margin-bottom: 24px; }
+}
+@media (max-width: 640px) {
+  .brand-detail-heading { flex-direction: column; }
+  .brand-review-filters { gap: 8px; }
+  .brand-review-filters .button { flex: 1 1 auto; }
+  .brand-website-preview { padding: 16px; }
+  .brand-comparison-pair { grid-template-columns: 1fr; gap: 14px; }
+  .brand-comparison-pair > div + div { border-inline-start: 0; padding-inline-start: 0; border-top: 1px solid var(--line-strong); padding-top: 14px; }
+  .brand-save-bar.project-save-bar { padding: 12px; align-items: stretch; }
+  .brand-save-bar .button { width: 100%; }
+}

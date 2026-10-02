@@ -124,6 +124,49 @@ def test_project_filter_is_exact_parameterized_snapshot_brand_id(client, monkeyp
     assert value not in calls[0][0]
 
 
+@pytest.mark.parametrize("role", ["editor", "publisher", "viewer", "admin"])
+def test_brand_history_includes_frozen_payload_under_the_existing_caller_role(client, monkeypatch, role):
+    brand_id, version_id = UUID(int=21), UUID(int=22)
+    frozen = {"public_name": {"th": "ชื่อในเวอร์ชันเดิม"}, "description": {"th": "คำอธิบายเดิม"},
+              "slug": "original-brand", "status": "active", "assets": []}
+    metadata = {"version_id": str(version_id), "version_no": 1, "published_at": STAMP,
+                "publisher": ID, "change_reason": "เหตุผลที่บันทึกเดิม"}
+    calls = []
+
+    class Connection:
+        async def fetchval(self, query, *values):
+            calls.append((query, values))
+            if "brand_detail" in query:
+                return {"id": str(brand_id), "public_name": {"th": "ฉบับร่างที่เปลี่ยนแล้ว"},
+                        "published_version_id": None}
+            assert "hub.brand_versions($1)" in query and values == (brand_id,)
+            return [metadata]
+
+        async def fetch(self, query, *values):
+            calls.append((query, values))
+            assert query == "SELECT id, payload FROM hub.brand_versions WHERE brand_id=$1"
+            assert values == (brand_id,)
+            return [{"id": version_id, "payload": frozen}]
+
+    @asynccontextmanager
+    async def connection(request, actor):
+        assert actor.role == role
+        yield Connection()
+
+    monkeypatch.setattr(main, "database", connection)
+    response = client.get("/v1/admin/brands/brd_review/versions", headers={"Authorization": f"Bearer {TOKENS[role]}"})
+    assert response.status_code == 200
+    assert response.json()["data"] == [{**metadata, "payload": frozen}]
+    assert calls[0][1] == ("brd_review",)
+    assert len(calls) == 3 and all(query.startswith("SELECT ") for query, _ in calls)
+
+
+def test_brand_history_payload_is_still_denied_to_public_consumer(client):
+    response = client.get("/v1/admin/brands/brd_review/versions",
+                          headers={"Authorization": f"Bearer {TOKENS['service_consumer']}"})
+    assert response.status_code == 403
+
+
 def test_create_project_assigns_brand_in_the_same_transaction(client, monkeypatch):
     calls = []
     transaction_count = 0

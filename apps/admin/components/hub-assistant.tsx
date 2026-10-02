@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { request } from "./hub-request";
 import { PendingQuestion } from "./pending-question";
 import { dateTime } from "./content-operations-shared";
@@ -84,33 +85,46 @@ function DraftProposal({ context, config }: { context: Context; config: Config }
   return <section className="assistant-proposal"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>แก้ได้เฉพาะช่องข้อความตัวอย่างที่ระบบอนุญาต การส่งแชตไม่ใช่คำสั่งบันทึก และไม่เปลี่ยนฉบับเผยแพร่</p><button className="button secondary" type="button" onClick={() => void load()} disabled={busy}>{target ? "โหลดฉบับร่างล่าสุดเพื่อทบทวนใหม่" : "โหลดข้อความฉบับร่างที่มีสิทธิ์แก้"}</button>{error && <p role="alert" className="notice error">{error}</p>}{target && <form onSubmit={propose}><div className="form-field"><label htmlFor="assistant-draft-field">ช่องข้อความ</label><select id="assistant-draft-field" value={field} onChange={event => { setField(event.target.value); setProposal(null); setSaved(false); }} disabled={busy}>{fields.map(path => <option key={path} value={path}>{fieldLabels[path] ?? "ข้อความที่ระบบอนุญาต"}</option>)}</select></div><p>ข้อความปัจจุบัน: {typeof oldValue === "string" && oldValue ? oldValue : "ยังไม่มีข้อความ"}</p><button className="button secondary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void suggest()}>ให้ผู้ช่วยเสนอข้อความ</button><p className="assistant-meta">ผู้ช่วยจำลองในเครื่องเสนอจากข้อความเดิม ไม่ได้เรียกโมเดลจริง หรือกรอกข้อความที่คุณเขียนเองด้านล่างเพื่อสร้างข้อเสนอ</p><div className="form-field"><label htmlFor="assistant-draft-new">ข้อความที่เสนอ</label><textarea id="assistant-draft-new" rows={4} maxLength={4000} value={text} disabled={busy} onChange={event => { setText(event.target.value); setProposal(null); setSaved(false); }} required /></div><div className="form-field"><label htmlFor="assistant-draft-reason">เหตุผลที่เสนอ</label><textarea id="assistant-draft-reason" rows={2} maxLength={1000} value={rationale} disabled={busy} onChange={event => { setRationale(event.target.value); setProposal(null); setSaved(false); }} /></div><button className="button secondary" type="submit" disabled={busy || !text.trim() || stale} aria-busy={busy}>สร้างข้อเสนอเพื่อดูความแตกต่าง</button></form>}{proposal && <section aria-label="ความแตกต่างของข้อความที่เสนอ"><dl className="assistant-diff"><div><dt>ก่อนแก้ไข</dt><dd>{proposal.old_text || "ยังไม่มีข้อความ"}</dd></div><div><dt>หลังแก้ไข</dt><dd>{proposal.new_text}</dd></div></dl><p className="assistant-meta">รุ่นข้อมูลอ้างอิง <code>{proposal.expected_updated_at}</code></p>{saved ? <p role="status" className="notice success">บันทึกฉบับร่างแล้ว · ฉบับเผยแพร่ยังไม่เปลี่ยน</p> : <button className="button primary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void confirm()}>ยืนยันบันทึกเป็นฉบับร่าง</button>}</section>}</section>;
 }
 
-export function HubAssistant() {
+export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigationTarget: HTMLElement | null; onNavigationOpen: () => HTMLElement | null }) {
   const [open, setOpen] = useState(false); const [config, setConfig] = useState<Config | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const [context, setContext] = useState<Context>({}); const [contextKind, setContextKind] = useState<ContextKind>("project_id"); const [contextId, setContextId] = useState(""); const [month, setMonth] = useState(""); const [visibility, setVisibility] = useState<"draft" | "published">("draft");
   const [mode, setMode] = useState<"fake" | "live">("fake"); const [question, setQuestion] = useState(""); const [golden, setGolden] = useState(""); const [turns, setTurns] = useState<Turn[]>([]); const [busy, setBusy] = useState(false); const [status, setStatus] = useState("");
   const [tab, setTab] = useState<"chat" | "draft">("chat"); const [saveBarClearance, setSaveBarClearance] = useState(0);
-  const trigger = useRef<HTMLButtonElement>(null); const opener = useRef<HTMLElement | null>(null); const dialog = useRef<HTMLDialogElement>(null); const latest = useRef<HTMLDivElement>(null); const controller = useRef<AbortController | null>(null); const runId = useRef<string | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null); const floatingTrigger = useRef<HTMLButtonElement>(null); const opener = useRef<HTMLElement | null>(null); const dialog = useRef<HTMLDialogElement>(null); const latest = useRef<HTMLDivElement>(null); const controller = useRef<AbortController | null>(null); const runId = useRef<string | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null); const goldenInput = useRef<HTMLSelectElement>(null); const shown = useRef(false);
   const contextButton = useRef<HTMLButtonElement>(null); const contextPopover = useRef<HTMLDivElement>(null); const contextHeading = useRef<HTMLHeadingElement>(null); const contextPopoverId = useId();
   useEffect(() => { const update = () => { const next = new URLSearchParams(window.location.search).get("assistant") === "open"; if (next) setTab("chat"); setOpen(next); }; update(); window.addEventListener("popstate", update); return () => { window.removeEventListener("popstate", update); controller.current?.abort(); }; }, []);
   useEffect(() => {
     const main = document.getElementById("main-content"); if (!main) return;
-    let bar: HTMLElement | null = null;
+    let bar: HTMLElement | null = null; let action: HTMLElement | null = null;
     const measure = () => {
       const rect = bar?.getBoundingClientRect();
-      setSaveBarClearance(rect && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0 ? Math.ceil(window.innerHeight - rect.top) : 0);
+      let clearance = rect && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0 ? Math.ceil(window.innerHeight - rect.top) : 0;
+      const floating = floatingTrigger.current; const actionRect = action?.getBoundingClientRect();
+      if (floating && actionRect && actionRect.height > 0) {
+        const fab = floating.getBoundingClientRect(); const style = getComputedStyle(floating);
+        // Recover the unshifted 20px + safe-area gap from the committed styles.
+        // Using the already-shifted box would alternate between clear and overlap.
+        const gap = parseFloat(style.bottom) - parseFloat(style.getPropertyValue("--assistant-clearance"));
+        const bottom = window.innerHeight - gap - clearance;
+        if (fab.height > 0 && fab.left < actionRect.right && fab.right > actionRect.left && bottom > actionRect.top && bottom - fab.height < actionRect.bottom) clearance = Math.max(clearance, Math.ceil(window.innerHeight - actionRect.top));
+      }
+      setSaveBarClearance(clearance);
     };
     const resize = new ResizeObserver(measure);
+    if (floatingTrigger.current) resize.observe(floatingTrigger.current);
     const bind = () => {
-      const next = main.querySelector<HTMLElement>(".project-save-bar");
-      if (next === bar) return;
-      resize.disconnect(); bar = next; if (bar) resize.observe(bar); measure();
+      const next = main.querySelector<HTMLElement>(".project-save-bar, [data-assistant-clearance]:not([data-assistant-clearance='overlap'])");
+      const nextAction = main.querySelector<HTMLElement>("[data-assistant-clearance='overlap']");
+      if (next === bar && nextAction === action) return;
+      resize.disconnect(); bar = next; action = nextAction;
+      if (bar) resize.observe(bar); if (action) resize.observe(action); if (floatingTrigger.current) resize.observe(floatingTrigger.current); measure();
     };
     const changes = new MutationObserver(bind); changes.observe(main, { childList: true, subtree: true }); bind();
     window.addEventListener("scroll", measure, { passive: true, capture: true }); window.addEventListener("resize", measure, { passive: true });
     return () => { changes.disconnect(); resize.disconnect(); window.removeEventListener("scroll", measure, true); window.removeEventListener("resize", measure); };
   }, []);
-  useEffect(() => { if (open) { shown.current = true; dialog.current?.showModal(); } else { contextPopover.current?.hidePopover(); dialog.current?.close(); if (shown.current) (opener.current?.isConnected ? opener.current : trigger.current)?.focus(); } }, [open]);
+  useEffect(() => { if (open) { shown.current = true; dialog.current?.showModal(); } else { contextPopover.current?.hidePopover(); dialog.current?.close(); if (shown.current) (opener.current?.isConnected && opener.current.getClientRects().length ? opener.current : trigger.current?.getClientRects().length ? trigger.current : floatingTrigger.current)?.focus(); } }, [open]);
   useEffect(() => { if (open && !config && !loading) void loadConfig(); }, [open]);
   useEffect(() => { if (open && config && tab === "chat") (mode === "fake" ? composer.current : goldenInput.current)?.focus({ preventScroll: true }); }, [open, config, mode]);
   function contextSaved(next: Context, value = config) {
@@ -172,8 +186,8 @@ export function HubAssistant() {
   const draftContextAllowed = Boolean(config && (context.project_id ? config.proposal_fields.project?.length : context.brand_id ? config.proposal_fields.brand?.length : false));
   const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4zM8 8h8M8 12h5" /></svg>;
   return <>
-    <button ref={trigger} className="nav-link assistant-trigger" type="button" aria-haspopup="dialog" onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ผู้ช่วย Hub</span></button>
-    <button className="button primary assistant-floating" style={{ bottom: `calc(20px + ${saveBarClearance}px + env(safe-area-inset-bottom))` }} type="button" aria-haspopup="dialog" hidden={open} onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ถามผู้ช่วย</span></button>
+    {navigationTarget && createPortal(<button ref={trigger} className="nav-link assistant-trigger" type="button" aria-haspopup="dialog" onClick={event => toggle(true, onNavigationOpen() ?? event.currentTarget)}>{icon}<span>ผู้ช่วย Hub</span></button>, navigationTarget)}
+    <button ref={floatingTrigger} className="button primary assistant-floating" style={{ "--assistant-clearance": `${saveBarClearance}px`, bottom: "calc(20px + var(--assistant-clearance) + env(safe-area-inset-bottom))" } as CSSProperties} type="button" aria-haspopup="dialog" hidden={open} onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ถามผู้ช่วย</span></button>
     <dialog ref={dialog} className="action-dialog assistant-panel" aria-labelledby="assistant-title" onCancel={event => { event.preventDefault(); toggle(false); }}>
       <header className="assistant-header">
         <div className="assistant-heading"><h2 id="assistant-title">ผู้ช่วย Hub</h2><button className="button secondary assistant-close" type="button" onClick={() => toggle(false)}>ปิดผู้ช่วย</button></div>

@@ -44,3 +44,99 @@ Brand and project publication are separate operations in this local slice. Coord
 ## Local examples
 
 `DEMO-BRAND-01` is a prepared published synthetic brand; `DEMO-001` and `DEMO-002` reference it but have different synthetic companies. `DEMO-BRAND-02` and `DEMO-003` let staff practise brand creation and project selection. Every name, logo and mapping is fabricated. The prepared project remains a draft until a user publishes it. No real source inventory is imported by the local bootstrap.
+
+## Brand review UX — 2 October 2026 design before code
+
+Preserve the current role checks, API routes/write bodies, source ownership,
+immutable versions and audit rules. The existing staff-only versions response
+needs its already-authorized frozen payload included for exact comparisons;
+read it under the existing caller role/RLS. This is an additive response field,
+not a new source of publication authority. Never substitute the current draft
+for an unavailable historical snapshot.
+
+Compare the saved draft's public name and description (all locales), slug, status
+and logo set with the exact selected published version. Ignore source/audit
+metadata and additional live asset metadata when comparing frozen content.
+Show `มีการแก้ไขรอเผยแพร่` alongside the existing publication state on list/detail.
+Publish review shows current versus proposed values; first publish shows the
+complete proposed content. Rollback compares current content with the selected
+historical version. Mark changed fields with Thai text as well as existing tokens.
+Every publish/withdraw/rollback reason is visibly required; whitespace alone
+cannot enable confirmation. Existing server validation remains authoritative.
+
+List filters are overlapping facets: all brands; ready at 100% with a changed
+draft or no publication history (`รอเผยแพร่`); not ready (`ยังไม่พร้อม`);
+currently available (`เผยแพร่แล้ว`); and previously published but unavailable
+(`หยุดแสดง`). A published brand with ready edits belongs to both relevant facets,
+so counts need not sum to the total. Withdrawal history distinguishes stopped
+brands from never-published drafts. A withdrawn brand whose publication pointer
+was cleared remains stopped: do not infer an edit or use the latest history row
+as its former publication, since a rollback might have selected another version.
+Shared read state supplies the list and the
+publisher's brand-menu pending count. Failed snapshot reads are shown as unknown
+with retry, never counted as unchanged or silently reported as zero.
+
+Publishers/viewers review text and a draft website-style logo/name/description
+preview. Editors/admins retain the existing form and primary save action, with
+a sticky save bar while dirty. Display four logo slots: required primary and
+optional white, monochrome and favicon, each with an empty/rights state. Keep
+upload, binding and rights approval controls within their current permissions.
+Use the REM brand ID in the header and a compact read-only source summary below
+the title. Admin requests and their pending count precede the brand grid.
+
+Keep the readiness/publish card sticky with room for the floating assistant at
+1366×768. On narrow screens, a menu button opens an accessible modal drawer with
+the same role-filtered groups; content starts immediately. Preserve a single
+assistant panel and its two entry points, focus return, Escape, reduced-motion
+tokens and context. Reserve bottom space and measure sticky save-bar clearance
+so persistent controls do not cover text/actions. Reuse the current Emerald &
+Champagne semantic colors and typography without new dependencies.
+
+Contrast measured from `styles/tokens.css` using sRGB relative luminance:
+
+| Brand review text/background tokens | Ratio |
+|---|---:|
+| `warning-strong` / `warning-soft` (pending changes) | 6.84:1 |
+| `gold-strong` / `surface-warm` (changed fields) | 4.77:1 |
+| `brand-ink` / `action` (selected filter) | 8.05:1 |
+| `sidebar` / `gold-light` (menu count) | 8.46:1 |
+
+Verify Edge at 1366×768 and 390×844, including saved-draft badges, first/publish/
+rollback comparisons, facet counts, required reasons, role-specific text/controls,
+four logo slots, admin requests, drawer keyboard behavior and assistant clearance.
+Run admin typecheck/build, API regression coverage for frozen payload permissions,
+and the full Edge UI suite before explicit-path commit and push.
+
+The implemented readiness column starts beside the detail header, remains sticky
+across both tabs on desktop, and precedes the content tabs on mobile. Its body
+does not inherit the project page's two-column mobile layout. The assistant
+keeps existing save-bar clearance and additionally moves above the brand publish
+controls only when their rectangle intersects its normal position. Computing
+from that normal position avoids alternating between overlap and clearance.
+
+The mobile drawer uses the browser's modal dialog behavior, including background
+inertness, Escape and focus return. Native Edge may move focus into browser chrome
+at the document boundary; returning with Tab must enter the drawer, and background
+content must remain unfocusable while it is open.
+
+Verification on 2 October 2026 (local synthetic database; Edge):
+
+| Command | Actual result |
+|---|---|
+| `npm.cmd run typecheck --prefix apps/admin` | Exit 0; `tsc --noEmit` |
+| `npm.cmd run build --prefix apps/admin` | Exit 0; Next.js production build completed |
+| `uv --cache-dir .cache/uv run --project apps/api --env-file apps/api/.env pytest apps/api/tests` | 1,071 passed, 10 skipped, 1 warning in 221.83 seconds |
+| `npm.cmd run test:db` | Exit 0; SQL/RLS, concurrency and DW fixture checks passed; fixture runner 2 passed, 0 failed |
+| `$env:PLAYWRIGHT_CHANNEL='msedge'; npm.cmd run test:ui` | 149 passed in 7.2 minutes, exit 0 |
+
+The brand API subset also passed all 71 tests. The final Edge suite covers
+1366×768 and 390×844, saved-draft badges, exact publication/rollback comparisons,
+required reasons, overlapping counts, unknown snapshots, logo slots, admin
+requests, role restrictions, mobile drawer focus and intermediate-scroll
+publish/assistant clearance. Read-only screenshot checks used the prepared
+synthetic brand with its long Thai name. An earlier run exposed test-locator and
+navigation-timing issues; these were corrected before the final passing suite.
+
+The build retains the existing Google Sans fallback-metric warning; the API
+warning is the existing Starlette `BlockingPortal` deprecation. No migration,
+external provider call or real source-system write was needed.

@@ -39,3 +39,11 @@
   .project-upload-item { grid-template-columns: minmax(0, 1fr); }
   .project-upload-preview { width: 100px; }
 }
+.brand-logo-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.brand-logo-slot { min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.brand-logo-slot-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px; background: var(--surface-warm); }
+.brand-logo-slot-heading h4 { margin: 0; font-size: var(--text-body); }
+.brand-logo-slot .asset-card { border: 0; border-radius: 0; }
+.brand-logo-slot .asset-empty { margin: 0; padding: 24px 16px; }
+.brand-assets .brand-logo-slot[data-logo-role="logo_white"] .asset-preview { background: var(--sidebar); }
+@media (max-width: 720px) { .brand-logo-slots { grid-template-columns: minmax(0, 1fr); } }

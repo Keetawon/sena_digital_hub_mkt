@@ -11,13 +11,23 @@ async function enter(page: Page, role: 'admin' | 'editor', path = '/') {
 }
 
 async function activeSection(page: Page, name: string) {
+  await openMenu(page);
   const navigation = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await expect(navigation).toBeVisible();
   await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
   await expect(navigation.getByRole('link', { name, exact: true })).toHaveAttribute('aria-current', 'page');
 }
 
+async function openMenu(page: Page) {
+  const trigger = page.getByRole('button', { name: 'เปิดเมนู', exact: true });
+  if (await trigger.isVisible()) {
+    await expect(page.locator('.hub-mobile-drawer')).toHaveCount(1);
+    if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  }
+}
+
 async function reveal(page: Page, group: string) {
+  await openMenu(page);
   const button = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('button', { name: group, exact: true });
   if (await button.count() && await button.getAttribute('aria-expanded') === 'false') await button.click();
 }
@@ -66,8 +76,8 @@ test('opening the registry from the shared menu preserves the residential role',
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
 });
 
-test('shared navigation stays keyboard accessible at 375px with large Thai text and reduced motion', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
+test('shared navigation stays keyboard accessible at 390px with large Thai text and reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; });
@@ -79,7 +89,9 @@ test('shared navigation stays keyboard accessible at 375px with large Thai text 
     const link = menu.getByRole('link', { name, exact: true });
     await link.focus();
     await expect(link).toBeFocused();
-    await page.keyboard.press('Enter');
+    // These are native anchor navigations, including the current-page link.
+    // Wait for its new document before reopening the responsive drawer.
+    await Promise.all([page.waitForEvent('domcontentloaded'), page.keyboard.press('Enter')]);
     await activeSection(page, name);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const target = await menu.getByRole('link', { name, exact: true }).boundingBox();
@@ -87,12 +99,40 @@ test('shared navigation stays keyboard accessible at 375px with large Thai text 
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('auto');
   }
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: 'ส่งคืนรหัสแคมเปญ', exact: true }).click();
   await activeSection(page, 'ทะเบียนแคมเปญ');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.keyboard.press('Escape');
   await page.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true }).click();
   await activeSection(page, 'ทะเบียนแคมเปญ');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('mobile drawer starts closed, traps focus, closes for navigation and returns focus on Escape', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 }); await enter(page, 'admin', '/?view=brands');
+  const opener = page.getByRole('button', { name: 'เปิดเมนู', exact: true });
+  const drawer = page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true });
+  await expect(opener).toHaveAttribute('aria-expanded', 'false');
+  await expect(drawer).not.toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true })).not.toBeVisible();
+  await expect(page.getByRole('heading', { name: 'แบรนด์ที่อยู่อาศัย', exact: true })).toBeInViewport();
+  await opener.focus(); await page.keyboard.press('Enter'); await expect(drawer).toBeVisible();
+  await expect(opener).toHaveAttribute('aria-expanded', 'true');
+  const closer = drawer.getByRole('button', { name: 'ปิดเมนู', exact: true });
+  await closer.focus(); await page.keyboard.press('Shift+Tab');
+  // Native Edge dialogs may tab into browser chrome at the document boundary.
+  // They must never expose the background page to keyboard/programmatic focus.
+  expect(await drawer.evaluate(element => !document.hasFocus() || element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Tab');
+  expect(await drawer.evaluate(element => document.hasFocus() && element.contains(document.activeElement))).toBe(true);
+  await page.getByRole('main', { includeHidden: true }).evaluate(element => element.focus());
+  expect(await drawer.evaluate(element => element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape'); await expect(drawer).not.toBeVisible(); await expect(opener).toBeFocused();
+  await opener.click(); await drawer.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/); await expect(drawer).not.toBeVisible();
+  await expect(opener).toHaveAttribute('aria-expanded', 'false');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('sidebar groups toggle independently, persist and always open the active group on load', async ({ page }) => {
