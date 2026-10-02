@@ -1,15 +1,19 @@
 # 27. Hosted TEST environment — Step 1 plan
 
-Date: **2 October 2026 (Asia/Bangkok)**. Status: **approved for H1 local implementation and simulation; hosted execution awaits IT readiness confirmation**.
-Repository baseline: `931b67c`, including brand logo uploads and migration `0024`.
+Date: **2 October 2026 (Asia/Bangkok)**. Status: **H1 implemented and verified locally; hosted execution waits for the owner's exact “credentials ready” instruction**.
+H1 repository baseline: `6bf9489`, including migration `0025` and local verification.
 Target: **only** Supabase project `eqlrtevwpyboplljgowo`
-(`https://eqlrtevwpyboplljgowo.supabase.co`), with synthetic data.
+(`https://eqlrtevwpyboplljgowo.supabase.co`), Free, **ap-south-1 (Mumbai)**,
+with synthetic data. Infrastructure details below are owner-reported decisions,
+not remotely inspected facts.
 
 The owner approved this document with the production and milestone additions below.
 Build and test H1 locally first. No hosted connection (including preflight),
 migration, bucket, Auth user, seed, deployment, purchase or credential change is
 authorized until the owner confirms that IT inputs and credentials are ready.
 Earlier permission to try the P1 test setup does not bypass this new gate.
+The step-by-step [CyberPanel runbook](ads/HOSTED_TEST_CYBERPANEL_RUNBOOK.md)
+records the later operator procedure; none of its hosted commands have run.
 
 This plan extends the historical [P1 setup](ads/SUPABASE_TEST_SETUP.md).
 It preserves the [naming contract](19-campaign-naming-registry.md),
@@ -118,7 +122,7 @@ profile difference must be documented and covered by the same issuance tests.
 
 ### Production path (design only)
 
-A future production Supabase project will use the same reviewed settings-table
+A **new Singapore production Supabase project** will use the same reviewed settings-table
 bootstrap mechanism for `0014`, avoiding the denied custom-parameter privilege.
 Use one explicitly versioned settings-based SQL baseline and narrowly reviewed
 profile overlays: the production profile contains only `sena_h_approved=false`,
@@ -261,20 +265,32 @@ reject demo tokens, role-selector cookies and forged role headers. Do not label
 hosted TEST as local or use production mode to evade a guard. Confirm the project's
 signing algorithm is supported; do not add an HS256 fallback casually.
 
-Create the following separate, invite-only identities only after IT readiness
-confirmation. H1 currently simulates them locally. Names here
-are account labels, not real email addresses; IT supplies controlled test mailboxes
-and sends credentials privately. Disable public self-sign-up for this TEST app.
+Create the following separate, invite-only identities only after “credentials
+ready”. Use **plus-addressing on one owner-controlled mailbox**, not seven
+mailboxes. In the table, `owner@example.invalid` is a placeholder: substitute
+the mailbox supplied privately by the owner and verify that every alias reaches
+it. These remain seven distinct Auth UUIDs/passwords/role assignments; the alias
+does not grant a role. H1 currently simulates them locally. Disable public
+self-sign-up and anonymous sign-in for this TEST app.
 
-| Account label | Trusted `hub_role` | Additional metadata | Acceptance focus |
+| Plus-address template | Trusted `hub_role` | Additional metadata | Acceptance focus |
 |---|---|---|---|
-| `hub-test-editor` | `editor` | None | Draft editing/upload; cannot publish or grant rights. |
-| `hub-test-publisher` | `publisher` | None | Publish/review and per-file rights records; existing permission matrix. |
-| `hub-test-viewer` | `viewer` | None | Read-only staff review; cannot edit/publish. |
-| `hub-test-admin` | `admin` | None | Existing steward/admin operations; cannot enable TEST issuance. |
-| `hub-test-online` | `online_staff` | None | Registry and marketing-ops operations; no memo approval authority. |
-| `hub-test-agency-kin` | `agency` | `hub_agency=KIN` | Own campaign names and permitted ID returns; no assistant/budgets/memos. |
-| `hub-test-agency-combay` | `agency` | `hub_agency=COMBAY` | Cross-agency isolation against KIN. |
+| `owner+hub-editor@example.invalid` | `editor` | None | Draft editing/upload; cannot publish or grant rights. |
+| `owner+hub-publisher@example.invalid` | `publisher` | None | Publish/review and per-file rights records; existing permission matrix. |
+| `owner+hub-viewer@example.invalid` | `viewer` | None | Read-only staff review; cannot edit/publish. |
+| `owner+hub-admin@example.invalid` | `admin` | None | Existing steward/admin operations; cannot enable TEST issuance. |
+| `owner+hub-online@example.invalid` | `online_staff` | None | Registry and marketing-ops operations; no memo approval authority. |
+| `owner+hub-agency-kin@example.invalid` | `agency` | `hub_agency=KIN` | Own campaign names and permitted ID returns; no assistant/budgets/memos. |
+| `owner+hub-agency-combay@example.invalid` | `agency` | `hub_agency=COMBAY` | Cross-agency isolation against KIN. |
+
+The current app supports password sign-in but has no invitation acceptance/
+password-setup route. Complete and test that onboarding path before sending
+invitations; do not invent a callback URL or enable public sign-up as a workaround.
+Plus-address delivery also needs an approved mail route: Supabase's default SMTP
+restricts recipients to project-team addresses, so aliases are not automatically
+authorized. Use IT's existing approved SMTP if needed; do not buy a mail plan or
+grant project-team access to the seven role accounts to bypass this limit.
+[Supabase SMTP restrictions](https://supabase.com/docs/guides/auth/auth-smtp).
 
 Provision `service_consumer` separately if needed for API-only published-data
 checks; it gets no staff browser session. The DW login is PostgreSQL-only, not
@@ -293,21 +309,34 @@ copy no environment file wholesale to hosting or Git.
 
 ## 5. Hosting topology and remaining application work
 
-**Owner cost decision, 2 October 2026:** use Supabase Free and the existing
-Hostinger VPS for both admin and API. No Vercel TEST project or paid plan is
-requested. This changes the hosting plan only; the IT-readiness gate still
-applies before any hosted connection or provisioning.
+**Owner infrastructure decision, 2 October 2026:** keep the existing Supabase
+Free project in **Mumbai (`ap-south-1`)**, and host admin/API on the existing
+**Singapore Hostinger VPS managed with CyberPanel**. OpenLiteSpeed already owns
+ports **80/443** and serves other websites. **Do not install nginx or Caddy,
+replace those listeners, or change other websites.** No Vercel TEST project or
+paid plan is requested. Hosted work still waits for “credentials ready”.
+
+Mumbai-to-Singapore database/Auth/storage round trips are an accepted TEST
+latency trade-off; repeated DB queries can compound that delay. No latency has
+been measured here. Measure representative login/list/detail request times after
+authorization, keep the existing connection pool small, and accept slower TEST
+demos instead of moving this project. Production uses a **new Singapore project**
+with a separately approved production profile, not a rename/copy of TEST state.
+[Supabase regions](https://supabase.com/docs/guides/platform/regions).
 
 | Piece | Selected TEST location | Required work before hosted use |
 |---|---|---|
-| Admin | Same Hostinger VPS as FastAPI | Build Next.js and run `next start` as a supervised service bound to loopback, behind the HTTPS reverse proxy. Real login, trusted API proxy and visible TEST/synthetic labels; no Vercel project. |
-| Database/Auth/assets | Existing Supabase TEST project on Free | Versioned migration profile, private asset storage, role setup and synthetic seed; verify region and capacity with IT. Manually resume if paused before a demo. |
-| FastAPI | Same Hostinger VPS as admin | Separate restricted service, loopback listener, shared HTTPS origin, secrets, bounded DB pool, logs without tokens/bodies, health checks and restart policy. |
-| Document worker — H2+ | Separate process on the VPS | Deferred beyond H1: narrow `ads_document_worker` credentials, durable leases, private temporary storage, local parsing/OCR only. No web-request OCR or external model calls. |
+| Admin | Singapore Hostinger VPS / CyberPanel | Build Next.js and run `next start` under systemd as dedicated non-root `sena-hub`, listening on `127.0.0.1:3000`; OpenLiteSpeed terminates HTTPS. Keep real login and TEST/synthetic labels; no Vercel project. |
+| Database/Auth/assets | Existing Mumbai Supabase Free project | Versioned migration profile, private asset storage, role setup and synthetic seed. Keep this TEST region; manually resume if paused before a demo. |
+| FastAPI | Same Singapore VPS | Separate systemd service under `sena-hub`, listening on `127.0.0.1:8000`; one Uvicorn worker and the existing 1–5 connection pool. Shared HTTPS origin and restricted credentials. |
+| Document worker — H2+ | Separate systemd service under `sena-hub` on the VPS | Service architecture only for H1: keep disabled. Before H2 activation, implement the hosted/Linux adapter, narrow `ads_document_worker` credentials and local processing; one job at a time, no external model/OCR calls. |
 | Document bytes — H2+ | Private R2 TEST bucket | Deferred beyond H1: scoped storage adapter and reproducible synthetic fixtures; no real upload before Q7. |
 | Assistant | Future approved VPS TEST path | Existing guard is fixed-local. Leave disabled with a Thai remark until reviewed; no key transfer or retrieval/indexing work in this step. |
 
-Use one IT-controlled TEST hostname and HTTPS origin for the admin and Hub API:
+The DNS owner adds an **A record for `hub-test.sena.co.th`** to the VPS address
+supplied by IT. In CyberPanel create a website for that hostname and issue
+**Let's Encrypt SSL through CyberPanel**. Keep its ACME challenge path intact.
+Use **`https://hub-test.sena.co.th`** as the single admin/Hub-API origin:
 
 | Public path | Reverse-proxy destination |
 |---|---|
@@ -328,6 +357,22 @@ Use separate service environments and restart policies. Verify login refresh,
 JSON calls, uploads and private downloads through this routing during the later
 hosted acceptance run. Next.js documents `next start` self-hosting behind a
 reverse proxy. [Next.js self-hosting](https://nextjs.org/docs/app/guides/self-hosting).
+
+OpenLiteSpeed proxy configuration is confined to the new website/vhost. Its
+graceful reload is a shared-server action, so IT verifies the other websites
+afterward. Manage the firewall **in CyberPanel only**: retain public 80/443 and
+the approved SSH port; keep 3000/8000 and database/worker ports closed externally.
+Preserve outbound Supabase **443/5432** and existing DNS/ACME access. Do not open
+CyberPanel/OpenLiteSpeed management ports publicly as part of this task.
+Retain Next.js `noindex` metadata, add site-specific `X-Robots-Tag` coverage,
+and keep Thai TEST/synthetic labels; search exclusion is not authentication.
+
+Owner-reported capacity is **4 shared CPU cores / 16 GB RAM**, with CPU around
+**59% at one observation**. This is not a reservation or a load test. Start with
+one admin process, one API worker and, later, one document job at a time. The
+runbook proposes per-service CPU quotas and memory limits; tune with IT after
+measuring the shared host. Build off-peak or on a matching Linux build machine,
+not concurrently with a demo or an already overloaded shared server.
 
 Migration success is not hosted-demo readiness. These existing safeguards need
 explicit target-aware adapters and tests, rather than deletion:
@@ -355,21 +400,18 @@ explicit target-aware adapters and tests, rather than deletion:
   non-indexing confirmation path is needed before enabling that action; no RAG
   implementation is included in this plan.
 
-IT must provide the actual Supabase/VPS/storage regions (Q7/Q37),
-approved account access with MFA, a restricted SSH/service account, OS/resources,
+TEST Supabase Mumbai and VPS Singapore are now decided; Q7/Q37 still do not
+authorize real data abroad. IT must provide approved CyberPanel/SSH access with
+MFA where supported, OS/runtime versions, a restricted deployment account,
 firewall rules, outbound Supabase/storage access, domain ownership/DNS/TLS,
-secret custody, monitoring and demo-recovery owners, and the existing VPS billing
-owner. Use one `hub-test` hostname under an IT-controlled domain for both admin
-and API; no separate `hub-api-test` hostname is required. No domain is assumed
-or registered here. Confirm capacity for both services without buying an upgrade.
+secret custody and the existing VPS billing owner. The **Hub owner** owns manual
+exports and demo recovery. DNS ownership and the VPS A-record address remain
+inputs; `hub-test.sena.co.th` is selected, not registered or configured here.
+Confirm capacity for both services without buying an upgrade.
 
-**Temporary option:** IT may provide a time-limited dedicated TEST VM with
-persistent storage behind its approved HTTPS gateway, running both the Next.js
-admin and H1 API with the same routing until Hostinger is ready. This option
-requires existing approved capacity, not a new purchase. Document workers remain
-H2+. Apply the same secrets, access and regional review. If IT cannot provide
-that environment, keep the presentation local. No VM, tunnel, gateway or Vercel
-project is provisioned in this step.
+If the selected VPS or credentials are not ready, continue the local presentation.
+Do not substitute a new VM, tunnel, reverse-proxy server or paid plan. Follow the
+[CyberPanel runbook](ads/HOSTED_TEST_CYBERPANEL_RUNBOOK.md) after the explicit gate.
 
 ## 6. Synthetic seed and acceptance sequence
 
@@ -419,10 +461,12 @@ No existing `dev:migrate`, `test:db`, API integration test or UI suite is to be
 repointed at hosted TEST. Hosted smoke checks need separate explicit targets and
 synthetic-only fixtures; do not let a routine local command mutate the cloud.
 
-## 7. Cost, demo recovery and teardown
+## 7. Cost, owner exports, demo recovery and teardown
 
 **Owner decision: Supabase Free, existing Hostinger VPS, no purchase.** The
-earlier Pro/Vercel TEST estimate and TEST backup proposal are superseded. The
+earlier Pro/Vercel TEST estimate is superseded. The latest infrastructure decision
+adds a **Hub-owner manual export before every hosted change**; this supersedes
+the earlier blanket no-backup decision while keeping synthetic re-seeding. The
 decision does not claim the current account configuration has been inspected
 or changed; that check remains behind the IT-readiness gate.
 
@@ -448,13 +492,26 @@ wait until the presentation starts or add a paid upgrade/keep-alive schedule.
 A normal resume retains data/configuration; it is not a reason to reset or
 re-seed healthy data. [Supabase project pausing and resume](https://supabase.com/docs/guides/platform/free-project-pausing).
 
-### Recovery: re-seed synthetic data instead of backing it up
+### Before every hosted change: Hub-owner manual export
 
-TEST data and demo edits are disposable. Do not schedule database dumps, object
-backups, pre-change exports or rotating backup retention for this environment.
-Keep the reviewed migrations, seed generators and non-secret manifests in Git;
-keep access credentials separately in IT's secret custody. Recover lost/reset
-TEST data from those versioned inputs, not from a saved database or bucket dump.
+The **Hub owner** is accountable for a manual pre-change export and its protected
+storage, with IT assisting execution. Before migrations, seed/reset, Auth/storage
+changes or VPS/site/service configuration changes, capture the applicable DB
+state, deployment manifest and site/service configuration; record time, scope,
+checksums and rollback reference. For the first change, export the existing
+baseline even if no Hub rows exist. Keep exports outside Git, web roots and chat.
+Do not proceed with a hosted mutation if the export failed or is unreadable.
+There is no paid backup product or automatic export schedule in this TEST plan.
+
+### Recovery: re-seed disposable synthetic data
+
+Keep reviewed migrations, seed generators and non-secret manifests in Git;
+keep access credentials separately in IT's secret custody. Synthetic data and
+demo edits remain disposable: rebuild/re-seed is the normal data recovery path.
+The owner's manual export provides a pre-change rollback/evidence checkpoint;
+it does not turn TEST into a durable store or authorize copying data to production.
+Generated asset bytes can be recreated; a later real-data retention policy is
+outside this TEST decision.
 
 For an explicitly authorized empty/rebuilt TEST target, replay the reviewed
 profile, provision the private bucket and required role identities, regenerate
@@ -487,9 +544,11 @@ Even hosted read-only preflight waits for the owner's IT-readiness confirmation.
 | Input | Owner | Default until answered |
 |---|---|---|
 | Accept explicit hosted `0014` profile and TEST-flag controls | Hub owner | Approved for H1 local implementation; both flags stay false. Hosted preflight still waits for IT readiness. |
-| Regions, access, shared-origin domain/TLS, secret custody and demo recovery | IT; DPO for Q7/Q37 | Local presentation continues; no guessed infrastructure or real-data transfer. Synthetic TEST data is re-seeded, not backed up. |
+| TEST regions and production region | Hub owner / IT; DPO for real-data Q7/Q37 | Decided: existing Free project in Mumbai; CyberPanel VPS in Singapore; new Singapore project for production. No real-data approval implied. |
+| CyberPanel/SSH access, DNS A record, SSL and secret custody | IT / DNS owner | `hub-test.sena.co.th`, existing OpenLiteSpeed 80/443, loopback apps; no hosted actions before “credentials ready”. |
+| Manual exports and demo recovery | Hub owner, with IT execution support | Manual export before every hosted change; synthetic recovery by re-seed. No paid backup service or automated schedule. |
 | TEST cost and existing VPS capacity | Hub owner + IT/Finance | Decided: Supabase Free and admin/API on the existing Hostinger VPS; no Vercel TEST project or purchase. IT capacity/access confirmation is still pending. Paid plans are revisited only for production. |
-| Test mailboxes and authorized testers | IT + Hub owner | No users or invitations created. |
+| Test identities and mail delivery | Hub owner + IT | Seven plus-addressed aliases on one owner mailbox; invite-only, trusted role metadata. Verify SMTP and implement/test invitation/password setup before invitations; no users created now. |
 | Copy of real HYABC REM identity | IT/data owner | No; use new fictional identities. |
 | Real documents/internal-data processing | DPO/data owner, Q7/Q36 | Synthetic only; no external OCR/LLM, RAG, indexing, embeddings or ingestion work. |
 
