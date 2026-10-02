@@ -1,0 +1,2 @@
+# Frozen contract checksums must survive Windows autocrlf checkouts.
+*.json text eol=lf

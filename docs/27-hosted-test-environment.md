@@ -237,10 +237,18 @@ provisioning path, scoped to this project and verified TLS, for `dw_hub_reader`:
   retain it unless explicitly rotated. Deliver through IT's secret store;
   never reuse or commit `.local/dw-reader.json`, show a password or put it in
   shell arguments. Validate ownership, memberships and unexpected grants.
-- Verify SELECT on all 15 `ads_export` views in one read-only transaction;
+- Verify SELECT on all 15 `ads_export` views and both `hub_export` published-content views in one read-only transaction;
   deny `ads`, `staging`, `audit`, `hub` and other private base-table access;
   prove writes fail even after attempting to disable the read-only default.
   Check role-switch denial and connection settings. No DW writes or schedules.
+
+The 2 October local extension in [doc 28](28-dw-brands-and-published-content.md)
+adds schema-only migrations `0026–0027` to the locally rehearsed profile. Its real
+38-brand dictionary stays in localhost staging; it is never an H1 seed input.
+The two export views expose public publication fields and logo role presence,
+without files or rights evidence, to the same reader group. These additions do
+not approve hosted execution, a hosted reader login or transfer of real brands;
+the section 6 data-owner confirmation default still applies.
 
 ## 4. Real login and TEST identities
 

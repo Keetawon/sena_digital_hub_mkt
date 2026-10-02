@@ -133,6 +133,11 @@
       "name": "202610020026_dw_brand_dictionary.sql",
       "canonical_sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08",
       "executed_sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08"
+    },
+    {
+      "name": "202610020027_hub_published_export.sql",
+      "canonical_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b",
+      "executed_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b"
     }
   ]
 }

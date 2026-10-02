@@ -1,0 +1,279 @@
+{
+  "format_version": 1,
+  "contract_version": "hub-published-content-v1",
+  "environment": "local-test",
+  "source_key": "hub",
+  "synthetic_only": true,
+  "hub_commit": "56ab9e93067fff82ad4556f593d599a712db0c93",
+  "exported_at": "2026-10-02T08:43:18.194Z",
+  "transaction": {
+    "role": "dw_hub_reader",
+    "isolation": "repeatable read",
+    "read_only": true,
+    "timezone": "UTC",
+    "snapshot_shared_with_provenance_checks": true
+  },
+  "semantics": "Current consumer-eligible immutable publications; project logo roles come from its frozen brand snapshot. UTC timestamps, exact text source IDs, optional English names remain null. No asset locators/files or rights evidence.",
+  "synthetic_provenance_checks": {
+    "complete_published_brand_set": "passed",
+    "complete_published_project_set": "passed"
+  },
+  "migration_checksums": [
+    {
+      "file": "supabase/migrations/202609160001_core_slice.sql",
+      "sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd",
+      "normalized_lf_sha256": "91ccbeeff99814c65fd1bd2a0e41231e9063b86bea6f2eccead09e103acf27bd"
+    },
+    {
+      "file": "supabase/migrations/202609160002_model_edit_lock.sql",
+      "sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5",
+      "normalized_lf_sha256": "076ac8d0293265746d3956830a233b7beb7f6414f02e4a33e3c6ffd411ff8bb5"
+    },
+    {
+      "file": "supabase/migrations/202609160003_source_selection.sql",
+      "sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa",
+      "normalized_lf_sha256": "a726c920a865c8c10fbcf5faa08a92b7a0477aa4d16ae0e1c94155aa4b60cbaa"
+    },
+    {
+      "file": "supabase/migrations/202609160004_publication_availability.sql",
+      "sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181",
+      "normalized_lf_sha256": "5e14222e2393f35cadc2aa25de51aeef9273d173fba302533f0382e2f0845181"
+    },
+    {
+      "file": "supabase/migrations/202609160005_asset_library.sql",
+      "sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f",
+      "normalized_lf_sha256": "8f0ac28f2d0a3a31a60508d8bc37b8d33c1c4c7ac1cf63df53cb17526d162c2f"
+    },
+    {
+      "file": "supabase/migrations/202609160006_brands.sql",
+      "sha256": "fc643f143c8453002a054164cb43db792fa7d83f90fb3dcf5e8bad8381ae2e3e",
+      "normalized_lf_sha256": "77c29cc4a9d1a73619a43a03cc307cf000a9faa26757784719606352a13c78b2"
+    },
+    {
+      "file": "supabase/migrations/202609180007_pilot_intake.sql",
+      "sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe",
+      "normalized_lf_sha256": "232a1a66dd552e7f2ea37f83323d7bfd9f2227226682f42ab3b2c6320791babe"
+    },
+    {
+      "file": "supabase/migrations/202609180008_project_gold_prefill.sql",
+      "sha256": "5d63e273b79209626700fa8d48c598270ac977c585f3dcf01178f65eede889e4",
+      "normalized_lf_sha256": "434ba3e39086dfa49944efa9cedf86d37597e96c96b10a2cb970af1b4d44e6e6"
+    },
+    {
+      "file": "supabase/migrations/202609180009_model_media.sql",
+      "sha256": "d8228ca2529132c07793ebaed4da06888fc977d9b23017b9e0cfaae4272da36e",
+      "normalized_lf_sha256": "6f98be46f07bbff3b4aa0276541711d54538d7ac8dd9ea9cd51f6cc96cb065aa"
+    },
+    {
+      "file": "supabase/migrations/202609200010_marketing_unit_types.sql",
+      "sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87",
+      "normalized_lf_sha256": "06044fbaa8b913a00d1fc6feb1eaeffaf325cf00a8e4b1919031e5a66bcc0c87"
+    },
+    {
+      "file": "supabase/migrations/202609200011_project_facilities.sql",
+      "sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99",
+      "normalized_lf_sha256": "c9d001d5d92601e813389957339af87a721fe048cf12de99707ab4ca74e70c99"
+    },
+    {
+      "file": "supabase/migrations/202609200012_project_gold_preview.sql",
+      "sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1",
+      "normalized_lf_sha256": "6e0a59018fc8d69a7c6ccb400c6c1fe30223191b096fd54d0bbdd4fb06bfe5c1"
+    },
+    {
+      "file": "supabase/migrations/202609210013_project_media_collections.sql",
+      "sha256": "38954d0ac2b962111134a8b55face2d6b552ca5e0df344d73075061634afe452",
+      "normalized_lf_sha256": "791cc2c51e6bf5ff3f60898e00e769e2993f84dbbbdfe01fc33d37b169095dfc"
+    },
+    {
+      "file": "supabase/migrations/202609290014_ads_registry.sql",
+      "sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b",
+      "normalized_lf_sha256": "c7fe3571db9f97616e26576e12688e7868301b5808809dab2e4b3e005353bc3b"
+    },
+    {
+      "file": "supabase/migrations/202609300015_ads_media_lines_memos.sql",
+      "sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6",
+      "normalized_lf_sha256": "5c4e19fec2e378332d06a52bfa48ff8b0de40d287226cce22c24608c09976fa6"
+    },
+    {
+      "file": "supabase/migrations/202610010016_ads_actuals.sql",
+      "sha256": "7a6dcb257e2419373a2b9d0dc4a7190af60d3cbdda7237a9af334fb928938b36",
+      "normalized_lf_sha256": "7a6dcb257e2419373a2b9d0dc4a7190af60d3cbdda7237a9af334fb928938b36"
+    },
+    {
+      "file": "supabase/migrations/202610010017_ads_actuals_permissions.sql",
+      "sha256": "cc4b0129ee1201f7b896e1cbbad6c164d5c53e2a2ff7f9700f8e170f214e8bed",
+      "normalized_lf_sha256": "cc4b0129ee1201f7b896e1cbbad6c164d5c53e2a2ff7f9700f8e170f214e8bed"
+    },
+    {
+      "file": "supabase/migrations/202610010018_ads_actuals_recurrence.sql",
+      "sha256": "02bc11ba00d662212e3a42be598c2a975311f1a2398f1d5498222b32c3f5061d",
+      "normalized_lf_sha256": "02bc11ba00d662212e3a42be598c2a975311f1a2398f1d5498222b32c3f5061d"
+    },
+    {
+      "file": "supabase/migrations/202610010019_ads_actuals_boundaries.sql",
+      "sha256": "6453b05acdb50c31a73d8cea8f8e37145c873d3c455e88cb71c690c122967270",
+      "normalized_lf_sha256": "6453b05acdb50c31a73d8cea8f8e37145c873d3c455e88cb71c690c122967270"
+    },
+    {
+      "file": "supabase/migrations/202610010020_ads_actuals_evaluation_history.sql",
+      "sha256": "94bb6eb601499a2d8eb9fe55bb10889196b4f7be2c9941349e8858e39f36bcc9",
+      "normalized_lf_sha256": "94bb6eb601499a2d8eb9fe55bb10889196b4f7be2c9941349e8858e39f36bcc9"
+    },
+    {
+      "file": "supabase/migrations/202610010021_residential_demo_release.sql",
+      "sha256": "90b11a3ae8b077e7963f20e2ca5ed4bd420c20ce297f38f81a95f6a179bd41ac",
+      "normalized_lf_sha256": "90b11a3ae8b077e7963f20e2ca5ed4bd420c20ce297f38f81a95f6a179bd41ac"
+    },
+    {
+      "file": "supabase/migrations/202610010022_private_document_archive.sql",
+      "sha256": "663a91a24af0a01cb8e95625161c1d226e69ef86174c6d3d04b7195af0800966",
+      "normalized_lf_sha256": "663a91a24af0a01cb8e95625161c1d226e69ef86174c6d3d04b7195af0800966"
+    },
+    {
+      "file": "supabase/migrations/202610010023_staff_assistant.sql",
+      "sha256": "8cd7bb7ca78de9e901b052a408d607ca3fe2bea2493105423d067c41e1068f15",
+      "normalized_lf_sha256": "8cd7bb7ca78de9e901b052a408d607ca3fe2bea2493105423d067c41e1068f15"
+    },
+    {
+      "file": "supabase/migrations/202610020024_brand_logo_svg.sql",
+      "sha256": "2786a074a3881fbfc3c3989c910b0378db1588d8c7050fd1d1a7c333f2eba366",
+      "normalized_lf_sha256": "2786a074a3881fbfc3c3989c910b0378db1588d8c7050fd1d1a7c333f2eba366"
+    },
+    {
+      "file": "supabase/migrations/202610020025_hosted_h1_adapters.sql",
+      "sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3",
+      "normalized_lf_sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3"
+    },
+    {
+      "file": "supabase/migrations/202610020026_dw_brand_dictionary.sql",
+      "sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08",
+      "normalized_lf_sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08"
+    },
+    {
+      "file": "supabase/migrations/202610020027_hub_published_export.sql",
+      "sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b",
+      "normalized_lf_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b"
+    }
+  ],
+  "generator_checksums": [
+    {
+      "file": "scripts/export-hub-content-fixtures.mjs",
+      "sha256": "b9b6b13dfe6ad587f99f0e5e35a7558bd4823078ee16114848f6b58ee9cec954",
+      "normalized_lf_sha256": "b9b6b13dfe6ad587f99f0e5e35a7558bd4823078ee16114848f6b58ee9cec954"
+    },
+    {
+      "file": "scripts/seed-hub-content-contract.mjs",
+      "sha256": "ab70661d0364e4bd1b956a9cb48916ed6d63284d440437b6b4118e6c337fb283",
+      "normalized_lf_sha256": "ab70661d0364e4bd1b956a9cb48916ed6d63284d440437b6b4118e6c337fb283"
+    },
+    {
+      "file": "scripts/provision-dw-reader.mjs",
+      "sha256": "6390454a7cab3716acc38ae97819e2a44f9d91deae5fa15f9a81caf085cfaef7",
+      "normalized_lf_sha256": "6390454a7cab3716acc38ae97819e2a44f9d91deae5fa15f9a81caf085cfaef7"
+    }
+  ],
+  "views": [
+    {
+      "view": "hub_export.brand_published",
+      "destination": "hub__brand_published",
+      "file": "brand_published.json",
+      "columns": [
+        {
+          "name": "rem_brand_id",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_brand_id",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_name_th",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_name_en",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "slug",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "published_version_id",
+          "postgres_type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "published_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "logo_roles_present",
+          "postgres_type": "text[]",
+          "nullable": true
+        }
+      ],
+      "row_count": 2,
+      "bytes": 899,
+      "exported_at": "2026-10-02T08:43:18.194Z",
+      "sha256": "d478e2621f8a7574c98223e7473be41dfc24a7741caa5eb250b9ed1da27ded0b"
+    },
+    {
+      "view": "hub_export.project_published",
+      "destination": "hub__project_published",
+      "file": "project_published.json",
+      "columns": [
+        {
+          "name": "rem_project_id",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_project_id",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_name_th",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "public_name_en",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "slug",
+          "postgres_type": "text",
+          "nullable": true
+        },
+        {
+          "name": "published_version_id",
+          "postgres_type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "published_at",
+          "postgres_type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "logo_roles_present",
+          "postgres_type": "text[]",
+          "nullable": true
+        }
+      ],
+      "row_count": 1,
+      "bytes": 447,
+      "exported_at": "2026-10-02T08:43:18.194Z",
+      "sha256": "e24f2492c750148d9d325e25dda147046bf516cede44b886093089833281d991"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ export const exportViews = Object.freeze([
   'cost_allocation', 'cost_record', 'line_assignment', 'media_line', 'memo',
   'memo_identifier', 'native_binding', 'recurring_commitment', 'scope_code', 'scope_member',
 ]);
+export const hubExportViews = Object.freeze(['brand_published', 'project_published']);
 
 async function readCredentialFile(file) {
   try { return JSON.parse(await readFile(file, 'utf8')); }
@@ -54,19 +55,21 @@ export async function verifyReader(credentials) {
       union all select 1 from pg_database where datdba=current_user::regrole
       union all select 1 from pg_proc where proowner=current_user::regrole
       union all select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
-        where n.nspname in ('ads','staging','audit','hub','internal','rag') and c.relkind in ('r','p','v','m','f')
+        where n.nspname in ('ads','staging','audit','hub','internal','rag','public_api') and c.relkind in ('r','p','v','m','f')
         and (has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
           or has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))
       union all select 1 from pg_namespace where nspname in ('ads','staging','audit','hub','internal','rag','public_api')
         and has_schema_privilege(current_user,oid,'USAGE,CREATE')
-      union all select 1 from pg_namespace where nspname='ads_export' and has_schema_privilege(current_user,oid,'CREATE')
+      union all select 1 from pg_namespace where nspname in ('ads_export','hub_export') and has_schema_privilege(current_user,oid,'CREATE')
     `);
     assert.equal(unsafe.rowCount, 0, 'Unexpected reader ownership or private grants');
     assert.deepEqual((await reader.query("select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='ads_export' and c.relkind='v' order by c.relname")).rows.map(row => row.relname), exportViews);
+    assert.deepEqual((await reader.query("select viewname from pg_views where schemaname='hub_export' order by viewname")).rows.map(row => row.viewname), hubExportViews);
     assert.equal((await reader.query('show default_transaction_read_only')).rows[0].default_transaction_read_only, 'on');
     await reader.query('begin isolation level repeatable read read only');
     assert.equal((await reader.query('show transaction_read_only')).rows[0].transaction_read_only, 'on');
     for (const view of exportViews) await reader.query(`select * from ads_export.${view} limit 1`);
+    for (const view of hubExportViews) await reader.query(`select * from hub_export.${view} limit 1`);
     await reader.query('commit');
     // Check both read-only defense and actual ACLs: the default is not an authorization boundary.
     await denied(reader, 'create table public.dw_reader_must_not_exist(id integer)', ['25006', '42501']);
@@ -83,7 +86,11 @@ export async function verifyReader(credentials) {
       assert.equal(access.allowed, false, 'Reader has view write privileges');
       await denied(reader, `delete from ads_export.${view} where false`, ['42501', '55000']);
     }
-    for (const role of ['admin', 'online_staff', 'agency', 'ads_export_owner', 'ads_finance_writer', 'ads_registry_writer']) {
+    for (const view of hubExportViews) {
+      assert.equal((await reader.query("select has_table_privilege(current_user,$1,'INSERT,UPDATE,DELETE') allowed", [`hub_export.${view}`])).rows[0].allowed, false);
+      await denied(reader, `delete from hub_export.${view} where false`, ['42501', '55000']);
+    }
+    for (const role of ['admin', 'online_staff', 'agency', 'ads_export_owner', 'hub_export_owner', 'ads_finance_writer', 'ads_registry_writer']) {
       await denied(reader, `set role ${role}`);
     }
     await reader.query('set default_transaction_read_only = on');

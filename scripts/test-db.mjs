@@ -44,7 +44,7 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/assistant.sql', import.meta.url), 'utf8'));
   console.log('PASS: assistant actor ownership, private citations and explicit once-only synthetic draft proposals');
   await connection.query(await readFile(new URL('../supabase/tests/dw_reader.sql', import.meta.url), 'utf8'));
-  console.log('PASS: local DW login, fifteen export views, private-table isolation and read-only enforcement');
+  console.log('PASS: local DW login, fifteen ads and two published-content views, private-table isolation and read-only enforcement');
 } finally {
   await connection.end();
 }

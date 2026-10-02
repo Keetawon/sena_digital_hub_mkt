@@ -14,7 +14,7 @@ const connection={host:'127.0.0.1',port:55434,database:'hub_hosted_test_simulati
 const secret=()=>randomBytes(32).toString('base64url');
 const identifier=value=>'"'+value.replaceAll('"','""')+'"';
 const denied=error=>error.code==='42501';
-const owners={ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging']};
+const owners={ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging'],hub_export_owner:['hub_export']};
 
 export async function simulateHostedTest({keepRunning=false,seed=true,log=console.log}={}) {
   // No environment profile is read; all endpoints and random credentials are local.

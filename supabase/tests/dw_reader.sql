@@ -38,7 +38,7 @@ begin
     or exists(select 1 from pg_proc where proowner = reader.oid) then
     raise exception 'DW login unexpectedly owns database objects';
   end if;
-  if exists(select 1 from pg_roles where rolname in ('ads_export_reader', 'ads_export_owner')
+  if exists(select 1 from pg_roles where rolname in ('ads_export_reader', 'ads_export_owner', 'hub_export_owner')
     and (rolcanlogin or rolsuper or rolcreatedb or rolcreaterole or rolreplication or rolbypassrls)) then
     raise exception 'Unsafe export group or view-owner attributes';
   end if;
@@ -47,7 +47,7 @@ begin
   for relation in
     select c.oid, n.nspname, c.relname
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname in ('ads', 'hub', 'staging', 'audit', 'internal', 'rag')
+    where n.nspname in ('ads', 'hub', 'staging', 'audit', 'internal', 'rag', 'public_api')
       and c.relkind in ('r', 'p', 'v', 'm', 'f')
   loop
     if has_table_privilege(reader.oid, relation.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
@@ -98,12 +98,18 @@ begin
       raise exception 'DW login has a write privilege on export view %', view_name;
     end if;
   end loop;
+  foreach view_name in array array['brand_published','project_published'] loop
+    execute format('select * from hub_export.%I limit 1', view_name);
+    if has_table_privilege(format('hub_export.%I', view_name), 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then
+      raise exception 'DW login has a write privilege on published content view %', view_name;
+    end if;
+  end loop;
   foreach private_schema in array array['ads', 'hub', 'staging', 'audit', 'internal', 'rag', 'public_api'] loop
     if has_schema_privilege(private_schema, 'USAGE,CREATE') then
       raise exception 'DW login has private schema privileges: %', private_schema;
     end if;
   end loop;
-  if has_schema_privilege('ads_export', 'CREATE') then
+  if has_schema_privilege('ads_export', 'CREATE') or has_schema_privilege('hub_export', 'CREATE') then
     raise exception 'DW login can create export objects';
   end if;
 
@@ -144,7 +150,7 @@ begin
     raise exception 'DW login can read private finance RPCs';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'PASS: DW reader attributes, sole membership, 15 export views, private table/column/RPC isolation and write denial with read-only disabled';
+  raise notice 'PASS: DW reader attributes, sole membership, 15 ads + 2 published content views, private table/column/RPC isolation and write denial with read-only disabled';
 end $$;
 
 reset role;

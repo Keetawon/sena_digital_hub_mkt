@@ -112,3 +112,118 @@ workflow; the final full UI run passed after correcting that former source-name
 assumption. The real package was never copied into the H1 simulation or hosted
 TEST. Neither the fixture checks nor the local source dictionary approve real
 published content for hosted use.
+
+## Published-content export contract v1
+
+Migration `0027` adds `hub_export.brand_published` and
+`hub_export.project_published`, following the private `ads_export` view pattern.
+Each returns **one current, consumer-eligible immutable publication per entity**.
+Draft changes never supply a field. Unpublished, withdrawn, deleted, expired,
+source-ineligible or rights-ineligible content is absent under the existing
+`public_api` eligibility rules. This is a current snapshot, not all publication
+history or a deletion/change feed. DW consumers must reconcile the complete
+snapshot; absence does not destroy the Hub's immutable history.
+
+Both views have exactly eight columns, in this order:
+
+| Brand column | Project column | PostgreSQL type / meaning |
+|---|---|---|
+| `rem_brand_id` | `rem_project_id` | `text`; exact frozen source ID, retaining leading zeros |
+| `public_brand_id` | `public_project_id` | `text`; stable Hub public identity |
+| `public_name_th` | `public_name_th` | `text`; published Thai public name |
+| `public_name_en` | `public_name_en` | `text`; published English public name, nullable |
+| `slug` | `slug` | `text`; published slug, never the current draft's slug |
+| `published_version_id` | `published_version_id` | `uuid`; exact selected immutable version |
+| `published_at` | `published_at` | `timestamptz`; original version publication time |
+| `logo_roles_present` | `logo_roles_present` | `text[]`; sorted distinct roles present in that published snapshot |
+
+Logo roles are `favicon`, `logo_mono`, `logo_primary`, `logo_white`; an empty
+array is represented as `[]`, not null. The project column describes the
+**brand logo set frozen into that project version**. Publishing a new brand
+version does not silently change an older project's names, version ID or logo
+roles. Rollback exports the selected earlier version's original ID and timestamp;
+`published_at` is neither rollback time nor source freshness.
+
+These projections exclude drafts, descriptions, arbitrary payload JSON, source
+records, actor IDs, asset IDs/URLs/storage keys/files and rights/approval evidence.
+They grant no file access or RPC execution. A `security_barrier` view owned by
+the new NOLOGIN/NOINHERIT, non-superuser `hub_export_owner` reads only the needed
+public view columns and the project's publication pointer columns under RLS.
+The reader cannot assume this owner role or read `hub`, `staging`, `audit`,
+`public_api`, `internal` or `rag` directly.
+
+Grant USAGE on `hub_export` and SELECT on the two named views to the existing
+`ads_export_reader` group. The existing `dw_hub_reader` login inherits them with
+its **same sole group membership**, two-connection limit and read-only default.
+It receives no base-table, column, schema-create or write grant. The verifier
+checks both exports and private ACLs with the read-only default disabled; that
+default supplements actual grants. Local provisioning still rejects any target
+except `127.0.0.1:55432/sena_hub_local`; no hosted reader was provisioned here.
+
+Extract both views together, optionally alongside the 15 `ads_export` views,
+using the existing DW login in **one REPEATABLE READ, READ ONLY transaction**:
+
+```sql
+BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SET LOCAL TIME ZONE 'UTC';
+SELECT * FROM hub_export.brand_published ORDER BY public_brand_id;
+SELECT * FROM hub_export.project_published ORDER BY public_project_id;
+COMMIT;
+```
+
+DW destination names are `hub__brand_published` and `hub__project_published`
+under source key `hub`. Preserve strings and nullable English; do not fall back
+to REM labels, drafts, inferred translations or a newer live brand logo set.
+Fixture column nullability comes from PostgreSQL's view catalog, not sample rows
+or a guarantee about business-required publication fields.
+
+## Frozen synthetic export fixtures
+
+The [fixture package](../supabase/tests/fixtures/hub_export/README.md) has two
+UTF-8 JSON arrays plus a manifest: two published synthetic brands and one
+synthetic project, 16 columns across the two views, three rows total. The new
+fixture IDs begin `00000-HUB-EXPORT-` to exercise leading-zero text transport.
+The prepared standard `DEMO-BRAND-01` is the second brand. No real dictionary row
+or package byte is included.
+
+```powershell
+npm.cmd run dev:dw-reader
+npm.cmd run dev:hub-content-fixtures -- --seed
+node --test supabase/tests/hub_export.test.mjs
+```
+
+`--seed` creates only the named invented localhost examples through existing
+admin/editor/publisher functions, including individual rights reviews. Seed replay
+preserves existing work; incomplete, withdrawn or conflicting fixtures refuse
+rather than reset. Registry metadata is sufficient for this SQL contract fixture;
+the generator does not write or export asset files.
+
+The exporter reads the **complete eligible view sets** through the real DW login.
+A privileged read-only session first verifies their exact synthetic source
+identities and public text in the same exported PostgreSQL snapshot. Real staged
+brands may coexist locally, but any unapproved/non-synthetic published export row
+refuses fixture output; nothing is silently omitted or relabelled. Manifest
+checks cover original bytes, SHA-256, row counts, exact ordered columns/types,
+UTC capture time, source Hub commit, every applied migration and generator hashes.
+Portable LF-normalized checks supplement the applied workstation hashes.
+
+The unchanged 15-view financial fixture remains in `fixtures/ads_export`.
+This additive package has its own `hub-published-content-v1` contract and does
+not change the financial fixture's frozen snapshot.
+
+Published-export verification on 2 October 2026:
+
+| Check | Actual result |
+|---|---|
+| Local migration and DW reader provisioning | Exit 0; existing login reads all 17 export views and cannot assume the new owner |
+| Synthetic fixture generation and exact schema/hash checks | Two views, three rows; two contract tests passed |
+| `npm.cmd run test:db` after migration `0027` | Exit 0; SQL/RLS/concurrency checks and all four financial/content fixture tests passed |
+| Brand and published API regression checks | 74 passed; one existing Starlette warning |
+| Final `npm.cmd run test:hosted-h1` | Ten runner/mock tests, 27-migration managed-permission replay and 14 Edge browser tests passed on isolated localhost |
+| Real local dictionary replay after export checks | `already_staged`; original `07:56:42.357604+00:00` import time preserved; no real Hub draft or publication created |
+
+The H1 inventory verifier now recognizes the ninth schema and separate view-owner
+role at migration `0027`, while retaining earlier migration inventories. The final
+browser run waits for the replacement favicon filename before examining its
+previews, avoiding an assertion against the earlier desktop fixture during the
+mobile upload. No hosted database was contacted or changed.

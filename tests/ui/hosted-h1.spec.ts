@@ -157,7 +157,9 @@ test.describe('H1 disposable managed-permission simulation', () => {
       const asset = data.assets.find((item: { asset_role: string }) => item.asset_role === 'logo_white');
       expect((await page.request.get(`http://127.0.0.1:8001/v1/admin/assets/${asset.id}/file`)).status()).toBe(401);
       const favicon = page.locator('[data-logo-role="favicon"]');
-      await favicon.getByLabel('เลือกไฟล์ · ไอคอนเว็บไซต์ (favicon)', { exact: true }).setInputFiles({ name: `favicon-${randomUUID()}.svg`, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="gold"/><title>${randomUUID()}</title></svg>`) });
+      const faviconName = `favicon-${randomUUID()}.svg`;
+      await favicon.getByLabel('เลือกไฟล์ · ไอคอนเว็บไซต์ (favicon)', { exact: true }).setInputFiles({ name: faviconName, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="gold"/><title>${randomUUID()}</title></svg>`) });
+      await expect(favicon.locator('.asset-caption > .small-text.muted')).toHaveText(faviconName);
       await expect(favicon.locator('img')).toHaveCount(2);
       for (const size of [16, 32]) {
         const image = favicon.locator(`img[width="${size}"]`);
