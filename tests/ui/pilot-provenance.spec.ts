@@ -5,7 +5,7 @@ const snapshotLabel = 'สำเนา REM ที่ตรวจสอบหล�
 const sampleLabel = 'ข้อมูลจำลองสำหรับเครื่องพัฒนา';
 const evidence = { source_record: null, intake_manifest_sha256: 'a'.repeat(64), source_updated_at: null, source_snapshot_at: snapshotTime };
 const source = { ...evidence, rem_project_id: 'PROVENANCE-TEST', project_name_rem: 'โครงการทดสอบป้ายสำเนา', model_count: 1, public_project_id: null, rem_brand_id: '000003', rem_company_id: null, brand_name_rem: null, company_name_rem: null };
-const brand = { ...evidence, rem_brand_id: '000003', brand_name_rem: 'แบรนด์ทดสอบป้ายสำเนา', brand_name_en_rem: null, is_deleted: false, public_brand_id: null };
+const brand = { ...evidence, rem_brand_id: '000003', brand_name_rem: 'แบรนด์ทดสอบป้ายสำเนา', brand_name_en_rem: null, is_deleted: false, residential_project_count: 1, public_brand_id: null };
 
 async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);

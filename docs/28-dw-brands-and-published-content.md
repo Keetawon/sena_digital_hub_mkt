@@ -1,0 +1,114 @@
+# DW brands and published Hub content
+
+Decision: 2 October 2026. Brand intake is authorized **locally only**. Hosted H1
+keeps fictional identities under [doc 27's real-data default](27-hosted-test-environment.md#6-synthetic-seed-and-acceptance-sequence).
+No real brand package, local database dump or `.local` directory goes to hosted
+TEST before the owner confirms with the data owner. Migrations contain schema
+and guards only; hosted seed inputs remain explicitly synthetic.
+
+## Reviewed local brand dictionary
+
+The DW report is
+`sena_idea_mkt_data_warehouse/docs/REM_BRAND_DICTIONARY.md`; it identifies the
+review package `data/rem-brand-export/20261002T071912690927Z/`.
+The Hub importer pins manifest SHA-256
+`1512ac0bac74f5356617458b30bf2079896cce18db54393b5244c136ae54f877`.
+It verifies both payload hashes, byte sizes, column sets and row counts before
+connecting. The complete package has 38 brands (36 active deletion flags, one
+deleted, one unknown) and four exception records. Thirty-five brands have
+residential references. IDs remain exact text, including leading zeros.
+
+```powershell
+uv --cache-dir .cache/uv run --project apps/api python scripts/stage-dw-brands.py
+uv --cache-dir .cache/uv run --project apps/api python scripts/stage-dw-brands.py --apply
+```
+
+Dry-run is the default. Apply accepts no connection override: the only target
+is `127.0.0.1:55432/sena_hub_local`, checked against server identity. Preserve
+original bytes in ignored `.local/dw-brand-intake/<manifest-sha256>/`; conflicting
+archived bytes refuse. One transaction stores the original manifest, brands and
+exceptions in immutable private `staging.intake_batches` and mirrors every brand
+in `staging.rem_brands`. Exact replay verifies the original batch and all mirror
+fields, returns `already_staged`, and preserves the first import time. Drift or
+failure rolls back all database changes. The shared pilot advisory lock serializes
+the two intake commands.
+
+The only permitted overlap enriches the two reviewed September pilot batches
+(`59391f30…` and `79188d16…`). Verify each previous mirror against its immutable
+batch and require unchanged ID, Thai/English labels, deletion flag, brand code
+and raw source dates before replacing its source evidence. The old batches remain
+immutable. Unreviewed overlaps or changed business values stop the whole import;
+this is not a recurring upsert/refresh or retirement workflow. No Hub content,
+draft, mapping, publication pointer, asset, company, project or model is changed.
+
+`is_deleted` is three-state: false means a nondeleted source flag, true means
+deleted, null means unknown. Source Thai names may be null or blank; review rows
+are retained. Neither source status nor residential usage establishes marketing
+approval. Raw REM create/modify timestamps retain their original wall-clock text
+and unconfirmed timezone; `source_updated_at` remains null. `source_snapshot_at`
+is brand extraction time, **not export/import time**. Project-reference freshness
+bounds, aliases, original quality flags and usage policy remain in `source_record`.
+
+## Staff source picker and Hub ownership
+
+`GET /v1/admin/sources/brands` retains its staff-only guarded RPC. It adds
+`deletion_status`, `residential_project_count`, the separate nondeleted count
+and `exception_codes` from the matching immutable batch. Earlier residential
+pilot/synthetic mirrors fall back to their staged project-reference count.
+Batch evidence itself remains private. Missing-dictionary project exceptions stay
+in the batch; they never create a fabricated brand row.
+
+“ดูแบรนด์จากต้นทาง” defaults to brands referenced by residential projects and
+offers all dictionary rows. Each card shows Thai/English source labels, exact ID,
+deletion status, residential count and text exception badges. The DW count uses
+`C`/`H` references excluding Solar containers `B2B`, `B2C`, `B2G`, including
+closed/deleted projects; the UI states this qualification. Search includes both
+source languages and the ID. Empty, loading and retry states remain Thai.
+
+Only admin can call `hub.create_brand_from_rem(text)`; deleted and unknown rows
+fail at the database guard as well as disabling UI actions. Creation copies only
+`rem_brand_id`. Public names/descriptions start as `{}`, slug as `''`, logos empty
+and publication pointer null. Marketing supplies public content through the
+existing draft and asset workflows. Admin retains no publisher bypass. Existing
+Hub edits are never refreshed from source labels.
+
+## Verification
+
+The real package was imported locally at `2026-10-02T07:56:42.357604+00:00`.
+The immediate exact replay returned `already_staged` with the same timestamp.
+All 38 mirrors have null normalized source modification time; 35 have residential
+references, 36 have active deletion flags, one is deleted and one unknown.
+Before/after row-count and SHA-256 checks preserved all 41 other Hub/staging/audit
+tables and the full rows of every previous immutable intake batch. Real package
+bytes and this local receipt are ignored artifacts, not repository fixtures.
+
+The importer tests use invented records and disposable localhost databases. They
+check pinned manifests, hashes/counts, text keys, deletion lineage, raw source time,
+transaction rollback, exact replay, immutable evidence, bounded predecessor
+enrichment, unchanged Hub content and admin/unknown/deleted creation guards.
+Browser coverage checks both 1366×768 and 390×844, default/all usage filtering,
+Thai/English search, count/status/exception badges and role controls.
+
+```powershell
+$env:HUB_INTAKE_TEST_DB='1'
+uv --cache-dir .cache/uv run --project apps/api python -m unittest discover -s tests -p test_stage_dw_brands.py -v
+```
+
+Local brand-intake verification on 2 October 2026:
+
+| Check | Actual result |
+|---|---|
+| Pinned dry-run, real local apply and immediate replay | Passed; 38 brands / four exceptions; replay preserves import time |
+| Importer tests with `HUB_INTAKE_TEST_DB=1` | Five passed, including fresh synthetic bootstrap |
+| Admin typecheck / production build | Exit 0; existing Google Sans fallback warning |
+| Full API suite | 1,204 passed, 11 skipped, one existing Starlette warning in 186.90 seconds |
+| Opt-in promotion database test | One passed, rollback-only synthetic fixture |
+| `npm.cmd run test:db` | Exit 0; all SQL/RLS/concurrency checks and two existing DW fixture tests passed |
+| Full Edge UI suite | 162 passed, 14 H1 checks skipped in local mode, exit 0 in 8.1 minutes |
+| `npm.cmd run test:hosted-h1` | Ten runner/mock checks and 14 Edge checks passed on isolated localhost; schema/profile replay and synthetic seed verified |
+
+Logo fixtures now explicitly prepare their public names through the Hub draft
+workflow; the final full UI run passed after correcting that former source-name
+assumption. The real package was never copied into the H1 simulation or hosted
+TEST. Neither the fixture checks nor the local source dictionary approve real
+published content for hosted use.

@@ -18,7 +18,7 @@ values
 -- Brand logo selection still replaces the previous logo; project collections do not.
 set local role admin;
 select set_config('test.pc_brand',hub.create_brand_from_rem('MEDIA-COLLECTION-BRAND')::text,true);
-select hub.update_brand_draft(id,'{"slug":"media-collection-brand","description":{"th":"Synthetic brand"}}',updated_at)
+select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic media collection brand"},"slug":"media-collection-brand","description":{"th":"Synthetic brand"}}',updated_at)
 from hub.brands where id=current_setting('test.pc_brand')::uuid;
 select hub.bind_brand_asset(id,'91300000-0000-0000-0000-000000000002','logo_primary','{"th":"Old logo"}',updated_at)
 from hub.brands where id=current_setting('test.pc_brand')::uuid;

@@ -37,7 +37,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
         await connection.execute("SET LOCAL ROLE admin")
         brand = await connection.fetchval("SELECT hub.create_brand_from_rem($1)", key)
         await connection.fetchval("SELECT hub.update_brand_draft(id,$2::jsonb,updated_at) FROM hub.brands WHERE id=$1", brand,
-                                  {"slug": key.lower(), "description": {"th": "แบรนด์สังเคราะห์สำหรับ API"}})
+                                  {"public_name": {"th": "Synthetic API brand"}, "slug": key.lower(), "description": {"th": "แบรนด์สังเคราะห์สำหรับ API"}})
         assets = []
         for name in ("hero", "thumbnail"):
             checksum = uuid4().hex + uuid4().hex

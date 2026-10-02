@@ -12,7 +12,7 @@ insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,sou
 values ('SQL-CORE-BRAND','Synthetic core test brand',now(),'synthetic-core-brand');
 set local role admin;
 select set_config('test.fixture_brand',hub.create_brand_from_rem('SQL-CORE-BRAND')::text,true);
-select hub.update_brand_draft(id,'{"slug":"sql-core-brand","description":{"th":"Synthetic test brand only"}}',updated_at)
+select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic core brand"},"slug":"sql-core-brand","description":{"th":"Synthetic test brand only"}}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;

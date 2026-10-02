@@ -53,7 +53,7 @@ async function createBrand(page: Page, data: Awaited<ReturnType<typeof fixture>>
   await page.getByLabel('ค้นหาแบรนด์ต้นทาง', { exact: true }).fill(data.sourceId);
   const source = page.locator('#brand-source-picker li').filter({ has: page.getByRole('heading', { name: data.name, exact: true }) });
   await source.getByRole('button', { name: 'นำแบรนด์นี้เข้าระบบ', exact: true }).click();
-  await expect(page.getByLabel('ชื่อแบรนด์ที่ใช้เผยแพร่')).toHaveValue(data.name);
+  await expect(page.getByLabel('ชื่อแบรนด์ที่ใช้เผยแพร่')).toHaveValue('');
   return detail(page, new URL(page.url()).searchParams.get('brand')!);
 }
 
@@ -108,6 +108,7 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     expect((await page.request.post(`${adminPath}/publish`, { headers, data: { change_reason: 'Admin must not publish' } })).status()).toBe(403);
     await role(page, 'editor');
     expect((await page.request.post('/api/hub/v1/admin/brands', { headers, data: { rem_brand_id: data.sourceId } })).status()).toBe(403);
+    await page.getByLabel('ชื่อแบรนด์ที่ใช้เผยแพร่', { exact: true }).fill(data.name);
     await page.getByLabel('ชื่ออ้างอิงแบรนด์', { exact: true }).fill(`e2e-brand-${data.suffix}`);
     await page.getByLabel('คำอธิบายแบรนด์ (ภาษาไทย)', { exact: true }).fill('แบรนด์สมมติสำหรับทดสอบการจัดการเนื้อหาและโลโก้เท่านั้น');
     const save = page.getByRole('button', { name: 'บันทึกข้อมูลแบรนด์', exact: true });
@@ -274,6 +275,9 @@ test('brand requests, exact project association, viewer permissions and mobile l
     const created = await page.request.post('/api/hub/v1/admin/brands', { headers, data: { rem_brand_id: data.sourceId } });
     expect(created.status()).toBe(201);
     const brand: Brand = (await created.json()).data;
+    expect(brand.public_name).toEqual({});
+    const named = await page.request.patch(`/api/hub/v1/admin/brands/${brand.public_brand_id}`, { headers, data: { updated_at: brand.updated_at, public_name: { th: data.name } } });
+    expect(named.status()).toBe(200);
     await page.reload();
     await requestRow.getByRole('button', { name: 'พิจารณาคำขอ', exact: true }).click();
     dialog = page.getByRole('dialog');

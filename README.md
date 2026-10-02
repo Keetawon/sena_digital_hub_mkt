@@ -49,6 +49,7 @@ with numbered testable requirements (P0/P1/P2), acceptance criteria and open que
 | [15 — **Status / KPI delivery forecast**](docs/15-status-kpi-plan-20260918.md) | Decisions, actual progress, issues, one-developer planning scenario, Gantt and measurable acceptance gates |
 | [16 — **HYABC current pilot intake**](docs/16-pilot-intake-hyabc.md) | Replacement selection, exact source identities, 13 model-master records and pending DW unit reconciliation |
 | [17 — **Project form / model and plan flow**](docs/17-project-form-and-plans.md) | Ordered Thai/English fields, verified Gold defaults, three workspace tabs, image placement and building/floor layout variants |
+| [28 — **DW brands / published Hub content**](docs/28-dw-brands-and-published-content.md) | Local verified brand dictionary, source review, identity-only creation and DW export contract |
 
 ## สรุปสั้นที่สุด
 

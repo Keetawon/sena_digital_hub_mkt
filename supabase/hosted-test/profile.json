@@ -128,6 +128,11 @@
       "name": "202610020025_hosted_h1_adapters.sql",
       "canonical_sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3",
       "executed_sha256": "f71e6198638e0de5bb5e682570477453c21f903272915b7bdd0381b207f76cb3"
+    },
+    {
+      "name": "202610020026_dw_brand_dictionary.sql",
+      "canonical_sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08",
+      "executed_sha256": "e5c63a9cb711ea467e9f9f8ac0dca17407064501d86c534b6f0554f200bb6e08"
     }
   ]
 }

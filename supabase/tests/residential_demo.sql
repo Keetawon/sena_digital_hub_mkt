@@ -12,7 +12,7 @@ insert into staging.source_offers(source_offer_key,source_active,source_snapshot
 values('SYNTHETIC:SQL:000021',true,now(),'{"synthetic_only":true}');
 set local role admin;
 select set_config('test.residential_brand',hub.create_brand_from_rem('SQL-RESIDENTIAL-21')::text,true);
-select hub.update_brand_draft(id,'{"slug":"sql-residential-21","description":{"th":"แบรนด์สังเคราะห์"}}',updated_at)
+select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic residential brand"},"slug":"sql-residential-21","description":{"th":"แบรนด์สังเคราะห์"}}',updated_at)
 from hub.brands where id=current_setting('test.residential_brand')::uuid;
 select set_config('test.residential_hero',hub.register_uploaded_asset(jsonb_build_object('original_filename','synthetic-residential-hero.png',
  'mime_type','image/png','asset_type','image','storage_path',repeat('7',64)||'.png','checksum',repeat('7',64),'file_size',100,'width',10,'height',10))#>>'{asset,id}',true);

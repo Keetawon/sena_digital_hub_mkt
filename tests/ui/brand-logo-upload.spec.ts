@@ -45,6 +45,8 @@ async function fixture(page: Page) {
   const created = await page.request.post(`${api}/brands`, { headers, data: { rem_brand_id: prefix } });
   expect(created.status()).toBe(201);
   const brand = (await created.json()).data;
+  const named = await page.request.patch(`${api}/brands/${brand.public_brand_id}`, { headers, data: { updated_at: brand.updated_at, public_name: { th: name } } });
+  expect(named.status()).toBe(200);
   await session(page, 'editor');
   await page.goto(`/?brand=${brand.public_brand_id}`);
   await expect(page.locator('.brand-logo-slot')).toHaveCount(4);

@@ -15,7 +15,7 @@ values ('90900000-0000-0000-0000-000000000001','synthetic-model.jpg','image/jpeg
        ('90900000-0000-0000-0000-000000000002','synthetic-plan.pdf','application/pdf','/v1/assets/90900000-0000-0000-0000-000000000002/file','pending','local-originals',repeat('8',64)||'.pdf',repeat('8',64),100);
 set local role admin;
 select set_config('test.mm_brand',hub.create_brand_from_rem('MODEL-MEDIA-BRAND')::text,true);
-select hub.update_brand_draft(id,'{"slug":"model-media-brand","description":{"th":"Synthetic brand"}}',updated_at)
+select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic model media brand"},"slug":"model-media-brand","description":{"th":"Synthetic brand"}}',updated_at)
 from hub.brands where id=current_setting('test.mm_brand')::uuid;
 select hub.bind_brand_asset(id,'90900000-0000-0000-0000-000000000001','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.mm_brand')::uuid;

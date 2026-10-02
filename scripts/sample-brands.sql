@@ -18,7 +18,8 @@ values ('DEMO-003','DEMO-003-M1','แบบจำลอง — สำหรั�
 set local role admin;
 select hub.create_brand_from_rem('DEMO-BRAND-01');
 reset role;
-update hub.brands set slug='synthetic-demo-brand',description='{"th":"แบรนด์และบริษัททั้งหมดในตัวอย่างนี้สร้างขึ้นเพื่อทดสอบ ไม่มีความเกี่ยวข้องกับแบรนด์หรือบริษัทจริง"}'
+update hub.brands set public_name='{"th":"แบรนด์จำลอง — สำหรับทดสอบเท่านั้น","en":"Synthetic demonstration brand"}',
+  slug='synthetic-demo-brand',description='{"th":"แบรนด์และบริษัททั้งหมดในตัวอย่างนี้สร้างขึ้นเพื่อทดสอบ ไม่มีความเกี่ยวข้องกับแบรนด์หรือบริษัทจริง"}'
 where rem_brand_id='DEMO-BRAND-01';
 insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,rights_notes)
 values ('10000000-0000-0000-0000-000000000003','synthetic-demo-brand-logo.svg','image/svg+xml','/demo-assets/brand-logo.svg','approved','สื่อสมมติที่มากับระบบสำหรับทดสอบภายในเครื่องเท่านั้น');
