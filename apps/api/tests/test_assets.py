@@ -169,7 +169,7 @@ def test_atomic_dedup_never_overwrites_and_detects_corruption(monkeypatch, tmp_p
     assert path.read_bytes() == b"corrupted"  # Never silently overwrite an existing original.
 
 
-@pytest.mark.parametrize("name", ["../secret", r"..\secret", "https://example.invalid/file", "file.svg", "a" * 64 + ".svg"])
+@pytest.mark.parametrize("name", ["../secret", r"..\secret", "https://example.invalid/file", "file.svg", "a" * 64 + ".html"])
 def test_registry_path_never_fetches_urls_or_escapes(name):
     with pytest.raises(HTTPException):
         assets.storage_path(name)

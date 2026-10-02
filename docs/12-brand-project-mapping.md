@@ -140,3 +140,92 @@ navigation-timing issues; these were corrected before the final passing suite.
 The build retains the existing Google Sans fallback-metric warning; the API
 warning is the existing Starlette `BlockingPortal` deprecation. No migration,
 external provider call or real source-system write was needed.
+
+## Brand logo upload — 2 October 2026 design before code
+
+Keep the shared asset registry, publisher-only rights review, guarded binding
+functions and per-file audit records. Each brand logo slot gets upload/drop and
+library selection with an inline Thai alternative-text suggestion. Upload and
+binding are one user action, using the existing two guarded requests; a failed
+binding retains the uploaded asset and retries without re-uploading. Replacing
+a slot uses the existing soft-deleted binding history, never deletion of the
+original asset or rewriting a published snapshot.
+
+Section-wide multi-file drops open a review table before any upload. Filename
+keywords suggest white, monochrome or favicon; a small square raster image may
+suggest favicon, with explicit operator confirmation. Roles and Thai alternative
+text remain editable. Reject duplicate destination slots in a single batch so
+one confirmed file cannot silently replace another. Reuse the project uploader's
+per-file states, completed-file retention and reconciliation after an uncertain
+binding response. Keyboard file inputs and library buttons are equivalent to
+dragging. Show white logos on a dark tile, monochrome on a light tile, and favicon
+previews at 16 and 32 pixels. Non-square/small favicon and opaque-background logo
+checks are advisory only, with unknown evidence stated rather than guessed.
+
+Publishers may select logo assets and complete one evidence form. Submit the
+existing guarded rights-review request for each unique asset, retaining an
+individual rights decision and audit event per file. Partial failures stay
+visible and completed decisions are not repeated. No bulk permission bypass or
+new automatic approval policy is introduced.
+
+### SVG risk and serving boundary
+
+SVG is executable XML when handled as an active document; external references
+and entity expansion also create network and resource-exhaustion risks. The
+Hub accepts a deliberately limited static logo subset, not arbitrary SVG.
+See [W3C SVG processing modes](https://www.w3.org/TR/SVG/conform.html) and
+[Python XML security guidance](https://docs.python.org/3/library/xml.html).
+
+Before content addressing or storage, the server parses bounded XML without
+DTD/entity resolution and serializes an allowlisted SVG tree. Remove scripts,
+event attributes, foreignObject, animation, embedded documents, external/data
+references and unsafe CSS; preserve only supported shapes, local definitions
+and fragment references. Reject malformed or excessively large/deep documents.
+Store and hash only the sanitized bytes; never retain or preview the raw upload
+as trusted markup. A new forward migration extends the existing registry MIME
+validation for sanitized SVG metadata, leaving prior migrations immutable.
+
+Serve sanitized SVG through the existing authorized asset-file routes as
+`image/svg+xml`, with `nosniff`, sandboxed `default-src 'none'` CSP and denied
+framing, including through the admin proxy. Display it with an image element,
+never inline HTML, an object or an iframe. Raw client-selected SVG receives a
+filename-only preview until server sanitization. Scripts, event handlers,
+foreign content, URL/CSS bypasses, XML entities, permission checks, sanitized
+checksum/deduplication and safe response headers get regression coverage.
+Sanitization can simplify unsupported artwork; the UI must make that explicit
+and offer raster formats. No indexing, embeddings or ingestion pipeline work.
+
+The static SVG limit is 2 MiB, 5,000 elements and depth 32; raster files retain
+the existing 10 MiB limit. SVG needs positive dimensions or a valid viewBox and
+is subject to the existing 40-million-pixel dimension bound. Unsupported CSS,
+image/use elements and animation are removed; these are not a general-purpose
+SVG rendering service. Advisories about favicon size or background opacity do
+not grant rights or block a valid file from being saved.
+
+Retries never resend bytes after an upload response has supplied an asset ID.
+If the upload response itself is lost, its outcome is unknown: retrying that
+upload uses the server's sanitized-content checksum to reuse the same asset,
+without duplicate storage or resetting rights. A lost binding response is
+reconciled against the current brand before another binding is attempted.
+
+Implementation verification (2 October 2026; synthetic/local TEST only):
+
+| Check | Actual result |
+|---|---|
+| `npm.cmd run dev:migrate` | Applied `202610020024_brand_logo_svg.sql` locally; exit 0 |
+| `npm.cmd run typecheck --prefix apps/admin` | Exit 0 |
+| `npm.cmd run build --prefix apps/admin` | Exit 0; existing Google Sans fallback-metric warning |
+| `npm.cmd run test:db` | Exit 0; SVG metadata/permissions, replacement history, individual rights/audit and all existing SQL/concurrency/fixture checks passed |
+| `uv --cache-dir .cache/uv run --project apps/api --env-file apps/api/.env pytest apps/api/tests` | 1,141 passed, 10 skipped, 1 existing Starlette warning in 207.30 seconds |
+| `$env:PLAYWRIGHT_CHANNEL='msedge'; npm.cmd run test:ui` | 158 passed in 8.0 minutes, exit 0 |
+
+The new nine-test logo browser suite passed independently (38.2 seconds) and in
+the full suite. It verifies both requested viewport sizes, direct slot binding,
+bulk confirmation and role suggestions, sanitized SVG response headers/bytes,
+replacement history, warning-only checks, 16/32-pixel favicon previews,
+per-file retries, concurrent slot removal/rebinding, and rights reconciliation
+without duplicate reviews. The initial mocked retry test was corrected to wait
+for the failed response before simulating another editor's change.
+Read-only Edge screenshot checks at 1366×768 and 390×844 found no horizontal
+overflow or console errors and confirmed visible modal focus and 44-pixel
+slot actions. Existing generic asset-library controls remain available.

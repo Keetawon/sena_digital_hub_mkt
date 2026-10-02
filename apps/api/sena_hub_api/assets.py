@@ -17,6 +17,7 @@ from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject, NameObj
 from starlette.requests import ClientDisconnect, Request
 
 from .auth import failure
+from .svg import sanitize_svg
 
 
 MAX_BYTES = 10 * 1024 * 1024
@@ -24,7 +25,7 @@ MAX_PIXELS = 40_000_000
 MAX_PDF_PAGES = 200
 STORAGE_ROOT = Path(__file__).resolve().parents[3] / ".local" / "assets"
 FORMATS = {"image/png": ("PNG", "png"), "image/jpeg": ("JPEG", "jpg"),
-           "image/webp": ("WEBP", "webp"), "application/pdf": (None, "pdf")}
+           "image/webp": ("WEBP", "webp"), "image/svg+xml": (None, "svg"), "application/pdf": (None, "pdf")}
 ACTIVE_PDF_NAMES = {"/JavaScript", "/JS", "/OpenAction", "/AA", "/Launch", "/SubmitForm",
                     "/ImportData", "/EmbeddedFiles", "/EmbeddedFile", "/RichMedia", "/XFA",
                     "/AcroForm", "/URI"}
@@ -49,7 +50,7 @@ def decode_filename(header: str | None) -> str:
 async def read_upload(request: Request) -> tuple[bytes, str, str]:
     mime = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if mime not in FORMATS:
-        raise failure(415, "unsupported_file", "รองรับเฉพาะ PNG, JPEG, WebP และ PDF")
+        raise failure(415, "unsupported_file", "รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF")
     filename = decode_filename(request.headers.get("x-filename"))
     declared = request.headers.get("content-length")
     if declared is not None and (not re.fullmatch(r"[0-9]{1,20}", declared) or int(declared) < 1):
@@ -109,6 +110,10 @@ def validate_file(content: bytes, mime: str, filename: str) -> dict:
             raise ValueError("Invalid file")
         if mime == "application/pdf":
             validate_pdf(content)
+        elif mime == "image/svg+xml":
+            sanitized, width, height = sanitize_svg(content)
+            if sanitized != content or width * height > MAX_PIXELS:
+                raise ValueError("SVG must be sanitized before registry validation")
         else:
             with warnings.catch_warnings():
                 warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -130,8 +135,18 @@ def validate_file(content: bytes, mime: str, filename: str) -> dict:
             "width": width, "height": height, "language": "th"}
 
 
+def prepare_upload(content: bytes, mime: str, filename: str) -> tuple[bytes, dict]:
+    """Never content-address or install raw SVG bytes."""
+    if mime == "image/svg+xml":
+        try:
+            content, _, _ = sanitize_svg(content)
+        except Exception:
+            raise failure(422, "invalid_file", "SVG ต้องเป็นภาพนิ่ง XML ที่ถูกต้อง ไม่เกิน 2 MiB และระบุขนาดหรือ viewBox; ไม่รองรับ DTD หรือเอนทิตี") from None
+    return content, validate_file(content, mime, filename)
+
+
 def storage_path(name: str) -> Path:
-    if not isinstance(name, str) or not re.fullmatch(r"[0-9a-f]{64}\.(?:jpg|png|webp|pdf)", name):
+    if not isinstance(name, str) or not re.fullmatch(r"[0-9a-f]{64}\.(?:jpg|png|webp|svg|pdf)", name):
         raise failure(404, "file_not_found", "ไม่พบไฟล์ที่จัดเก็บอย่างถูกต้อง")
     root = STORAGE_ROOT.resolve()
     if root != STORAGE_ROOT.absolute():

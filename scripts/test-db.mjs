@@ -17,6 +17,8 @@ try {
   console.log('PASS: asset rights, binding isolation and published file eligibility');
   await connection.query(await readFile(new URL('../supabase/tests/brands.sql', import.meta.url), 'utf8'));
   console.log('PASS: brand/company identity, requests, immutable brand publication and dependent project eligibility');
+  await connection.query(await readFile(new URL('../supabase/tests/brand_logo_svg.sql', import.meta.url), 'utf8'));
+  console.log('PASS: SVG registry rights, binding history and individual batch-review audit records');
   await connection.query(await readFile(new URL('../supabase/tests/project_prefill.sql', import.meta.url), 'utf8'));
   console.log('PASS: Gold defaults, bilingual fields, source revisions and preservation of edited values');
   await connection.query(await readFile(new URL('../supabase/tests/model_media.sql', import.meta.url), 'utf8'));

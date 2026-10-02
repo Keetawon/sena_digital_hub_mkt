@@ -356,7 +356,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def upload_asset(request: Request, actor: Actor = Depends(writer)):
         require_local_assets()
         content, mime, filename = await asset_files.read_upload(request)
-        metadata = await asyncio.to_thread(asset_files.validate_file, content, mime, filename)
+        content, metadata = await asyncio.to_thread(asset_files.prepare_upload, content, mime, filename)
         created = False
         try:
             async with database(request, actor) as connection:

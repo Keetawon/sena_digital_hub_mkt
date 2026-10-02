@@ -4,7 +4,7 @@ import { isContentStaff, isHubStaff } from "@/lib/staff";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
-const uploadTypes = new Set(["image/png", "image/jpeg", "image/webp", "application/pdf"]);
+const uploadTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml", "application/pdf"]);
 const allowed = {
   GET: new RegExp(`^v1/(?:admin/(?:assets(?:/${id}(?:/file)?)?|sources/(?:projects|brands)|brands(?:/${id}(?:/versions)?)?|brand-requests|projects(?:/${id}(?:/(?:versions|source-models|models/${id}|commercial-types))?)?)|assets/${id}/file|(?:projects|brands)(?:/${id})?)$`),
   PATCH: new RegExp(`^v1/admin/(?:projects/${id}(?:/(?:models|commercial-types)/${id})?|brands/${id})$`),
@@ -106,7 +106,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     if (length && (!/^\d+$/.test(length) || Number(length) > limit)) return error("ข้อมูลมีขนาดเกินกำหนด", 413);
     if (upload) {
       const type = request.headers.get("content-type") ?? "";
-      if (!uploadTypes.has(type)) return error("รองรับเฉพาะ PNG, JPEG, WebP และ PDF", 415);
+      if (!uploadTypes.has(type)) return error("รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF", 415);
       const filename = request.headers.get("x-filename") ?? "";
       if (!filename || filename.length > 2400) return error("กรุณาระบุชื่อไฟล์ที่ถูกต้อง", 422);
       headers["Content-Type"] = type;
