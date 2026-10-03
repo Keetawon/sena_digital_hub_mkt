@@ -6,6 +6,8 @@ import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
+import { ProjectComparison, projectChanges, modelActorLabel } from "./project-review";
+import "./project-editor.css";
 import { ContentSource } from "./content-source";
 import { DemoFields } from "./demo-fields";
 import { ProjectAssets, type AssetBinding } from "./project-assets";
@@ -36,6 +38,7 @@ export type Project = {
   published_version_id: string | null; publication_available: boolean; readiness: Readiness;
   address?: Localized; latitude?: number | null; longitude?: number | null;
   ad_disclaimer?: Localized; meta_title?: Localized; meta_description?: Localized;
+  brand_version_id?: string | null; version_count?: number; has_unpublished_changes?: boolean;
   brand_id?: string | null; brand_summary?: BrandSummary | null;
   gold_source?: GoldSource | null;
   gold_prefill_changes?: { public_name?: Localized; address?: Localized; latitude?: number; longitude?: number };
@@ -44,7 +47,7 @@ export type Project = {
 };
 type Version = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload: Project };
 type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; meta_title: string; meta_description: string };
-type ProjectTab = "content" | "models" | "versions";
+type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
 type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
 const roles: Record<LocalRole, string> = { editor: "ผู้แก้ไขข้อมูล", publisher: "ผู้เผยแพร่", viewer: "ผู้อ่านข้อมูล", admin: "ผู้ดูแลระบบ", online_staff: "ทีมออนไลน์", agency_kin: "เอเจนซี KIN", agency_combay: "เอเจนซี COMBAY" };
 const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
@@ -201,7 +204,7 @@ function SourceProjects({ role }: { role: LocalRole }) {
 
 function StatusBadge({ project }: { project: Project }) {
   const unavailable = Boolean(project.published_version_id) && project.publication_available === false;
-  return <span className={`status-badge ${project.publication_available ? "published" : "draft"}`}><span />{unavailable ? "หยุดแสดงผ่าน API" : project.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</span>;
+  return <span className={`status-badge ${project.publication_available ? "published" : "draft"}`}><span />{unavailable ? "หยุดแสดงผ่าน API" : project.published_version_id && project.has_unpublished_changes ? "มีการแก้ไขที่ยังไม่เผยแพร่" : project.publication_available ? "เผยแพร่แล้ว" : project.version_count ? "ถอนการเผยแพร่แล้ว" : "ฉบับร่าง"}</span>;
 }
 function LoadingState() { return <div className="loading-state" role="status"><span className="spinner" />กำลังโหลดข้อมูล…</div>; }
 function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
@@ -222,13 +225,14 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   const [mediaModelId, setMediaModelId] = useState("");
   const [commercialDirty, setCommercialDirty] = useState(false);
   const [facilitiesDirty, setFacilitiesDirty] = useState(false);
+  const [modelDirty, setModelDirty] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Draft, string>>>({});
   const [conflict, setConflict] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
   const canEdit = role === "editor" || role === "admin";
   const canPublish = role === "publisher";
   const dirty = Boolean(project && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(project)));
-  const relatedDirty = commercialDirty || facilitiesDirty;
+  const relatedDirty = commercialDirty || facilitiesDirty || modelDirty;
   const anyDirty = dirty || relatedDirty;
   useEffect(() => { onDirtyChange(anyDirty); return () => onDirtyChange(false); }, [anyDirty, onDirtyChange]);
 
@@ -308,10 +312,16 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
 
   function revealField(name: string) {
     const anchor = missingAnchor(name);
+    const asset = project?.assets?.find(item => name.split(".").includes(item.id));
     const linkedModel = project?.models?.find(model => name.split(".").some(part => part === model.id || part === model.public_model_id));
-    if (anchor === "models" && linkedModel) setMediaModelId(linkedModel.public_model_id);
-    setTab(anchor === "models" ? "models" : "content");
-    setNavigationTarget(anchor);
+    if (linkedModel || asset?.public_model_id) setMediaModelId(linkedModel?.public_model_id ?? asset!.public_model_id!);
+    setTab(anchor === "models" || asset?.public_model_id ? "models" : anchor === "assets" ? "media" : "content");
+    setNavigationTarget(asset?.public_model_id ? "model-media" : anchor === "source" ? "gold-project_id" : anchor);
+    const modelField = name.split(".").at(-1);
+    if (linkedModel && canEdit && !anyDirty && modelField && ["public_name", "bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"].includes(modelField)) {
+      setModelAction({ type: "edit", model: linkedModel });
+      setNavigationTarget(`model-${modelField}`);
+    }
   }
 
   if (loading) return <LoadingState />;
@@ -336,10 +346,23 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   }
 
   function sourceField(name: string, label: string) {
-    const value = project?.gold_source?.record[name];
-    return <div className="form-field source-field"><label htmlFor={`gold-${name}`}>{label}<span className="field-chip">อ่านอย่างเดียว</span></label><input id={`gold-${name}`} readOnly value={value == null || value === "" ? "ยังไม่มีข้อมูลจาก DW" : String(value)} /></div>;
+    const gold = project?.gold_source?.record[name];
+    const mirror: Record<string, unknown> = { commercial_brand: project?.source?.brand_name_rem,
+      project_id: project?.source?.rem_project_id, project_name: project?.source?.project_name_rem,
+      project_name_eng: project?.source?.source_record?.project_name_en,
+      rem_project_group_id: project?.source?.source_record?.rem_project_group_id };
+    const fromRem = gold == null || gold === "";
+    const value = fromRem ? mirror[name] : gold;
+    return <div className="form-field source-field"><span>{label}<span className="field-chip">อ่านอย่างเดียว</span></span><p id={`gold-${name}`} tabIndex={-1}>{value == null || value === "" ? "ยังไม่มีข้อมูลต้นทาง" : String(value)}{value != null && value !== "" && <small className="source-origin">{fromRem ? "จาก REM" : "จาก DW"}</small>}</p></div>;
   }
-  const tabs: { id: ProjectTab; label: string; icon: "document" | "building" | "shield" }[] = [{ id: "content", label: "ข้อมูลโครงการ", icon: "document" }, { id: "models", label: "แบบที่อยู่อาศัย", icon: "building" }, { id: "versions", label: "เผยแพร่และประวัติ", icon: "shield" }];
+  const tabs: { id: ProjectTab; label: string }[] = [{ id: "content", label: "ข้อมูลหลัก" }, { id: "media", label: "รูปภาพ" }, { id: "models", label: "แบบบ้าน" }, { id: "extra", label: "ข้อมูลเสริม" }, { id: "versions", label: "เผยแพร่และประวัติ" }];
+  const live = versions.find(version => version.version_id === project.published_version_id)?.payload;
+  const gapsFor = (id: ProjectTab) => readiness.missing.filter(item => {
+    const anchor = missingAnchor(item.field);
+    const modelAsset = project.assets?.some(asset => asset.public_model_id && item.field.split(".").includes(asset.id));
+    return id === "versions" || (anchor === "models" || modelAsset ? id === "models" : anchor === "assets" ? id === "media" : id === "content");
+  });
+  const confirmed = project.models?.filter(model => model.match_status === "CONFIRMED").length ?? 0;
   const sortedModels = [...(project.models ?? [])].sort((a, b) => a.rem_model_id.localeCompare(b.rem_model_id, "en", { numeric: true }));
   const mediaModel = sortedModels.find(model => model.public_model_id === mediaModelId) ?? sortedModels[0];
   const goldModelGroups = mediaModel ? project.gold_source?.model_groups?.filter(group => group.model_ids?.includes(mediaModel.rem_model_id)) ?? [] : [];
@@ -353,21 +376,23 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
 
   return <>
     <a className="back-link" href="/"><span aria-hidden="true">←</span>โครงการทั้งหมด</a>
-    <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={project.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={project} /></div>
+    <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={project.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={{ ...project, version_count: versions.length, has_unpublished_changes: Boolean(live && projectChanges(project, live).length) }} /></div>
     {notice && <div className="notice success" role="status"><Icon name="check" />{notice}</div>}
     {error && <div className="notice error" role="alert"><div><strong>{error}</strong>{conflict && <p>ข้อมูลร่างของคุณยังอยู่ กรุณาคัดลอกข้อความที่ต้องการเก็บ ก่อนโหลดข้อมูลล่าสุด</p>}</div>{conflict && <button className="button secondary" onClick={() => void load()}>โหลดข้อมูลล่าสุด</button>}</div>}
-    <div className="project-readiness-strip" aria-label="สรุปความพร้อม"><div><strong>{readiness.ready ? "ผ่านเงื่อนไขการเผยแพร่ชุดปัจจุบัน" : "ยังมีเงื่อนไขก่อนเผยแพร่"}</strong><span>{readiness.ready ? "ข้อมูลที่บันทึกผ่านรายการตรวจสอบแล้ว" : `เหลือ ${readiness.missing.length} รายการที่ต้องตรวจสอบ`}</span></div><button className="button text-button" onClick={() => { setTab("versions"); requestAnimationFrame(() => document.getElementById("versions-tab")?.focus()); }}>ตรวจความพร้อม<Icon name="arrow" size={17} /></button></div>
+    <div className="project-readiness-strip" aria-label="สรุปความพร้อม"><div><strong>{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : "ยังมีเงื่อนไขก่อนเผยแพร่"}</strong><span>{readiness.ready ? "ข้อมูลที่บันทึกผ่านรายการตรวจสอบแล้ว" : `เหลือ ${readiness.missing.length} รายการที่ต้องตรวจสอบ`}</span></div><button className="button text-button" onClick={() => { setTab("versions"); requestAnimationFrame(() => document.getElementById("versions-tab")?.focus()); }}>ตรวจความพร้อม<Icon name="arrow" size={17} /></button></div>
     <p className="project-flow-hint">เริ่มจากข้อมูลและสื่อโครงการ → จัดเตรียมแบบที่อยู่อาศัย → ตรวจความพร้อมก่อนส่งต่อ</p>
-    <div className="detail-tabs project-tabs" role="tablist" aria-label="ส่วนงานโครงการ">{tabs.map((item, index) => <button key={item.id} id={`${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => goToTab(item.id)} onKeyDown={event => { const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0; if (!offset && event.key !== "Home" && event.key !== "End") return; event.preventDefault(); const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length].id; setTab(next); document.getElementById(`${next}-tab`)?.focus(); }}><span className="workflow-step" aria-hidden="true">{index + 1}</span>{item.label}{item.id === "models" && <span className="tab-count">{project.commercial_types?.length ?? 0}</span>}</button>)}</div>
+    <div className="detail-tabs project-tabs" role="tablist" aria-label="ส่วนงานโครงการ">{tabs.map((item, index) => <button key={item.id} id={`${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => goToTab(item.id)} onKeyDown={event => { const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0; if (!offset && event.key !== "Home" && event.key !== "End") return; event.preventDefault(); const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length].id; setTab(next); document.getElementById(`${next}-tab`)?.focus(); }}><span>{item.label}</span><span className="tab-count" aria-label={item.id === "models" ? `ยืนยัน ${confirmed} จาก ${project.models?.length ?? 0} แบบ; ยังขาด ${gapsFor(item.id).length}` : gapsFor(item.id).length ? `ยังขาด ${gapsFor(item.id).length}` : "ครบแล้ว"}>{item.id === "models" ? `${confirmed}/${project.models?.length ?? 0} · ` : ""}{gapsFor(item.id).length || "✓"}</span></button>)}</div>
+    <div data-project-assistant />
     <div className="project-workspace">
       <div id="content-panel" role="tabpanel" tabIndex={-1} aria-labelledby="content-tab" hidden={tab !== "content"}>
         <form id="project-details-form" onSubmit={save} noValidate>
           <section className="panel project-details" aria-labelledby="project-details-title"><div className="panel-heading"><div><span className="section-chip">รายละเอียดโครงการ</span><h2 id="project-details-title">ชื่อและที่ตั้งโครงการ</h2><p>ตรวจข้อมูลอ้างอิงจาก DW แล้วปรับชื่อและที่อยู่สำหรับการสื่อสาร</p></div><span className="language-chip">ไทย · English</span></div><div className="panel-body">
             {!canEdit && <p className="read-only-note"><Icon name="shield" size={16} />บัญชีนี้อ่านข้อมูลได้ การแก้ไขเป็นหน้าที่ของผู้แก้ไขข้อมูล</p>}
-            {!project.gold_source && <p className="read-only-note">ยังไม่มีสำเนา gold.dim_project ที่ตรวจสอบแล้ว จึงยังแสดงหรือเติมค่าเริ่มต้นจาก DW ไม่ได้ ข้อมูลร่างที่เคยบันทึกไว้ยังคงเดิม</p>}
+            {!project.gold_source && <p className="read-only-note">ข้อมูลอ้างอิงที่ DW ยังไม่มีจะแสดงสำเนา REM พร้อมป้าย “จาก REM” กรุณาตรวจสอบก่อนกรอกข้อมูลสื่อสาร</p>}
             {canEdit && project.gold_prefill_changes && Object.keys(project.gold_prefill_changes).length > 0 && dirty && <p className="read-only-note" role="note">เติมค่าเริ่มต้นจาก DW ในช่องที่ยังไม่ได้กรอกให้แล้ว กรุณาตรวจสอบและกดบันทึกข้อมูลร่าง ค่าเหล่านี้ยังไม่ได้บันทึกหรือเผยแพร่</p>}
-            {project.gold_source && <details className="prefill-preview"><summary>ดูค่าอ้างอิงจาก DW</summary><p className="field-help">ระบบเสนอค่าเริ่มต้นในช่องที่ยังไม่ได้กรอก ข้อมูลที่ทีมงานแก้แล้วจะคงเดิม ตรวจสอบก่อนบันทึกข้อมูลร่าง</p><dl className="snapshot-list">{["commercial_project_name", "commercial_project_name_eng", "moo", "soi", "road", "subdistrict", "district", "province", "postcode", "moo_eng", "soi_eng", "road_eng", "subdistrict_eng", "district_eng", "province_eng", "latitude", "longitude"].map(key => <div key={key}><dt>{key}</dt><dd>{String(project.gold_source?.record[key] ?? "—")}</dd></div>)}</dl><p className="field-help">ที่อยู่อังกฤษใช้รหัสไปรษณีย์เดียวกับภาษาไทย เพราะต้นทางไม่มี postcode_eng</p></details>}
+
             {goldQualityWarnings.length > 0 && <div className="inline-warning" role="note" aria-label="ข้อควรตรวจสอบจาก DW"><strong>ข้อควรตรวจสอบจาก DW</strong><ul>{goldQualityWarnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
+            <p className="field-help source-provenance">{project.source ? sourceProvenance(project.source) : "ยังไม่มีข้อมูลต้นทาง"}{project.source?.source_snapshot_at && ` · ${formatDate(project.source.source_snapshot_at)}`}</p>
             <div className="project-fields">
               {sourceField("commercial_brand", "แบรนด์")}
               {sourceField("project_id", "รหัสโครงการ")}
@@ -383,21 +408,25 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
               <div className="coordinate-tools"><p className="field-help">วางพิกัดแบบ lat, lng ในช่องใดก็ได้ เช่น 13.7563, 100.5018</p>{draft.latitude.trim() && draft.longitude.trim() && !coordinateError("latitude", draft.latitude) && !coordinateError("longitude", draft.longitude)
                 ? <a className="button text-button" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${Number(draft.latitude)},${Number(draft.longitude)}`)}`} target="_blank" rel="noopener noreferrer">เปิดใน Google Maps ↗</a>
                 : <span className="field-help">ระบุพิกัดในประเทศไทยเพื่อเปิดใน Google Maps</span>}</div>
+              {field("slug", false, "ใช้อักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง")}{field("ad_disclaimer", true, "กรอกข้อความที่ได้รับการตรวจสอบแล้ว")}
             </div>
           </div></section>
         </form>
+        <ProjectBrandCard project={project} role={role} disabled={anyDirty || saving} onChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+      </div>
+      <div id="media-panel" role="tabpanel" tabIndex={-1} aria-labelledby="media-tab" hidden={tab !== "media"}>
         <ProjectAssets project={project} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} />
-        <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
-        <details className="panel project-settings"><summary><span>ข้อมูลประกอบและการเชื่อมต่อ</span><span className="muted small-text">ข้อความกำกับ · SEO · รหัส URL</span></summary><div className="panel-body">{field("ad_disclaimer", true, "กรอกข้อความที่ได้รับการตรวจสอบแล้ว ไม่ใช้คำแนะนำจากระบบแทนการอนุมัติ")}{field("meta_title")}{field("meta_description", true)}{field("slug", false, "รหัสข้อความสำหรับ URL ที่ทีมเว็บไซต์นำไปใช้ได้ เช่น flexi-sathon ผู้ดูแลเป็นผู้กำหนด แยกจากรหัสโครงการ REM และชื่อคอมเมอเชียล ใช้อักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง")}</div></details>
-        <details className="panel project-settings" id="source"><summary><span>ข้อมูลต้นทางและการผูกแบรนด์</span><span className="muted small-text">อ่านหลักฐานและตรวจการเชื่อมโยง</span></summary><dl className="source-list"><div><dt>รหัสโครงการ REM</dt><dd>{project.source?.rem_project_id ?? "—"}</dd></div><div><dt>ชื่อโครงการต้นทาง</dt><dd>{project.source?.project_name_rem ?? "—"}</dd></div><div><dt>ปรับปรุงข้อมูลต้นทาง</dt><dd>{sourceDate(project.source?.source_updated_at)}</dd></div><div><dt>แหล่งข้อมูล REM</dt><dd>{project.source ? sourceProvenance(project.source) : "ยังไม่มีข้อมูลต้นทาง"}</dd></div>{project.source?.source_snapshot_at && <div><dt>เวลาสกัดสำเนา REM</dt><dd>{formatDate(project.source.source_snapshot_at)}</dd></div>}{project.gold_source && <><div><dt>แหล่งข้อมูล DW</dt><dd>{project.gold_source.source_relation}</dd></div><div><dt>เวลาสกัดสำเนา DW</dt><dd>{formatDate(project.gold_source.source_snapshot_at)}</dd></div><div><dt>หลักฐาน DW</dt><dd>{JSON.stringify(project.gold_source.provenance)}</dd></div></>}</dl><ProjectBrandCard project={project} role={role} disabled={anyDirty || saving} onChanged={data => { setProject(data); setDraft(draftFrom(data)); }} /></details>
+
+
       </div>
       <div id="models-panel" role="tabpanel" tabIndex={-1} aria-labelledby="models-tab" hidden={tab !== "models"}>
         <section className="panel model-project-context"><div className="panel-body"><div><span className="section-chip">โครงการที่เลือก</span><h2>{project.public_name.th || project.source?.project_name_rem || "โครงการนี้"}</h2><p className="muted small-text">{project.source?.rem_project_id} · แบบทั้งหมดอยู่ภายใต้โครงการนี้</p></div><a className="button secondary" href="/" onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลโครงการที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนโครงการหรือไม่?")) event.preventDefault(); }}>เปลี่ยนโครงการ</a></div></section>
-        <CommercialTypes project={project} role={role} disabled={dirty || facilitiesDirty || saving} onDirtyChange={setCommercialDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
-        <details className="panel project-settings"><summary><span>รหัสแบบและข้อมูลอ้างอิง REM</span><span className="muted small-text">ตรวจรหัสต้นทางแยกจากแบบขาย</span></summary>
-    <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>ตรวจรหัสต้นทางและข้อมูลชุดเผยแพร่เดิม ใช้ส่วนแบบขายด้านบนเพื่อเตรียมเนื้อหาใหม่</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
+
+
+    <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>คลิกแถวเพื่อแก้ไขรายละเอียด ตรวจการจับคู่ และเตรียมแปลนก่อนเผยแพร่</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
       {canEdit && <><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "add" })}>เลือกแบบเพิ่มเติมจากต้นทาง</button>{dirty && <p className="field-help">บันทึกข้อมูลโครงการก่อนจัดการแบบที่อยู่อาศัย</p>}</>}
-      {Boolean(sortedModels.length) && <div className="form-field model-selection"><label htmlFor="model-selection">เลือกแบบที่ต้องการจัดการ</label><select id="model-selection" value={mediaModel?.public_model_id ?? ""} onChange={event => setMediaModelId(event.target.value)}>{sortedModels.map(model => { const name = model.public_name.th || model.model_name_rem; return <option key={model.public_model_id} value={model.public_model_id}>{name === model.rem_model_id ? name : `${name} · ${model.rem_model_id}`}</option>; })}</select></div>}
+      {Boolean(sortedModels.length) && <div className="table-scroll"><table className="rem-model-table"><caption className="sr-only">แบบบ้านจาก REM</caption><thead><tr><th>ชื่อแบบ</th><th>ModelID</th><th>ยืนยัน</th><th>ข้อมูลครบ</th><th>แปลน</th></tr></thead><tbody>{sortedModels.map(model => <tr key={model.public_model_id} data-model-id={model.public_model_id} aria-selected={mediaModel?.public_model_id === model.public_model_id} onClick={() => { if (modelDirty || saving) return; setMediaModelId(model.public_model_id); setModelAction(canEdit && !anyDirty ? { type: "edit", model } : null); }}><td><button className="button text-button" disabled={modelDirty || saving}>{model.public_name.th || model.model_name_rem}</button></td><td>{model.rem_model_id}</td><td>{matchLabels[model.match_status]}</td><td>{model.public_name.th?.trim() && model.bedrooms != null && model.bathrooms != null && (model.usable_area_sqm ?? 0) > 0 ? "✓" : "ยังขาด"}</td><td>{project.assets?.filter(asset => asset.public_model_id === model.public_model_id && ["floor_plan", "structural_plan"].includes(asset.asset_role)).length ?? 0}</td></tr>)}</tbody></table></div>}
+
       {!project.models?.length ? <p className="muted">ยังไม่มีข้อมูลแบบที่อยู่อาศัย</p> : project.models.filter(model => model.public_model_id === mediaModel?.public_model_id).map(model => <article className={`model-card ${mediaModel?.public_model_id === model.public_model_id ? "selected-model" : ""}`} key={model.public_model_id} aria-label={model.public_name.th || model.rem_model_id}>
         <DemoFields fields={model.demo_fields} /><div className="model-card-heading"><h3>{model.public_name.th || "แบบที่ยังไม่ระบุชื่อ"}</h3><span className={`match-status ${model.match_status.toLowerCase()}`}>{matchLabels[model.match_status]}</span></div>
         <p className="small-text muted source-code">{model.public_model_id}</p>
@@ -405,34 +434,42 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
         <details className="gold-model-evidence"><summary>ข้อมูลแบบจาก DW สำหรับตรวจสอบ</summary>{!goldModelGroups.length ? <p className="field-help">ยังไม่มีข้อมูล gold.dim_project_model ที่จับคู่กับรหัสแบบนี้ ยังคงใช้ข้อมูล REM เดิมเพื่อรอตรวจสอบ</p> : <>{(goldModelGroups.length > 1 || goldModelGroups.some(group => group.model_attribute_variant)) && <p className="inline-warning">ต้นทางมีหลายกลุ่มหรือหลายรูปแบบ ต้องตรวจสอบความแตกต่างก่อนใช้ข้อมูล</p>}{goldModelGroups.map((group, index) => <dl className="snapshot-list" key={index}><div><dt>ชื่อแบบจาก DW</dt><dd>{group.model_name || "—"} · {group.model_name_eng || "—"}</dd></div><div><dt>รหัสแบบในกลุ่ม</dt><dd>{group.model_ids?.join(", ") || "—"}</dd></div><div><dt>ModelTypeID</dt><dd>{group.model_type_ids?.join(", ") || "—"}</dd></div><div><dt>ช่วงพื้นที่ต้นทาง (ยังไม่ยืนยันหน่วยและความหมาย)</dt><dd>{group.minimum_model_area ?? "—"} – {group.maximum_model_area ?? "—"}</dd></div></dl>)}<p className="field-help">กลุ่มจาก DW ใช้ประกอบการตรวจสอบ ไม่เติมพื้นที่ใช้สอยหรือยืนยันการจับคู่อัตโนมัติ</p></>}</details>
         <div className="model-specs"><span>{model.bedrooms ?? "—"} ห้องนอน</span><span>{model.bathrooms ?? "—"} ห้องน้ำ</span><span>{model.usable_area_sqm ?? "—"} ตร.ม.</span><span>{model.parking_spaces ?? "—"} ที่จอดรถ</span></div>
         {model.match_status === "REJECTED" && <p className="field-help">แบบนี้จะไม่รวมในการเผยแพร่ครั้งใหม่ ยืนยันการจับคู่อีกครั้งได้หากตรวจสอบแล้วว่าถูกต้อง</p>}
-        {model.verified_at && <p className="small-text muted review-evidence">ยืนยันเมื่อ {formatDate(model.verified_at)}<br />โดย {model.verified_by}</p>}
+        {model.verified_at && <p className="small-text muted review-evidence">ยืนยันเมื่อ {formatDate(model.verified_at)}<br />โดย {modelActorLabel(model.verified_by)}</p>}
         <div className="model-actions"><button className="button secondary" onClick={() => { setMediaModelId(model.public_model_id); requestAnimationFrame(() => document.getElementById("model-media")?.scrollIntoView({ block: "start" })); }}>รูปภาพและแปลนของแบบนี้</button></div>
         {canEdit && <div className="model-actions"><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "edit", model })}>แก้ไขรายละเอียดแบบ</button><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "review", model })}>ตรวจสอบการจับคู่</button></div>}
+        {modelAction?.type === "edit" && modelAction.model.public_model_id === model.public_model_id && <ModelDialog key={model.public_model_id} inline action={modelAction} project={project} onDirtyChange={setModelDirty} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว"); }} onReload={() => { setModelAction(null); void load(); }} />}
       </article>)}
     </div></section>
 
         {mediaModel && <div id="model-media" className="model-media" tabIndex={-1}><div className="model-media-context"><span className="section-chip">สื่อของแบบที่เลือก</span><h2>{mediaModel.public_name.th || mediaModel.rem_model_id} · {project.source?.rem_project_id}</h2><p className="field-help">ไฟล์ผูกกับโครงการและรหัสแบบนี้ หากมีแปลนต่างกันตามอาคารหรือชั้น ให้ระบุอาคารและชั้นในคำอธิบายไฟล์ การกำหนดขอบเขตอาคาร/ชั้นแบบโครงสร้างจะเพิ่มภายหลัง</p></div><ProjectAssets key={mediaModel.public_model_id} project={project} model={{ public_model_id: mediaModel.public_model_id, name: mediaModel.public_name.th || mediaModel.rem_model_id }} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} /></div>}
-        </details>
+        <p className="read-only-note">แบบขายของ Marketing · ยังไม่ออก API</p>
+        <CommercialTypes project={project} role={role} disabled={dirty || facilitiesDirty || saving} onDirtyChange={setCommercialDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+      </div>
+      <div id="extra-panel" role="tabpanel" tabIndex={-1} aria-labelledby="extra-tab" hidden={tab !== "extra"}>
+        <p className="read-only-note">ข้อมูลเสริมเป็นทางเลือก ไม่กีดกันการเผยแพร่</p>
+        <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+        <section className="panel"><div className="panel-body">{field("meta_title")}{field("meta_description", true)}</div></section>
       </div>
       <div id="versions-panel" role="tabpanel" tabIndex={-1} aria-labelledby="versions-tab" hidden={tab !== "versions"}>
-        <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.missing.length} รายการ</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><p className="small-text muted">{canPublish ? "การเผยแพร่จะบันทึกข้อมูลเป็นเวอร์ชันพร้อมเหตุผล" : "ผู้เผยแพร่เป็นผู้ยืนยันก่อนส่งข้อมูลออกผ่าน API"}</p>{canPublish && <div><button className="button primary" disabled={!readiness.ready || anyDirty || saving} onClick={() => setAction({ type: "publish" })}>เผยแพร่ข้อมูล<Icon name="arrow" size={18} /></button>{project.published_version_id && <button className="button text-button" onClick={() => setAction({ type: "withdraw" })}>ถอนการเผยแพร่</button>}</div>}</div></div></section>
-<section className="panel" id="publication-history"><div className="panel-heading"><div><h2>ประวัติการเผยแพร่</h2><p>ทุกเวอร์ชันเก็บข้อมูล ณ เวลาที่เผยแพร่ไว้สำหรับตรวจสอบ</p></div></div><div className="panel-body">{versionsError ? <ErrorState message={versionsError} retry={load} /> : !versions.length ? <div className="empty-state compact"><Icon name="clock" size={32} /><h3>ยังไม่มีเวอร์ชันที่เผยแพร่</h3><p>เมื่อเผยแพร่ครั้งแรก ประวัติจะปรากฏที่นี่</p></div> : <ol className="version-list">{versions.map(version => <li key={version.version_id}><div className="version-marker">{version.version_no}</div><div className="version-content"><div className="version-heading"><h3>เวอร์ชัน {version.version_no}</h3>{version.version_id === project.published_version_id && <span className="status-badge published">เวอร์ชันที่เลือก</span>}</div><p>{version.change_reason || "ไม่ได้ระบุเหตุผล"}</p><p className="small-text muted">{formatDate(version.published_at)} · {version.publisher || "ผู้เผยแพร่"}</p><details><summary>ดูข้อมูลที่บันทึกในเวอร์ชันนี้</summary><dl className="snapshot-list"><div><dt>ชื่อโครงการ</dt><dd>{version.payload?.public_name?.th ?? "—"}</dd></div><div><dt>ที่อยู่</dt><dd>{version.payload?.address?.th ?? "—"}</dd></div><div><dt>ข้อความกำกับโฆษณา</dt><dd>{version.payload?.ad_disclaimer?.th ?? "—"}</dd></div></dl></details>{canPublish && version.version_id !== project.published_version_id && <button className="button secondary" onClick={() => setAction({ type: "rollback", version })}>คืนค่าเวอร์ชันนี้</button>}</div></li>)}</ol>}</div></section>
+        <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : `${readiness.missing.length} รายการ`}</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><p className="small-text muted">{canPublish ? "การเผยแพร่จะบันทึกข้อมูลเป็นเวอร์ชันพร้อมเหตุผล" : "ผู้เผยแพร่เป็นผู้ยืนยันก่อนส่งข้อมูลออกผ่าน API"}</p>{canPublish && <div><button className="button primary" disabled={!readiness.ready || anyDirty || saving || Boolean(versionsError) || Boolean(project.published_version_id && !live)} onClick={() => setAction({ type: "publish" })}>เผยแพร่ข้อมูล<Icon name="arrow" size={18} /></button>{project.published_version_id && <button className="button text-button" onClick={() => setAction({ type: "withdraw" })}>ถอนการเผยแพร่</button>}</div>}</div></div></section>
+<section className="panel" id="publication-history"><div className="panel-heading"><div><h2>ประวัติการเผยแพร่</h2><p>ทุกเวอร์ชันเก็บข้อมูล ณ เวลาที่เผยแพร่ไว้สำหรับตรวจสอบ</p></div></div><div className="panel-body">{versionsError ? <ErrorState message={versionsError} retry={load} /> : !versions.length ? <div className="empty-state compact"><Icon name="clock" size={32} /><h3>ยังไม่มีเวอร์ชันที่เผยแพร่</h3><p>เมื่อเผยแพร่ครั้งแรก ประวัติจะปรากฏที่นี่</p></div> : <ol className="version-list">{versions.map(version => <li key={version.version_id}><div className="version-marker">{version.version_no}</div><div className="version-content"><div className="version-heading"><h3>เวอร์ชัน {version.version_no}</h3>{version.version_id === project.published_version_id && <span className="status-badge published">เวอร์ชันที่เลือก</span>}</div><p>{version.change_reason || "ไม่ได้ระบุเหตุผล"}</p><p className="small-text muted">{formatDate(version.published_at)} · ผู้เผยแพร่</p><details><summary>ดูข้อมูลที่บันทึกในเวอร์ชันนี้</summary><dl className="snapshot-list"><div><dt>ชื่อโครงการ</dt><dd>{version.payload?.public_name?.th ?? "—"}</dd></div><div><dt>ที่อยู่</dt><dd>{version.payload?.address?.th ?? "—"}</dd></div><div><dt>ข้อความกำกับโฆษณา</dt><dd>{version.payload?.ad_disclaimer?.th ?? "—"}</dd></div></dl></details>{canPublish && version.version_id !== project.published_version_id && <button className="button secondary" onClick={() => setAction({ type: "rollback", version })}>คืนค่าเวอร์ชันนี้</button>}</div></li>)}</ol>}</div></section>
       </div>
-      <div className="save-bar project-save-bar">
+      {tab !== "versions" && <div className="save-bar project-save-bar">
         <div className="workflow-feedback" role="status"><span className={`save-dot ${anyDirty ? "unsaved" : ""}`} /><span>{saving ? "กำลังบันทึก…" : error ? "บันทึกไม่สำเร็จ กรุณาตรวจข้อความแจ้งเตือน" : relatedDirty ? "บันทึกหรือยกเลิกรายการที่กำลังแก้ไขก่อนทำขั้นตอนถัดไป" : dirty ? "มีข้อมูลที่ยังไม่ได้บันทึก" : tab === "content" ? "ข้อมูลร่างโครงการเป็นปัจจุบัน · ถัดไปจัดเตรียมแบบที่อยู่อาศัย" : tab === "models" ? "ถัดไปตรวจความพร้อมของข้อมูลที่บันทึกแล้ว" : "การบันทึกร่างยังไม่ใช่การเผยแพร่"}</span></div>
         <div className="workflow-actions">
-          {tab !== "content" && <button className="button secondary" onClick={() => goToTab(tab === "models" ? "content" : "models")}>ย้อนกลับ</button>}
-          {canEdit && <button type="submit" form="project-details-form" className="button secondary" disabled={!dirty || relatedDirty || saving}><Icon name="save" />{saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"}</button>}
-          {tab !== "versions" && <button className="button primary" disabled={relatedDirty || saving} onClick={() => { const next = tab === "content" ? "models" : "versions"; if (dirty && canEdit) void save(undefined, next); else goToTab(next); }}>{dirty && canEdit ? "บันทึกและไปต่อ" : tab === "content" ? "ถัดไป: แบบที่อยู่อาศัย" : "ถัดไป: ตรวจความพร้อม"}<Icon name="arrow" size={18} /></button>}
+          {tab !== "content" && <button className="button secondary" onClick={() => goToTab(tabs[tabs.findIndex(item => item.id === tab) - 1].id)}>ย้อนกลับ</button>}
+          {canEdit && <button type="submit" form="project-details-form" className="button secondary" aria-label={saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"} disabled={!dirty || relatedDirty || saving}><Icon name="save" /><span className="save-label">{saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"}</span><span className="save-label-short" aria-hidden="true">บันทึก</span></button>}
+          <button className="button primary" disabled={relatedDirty || saving} onClick={() => { const next = tabs[tabs.findIndex(item => item.id === tab) + 1].id; if (dirty && canEdit) void save(undefined, next); else goToTab(next); }}>{dirty && canEdit ? "บันทึกและไปต่อ" : "ถัดไป"}<Icon name="arrow" size={18} /></button>
         </div>
-      </div>
+      </div>}
     </div>
-    {modelAction && <ModelDialog action={modelAction} project={project} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
-    {action && <ActionDialog action={action} projectName={project.public_name.th ?? "โครงการนี้"} onCancel={() => setAction(null)} onConfirm={runAction} />}
+    {modelAction && modelAction.type !== "edit" && <ModelDialog action={modelAction} project={project} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
+    {action && <ActionDialog action={action} project={project} live={live} projectName={project.public_name.th ?? "โครงการนี้"} onCancel={() => setAction(null)} onConfirm={runAction} />}
   </>;
 }
 
-function ModelDialog({ action, project, onCancel, onSaved, onReload }: {
+function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = false, onDirtyChange }: {
+  inline?: boolean; onDirtyChange?: (dirty: boolean) => void;
   action: ModelAction; project: Project; onCancel: () => void; onSaved: (data: Project) => void; onReload: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -452,7 +489,8 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload }: {
   const [conflict, setConflict] = useState(false);
   const dirty = JSON.stringify(initial) !== JSON.stringify(values) || Boolean(reason || sourceId);
   const base = `v1/admin/projects/${encodeURIComponent(project.public_project_id)}`;
-  useEffect(() => { dialog.current?.showModal(); }, []);
+  useEffect(() => { if (!inline) dialog.current?.showModal(); }, [inline]);
+  useEffect(() => { onDirtyChange?.(dirty); return () => onDirtyChange?.(false); }, [dirty, onDirtyChange]);
   useEffect(() => {
     if (action.type !== "add") return;
     let active = true;
@@ -502,8 +540,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload }: {
     }
   }
   const title = action.type === "edit" ? "แก้ไขรายละเอียดแบบ" : action.type === "review" ? "ตรวจสอบการจับคู่แบบ" : "เลือกแบบจากต้นทาง";
-  return <dialog ref={dialog} className="action-dialog model-dialog" aria-labelledby="model-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}>
-    <form onSubmit={submit} noValidate><h2 id="model-dialog-title">{title}</h2>
+  const form = <form onSubmit={submit} noValidate><h2 id="model-dialog-title">{title}</h2>
       {(error || Object.keys(fieldErrors).length > 0) && <div className="notice error model-error-summary" role="alert" tabIndex={-1} ref={summary}><strong>{error || "กรุณาตรวจข้อมูลที่ระบุ"}</strong>{Object.keys(fieldErrors).length > 0 && <ul>{Object.entries(fieldErrors).map(([field, message]) => <li key={field}><a href={`#model-${field}`}>{message}</a></li>)}</ul>}{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" onClick={() => { if (canDiscard()) onReload(); }}>โหลดข้อมูลล่าสุด</button></>}</div>}
       {model && <dl className="snapshot-list"><div><dt>โครงการต้นทาง</dt><dd>{project.source?.project_name_rem} · {project.source?.rem_project_id}</dd></div><div><dt>ชื่อแบบต้นทาง (อ่านอย่างเดียว)</dt><dd>{model.model_name_rem}</dd></div><div><dt>รหัสแบบ REM</dt><dd>{model.rem_model_id}</dd></div><div><dt>แหล่งข้อมูล</dt><dd>{sourceProvenance(model)}</dd></div><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(model.source_updated_at)}</dd></div><div><dt>เวลาสกัดสำเนาต้นทาง</dt><dd>{formatDate(model.source_snapshot_at)}</dd></div><RawModelEvidence source={model} />{action.type === "review" && <div><dt>ชื่อแบบที่ใช้เผยแพร่</dt><dd>{model.public_name.th || "ยังไม่ระบุชื่อ"}</dd></div>}</dl>}
       {action.type === "edit" && <><p className="field-help">เว้นข้อมูลที่ยังไม่ทราบไว้ได้ การเผยแพร่ต้องมีชื่อไทย ห้องนอน ห้องน้ำ และพื้นที่ใช้สอยครบถ้วน</p><div className="model-edit-fields">{(Object.keys(fieldLabels) as (keyof typeof values)[]).map(name => <div className="form-field" key={name}>
@@ -516,8 +553,8 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload }: {
       </>}
       {action.type === "add" && (loading ? <LoadingState /> : sources.length ? <div className="form-field"><label htmlFor="model-source">แบบที่ยังไม่ได้เลือกในโครงการนี้</label><select id="model-source" disabled={pending} value={sourceId} aria-invalid={Boolean(fieldErrors.source)} aria-describedby={fieldErrors.source ? "model-source-error" : undefined} onChange={event => setSourceId(event.target.value)}><option value="">เลือกแบบ</option>{sources.map(source => <option key={source.rem_model_id} value={source.rem_model_id}>{source.model_name_rem} · {source.rem_model_id}</option>)}</select>{fieldErrors.source && <p id="model-source-error" className="field-error">{fieldErrors.source}</p>}<p className="field-help">แบบที่เลือกจะอยู่ในสถานะรอตรวจสอบ</p>{sources.filter(source => source.rem_model_id === sourceId).map(source => <div key={source.rem_model_id}><p className="field-help">{sourceProvenance(source)}</p><dl className="snapshot-list"><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(source.source_updated_at)}</dd></div><RawModelEvidence source={source} /></dl></div>)}</div> : !error && <p className="muted">ไม่มีแบบใหม่จากต้นทาง แบบที่เลือกแล้วแสดงอยู่ในรายการโครงการ</p>)}
       <div className="dialog-actions"><button type="button" className="button secondary" disabled={pending} onClick={cancel}>ยกเลิก</button><button type="submit" className="button primary" aria-busy={pending} disabled={pending || loading || (action.type === "add" && !sourceId)}>{pending ? "กำลังบันทึก…" : action.type === "edit" ? "บันทึกรายละเอียดแบบ" : action.type === "review" ? "บันทึกผลตรวจสอบ" : "เพิ่มแบบที่เลือก"}</button></div>
-    </form>
-  </dialog>;
+    </form>;
+  return inline ? <section className="inline-model-editor" aria-label="แก้ไขรายละเอียดแบบ">{form}</section> : <dialog ref={dialog} className="action-dialog model-dialog" aria-labelledby="model-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}>{form}</dialog>;
 }
 
 function missingAnchor(field: string) {
@@ -529,7 +566,7 @@ function missingAnchor(field: string) {
   return root in labels ? root : "content-panel";
 }
 
-function ActionDialog({ action, projectName, onCancel, onConfirm }: { action: Action; projectName: string; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
+function ActionDialog({ action, projectName, project, live, onCancel, onConfirm }: { project: Project; live?: Project; action: Action; projectName: string; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [reason, setReason] = useState("");
   const [pending, setPending] = useState(false);
@@ -542,5 +579,5 @@ function ActionDialog({ action, projectName, onCancel, onConfirm }: { action: Ac
     try { await onConfirm(reason.trim()); }
     catch (error) { setError(error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ"); setPending(false); }
   }
-  return <dialog ref={dialog} className="action-dialog" aria-labelledby="action-title" aria-describedby="action-description" onCancel={event => { event.preventDefault(); if (!pending) onCancel(); }}><form onSubmit={submit}><div className="section-icon"><Icon name={action.type === "withdraw" ? "alert" : "shield"} size={26} /></div><h2 id="action-title">{actionLabels[action.type]}{action.version ? ` ${action.version.version_no}` : ""}</h2><p id="action-description">{action.type === "publish" ? `เผยแพร่ข้อมูลโครงการชุดปัจจุบันของ “${projectName}” โดยยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวกฉบับร่าง` : action.type === "withdraw" ? `“${projectName}” จะไม่แสดงผ่าน API จนกว่าจะเผยแพร่อีกครั้ง ข้อมูลร่างและประวัติยังอยู่` : `ผู้ใช้งาน API จะเห็นข้อมูลเวอร์ชัน ${action.version?.version_no} โดยข้อมูลร่างยังคงเดิม`}</p><div className="form-field"><label htmlFor="change-reason">เหตุผลในการดำเนินการ</label><textarea id="change-reason" rows={3} value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} disabled={pending} required autoFocus /></div>{error && <div className="notice error" role="alert">{error}</div>}<div className="dialog-actions"><button type="button" className="button secondary" onClick={onCancel} disabled={pending}>ยกเลิก</button><button type="submit" className={`button ${action.type === "withdraw" ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || !reason.trim()}>{pending ? "กำลังดำเนินการ…" : `ยืนยัน${actionLabels[action.type]}`}</button></div></form></dialog>;
+  return <dialog ref={dialog} className="action-dialog" aria-labelledby="action-title" aria-describedby="action-description" onCancel={event => { event.preventDefault(); if (!pending) onCancel(); }}><form onSubmit={submit}><div className="section-icon"><Icon name={action.type === "withdraw" ? "alert" : "shield"} size={26} /></div><h2 id="action-title">{actionLabels[action.type]}{action.version ? ` ${action.version.version_no}` : ""}</h2><p id="action-description">{action.type === "publish" ? `เผยแพร่ข้อมูลโครงการชุดปัจจุบันของ “${projectName}” โดยยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวกฉบับร่าง` : action.type === "withdraw" ? `“${projectName}” จะไม่แสดงผ่าน API จนกว่าจะเผยแพร่อีกครั้ง ข้อมูลร่างและประวัติยังอยู่` : `ผู้ใช้งาน API จะเห็นข้อมูลเวอร์ชัน ${action.version?.version_no} โดยข้อมูลร่างยังคงเดิม`}</p>{action.type === "publish" && <ProjectComparison current={live} target={project} />}<div className="form-field"><label htmlFor="change-reason">เหตุผลในการดำเนินการ</label><textarea id="change-reason" rows={3} value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} disabled={pending} required autoFocus /></div>{error && <div className="notice error" role="alert">{error}</div>}<div className="dialog-actions"><button type="button" className="button secondary" onClick={onCancel} disabled={pending}>ยกเลิก</button><button type="submit" className={`button ${action.type === "withdraw" ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || !reason.trim()}>{pending ? "กำลังดำเนินการ…" : `ยืนยัน${actionLabels[action.type]}`}</button></div></form></dialog>;
 }

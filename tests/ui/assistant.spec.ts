@@ -100,7 +100,7 @@ test('delayed configuration still focuses the pinned composer when it becomes av
   await expect(composer).toBeFocused(); await fullyExposed(composer);
 });
 
-test('mobile floating entry clears the real async project save bar as Thai text grows and the bar disappears', async ({ page }) => {
+test('mobile editor entry uses reserved space and clears language and tab controls as Thai text grows', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await mocked(page);
   const response = await page.request.get('/api/hub/v1/admin/projects'); expect(response.ok()).toBeTruthy();
   const project = (await response.json()).data.find((item: { source?: { rem_project_id?: string } }) => item.source?.rem_project_id === 'DEMO-001');
@@ -112,23 +112,22 @@ test('mobile floating entry clears the real async project save bar as Thai text 
   const bar = page.locator('.project-save-bar');
   await expect(bar).toHaveCount(0); await fullyExposed(floating);
   release(); await expect(bar).toBeVisible();
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await fullyExposed(bar);
-  const originalHeight = (await bar.boundingBox())!.height;
-  const clearance = async () => {
-    const [button, save] = await Promise.all([floating.boundingBox(), bar.boundingBox()]);
-    return button && save ? save.y - (button.y + button.height) : -1;
-  };
-  await expect.poll(clearance).toBeGreaterThanOrEqual(16); await fullyExposed(floating);
+  await expect(page.locator('[data-project-assistant]')).toContainText('ถามผู้ช่วย');
+  await expect(page.locator('.assistant-floating')).toHaveCount(0);
+  await floating.scrollIntoViewIfNeeded(); await fullyExposed(floating);
+  const clear = async () => floating.evaluate(button => {
+    const a = button.getBoundingClientRect();
+    return [...document.querySelectorAll('.language-chip,.project-tabs')].every(item => {
+      const b = item.getBoundingClientRect();
+      return a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom;
+    });
+  });
+  expect(await clear()).toBeTruthy();
   await page.evaluate(() => { document.documentElement.style.fontSize = '150%'; });
-  await expect.poll(async () => (await bar.boundingBox())!.height).toBeGreaterThan(originalHeight);
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await expect.poll(clearance).toBeGreaterThanOrEqual(16); await fullyExposed(floating);
-  // Detach the actual rendered bar to exercise observer rebinding without saving,
-  // navigating or replacing it with a differently sized test imitation.
-  await bar.evaluate(element => element.remove()); await expect(bar).toHaveCount(0);
-  await expect.poll(async () => { const box = (await floating.boundingBox())!; return 844 - box.y - box.height; }).toBeCloseTo(20, 0);
-  await fullyExposed(floating);
+  await floating.scrollIntoViewIfNeeded(); expect(await clear()).toBeTruthy();
+  await floating.click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape'); await expect(floating).toBeFocused();
+
 });
 
 test('sidebar and floating triggers reopen one conversation and return focus to their own opener', async ({ page }) => {

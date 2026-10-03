@@ -550,20 +550,20 @@ main:focus { outline: none; }
   .project-readiness-strip { align-items: flex-start; flex-direction: column; gap: 4px; }
   .project-readiness-strip > div { gap: 4px 10px; }
   .project-readiness-strip .button { padding: 8px 0; }
-  .project-tabs { gap: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .project-tabs { gap: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .project-tabs > button { flex-direction: column; justify-content: center; font-size: var(--text-small); line-height: 1.6; padding: 10px 3px; min-height: 78px; text-align: center; }
-  .project-tabs .tab-count { display: none; }
+  .project-tabs .tab-count { display: inline; font-size: var(--text-caption); }
   .project-details .panel-heading { align-items: flex-start; }
-  .project-details .language-chip { display: none; }
+  .project-details .language-chip { display: inline; }
   .project-settings > summary { padding: 16px 20px; gap: 8px; }
   .project-settings > summary > .small-text { width: 100%; padding-left: 20px; }
   .project-settings #project-brand { margin: 16px 12px; }
-  .project-save-bar { padding: 12px; }
-  .project-save-bar .workflow-feedback { flex: initial; justify-content: flex-start; }
-  .project-save-bar .workflow-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .project-save-bar .workflow-actions .primary { grid-column: 1 / -1; }
-  .project-save-bar .workflow-actions > .secondary:first-child:nth-last-child(2) { grid-column: 1 / -1; }
-  .project-save-bar .workflow-actions .button { padding: 10px 8px; }
+  .project-save-bar { padding: 8px; flex-wrap: nowrap; gap: 6px; }
+  .project-save-bar .workflow-feedback { flex: 0 0 auto; }
+  .project-save-bar .workflow-feedback > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .project-save-bar .workflow-actions { display: flex; flex: 1; flex-wrap: nowrap; gap: 6px; }
+  .project-save-bar .workflow-actions .button { padding: 8px 6px; font-size: var(--text-small); min-height: 44px; white-space: nowrap; flex: 1; }
+  .project-save-bar .workflow-actions svg { display: none; }
   .project-workspace [role="tabpanel"] { scroll-margin-top: 122px; }
   .project-workspace input, .project-workspace textarea, .project-workspace button, .project-workspace select { scroll-margin-top: 125px; scroll-margin-bottom: 250px; }
   .model-media-context { padding: 18px 20px; }

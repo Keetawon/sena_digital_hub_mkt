@@ -290,7 +290,6 @@ test('brand requests, exact project association, viewer permissions and mobile l
     expect(projectResponse.status()).toBe(201);
     const project = (await projectResponse.json()).data;
     await page.goto(`/?project=${project.public_project_id}`);
-    await page.locator('#source > summary').click();
     const association = page.locator('#project-brand');
     await expect(association.getByText('DEMO-CO-A', { exact: true })).toBeVisible();
     await association.getByRole('button', { name: 'เลือกแบรนด์ที่ตรงกับต้นทาง', exact: true }).click();

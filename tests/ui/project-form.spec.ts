@@ -61,20 +61,21 @@ test('Thailand coordinates reject zero and outside bounds, accept pasted pairs a
   expect(project.longitude).toBe(100.5018);
 });
 
-test('ordered source fields, bilingual draft and unsaved edits survive all three tabs', async ({ page }) => {
+test('ordered source fields, bilingual draft and unsaved edits survive five tabs', async ({ page }) => {
   const project = await openFixture(page);
-  const fields = page.locator('.project-fields input, .project-fields textarea');
-  expect(await fields.evaluateAll(nodes => nodes.map(node => node.id))).toEqual(['gold-commercial_brand', 'gold-project_id', 'gold-rem_project_group_id', 'gold-project_name', 'public_name', 'gold-project_name_eng', 'public_name_en', 'address', 'address_en', 'latitude', 'longitude']);
-  await expect(page.locator('#gold-project_name')).toHaveAttribute('readonly', '');
+  const fields = page.locator('.project-fields input, .project-fields textarea, .project-fields .source-field p');
+  expect(await fields.evaluateAll(nodes => nodes.map(node => node.id))).toEqual(['gold-commercial_brand', 'gold-project_id', 'gold-rem_project_group_id', 'gold-project_name', 'public_name', 'gold-project_name_eng', 'public_name_en', 'address', 'address_en', 'latitude', 'longitude', 'slug', 'ad_disclaimer']);
+  await expect(page.locator('#gold-project_name')).toContainText('ชื่อทางการ REM');
+  await expect(page.locator('.source-field input')).toHaveCount(0);
   await expect(page.locator('#public_name')).toHaveValue('ชื่อที่ทีมงานแก้แล้ว');
   await page.locator('#public_name_en').fill('Revised English');
   await page.locator('#address_en').fill('Revised address');
-  const content = page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true });
+  const content = page.getByRole('tab', { name: /ข้อมูลหลัก/ });
   await content.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ })).toBeFocused();
+  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toBeFocused();
   await page.keyboard.press('End');
-  await expect(page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true })).toBeFocused();
+  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toBeFocused();
   await page.keyboard.press('Home');
   await expect(content).toBeFocused();
   await expect(page.locator('#public_name_en')).toHaveValue('Revised English');
@@ -82,47 +83,46 @@ test('ordered source fields, bilingual draft and unsaved edits survive all three
   await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
   expect(project.public_name).toEqual({ th: 'ชื่อที่ทีมงานแก้แล้ว', en: 'Revised English', zh: '保留名称' });
   expect(project.address).toEqual({ th: 'ที่อยู่ที่แก้แล้ว', en: 'Revised address', zh: '保留地址' });
-  expect(await page.locator('.project-details').evaluate(node => node.closest('form')?.nextElementSibling?.id)).toBe('assets');
+  await expect(page.locator('#content-panel #project-brand')).toHaveCount(1);
+  await expect(page.locator('#media-panel #assets')).toHaveCount(1);
   await page.screenshot({ path: 'artifacts/project-form-desktop.png', fullPage: true });
 });
 
 test('readiness links reveal correct tab and advanced field; model plans stay scoped', async ({ page }) => {
   await openFixture(page);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByText('รหัสแบบและข้อมูลอ้างอิง REM', { exact: true }).click();
-  const modelSelector = page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true });
-  await expect(modelSelector).toHaveValue('model-A');
-  expect(await modelSelector.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value))).toEqual(['model-A', 'model-A2', 'model-A10', 'model-B']);
-  await expect(modelSelector.locator('option[value="model-B"]')).toHaveText('model-B');
-  await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  expect(await page.locator('.rem-model-table tbody tr td:nth-child(2)').allTextContents()).toEqual(['model-A', 'model-A2', 'model-A10', 'model-B']);
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets')).toContainText('project-plan.pdf');
   await expect(page.locator('#assets')).not.toContainText('model-a-plan.pdf');
-  await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
+  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await page.locator('.readiness-groups summary').filter({ hasText: 'ข้อมูลโครงการ' }).click();
   await page.getByRole('link', { name: 'กรอกรหัส URL', exact: true }).click();
   await expect(page.locator('#slug')).toBeVisible();
   await expect(page.locator('#slug')).toBeFocused();
-  await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
+  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await page.locator('.readiness-groups summary').filter({ hasText: 'แบบที่อยู่อาศัย' }).click();
   await page.getByRole('link', { name: 'ตรวจสอบแบบ A', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: /แบบบ้าน/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#model-media')).toContainText('model-a-plan.pdf');
   await expect(page.locator('#model-media')).not.toContainText('model-b-plan.pdf');
   await page.getByText('ข้อมูลแบบจาก DW สำหรับตรวจสอบ', { exact: true }).click();
   await expect(page.locator('.gold-model-evidence')).toContainText('ต้นทางมีหลายกลุ่มหรือหลายรูปแบบ');
-  await page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true }).selectOption('model-B');
+  await page.locator('.rem-model-table').getByRole('button', { name: 'model-B', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ' })).toBeVisible();
   await expect(page.locator('#model-media')).toContainText('model-b-plan.pdf');
   await expect(page.locator('#model-media')).not.toContainText('model-a-plan.pdf');
-  await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
+  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await page.getByRole('link', { name: 'ตรวจสอบแบบ A', exact: true }).click();
-  await expect(page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true })).toHaveValue('model-A');
+  await expect(page.locator('.rem-model-table tr[aria-selected="true"]')).toContainText('model-A');
 });
 
 test('missing Gold is explicit and the mobile tabs do not overflow', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openFixture(page, false);
-  await expect(page.locator('#gold-project_id')).toHaveValue('ยังไม่มีข้อมูลจาก DW');
+  await expect(page.locator('#gold-project_id')).toHaveText('TEST-PROJECTจาก REM');
+  await expect(page.locator('#gold-project_name')).toHaveText('ชื่อทางการ REMจาก REM');
   await expect(page.locator('#public_name')).toHaveValue('ชื่อที่ทีมงานแก้แล้ว');
   await expect(page.getByRole('button', { name: 'เติมค่าเริ่มต้นจาก DW', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
@@ -157,16 +157,18 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   await page.locator('#public_name_en').fill('Reviewed English');
   await page.getByRole('button', { name: 'บันทึกและไปต่อ', exact: true }).click();
   await expect(page.locator('.notice[role="alert"]')).toContainText('ข้อมูลเปลี่ยนแปลง');
-  await expect(page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: /ข้อมูลหลัก/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#public_name_en')).toHaveValue('Reviewed English');
   failSave = false;
   await page.getByRole('button', { name: 'บันทึกและไปต่อ', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#models-panel')).toBeFocused();
+  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#media-panel')).toBeFocused();
   expect(project.public_name.en).toBe('Reviewed English');
   expect(project.address.zh).toBe('保留地址');
-  await page.getByRole('button', { name: 'ถัดไป: ตรวจความพร้อม', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
+  await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
+  await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
+  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toHaveAttribute('aria-selected', 'true');
   expect(project.published_version_id).toBeNull();
 });
 
@@ -183,8 +185,7 @@ test('adding a second model plan uses the selected model route and retains exist
     project.assets.push(binding('additional-plan', 'model-A', 'floor_plan'));
     await route.fulfill({ json: { data: project } });
   });
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByText('รหัสแบบและข้อมูลอ้างอิง REM', { exact: true }).click();
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
   const media = page.locator('#model-media');
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
   await media.getByRole('button', { name: 'เลือกใช้กับแบบที่อยู่อาศัย', exact: true }).click();

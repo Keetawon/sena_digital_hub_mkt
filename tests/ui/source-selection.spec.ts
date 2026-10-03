@@ -90,9 +90,11 @@ function modelCard(page: Page, name: string) {
 }
 
 async function selectModel(page: Page, publicModelId: string) {
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  if (!await page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true }).isVisible()) await page.getByText('รหัสแบบและข้อมูลอ้างอิง REM', { exact: true }).click();
-  await page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true }).selectOption(publicModelId);
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.locator(`.rem-model-table tr[data-model-id="${publicModelId}"] button`).click();
+  const inline = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
+  if (await inline.count()) await inline.getByRole('button', { name: 'ยกเลิก', exact: true }).click();
+
 }
 
 test('staged project intake, model enrichment and explicit mapping decisions', async ({ page }) => {
@@ -127,7 +129,7 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     await page.reload();
     await selectModel(page, first.public_model_id);
     await modelCard(page, 'แบบต้นทาง เอ').getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).click();
-    let dialog = page.getByRole('dialog');
+    let dialog = page.locator('.inline-model-editor, dialog[open]');
     await expect(dialog.getByText('แบบต้นทาง เอ', { exact: true })).toBeVisible();
     await dialog.getByLabel('ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)', { exact: true }).fill('บ้านตัวอย่างสำหรับทดสอบ');
     await dialog.getByLabel('จำนวนห้องนอน', { exact: true }).fill('2.5');
@@ -144,7 +146,7 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     expect(current.match_status).toBe('SUGGESTED');
 
     await modelCard(page, current.public_name.th).getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true }).click();
-    dialog = page.getByRole('dialog');
+    dialog = page.locator('.inline-model-editor, dialog[open]');
     await dialog.getByLabel('เหตุผลในการตรวจสอบ').fill('ตรวจรหัสและชื่อแบบจากข้อมูลจำลองแล้ว');
     await page.screenshot({ path: 'artifacts/model-review-dialog.png' });
     await dialog.getByRole('button', { name: 'บันทึกผลตรวจสอบ', exact: true }).click();
@@ -155,11 +157,11 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     expect(current.verified_by).toBe(actor);
     expect(current.verified_at).toBeTruthy();
     expect(project.readiness.missing.some(item => item.field === `models.${first.id}.match_status`)).toBeFalsy();
-    await expect(modelCard(page, current.public_name.th).locator('.review-evidence')).toContainText(actor);
+    await expect(modelCard(page, current.public_name.th).locator('.review-evidence')).toContainText('ผู้แก้ไขข้อมูล');
 
     await selectModel(page, second.public_model_id);
     await modelCard(page, 'แบบต้นทาง บี').getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true }).click();
-    dialog = page.getByRole('dialog');
+    dialog = page.locator('.inline-model-editor, dialog[open]');
     await dialog.getByRole('radio', { name: 'ปฏิเสธการจับคู่', exact: true }).check();
     await expect(dialog.getByRole('status')).toContainText('ไม่รวมในการเผยแพร่ครั้งใหม่');
     await dialog.getByLabel('เหตุผลในการตรวจสอบ').fill('ไม่ใช้แบบนี้ในการเผยแพร่ชุดทดสอบ');
@@ -172,7 +174,7 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
 
     await data.addSourceModel('MODEL-C', 'แบบเพิ่มเติมภายหลัง');
     await page.getByRole('button', { name: 'เลือกแบบเพิ่มเติมจากต้นทาง', exact: true }).click();
-    dialog = page.getByRole('dialog');
+    dialog = page.locator('.inline-model-editor, dialog[open]');
     await dialog.getByLabel('แบบที่ยังไม่ได้เลือกในโครงการนี้').selectOption('MODEL-C');
     await dialog.getByRole('button', { name: 'เพิ่มแบบที่เลือก', exact: true }).click();
     await expect(dialog).toHaveCount(0);
@@ -203,11 +205,11 @@ test('model changes preserve unsaved project edits and retain stale-dialog input
     await expect(page.getByRole('button', { name: 'เลือกแบบเพิ่มเติมจากต้นทาง', exact: true })).toBeDisabled();
     for (const button of await page.getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).all()) await expect(button).toBeDisabled();
     for (const button of await page.getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true }).all()) await expect(button).toBeDisabled();
-    await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
+    await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
     await page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true }).fill(data.name);
     await selectModel(page, project.models.find(model => model.rem_model_id === 'MODEL-A')!.public_model_id);
     await modelCard(page, 'แบบต้นทาง เอ').getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).click();
-    const dialog = page.getByRole('dialog');
+    const dialog = page.locator('.inline-model-editor, dialog[open]');
     await dialog.getByLabel('ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)', { exact: true }).fill('ข้อความที่ต้องเก็บเมื่อเกิดข้อขัดแย้ง');
     const changed = await page.request.patch(`/api/hub/v1/admin/projects/${project.public_project_id}`, {
       headers, data: { updated_at: project.updated_at, meta_title: { th: 'ข้อมูลจากอีกหน้าต่าง' } },
@@ -222,8 +224,7 @@ test('model changes preserve unsaved project edits and retain stale-dialog input
     page.once('dialog', confirmation => confirmation.accept());
     await dialog.getByRole('button', { name: 'โหลดข้อมูลล่าสุด', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
-    await page.getByText('ข้อมูลประกอบและการเชื่อมต่อ', { exact: true }).click();
+    await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
     await expect(page.getByLabel('ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล', { exact: true })).toHaveValue('ข้อมูลจากอีกหน้าต่าง');
     await selectModel(page, project.models.find(model => model.rem_model_id === 'MODEL-A')!.public_model_id);
     await expect(modelCard(page, 'แบบต้นทาง เอ')).toBeVisible();
@@ -257,7 +258,7 @@ test('viewer cannot create or review mappings and model routes enforce project o
       await expect(modelCard(page, model.public_name.th).getByRole('button', { name: 'รูปภาพและแปลนของแบบนี้', exact: true })).toBeVisible();
       await expect(modelCard(page, model.public_name.th).getByRole('button', { name: /แก้ไขรายละเอียดแบบ|ตรวจสอบการจับคู่/ })).toHaveCount(0);
     }
-    await expect(page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true }).locator('option')).toHaveCount(2);
+    await expect(page.locator('.rem-model-table tbody tr')).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'เลือกแบบเพิ่มเติมจากต้นทาง', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true })).toHaveCount(0);

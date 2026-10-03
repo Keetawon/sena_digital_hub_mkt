@@ -25,7 +25,7 @@ working data directory untouched. The existing Google Sans build warning and
 Starlette deprecation warning remain. Published export fixtures were refrozen
 from the disposable synthetic seed with the updated generator and migration hashes.
 
-The former label **“ชื่ออ้างอิงโครงการ” means `slug`**, an editable URL-friendly content identifier such as `flexi-example`. Staff supply it; the current app does not generate it from a source name or code. It is not a REM name, commercial name, ProjectID, or automatically verified business alias. The public API continues to use immutable `public_project_id`. Show **รหัส URL (slug)** in the collapsed **ข้อมูลประกอบและการเชื่อมต่อ** section with an explanation; source/public names occupy the main form.
+The former label **“ชื่ออ้างอิงโครงการ” means `slug`**, an editable URL-friendly content identifier such as `flexi-example`. Staff supply it; the current app does not generate it from a source name or code. It is not a REM name, commercial name, ProjectID, or automatically verified business alias. The public API continues to use immutable `public_project_id`. Show **รหัส URL (slug)** after the eleven ordered rows in **ข้อมูลหลัก**, followed by the ad disclaimer and brand binding. All main fields stay expanded.
 
 REM owns ProjectID, BrandID, internal names, group and operational relationships. `gold.dim_project` combines these with commercial enrichment from the governed commercial Sheet. Its `commercial_brand` label does not replace the actual REM BrandID link. Marketing edits the Hub public wording; source evidence remains read-only.
 
@@ -61,19 +61,29 @@ The local source contract is private `staging.dw_projects`: exact `source_record
 
 ## Workspace flow
 
-Use three tabs instead of repeating a long checklist in the sidebar:
+Phase B (3 October 2026) orders work by publication blockers. The eleven field rows above retain their approved order on desktop and mobile.
 
-| Workspace | Staff task |
+| Tab | Staff task |
 |---|---|
-| ข้อมูลโครงการ | Edit the ordered form, then project images and master plan immediately below it; complete the amenities section; company/source integration metadata is collapsed and secondary |
-| แบบที่อยู่อาศัย | Choose/confirm the project, then view and expand a Marketing type to edit details, images/plans and source associations. Keep exact REM models available in a separately labelled source/review section; commercial draft save does not confirm canonical mappings |
-| เผยแพร่และประวัติ | Review missing requirements, asset rights, mapping state and publication/version actions |
+| ข้อมูลหลัก | Eleven ordered rows, then slug, ad disclaimer and brand binding. Expanded throughout. Source values are compact read-only text; missing Gold values fall back to the existing REM mirror with **จาก REM**, including the original `project_name_en` evidence when available. No invented values and no duplicate source/brand section. |
+| รูปภาพ | Project media and existing rights status/review controls. |
+| แบบบ้าน | REM table first: name, ModelID, confirmation, complete required specs and plan count. A row opens the existing model form in place. Media remains scoped to that selected model. Marketing commercial types follow with **ยังไม่ออก API**. |
+| ข้อมูลเสริม | Optional compact amenity table and SEO fields. A selected radio is the status; no duplicate chip. Amenities never block publication. |
+| เผยแพร่และประวัติ | Existing readiness, named field links, publication and history. No bottom save bar. Publish confirmation compares only published-content fields with the live version, using the brand comparison layout. |
 
-Keep project context visible across tabs. Separate sections with headings and text chips for source, editable content and review status; do not rely on color alone. Use visible field labels, Thai help/error text, clear focus, keyboard-operable navigation and comfortable mobile controls. The numbered tabs stay visible while scrolling and preserve unsaved fields. **บันทึกข้อมูลร่าง** saves in place; **บันทึกและไปต่อ** saves successfully before moving to Marketing types, then a separate next action opens readiness. Failed saves keep the draft and current section. Project and canonical-model media can be uploaded, attached or removed while project text is unsaved; media changes preserve the text draft and advance its saved revision only when the server's editable text is unchanged. Conflict reloads containing another editor's text retain the old revision and local input so a later save cannot silently overwrite them. Main form saving and other active detail editors still block conflicting media actions. Changing project warns before discarding unsaved changes. Tabs group work; they do not force staff to complete every model before returning to project details. Exact REM model inspection is collapsed beneath the Marketing types by default.
+Each tab shows a check or missing count from existing readiness; REM models also show confirmed/total. The empty readiness state is **พร้อมเผยแพร่ · ไม่มีรายการค้าง**. Versions without a live pointer show **ถอนการเผยแพร่แล้ว**; live content with a changed saved payload shows **มีการแก้ไขที่ยังไม่เผยแพร่**. Comparison excludes source/audit metadata, rejected models and optional draft modules. A failed history read prevents confirming a misleading comparison. No database function, role, RLS or publication rule changes in B.
 
-Project images belong directly below details because staff usually describe and illustrate the same project together. Model images/plans belong with their selected model, reducing accidental attachment to the whole project. Upload, draft save, rights approval, model confirmation and publication are separate actions. Originals are retained; attachments do not bypass review or become public immediately.
+History shows the publisher role. Model confirmations show known local actor roles; legacy/imported identities without a staff directory display **ผู้ยืนยันแบบ**. UUIDs remain in immutable evidence/API data, not the human-facing attribution. This is a role label, not an invented display name.
 
-The project media flow is **choose purpose → select files → caption each file → upload and append to draft**. Each purpose supports multiple files: hero, thumbnail, master plan, building/floor plan and brochure. Existing-library selection appends one compatible file without replacing an earlier binding. New files are processed sequentially with visible per-file results and retry for unfinished items; successfully attached files remain when later items fail or the queue is closed. An uploaded file that is not yet attached stays in the private library. Main project text remains unsaved and intact until its separate draft save. Project plans and type plans remain separate scopes.
+Tabs preserve unsaved text; save-and-continue advances only after a successful save. Project and model media can change while project text is unsaved, preserving local input and concurrency revisions. Other active editors block conflicting writes. Inline model edits preserve validation, revision-conflict handling and discard confirmation. The mobile save bar is one compact row. The assistant trigger has reserved space in the editor, so it cannot cover the language chip or sticky tabs. Upload, save, rights approval, model confirmation and publication remain separate actions.
+
+Phase B verification: typecheck, production build and `test:db` passed. Full API:
+1,273 passed, 11 skipped. All 70 relevant browser cases passed (68 in the broad
+run, then the two updated legacy selectors passed focused reruns). Coverage
+includes comparison, withdrawn/pending labels, role attribution, mobile overflow,
+keyboard navigation, optional amenities, media revisions, source selection and
+read-only viewers. Tests used the disposable local database. No hosted fixture
+or migration changed in this phase; H1 was not redeployed or reseeded.
 
 The first active hero, thumbnail or brochure remains its role's primary binding. Adding files does not change it; removing it promotes the next ordered active binding. Plans remain collections. Duplicate project attachment of the same file to the same role is an idempotent no-op with the current project revision, retaining the existing caption and order. Brand-logo replacement and canonical-model duplicate rules remain unchanged. Originals, rights checks and immutable published snapshots retain their existing protections.
 

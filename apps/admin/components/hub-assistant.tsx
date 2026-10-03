@@ -90,6 +90,7 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
   const [context, setContext] = useState<Context>({}); const [contextKind, setContextKind] = useState<ContextKind>("project_id"); const [contextId, setContextId] = useState(""); const [month, setMonth] = useState(""); const [visibility, setVisibility] = useState<"draft" | "published">("draft");
   const [mode, setMode] = useState<"fake" | "live">("fake"); const [question, setQuestion] = useState(""); const [golden, setGolden] = useState(""); const [turns, setTurns] = useState<Turn[]>([]); const [busy, setBusy] = useState(false); const [status, setStatus] = useState("");
   const [tab, setTab] = useState<"chat" | "draft">("chat"); const [saveBarClearance, setSaveBarClearance] = useState(0);
+  const [editorSlot, setEditorSlot] = useState<HTMLElement | null>(null);
   const trigger = useRef<HTMLButtonElement>(null); const floatingTrigger = useRef<HTMLButtonElement>(null); const opener = useRef<HTMLElement | null>(null); const dialog = useRef<HTMLDialogElement>(null); const latest = useRef<HTMLDivElement>(null); const controller = useRef<AbortController | null>(null); const runId = useRef<string | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null); const goldenInput = useRef<HTMLSelectElement>(null); const shown = useRef(false);
   const contextButton = useRef<HTMLButtonElement>(null); const contextPopover = useRef<HTMLDivElement>(null); const contextHeading = useRef<HTMLHeadingElement>(null); const contextPopoverId = useId();
@@ -114,6 +115,7 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     const resize = new ResizeObserver(measure);
     if (floatingTrigger.current) resize.observe(floatingTrigger.current);
     const bind = () => {
+      setEditorSlot(main.querySelector<HTMLElement>("[data-project-assistant]"));
       const next = main.querySelector<HTMLElement>(".project-save-bar, [data-assistant-clearance]:not([data-assistant-clearance='overlap'])");
       const nextAction = main.querySelector<HTMLElement>("[data-assistant-clearance='overlap']");
       if (next === bar && nextAction === action) return;
@@ -187,7 +189,7 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
   const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4zM8 8h8M8 12h5" /></svg>;
   return <>
     {navigationTarget && createPortal(<button ref={trigger} className="nav-link assistant-trigger" type="button" aria-haspopup="dialog" onClick={event => toggle(true, onNavigationOpen() ?? event.currentTarget)}>{icon}<span>ผู้ช่วย Hub</span></button>, navigationTarget)}
-    <button ref={floatingTrigger} className="button primary assistant-floating" style={{ "--assistant-clearance": `${saveBarClearance}px`, bottom: "calc(20px + var(--assistant-clearance) + env(safe-area-inset-bottom))" } as CSSProperties} type="button" aria-haspopup="dialog" hidden={open} onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ถามผู้ช่วย</span></button>
+    {editorSlot ? createPortal(<button ref={floatingTrigger} className="button secondary assistant-editor-trigger" type="button" aria-haspopup="dialog" onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ถามผู้ช่วย</span></button>, editorSlot) : <button ref={floatingTrigger} className="button primary assistant-floating" style={{ "--assistant-clearance": `${saveBarClearance}px`, bottom: "calc(20px + var(--assistant-clearance) + env(safe-area-inset-bottom))" } as CSSProperties} type="button" aria-haspopup="dialog" hidden={open} onClick={event => toggle(true, event.currentTarget)}>{icon}<span>ถามผู้ช่วย</span></button>}
     <dialog ref={dialog} className="action-dialog assistant-panel" aria-labelledby="assistant-title" onCancel={event => { event.preventDefault(); toggle(false); }}>
       <header className="assistant-header">
         <div className="assistant-heading"><h2 id="assistant-title">ผู้ช่วย Hub</h2><button className="button secondary assistant-close" type="button" onClick={() => toggle(false)}>ปิดผู้ช่วย</button></div>

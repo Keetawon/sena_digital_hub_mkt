@@ -63,18 +63,20 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
         {disabled && canEdit && <p className="inline-warning">บันทึกหรือยกเลิกงานส่วนอื่นก่อนแก้ไขสิ่งอำนวยความสะดวก</p>}
         {error && <div className="notice error" role="alert">{error}<p className="field-help">ข้อมูลที่กรอกยังอยู่ หากร่างเปลี่ยนในหน้าต่างอื่น ให้เก็บข้อความก่อนโหลดใหม่</p></div>}
         {notice && <p className="notice success" role="status">{notice}</p>}
-        <div className="facility-list">{data.items.map(item => {
+        <div className="table-scroll"><table className="facility-list"><caption className="sr-only">สถานะสิ่งอำนวยความสะดวก (ไม่กีดกันการเผยแพร่)</caption><thead><tr><th>รายการ</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead>{data.items.map(item => {
           const active = editing?.code === item.code;
           const status = active ? editing.status : item.status;
-          return <article className="facility-item" key={item.code} id={`facilities-${item.code}`}>
-          <div className="facility-row"><div><h3>{item.name_th}</h3><p className="small-text muted">{item.required ? "รายการหลัก" : "ข้อมูลเพิ่มเติม"}{item.location_note ? ` · ${item.location_note}` : ""}</p></div><span className={`facility-status ${status}`}>{statusLabels[status]}</span>{canEdit && !active && <button type="button" className="button secondary" disabled={disabled || pending || Boolean(editing)} onClick={() => edit(item, item.status, true)}>รายละเอียด<span className="sr-only"> {item.name_th}</span></button>}</div>
+          return <tbody className="facility-item" key={item.code} id={`facilities-${item.code}`}>
+          <tr><th scope="row"><h3>{item.name_th}</h3><p className="small-text muted">{item.required ? "รายการหลัก" : "ข้อมูลเพิ่มเติม"}</p></th><td>
+          {!canEdit && <span>{statusLabels[status]}</span>}
           {canEdit && <fieldset className="facility-status-options" disabled={disabled || pending || Boolean(editing && !active)}>
             <legend className="sr-only">สถานะ{item.name_th}</legend>
             {Object.entries(statusLabels).map(([value, label]) => <label key={value} className="facility-status-option">
               <input type="radio" name={`facility-status-${item.code}`} value={value} checked={status === value} onChange={() => edit(item, value as Facility["status"])} />
               <span>{label}</span>
             </label>)}
-          </fieldset>}
+          </fieldset>}</td><td>{canEdit && !active && <button type="button" className="button text-button" disabled={disabled || pending || Boolean(editing)} onClick={() => edit(item, item.status, true)}>รายละเอียด<span className="sr-only"> {item.name_th}</span></button>}</td></tr>
+          {(active || item.description.th || item.access_note || item.expected_open_date || item.evidence_note) && <tr><td colSpan={3}>
           {active ? <form onSubmit={save} className="facility-editor">
             <p className="field-help">ยังไม่บันทึก · บันทึกหรือยกเลิกรายการนี้ก่อนเลือกสิ่งอำนวยความสะดวกถัดไป</p>
             <fieldset disabled={disabled || pending}><legend className="sr-only">แก้ไข{item.name_th}</legend>
@@ -88,7 +90,8 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
             </fieldset>
             <div className="facility-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setEditing(null); setError(""); }}>ยกเลิก</button><button className="button primary" type="submit" aria-busy={pending} disabled={disabled || pending}>{pending ? "กำลังบันทึก…" : "บันทึกสิ่งอำนวยความสะดวก"}</button></div>
           </form> : <>{item.description.th && <p className="facility-description">{item.description.th}</p>}{item.access_note && <p className="small-text muted">เงื่อนไข: {item.access_note}</p>}{item.expected_open_date && <p className="small-text muted">คาดว่าจะเปิดใช้: {item.expected_open_date}</p>}{item.evidence_note && <details className="facility-evidence"><summary>แหล่งข้อมูลและประวัติบันทึก</summary><p>{item.evidence_note}</p>{item.updated_at && <p className="small-text muted">บันทึก {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(item.updated_at))}</p>}</details>}</>}
-        </article>; })}</div>
+          </td></tr>}
+        </tbody>; })}</table></div>
       </> : <p className="muted">ยังไม่มีรายการสิ่งอำนวยความสะดวกจากระบบ</p>}
     </div>
   </section>;

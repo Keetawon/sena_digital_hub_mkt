@@ -68,6 +68,7 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
     }
   });
   await page.goto('/?project=facility-test');
+  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await expect(page.locator('#facilities')).toBeVisible();
   return { project, writes, unexpectedWrites };
 }
@@ -76,7 +77,7 @@ test('unknown and absent are distinct; saved status updates collection with revi
   const { project, writes, unexpectedWrites } = await openFixture(page);
   const section = page.locator('#facilities');
   await expect(section.locator('.count')).toHaveText('0/6');
-  await expect(page.locator('#facilities-clubhouse .facility-status')).toHaveText('มี');
+  await expect(page.locator('#facilities-clubhouse')).toContainText('มี');
   const pool = page.getByRole('group', { name: 'สถานะสระว่ายน้ำ', exact: true });
   await expect(pool.getByRole('radio', { name: 'ยังไม่ทราบ', exact: true })).toBeChecked();
   await pool.getByRole('radio', { name: 'ไม่มี', exact: true }).check();
@@ -87,7 +88,7 @@ test('unknown and absent are distinct; saved status updates collection with revi
   await page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true }).fill('ตรวจสอบแล้ว โครงการไม่มีสระว่ายน้ำ');
   await section.getByRole('button', { name: 'บันทึกสิ่งอำนวยความสะดวก', exact: true }).click();
   await expect(section.getByRole('status')).toHaveText('บันทึกสิ่งอำนวยความสะดวกเป็นร่างแล้ว');
-  await expect(page.locator('#facilities-pool .facility-status')).toHaveText('ไม่มี');
+  await expect(pool.getByRole('radio', { name: 'ไม่มี', exact: true })).toBeChecked();
   await expect(section.locator('.count')).toHaveText('1/6');
   expect(writes[0]).toEqual({ code: 'pool', body: {
     updated_at: initialTime, status: 'absent',
@@ -105,20 +106,25 @@ test('unknown and absent are distinct; saved status updates collection with revi
 test('unsaved facility work survives tabs and blocks conflicting project and media changes until cancelled', async ({ page }) => {
   const { writes, unexpectedWrites } = await openFixture(page);
   const section = page.locator('#facilities');
+  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await page.getByRole('button', { name: 'รายละเอียด สระว่ายน้ำ', exact: true }).click();
   await page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true }).fill('ข้อมูลที่ยังไม่บันทึก');
   await expect(page.locator('#public_name')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true })).toBeDisabled();
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeDisabled();
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets').getByRole('button', { name: 'เปิดคลังสื่อ', exact: true })).toBeEnabled();
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
-  await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await expect(page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true })).toHaveValue('ข้อมูลที่ยังไม่บันทึก');
   await section.getByRole('button', { name: 'ยกเลิก', exact: true }).click();
   await expect(section.locator('form')).toHaveCount(0);
   await expect(page.locator('#public_name')).toBeEnabled();
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
+  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await page.getByRole('button', { name: 'รายละเอียด สระว่ายน้ำ', exact: true }).click();
   await expect(page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true })).toHaveValue('');
   expect(writes).toEqual([]);
@@ -150,8 +156,8 @@ test('viewer sees explicit statuses and collection counts without editing contro
   const { writes, unexpectedWrites } = await openFixture(page, 'viewer');
   const section = page.locator('#facilities');
   await expect(section.locator('.count')).toHaveText('0/6');
-  await expect(page.locator('#facilities-pool .facility-status')).toHaveText('ยังไม่ทราบ');
-  await expect(page.locator('#facilities-clubhouse .facility-status')).toHaveText('มี');
+  await expect(page.locator('#facilities-pool')).toContainText('ยังไม่ทราบ');
+  await expect(page.locator('#facilities-clubhouse')).toContainText('มี');
   await expect(section.getByRole('button')).toHaveCount(0);
   await expect(section.getByRole('radio')).toHaveCount(0);
   await expect(section.locator('form')).toHaveCount(0);

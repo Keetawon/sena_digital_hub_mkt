@@ -77,6 +77,7 @@ async function openFixture(page: Page, failure?: { stage: 'upload' | 'bind'; fil
 }
 
 async function selectFiles(page: Page, files: ReturnType<typeof file>[], purpose = 'hero') {
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await page.locator(`input[name="assets-purpose"][value="${purpose}"]`).check();
   await page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true }).click();
   const dialog = page.getByRole('dialog');

@@ -95,6 +95,7 @@ async function expectLocalText(page: Page) {
 }
 
 async function chooseReplacement(page: Page) {
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   const media = page.locator('#assets');
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
   await media.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true }).fill('replacement');
@@ -105,6 +106,7 @@ async function chooseReplacement(page: Page) {
 test('dirty project text survives upload, another image and removal; save uses the latest media revision', async ({ page }) => {
   const fixture = await openFixture(page);
   await editText(page);
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   const media = page.locator('#assets');
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true }).click();
@@ -179,8 +181,7 @@ test('refreshing a media conflict preserves local text without allowing it to ov
 test('model-scoped plan binding also preserves dirty project text and advances its save revision', async ({ page }) => {
   const fixture = await openFixture(page);
   await editText(page);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByText('รหัสแบบและข้อมูลอ้างอิง REM', { exact: true }).click();
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
   const media = page.locator('#model-media');
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
@@ -192,7 +193,7 @@ test('model-scoped plan binding also preserves dirty project text and advances i
   await expect(dialog).toHaveCount(0);
   await expect(media.locator('.bound-assets')).toContainText('replacement.png');
   expect(fixture.writes[0].path).toBe(`${projectPath}/models/model-A/assets`);
-  await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
+  await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
   await expect(page.locator('#assets .bound-assets')).toHaveCount(0);
   await expectLocalText(page);
   await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();

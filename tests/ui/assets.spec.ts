@@ -67,11 +67,12 @@ async function role(page: Page, value: 'editor' | 'publisher' | 'viewer') {
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(value);
   expect((await changed).ok()).toBeTruthy();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toBeEnabled();
-  await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
-  await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeVisible();
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await expect(page.locator('#assets')).toBeVisible();
 }
 
 async function library(page: Page) {
+  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   const open = page.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true });
   if (await open.count()) await open.click();
   await expect(page.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true })).toBeVisible();
@@ -145,12 +146,12 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     let project = (await (await page.request.get(base)).json()).data;
     expect(project.readiness.ready).toBe(false);
     await role(page, 'publisher');
-    await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
+    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
     await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
-    await page.getByRole('tab', { name: 'ข้อมูลโครงการ', exact: true }).click();
+    await page.getByRole('tab', { name: /รูปภาพ/ }).click();
     await approve(page, asset, 'approved');
     expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(404);
-    await page.getByRole('tab', { name: 'เผยแพร่และประวัติ', exact: true }).click();
+    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
     await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
     await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
     await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();

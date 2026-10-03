@@ -47,13 +47,10 @@ test('model evidence keeps raw area separate from blank approved specifications'
     'projects/project-test': { public_project_id: 'project-test', public_name: {}, slug: '', updated_at: snapshotTime, published_version_id: null, publication_available: false, readiness: { ready: false, percent: 0, missing: [] }, source, models: [model], assets: [] },
   });
   await page.goto('/?project=project-test');
-  await page.locator('#source > summary').click();
-  await expect(page.locator('#source')).toContainText(snapshotLabel);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByText('รหัสแบบและข้อมูลอ้างอิง REM', { exact: true }).click();
-  await page.getByLabel('เลือกแบบที่ต้องการจัดการ', { exact: true }).selectOption(model.public_model_id);
-  await page.getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).click();
-  const dialog = page.getByRole('dialog');
+  await expect(page.locator('.source-provenance')).toContainText(snapshotLabel);
+  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.locator('.rem-model-table').getByRole('button', { name: 'A1-1', exact: true }).click();
+  const dialog = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
   await expect(dialog).toContainText('CON4');
   await expect(dialog).toContainText('27.00');
   await expect(dialog).toContainText('ยังไม่ยืนยันหน่วยและความหมาย');
