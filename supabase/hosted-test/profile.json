@@ -143,6 +143,11 @@
       "name": "202610020028_brand_completeness.sql",
       "canonical_sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f",
       "executed_sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f"
+    },
+    {
+      "name": "202610030029_thailand_coordinates.sql",
+      "canonical_sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388",
+      "executed_sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388"
     }
   ]
 }

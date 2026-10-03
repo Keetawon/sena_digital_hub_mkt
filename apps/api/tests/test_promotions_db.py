@@ -56,7 +56,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
         await connection.fetchval("SELECT hub.assign_project_brand(id,$2,updated_at) FROM hub.projects WHERE id=$1", project_id, brand)
         await connection.fetchval("SELECT hub.patch_project(id,$2::jsonb,updated_at) FROM hub.projects WHERE id=$1", project_id,
             {"public_name": {"th": "โครงการสังเคราะห์ API"}, "slug": key.lower() + "-project", "address": {"th": "ที่อยู่สังเคราะห์"},
-             "latitude": 0, "longitude": 0, "ad_disclaimer": {"th": "ข้อมูลสังเคราะห์สำหรับทดสอบเท่านั้น"}})
+             "latitude": 13.7563, "longitude": 100.5018, "ad_disclaimer": {"th": "ข้อมูลสังเคราะห์สำหรับทดสอบเท่านั้น"}})
         await connection.fetchval("SELECT hub.update_model($1,public_model_id,$2::jsonb,(SELECT updated_at FROM hub.projects WHERE id=$1)) FROM hub.model_types WHERE project_id=$1",
                                   project_id, {"bedrooms": 2, "bathrooms": 1, "usable_area_sqm": 50, "parking_spaces": 1})
         await connection.fetchval("SELECT hub.review_model($1,public_model_id,(SELECT updated_at FROM hub.projects WHERE id=$1),'CONFIRMED','Synthetic API fixture') FROM hub.model_types WHERE project_id=$1", project_id)

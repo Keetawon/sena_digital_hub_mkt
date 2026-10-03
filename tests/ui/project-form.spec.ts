@@ -29,6 +29,38 @@ async function openFixture(page: Page, gold = true) {
   return project;
 }
 
+test('Thailand coordinates reject zero and outside bounds, accept pasted pairs and open Maps', async ({ page }) => {
+  const project = await openFixture(page);
+  const latitude = page.locator('#latitude'), longitude = page.locator('#longitude');
+  for (const [lat, lng, invalid] of [['0', '0', '#latitude'], ['4.99', '100', '#latitude'], ['21.01', '100', '#latitude'], ['13', '96.99', '#longitude'], ['13', '106.01', '#longitude']]) {
+    await latitude.fill(lat);
+    await longitude.fill(lng);
+    await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
+    await expect(page.locator(invalid)).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator(invalid)).toBeFocused();
+    expect(project.latitude).toBeNull();
+    await expect(page.getByRole('link', { name: /เปิดใน Google Maps/ })).toHaveCount(0);
+  }
+  for (const [lat, lng] of [['5', '97'], ['21', '106']]) {
+    await latitude.fill(lat);
+    await longitude.fill(lng);
+    await longitude.blur();
+    await expect(page.getByRole('link', { name: /เปิดใน Google Maps/ })).toHaveAttribute('href', `https://www.google.com/maps/search/?api=1&query=${lat}%2C${lng}`);
+  }
+  await longitude.evaluate(node => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text', ' 13.7563, 100.5018 ');
+    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
+  });
+  await expect(latitude).toHaveValue('13.7563');
+  await expect(longitude).toHaveValue('100.5018');
+  await expect(page.getByRole('link', { name: /เปิดใน Google Maps/ })).toHaveAttribute('rel', 'noopener noreferrer');
+  await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
+  await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
+  expect(project.latitude).toBe(13.7563);
+  expect(project.longitude).toBe(100.5018);
+});
+
 test('ordered source fields, bilingual draft and unsaved edits survive all three tabs', async ({ page }) => {
   const project = await openFixture(page);
   const fields = page.locator('.project-fields input, .project-fields textarea');

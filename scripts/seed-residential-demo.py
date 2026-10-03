@@ -100,7 +100,7 @@ async def seed(db) -> dict:
     introduced = []
     for kind, record, proposed, function in [
         ("brand", brand, {"slug": "flexi-demo", "description": {"th": "ข้อมูลตัวอย่าง: แนวคิดที่อยู่อาศัยเพื่อสาธิตการจัดการแบรนด์ ไม่ใช่ข้อความที่อนุมัติใช้งานจริง"}}, "hub.update_brand_draft"),
-        ("project", project, {"slug": "hyabc-demo", "latitude": "0", "longitude": "0",
+        ("project", project, {"slug": "hyabc-demo", "latitude": "13.7563", "longitude": "100.5018",
             "address": {"th": "ข้อมูลตัวอย่าง: ที่อยู่สำหรับเดโมเท่านั้น"},
             "ad_disclaimer": {"th": "ข้อมูลตัวอย่างและภาพประกอบใช้สาธิตระบบภายในเท่านั้น ไม่ใช่ข้อเสนอขายหรือข้อมูลโครงการที่ได้รับการรับรอง"},
             "meta_title": {"th": "HYABC — ข้อมูลตัวอย่าง"},

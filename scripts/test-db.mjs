@@ -11,6 +11,8 @@ try {
   connection.on('notice', (notice) => console.log(notice.message));
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
+  await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));
+  console.log('PASS: inclusive Thailand coordinate bounds and unchanged remaining readiness rules');
   await connection.query(await readFile(new URL('../supabase/tests/source_selection.sql', import.meta.url), 'utf8'));
   console.log('PASS: source selection, human model review and stale-edit protection');
   await connection.query(await readFile(new URL('../supabase/tests/asset_library.sql', import.meta.url), 'utf8'));

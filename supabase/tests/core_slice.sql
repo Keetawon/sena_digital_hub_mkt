@@ -81,7 +81,7 @@ end $$;
 
 set local role editor;
 select hub.patch_project(current_setting('test.project_id')::uuid,
-  '{"public_name":{"th":"ข้อมูลทดสอบ รุ่นหนึ่ง"},"slug":"sql-test-core","address":{"th":"ที่อยู่ทดสอบ"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"ข้อมูลทดสอบเท่านั้น"}}',
+  '{"public_name":{"th":"ข้อมูลทดสอบ รุ่นหนึ่ง"},"slug":"sql-test-core","address":{"th":"ที่อยู่ทดสอบ"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"ข้อมูลทดสอบเท่านั้น"}}',
   (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
 select hub.update_model(current_setting('test.project_id')::uuid,current_setting('test.public_model_id'),
   '{"bedrooms":2.5,"bathrooms":1,"usable_area_sqm":50,"parking_spaces":1}',
@@ -97,6 +97,20 @@ begin
   assert (hub.project_readiness(current_setting('test.project_id')::uuid)->>'ready')::boolean, 'Complete draft blocked';
 end $$;
 
+select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":0,"longitude":0}',
+  (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
+set local role publisher;
+do $$ begin
+  begin
+    perform hub.publish_project(current_setting('test.project_id')::uuid,'Must reject zero coordinates');
+    raise exception 'Zero coordinates passed the publication gate';
+  exception when check_violation then null; end;
+  assert not exists(select 1 from hub.entity_versions where project_id=current_setting('test.project_id')::uuid),
+    'Coordinate rejection wrote a publication';
+end $$;
+set local role editor;
+select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":13.7563,"longitude":100.5018}',
+  (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
 set local role publisher;
 select set_config('test.version_1',hub.publish_project(current_setting('test.project_id')::uuid,'First SQL test publish')::text,true);
 set local role service_consumer;

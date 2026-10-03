@@ -16,7 +16,7 @@ values('71000000-0000-0000-0000-000000000001','brd_71000000000000000000000000000
  'h1-fictional-garden-brand',array['source','public_name.th','description.th','slug']);
 insert into hub.projects(id,public_project_id,rem_project_id,brand_id,public_name,name_source,slug,address,latitude,longitude,ad_disclaimer,meta_title,meta_description,demo_fields)
 values('71000000-0000-0000-0000-000000000002','prj_71000000000000000000000000000002','H1-PROJECT-001','71000000-0000-0000-0000-000000000001',
- '{"th":"ข้อมูลตัวอย่าง — โครงการสวนสมมติ"}','marketing_override','h1-fictional-garden-project','{"th":"ที่อยู่สมมติสำหรับทดสอบเท่านั้น"}',0,0,
+ '{"th":"ข้อมูลตัวอย่าง — โครงการสวนสมมติ"}','marketing_override','h1-fictional-garden-project','{"th":"ที่อยู่สมมติสำหรับทดสอบเท่านั้น"}',13.7563,100.5018,
  '{"th":"ข้อมูลตัวอย่างและภาพกราฟิกสังเคราะห์ ไม่ใช่ข้อเสนอขายหรือข้อมูลโครงการจริง"}',
  '{"th":"ข้อมูลตัวอย่าง — โครงการสวนสมมติ"}','{"th":"ข้อมูลสมมติเพื่อทดสอบการเผยแพร่เท่านั้น"}',
  array['source','public_name.th','address.th','latitude','longitude','ad_disclaimer.th','meta_title.th','meta_description.th','slug']);

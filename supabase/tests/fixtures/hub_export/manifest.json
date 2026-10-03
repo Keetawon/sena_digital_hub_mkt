@@ -4,8 +4,8 @@
   "environment": "local-test",
   "source_key": "hub",
   "synthetic_only": true,
-  "hub_commit": "56ab9e93067fff82ad4556f593d599a712db0c93",
-  "exported_at": "2026-10-02T08:43:18.194Z",
+  "hub_commit": "d5767b30f47568f088f48c7e7b1a10ba06bce582",
+  "exported_at": "2026-10-03T09:29:57.320Z",
   "transaction": {
     "role": "dw_hub_reader",
     "isolation": "repeatable read",
@@ -153,6 +153,16 @@
       "file": "supabase/migrations/202610020027_hub_published_export.sql",
       "sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b",
       "normalized_lf_sha256": "ba11134a1896aa36dc9d619dcc5f641045007622dcf597ccbf366bf17f0dda5b"
+    },
+    {
+      "file": "supabase/migrations/202610020028_brand_completeness.sql",
+      "sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f",
+      "normalized_lf_sha256": "e6513ad6b4071b68874d7d6e84ebe1143dd5c4a0cd466f490c59f5f2ece5598f"
+    },
+    {
+      "file": "supabase/migrations/202610030029_thailand_coordinates.sql",
+      "sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388",
+      "normalized_lf_sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388"
     }
   ],
   "generator_checksums": [
@@ -163,8 +173,8 @@
     },
     {
       "file": "scripts/seed-hub-content-contract.mjs",
-      "sha256": "ab70661d0364e4bd1b956a9cb48916ed6d63284d440437b6b4118e6c337fb283",
-      "normalized_lf_sha256": "ab70661d0364e4bd1b956a9cb48916ed6d63284d440437b6b4118e6c337fb283"
+      "sha256": "dabe560525447b47c3881413400d8e060f3853820a28bb697111c955172dbd08",
+      "normalized_lf_sha256": "dabe560525447b47c3881413400d8e060f3853820a28bb697111c955172dbd08"
     },
     {
       "file": "scripts/provision-dw-reader.mjs",
@@ -221,8 +231,8 @@
       ],
       "row_count": 2,
       "bytes": 899,
-      "exported_at": "2026-10-02T08:43:18.194Z",
-      "sha256": "d478e2621f8a7574c98223e7473be41dfc24a7741caa5eb250b9ed1da27ded0b"
+      "exported_at": "2026-10-03T09:29:57.320Z",
+      "sha256": "4afbceb1e11af9308b84b485a6ac67cea317b8bf7ba6f541c74926a79ba2c11c"
     },
     {
       "view": "hub_export.project_published",
@@ -272,8 +282,8 @@
       ],
       "row_count": 1,
       "bytes": 447,
-      "exported_at": "2026-10-02T08:43:18.194Z",
-      "sha256": "e24f2492c750148d9d325e25dda147046bf516cede44b886093089833281d991"
+      "exported_at": "2026-10-03T09:29:57.320Z",
+      "sha256": "da3ad68ab6635d53f07249aa94f51f390c855b51b19ab7872102a5180545d34f"
     }
   ]
 }

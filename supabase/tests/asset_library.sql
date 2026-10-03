@@ -67,7 +67,7 @@ begin
     perform set_config('test.asset_project_'||suffix,p::text,true);
     perform set_config('test.asset_public_'||suffix,public_id,true);
     perform hub.patch_project(p,jsonb_build_object('public_name',jsonb_build_object('th','Synthetic commercial project'),'slug','sql-asset-'||suffix,'address',jsonb_build_object('th','Synthetic address'),
-      'latitude',0,'longitude',0,'ad_disclaimer',jsonb_build_object('th','Synthetic only')),(select updated_at from hub.projects where id=p));
+      'latitude',13.7563,'longitude',100.5018,'ad_disclaimer',jsonb_build_object('th','Synthetic only')),(select updated_at from hub.projects where id=p));
     select public_model_id into model_id from hub.model_types where project_id=p;
     perform hub.update_model(p,model_id,'{"bedrooms":2,"bathrooms":1,"usable_area_sqm":50}',(select updated_at from hub.projects where id=p));
     perform hub.review_model(p,model_id,(select updated_at from hub.projects where id=p),'CONFIRMED','Synthetic human mapping');

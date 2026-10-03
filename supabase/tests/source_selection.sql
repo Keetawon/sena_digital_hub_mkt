@@ -163,7 +163,7 @@ end $$;
 
 set local role editor;
 select hub.patch_project(current_setting('test.source_a')::uuid,
-  '{"public_name":{"th":"Synthetic commercial project"},"slug":"sql-source-test","address":{"th":"Synthetic address"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"Synthetic test only"}}',
+  '{"public_name":{"th":"Synthetic commercial project"},"slug":"sql-source-test","address":{"th":"Synthetic address"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"Synthetic test only"}}',
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid));
 select hub.update_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),
   '{"bedrooms":null,"bathrooms":null,"usable_area_sqm":null,"parking_spaces":null}',

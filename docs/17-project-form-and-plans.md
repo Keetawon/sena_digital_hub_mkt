@@ -6,6 +6,25 @@ Decision date: 18 September 2026. Scope: Thai staff back office, current HYABC p
 
 ## Names and source boundaries
 
+**3 October, phase A — coordinates:** migration `0029` treats latitude outside
+5.0–21.0 or longitude outside 97.0–106.0 (inclusive) as a named missing item in
+the existing publication readiness function. Null coordinates remain missing;
+all other rules and permissions stay the same. The form validates the same bounds,
+accepts a pasted `lat, lng` pair in either coordinate field, and offers **เปิดใน
+Google Maps** for a valid pair. Saving an incomplete draft through the API is
+still permitted; the database publication gate enforces the bounds. Synthetic
+seeds use Bangkok example coordinates 13.7563, 100.5018. Source evidence and
+existing immutable publication versions are not rewritten.
+
+Phase A verification: typecheck and production build passed; full API suite
+**1,273 passed, 11 skipped** with `HUB_COORDINATE_TEST=1`; `test:db` passed all
+SQL/RLS/concurrency and five fixture-contract tests; six project-form browser
+tests passed. Isolated H1 passed ten runner/mock tests, all 29 migration replay
+checks and 14 browser tests. Checks used a disposable local cluster, leaving the
+working data directory untouched. The existing Google Sans build warning and
+Starlette deprecation warning remain. Published export fixtures were refrozen
+from the disposable synthetic seed with the updated generator and migration hashes.
+
 The former label **“ชื่ออ้างอิงโครงการ” means `slug`**, an editable URL-friendly content identifier such as `flexi-example`. Staff supply it; the current app does not generate it from a source name or code. It is not a REM name, commercial name, ProjectID, or automatically verified business alias. The public API continues to use immutable `public_project_id`. Show **รหัส URL (slug)** in the collapsed **ข้อมูลประกอบและการเชื่อมต่อ** section with an explanation; source/public names occupy the main form.
 
 REM owns ProjectID, BrandID, internal names, group and operational relationships. `gold.dim_project` combines these with commercial enrichment from the governed commercial Sheet. Its `commercial_brand` label does not replace the actual REM BrandID link. Marketing edits the Hub public wording; source evidence remains read-only.

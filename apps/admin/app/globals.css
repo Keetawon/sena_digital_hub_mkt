@@ -500,6 +500,8 @@ main:focus { outline: none; }
 .project-details .panel-heading { background: var(--primary-soft); }
 .section-chip { display: inline-block; color: var(--secondary-strong); background: var(--secondary-soft); font-size: var(--text-caption); font-weight: 500; border-radius: 5px; padding: 3px 8px; margin-bottom: 8px; }
 .project-fields { max-width: 760px; }
+.coordinate-tools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.coordinate-tools .field-help { margin: 0; }
 .project-fields .form-field { margin-bottom: 24px; }
 .project-fields .form-field:last-child { margin-bottom: 0; }
 .project-fields label { font-size: var(--text-label); }

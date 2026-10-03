@@ -91,6 +91,14 @@ function draftFrom(project: Project): Draft {
   return { public_name: project.public_name?.th ?? "", public_name_en: project.public_name?.en ?? "", slug: project.slug ?? "", address: project.address?.th ?? "", address_en: project.address?.en ?? "", latitude: project.latitude?.toString() ?? "", longitude: project.longitude?.toString() ?? "", ad_disclaimer: project.ad_disclaimer?.th ?? "", meta_title: project.meta_title?.th ?? "", meta_description: project.meta_description?.th ?? "" };
 }
 
+function coordinateError(name: "latitude" | "longitude", value: string) {
+  if (!value.trim()) return undefined;
+  const number = Number(value);
+  const [min, max] = name === "latitude" ? [5, 21] : [97, 106];
+  return !Number.isFinite(number) || number < min || number > max
+    ? "พิกัดอยู่นอกประเทศไทย ตรวจละติจูดและลองจิจูด" : undefined;
+}
+
 export function HubAdmin({ localMode, initialRole, projectId, brandId = null, view = null, sourceVersion = null, sourceDraftAt = null }: { localMode: boolean; initialRole: LocalRole | null; projectId: string | null; brandId?: string | null; view?: string | null; sourceVersion?: string | null; sourceDraftAt?: string | null }) {
   const enabled = localMode || Boolean(useHostedSession());
   const [role, setRole] = useState<LocalRole | null>(initialRole);
@@ -256,13 +264,15 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     if (!draft || !project || !canEdit || relatedDirty) return;
     const errors: Partial<Record<keyof Draft, string>> = {};
     if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) errors.slug = "ใช้ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง เช่น sena-example";
-    if (draft.latitude && (!Number.isFinite(Number(draft.latitude)) || Math.abs(Number(draft.latitude)) > 90)) errors.latitude = "กรอกค่าระหว่าง -90 ถึง 90";
-    if (draft.longitude && (!Number.isFinite(Number(draft.longitude)) || Math.abs(Number(draft.longitude)) > 180)) errors.longitude = "กรอกค่าระหว่าง -180 ถึง 180";
+    for (const name of ["latitude", "longitude"] as const) {
+      const message = coordinateError(name, draft[name]);
+      if (message) errors[name] = message;
+    }
     setFieldErrors(errors);
     if (Object.keys(errors).length) { revealField(Object.keys(errors)[0]); return; }
     setSaving(true); setError(""); setNotice("");
     try {
-      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude === "" ? null : Number(draft.latitude), longitude: draft.longitude === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer }, meta_title: { ...project.meta_title, th: draft.meta_title }, meta_description: { ...project.meta_description, th: draft.meta_description } };
+      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer }, meta_title: { ...project.meta_title, th: draft.meta_title }, meta_description: { ...project.meta_description, th: draft.meta_description } };
       const data = await request<Project>(base, "PATCH", payload);
       setProject(data); setDraft(draftFrom(data)); setNotice("บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม"); setConflict(false);
       if (nextTab) goToTab(nextTab);
@@ -309,7 +319,19 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   const readiness = project.readiness ?? { ready: false, percent: 0, missing: [] };
 
   function field(name: keyof Draft, multiline = false, help?: string) {
-    const common = { id: name, name, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); }, "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
+    const coordinate = name === "latitude" || name === "longitude";
+    const common = { id: name, name, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
+      onBlur: () => { if (coordinate) setFieldErrors(previous => ({ ...previous, [name]: coordinateError(name, draft![name]) })); },
+      onPaste: (event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!coordinate) return;
+        const pair = event.clipboardData.getData("text").split(",").map(value => value.trim());
+        if (pair.length !== 2 || pair.some(value => !value || !Number.isFinite(Number(value)))) return;
+        event.preventDefault();
+        setDraft(previous => previous ? { ...previous, latitude: pair[0], longitude: pair[1] } : previous);
+        setFieldErrors(previous => ({ ...previous, latitude: coordinateError("latitude", pair[0]), longitude: coordinateError("longitude", pair[1]) }));
+        setNotice("");
+      },
+      "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
     return <div className="form-field"><label htmlFor={name}>{labels[name]}</label>{multiline ? <textarea {...common} rows={name === "ad_disclaimer" ? 4 : 3} maxLength={name === "meta_description" ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
   }
 
@@ -358,6 +380,9 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
               {field("address_en", true)}
               {field("latitude", false, project.gold_source?.record.latitude == null ? "ต้นทาง DW ยังไม่มีละติจูด กรุณาระบุพิกัดที่ตรวจสอบแล้ว" : undefined)}
               {field("longitude", false, project.gold_source?.record.longitude == null ? "ต้นทาง DW ยังไม่มีลองจิจูด กรุณาระบุพิกัดที่ตรวจสอบแล้ว" : undefined)}
+              <div className="coordinate-tools"><p className="field-help">วางพิกัดแบบ lat, lng ในช่องใดก็ได้ เช่น 13.7563, 100.5018</p>{draft.latitude.trim() && draft.longitude.trim() && !coordinateError("latitude", draft.latitude) && !coordinateError("longitude", draft.longitude)
+                ? <a className="button text-button" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${Number(draft.latitude)},${Number(draft.longitude)}`)}`} target="_blank" rel="noopener noreferrer">เปิดใน Google Maps ↗</a>
+                : <span className="field-help">ระบุพิกัดในประเทศไทยเพื่อเปิดใน Google Maps</span>}</div>
             </div>
           </div></section>
         </form>

@@ -35,7 +35,7 @@ select set_config('test.pc_project',hub.create_project_from_rem('MEDIA-COLLECTIO
 select set_config('test.pc_public',public_project_id,true) from hub.projects where id=current_setting('test.pc_project')::uuid;
 select set_config('test.pc_model',public_model_id,true) from hub.model_types where project_id=current_setting('test.pc_project')::uuid;
 select hub.assign_project_brand(id,current_setting('test.pc_brand')::uuid,updated_at) from hub.projects where id=current_setting('test.pc_project')::uuid;
-select hub.patch_project(id,'{"public_name":{"th":"Synthetic collection project"},"slug":"media-collection-project","address":{"th":"Synthetic address"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
+select hub.patch_project(id,'{"public_name":{"th":"Synthetic collection project"},"slug":"media-collection-project","address":{"th":"Synthetic address"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
 from hub.projects where id=current_setting('test.pc_project')::uuid;
 select hub.update_model(id,current_setting('test.pc_model'),'{"bedrooms":1,"bathrooms":1,"usable_area_sqm":25}',updated_at)
 from hub.projects where id=current_setting('test.pc_project')::uuid;

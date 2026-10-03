@@ -15,7 +15,7 @@ update hub.projects set
   public_name='{"th":"ข้อมูลจำลอง — โครงการทดสอบ ไม่ใช่โครงการจริง"}',name_source='marketing_override',
   slug='synthetic-demo-project',
   address='{"th":"ที่อยู่สมมติสำหรับทดสอบระบบเท่านั้น"}',
-  latitude=0,longitude=0,
+  latitude=13.7563,longitude=100.5018,
   ad_disclaimer='{"th":"ข้อมูลและรูปประกอบนี้สร้างขึ้นเพื่อทดสอบระบบ ไม่ใช่ข้อเสนอหรือข้อมูลโครงการจริงของ SENA"}',
   meta_title='{"th":"ข้อมูลจำลอง — ทดสอบ Digital Hub"}',
   meta_description='{"th":"ข้อมูลสังเคราะห์สำหรับทดลองแก้ไขและเผยแพร่ภายในเครื่องเท่านั้น"}'

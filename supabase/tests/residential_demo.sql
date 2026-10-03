@@ -28,7 +28,7 @@ set local role editor;
 select set_config('test.residential_project',hub.create_project_from_rem('SQL-RESIDENTIAL-21')::text,true);
 select hub.assign_project_brand(id,current_setting('test.residential_brand')::uuid,updated_at)
 from hub.projects where id=current_setting('test.residential_project')::uuid;
-select hub.patch_project(id,'{"slug":"sql-residential-project-21","public_name":{"th":"โครงการสังเคราะห์"},"address":{"th":"ที่อยู่สังเคราะห์"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"ข้อมูลตัวอย่างเท่านั้น"}}',updated_at)
+select hub.patch_project(id,'{"slug":"sql-residential-project-21","public_name":{"th":"โครงการสังเคราะห์"},"address":{"th":"ที่อยู่สังเคราะห์"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"ข้อมูลตัวอย่างเท่านั้น"}}',updated_at)
 from hub.projects where id=current_setting('test.residential_project')::uuid;
 select hub.update_model(project_id,public_model_id,'{"bedrooms":2,"bathrooms":1,"usable_area_sqm":50,"parking_spaces":1}',
  (select updated_at from hub.projects where id=m.project_id)) from hub.model_types m where project_id=current_setting('test.residential_project')::uuid;

@@ -119,7 +119,7 @@ begin
     (select updated_at from hub.projects where id=current_setting('test.brand_project_c')::uuid));
   assert not (hub.project_readiness(current_setting('test.brand_project_c')::uuid)->>'ready')::boolean, 'Unpublished brand accepted for project publication';
 end $$;
-select hub.patch_project(id,'{"public_name":{"th":"Synthetic commercial project"},"slug":"sql-branded-project","address":{"th":"Synthetic address"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
+select hub.patch_project(id,'{"public_name":{"th":"Synthetic commercial project"},"slug":"sql-branded-project","address":{"th":"Synthetic address"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
 from hub.projects where id=current_setting('test.brand_project')::uuid;
 select hub.update_model(p.id,m.public_model_id,'{"bedrooms":2,"bathrooms":1,"usable_area_sqm":50}',p.updated_at)
 from hub.projects p join hub.model_types m on m.project_id=p.id where p.id=current_setting('test.brand_project')::uuid;

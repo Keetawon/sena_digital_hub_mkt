@@ -42,7 +42,7 @@ export async function seedHubContentContract(client) {
   await client.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true)");
   const project = (await client.query('select hub.create_project_from_rem($1) id', [f.project])).rows[0].id;
   await client.query('select hub.assign_project_brand(id,$2,updated_at) from hub.projects where id=$1', [project, brand]);
-  await client.query('select hub.patch_project(id,$2,updated_at) from hub.projects where id=$1', [project, { public_name: { th: f.projectName }, slug: 'synthetic-hub-export-project', address: { th: 'ที่อยู่สมมติสำหรับทดสอบ' }, latitude: 0, longitude: 0, ad_disclaimer: { th: 'ข้อมูลสังเคราะห์ ไม่ใช่ข้อเสนอขาย' } }]);
+  await client.query('select hub.patch_project(id,$2,updated_at) from hub.projects where id=$1', [project, { public_name: { th: f.projectName }, slug: 'synthetic-hub-export-project', address: { th: 'ที่อยู่สมมติสำหรับทดสอบ' }, latitude: 13.7563, longitude: 100.5018, ad_disclaimer: { th: 'ข้อมูลสังเคราะห์ ไม่ใช่ข้อเสนอขาย' } }]);
   const model = (await client.query('select public_model_id from hub.model_types where project_id=$1', [project])).rows[0].public_model_id;
   await client.query('select hub.update_model(id,$2,$3,updated_at) from hub.projects where id=$1', [project, model, { public_name: { th: 'แบบสมมติสำหรับทดสอบ' }, bedrooms: 1, bathrooms: 1, usable_area_sqm: 32 }]);
   await client.query("select hub.review_model(id,$2,updated_at,'CONFIRMED',$3) from hub.projects where id=$1", [project, model, f.marker]);

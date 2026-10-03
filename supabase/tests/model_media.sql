@@ -29,7 +29,7 @@ select set_config('test.mm_model',public_model_id,true) from hub.model_types whe
 select set_config('test.mm_second',public_model_id,true) from hub.model_types where project_id=current_setting('test.mm_project')::uuid and rem_model_id='B1';
 select set_config('test.mm_foreign',public_model_id,true) from hub.model_types where project_id=current_setting('test.mm_other')::uuid;
 select hub.assign_project_brand(id,current_setting('test.mm_brand')::uuid,updated_at) from hub.projects where id=current_setting('test.mm_project')::uuid;
-select hub.patch_project(id,'{"public_name":{"th":"Synthetic marketing project"},"slug":"model-media-project","address":{"th":"Synthetic address"},"latitude":0,"longitude":0,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
+select hub.patch_project(id,'{"public_name":{"th":"Synthetic marketing project"},"slug":"model-media-project","address":{"th":"Synthetic address"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"Synthetic only"}}',updated_at)
 from hub.projects where id=current_setting('test.mm_project')::uuid;
 do $$
 declare p uuid:=current_setting('test.mm_project')::uuid; m text; stamp timestamptz; binding uuid; result jsonb;
