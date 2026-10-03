@@ -85,6 +85,40 @@ keyboard navigation, optional amenities, media revisions, source selection and
 read-only viewers. Tests used the disposable local database. No hosted fixture
 or migration changed in this phase; H1 was not redeployed or reseeded.
 
+### Phase C design — project progress
+
+The staff-only project list gains the brand dashboard's summary tiles and table
+treatment. Counts may overlap: a live project can also await publication or need
+attention. Missing fields come directly from `hub.snapshot_readiness` via the
+existing project detail; there is no new percentage or publication criterion.
+Amenities are a separate, optional collection count. Viewers can inspect and
+follow field links but cannot create or edit.
+
+`GET /v1/admin/projects/progress` reads every visible Hub project and the existing
+REM picker mirror, without the old card list's 100-row cap. It reports new REM,
+incomplete, awaiting-publisher, published and attention counts, grouped named
+gaps, confirmed/total models and update/age metadata. Awaiting publisher includes
+ready unpublished changes and pending asset rights. Attention uses the **live
+snapshot's** brand and hero/thumbnail IDs, with current brand withdrawal and
+rights status/expiry (within 30 days), plus explicit source deletion/inactivity.
+Unreviewed numeric REM status codes are not interpreted as active or inactive.
+
+The existing source-list function adds only read-only age metadata, retaining
+its signature, actor check and execution ACL. Known first-seen metadata takes
+precedence; otherwise use the earliest immutable intake receipt for that project,
+labelled **ใช้เวลานำเข้าสำเนาครั้งแรก**. Legacy rows without an intake receipt show
+**ไม่ทราบวันนำเข้า** rather than treating export/source dates as import dates.
+No source, Hub content, mapping, publication, RLS or role is changed by the read.
+
+Phase C verification: typecheck and production build passed; full API **1,293
+passed, 11 skipped**, including read-only PostgreSQL checks for all four staff
+roles. `test:db` passed, including unchanged execution ACLs/private intake denial,
+earliest receipt selection and Gold preview regression. All 14 relevant browser
+cases passed (dashboard, field links, real local viewer response, project form
+and shared brand tiles/CSV). The CSV case now uses a synthetic seed rather than
+depending on real DW brand 35. Local H1 passed ten runner/mock tests, all 31
+canonical migrations/replay checks and 14 browser tests. No hosted changes.
+
 The first active hero, thumbnail or brochure remains its role's primary binding. Adding files does not change it; removing it promotes the next ordered active binding. Plans remain collections. Duplicate project attachment of the same file to the same role is an idempotent no-op with the current project revision, retaining the existing caption and order. Brand-logo replacement and canonical-model duplicate rules remain unchanged. Originals, rights checks and immutable published snapshots retain their existing protections.
 
 Facility rows expose native radio boxes for **มี / ไม่มี / อยู่ในแผน / ยังไม่ทราบ** immediately. Selecting a status opens that row's Save/Cancel controls; notes are optional disclosure fields, and a planned status exposes its expected opening date. Unknown is distinct from confirmed absence. Row saves remain explicit and block conflicting project/type mutations until saved or cancelled.

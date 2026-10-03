@@ -6,6 +6,7 @@ import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
+import { ProjectDashboard } from "./project-dashboard";
 import { ProjectComparison, projectChanges, modelActorLabel } from "./project-review";
 import "./project-editor.css";
 import { ContentSource } from "./content-source";
@@ -135,6 +136,7 @@ function SetupNotice() {
 
 function ProjectOverview({ role }: { role: LocalRole }) {
   const [showSources, setShowSources] = useState(false);
+  const [sourceSearch, setSourceSearch] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [brandFilter, setBrandFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -152,21 +154,23 @@ function ProjectOverview({ role }: { role: LocalRole }) {
 
   return <>
     <div className="page-heading"><div><p className="eyebrow">ข้อมูลสำหรับเผยแพร่</p><h1>โครงการที่อยู่อาศัย</h1><p className="muted">ดูแลข้อมูลโครงการให้ครบถ้วน ก่อนส่งต่อให้ผู้ใช้งานข้อมูล</p></div><span className="scope-pill"><span />SENA Residential</span></div>
+    <ProjectDashboard role={role} onStart={sourceId => { setSourceSearch(sourceId); setShowSources(true); requestAnimationFrame(() => document.getElementById("source-picker")?.scrollIntoView({ block: "start" })); }} />
     <div className="section-heading"><h2>โครงการในพื้นที่ทำงาน {!loading && !error && <span className="count">{projects.length}</span>}</h2><button className="button secondary" aria-expanded={showSources} aria-controls="source-picker" onClick={() => setShowSources(value => !value)}>{showSources ? "ปิดรายการต้นทาง" : "เลือกโครงการจากต้นทาง"}</button></div>
-    {showSources && <SourceProjects role={role} />}
+    {showSources && <SourceProjects role={role} initialSearch={sourceSearch} />}
     <div className="form-field brand-filter"><label htmlFor="project-brand-filter">กรองโครงการตามแบรนด์</label><select id="project-brand-filter" value={brandFilter} onChange={event => setBrandFilter(event.target.value)}><option value="">ทุกแบรนด์</option><option value="unassigned">ยังไม่ได้เลือกแบรนด์</option>{brandOptions.map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id}</option>)}</select></div>
     {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !filteredProjects.length ? <div className="empty-state"><Icon name="building" size={36} /><h2>{brandFilter ? "ไม่มีโครงการที่ตรงกับตัวกรองแบรนด์" : "ยังไม่มีโครงการในพื้นที่ทำงาน"}</h2><p>{brandFilter ? "เลือกทุกแบรนด์เพื่อดูโครงการทั้งหมด" : "เลือกโครงการจากรายการต้นทางเพื่อเริ่มจัดเตรียมข้อมูลร่าง"}</p></div> : <div className="project-grid">{filteredProjects.map(project => <a className="project-card" key={project.public_project_id} href={`/?project=${encodeURIComponent(project.public_project_id)}`}><div className="project-card-art" aria-hidden="true"><div className="art-frame"><Icon name="building" size={58} /></div><span className="sample-stamp">โครงการในพื้นที่ทำงาน</span></div><div className="project-card-body"><div className="project-card-meta"><span className="small-text muted">{project.brand_summary?.public_name.th || "ยังไม่ได้เลือกแบรนด์"}</span><StatusBadge project={project} /></div><h3>{project.public_name?.th || "โครงการที่ยังไม่ระบุชื่อ"}</h3><DemoFields fields={project.demo_fields} /><p className="project-id">{project.public_project_id}</p><div className="readiness-summary"><span>เงื่อนไขการเผยแพร่</span><strong>{project.readiness?.ready ? "ผ่านรายการตรวจสอบ" : `${project.readiness?.missing.length ?? 0} รายการรอตรวจสอบ`}</strong></div><div className="project-card-footer"><span className="small-text muted"><Icon name="clock" size={14} />{formatDate(project.updated_at)}</span><span className="open-project">จัดการข้อมูล<Icon name="arrow" size={18} /></span></div></div></a>)}</div>}
     <div className="information-strip"><Icon name="document" /><p><strong>แก้ไขข้อมูลร่างได้โดยไม่กระทบข้อมูลที่เผยแพร่</strong><br /><span className="muted">ผู้เผยแพร่ตรวจสอบความพร้อมก่อนเผยแพร่ทุกครั้ง และเรียกคืนเวอร์ชันก่อนหน้าได้</span></p></div>
   </>;
 }
 
-function SourceProjects({ role }: { role: LocalRole }) {
+function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initialSearch?: string }) {
   const [sources, setSources] = useState<SourceProject[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<Record<string, string>>({});
   const [requestSource, setRequestSource] = useState<SourceProject | null>(null);
   const [notice, setNotice] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
+  useEffect(() => setSearch(initialSearch), [initialSearch]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -247,6 +251,14 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     finally { setLoading(false); }
   }, [base, canEdit]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (loading || !project) return;
+    const field = new URLSearchParams(window.location.search).get("field");
+    if (field) revealField(field);
+    // The query is consumed once per loaded project; subsequent edits preserve the chosen tab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, projectId]);
+
   useEffect(() => {
     if (!anyDirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };

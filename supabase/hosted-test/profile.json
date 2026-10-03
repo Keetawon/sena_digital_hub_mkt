@@ -148,6 +148,16 @@
       "name": "202610030029_thailand_coordinates.sql",
       "canonical_sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388",
       "executed_sha256": "be90023ee95db39e577d394449d69b7041493fd269926962da1f24e0efbcf388"
+    },
+    {
+      "name": "202610030030_project_progress_source_dates.sql",
+      "canonical_sha256": "f4d75a603ee4bec24a0fb270eb41e6b006b94f4f92c0a32f50e0830e9b6622d1",
+      "executed_sha256": "f4d75a603ee4bec24a0fb270eb41e6b006b94f4f92c0a32f50e0830e9b6622d1"
+    },
+    {
+      "name": "202610030031_project_progress_gold_preview.sql",
+      "canonical_sha256": "adbdcbabaf7f192e434a1170eb963a68c826fc0fe52ea62fd2b6553cc89e87ef",
+      "executed_sha256": "adbdcbabaf7f192e434a1170eb963a68c826fc0fe52ea62fd2b6553cc89e87ef"
     }
   ]
 }

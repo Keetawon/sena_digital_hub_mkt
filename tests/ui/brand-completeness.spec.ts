@@ -63,7 +63,8 @@ test('staff CSV goes through the authenticated proxy and excludes files and righ
   await page.context().addCookies([{name:'sena_local_persona',value:'viewer',url:origin}]);await page.goto('/?view=brands');
   await expect(page.getByRole('button',{name:/^ทั้งหมด \d+$/,exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'พรีวิวสร้างฉบับร่างจาก DW',exact:true})).toHaveCount(0);
-  const response=await page.request.get(`${api}/brands/completeness.csv?status=not_created&search=35`);
+  // Use the synthetic seed, never the real reviewed DW dictionary.
+  const response=await page.request.get(`${api}/brands/completeness.csv?status=all&search=DEMO-BRAND-01`);
   expect(response.status()).toBe(200);expect(response.headers()['content-type']).toContain('text/csv');
-  const csv=await response.text();expect(csv).toContain('name_th,name_en,rem_brand_id,public_brand_id,residential_project_count,status');expect(csv).toContain('ยังไม่ทราบสถานะต้นทาง');expect(csv).not.toMatch(/rights_notes|storage_path|public_url|https?:\/\//);
+  const csv=await response.text();expect(csv).toContain('name_th,name_en,rem_brand_id,public_brand_id,residential_project_count,status');expect(csv).toContain('DEMO-BRAND-01');expect(csv).not.toMatch(/rights_notes|storage_path|public_url|https?:\/\//);
 });

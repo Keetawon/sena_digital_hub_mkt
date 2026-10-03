@@ -15,6 +15,8 @@ try {
   console.log('PASS: inclusive Thailand coordinate bounds and unchanged remaining readiness rules');
   await connection.query(await readFile(new URL('../supabase/tests/source_selection.sql', import.meta.url), 'utf8'));
   console.log('PASS: source selection, human model review and stale-edit protection');
+  await connection.query(await readFile(new URL('../supabase/tests/project_progress.sql', import.meta.url), 'utf8'));
+  console.log('PASS: project progress receipt dates, existing staff ACL and private intake isolation');
   await connection.query(await readFile(new URL('../supabase/tests/asset_library.sql', import.meta.url), 'utf8'));
   console.log('PASS: asset rights, binding isolation and published file eligibility');
   await connection.query(await readFile(new URL('../supabase/tests/brands.sql', import.meta.url), 'utf8'));

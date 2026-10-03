@@ -467,6 +467,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async with database(request, actor) as connection:
             return {"data": await connection.fetchval("SELECT hub.list_rem_projects()")}
 
+    @app.get("/v1/admin/projects/progress")
+    async def project_progress(request: Request, actor: Actor = Depends(admin)):
+        from .project_progress import read_progress
+        async with database(request, actor) as connection:
+            return {"data": await read_progress(connection)}
+
     @app.post("/v1/admin/projects", status_code=201)
     async def create_project(body: CreateProject, request: Request, actor: Actor = Depends(writer)):
         async with database(request, actor) as connection:

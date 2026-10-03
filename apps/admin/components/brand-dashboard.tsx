@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { LocalRole } from "@/lib/local-session";
+import { DashboardTiles } from "./dashboard-tiles";
 import { request } from "./hub-request";
 import { AssetDialog } from "./project-assets";
 import { useHostedSession } from "./hosted-session";
@@ -53,7 +54,7 @@ export function BrandDashboard({ role, onChanged, children }: { role: LocalRole;
     catch (error) { setError(errorText(error)); } finally { setBusy(false); }
   }
   return <section aria-label="ความครบถ้วนของแบรนด์" className="brand-dashboard">
-    <div className="brand-completeness-tiles" role="group" aria-label="ภาพรวมความครบถ้วน">{tiles.map(tile => <button key={tile.value} aria-pressed={status === tile.value} disabled={loading || Boolean(error)} onClick={() => setStatus(tile.value)}><span>{tile.label}</span><strong>{loading || error ? "…" : data?.counts[tile.key] ?? "—"}</strong></button>)}</div>
+    <DashboardTiles tiles={tiles} counts={data?.counts} selected={status} onSelect={setStatus} loading={loading || Boolean(error)} label="ภาพรวมความครบถ้วน" />
     <p className="field-help">จำนวนของทุกแบรนด์ รวมรายการต้นทางที่ยังไม่สร้าง จำนวนเผยแพร่แล้วรวมแบรนด์ที่มีการแก้ไข คะแนนใช้เกณฑ์เผยแพร่เดิม ค่าชื่อจากต้นทางที่ยังไม่ยืนยันแสดงแยกให้ทีมตรวจ</p>
     {children}
     <div className="brand-dashboard-toolbar"><div className="form-field"><label htmlFor="brand-search">ค้นหาชื่อหรือรหัสแบรนด์</label><input id="brand-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div><div className="form-field"><label htmlFor="brand-missing-filter">ฟิลด์ที่ยังขาด</label><select id="brand-missing-filter" value={missing} onChange={event => setMissing(event.target.value)}><option value="all">ทุกฟิลด์</option>{Object.entries(checkLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div><div className="form-field"><label htmlFor="brand-status-filter">สถานะแบรนด์</label><select id="brand-status-filter" value={status} onChange={event => setStatus(event.target.value)}>{tiles.map(tile => <option key={tile.value} value={tile.value}>{tile.label}</option>)}</select></div></div>
