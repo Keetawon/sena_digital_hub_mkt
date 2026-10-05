@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { provisionDwReader } from './provision-dw-reader.mjs';
+import { assertDisposableTestDatabase } from './disposable-test-guard.mjs';
 
 // Only the fixed local TEST login; never print or pass its password to a command.
+await assertDisposableTestDatabase();
 await provisionDwReader();
 const config = JSON.parse(await readFile(new URL('../.local/development.json', import.meta.url), 'utf8'));
 const connection = new pg.Client({ host: '127.0.0.1', user: 'postgres', password: config.adminPassword, port: 55432, database: 'sena_hub_local' });

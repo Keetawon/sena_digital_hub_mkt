@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Fixed local TEST only: confirmation replay and two proposals for one draft revision.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

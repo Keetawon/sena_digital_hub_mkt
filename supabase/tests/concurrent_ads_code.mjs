@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Two real transactions must serialize allocation and receive distinct SN codes.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

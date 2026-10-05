@@ -18,8 +18,10 @@
     "dev:demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-hub-demo.py",
     "check:questions": "python scripts/sync-questions.py --check",
     "sync:questions": "python scripts/sync-questions.py --write",
-    "test:ui": "playwright test",
-    "test:db": "node scripts/test-db.mjs && node supabase/tests/concurrent_model.mjs && node supabase/tests/concurrent_asset.mjs && node supabase/tests/concurrent_brand.mjs && node supabase/tests/concurrent_ads_code.mjs && node supabase/tests/concurrent_ads_line_revision.mjs && node supabase/tests/concurrent_ads_actuals.mjs && node supabase/tests/concurrent_residential_release.mjs && node supabase/tests/concurrent_document_archive.mjs && node supabase/tests/concurrent_assistant.mjs && node --test supabase/tests/dw_fixtures.test.mjs supabase/tests/hub_export.test.mjs supabase/tests/brand_completeness.test.mjs"
+    "test:api": "node scripts/run-disposable-tests.mjs api",
+    "test:ui": "node scripts/run-disposable-tests.mjs ui",
+    "test:db": "node scripts/run-disposable-tests.mjs db",
+    "test:local": "node scripts/run-disposable-tests.mjs all"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

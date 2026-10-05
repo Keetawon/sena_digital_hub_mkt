@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Real two-connection races. Synthetic fixtures only; no remote database support.
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';

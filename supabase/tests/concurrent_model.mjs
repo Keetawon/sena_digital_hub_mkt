@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Local-only PostgreSQL regression. Uses two transactions and a unique synthetic
 // fixture; never mutates DEMO-001. Run from the repo root after npm run dev:db.
 import assert from 'node:assert/strict';

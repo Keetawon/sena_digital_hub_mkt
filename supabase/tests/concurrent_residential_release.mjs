@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Local TEST only: competing complete releases and draft changes cannot overwrite state.
 import assert from 'node:assert/strict';
 import { randomUUID, randomBytes } from 'node:crypto';

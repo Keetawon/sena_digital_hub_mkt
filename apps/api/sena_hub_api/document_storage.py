@@ -16,7 +16,8 @@ from pypdf.generic import ContentStream, DictionaryObject, NameObject, DecodedSt
 from .assets import validate_pdf
 
 ROOT = Path(__file__).resolve().parents[3]
-STORAGE_ROOT = ROOT / '.local/document-archive'
+STORAGE_ROOT = (Path(os.environ['HUB_DISPOSABLE_TEST_RUN']) / 'document-archive' if os.environ.get('HUB_DISPOSABLE_TEST_RUN')
+                else ROOT / '.local/document-archive')
 PIPELINE = 'hub-document-local-v1'
 MAX_BYTES = 5 * 1024 * 1024
 MAX_PAGES = 20

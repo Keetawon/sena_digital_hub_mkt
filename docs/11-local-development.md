@@ -199,18 +199,65 @@ Remove-Item Env:HUB_INTAKE_TEST_DB
 ```powershell
 npm.cmd run typecheck --prefix apps/admin
 npm.cmd run build --prefix apps/admin
-uv run --project apps/api --env-file apps/api/.env pytest apps/api/tests
+npm.cmd run test:api
 npm.cmd run test:db
 npm.cmd run test:ui
 ```
 
-Browser tests require the database, API and admin running with the generated local configuration. The default browser is installed Microsoft Edge; set `PLAYWRIGHT_CHANNEL` to `chrome` if appropriate for your machine. Browser-test artifacts are ignored by Git. Tests may publish or withdraw the synthetic project; never point local tests at enterprise data.
+Stop the working local database, API and admin before these test commands. Each command creates a fresh disposable PostgreSQL cluster under `.local/test-runs/`, applies migrations and synthetic seeds, and removes that cluster on completion or failure. Browser tests also start and stop their own API/admin. Occupied ports 55432, 8000 or 3000 cause a refusal; tests never reuse a running working database or app. `npm run test:local` runs the full API, database and UI suites sequentially in one disposable run. The default browser is Microsoft Edge; set `PLAYWRIGHT_CHANNEL=chrome` if needed. Browser traces remain in ignored `artifacts/playwright/`.
 
-The generated API environment explicitly sets `HUB_TEST_DATABASE_URL` to the local runtime connection. Without this variable the API's live database test is skipped; authentication/validation tests still run. Use `npm` instead of `npm.cmd` on macOS/Linux.
+The runner supplies the test connection and a unique run marker. Before API tests, browser tests or direct database test entry points execute, a shared guard checks PostgreSQL's actual data directory and its matching database marker. Direct `pytest`, Playwright and database test invocations against the working DB fail closed. Focused commands remain available: `npm run test:api -- -k coordinates` and `npm run test:ui -- tests/ui/brands.spec.ts`. Use `npm` instead of `npm.cmd` on macOS/Linux.
 
-`npm run test:db` runs the SQL role/publication/source-selection/asset/brand checks and two-connection model/brand-edit and duplicate-upload regressions in `supabase/tests` against local PostgreSQL using the generated migration/test administrator. SQL tests roll back changes or remove their own uniquely named synthetic fixtures. Browser asset tests restore the sample project's original bindings and publication pointer, soft-delete their registry fixtures and retain the small test originals and immutable audit/publication history. Browser brand tests archive their synthetic brands, retain immutable brand versions/audits and remove their unpublished project/request fixtures. Run API and browser suites sequentially because they exercise the same synthetic development data.
+`npm run test:db` runs the SQL/RLS checks, every two-connection regression and the frozen DW/content contract checks in the disposable cluster. Uploaded assets and synthetic archive files use directories inside that same disposable run. Existing test teardown may retain immutable test versions within the run; the entire cluster and test file stores are removed afterward, so no test brand, project, history or upload reaches the working DB or its file stores. H1 continues using its separate loopback simulation and its own synthetic seed; it never imports the working database.
 
 ## Deployment boundary
+
+### Confirmed local cleanup — 5 October 2026
+
+The owner replaced preview `f44bd3f295ab` with deletion, then explicitly preserved
+`DEMO-ASSISTANT-001` and its mirror because protected assistant records reference
+it. Confirmed plan `57c022a10fce` was applied only to the working
+`127.0.0.1:55432/sena_hub_local` cluster in one transaction. Normal foreign keys
+remained active; affected user triggers were temporarily disabled inside that
+transaction and restored to their exact original states before commit. Every
+retained row was compared with the pre-cleanup snapshot. No hosted/source-system
+change or new publication occurred; no sample-hiding toggle was added.
+
+The ignored full backup is
+`.local/backups/sena_hub_local-before-phase-d-20261005T021819327Z.dump`
+(SHA-256 `416631856d3d1c1a2ce4bb35be51d737d4b13948f08d804da0205ed5779d02ee`).
+The matching `.assets/` folder preserves the 163 removed stored files; six other
+listed paths were already absent. The full row/file plan and applied receipt are
+under `.local/cleanup/revised-20261005/`. Real/private row contents are not committed.
+
+| Table | Deleted rows |
+|---|---:|
+| `hub.brands` | 109 |
+| `hub.projects` | 2 |
+| `hub.model_types` | 2 |
+| `hub.brand_versions` | 112 |
+| `hub.entity_versions` | 160 |
+| `hub.brand_assets` | 154 |
+| `hub.entity_assets` | 109 |
+| `hub.assets` | 172 |
+| `staging.rem_brands` | 110 |
+| `staging.rem_projects` | 4 |
+| `staging.rem_models` | 5 |
+| `staging.rem_companies` | 2 |
+| `audit.change_log` | 3,619 |
+
+All other tables retained every row unchanged, including all immutable intake
+batches, ads, archive, document and assistant data. The resulting lists contain
+33 brands (the 32 confirmed drafts plus existing FLEXI) and four projects
+(`HYABC`, `KUBON`, `B_PO`, `DEMO-ASSISTANT-001`). All 38 reviewed DW brand mirrors
+remain. The protected project/model mappings and prior evidence are unchanged.
+
+Verification: admin typecheck/build, 1,293 API tests (11 skipped), full DB/RLS and
+concurrency suite, 174 UI tests, and local H1 simulation (10 unit and 14 UI tests)
+passed. A deliberately invalid pytest invocation returned failure and removed its
+temporary database. After all suites, every retained row across all 92 working
+tables still matched the confirmed cleanup snapshot; the ignored receipt is
+`post-test-verification.json` in the cleanup folder.
 
 ### Synthetic document archive (Task 4)
 

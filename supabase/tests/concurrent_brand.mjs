@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Two editors must not overwrite a brand changed while waiting on its row lock.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

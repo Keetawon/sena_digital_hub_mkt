@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Actual concurrent duplicate registration. Files are API-owned; this test checks
 // SQL serialization and preservation of the winner's reviewed registry metadata.
 import assert from 'node:assert/strict';

@@ -23,7 +23,8 @@ from .svg import sanitize_svg
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PIXELS = 40_000_000
 MAX_PDF_PAGES = 200
-STORAGE_ROOT = Path(__file__).resolve().parents[3] / ".local" / "assets"
+STORAGE_ROOT = (Path(os.environ["HUB_DISPOSABLE_TEST_RUN"]) / "assets" if os.environ.get("HUB_DISPOSABLE_TEST_RUN")
+                else Path(__file__).resolve().parents[3] / ".local" / "assets")
 FORMATS = {"image/png": ("PNG", "png"), "image/jpeg": ("JPEG", "jpg"),
            "image/webp": ("WEBP", "webp"), "image/svg+xml": (None, "svg"), "application/pdf": (None, "pdf")}
 ACTIVE_PDF_NAMES = {"/JavaScript", "/JS", "/OpenAction", "/AA", "/Launch", "/SubmitForm",

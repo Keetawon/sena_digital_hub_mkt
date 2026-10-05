@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Local TEST: one lease, one confirmation and one P2 application per immutable source version.
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';

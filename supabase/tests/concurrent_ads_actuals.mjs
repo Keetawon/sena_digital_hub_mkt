@@ -1,3 +1,5 @@
+import { assertDisposableTestDatabase } from '../../scripts/disposable-test-guard.mjs';
+await assertDisposableTestDatabase();
 // Local synthetic two-connection P3 races. Restore the previous good generation.
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
