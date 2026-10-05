@@ -1,0 +1,23 @@
+{
+  "review_status": "SYNTHETIC_ONLY",
+  "counts": {
+    "projects": 5,
+    "models": 4,
+    "gold_projects": 5,
+    "gold_project_rows": 5,
+    "gold_models": 3,
+    "missing_gold_project_rows": 0,
+    "exceptions": 3,
+    "exceptions_by_type": {
+      "GOLD_MODEL_ID_MISSING_REM": 1,
+      "PROJECT_BRAND_MISSING": 1,
+      "GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT": 1
+    }
+  },
+  "quality_flags": [],
+  "HYABC": null,
+  "consistency": {
+    "synthetic": true
+  },
+  "no_model_area_interpretation": true
+}

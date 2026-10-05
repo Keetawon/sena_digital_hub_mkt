@@ -6,6 +6,21 @@ creates Hub drafts, changes Marketing fields, confirms mappings or publishes.
 
 ## Reviewed input and verification gate
 
+Owner decision, 5 October: discard the 89 deleted, ungrouped models from usable
+staging rather than retaining REM-only mirrors. The original bytes and immutable
+batch still contain their evidence. The importer explicitly opts into this policy
+with `--discard-deleted-ungrouped-models`; any existing Hub reference stops deletion.
+The two reported trailing-space mismatches are accepted unresolved exceptions,
+never trimmed or joined. All other unexplained reconciliation conflicts still stop.
+
+Implementation: append private immutable evidence per REM project/model and Gold
+project/group, plus an immutable batch receipt. Existing accepted mirrors and Gold
+prefill baselines remain unchanged on refresh; latest source status and review flags
+are read from evidence. New identities are mirrored, missing/deleted identities are
+flagged, and exact replays append nothing. First-seen timestamps are assigned once
+to the imported source identities, including existing pilot identities, in one
+transaction. Previous evidence stays addressable; no draft or mapping is rewritten.
+
 The owner supplied `rem-project-model-review-v1` from the sibling DW repository,
 `data/rem-project-export/20261005T025000717680Z/`, with reviewed manifest SHA-256
 `6251c4663d85303caeb5bb7469d79bd00b022f64f470486afcf14db050955ed3`.
@@ -31,10 +46,10 @@ The first step is a read-only dry-run report with source counts, all exceptions,
 model reconciliation, prior-evidence comparison and proposed new/changed/missing
 identities. The owner authorizes application without another confirmation only
 when there are no unreviewed conflicts and HYABC matches. Otherwise stop before
-staging writes and show the conflicts. The strict requested model coverage check
-includes every raw row, including deleted models; the DW contract's Gold grain
-excludes deleted models. A failed coverage check must be reported, not silently
-waived or repaired by trimming IDs or fabricating groups.
+staging writes and show the conflicts. Reconciliation reports every raw row, including the 89 deleted rows excluded by
+the owner's later decision. The two explicitly reported whitespace conflicts
+remain unresolved flags. Any additional unexplained gap stops the import; no
+identity is repaired by trimming or fabricating groups.
 
 ## Source status and staff presentation
 
@@ -63,7 +78,9 @@ source is deleted or Closed; it never withdraws them automatically.
 Match raw `(ProjectID, ModelID)` to Gold `(project_id, model_ids member)` using
 exact text. Report every raw key in zero groups or multiple groups and every
 Gold member without a raw key. Do not join on labels, trim IDs, infer room counts
-or treat `ModelArea` as confirmed usable area. Preserve deleted raw models.
+or treat `ModelArea` as confirmed usable area. Preserve the original deleted rows in immutable package evidence; omit the 89
+owner-discarded model identities from usable mirrors. Later newly deleted
+identities remain flagged; this deletion authorization does not expand on refresh.
 
 Keep all exception observations and exact keys visible in the picker/dashboard:
 
@@ -112,31 +129,59 @@ integrity before connection, exact replay/first-seen preservation, new/changed/
 missing evidence, conflict rollback, exact whitespace, protected Hub state and
 staff-only status presentation using synthetic packages matching this contract.
 
-## Delivery state
+## Delivery and operator commands
 
-The replacement package passed integrity checks on 5 October. Both packages'
-original bytes remain under their manifest hashes in ignored `.local/` folders;
-neither package has been applied. `scripts/review-dw-projects.py` is a read-only
-gate, with no apply option. It verifies packages before connecting and reads only
-the guarded working cluster when `--compare-local` is supplied. Its eight synthetic
-offline tests cover hashes, counts/columns/types, DW-only versus historical source
-windows, exact IDs, status scope, HYABC identity and private Gold comparisons.
+The replacement package was applied locally on 5 October after the owner resolved
+the deleted-model policy and the dry-run passed. The superseded 3 October package
+was never applied. Both packages' original bytes remain in ignored `.local/`.
 
 ```powershell
-uv run --project apps/api python scripts/review-dw-projects.py `
+uv run --project apps/api python scripts/stage-dw-projects.py `
   --package <reviewed-package-folder> --manifest-sha256 <reviewed-sha256> `
-  --compare-local `
-  --previous-package <prior-package-folder> --previous-manifest-sha256 <prior-sha256>
-uv run --project apps/api python -m unittest discover -s tests -p test_review_dw_projects.py -v
+  --discard-deleted-ungrouped-models
+# Add --apply only after reviewing the dry-run (already authorized for this input).
 ```
 
-Latest ignored report:
-`.local/dw-project-intake/6251c4663d85303caeb5bb7469d79bd00b022f64f470486afcf14db050955ed3/dry-run-20261005T031127968304Z.json`.
-It includes every unmatched exact ID, all exception observations, watermarks and
-the private HYABC before/after values. No private price or unit-count values are
-committed, displayed to consumers or treated as approved marketing content.
+The default is a read-only dry-run. All byte/hash/count/column/identity checks run
+before connecting. Apply checks the actual local working data directory, locks
+the source mirrors and uses one serializable transaction. No hosted/DW/REM target
+argument exists. The explicit manifest hash supports future reviewed packages.
+The first receipt freezes the identities authorized for omission; later deleted
+models outside that list remain flagged and never inherit permission to delete.
 
-| Raw status | Total projects | Non-deleted projects |
+Migrations 0032–0033 add private immutable evidence/receipts and first-seen metadata.
+Existing RLS, roles and publication-readiness functions are unchanged. Accepted
+REM mirrors and Gold prefill baselines stay intact on refresh. Staff source status
+comes from the latest evidence; a missing row retains its last observed status.
+Neither intake nor refresh creates drafts, changes mappings or publishes.
+
+| Intake outcome | Count |
+|---|---:|
+| Package projects / raw models | 278 / 3,516 |
+| Usable package model mirrors after authorized omission | 3,427 |
+| New project mirrors / existing project identities preserved | 275 / 3 |
+| New model mirrors / existing model identities preserved | 3,318 / 109 |
+| New Gold project baselines | 277 |
+| New Gold model-group evidence | 3,165 |
+| Existing HYABC Gold project/group changes stored as review evidence | 1 / 13 |
+| Total immutable source-evidence rows appended | 7,161 |
+| Deleted, ungrouped models omitted | 89 |
+| Existing mirror rows deleted | 0 |
+| Drafts / mappings / publications changed | 0 / 0 / 0 |
+
+The 89 omitted models were not present in the working mirrors; no existing row
+needed deletion. Exact replay returned `already_staged` with zero new evidence,
+mirror inserts or deletes. Original bytes and every preexisting immutable batch
+and receipt remain intact. All old working rows were preserved, except adding
+the explicitly requested first-seen timestamp to imported source identities.
+All imported identities share one transaction timestamp, shown as **นำเข้าครั้งแรก**.
+
+The Hub lists still contain 33 brands and four projects (HYABC, KUBON, B_PO and
+the explicitly protected assistant demo). Source staging contains 279 project
+mirrors and 3,428 models including that retained synthetic evidence. Gold staging
+contains 278 projects. No automated-test records reached the working database.
+
+| Raw status | Package projects | Non-deleted |
 |---|---:|---:|
 | `0` — พรีเซล | 15 | 15 |
 | `1` — กำลังก่อสร้าง | 25 | 25 |
@@ -144,36 +189,51 @@ committed, displayed to consumers or treated as approved marketing content.
 | `3` — ปิดโครงการ | 81 | 81 |
 | `4` — ไม่ทราบสถานะ | 1 | 1 |
 
-There are 278 projects, 3,516 raw models, 278 Gold projects and 3,178 Gold groups.
-Default status/deletion scope would contain 193 projects. The 14 exceptions are
-three missing brands, five unknown model types, three Gold identity/group
-conflicts, two trailing-space ID mismatches and one blank English name.
+The dashboard defaults to 193 projects, with **190 ใหม่จาก REM**. Closed, deleted
+and unknown-status projects are behind the status-scope toggle; the status filter
+shows counts and raw codes. The attention tile also includes live Closed/deleted
+projects without automatic withdrawal. Source picker and editor show the same
+staff-only labels, raw values, exception reasons and source-change flags.
 
-**Reconciliation stops the apply gate:** 3,425 raw models occur in exactly one
-Gold group; 91 occur in none (89 deleted and two active IDs with trailing spaces).
+All 14 exceptions remain visible: three missing brands (`000000`, `2020`,
+`K9_Demo`), five unknown model types, three Gold identity/group conflicts (`00401`,
+`00412`, `01401`), two trailing-space model IDs and one blank English name.
+Missing brands cannot be bound; the three Gold conflicts cannot prefill. Exact
+IDs are retained, including whitespace, without auto-joining.
+
+Reconciliation: 3,425 raw models occur in exactly one Gold group; 91 occur in none
+(the 89 omitted deleted rows plus the two unresolved active whitespace IDs).
 No raw model occurs in multiple groups. Two Gold IDs have no exact raw model.
-The 89 deleted models are excluded by the documented Gold grain. Importing them
-as flagged REM-only evidence needs the owner's resolution of the strict
-every-raw-model coverage requirement; no grouping is invented. The two known
-whitespace mismatches remain exact unresolved keys, as already instructed.
+The full exact-key lists remain in the private reconciliation report.
 
-HYABC matches the 18 September immutable pilot and the preserved Gold identities:
-13 raw model IDs, 13 Gold groups, unchanged project/brand/company/group identity,
-unchanged comparable raw fields, and status `2` (พร้อมอยู่). All existing Hub
-models, mappings, draft fields and publications remain unchanged. Gold enrichment
-values differ from the older staging and remain private review evidence.
+HYABC matches the 18 September immutable pilot: 13 raw model IDs, 13 Gold groups,
+unchanged comparable raw fields and project/brand/company/group identity, with
+status `2` (พร้อมอยู่). Its original Gold staging and all confirmed mappings remain
+unchanged; newer Gold values are immutable evidence marked **ต้นทางเปลี่ยน**.
 
-Compared with the superseded package, all 278 raw projects and 3,516 raw models
-are byte-identical. Prices/unit counts differ for 23 Gold projects and 35 Gold
-groups. Exact Gold rows differ for all 278 projects and 3,178 groups when timestamp
-representation and provenance are included; this is distinct from a business
-measure change. These are offline comparison counts, **not applied refresh
-outcomes**. Applied batches, inserted mirrors, changed evidence, new drafts,
-mapping changes and publications from this phase are all zero.
+Compared with the unapplied 3 October package, all 278 raw projects and 3,516 raw
+models are byte-identical. Private prices/unit counts differ for 23 Gold projects
+and 35 groups. Exact Gold rows also differ in timestamp representation/provenance.
+These are package-comparison counts, not a second applied refresh. Prices and unit
+counts remain private evidence and are absent from consumer payloads.
 
-Pending the gate decision: the transactional staging importer, immutable source
-refresh evidence/first-seen migration and staff picker/dashboard/editor changes
-described above. RLS and the publication gate have not changed. Application
-typecheck/build, full API/DB/UI and H1 checks passed for Phase D on the same
-unchanged application code; the new review tool additionally passed eight
-synthetic tests. Phase E is not complete.
+Private receipts under
+`.local/dw-project-intake/6251c4663d85303caeb5bb7469d79bd00b022f64f470486afcf14db050955ed3/`:
+
+- `intake-dry-run-20261005T040242584537Z.json`
+- `apply-20261005T040326894517Z.json`
+- `apply-20261005T040328866082Z.json` (exact replay)
+- `dry-run-20261005T040631169815Z.json` (full reconciliation/HYABC report)
+- `post-apply-verification.json` and `staff-verification.json`
+
+Validation: typecheck/build, full API suite (1,302 passed, 11 skipped), full DB/RLS
+and concurrency suite, eight offline validator tests, nine intake integration and
+status tests, 23 relevant browser tests, and local H1 simulation (10 unit, 14 UI)
+passed. Relevant browser
+checks cover default scope, status counts, raw IDs, exception guards, read-only
+viewers, existing editor behavior and source selection. Synthetic fixture bytes,
+columns/counts and checksums are frozen in `supabase/tests/fixtures/dw_projects/`.
+
+The actual local viewer UI was also checked after application: 193 default rows,
+the exact conflicted source `00401` visible with its warning, and zero attempted
+writes. Screenshots are ignored under `artifacts/phase-e-local-*.png`.

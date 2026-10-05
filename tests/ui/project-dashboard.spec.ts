@@ -76,7 +76,7 @@ test('actual local viewer dashboard matches the authenticated progress response'
   const data = (await response.json()).data;
   await page.goto('/');
   const dashboard = page.locator('.project-dashboard');
-  await expect(dashboard.locator('tbody tr')).toHaveCount(data.rows.length);
+  await expect(dashboard.locator('tbody tr')).toHaveCount(data.rows.filter((row: { source_review?: { default_scope: boolean } }) => row.source_review?.default_scope !== false).length);
   await expect(dashboard.getByRole('button', { name: `ทั้งหมด ${data.counts.all}`, exact: true })).toBeVisible();
   await expect(dashboard.getByRole('button', { name: 'เริ่มกรอก', exact: true })).toHaveCount(0);
   expect((await page.request.get('/api/hub/v1/admin/projects/progress?unexpected=1')).status()).toBe(404);

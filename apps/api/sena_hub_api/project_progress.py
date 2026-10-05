@@ -48,13 +48,23 @@ def build_progress(records, sources, assets, now=None):
     source_by_id = {source["rem_project_id"]: source for source in sources}
     rows = []
 
+    def source_review(source):
+        if source.get('source_review'):
+            return source['source_review']
+        raw = source.get('source_record') or {}
+        status = raw.get('ProjectStatus', raw.get('project_status'))
+        status = str(status) if status is not None else None
+        deleted = raw.get('isDeleted', raw.get('is_deleted'))
+        return {'status_raw': status, 'status_label': {'0': 'พรีเซล', '1': 'กำลังก่อสร้าง', '2': 'พร้อมอยู่', '3': 'ปิดโครงการ'}.get(status, 'ไม่ทราบสถานะ'),
+                'is_deleted': deleted, 'default_scope': deleted is False and status in ('0', '1', '2'), 'flags': [], 'exceptions': []}
+
     def age(source):
         first = timestamp(source.get("first_seen_at"))
         imported = timestamp(source.get("mirror_imported_at"))
         observed = first or imported
         return {"first_seen_at": observed.isoformat() if observed else None,
                 "age_days": max(0, (now - observed).days) if observed else None,
-                "age_basis": "first_seen" if first else "mirror_import" if imported else "unknown"}
+                "age_basis": "first_import" if first and source_review(source).get('first_import_only') else "first_seen" if first else "mirror_import" if imported else "unknown"}
 
     for record in records:
         project = record["detail"]
@@ -63,6 +73,7 @@ def build_progress(records, sources, assets, now=None):
         source_id = project["source"]["rem_project_id"]
         source = source_by_id.get(source_id, project["source"])
         raw = source.get("source_record") or {}
+        review = source_review(source)
         live = record.get("live_payload")
         has_changes = not live or review_content(project) != review_content(live)
         readiness = project["readiness"]
@@ -84,8 +95,10 @@ def build_progress(records, sources, assets, now=None):
                     attention.append({"field": field, "message": f"{name}ถูกเพิกถอนสิทธิ์"})
                 elif any(expiry and expiry <= now + timedelta(days=30) for expiry in (timestamp(current.get("effective_to")), timestamp(binding.get("effective_to")))):
                     attention.append({"field": field, "message": f"สิทธิ์{name}หมดอายุหรือจะหมดภายใน 30 วัน"})
-            if raw.get("is_deleted") is True:
+            if review.get("is_deleted") is True:
                 attention.append({"field": "source", "message": "โครงการต้นทาง REM ถูกลบ"})
+            elif review.get('status_raw') == '3':
+                attention.append({'field': 'source', 'message': 'โครงการต้นทาง REM ปิดโครงการ (3)'})
             elif raw.get("is_active") is False or str(raw.get("project_status", "")).lower() == "inactive":
                 attention.append({"field": "source", "message": "โครงการต้นทาง REM ไม่ใช้งาน"})
         awaiting = bool((readiness["ready"] and has_changes) or pending_rights)
@@ -101,7 +114,7 @@ def build_progress(records, sources, assets, now=None):
                      "gaps": gaps, "confirmed_models": sum(model["match_status"] == "CONFIRMED" for model in models), "total_models": len(models),
                      "amenities": {"collected": facilities.get("collected_count", 0), "total": facilities.get("expected_count", 0)},
                      "waiting_on": (["editor"] if editor_gaps else []) + (["publisher"] if awaiting else []),
-                     "updated_at": project.get("updated_at"), **age(source)})
+                     "updated_at": project.get("updated_at"), 'source_review': review, **age(source)})
 
     for source in sources:
         if source.get("public_project_id"):
@@ -110,9 +123,10 @@ def build_progress(records, sources, assets, now=None):
                      "brand_name": source.get("brand_name_rem"), "new_from_rem": True, "filling": False, "awaiting_publisher": False,
                      "published": False, "needs_attention": False, "attention": [], "has_unpublished_changes": False, "withdrawn": False,
                      "gaps": {group: [] for group in ("core", "media", "models", "brand")}, "confirmed_models": 0, "total_models": source["model_count"],
-                     "amenities": None, "waiting_on": ["editor"], "updated_at": None, **age(source)})
-    counts = {key: sum(bool(row[key]) for row in rows) for key in ("new_from_rem", "filling", "awaiting_publisher", "published", "needs_attention")}
-    counts["all"] = len(rows)
+                     "amenities": None, "waiting_on": ["editor"], "updated_at": None, 'source_review': source_review(source), **age(source)})
+    counts = {key: sum(bool(row[key]) and (row['source_review']['default_scope'] or key == 'needs_attention') for row in rows)
+              for key in ("new_from_rem", "filling", "awaiting_publisher", "published", "needs_attention")}
+    counts["all"] = sum(row['source_review']['default_scope'] for row in rows)
     return {"rows": sorted(rows, key=lambda row: (-sum(len(items) for items in row["gaps"].values()), row["rem_project_id"])), "counts": counts}
 
 

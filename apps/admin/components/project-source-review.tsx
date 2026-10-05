@@ -1,0 +1,29 @@
+export type SourceReview = {
+  status_raw: string | null; status_label: string; is_deleted: boolean | string | null; default_scope: boolean;
+  flags: string[]; exceptions: { code: string; keys: Record<string, unknown> }[];
+  brand_binding_allowed?: boolean; gold_prefill_allowed?: boolean; first_import_only?: boolean;
+};
+const reasons: Record<string, string> = {
+  PROJECT_BRAND_MISSING: "ต้นทางไม่มีแบรนด์ จึงยังผูกแบรนด์ไม่ได้",
+  GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT: "ตัวตนหรือกลุ่มใน Gold ขัดแย้ง — ปิดการเติมจาก Gold ใช้ REM อ้างอิงตัวตน",
+  GOLD_MODEL_ID_MISSING_REM: "รหัสแบบบ้านมีช่องว่างไม่ตรงกัน — เก็บรหัสเดิม ไม่จับคู่อัตโนมัติ",
+  MODEL_TYPE_UNKNOWN: "ไม่พบประเภทแบบบ้านในพจนานุกรมต้นทาง",
+  BLANK_NAME: "ชื่อภาษาอังกฤษต้นทางว่าง",
+};
+export function ProjectSourceReview({ value }: { value?: SourceReview }) {
+  if (!value) return null;
+  return <div className="small-text"><p>สถานะ REM: {value.status_label} ({value.status_raw ?? "null"}){value.is_deleted === true ? " · ถูกลบจากต้นทาง" : value.is_deleted !== false ? " · ไม่ทราบสถานะการลบ" : ""}</p>
+    {value.flags?.map(flag => <p key={flag}>{flag === "changed" ? "ต้นทางเปลี่ยน — รอตรวจสอบ" : flag === "missing" ? "ไม่พบในชุดข้อมูลล่าสุด — เก็บหลักฐานเดิม" : "ต้นทางระบุว่าลบแล้ว"}</p>)}
+    {value.exceptions?.length > 0 && <ul className="project-gap-list">{value.exceptions.map((finding, index) => <li key={index}>{reasons[finding.code] ?? finding.code}<code className="source-code"> {JSON.stringify(finding.keys)}</code></li>)}</ul>}
+  </div>;
+}
+
+export function SourceStatusFilter({ id, rows, value, onChange }: { id: string; rows: { source_review?: SourceReview }[]; value: string; onChange: (value: string) => void }) {
+  const statuses = new Map<string, { label: string; count: number }>();
+  for (const row of rows) {
+    const key = row.source_review?.status_raw ?? "null";
+    const old = statuses.get(key);
+    statuses.set(key, { label: row.source_review?.status_label ?? "ไม่ทราบสถานะ", count: (old?.count ?? 0) + 1 });
+  }
+  return <div className="form-field"><label htmlFor={id}>สถานะโครงการ REM</label><select id={id} value={value} onChange={event => onChange(event.target.value)}><option value="all">ทุกสถานะ ({rows.length})</option>{[...statuses].sort(([a], [b]) => a.localeCompare(b)).map(([key, row]) => <option key={key} value={key}>{row.label} ({key}) · {row.count}</option>)}</select></div>;
+}

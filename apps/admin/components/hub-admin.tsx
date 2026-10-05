@@ -6,6 +6,7 @@ import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
+import { ProjectSourceReview, SourceStatusFilter, type SourceReview } from "./project-source-review";
 import { ProjectDashboard } from "./project-dashboard";
 import { ProjectComparison, projectChanges, modelActorLabel } from "./project-review";
 import "./project-editor.css";
@@ -18,7 +19,7 @@ import { BrandWorkspace, BrandRequestDialog, ProjectBrandCard, type Brand, type 
 
 type Localized = { th?: string; [locale: string]: string | undefined };
 type Readiness = { ready: boolean; percent: number; missing: { field: string; message: string }[] };
-type SourceEvidence = { source_record: Record<string, unknown> | null; intake_manifest_sha256: string | null };
+type SourceEvidence = { source_review?: SourceReview; first_seen_at?: string | null; source_record: Record<string, unknown> | null; intake_manifest_sha256: string | null };
 type GoldModelGroup = { model_ids?: string[]; model_name?: string; model_name_eng?: string | null; model_type_ids?: string[]; minimum_model_area?: number | null; maximum_model_area?: number | null; model_attribute_variant?: boolean; technical_model_count?: number };
 type GoldSource = { model_groups?: GoldModelGroup[]; record: Record<string, string | number | null>; source_relation: string; source_snapshot_at: string; source_fingerprint: string; provenance: Record<string, unknown> };
 type Model = {
@@ -88,7 +89,7 @@ function sourceDate(value?: string | null) {
 
 function RawModelEvidence({ source }: { source: SourceEvidence }) {
   if (!source.source_record || source.intake_manifest_sha256 == null) return null;
-  return <><div><dt>ModelTypeID ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.model_type_id ?? "—")}</dd></div><div><dt>ModelArea ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.model_area ?? "—")} · ยังไม่ยืนยันหน่วยและความหมาย ห้ามใช้แทนพื้นที่ใช้สอยที่ตรวจสอบแล้ว</dd></div></>;
+  return <><div><dt>ModelTypeID ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.ModelTypeID ?? source.source_record.model_type_id ?? "—")}</dd></div><div><dt>ModelArea ต้นทาง (อ่านอย่างเดียว)</dt><dd>{String(source.source_record.ModelArea ?? source.source_record.model_area ?? "—")} · ยังไม่ยืนยันหน่วยและความหมาย ห้ามใช้แทนพื้นที่ใช้สอยที่ตรวจสอบแล้ว</dd></div></>;
 }
 
 function draftFrom(project: Project): Draft {
@@ -170,6 +171,7 @@ function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initial
   const [requestSource, setRequestSource] = useState<SourceProject | null>(null);
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState(initialSearch);
+  const [sourceStatus, setSourceStatus] = useState("all");
   useEffect(() => setSearch(initialSearch), [initialSearch]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<string | null>(null);
@@ -189,17 +191,18 @@ function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initial
     } catch (error) { setError(error instanceof Error ? error.message : "สร้างข้อมูลร่างไม่สำเร็จ"); setPending(null); }
   }
   const query = search.trim().toLocaleLowerCase("th");
-  const filtered = sources.filter(source => `${source.rem_project_id} ${source.project_name_rem}`.toLocaleLowerCase("th").includes(query));
+  const filtered = sources.filter(source => (sourceStatus === "all" || (source.source_review?.status_raw ?? "null") === sourceStatus) && `${source.rem_project_id} ${source.project_name_rem}`.toLocaleLowerCase("th").includes(query));
   return <section className="panel" id="source-picker" aria-labelledby="source-picker-title">
     <div className="panel-heading"><div><h2 id="source-picker-title">เลือกจากข้อมูลต้นทาง</h2><p>ตรวจแหล่งข้อมูลของแต่ละรายการ · ยังไม่ได้เชื่อม DW สด</p></div><Icon name="document" /></div>
     <div className="panel-body">
       <p className="read-only-note">การเลือกจะสร้างข้อมูลร่างพร้อมแบบที่อยู่อาศัยจากต้นทาง ทุกแบบต้องได้รับการตรวจสอบก่อนเผยแพร่ ชื่อและรหัสต้นทางแก้ไขไม่ได้</p>
       <div className="form-field"><label htmlFor="source-search">ค้นหาชื่อหรือรหัสโครงการต้นทาง</label><input id="source-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>
+      <SourceStatusFilter id="picker-rem-status" rows={sources} value={sourceStatus} onChange={setSourceStatus} />
       {notice && <p className="notice success" role="status">{notice}</p>}
       {error && <div className="notice error" role="alert">{error}<button className="button secondary" onClick={() => void load()}>โหลดรายการใหม่</button></div>}
       {loading ? <LoadingState /> : <><p className="small-text muted" role="status">พบ {filtered.length} โครงการ</p><ul className="source-cards">{filtered.map(source => <li key={source.rem_project_id}>
-        <div><h3>{source.project_name_rem}</h3><p className="small-text source-code">{source.rem_project_id} · {source.model_count} แบบที่อยู่อาศัย</p><p className="small-text muted">แบรนด์ต้นทาง: {source.brand_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_brand_id || "ไม่ระบุ"}</p><details><summary className="small-text muted">ข้อมูลบริษัทจากต้นทาง</summary><p className="small-text muted">{source.company_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_company_id || "ไม่ระบุ"}</p></details><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {formatDate(source.source_snapshot_at)}</p></div>
-        {source.public_project_id ? <a className="button secondary" href={`/?project=${encodeURIComponent(source.public_project_id)}`}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending)} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
+        <div><h3>{source.project_name_rem}</h3><ProjectSourceReview value={source.source_review} /><p className="small-text source-code">{source.rem_project_id} · {source.model_count} แบบที่อยู่อาศัย</p><p className="small-text muted">แบรนด์ต้นทาง: {source.brand_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_brand_id || "ไม่ระบุ"}</p><details><summary className="small-text muted">ข้อมูลบริษัทจากต้นทาง</summary><p className="small-text muted">{source.company_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_company_id || "ไม่ระบุ"}</p></details><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {formatDate(source.source_snapshot_at)}</p></div>
+        {source.public_project_id ? <a className="button secondary" href={`/?project=${encodeURIComponent(source.public_project_id)}`}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending) || source.source_review?.brand_binding_allowed === false} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
       </li>)}</ul>{!filtered.length && <p className="muted">ไม่พบโครงการที่ตรงกับการค้นหา</p>}</>}
       {requestSource && <BrandRequestDialog sourceId={requestSource.rem_brand_id} initialName={requestSource.brand_name_rem || ""} onCancel={() => setRequestSource(null)} onCreated={() => { setRequestSource(null); setNotice("ส่งคำขอเพิ่มแบรนด์แล้ว สร้างโครงการเป็นข้อมูลร่างและเลือกแบรนด์ภายหลังได้"); }} />}
     </div>
@@ -361,8 +364,8 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     const gold = project?.gold_source?.record[name];
     const mirror: Record<string, unknown> = { commercial_brand: project?.source?.brand_name_rem,
       project_id: project?.source?.rem_project_id, project_name: project?.source?.project_name_rem,
-      project_name_eng: project?.source?.source_record?.project_name_en,
-      rem_project_group_id: project?.source?.source_record?.rem_project_group_id };
+      project_name_eng: project?.source?.source_record?.ProjectNameEng ?? project?.source?.source_record?.project_name_en,
+      rem_project_group_id: project?.source?.source_record?.ProjectGroupID ?? project?.source?.source_record?.rem_project_group_id };
     const fromRem = gold == null || gold === "";
     const value = fromRem ? mirror[name] : gold;
     return <div className="form-field source-field"><span>{label}<span className="field-chip">อ่านอย่างเดียว</span></span><p id={`gold-${name}`} tabIndex={-1}>{value == null || value === "" ? "ยังไม่มีข้อมูลต้นทาง" : String(value)}{value != null && value !== "" && <small className="source-origin">{fromRem ? "จาก REM" : "จาก DW"}</small>}</p></div>;
@@ -400,6 +403,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
         <form id="project-details-form" onSubmit={save} noValidate>
           <section className="panel project-details" aria-labelledby="project-details-title"><div className="panel-heading"><div><span className="section-chip">รายละเอียดโครงการ</span><h2 id="project-details-title">ชื่อและที่ตั้งโครงการ</h2><p>ตรวจข้อมูลอ้างอิงจาก DW แล้วปรับชื่อและที่อยู่สำหรับการสื่อสาร</p></div><span className="language-chip">ไทย · English</span></div><div className="panel-body">
             {!canEdit && <p className="read-only-note"><Icon name="shield" size={16} />บัญชีนี้อ่านข้อมูลได้ การแก้ไขเป็นหน้าที่ของผู้แก้ไขข้อมูล</p>}
+            <ProjectSourceReview value={project.source?.source_review} />
             {!project.gold_source && <p className="read-only-note">ข้อมูลอ้างอิงที่ DW ยังไม่มีจะแสดงสำเนา REM พร้อมป้าย “จาก REM” กรุณาตรวจสอบก่อนกรอกข้อมูลสื่อสาร</p>}
             {canEdit && project.gold_prefill_changes && Object.keys(project.gold_prefill_changes).length > 0 && dirty && <p className="read-only-note" role="note">เติมค่าเริ่มต้นจาก DW ในช่องที่ยังไม่ได้กรอกให้แล้ว กรุณาตรวจสอบและกดบันทึกข้อมูลร่าง ค่าเหล่านี้ยังไม่ได้บันทึกหรือเผยแพร่</p>}
 

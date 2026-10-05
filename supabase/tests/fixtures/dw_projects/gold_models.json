@@ -1,0 +1,119 @@
+[
+  {
+    "project_model_key": "SYN-DW-A-001",
+    "project_key": null,
+    "project_id": "SYN-DW-A",
+    "model_name": "แบบสมมติ 001",
+    "model_name_eng": null,
+    "model_names_eng": [
+      "Synthetic"
+    ],
+    "short_name": null,
+    "minimum_model_area": null,
+    "maximum_model_area": null,
+    "model_ids": [
+      "001"
+    ],
+    "technical_model_count": 1,
+    "model_type_ids": [
+      "SYN-T"
+    ],
+    "model_type_count": 1,
+    "model_attribute_variant": false,
+    "total_unit_count": null,
+    "transferred_unit_count": null,
+    "livnex_unit_count": null,
+    "rentnex_unit_count": null,
+    "available_unit_count": 9,
+    "other_unit_count": null,
+    "minimum_available_selling_price": null,
+    "maximum_available_selling_price": null,
+    "average_available_selling_price": "9999.25",
+    "available_priced_unit_count": null,
+    "has_available_price": null,
+    "price_as_of_date": null,
+    "price_source": null,
+    "source_created_at": null,
+    "source_modified_at": null,
+    "source_snapshot_at": "2026-10-05T00:00:00+00:00",
+    "warehouse_loaded_at": "2026-10-05T00:00:00+00:00"
+  },
+  {
+    "project_model_key": "SYN-DW-A-002",
+    "project_key": null,
+    "project_id": "SYN-DW-A",
+    "model_name": "แบบสมมติ 002 ",
+    "model_name_eng": null,
+    "model_names_eng": [
+      "Synthetic"
+    ],
+    "short_name": null,
+    "minimum_model_area": null,
+    "maximum_model_area": null,
+    "model_ids": [
+      "002"
+    ],
+    "technical_model_count": 1,
+    "model_type_ids": [
+      "SYN-T"
+    ],
+    "model_type_count": 1,
+    "model_attribute_variant": false,
+    "total_unit_count": null,
+    "transferred_unit_count": null,
+    "livnex_unit_count": null,
+    "rentnex_unit_count": null,
+    "available_unit_count": 9,
+    "other_unit_count": null,
+    "minimum_available_selling_price": null,
+    "maximum_available_selling_price": null,
+    "average_available_selling_price": "9999.25",
+    "available_priced_unit_count": null,
+    "has_available_price": null,
+    "price_as_of_date": null,
+    "price_source": null,
+    "source_created_at": null,
+    "source_modified_at": null,
+    "source_snapshot_at": "2026-10-05T00:00:00+00:00",
+    "warehouse_loaded_at": "2026-10-05T00:00:00+00:00"
+  },
+  {
+    "project_model_key": "SYN-DW-CONFLICT-001",
+    "project_key": null,
+    "project_id": "SYN-DW-CONFLICT",
+    "model_name": "แบบสมมติ 001",
+    "model_name_eng": null,
+    "model_names_eng": [
+      "Synthetic"
+    ],
+    "short_name": null,
+    "minimum_model_area": null,
+    "maximum_model_area": null,
+    "model_ids": [
+      "001"
+    ],
+    "technical_model_count": 1,
+    "model_type_ids": [
+      "SYN-T"
+    ],
+    "model_type_count": 1,
+    "model_attribute_variant": false,
+    "total_unit_count": null,
+    "transferred_unit_count": null,
+    "livnex_unit_count": null,
+    "rentnex_unit_count": null,
+    "available_unit_count": 9,
+    "other_unit_count": null,
+    "minimum_available_selling_price": null,
+    "maximum_available_selling_price": null,
+    "average_available_selling_price": "9999.25",
+    "available_priced_unit_count": null,
+    "has_available_price": null,
+    "price_as_of_date": null,
+    "price_source": null,
+    "source_created_at": null,
+    "source_modified_at": null,
+    "source_snapshot_at": "2026-10-05T00:00:00+00:00",
+    "warehouse_loaded_at": "2026-10-05T00:00:00+00:00"
+  }
+]

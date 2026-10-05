@@ -13,7 +13,7 @@ NOW = datetime(2026, 10, 3, tzinfo=timezone.utc)
 
 def fixture():
     source = {"rem_project_id": "0007", "project_name_rem": "โครงการจำลอง", "brand_name_rem": "แบรนด์จำลอง",
-              "public_project_id": "prj_test", "model_count": 1, "source_record": {"is_deleted": False},
+              "public_project_id": "prj_test", "model_count": 1, "source_record": {"is_deleted": False, "project_status": "2"},
               "mirror_imported_at": (NOW - timedelta(days=40)).isoformat()}
     project = {"public_project_id": "prj_test", "public_name": {"th": "ชื่อเผยแพร่"}, "updated_at": NOW.isoformat(),
                "source": source, "published_version_id": "v1", "publication_available": True,
@@ -157,7 +157,9 @@ def test_actual_staff_queries_are_read_only_and_not_capped():
                     result = await read_progress(connection)
                     count = await connection.fetchval("SELECT count(*) FROM hub.projects WHERE deleted_at IS NULL")
                     assert len([row for row in result["rows"] if row["public_project_id"]]) == count
-                    assert result["counts"] == expected if expected is not None else result["counts"]["all"] > 0
+                    assert result['counts']['all'] == sum(row['source_review']['default_scope'] for row in result['rows'])
+                    if expected is not None:
+                        assert result['counts'] == expected
                     expected = result["counts"]
         finally:
             await connection.close()

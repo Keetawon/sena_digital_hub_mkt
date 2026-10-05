@@ -1,0 +1,72 @@
+[
+  {
+    "ProjectID": "SYN-DW-A",
+    "ProjectName": "โครงการสมมติ A",
+    "ProjectNameEng": "Synthetic A",
+    "ProjectType": "H",
+    "BrandID": "DEMO-BRAND-01",
+    "CompanyID": "DEMO-CO-A",
+    "ProjectGroupID": "SYN-G",
+    "ProjectStatus": "2",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false
+  },
+  {
+    "ProjectID": "SYN-DW-CONFLICT",
+    "ProjectName": "โครงการสมมติ CONFLICT",
+    "ProjectNameEng": "Synthetic CONFLICT",
+    "ProjectType": "H",
+    "BrandID": "DEMO-BRAND-01",
+    "CompanyID": "DEMO-CO-A",
+    "ProjectGroupID": "SYN-G",
+    "ProjectStatus": "1",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false
+  },
+  {
+    "ProjectID": "SYN-DW-MISSINGBRAND",
+    "ProjectName": "โครงการสมมติ MISSINGBRAND",
+    "ProjectNameEng": "Synthetic MISSINGBRAND",
+    "ProjectType": "H",
+    "BrandID": "",
+    "CompanyID": "DEMO-CO-A",
+    "ProjectGroupID": "SYN-G",
+    "ProjectStatus": "0",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false
+  },
+  {
+    "ProjectID": "SYN-DW-CLOSED",
+    "ProjectName": "โครงการสมมติ CLOSED",
+    "ProjectNameEng": "Synthetic CLOSED",
+    "ProjectType": "H",
+    "BrandID": "DEMO-BRAND-01",
+    "CompanyID": "DEMO-CO-A",
+    "ProjectGroupID": "SYN-G",
+    "ProjectStatus": "3",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false
+  },
+  {
+    "ProjectID": "SYN-DW-UNKNOWN",
+    "ProjectName": "โครงการสมมติ UNKNOWN",
+    "ProjectNameEng": "Synthetic UNKNOWN",
+    "ProjectType": "H",
+    "BrandID": "DEMO-BRAND-01",
+    "CompanyID": "DEMO-CO-A",
+    "ProjectGroupID": "SYN-G",
+    "ProjectStatus": null,
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false
+  }
+]

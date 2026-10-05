@@ -1,0 +1,33 @@
+[
+  {
+    "exception_key": "d9b4f670152f5121efa76b21d605540c7bd34710ec264847e06b2d2b518a03c0",
+    "issue_code": "GOLD_MODEL_ID_MISSING_REM",
+    "source_relation": "synthetic",
+    "keys": {
+      "project_id": "SYN-DW-A",
+      "ModelID": "002"
+    },
+    "observed": {},
+    "disposition": "REVIEW_REQUIRED"
+  },
+  {
+    "exception_key": "a74d9d464ba92c16412d28a5ca66e13a25fccd4452a449e4bc86f0d451f62877",
+    "issue_code": "PROJECT_BRAND_MISSING",
+    "source_relation": "synthetic",
+    "keys": {
+      "ProjectID": "SYN-DW-MISSINGBRAND"
+    },
+    "observed": {},
+    "disposition": "REVIEW_REQUIRED"
+  },
+  {
+    "exception_key": "cf040a3e1476534603f38e0c570bfa4a8c3d30aa5d0881fd4f2ffaa1dbe7a9e9",
+    "issue_code": "GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT",
+    "source_relation": "synthetic",
+    "keys": {
+      "project_id": "SYN-DW-CONFLICT"
+    },
+    "observed": {},
+    "disposition": "REVIEW_REQUIRED"
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "ProjectID": "SYN-DW-A",
+    "ModelID": "001",
+    "ModelName": "แบบสมมติ 001",
+    "ModelNameEng": "Synthetic 001",
+    "ModelTypeID": "SYN-T",
+    "ModelArea": "25.00",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false,
+    "ModelTypeName": "สมมติ",
+    "ModelTypeNameEng": "Synthetic"
+  },
+  {
+    "ProjectID": "SYN-DW-A",
+    "ModelID": "002 ",
+    "ModelName": "แบบสมมติ 002 ",
+    "ModelNameEng": "Synthetic 002 ",
+    "ModelTypeID": "SYN-T",
+    "ModelArea": "25.00",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false,
+    "ModelTypeName": "สมมติ",
+    "ModelTypeNameEng": "Synthetic"
+  },
+  {
+    "ProjectID": "SYN-DW-A",
+    "ModelID": "099",
+    "ModelName": "แบบสมมติ 099",
+    "ModelNameEng": "Synthetic 099",
+    "ModelTypeID": "SYN-T",
+    "ModelArea": "25.00",
+    "isDeleteRaw": "1",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": true,
+    "ModelTypeName": "สมมติ",
+    "ModelTypeNameEng": "Synthetic"
+  },
+  {
+    "ProjectID": "SYN-DW-CONFLICT",
+    "ModelID": "001",
+    "ModelName": "แบบสมมติ 001",
+    "ModelNameEng": "Synthetic 001",
+    "ModelTypeID": "SYN-T",
+    "ModelArea": "25.00",
+    "isDeleteRaw": "0",
+    "CreateDate": null,
+    "ModifyDate": null,
+    "isDeleted": false,
+    "ModelTypeName": "สมมติ",
+    "ModelTypeNameEng": "Synthetic"
+  }
+]

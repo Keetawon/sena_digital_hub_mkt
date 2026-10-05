@@ -158,6 +158,16 @@
       "name": "202610030031_project_progress_gold_preview.sql",
       "canonical_sha256": "adbdcbabaf7f192e434a1170eb963a68c826fc0fe52ea62fd2b6553cc89e87ef",
       "executed_sha256": "adbdcbabaf7f192e434a1170eb963a68c826fc0fe52ea62fd2b6553cc89e87ef"
+    },
+    {
+      "name": "202610050032_dw_project_intake.sql",
+      "canonical_sha256": "27c883895a157b608305083f5af2f7875763a9b82c653e1f15effed3bcbf2f38",
+      "executed_sha256": "27c883895a157b608305083f5af2f7875763a9b82c653e1f15effed3bcbf2f38"
+    },
+    {
+      "name": "202610050033_missing_project_last_status.sql",
+      "canonical_sha256": "918d176cdc527b9cf6abe5ac6f5e375c704ff6dca55f139553b5da8290daa228",
+      "executed_sha256": "918d176cdc527b9cf6abe5ac6f5e375c704ff6dca55f139553b5da8290daa228"
     }
   ]
 }

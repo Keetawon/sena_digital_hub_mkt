@@ -1,3 +1,4 @@
 # Applied migrations are checksummed from exact file bytes; never convert line endings.
 supabase/migrations/*.sql -text
 supabase/hosted-test/*.sql -text
+supabase/tests/fixtures/dw_projects/* -text

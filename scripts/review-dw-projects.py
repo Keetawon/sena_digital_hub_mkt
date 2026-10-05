@@ -46,6 +46,52 @@ def utc(value):
     return stamp
 
 
+def identity_conflicts(data):
+    raw = {r['ProjectID']: r for r in data['projects']}
+    findings = defaultdict(set)
+    for item in data['exceptions']:
+        findings[item['keys'].get('ProjectID', item['keys'].get('project_id'))].add(item['issue_code'])
+    conflicts = []
+    for wrapper in data['gold_projects']:
+        project = wrapper['project_id']; gold = wrapper['gold']
+        if gold is None:
+            continue
+        if project not in raw:
+            conflicts.append(project); continue
+        allowed = 'GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT' in findings[project]
+        if (gold.get('project_identity_conflict') or gold.get('project_group_conflict')) and not allowed:
+            conflicts.append(project)
+        for field, source in [('rem_brand_id', 'BrandID'), ('company_id', 'CompanyID'), ('rem_project_group_id', 'ProjectGroupID')]:
+            if gold.get(field) != raw[project][source] and not allowed:
+                if field == 'rem_brand_id' and 'PROJECT_BRAND_MISSING' in findings[project]:
+                    continue
+                conflicts.append(project)
+    return sorted(set(conflicts))
+
+
+def identity_conflicts(data):
+    raw = {r['ProjectID']: r for r in data['projects']}
+    findings = defaultdict(set)
+    for item in data['exceptions']:
+        findings[item['keys'].get('ProjectID', item['keys'].get('project_id'))].add(item['issue_code'])
+    conflicts = []
+    for wrapper in data['gold_projects']:
+        project = wrapper['project_id']; gold = wrapper['gold']
+        if gold is None:
+            continue
+        if project not in raw:
+            conflicts.append(project); continue
+        allowed = 'GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT' in findings[project]
+        if (gold.get('project_identity_conflict') or gold.get('project_group_conflict')) and not allowed:
+            conflicts.append(project)
+        for field, source in [('rem_brand_id', 'BrandID'), ('company_id', 'CompanyID'), ('rem_project_group_id', 'ProjectGroupID')]:
+            if gold.get(field) != raw[project][source] and not allowed:
+                if field == 'rem_brand_id' and 'PROJECT_BRAND_MISSING' in findings[project]:
+                    continue
+                conflicts.append(project)
+    return sorted(set(conflicts))
+
+
 def load_package(folder: Path, reviewed_hash: str):
     require(bool(re.fullmatch('[0-9a-f]{64}', reviewed_hash)), 'An explicit reviewed manifest SHA-256 is required')
     raw = {'manifest.json': (folder / 'manifest.json').read_bytes()}
@@ -85,6 +131,7 @@ def load_package(folder: Path, reviewed_hash: str):
     require(all(r['ProjectID'] in project_ids for r in datasets['models']), 'Raw model without exact project')
     require(len(manifest['gold_project_columns']) == manifest['gold_project_nested_column_count'] == 105, 'Unexpected Gold project column contract')
     require(all(r['gold'] is None or set(r['gold']) == set(manifest['gold_project_columns']) for r in datasets['gold_projects']), 'Nested Gold columns mismatch')
+    require(all(r['gold'] is None or r['gold']['project_id'] == r['project_id'] for r in datasets['gold_projects']), 'Gold wrapper identity conflict')
     for name, key in [('gold_projects', 'project_id'), ('gold_models', 'project_model_key'), ('exceptions', 'exception_key')]:
         values = [r[key] for r in datasets[name]]
         require(all(isinstance(v, str) and v.strip() for v in values) and len(values) == len(set(values)), 'Invalid or duplicate ' + name + ' key')
@@ -101,6 +148,8 @@ def load_package(folder: Path, reviewed_hash: str):
     require(counts['exceptions_by_type'] == dict(Counter(r['issue_code'] for r in datasets['exceptions'])), 'Exception counts disagree')
     require(all(r['disposition'] == 'REVIEW_REQUIRED' for r in datasets['exceptions']), 'Unexpected exception disposition')
     require(datasets['review']['counts'] == counts, 'Review counts disagree')
+    require(not identity_conflicts(datasets), 'Unreviewed Gold identity/group conflict')
+    require(not identity_conflicts(datasets), 'Unreviewed Gold identity/group conflict')
     require(manifest['consistency']['cross_database_consistent_snapshot'] is False, 'A shared REM/DW snapshot must not be claimed')
     utc(manifest['extracted_at'])
     for system in ('rem', 'dw'):
@@ -128,6 +177,22 @@ def reconcile(raw, gold):
             'raw_without_group': absent, 'raw_in_multiple_groups': multiple, 'gold_ids_without_raw': orphan,
             'ungrouped_deleted_count': sum(r['isDeleted'] is True for r in absent),
             'exact_coverage_passes': not (absent or multiple or orphan)}
+
+
+def coverage_conflicts(package, discard_deleted=False):
+    """Only the owner's deleted-model policy and explicit whitespace findings waive coverage."""
+    data = package['datasets']; check = reconcile(data['models'], data['gold_models'])
+    allowed = {(e['keys'].get('ProjectID', e['keys'].get('project_id')), e['keys'].get('ModelID'))
+               for e in data['exceptions'] if e['issue_code'] == 'GOLD_MODEL_ID_MISSING_REM'}
+    raw_keys = {(r['ProjectID'], r['ModelID']) for r in data['models']}
+    orphan_keys = {(r['project_id'], r['model_id']) for r in check['gold_ids_without_raw']}
+    # Whitespace is compared only to explain an explicit finding, never to create a join.
+    accepted_spaces = {key for key in allowed & orphan_keys
+                       if sum(p == key[0] and m != key[1] and m.rstrip() == key[1] for p, m in raw_keys) == 1}
+    unexplained = [r for r in check['raw_without_group'] if not (discard_deleted and r['isDeleted'] is True)
+                   and (r['ProjectID'], r['ModelID'].rstrip()) not in accepted_spaces]
+    return unexplained or check['raw_in_multiple_groups'] or [r for r in check['gold_ids_without_raw']
+                                                            if (r['project_id'], r['model_id']) not in accepted_spaces]
 
 
 def compare_packages(before, after):
@@ -232,12 +297,12 @@ async def local_evidence():
         await db.close()
 
 
-def report(package, tables=None):
+def report(package, tables=None, discard_deleted=False):
     data = package['datasets']; projects = data['projects']
     reconciliation = reconcile(data['models'], data['gold_models'])
     hyabc = compare_hyabc(package, tables) if tables else None
     blockers = []
-    if not reconciliation['exact_coverage_passes']:
+    if coverage_conflicts(package, discard_deleted):
         blockers.append('EXACT_RAW_TO_GOLD_COVERAGE_FAILED')
     if hyabc is None:
         blockers.append('LOCAL_HYABC_COMPARISON_NOT_RUN')
@@ -265,6 +330,7 @@ def main():
     parser.add_argument('--compare-local', action='store_true', help='Read the guarded local working DB after package integrity passes')
     parser.add_argument('--previous-package', type=Path, help='Optional earlier package for an offline evidence comparison')
     parser.add_argument('--previous-manifest-sha256')
+    parser.add_argument('--discard-deleted-ungrouped-models', action='store_true')
     args = parser.parse_args()
     package = load_package(args.package, args.manifest_sha256)  # Always before connecting.
     require(bool(args.previous_package) == bool(args.previous_manifest_sha256), 'Previous package and reviewed hash must be supplied together')
@@ -278,7 +344,7 @@ def main():
         else:
             with target.open('xb') as stream:
                 stream.write(content)
-    result = report(package, asyncio.run(local_evidence()) if args.compare_local else None)
+    result = report(package, asyncio.run(local_evidence()) if args.compare_local else None, args.discard_deleted_ungrouped_models)
     if previous:
         result['previous_package_comparison'] = compare_packages(previous, package)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
