@@ -223,6 +223,18 @@ uses authenticated fetch-to-Blob previews/downloads, never JWTs in query strings
 Uploads and downloads are verified locally; VPS delivery and managed Storage
 policies await the approved cloud acceptance run.
 
+**ความเสี่ยงไฟล์ค้างที่ยอมรับสำหรับ H1 (5 ตุลาคม 2026):** `upload_asset`
+เรียก `hosted_assets.install` ก่อน COMMIT ของฐานข้อมูล หากอัปโหลดสำเร็จแต่
+COMMIT ล้มเหลว อาจเหลือไฟล์ใน Supabase Storage ที่ไม่มีแถวใน `hub.assets`
+เส้นทาง hosted ยังไม่มีการลบไฟล์ค้างอัตโนมัติ ไฟล์ยังอยู่ใน bucket ส่วนตัว
+และไม่สามารถอ่านผ่าน Hub ได้หากไม่มีรายการและสิทธิ์ที่เกี่ยวข้อง แต่ยังใช้โควตาพื้นที่จัดเก็บ
+
+เลือกบันทึกความเสี่ยงนี้สำหรับ H1 ที่ใช้ข้อมูลจำลอง เพื่อคงพฤติกรรมอัปโหลดเดิม
+แทนการเพิ่มขั้นตอนลบ remote object ที่ต้องจัดการ COMMIT ซึ่งอาจสำเร็จแล้วแม้ client ได้รับข้อผิดพลาด
+การอัปโหลดเนื้อหาเดิมซ้ำตรวจ checksum และใช้ไฟล์เดิมได้ หากภายหลังเพิ่มการเก็บกวาด
+ต้องตรวจว่าไม่มีแถว `hub.assets` ของ checksum นั้นภายใต้ advisory lock เดียวกับการอัปโหลด
+ก่อนลบ และเก็บไฟล์ไว้หากฐานข้อมูลไม่พร้อมให้ตรวจสอบ ข้อนี้ไม่อนุมัติการเปลี่ยนแปลง hosted ใด ๆ
+
 ### 3.3 Hosted DW reader (H2+, deferred)
 
 Keep `scripts/provision-dw-reader.mjs` strictly local, including its

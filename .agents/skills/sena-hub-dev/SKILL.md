@@ -32,7 +32,7 @@ description: >
 |---|---|
 | `apps/api/sena_hub_api/` | FastAPI app (`main.py` routes, `auth.py` JWT/demo actors). asyncpg; each request runs `SET LOCAL ROLE <actor role>` + `set_config('app.actor_id', …)` so Postgres RLS decides access |
 | `apps/admin/` | Next.js 16 admin; calls the API through `app/api/hub/[...path]/route.ts`; tokens in `styles/tokens.css` |
-| `supabase/migrations/` | `YYYYMMDDNNNN_<slug>.sql`, NNNN continues the global counter (last: `202609210013`) |
+| `supabase/migrations/` | `YYYYMMDDNNNN_<slug>.sql`, NNNN continues the global counter (last: `202610050033_missing_project_last_status.sql`) |
 | `supabase/tests/` | SQL checks + `concurrent_*.mjs` two-connection regressions |
 | `tests/ui/` | Playwright specs; `tests/*.py` intake script tests |
 | `scripts/` | local DB, migrations, DW stage scripts (`stage-gold-project.py` = DW→Hub staging pattern) |
@@ -52,10 +52,14 @@ npm.cmd run dev --prefix apps/admin
 # verification
 npm.cmd run typecheck --prefix apps/admin
 npm.cmd run build --prefix apps/admin
-uv run --project apps/api --env-file apps/api/.env pytest apps/api/tests
+npm.cmd run test:api
 npm.cmd run test:db
-npm.cmd run test:ui                     # run API/browser suites sequentially
+npm.cmd run test:ui                     # รันชุดทดสอบตามลำดับ ไม่รันพร้อมกัน
 ```
+
+คำสั่ง `test:api`, `test:db` และ `test:ui` ใช้ฐานข้อมูลทดสอบแบบใช้แล้วทิ้ง
+ตัวรันจะปฏิเสธการเริ่มงานหากฐานข้อมูลทำงาน/API/admin ยังใช้พอร์ต `55432`/`8000`/`3000`
+ให้ขอให้ผู้ใช้หยุดบริการหรืออนุญาตก่อน ห้ามหยุดบริการเองหรือข้ามตัวตรวจเพื่อใช้ฐานข้อมูลทำงานทดสอบ
 
 On restricted workstations add `--cache .cache/npm` (npm) and `--cache-dir .cache/uv` (uv). See
 `docs/11-local-development.md`.

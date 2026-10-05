@@ -385,9 +385,12 @@ def register_assistant_routes(app, authentication, database, settings):
     async def suggest(body: SuggestProposal, request: Request, actor: Actor = Depends(staff)):
         from .assistant_model import suggest_draft_text
         proposal_permission(actor, body.entity_type)
-        table = "projects" if body.entity_type == "project" else "brands"
-        column, locale = body.field_path.split(".")
-        value = await rpc(request, actor, f"SELECT jsonb_build_object('text',{column}->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.{table} WHERE id=$1 AND deleted_at IS NULL", body.entity_id, locale)
+        queries = {
+            ("project", "meta_title.th"): "SELECT jsonb_build_object('text',meta_title->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.projects WHERE id=$1 AND deleted_at IS NULL",
+            ("project", "meta_description.th"): "SELECT jsonb_build_object('text',meta_description->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.projects WHERE id=$1 AND deleted_at IS NULL",
+            ("brand", "description.th"): "SELECT jsonb_build_object('text',description->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.brands WHERE id=$1 AND deleted_at IS NULL",
+        }
+        value = await rpc(request, actor, queries[(body.entity_type, body.field_path)], body.entity_id, "th")
         if not value: raise failure(404, "assistant_not_found", "ไม่พบรายการที่คุณเข้าถึงได้")
         if body.field_path not in value.get("demo_fields", []): raise failure(403, "assistant_proposal_forbidden", "ชุดสาธิตแก้ได้เฉพาะข้อความสมมติที่กำหนดไว้")
         if datetime.fromisoformat(value["updated_at"]) != body.expected_updated_at: raise failure(409, "assistant_stale", "ข้อมูลเปลี่ยนแล้ว กรุณาตรวจข้อเสนอใหม่")

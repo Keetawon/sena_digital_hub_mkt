@@ -1,6 +1,8 @@
 import json
+import logging
 import time
 
+import asyncpg
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -53,6 +55,74 @@ def test_every_data_route_requires_auth(client, method, path):
 def test_health_only_and_no_openapi(client):
     assert client.get("/health").json() == {"status": "ok"}
     assert client.get("/openapi.json").status_code == 404
+
+
+@pytest.mark.parametrize("sqlstate,status,code,message", [
+    ("22P02", 422, "invalid_value", "รูปแบบข้อมูลไม่ถูกต้อง"),
+    ("23503", 422, "invalid_reference", "ไม่พบรายการอ้างอิงที่ใช้งานได้ กรุณาเลือกข้อมูลใหม่"),
+    ("42501", 403, "forbidden", None),
+    ("23514", 422, "not_ready", None),
+    ("23505", 409, "duplicate", None),
+    ("40001", 409, "conflict", None),
+    ("P0002", 404, "not_found", None),
+    ("08006", 503, "database_unavailable", None),
+    ("53300", 503, "database_unavailable", None),
+    ("57P01", 503, "database_unavailable", None),
+    ("57P05", 503, "database_unavailable", None),
+    ("57014", 500, "server_error", None),
+    ("42601", 500, "server_error", None),
+    ("XX000", 500, "server_error", None),
+    (None, 500, "server_error", None),
+])
+def test_postgres_error_mapping_and_safe_logging(client, caplog, sqlstate, status, code, message):
+    error = asyncpg.PostgresError("private database value")
+    error.sqlstate = sqlstate
+
+    @client.app.get("/test-postgres-error")
+    async def fail_query():
+        raise error
+
+    with caplog.at_level(logging.ERROR, logger="sena_hub_api"):
+        response = client.get("/test-postgres-error")
+    assert response.status_code == status
+    assert response.json()["error"]["code"] == code
+    if message:
+        assert response.json()["error"]["message"] == message
+    records = [record for record in caplog.records if record.name == "sena_hub_api"]
+    if status >= 500:
+        assert len(records) == 1
+        assert records[0].levelno == logging.ERROR
+        assert records[0].getMessage() == f"Database request failed: sqlstate={sqlstate} type=PostgresError"
+        assert records[0].exc_info is None
+    else:
+        assert records == []
+    assert "private database value" not in caplog.text + response.text
+
+
+def test_unexpected_error_logs_traceback_without_private_input(caplog):
+    app = create_app(settings())
+    private_values = ("private chained value", "private exception value", "private request body", "private-token")
+
+    @app.post("/test-unexpected-error")
+    async def fail_request():
+        try:
+            raise ValueError(private_values[0])
+        except ValueError as error:
+            raise RuntimeError(private_values[1]) from error
+
+    client = TestClient(app, raise_server_exceptions=False)
+    with caplog.at_level(logging.ERROR, logger="sena_hub_api"):
+        response = client.post("/test-unexpected-error", json={"name": private_values[2]},
+                               headers={"Authorization": f"Bearer {private_values[3]}"})
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "server_error"
+    record, = [record for record in caplog.records if record.name == "sena_hub_api"]
+    assert record.levelno == logging.ERROR
+    assert record.getMessage() == "Request failed: RuntimeError"
+    assert record.exc_info is not None and record.exc_info[2] is not None
+    assert "Traceback" in caplog.text and "in fail_request" in caplog.text
+    for private_value in private_values:
+        assert private_value not in caplog.text + response.text
 
 
 @pytest.mark.parametrize("role,method,path", [

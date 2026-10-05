@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import type { LocalRole } from "@/lib/local-session";
+import { roleLabels as roles, type LocalRole } from "@/lib/roles";
 import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
@@ -51,7 +51,6 @@ type Version = { version_id: string; version_no: number; published_at: string; p
 type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; meta_title: string; meta_description: string };
 type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
 type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
-const roles: Record<LocalRole, string> = { editor: "ผู้แก้ไขข้อมูล", publisher: "ผู้เผยแพร่", viewer: "ผู้อ่านข้อมูล", admin: "ผู้ดูแลระบบ", online_staff: "ทีมออนไลน์", agency_kin: "เอเจนซี KIN", agency_combay: "เอเจนซี COMBAY" };
 const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
 const matchLabels = { SUGGESTED: "รอตรวจสอบ", CONFIRMED: "ยืนยันแล้ว", REJECTED: "ปฏิเสธการจับคู่" };
 const labels: Record<string, string> = { public_name: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)", public_name_en: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (English)", slug: "รหัส URL (slug)", address: "ที่อยู่โครงการ (ไทย)", address_en: "Project address (English)", latitude: "ละติจูด", longitude: "ลองจิจูด", ad_disclaimer: "ข้อความกำกับโฆษณา", meta_title: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", meta_description: "คำอธิบายย่อ" };

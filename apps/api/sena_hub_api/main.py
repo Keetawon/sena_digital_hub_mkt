@@ -309,15 +309,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "42501": (403, "forbidden", "สิทธิ์ของคุณไม่อนุญาตให้ดำเนินการนี้"),
             "23514": (422, "not_ready", "ข้อมูลยังไม่ผ่านเงื่อนไข กรุณาตรวจรายการที่ยังขาดและสิทธิ์สื่อ"),
             "23505": (409, "duplicate", "ข้อมูลนี้มีอยู่แล้ว กรุณาตรวจรหัสหรือชื่อเส้นทาง"),
+            "22P02": (422, "invalid_value", "รูปแบบข้อมูลไม่ถูกต้อง"),
+            "23503": (422, "invalid_reference", "ไม่พบรายการอ้างอิงที่ใช้งานได้ กรุณาเลือกข้อมูลใหม่"),
             "40001": (409, "conflict", "ข้อมูลเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดก่อนบันทึก"),
             "P0002": (404, "not_found", "ไม่พบข้อมูลที่ร้องขอ"),
         }
-        status, code, message = errors.get(error.sqlstate, (503, "database_unavailable", "ระบบข้อมูลไม่พร้อมใช้งาน กรุณาลองใหม่"))
+        if error.sqlstate in errors:
+            status, code, message = errors[error.sqlstate]
+        else:
+            logging.getLogger("sena_hub_api").error(
+                "Database request failed: sqlstate=%s type=%s", error.sqlstate, type(error).__name__,
+            )
+            if (error.sqlstate or "").startswith(("08", "53", "57P")):
+                status, code, message = 503, "database_unavailable", "ระบบข้อมูลไม่พร้อมใช้งาน กรุณาลองใหม่"
+            else:
+                status, code, message = 500, "server_error", "ระบบไม่สามารถดำเนินการได้ กรุณาลองใหม่"
         return JSONResponse({"error": {"code": code, "message": message}}, status)
 
     @app.exception_handler(Exception)
     async def unexpected_error(request, error):
-        logging.getLogger("sena_hub_api").error("Request failed: %s", type(error).__name__)
+        # Keep stack frames without exception values/chains that may contain private input.
+        logging.getLogger("sena_hub_api").exception(
+            "Request failed: %s", type(error).__name__,
+            exc_info=(RuntimeError, RuntimeError(type(error).__name__), error.__traceback__),
+        )
         return JSONResponse({"error": {"code": "server_error", "message": "ระบบไม่สามารถดำเนินการได้ กรุณาลองใหม่"}}, 500)
 
     async def admin(actor: Actor = Depends(authentication)):
