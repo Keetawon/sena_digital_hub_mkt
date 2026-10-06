@@ -44,7 +44,7 @@ def test_each_staff_role_receives_only_pending_thai_policy_fields(client, role):
     assert set(response.json()) == {"data"}
     assert set(response.json()["data"]) == {"questions"}
     entries = response.json()["data"]["questions"]
-    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 46)} - HIDDEN_IDS
+    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 71)} - HIDDEN_IDS
     assert {entry["owner_group"] for entry in entries} == OWNER_GROUPS
     for entry in entries:
         assert set(entry) == set(PRESENTATION_FIELDS)
@@ -88,7 +88,7 @@ def test_invalid_catalog_fails_closed(tmp_path, mutation):
     catalog = deepcopy(load_catalog())
     first = catalog["questions"][0]
     if mutation == "missing":
-        catalog["questions"].pop()
+        catalog["questions"].pop(0)  # A required ID is missing even as the catalogue grows.
     elif mutation == "duplicate":
         catalog["questions"][1] = deepcopy(first)
     elif mutation == "status":

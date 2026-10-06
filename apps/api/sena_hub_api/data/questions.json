@@ -997,6 +997,631 @@
         "blocks": "Real data/content acceptance, not the local demo pack.",
         "default": "Use a localhost-only coherent HYABC/FLEXI October 2026 seed with explicit synthetic provenance. A sample scope association is not reviewed DW master acceptance. Keep the original DW package unchanged; a new local synthetic P3 generation preserves finding identities and original observation dates, with unevaluated carry-forward findings UNAVAILABLE. Show the current Bangkok month by default and pin October presentation links. One pristine memo V1 is preconfirmed through normal controls with synthetic fixture-review evidence for restricted search; the statement stays DRAFT for source review and links the existing exact ten-row THB 4812.00 batch after confirmation. A separate September THB 120.00 debit supplies its refund origin; annual commitment coverage uses a separate memo. Never add platform media to card cash or cash to monthly recognition. Replays preserve saved edits and newer snapshots, with conflicts stopping rather than resetting data. No automatic publication or real approval."
       }
+    },
+    {
+      "id": "Q46",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์การตลาด",
+      "question_th": "โครงการ 6 แห่งในชีตธุรกิจเป็นรายการที่เหลือของ Phase 1 ใช่หรือไม่?",
+      "default_th": "ใช้ EKAMI, RAMK, BNA7, TPRAK, SK2TR, BPHGH และ HYABC เป็นชุดตรวจในเครื่อง ยังไม่เผยแพร่",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q46",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q46",
+        "question": "Are these 6 projects the remaining Phase 1 selections?",
+        "owner": "เจ้าของผลิตภัณฑ์การตลาด",
+        "blocks": "Pilot business selection",
+        "default": "Keep the seven approved pilot IDs for local pre-audit; no publication. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q47",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการการตลาดและเจ้าของผลิตภัณฑ์ LivNex/RentNex",
+      "question_th": "ใครเป็นผู้รับผิดชอบรายโครงการ รายข้อเท็จจริง และเนื้อหาร่วม รวมถึงผู้เผยแพร่ที่ตรวจขอบเขต?",
+      "default_th": "ใช้เจ้าของชั่วคราวตาม docs/30 และรอบตรวจจาก Freshness ผู้เผยแพร่ตรวจทุกโครงการที่ได้รับผล ไม่มีคำตอบตัวเลขการเงินหากขาดเจ้าของ วันที่ และช่วงมีผล",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q47",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q47",
+        "question": "Assign named project/fact/programme owners and the publisher for shared applicability review.",
+        "owner": "เจ้าของโครงการการตลาดและเจ้าของผลิตภัณฑ์ LivNex/RentNex",
+        "blocks": "Named ownership and operational review assignments",
+        "default": "Provisional MKT, Sales/Marketing and programme owners are accepted; use audit cadence and publisher impact preview. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q48",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีมเว็บและผู้ดูแลฐานข้อมูลเดิม",
+      "question_th": "เวลาที่ไม่มีเขตเวลาในฐานข้อมูล KM เดิมใช้เขตเวลาใด?",
+      "default_th": "เก็บเวลาเดิมพร้อมระบุว่าไม่ทราบเขตเวลา ไม่สมมติ UTC หรือเวลาไทย",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q48",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q48",
+        "question": "What timezone did legacy naive KM timestamps use?",
+        "owner": "ทีมเว็บและผู้ดูแลฐานข้อมูลเดิม",
+        "blocks": "Historical timestamp interpretation",
+        "default": "Keep source_timezone=unknown; new fetch times do not supply fact as_of. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q49",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการ AQ",
+      "question_th": "ระยะทาง AQ ถึง MRT บางกระสอ 200 หรือ 270 เมตร ใช้วิธีวัดใด?",
+      "default_th": "พักเฉพาะระยะทางที่ขัดกัน ดำเนินเนื้อหาอื่นต่อ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q49",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q49",
+        "question": "Resolve AQ 200 m versus 270 m and measurement method.",
+        "owner": "เจ้าของโครงการ AQ",
+        "blocks": "Affected distance claim only",
+        "default": "Hold the distance claim, continue unrelated content. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q50",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการ HYABC/HY2DE และทีมข้อมูลโครงการ",
+      "question_th": "ยอดรวมในหน้า HYABC/HY2DE แบ่งตามเฟสอย่างไร?",
+      "default_th": "ไม่ใส่ยอดรวม 899 ลงโครงการเดียว ไม่แบ่งเท่า ๆ กัน",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q50",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q50",
+        "question": "Confirm HYABC/HY2DE combined totals and phase grain.",
+        "owner": "เจ้าของโครงการ HYABC/HY2DE และทีมข้อมูลโครงการ",
+        "blocks": "Affected totals only",
+        "default": "Never copy combined 899 units to one project or divide without evidence. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q51",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของข้อมูล REM/DW และทีมโครงการ",
+      "question_th": "BPEF2 ใน KM ต้องจับคู่กับรหัส REM ใด?",
+      "default_th": "คงข้อยกเว้นไว้ ไม่ตัดช่องว่างหรือจับคู่จากชื่อ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q51",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q51",
+        "question": "Resolve legacy BPEF2, absent from the reviewed DW dictionary.",
+        "owner": "เจ้าของข้อมูล REM/DW และทีมโครงการ",
+        "blocks": "BPEF2 mapping only",
+        "default": "Hold this applicability, preserve exact IDs and existing mappings. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q52",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ทีมเว็บและเจ้าของข้อมูลโครงการ",
+      "question_th": "หน้า KM 13 ที่ไม่มีลิงก์รหัสต้นทางเป็นโครงการหรือเฟสใด?",
+      "default_th": "เก็บรอตรวจ ไม่สร้างหรือผูกโครงการจากชื่ออัตโนมัติ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q52",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q52",
+        "question": "Map legacy page 13 with no source project link.",
+        "owner": "ทีมเว็บและเจ้าของข้อมูลโครงการ",
+        "blocks": "Page 13 mapping only",
+        "default": "Hold mapping; do not infer a REM identity from the name. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q53",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ทีม Project Master และฝ่ายขาย",
+      "question_th": "ข้อมูลแต่ละส่วนของ URL ร่วม TPRAK/SK2TR ใช้กับเฟสใด และชื่อเฟส TPRAK ที่ต่างจาก REM ถูกต้องหรือไม่?",
+      "default_th": "แยกทุกเนื้อหา ข้อเท็จจริง ข้อเสนอ ส่วนกลาง และไฟล์ตามเฟส ชื่อกำกวมต้องถาม TPRAK คงสถานะปิดโครงการ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q53",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q53",
+        "question": "Confirm TPRAK/SK2TR phase scope and TPRAK source-name discrepancy.",
+        "owner": "ทีม Project Master และฝ่ายขาย",
+        "blocks": "Shared-page applicability",
+        "default": "CMS 101/26 are metadata; exact REM IDs remain keys. Ask which phase; never copy SK2TR evidence to TPRAK. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q54",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ LivNex",
+      "question_th": "LivNex 0% กับ 1.8% เป็นคนละรุ่นหรือข้อมูลขัดกัน และมีผลช่วงใด?",
+      "default_th": "พักเฉพาะอัตราที่ขัดกัน แยกรุ่นและวันที่ ห้ามเลือกตามวันที่ดึงเว็บ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q54",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q54",
+        "question": "Resolve LivNex 0% versus 1.8%, programme version and effective dates.",
+        "owner": "เจ้าของผลิตภัณฑ์ LivNex",
+        "blocks": "Affected programme-rate claims",
+        "default": "Hold conflicting rates; no calculator or crawl-date tie-break. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q55",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการ Grand Home และเจ้าของ Solar",
+      "question_th": "Grand Home ประหยัดสูงสุด 85% กับ 38% ใช้อุปกรณ์ รุ่น และสมมติฐานใด?",
+      "default_th": "พักตัวเลขประหยัดจนยืนยันหลักฐาน Solar ยังอยู่นอกขอบเขตระยะนี้",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q55",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q55",
+        "question": "Resolve Grand Home 85% versus 38% with specification/version/assumptions.",
+        "owner": "เจ้าของโครงการ Grand Home และเจ้าของ Solar",
+        "blocks": "Affected savings claim",
+        "default": "Hold numeric claim; Solar product intake remains deferred. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q56",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ RentNex",
+      "question_th": "ยืนยันกฎสะสมค่าเช่า 100% และเพดานใช้สิทธิ์ 5% รวมช่วงสะสม ข้อยกเว้น และสิทธิ์โอน?",
+      "default_th": "แยกกฎสะสมกับใช้สิทธิ์และฐานคำนวณ ไม่รวมเป็นกฎเดียว ไม่ทำเครื่องคำนวณ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q56",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q56",
+        "question": "Confirm RentNex accrual, redemption cap, rolling periods, exclusions and transfer rights.",
+        "owner": "เจ้าของผลิตภัณฑ์ RentNex",
+        "blocks": "Programme rule validity",
+        "default": "100% accrual and 5% redemption cap are separate typed rules with separate bases. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q57",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ RentNex",
+      "question_th": "สัญญาเช่า 6/12 เดือนกับ Benefit 1 ปีใช้กับแพ็กเกจ รุ่น โครงการ และยูนิตใด?",
+      "default_th": "แยกรุ่นและเงื่อนไขการเข้าร่วม ไม่อนุมานว่าทุกแพ็กเกจได้สิทธิ์",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q57",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q57",
+        "question": "Resolve RentNex 6/12-month lease versus one-year Benefit eligibility.",
+        "owner": "เจ้าของผลิตภัณฑ์ RentNex",
+        "blocks": "Package eligibility",
+        "default": "Pin programme version, lease term, project/unit scope and dates. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q58",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการ BNA7 และผู้ดูแลแบบห้อง",
+      "question_th": "แบบ 23–24.5 ตร.ม. ที่เรียก STUDIO หรือ Smart Tatami ตรงกับแบบใด?",
+      "default_th": "เก็บชื่อการตลาดเป็นชื่อเดิมรอตรวจ ไม่รวมแบบด้วยชื่อหรือพื้นที่อย่างเดียว",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q58",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q58",
+        "question": "Resolve FLEXI STUDIO versus Smart Tatami type labels at 23–24.5 sqm.",
+        "owner": "เจ้าของโครงการ BNA7 และผู้ดูแลแบบห้อง",
+        "blocks": "Unit-type claim mapping",
+        "default": "Review canonical type and historical labels; no automatic model association. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q59",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ฝ่ายขาย ฝ่ายการตลาด และ Sales Ops",
+      "question_th": "ใครอนุมัติราคาเริ่มต้น แหล่งข้อมูล วันที่อ้างอิง และช่วงมีผลรายโครงการ?",
+      "default_th": "ตอบได้เฉพาะราคาเริ่มต้นที่อนุมัติพร้อมวันที่ มิฉะนั้นส่งต่อฝ่ายขาย ราคาเฉลี่ยในชีตใช้ภายใน",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q59",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q59",
+        "question": "Confirm approved starting-price source, owner, as_of and validity per project.",
+        "owner": "ฝ่ายขาย ฝ่ายการตลาด และ Sales Ops",
+        "blocks": "Current price answers",
+        "default": "No approved dated starting-price fact means handoff; Average Price Per unit stays internal. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q60",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "Sales Ops และทีมไอที",
+      "question_th": "ข้อมูลห้องว่างรายวันเพียงพอหรือจำเป็นต้องเป็นเวลาจริง?",
+      "default_th": "ระยะแรกส่งต่อฝ่ายขายทุกครั้ง ยังไม่ตกลง SLA ของ API",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q60",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q60",
+        "question": "Is daily availability enough, or is real time required?",
+        "owner": "Sales Ops และทีมไอที",
+        "blocks": "Later availability integration",
+        "default": "Always hand off in v1. Audit 5–15 minute caching is a proposal, not an approved SLA. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q61",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของโครงการการตลาดและฝ่ายขาย",
+      "question_th": "ค่าส่วนกลาง กองทุน ค่าโอน เฟอร์นิเจอร์ สัตว์เลี้ยงและที่จอดของแต่ละเฟสหรือยูนิตยืนยันจากใคร?",
+      "default_th": "ค่าที่ว่างคือไม่ทราบ รอตรวจเอกสารและขอบเขตรายรายการ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q61",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q61",
+        "question": "Confirm fee/fund/transfer/furniture/pet/parking facts and phase/unit coverage.",
+        "owner": "เจ้าของโครงการการตลาดและฝ่ายขาย",
+        "blocks": "Affected fact coverage",
+        "default": "Unknown is not none; require approved fact sheets and monetary freshness. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q62",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของเนื้อหา RAMK และผู้ประสานข้อมูลการเดินรถ",
+      "question_th": "สถานีสายสีส้มที่อ้างใน RAMK เปิดบริการแล้วหรือยัง และอ้างอิงผู้ให้บริการใด?",
+      "default_th": "เก็บสถานะการเดินรถแยกจากชื่อสถานี ไม่บอกว่าเปิดหากยังไม่ยืนยัน",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q62",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q62",
+        "question": "Confirm RAMK Orange Line transit operating status and operator source.",
+        "owner": "เจ้าของเนื้อหา RAMK และผู้ประสานข้อมูลการเดินรถ",
+        "blocks": "Transit claim only",
+        "default": "Do not imply a planned station is operating. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q63",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ฝ่ายการตลาด Solar",
+      "question_th": "โปรโมชั่น Solar เดือนกรกฎาคมที่ยังแสดงในตุลาคมมีผลถึงเมื่อใดและมีโควตาหรือไม่?",
+      "default_th": "บันทึกคำถามไว้สำหรับระยะถัดไป ไม่มีวันที่ยืนยันถือว่ายังไม่ทราบช่วงมีผล",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q63",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q63",
+        "question": "Deferred Solar: confirm July-banner validity and quota.",
+        "owner": "ฝ่ายการตลาด Solar",
+        "blocks": "Later Solar offer use",
+        "default": "No current-offer claim without approved dates; Solar deferred. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q64",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ Solar",
+      "question_th": "ค่าผ่อน Solar ที่เขียน 3,6=700 ค่าที่ถูกต้องและหลักฐานคืออะไร?",
+      "default_th": "กักค่าผิดรูปแบบไว้ AI ห้ามแก้หรือเดาตัวเลข Solar ยังไม่เริ่ม",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q64",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q64",
+        "question": "Deferred Solar: resolve malformed installment value 3,6=700.",
+        "owner": "เจ้าของผลิตภัณฑ์ Solar",
+        "blocks": "That numeric claim only",
+        "default": "Quarantine; never AI-correct. Retain as a malformed-value golden case. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q65",
+      "status": "PENDING",
+      "owner_group": "finance",
+      "owner_th": "เจ้าของข้อมูลการเงิน Solar",
+      "question_th": "ตารางหัวข้อ GSB ที่หมายเหตุระบุผู้ให้บริการลีสซิ่งเป็นผลิตภัณฑ์ใด?",
+      "default_th": "แยกผู้ให้กู้ ผลิตภัณฑ์ และตารางอัตราไว้รอตรวจ ไม่คำนวณ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q65",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q65",
+        "question": "Deferred Solar Finance: resolve GSB versus leasing-provider table mapping.",
+        "owner": "เจ้าของข้อมูลการเงิน Solar",
+        "blocks": "Later lender/rate use",
+        "default": "No lender/product/rate-table inference; no v1 calculators. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q66",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "วิศวกรและเจ้าของผลิตภัณฑ์ Solar",
+      "question_th": "ภาพแพ็กเกจ Solar แต่ละภาพตรงกับ SKU รุ่น kWp และ kWh ใด?",
+      "default_th": "รอตรวจภาพและข้อมูลเป็นรายรายการ ไม่จับคู่ด้วยลำดับภาพ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q66",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q66",
+        "question": "Deferred Solar: verify image-to-SKU/model/kWp/kWh mapping.",
+        "owner": "วิศวกรและเจ้าของผลิตภัณฑ์ Solar",
+        "blocks": "Later Solar specifications",
+        "default": "No image-order mapping; engineer review required. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q67",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีมเว็บและทีมไอที",
+      "question_th": "หน้าที่ดึงแล้ว 502 หรือหมดเวลาจะเข้าถึงเนื้อหาและไฟล์ครบได้ทางใด?",
+      "default_th": "บันทึกความล้มเหลว ลองใหม่ตามนโยบาย ไม่ถือว่าเว็บไม่มีเนื้อหา ไม่เปลี่ยนเวลา snapshot ที่สำเร็จเดิม",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q67",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q67",
+        "question": "Resolve incomplete coverage from 502/timeouts and rendered-page failures.",
+        "owner": "ทีมเว็บและทีมไอที",
+        "blocks": "Only inaccessible source coverage",
+        "default": "Record failures, retry/backoff/render, preserve last-successful time; use CMS export when available. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q68",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีมเว็บและเจ้าของสื่อการตลาด",
+      "question_th": "ทีมเว็บส่งออกคลังสื่อ CMS เช่น WordPress uploads ของเว็บโครงการนำร่องได้หรือไม่?",
+      "default_th": "ใช้ไฟล์ที่ดึงได้เป็นหลักฐานส่วนตัวก่อน ไฟล์ยังต้องยืนยันขอบเขตและสิทธิ์",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q68",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q68",
+        "question": "Can the web team export the CMS media library, e.g. WordPress uploads, for pilot sites?",
+        "owner": "ทีมเว็บและเจ้าของสื่อการตลาด",
+        "blocks": "Coverage beyond linked public files",
+        "default": "Keep links/failures visible; media remain private until MKT and publisher review. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q69",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีมไอทีและเจ้าของงบระบบ",
+      "question_th": "ไฟล์ production จะเก็บที่ Supabase Storage หรือ R2 และต้องใช้พื้นที่เท่าใด?",
+      "default_th": "ใช้จำนวนไบต์จริงจาก manifest แยกไฟล์ไม่ซ้ำ หลักฐาน และไฟล์ที่ดึงไม่สำเร็จ ยังไม่ย้ายขึ้นระบบ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q69",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q69",
+        "question": "Where will production assets live (Supabase Storage or R2), and how much space is needed?",
+        "owner": "ทีมไอทีและเจ้าของงบระบบ",
+        "blocks": "Production storage choice and capacity",
+        "default": "Use measured unique file/package bytes after crawl, plus failed-file lower-bound warning, retention and growth. No hosted upload. See docs/30-knowledge-library.md."
+      }
+    },
+    {
+      "id": "Q70",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์ LivNex/RentNex",
+      "question_th": "ยืนยันรุ่น วันมีผล เงินมัดจำ ข้อยกเว้น สิทธิ์โอน และขอบเขตโครงการ/ยูนิตของทั้ง 5 โปรแกรม?",
+      "default_th": "แยก LIVNEX, LIVNEX_GOLD, RENTNEX, RENTNEX_BENEFIT, RENTNEX_INVEST รอตรวจรายกฎ",
+      "links": [
+        {
+          "href": "/",
+          "label": "โครงการและแบรนด์"
+        },
+        {
+          "href": "/questions#Q70",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q70",
+        "question": "Confirm all five programme versions, effective dates, deposits, exclusions, transfer rights and applicability.",
+        "owner": "เจ้าของผลิตภัณฑ์ LivNex/RentNex",
+        "blocks": "Unreviewed programme rules",
+        "default": "Explicit scope per typed rule; explain approved rules with citations and staff handoff. See docs/30-knowledge-library.md."
+      }
     }
   ]
 }
