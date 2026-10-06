@@ -10,7 +10,8 @@ const reviews = [metadata('2', {brand_binding_allowed: false, exceptions: [{code
 async function setup(page: Page, role = 'viewer') {
   const writes: string[] = [];
   const rows = reviews.map((source_review, i) => ({public_project_id: i === 2 ? 'prj_closed' : null, rem_project_id: `P${i}`, name: `โครงการสมมติ ${i}`,
-    brand_name: null, source_review, new_from_rem: i !== 2, filling: false, awaiting_publisher: false, published: i === 2, needs_attention: i === 2,
+    brand_name: null, marketing_project_group_id: 'GROUP-01', marketing_group_name_th: 'กลุ่มโครงการจำลอง', rem_project_group_id: 'REM-G', group_mismatch: true,
+    source_review, new_from_rem: i !== 2, filling: false, awaiting_publisher: false, published: i === 2, needs_attention: i === 2,
     attention: i === 2 ? [{field: 'source', message: 'โครงการต้นทาง REM ปิดโครงการ (3)'}] : [], gaps: {core: [], media: [], models: [], brand: []},
     confirmed_models: 0, total_models: 1, waiting_on: [], first_seen_at: '2026-10-05T00:00:00Z', age_days: 0, age_basis: 'first_import', amenities: null}));
   await page.context().addCookies([{name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000'}]);
@@ -54,6 +55,8 @@ test('source picker disables missing-brand selection and explains Gold conflict 
   const picker = page.locator('#source-picker');
   await expect(picker.locator('#source-brand-P0')).toBeDisabled();
   await expect(picker).toContainText('ต้นทางไม่มีแบรนด์ จึงยังผูกแบรนด์ไม่ได้');
+  await expect(picker).toContainText('GROUP-01 · กลุ่มโครงการจำลอง');
+  await expect(picker).toContainText('รหัสกลุ่มไม่ตรงกัน · REM: REM-G');
   await page.getByLabel('ค้นหาชื่อหรือรหัสโครงการต้นทาง').fill('P1');
   await expect(picker).toContainText('ปิดการเติมจาก Gold');
   await expect(picker).toContainText('ไม่จับคู่อัตโนมัติ');

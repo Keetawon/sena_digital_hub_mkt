@@ -23,6 +23,20 @@ do $$ declare cached jsonb; actual jsonb; begin
   if cached->'required' is distinct from actual->'required' or cached->'percent' is distinct from actual->'percent' then raise exception 'Save cache diverged from publication gate'; end if;
   if (select summary->>'new_from_rem' from hub.project_progress_cache where rem_project_id='CACHE-TEST')<>'false' then raise exception 'Hub creation not reflected'; end if;
 end $$;
+insert into staging.intake_batches values(repeat('4',64),'{"synthetic":true}','{}',now());
+update staging.rem_projects set source_record=source_record||'{"ProjectGroupID":"REM-G "}' where rem_project_id='CACHE-TEST';
+insert into staging.dw_projects(rem_project_id,source_record,source_snapshot_at,source_fingerprint,provenance)
+values('CACHE-TEST','{"project_id":"CACHE-TEST","marketing_project_group_id":"0001"}',now(),repeat('4',64),'{"synthetic":true}');
+insert into staging.dw_project_groups(project_group_id,source_record,manifest_sha256)
+values('0001','{"project_group_id":"0001","project_name_th":"กลุ่มจำลอง","project_id_set":["CACHE-TEST"],"source_snapshot_at":"2026-10-06T07:00:00+07:00"}',repeat('4',64));
+do $$ declare v jsonb; begin
+  select summary into v from hub.project_progress_cache where rem_project_id='CACHE-TEST';
+  if v->>'group_status'<>'marketing_reference' or v->>'marketing_group_name_th'<>'กลุ่มจำลอง' or v->>'group_mismatch'<>'true'
+     or v->>'rem_project_group_id'<>'REM-G ' or v#>>'{group_provenance,manifest_sha256}'<>repeat('4',64) then
+    raise exception 'Dictionary name/provenance or exact group mismatch missing';
+  end if;
+  if exists(select 1 from jsonb_array_elements(v->'group_issues')) then raise exception 'Unexpected membership issue'; end if;
+end $$;
 set local role service_consumer;
 do $$ begin
   begin perform * from hub.progress_inputs(); raise exception 'Consumer cache access'; exception when insufficient_privilege then null; end;

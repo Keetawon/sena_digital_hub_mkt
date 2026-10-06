@@ -503,7 +503,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                status: Literal['all','new_from_rem','filling','awaiting_publisher','published','needs_attention'] = 'all',
                                rem_status: str = Query('all', max_length=50), other: bool = False,
                                brand: str | None = Query(None, max_length=200), group: str | None = Query(None, max_length=200),
-                               group_state: Literal['rem_reference','conflict','missing'] | None = None,
+                               group_state: Literal['marketing_reference','conflict','missing'] | None = None,
                                view: Literal['rows','counts','groups'] = 'rows',
                                detail: str | None = Query(None, max_length=200)):
         from .project_progress import read_progress, select_progress

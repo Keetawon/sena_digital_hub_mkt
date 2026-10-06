@@ -47,6 +47,30 @@ def write_manifest(folder, manifest):
 
 
 class ReviewTests(unittest.TestCase):
+    def test_optional_group_contract_and_exact_ids(self):
+        for invalid in (None, 'duplicate', 'numeric_id', 'no_timezone', 'columns', 'count'):
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as temp:
+                folder = Path(temp); fixture(folder)
+                manifest = json.loads((folder / 'manifest.json').read_text())
+                groups = [dict(project_group_id='0001 ', project_name_th=None, project_name_en='Synthetic',
+                               member_count=2, project_id_set=['00001', 'OUTSIDE'], source_snapshot_at='2026-10-06T06:00:00+07:00')]
+                if invalid == 'duplicate': groups.append(groups[0])
+                if invalid == 'numeric_id': groups[0]['project_group_id'] = 1
+                if invalid == 'no_timezone': groups[0]['source_snapshot_at'] = '2026-10-06T06:00:00'
+                content = json.dumps(groups).encode(); (folder / 'project_groups.json').write_bytes(content)
+                manifest['files']['project_groups.json'] = dict(bytes=len(content), sha256=review.digest(content), row_count=len(groups), columns=review.GROUP_COLUMNS)
+                manifest['counts']['project_groups'] = len(groups) + (1 if invalid == 'count' else 0)
+                content = json.dumps({'counts': manifest['counts']}).encode(); (folder / 'review.json').write_bytes(content)
+                manifest['files']['review.json'].update(bytes=len(content), sha256=review.digest(content))
+                if invalid == 'columns': manifest['files']['project_groups.json']['columns'] = ['unexpected']
+                digest = write_manifest(folder, manifest)
+                if invalid:
+                    with self.assertRaises(ValueError): review.load_package(folder, digest)
+                else:
+                    data = review.load_package(folder, digest)['datasets']
+                    self.assertEqual(data['project_groups'][0]['project_group_id'], '0001 ')
+                    self.assertEqual(review.group_findings(data), [{'code': 'GROUP_MEMBER_OUTSIDE_PACKAGE', 'group_id': '0001 ', 'project_id': 'OUTSIDE'}])
+
     def test_integrity_is_complete_and_reviewed_hash_is_an_argument(self):
         with tempfile.TemporaryDirectory() as temp:
             folder = Path(temp); digest = fixture(folder)

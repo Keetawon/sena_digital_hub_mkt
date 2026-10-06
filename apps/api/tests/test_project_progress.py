@@ -112,15 +112,15 @@ def test_navigation_preserves_exact_membership_without_gold_substitution_or_priv
     before = deepcopy(record)
     row = build_progress([record], [source], [], NOW)["rows"][0]
     assert row["rem_brand_id"] == "00025" and row["rem_project_group_id"] == "GROUP-01 "
-    assert row["marketing_project_group_id"] == "GROUP-01" and row["group_status"] == "rem_reference"
+    assert row["marketing_project_group_id"] == "GROUP-01" and row["group_status"] == "marketing_reference"
     assert "private_price" not in str(row) and record == before
 
 
 @pytest.mark.parametrize("raw,gold,expected", [
     ({}, {}, "missing"), ({"ProjectGroupID": ""}, {}, "missing"),
-    ({"ProjectGroupID": None}, {"marketing_project_group_id": "G"}, "missing"),
-    ({"ProjectGroupID": "G"}, {}, "rem_reference"),
-    ({"ProjectGroupID": "G"}, {"marketing_project_group_id": "G"}, "rem_reference"),
+    ({"ProjectGroupID": None}, {"marketing_project_group_id": "G"}, "marketing_reference"),
+    ({"ProjectGroupID": "G"}, {}, "missing"),
+    ({"ProjectGroupID": "G"}, {"marketing_project_group_id": "G"}, "marketing_reference"),
     ({"ProjectGroupID": "G"}, {"project_identity_conflict": True}, "conflict"),
     ({"ProjectGroupID": None, "rem_project_group_id": "LEGACY"}, {}, "missing"),
 ])
@@ -229,3 +229,19 @@ def test_server_pages_keep_facets_and_source_model_counts_without_model_lists():
     assert select_progress(data, other=True, status='new_from_rem')['total'] == 11
     assert select_progress(data, q='0011', other=True)['rows'][0]['rem_project_id'] == '0011'
     assert select_progress(data, page=999)['page'] == 2
+
+
+def test_marketing_group_filters_counts_and_names_preserve_exact_ids():
+    from sena_hub_api.project_progress import select_progress
+    record, source = fixture()
+    row = build_progress([record], [source], [], NOW)['rows'][0]
+    row.update(marketing_project_group_id='0001', marketing_group_name_th='กลุ่มจำลอง', group_status='marketing_reference', group_mismatch=True)
+    second = {**row, 'rem_project_id': 'OTHER', 'marketing_project_group_id': '0001 ', 'group_mismatch': False}
+    data = {'rows': [row, second]}
+    assert select_progress(data, group='0001')['total'] == 1
+    assert select_progress(data, q='กลุ่มจำลอง')['total'] == 2
+    counts = select_progress(data, view='counts')
+    assert counts['groups'] == [('0001', 'กลุ่มจำลอง'), ('0001 ', 'กลุ่มจำลอง')]
+    assert counts['group_mismatch_count'] == 1
+    groups = select_progress(data, view='groups')['rows']
+    assert len(groups) == 2 and groups[0]['name_th'] == 'กลุ่มจำลอง'

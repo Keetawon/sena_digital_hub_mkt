@@ -7,7 +7,7 @@ const gap = { field: 'latitude', message: 'ระบุพิกัดโคร�
 const source = { status_raw: '2', status_label: 'พร้อมอยู่', default_scope: true, is_deleted: false, flags: [], exceptions: [] };
 const item = (id: string, extra: Record<string, unknown> = {}) => ({
   public_project_id: id, rem_project_id: id, name: `โครงการ ${id}`, brand_name: 'แบรนด์จำลอง', rem_brand_id: '00025',
-  rem_project_group_id: 'G', marketing_project_group_id: 'MARKETING-G', group_status: 'rem_reference',
+  rem_project_group_id: 'G', marketing_project_group_id: 'MARKETING-G', marketing_group_name_th: 'กลุ่มจำลอง', group_mismatch: true, group_status: 'marketing_reference',
   new_from_rem: false, filling: true, awaiting_publisher: true, published: false, needs_attention: false,
   has_unpublished_changes: true, withdrawn: false, attention: [], gaps: { core: [gap], media: [], models: [], brand: [] },
   confirmed_models: 0, total_models: 1, amenities: null, waiting_on: ['editor', 'publisher'], updated_at: stamp,
@@ -16,8 +16,8 @@ const item = (id: string, extra: Record<string, unknown> = {}) => ({
 
 async function fixture(page: Page, role = 'publisher') {
   const rows = [...Array.from({ length: 12 }, (_, index) => item(`P${String(index + 1).padStart(2, '0')}`)),
-    item('SPACE', { rem_project_group_id: 'G ' }), item('OTHER-BRAND', { rem_brand_id: '25' }),
-    item('CONFLICT', { group_status: 'conflict' }), item('MISSING', { group_status: 'missing', rem_project_group_id: null }),
+    item('SPACE', { marketing_project_group_id: 'MARKETING-G ' }), item('OTHER-BRAND', { rem_brand_id: '25' }),
+    item('CONFLICT', { group_status: 'conflict' }), item('MISSING', { group_status: 'missing', marketing_project_group_id: null }),
     item('CLOSED', { source_review: { ...source, status_raw: '3', default_scope: false } }),
     item('NEW', { public_project_id: null, new_from_rem: true, filling: false })];
   const asset = { id: 'synthetic-image', original_filename: 'synthetic.png', mime_type: 'image/png', public_url: '/demo-assets/brand-logo.svg', rights_status: 'pending', rights_notes: null, updated_at: stamp, effective_from: null, effective_to: null };
@@ -56,10 +56,10 @@ test('brand expansion preserves exact IDs, shared groups, conflicts and scope th
   await expect(groups).toContainText('รหัสมีช่องว่าง:');
   await page.screenshot({ path: 'artifacts/brand-group-expansion.png', fullPage: true });
   const open = groups.locator('a').filter({ hasText: 'เปิดกลุ่ม' });
-  const exactGroup = open.filter({ has: page.locator('span', { hasText: /^ G$/ }) });
+  const exactGroup = open.filter({ has: page.locator('span', { hasText: /^ MARKETING-G · กลุ่มจำลอง$/ }) });
   await exactGroup.click();
   expect(new URL(page.url()).searchParams.get('rem_brand')).toBe('00025');
-  expect(new URL(page.url()).searchParams.get('group')).toBe('G');
+  expect(new URL(page.url()).searchParams.get('group')).toBe('MARKETING-G');
   await expect(page.locator('.project-dashboard tbody tr')).toHaveCount(10);
   await expect(page.locator('.project-dashboard')).not.toContainText('OTHER-BRAND');
   await page.locator('#projects-top-page').selectOption('2');
@@ -79,7 +79,7 @@ test('brand expansion preserves exact IDs, shared groups, conflicts and scope th
 test('out-of-scope group selection keeps the toggle and source action stays read-only for viewers', async ({ page }) => {
   const { writes } = await fixture(page, 'viewer');
   await page.goto('/?view=brands&bopen=00025&bother=1');
-  await page.locator('.project-group-list a[href*="group=G&"]').first().click();
+  await page.locator('.project-group-list a[href*="group=MARKETING-G&"]').first().click();
   await expect(page.getByRole('checkbox', { name: 'แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ' })).toBeChecked();
   await page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM').fill('NEW');
   await page.getByRole('button', { name: 'ดูต้นทาง', exact: true }).click();
@@ -116,4 +116,16 @@ test('project table has a sticky header, pagination and no mobile document overf
   await page.screenshot({ path: 'artifacts/group-project-mobile.png', fullPage: true });
   await page.goto('/?project=P01&return_to=https%3A%2F%2Fexample.com');
   await expect(page.locator('a.back-link')).toHaveAttribute('href', '/');
+});
+
+test('marketing names are shown in rows and filters while REM differences are flagged', async ({ page }) => {
+  await fixture(page, 'viewer');
+  await page.goto('/');
+  await expect(page.locator('#project-group-filter option[value="MARKETING-G"]')).toHaveText('MARKETING-G · กลุ่มจำลอง');
+  const row = page.locator('.project-summary-row').first();
+  await expect(row).toContainText('กลุ่มการตลาด: MARKETING-G · กลุ่มจำลอง');
+  await expect(row).toContainText('รหัสกลุ่มไม่ตรงกัน · REM: G');
+  await page.getByLabel('กลุ่มการตลาด', {exact:true}).selectOption('MARKETING-G ');
+  await expect(page.locator('.project-summary-row')).toHaveCount(1);
+  await expect(page.locator('.project-summary-row')).toContainText('SPACE');
 });

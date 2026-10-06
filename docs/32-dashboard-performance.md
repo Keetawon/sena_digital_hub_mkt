@@ -71,3 +71,37 @@ runs. The full combined API/UI suites will run again with the remaining follow-u
 Dashboard and source-picker filter options use `<raw code> <Thai label> (<count>)`.
 Null uses `— ไม่ทราบสถานะ`; unknown non-null codes retain their exact raw value.
 Counts and default-scope semantics are unchanged.
+
+## Optional marketing-group dictionary (item 4)
+
+`project_groups.json` is an additive extension of the reviewed DW package. Older packages remain valid.
+The intake verifies its six columns, bytes, SHA-256, row count, exact text identifiers, member array
+and offset-bearing source timestamp before connecting. It archives the original bytes with the other
+payloads. A private mirror stores the first name and provenance; immutable evidence records later
+changed/missing rows for review. Omission of the optional file does not mark groups missing.
+No group membership, Hub mapping, draft or publication is created or changed by the dictionary.
+
+Staff summaries join the accepted Gold `marketing_project_group_id` to the dictionary, displaying
+`<id> · <Thai name>` (an explicit missing-name label when unknown). REM codes remain in source details;
+different nonblank REM/marketing codes get a mismatch flag without being joined or repaired. Source
+identity conflicts remain in their separate review bucket. Group membership outside the residential
+package and missing dictionary references are reported as named evidence issues, never auto-created.
+Group evidence/mirror writes invalidate the existing cached summaries in the same transaction.
+
+The 6 October extension manifest is `89ccfc35f045b13d82005f0967c7c3d04c74e3a5dccfa429c1169b33ac8fc737`.
+All five existing business/exception files are byte-identical to the approved 5 October package.
+Its 118 groups contain no outside-package members or missing marketing dictionary references.
+Three membership differences (`00412`, `00401`, `01401`) match the already recorded
+`GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT` exceptions. They remain flagged with Gold prefill disabled.
+Any dictionary membership conflict without such explicit prior evidence stops intake.
+
+Local intake result: 118 new dictionary mirrors/evidence rows. Existing projects (278), retained
+raw models (3,427), Gold projects (278) and Gold model groups (3,178) were identical no-ops;
+the 89 previously discarded models remain excluded. Exact package replay returned `already_staged`.
+Protected Hub brand/project/model/version/asset-link fingerprints were identical before/after.
+The local dashboard has one exact REM/marketing code mismatch: `00412`,
+`C-MIBF-BNGPU` versus `C-MIGD-BNGPU`. No mapping was repaired.
+
+Item 4 verification: typecheck and production build passed; 9 offline importer contract tests;
+full API 1,390 passed / 11 skipped, then 41 final intake/progress checks passed; full DB suite
+and all 204 production UI tests passed. Evidence is under ignored `.local/dashboard-followup`.

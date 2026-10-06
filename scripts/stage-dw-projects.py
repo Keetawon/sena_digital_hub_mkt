@@ -55,6 +55,10 @@ def legacy_changes(kind, old, new):
 
 
 async def plan(connection, package, discard_deleted):
+    known_group_conflicts = {e['keys'].get('project_id', e['keys'].get('ProjectID')) for e in package['datasets']['exceptions']
+                             if e['issue_code'] == 'GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT'}
+    require(not any(f['code'] == 'GROUP_MEMBERSHIP_MISMATCH' and f['project_id'] not in known_group_conflicts
+                    for f in review.group_findings(package['datasets'])), 'Unreviewed dictionary membership conflict')
     require(not review.identity_conflicts(package['datasets']), 'Unreviewed Gold identity/group conflict')
     require(not review.identity_conflicts(package['datasets']), 'Unreviewed Gold identity/group conflict')
     tables = {table: [dict(r) for r in await connection.fetch('SELECT * FROM ' + table)] for table in
@@ -130,12 +134,27 @@ async def plan(connection, package, discard_deleted):
     inserts = {kind: [key for key, row in rows.items() if key[0] == kind and row is not None and
                      (key[1] not in projects if kind == 'projects' else key[1:] not in models if kind == 'models' else key[1] not in gold)]
                for kind in ('projects', 'models', 'gold_projects')}
+    group_actions = []; group_counts = Counter()
+    if 'project_groups' in package['datasets']:
+        incoming_groups = {r['project_group_id']: r for r in package['datasets']['project_groups']}
+        previous_groups = {r['project_group_id']: dict(r) for r in await connection.fetch('''
+            SELECT DISTINCT ON(project_group_id) * FROM staging.project_group_evidence ORDER BY project_group_id,id DESC''')}
+        for gid, row in incoming_groups.items():
+            previous = previous_groups.get(gid)
+            if previous and previous['record'] == row and previous['outcome'] != 'missing':
+                group_counts['identical'] += 1; continue
+            outcome = 'changed' if previous else 'new'
+            group_actions.append((gid, outcome, row, previous['record'] if previous else None)); group_counts[outcome] += 1
+        for gid, previous in previous_groups.items():
+            if gid not in incoming_groups and previous['outcome'] != 'missing':
+                group_actions.append((gid, 'missing', None, previous['record'])); group_counts['missing'] += 1
     result = {'status': 'validated_dry_run', 'manifest_sha256': package['manifest_sha256'], 'outcomes': counts,
+              'project_groups': dict(group_counts), 'group_findings': review.group_findings(package['datasets']),
               'new_evidence': len(evidence), 'mirror_inserts': {k: len(v) for k, v in inserts.items()},
               'discarded_deleted_models': len(omitted), 'mirror_deletes': len(deletions),
               'discarded_model_keys': sorted(discard_keys if discard_keys is not None else omitted),
               'hub_drafts_changed': 0, 'mappings_changed': 0, 'publications_changed': 0}
-    return result, (rows, evidence, inserts, deletions)
+    return result, (rows, evidence, inserts, deletions, group_actions)
 
 
 async def stage_package(connection, package, discard_deleted=False, apply=False):
@@ -146,12 +165,18 @@ async def stage_package(connection, package, discard_deleted=False, apply=False)
         result, actions = await plan(connection, package, discard_deleted)
         if not apply or actions is None:
             return result
-        rows, evidence, inserts, deletions = actions
+        rows, evidence, inserts, deletions, group_actions = actions
         digest = package['manifest_sha256']; stamp = review.utc(package['manifest']['extracted_at'])
         await connection.execute('INSERT INTO staging.intake_batches(manifest_sha256,manifest,datasets) VALUES($1,$2,$3)', digest, package['manifest'], package['datasets'])
         await connection.executemany('''INSERT INTO staging.project_intake_evidence
             (manifest_sha256,kind,rem_project_id,source_id,outcome,record,previous_record) VALUES($1,$2,$3,$4,$5,$6,$7)''',
             [(digest, *key, outcome, record, old) for key, outcome, record, old in evidence])
+        await connection.executemany('''INSERT INTO staging.project_group_evidence
+            (manifest_sha256,project_group_id,outcome,record,previous_record) VALUES($1,$2,$3,$4,$5)''',
+            [(digest, *row) for row in group_actions])
+        await connection.executemany('''INSERT INTO staging.dw_project_groups(project_group_id,source_record,manifest_sha256)
+            VALUES($1,$2,$3) ON CONFLICT(project_group_id) DO NOTHING''',
+            [(gid, row, digest) for gid, outcome, row, _ in group_actions if outcome == 'new'])
         for key in inserts['projects']:
             row = rows[key]
             await connection.execute('''INSERT INTO staging.rem_projects(rem_project_id,project_name_rem,rem_brand_id,rem_company_id,

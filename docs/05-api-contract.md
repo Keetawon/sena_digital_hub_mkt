@@ -205,3 +205,10 @@ pre-generated private 96px WebP with existing staff file authorization. Missing 
 unsupported derivatives return 404; clients use initials, never the original.
 No consumer payload or publication gate is changed. See docs/32 for cache refresh
 and performance measurements.
+
+Marketing-group follow-up: `group` filters the exact accepted Gold marketing ID;
+`group_state` is `marketing_reference`, `conflict` or `missing`. `view=counts` also
+returns group ID/Thai-name options and `group_mismatch_count`. Rows include the
+marketing name, immutable intake/snapshot provenance, dictionary issue flags and
+exact REM/marketing mismatch boolean. `view=groups` includes `name_th`. These are
+staff-only source summaries; no group membership or consumer contract changes.

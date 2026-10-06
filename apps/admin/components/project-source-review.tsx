@@ -3,6 +3,24 @@ export type SourceReview = {
   flags: string[]; exceptions: { code: string; keys: Record<string, unknown> }[];
   brand_binding_allowed?: boolean; gold_prefill_allowed?: boolean; first_import_only?: boolean;
 };
+export type ProjectGroupInfo = {
+  rem_project_group_id?: string | null; marketing_project_group_id?: string | null;
+  marketing_group_name_th?: string | null; group_mismatch?: boolean; group_issues?: string[];
+  group_evidence_status?: string | null;
+  group_provenance?: { manifest_sha256: string; source_snapshot_at: string; first_seen_at: string } | null;
+};
+export function ProjectGroupSummary({ value, details = false }: { value: ProjectGroupInfo; details?: boolean }) {
+  return <div className="small-text">
+    <p className="source-code">กลุ่มการตลาด: {value.marketing_project_group_id ? `${value.marketing_project_group_id} · ${value.marketing_group_name_th || "ยังไม่มีชื่อกลุ่ม"}` : "ยังไม่ระบุกลุ่ม"}</p>
+    {value.group_mismatch && <p className="field-help">รหัสกลุ่มไม่ตรงกัน · REM: <code>{value.rem_project_group_id}</code></p>}
+    {details && <details><summary>รายละเอียดกลุ่มต้นทาง</summary><p>รหัสกลุ่ม REM: <code>{JSON.stringify(value.rem_project_group_id ?? null)}</code></p>
+      {value.group_provenance && <><p>วันที่สำเนาชื่อกลุ่ม: {value.group_provenance.source_snapshot_at}</p><p className="source-code">ชุดหลักฐาน: {value.group_provenance.manifest_sha256}</p></>}
+    </details>}
+    {value.group_evidence_status === "changed" && <p className="field-help">ชื่อหรือสมาชิกกลุ่มต้นทางเปลี่ยน · รอตรวจสอบ</p>}
+    {value.group_evidence_status === "missing" && <p className="field-help">ไม่พบกลุ่มในชุดข้อมูลล่าสุด · เก็บหลักฐานเดิม</p>}
+    {value.group_issues?.map(issue => <p className="field-help" key={issue}>{issue === "MARKETING_GROUP_MISSING" ? "ไม่พบกลุ่มการตลาดในพจนานุกรมต้นทาง" : "สมาชิกกลุ่มต้นทางไม่ตรงกับโครงการ · รอตรวจสอบ"}</p>)}
+  </div>;
+}
 const reasons: Record<string, string> = {
   PROJECT_BRAND_MISSING: "ต้นทางไม่มีแบรนด์ จึงยังผูกแบรนด์ไม่ได้",
   GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT: "ตัวตนหรือกลุ่มใน Gold ขัดแย้ง — ปิดการเติมจาก Gold ใช้ REM อ้างอิงตัวตน",

@@ -57,7 +57,8 @@ def source_membership(source):
     # REM and Marketing group IDs belong to separate namespaces.
     return {"rem_brand_id": text_id(source.get("rem_brand_id")), "rem_project_group_id": rem_group,
             "marketing_project_group_id": marketing_group,
-            "group_status": "conflict" if conflict else "rem_reference" if rem_group else "missing"}
+            "group_status": "conflict" if conflict else "marketing_reference" if marketing_group else "missing",
+            "group_mismatch": bool(rem_group and marketing_group and rem_group != marketing_group)}
 
 
 def checklist(readiness):
@@ -178,8 +179,8 @@ def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='al
                     brand=None, group=None, group_state=None, view='rows'):
     """Server-side scope, faceting, stable sorting and bounded pages of stored summaries."""
     members = [r for r in data['rows'] if (brand is None or r.get('rem_brand_id') == brand)
-               and (not group_state or r['group_status'] == group_state and
-                    (group_state != 'rem_reference' or r.get('rem_project_group_id') == group))]
+               and (group is None or r.get('marketing_project_group_id') == group)
+               and (not group_state or r['group_status'] == group_state)]
     counts = {key: sum((r['source_review']['default_scope'] or key == 'needs_attention' or other and key != 'new_from_rem')
                       and (key == 'all' or r[key]) for r in members) for key in ('all', *TILES)}
     statuses = {}
@@ -191,20 +192,22 @@ def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='al
     rows = [r for r in members if (other or r['source_review']['default_scope'] or status == 'needs_attention' and r['needs_attention'])
             and (status == 'all' or r[status]) and (status != 'new_from_rem' or r['source_review']['default_scope'])
             and (rem_status == 'all' or (r['source_review']['status_raw'] if r['source_review']['status_raw'] is not None else 'null') == rem_status)
-            and text in ' '.join(str(r.get(k) or '') for k in ('name', 'rem_project_id', 'brand_name', 'rem_project_group_id')).lower()]
+            and text in ' '.join(str(r.get(k) or '') for k in ('name', 'rem_project_id', 'brand_name', 'marketing_project_group_id', 'marketing_group_name_th')).lower()]
     if view == 'counts':
         return {'counts': counts, 'statuses': statuses, 'status_total': len(members),
-                'brands': list({r['rem_brand_id']: r['brand_name'] or r['rem_brand_id'] for r in data['rows'] if r.get('rem_brand_id')}.items())}
+                'brands': list({r['rem_brand_id']: r['brand_name'] or r['rem_brand_id'] for r in data['rows'] if r.get('rem_brand_id')}.items()),
+                'groups': sorted({r['marketing_project_group_id']: r.get('marketing_group_name_th') for r in data['rows'] if r.get('marketing_project_group_id')}.items()),
+                'group_mismatch_count': sum(bool(r.get('group_mismatch')) for r in members)}
     if view == 'groups':
         groups = {}
         for r in rows:
-            state = r['group_status']; gid = r.get('rem_project_group_id') if state == 'rem_reference' else None
-            entry = groups.setdefault((state, gid), {'state': state, 'id': gid, 'count': 0, 'published': 0, 'filling': 0, 'awaiting_publisher': 0, 'names': []})
+            state = r['group_status']; gid = r.get('marketing_project_group_id') if state == 'marketing_reference' else None
+            entry = groups.setdefault((state, gid), {'state': state, 'id': gid, 'name_th': r.get('marketing_group_name_th'), 'count': 0, 'published': 0, 'filling': 0, 'awaiting_publisher': 0, 'names': []})
             entry['count'] += 1
             for key in ('published', 'filling', 'awaiting_publisher'): entry[key] += int(r[key])
             if len(entry['names']) < 2: entry['names'].append(r['name'])
         for entry in groups.values():
-            entry['brand_count'] = len({r.get('rem_brand_id') for r in data['rows'] if r['group_status'] == entry['state'] and r.get('rem_project_group_id') == entry['id']})
+            entry['brand_count'] = len({r.get('rem_brand_id') for r in data['rows'] if r['group_status'] == entry['state'] and (entry['state'] != 'marketing_reference' or r.get('marketing_project_group_id') == entry['id'])})
         rows = sorted(groups.values(), key=lambda r: (r['state'], r['id'] or ''))
     total = len(rows); pages = max(1, (total + size - 1) // size); page = min(page, pages)
     selected = rows[(page - 1) * size:page * size]

@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FILES = {'projects.json', 'models.json', 'gold_projects.json', 'gold_models.json', 'exceptions.json', 'review.json'}
 PROJECT_COLUMNS = 'ProjectID ProjectName ProjectNameEng ProjectType BrandID CompanyID ProjectGroupID ProjectStatus isDeleteRaw CreateDate ModifyDate isDeleted'.split()
 MODEL_COLUMNS = 'ProjectID ModelID ModelName ModelNameEng ModelTypeID ModelArea isDeleteRaw CreateDate ModifyDate isDeleted ModelTypeName ModelTypeNameEng'.split()
+GROUP_COLUMNS = 'project_group_id project_name_th project_name_en member_count project_id_set source_snapshot_at'.split()
 STATUS = {'0': 'พรีเซล', '1': 'กำลังก่อสร้าง', '2': 'พร้อมอยู่', '3': 'ปิดโครงการ'}
 
 
@@ -99,8 +100,9 @@ def load_package(folder: Path, reviewed_hash: str):
     manifest = decode(raw['manifest.json'])
     require(manifest['contract_version'] == 'rem-project-model-review-v1', 'Unsupported project/model contract')
     require(manifest['environment'] == 'local_review' and type(manifest['synthetic']) is bool, 'Unexpected package environment')
-    require(set(manifest['files']) == FILES, 'Unexpected payload file set')
-    require({p.name for p in folder.iterdir()} == FILES | {'manifest.json', 'manifest.sha256'}, 'Incomplete or extra package files')
+    files = FILES | ({'project_groups.json'} if 'project_groups' in manifest['counts'] else set())
+    require(set(manifest['files']) == files, 'Unexpected payload file set')
+    require({p.name for p in folder.iterdir()} == files | {'manifest.json', 'manifest.sha256'}, 'Incomplete or extra package files')
     raw['manifest.sha256'] = (folder / 'manifest.sha256').read_bytes()
     require(raw['manifest.sha256'].decode('ascii').split() == [reviewed_hash, 'manifest.json'], 'Manifest sidecar mismatch')
     datasets = {}
@@ -141,6 +143,20 @@ def load_package(folder: Path, reviewed_hash: str):
             require(isinstance(row[field], list) and all(isinstance(v, str) for v in row[field]), 'Gold identifier/name arrays must contain text')
         require(row['technical_model_count'] == len(row['model_ids']) and len(set(row['model_ids'])) == len(row['model_ids']), 'Gold technical-model count mismatch')
     counts = manifest['counts']
+    if 'project_groups' in datasets:
+        groups = datasets['project_groups']
+        columns = manifest['files']['project_groups.json']['columns']
+        require(len(columns) == len(GROUP_COLUMNS) and set(columns) == set(GROUP_COLUMNS), 'Unexpected group column contract')
+        require(type(counts['project_groups']) is int and counts['project_groups'] == len(groups), 'Manifest count mismatch: project_groups')
+        ids = [r['project_group_id'] for r in groups]
+        require(all(isinstance(v, str) and v.strip() for v in ids) and len(ids) == len(set(ids)), 'Blank or duplicate group identity')
+        for group in groups:
+            require(all(group[k] is None or isinstance(group[k], str) for k in ('project_name_th', 'project_name_en')), 'Group names must be text/null')
+            require(group['member_count'] is None or type(group['member_count']) is int and group['member_count'] >= 0, 'Invalid group member count')
+            members = group['project_id_set']
+            require(members is None or isinstance(members, list) and all(isinstance(v, str) and v.strip() for v in members)
+                    and len(members) == len(set(members)), 'Invalid group member identities')
+            require(datetime.fromisoformat(group['source_snapshot_at']).tzinfo is not None, 'Group snapshot needs an explicit timezone')
     for name in ('projects', 'models', 'gold_projects', 'gold_models', 'exceptions'):
         require(counts[name] == len(datasets[name]), 'Manifest count mismatch: ' + name)
     require(counts['gold_project_rows'] == sum(r['gold'] is not None for r in datasets['gold_projects']), 'Gold row count mismatch')
@@ -161,6 +177,23 @@ def load_package(folder: Path, reviewed_hash: str):
             continue
         require(utc(window['read_started_at']) <= utc(window['read_finished_at']), 'Invalid source read window')
     return {'manifest_sha256': reviewed_hash, 'manifest': manifest, 'datasets': datasets, 'raw_files': raw}
+
+
+def group_findings(data):
+    """Dictionary membership is evidence, never authority to create or rebind projects."""
+    if 'project_groups' not in data:
+        return []
+    projects = {r['ProjectID'] for r in data['projects']}
+    groups = {r['project_group_id']: r for r in data['project_groups']}
+    findings = [{'code': 'GROUP_MEMBER_OUTSIDE_PACKAGE', 'group_id': gid, 'project_id': pid}
+                for gid, row in groups.items() for pid in row['project_id_set'] or [] if pid not in projects]
+    for wrapper in data['gold_projects']:
+        gid = (wrapper['gold'] or {}).get('marketing_project_group_id')
+        if gid and gid not in groups:
+            findings.append({'code': 'MARKETING_GROUP_MISSING', 'group_id': gid, 'project_id': wrapper['project_id']})
+        elif gid and groups[gid]['project_id_set'] is not None and wrapper['project_id'] not in groups[gid]['project_id_set']:
+            findings.append({'code': 'GROUP_MEMBERSHIP_MISMATCH', 'group_id': gid, 'project_id': wrapper['project_id']})
+    return findings
 
 
 def reconcile(raw, gold):

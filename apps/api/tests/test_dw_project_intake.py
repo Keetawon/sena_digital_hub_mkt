@@ -39,12 +39,19 @@ def test_transactional_intake_replay_refresh_conflict_acl_and_staff_guards():
         await db.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
         try:
             original = package()
+            original['datasets']['project_groups'] = [dict(project_group_id='SYN-G', project_name_th='กลุ่มจำลอง',
+                project_name_en='Synthetic group', member_count=5, project_id_set=[r['ProjectID'] for r in original['datasets']['projects']],
+                source_snapshot_at='2026-10-05T07:00:00+07:00')]
             before = await db.fetchval("SELECT count(*) FROM staging.intake_batches")
             preview = await stage.stage_package(db, original, True)
             assert preview['discarded_deleted_models'] == 1
             assert await db.fetchval("SELECT count(*) FROM staging.intake_batches") == before
             applied = await stage.stage_package(db, original, True, True)
             assert applied['status'] == 'staged' and applied['mirror_inserts'] == {'projects': 5, 'models': 3, 'gold_projects': 5}
+            assert applied['project_groups'] == {'new': 1}
+            grouped = await db.fetchval("SELECT summary FROM hub.project_progress_cache WHERE rem_project_id='SYN-DW-A'")
+            assert grouped['marketing_group_name_th'] == 'กลุ่มจำลอง' and grouped['group_status'] == 'marketing_reference'
+            assert grouped['group_provenance']['manifest_sha256'] == original['manifest_sha256'] and grouped['group_mismatch'] is False
             assert not await db.fetchval("SELECT EXISTS(SELECT 1 FROM staging.rem_models WHERE rem_project_id='SYN-DW-A' AND rem_model_id='099')")
             first_seen = await db.fetchval("SELECT first_seen_at FROM staging.rem_projects WHERE rem_project_id='SYN-DW-A'")
             assert await db.fetchval("SELECT bool_and(first_seen_at=$1) FROM staging.rem_models WHERE rem_project_id LIKE 'SYN-DW-%'", first_seen)
@@ -70,6 +77,7 @@ def test_transactional_intake_replay_refresh_conflict_acl_and_staff_guards():
             evidence_before = await db.fetchval('SELECT count(*) FROM staging.project_intake_evidence')
             replay = await stage.stage_package(db, original, True, True)
             assert replay['status'] == 'already_staged'
+            assert await db.fetchval('SELECT count(*) FROM staging.project_group_evidence') == 1
             assert await db.fetchval('SELECT count(*) FROM staging.project_intake_evidence') == evidence_before
             refresh = deepcopy(original)
             refresh['manifest']['extracted_at'] = '2026-10-06T00:00:00+00:00'
@@ -77,8 +85,12 @@ def test_transactional_intake_replay_refresh_conflict_acl_and_staff_guards():
             refresh['datasets']['gold_projects'][0]['gold']['available_unit_count'] = 8
             refresh['datasets']['gold_models'][0]['available_unit_count'] = 8
             refresh['datasets']['projects'][0]['ProjectStatus'] = '3'
+            refresh['datasets']['project_groups'][0]['project_name_th'] = 'ชื่อใหม่รอตรวจ'
             result = await stage.stage_package(db, refresh, True, True)
             assert result['outcomes']['models']['identical'] == 3
+            assert result['project_groups'] == {'changed': 1}
+            grouped = await db.fetchval("SELECT summary FROM hub.project_progress_cache WHERE rem_project_id='SYN-DW-A'")
+            assert grouped['marketing_group_name_th'] == 'กลุ่มจำลอง' and grouped['group_evidence_status'] == 'changed'
             assert result['outcomes']['projects']['changed'] == 1
             assert result['outcomes']['gold_projects']['changed'] == 1 and result['outcomes']['gold_models']['changed'] == 1
             assert await db.fetchval("SELECT source_record->>'available_unit_count' FROM staging.dw_projects WHERE rem_project_id='SYN-DW-A'") == '9'
@@ -89,6 +101,11 @@ def test_transactional_intake_replay_refresh_conflict_acl_and_staff_guards():
             assert await db.fetchval("SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM hub.projects p") == kept
             assert await db.fetchval("SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM hub.model_types p") == kept_models
             bad = deepcopy(refresh); bad['manifest_sha256'] = 'e' * 64; bad['manifest']['extracted_at'] = '2026-10-07T00:00:00+00:00'
+            unchanged = await stage.stage_package(db, bad, True)
+            assert unchanged['project_groups'] == {'identical': 1}
+            bad_group = deepcopy(bad); bad_group['datasets']['project_groups'][0]['project_id_set'] = []
+            with pytest.raises(ValueError, match='dictionary membership conflict'):
+                await stage.stage_package(db, bad_group, True, True)
             bad['datasets']['projects'][0]['BrandID'] = 'invented-brand'
             with pytest.raises(ValueError, match='identity.*conflict'):
                 await stage.stage_package(db, bad, True, True)
@@ -101,17 +118,22 @@ def test_transactional_intake_replay_refresh_conflict_acl_and_staff_guards():
             missing = deepcopy(refresh); missing['manifest_sha256'] = 'f' * 64; missing['manifest']['extracted_at'] = '2026-10-08T00:00:00+00:00'
             missing['datasets']['projects'] = [r for r in missing['datasets']['projects'] if r['ProjectID'] != 'SYN-DW-CLOSED']
             missing['datasets']['gold_projects'] = [r for r in missing['datasets']['gold_projects'] if r['project_id'] != 'SYN-DW-CLOSED']
+            missing['datasets']['project_groups'] = []
             await stage.stage_package(db, missing, True, True)
+            assert await db.fetchval("SELECT summary->>'group_evidence_status' FROM hub.project_progress_cache WHERE rem_project_id='SYN-DW-A'") == 'missing'
             assert 'missing' in (await db.fetchval("SELECT hub.project_source_review('SYN-DW-CLOSED')"))['flags']
             assert await db.fetchval("SELECT EXISTS(SELECT 1 FROM staging.rem_projects WHERE rem_project_id='SYN-DW-CLOSED')")
             deleted = deepcopy(missing); deleted['manifest_sha256'] = 'c' * 64; deleted['manifest']['extracted_at'] = '2026-10-09T00:00:00+00:00'
             deleted['datasets']['models'][0].update(isDeleted=True, isDeleteRaw='1')
             deleted['datasets']['gold_models'] = deleted['datasets']['gold_models'][1:]
+            del deleted['datasets']['project_groups']  # Older optional-file-less packages do not touch groups.
+            group_evidence_count = await db.fetchval('SELECT count(*) FROM staging.project_group_evidence')
             result = await stage.stage_package(db, deleted, True, True)
+            assert result['project_groups'] == {} and await db.fetchval('SELECT count(*) FROM staging.project_group_evidence') == group_evidence_count
             assert result['discarded_deleted_models'] == 1 and result['mirror_deletes'] == 0
             assert await db.fetchval("SELECT EXISTS(SELECT 1 FROM staging.rem_models WHERE rem_project_id='SYN-DW-A' AND rem_model_id='001')")
             assert await db.fetchval("SELECT outcome FROM staging.project_intake_evidence WHERE kind='models' AND rem_project_id='SYN-DW-A' AND source_id='001' ORDER BY id DESC LIMIT 1") == 'deleted'
-            for table in ('staging.project_intake_evidence', 'staging.project_intake_receipts'):
+            for table in ('staging.project_intake_evidence', 'staging.project_intake_receipts', 'staging.dw_project_groups', 'staging.project_group_evidence'):
                 with pytest.raises(asyncpg.PostgresError):
                     async with db.transaction():
                         await db.execute('DELETE FROM ' + table)
