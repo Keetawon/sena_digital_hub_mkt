@@ -155,7 +155,7 @@ database and Auth/storage doubles; it must never load `.env.supabase-test`.
 
 The baseline `scripts/supabase-test-migrations.mjs` was pinned to exactly fourteen
 files. H1 replaces the file-count, history, schema, role and ownership assumptions
-with a reviewed ordered manifest of **25 migrations**, including the new adapter:
+with a reviewed ordered manifest, now **41 migrations** in the local rehearsal inventory:
 
 | Counters | Contents |
 |---|---|
@@ -167,6 +167,19 @@ with a reviewed ordered manifest of **25 migrations**, including the new adapter
 | `0021–0023` | Residential releases, private document archive and staff assistant schema. |
 | `0024` | Safe brand-logo SVG registration. |
 | `0025` | H1 private asset metadata and narrow residential environment adapters; original archive/assistant guards remain unchanged. |
+| `0026–0027` | DW brand staging and published-content export views; real packages remain local only. |
+| `0028–0033` | Brand completeness, Thailand coordinates, project progress and immutable project intake/status evidence. |
+| `0034–0036` | Private knowledge review, retrieval boundary and preview gaps; H1 ingestion remains inactive. |
+| `0037–0039` | Required/recommended readiness, source progress and private knowledge follow-up. |
+| `0040–0041` | Cached staff project summaries and optional marketing-group dictionary; no hosted real-data intake. |
+
+The 6 October follow-up updates the exact ordered SHA-256 inventory from 33 to 41.
+The profile identity and historical checksums remain unchanged, including the single reviewed
+`0014` variant. Additions are explicit; discovery still refuses unreviewed migrations. The local
+synthetic H1 project carries status `2` and `isDeleted=false`, so it appears in the default dashboard
+scope. No hosted migration, seed, Auth, storage or deployment action is authorized by this update.
+Local verification passed: 10 runner/mock tests, the complete managed-permission migration/replay/ACL
+simulation and 15 H1 browser tests, including cached progress/default scope and agency denial.
 
 Discover files, but reject unreviewed additions instead of automatically applying
 whatever appears in the directory. Expand the manifest explicitly for later

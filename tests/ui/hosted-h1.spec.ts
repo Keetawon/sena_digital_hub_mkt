@@ -71,6 +71,25 @@ test.describe('H1 disposable managed-permission simulation', () => {
     expect(settings.sena_h_approved).toBe(false); expect(settings.can_issue).toBe(false);
   });
 
+  test('H1 cached progress stays synthetic, paginated and visible in the default scope', async ({page}) => {
+    await login(page, 'viewer');
+    const response=await page.request.get('/api/hub/v1/admin/projects/progress?page=1&size=10');
+    expect(response.status()).toBe(200);
+    const data=(await response.json()).data;
+    expect(data.rows).toHaveLength(1);
+    expect(data.rows[0].rem_project_id).toBe('H1-PROJECT-001');
+    expect(data.rows[0].source_review).toMatchObject({status_raw:'2',default_scope:true});
+    expect(data.rows[0].group_status).toBe('missing');
+    expect(data.rows[0].checklist.required).toBeUndefined();
+    expect(data.rows[0].models).toBeUndefined();
+    const counts=(await (await page.request.get('/api/hub/v1/admin/projects/progress?view=counts')).json()).data;
+    expect(counts.counts.all).toBe(1);expect(counts.statuses['2'].count).toBe(1);
+    await expect(page.locator('.project-summary-row')).toHaveCount(1);
+    await page.getByRole('button',{name:'ออกจากระบบ',exact:true}).click();
+    await login(page,'agency-kin');
+    expect((await page.request.get('/api/hub/v1/admin/projects/progress')).status()).toBe(403);
+  });
+
   test('agency inbox preserves source IDs and isolates both agency identities', async ({ page, browser }) => {
     await login(page, 'agency-kin', '/ads/registry/inbox');
     const rows = (await (await page.request.get('/api/hub/v1/admin/ads/registrations')).json()).data;

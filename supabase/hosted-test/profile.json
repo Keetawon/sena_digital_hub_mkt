@@ -168,6 +168,46 @@
       "name": "202610050033_missing_project_last_status.sql",
       "canonical_sha256": "918d176cdc527b9cf6abe5ac6f5e375c704ff6dca55f139553b5da8290daa228",
       "executed_sha256": "918d176cdc527b9cf6abe5ac6f5e375c704ff6dca55f139553b5da8290daa228"
+    },
+    {
+      "name": "202610060034_knowledge_review.sql",
+      "canonical_sha256": "4d7b2435ef9a999c88c98775854338e8d2b178965dfa6c544fd12eca53a87f33",
+      "executed_sha256": "4d7b2435ef9a999c88c98775854338e8d2b178965dfa6c544fd12eca53a87f33"
+    },
+    {
+      "name": "202610060035_knowledge_read_boundary.sql",
+      "canonical_sha256": "58c5095172f23912d641cb286638e6393ce4fc9170b7ab950c39819ed08d9f3a",
+      "executed_sha256": "58c5095172f23912d641cb286638e6393ce4fc9170b7ab950c39819ed08d9f3a"
+    },
+    {
+      "name": "202610060036_knowledge_preview_gaps.sql",
+      "canonical_sha256": "6dce511ec8c2ea04ce0bd122fce0254f85d103dde0635d6a5e8571891aec3ca2",
+      "executed_sha256": "6dce511ec8c2ea04ce0bd122fce0254f85d103dde0635d6a5e8571891aec3ca2"
+    },
+    {
+      "name": "202610070037_readiness_levels.sql",
+      "canonical_sha256": "e52e8af61770dc665a716005079996a0020d6832018cfd5272408713f6668edf",
+      "executed_sha256": "e52e8af61770dc665a716005079996a0020d6832018cfd5272408713f6668edf"
+    },
+    {
+      "name": "202610070038_source_progress.sql",
+      "canonical_sha256": "93bdfed3e379da876ac6bf1cf616feba3379f8cf183f44ce2d82b227dc119dff",
+      "executed_sha256": "93bdfed3e379da876ac6bf1cf616feba3379f8cf183f44ce2d82b227dc119dff"
+    },
+    {
+      "name": "202610070039_knowledge_followup.sql",
+      "canonical_sha256": "637799a8ceadd84ee77f3a647be3e01c87eac456a5509a814345b2f9a5742543",
+      "executed_sha256": "637799a8ceadd84ee77f3a647be3e01c87eac456a5509a814345b2f9a5742543"
+    },
+    {
+      "name": "202610070040_project_progress_cache.sql",
+      "canonical_sha256": "6acd01ba385b6c0e4ef31782d1ce0f370d0ada3fad1fdbdb615211d78272d280",
+      "executed_sha256": "6acd01ba385b6c0e4ef31782d1ce0f370d0ada3fad1fdbdb615211d78272d280"
+    },
+    {
+      "name": "202610070041_marketing_project_groups.sql",
+      "canonical_sha256": "9aba82b45c477f96c6ad30d44e393229b9b44e8ea22fbc96fc4ae91725b281be",
+      "executed_sha256": "9aba82b45c477f96c6ad30d44e393229b9b44e8ea22fbc96fc4ae91725b281be"
     }
   ]
 }

@@ -6,7 +6,7 @@ select set_config('app.change_reason','SYNTHETIC-HOSTED-H1-v1: fictional demonst
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,brand_name_en_rem,source_updated_at,source_fingerprint,source_record)
 values('H1-BRAND-001','ข้อมูลตัวอย่าง — แบรนด์สวนสมมติ','H1 DEMO BRAND',now(),'SYNTHETIC-HOSTED-H1-v1','{"synthetic_only":true,"source":"hosted-h1-fixture"}');
 insert into staging.rem_projects(rem_project_id,project_name_rem,rem_brand_id,source_updated_at,source_fingerprint,source_record)
-values('H1-PROJECT-001','ข้อมูลตัวอย่าง — โครงการสวนสมมติ','H1-BRAND-001',now(),'SYNTHETIC-HOSTED-H1-v1','{"synthetic_only":true,"source":"hosted-h1-fixture"}');
+values('H1-PROJECT-001','ข้อมูลตัวอย่าง — โครงการสวนสมมติ','H1-BRAND-001',now(),'SYNTHETIC-HOSTED-H1-v1','{"synthetic_only":true,"source":"hosted-h1-fixture","ProjectStatus":"2","isDeleted":false}');
 insert into staging.rem_models(rem_project_id,rem_model_id,model_name_rem,source_updated_at,source_fingerprint,source_record)
 values('H1-PROJECT-001','H1-MODEL-001','ข้อมูลตัวอย่าง — แบบบ้านสมมติ',now(),'SYNTHETIC-HOSTED-H1-v1','{"synthetic_only":true,"source":"hosted-h1-fixture"}');
 

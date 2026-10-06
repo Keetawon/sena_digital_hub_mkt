@@ -58,7 +58,7 @@ The function comparison executes the original `432752b` implementation and the
 new implementation against the same migrated local data, without modifying it.
 Loopback timings include serialization/HTTP; function timings exclude those and
 are measured separately. These are local results, not a Mumbai/Singapore latency
-simulation. Raw samples: `.local/dashboard-followup/{before,after,server-times}.json`.
+simulation. Item 2 HTTP/browser samples: `.local/dashboard-followup/{before,after}.json`.
 
 Verification: admin typecheck/build passed; 203 related API regressions and the
 four final cache/derivative smoke checks passed; full DB suites passed; 19 relevant
@@ -105,3 +105,20 @@ The local dashboard has one exact REM/marketing code mismatch: `00412`,
 Item 4 verification: typecheck and production build passed; 9 offline importer contract tests;
 full API 1,390 passed / 11 skipped, then 41 final intake/progress checks passed; full DB suite
 and all 204 production UI tests passed. Evidence is under ignored `.local/dashboard-followup`.
+
+## Final verification after group intake and H1 profile update
+
+All local services were restored. The production build was measured again with group names loaded:
+API p95 **82ms**, **12,966 bytes / 10 rows**, maximum interaction time across five fresh browser
+contexts **1,153ms**. All three targets pass. Raw samples: `.local/dashboard-followup/final.json`.
+A separate read-only replay on this final dataset compares original `432752b` server code with the
+cached summary: p95 **4,597ms → 37ms** (`server-times.json`). This diagnostic repeats the legacy code
+on the final intake history; it is distinct from the original pre-change HTTP baseline.
+
+H1 `npm.cmd run test:hosted-h1`: 10 runner/mock tests, all 41 migrations under the managed-permission
+simulation, immutable checksum/replay/ACL checks and 15 UI tests passed. No hosted requests or writes.
+The default synthetic project is visible with explicit status 2; agency access remains denied.
+The final admin typecheck passed. Existing Google Sans fallback and Python deprecation warnings remain.
+
+Read-only screenshots (visually checked): `.local/dashboard-followup/projects.png`, `projects-table.png`,
+`sidebar.png`, `sidebar-mobile.png`, `groups.png`. No browser page errors were recorded.
