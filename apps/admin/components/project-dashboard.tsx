@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
+import { EntityThumbnail, type Thumbnail } from "./entity-thumbnail";
 import { CompletenessBar } from "./completeness-bar";
 import { DashboardTiles } from "./dashboard-tiles";
 import { ProjectSourceReview, SourceStatusFilter, type SourceReview } from "./project-source-review";
@@ -22,7 +23,7 @@ export type ProgressRow = {
   gaps: Record<"core" | "media" | "models" | "brand", Gap[]>; confirmed_models: number; total_models: number;
   amenities: { collected: number; total: number } | null; waiting_on: string[]; updated_at: string | null;
   first_seen_at: string | null; age_days: number | null; age_basis: "first_import" | "first_seen" | "mirror_import" | "unknown";
-  source_review?: SourceReview;
+  source_review?: SourceReview; thumbnail?: Thumbnail | null; brand_logo?: Thumbnail | null;
   checklist?: { required: Check[]; recommended: Check[]; passed: number; total: number; percent: number; ready: boolean };
   knowledge?: { reviewed: number; staged: number }; thumbnail_asset_id?: string | null;
 };
@@ -106,7 +107,7 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
           return <Fragment key={row.rem_project_id}><tr className="brand-table-row project-summary-row">
           <td data-label="โครงการ"><div className="project-row-identity">
             <button className="project-expand" aria-label={`รายการตรวจ ${row.name}`} aria-expanded={open} aria-controls={id} onClick={() => setExpanded(previous => { const next = new Set(previous); if (next.has(row.rem_project_id)) next.delete(row.rem_project_id); else next.add(row.rem_project_id); return next; })}>{open ? "▾" : "▸"}</button>
-            {row.thumbnail_asset_id ? <img className="project-row-thumbnail" src={`/api/hub/v1/admin/assets/${encodeURIComponent(row.thumbnail_asset_id)}/file`} alt={row.name} width={48} height={48} loading="lazy" /> : <span className="project-row-thumbnail" aria-hidden="true">{Array.from(row.name).slice(0, 2).join("")}</span>}
+            <EntityThumbnail name={row.name} image={row.thumbnail} fallback={row.brand_logo} brandKey={row.rem_brand_id} />
             <div>{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{row.rem_project_id} · {row.brand_name || "ยังไม่ระบุแบรนด์"}</p><p className="small-text">{row.source_review?.status_label || "ไม่ทราบสถานะ"} ({row.source_review?.status_raw ?? "null"})</p>
             {row.public_project_id ? <a className="project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : role === "publisher" ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button text-button project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}</div></div>
           </td>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { assetFetch, useHostedSession } from "./hosted-session";
 
 type FileAsset = { id: string; public_url: string | null; original_filename?: string };
@@ -13,6 +13,7 @@ export async function privateAssetBlob(asset: FileAsset) {
 
 export function AssetImage({ asset, alt, width, height, onError }: { asset: FileAsset; alt: string; width: number; height: number; onError?: () => void }) {
   const hosted = Boolean(useHostedSession());
+  const failureCallback = useRef(onError); failureCallback.current = onError;
   const [url, setUrl] = useState("");
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -22,7 +23,7 @@ export function AssetImage({ asset, alt, width, height, onError }: { asset: File
     void privateAssetBlob({ id: asset.id, public_url: null }).then(blob => {
       if (!active) return;
       objectUrl = URL.createObjectURL(blob); setUrl(objectUrl);
-    }).catch(() => { if (active) setFailed(true); });
+    }).catch(() => { if (active) { setFailed(true); failureCallback.current?.(); } });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [hosted, asset.id]);
   if (hosted && !url) return <span role="status">{failed ? "โหลดภาพไม่ได้" : "กำลังโหลดภาพ…"}</span>;

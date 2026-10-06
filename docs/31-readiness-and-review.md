@@ -35,3 +35,9 @@ No legacy narrative/FAQ coverage shows `ไม่มี KM เดิม · ต�
 Project links retain exact IDs in the queue URL; an unknown/non-pilot ID shows a missing-package message rather than silently opening a different project. Pending/conflict filters are read-only. A saved review refreshes both the queue and summary.
 
 Validation for C: typecheck/build passed; 1,369 API tests passed / 11 skipped; database checks passed; all 5 knowledge dashboard/review browser tests passed against the production build.
+
+## E. Staff thumbnails
+
+The brand list/dashboard uses the existing primary logo slot. The project list/dashboard and knowledge dashboard prefer the project thumbnail, then the exact REM brand's primary logo, then initials on one of the Hub's muted brand tiles. Missing/unavailable files advance to the next fallback. Tiles remain 48×48, lazy-loaded and labelled with the entity name. These are staff projections under existing RLS, including images awaiting rights review. The authenticated local/hosted file component is reused. No consumer payload, asset approval or real publication changes.
+
+Validation for E: typecheck/build passed; full API 1,369 passed / 11 skipped; database checks passed; 19 thumbnail/brand/project/knowledge browser tests passed, including unavailable-image fallbacks, dimensions, lazy loading and unchanged private-data exclusions in CSV.

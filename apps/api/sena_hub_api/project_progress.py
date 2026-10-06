@@ -1,5 +1,6 @@
 """Read-only staff progress, derived from existing readiness and frozen versions."""
 from datetime import datetime, timedelta, timezone
+from .staff_media import thumbnails
 
 
 def review_content(value):
@@ -179,4 +180,9 @@ async def read_progress(connection):
         LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id GROUP BY project_id
     """)}
     assets = await connection.fetch("SELECT id,rights_status,effective_to FROM hub.assets")
-    return build_progress(records, sources, assets, knowledge=knowledge)
+    data = build_progress(records, sources, assets, knowledge=knowledge)
+    media = await thumbnails(connection)
+    for row in data['rows']:
+        row['thumbnail'] = media['project'].get(row['rem_project_id'])
+        row['brand_logo'] = media['brand'].get(row.get('rem_brand_id'))
+    return data

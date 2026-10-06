@@ -12,6 +12,7 @@ from fastapi.responses import Response
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictBool, field_validator
 
 from .auth import Actor, failure
+from .staff_media import thumbnails
 
 MANIFEST = "1512ac0bac74f5356617458b30bf2079896cce18db54393b5244c136ae54f877"
 REASONS = {"deleted": "ต้นทางถูกลบ", "unknown_status": "ยังไม่ทราบสถานะต้นทาง", "blank_name": "ไม่มีชื่อภาษาไทย",
@@ -92,8 +93,9 @@ def register_brand_completeness_routes(app, admin, administrator, writer, databa
         query(request, ("status", "missing", "search"))
         async with database(request, actor) as db:
             data = await db.fetchval("SELECT hub.brand_completeness()")
+            media = await thumbnails(db)
         data = json.loads(data) if isinstance(data, str) else data
-        return {**data, "rows": filter_rows(data["rows"], filters)}
+        return {**data, "rows": [{**r, 'thumbnail': media['brand'].get(r['rem_brand_id'])} for r in filter_rows(data["rows"], filters)]}
 
     # Registered before the generic /brands/{public_id} route.
     @app.get("/v1/admin/brands/completeness")

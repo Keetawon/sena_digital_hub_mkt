@@ -25,6 +25,9 @@ def fake(monkeypatch):
     data = {"rows": [row(), row("published_changes", True), {**row("not_created"), "public_brand_id": None, "reason_codes": ["duplicate"]}],
             "counts": {"total": 3, "missing_data": 1, "ready": 1, "published": 1, "published_changes": 1, "not_created": 1}}
     class DB:
+        async def fetch(self, statement, *args):
+            calls.append((statement, args))
+            return []
         async def fetchval(self, statement, *args):
             calls.append((statement, args))
             return data if "brand_completeness" in statement else {"create_count": 2, "created_count": 2, "preview_sha256": "a" * 64}
