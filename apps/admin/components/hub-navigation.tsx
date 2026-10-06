@@ -5,6 +5,7 @@ import "./hub-navigation.css";
 
 import { hubPages, hubGroups, type HubSection } from "./hub-navigation-data";
 import { useBrandReviews } from "./brand-review";
+import { useHostedSession } from "./hosted-session";
 type Item = typeof hubPages[number];
 function NavIcon({ path }: { path: string }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>; }
 function NavLink({ item, section, pendingBrands }: { item: Item; section: HubSection; pendingBrands?: number | null }) {
@@ -22,9 +23,10 @@ function Group({ name, items, section, pendingBrands }: { name: keyof typeof hub
 }
 export function HubNavigation({ section, residential, finance, staff, publisher = false }: { section: HubSection; residential: boolean; finance: boolean; staff: boolean; publisher?: boolean }) {
   const { pendingCount } = useBrandReviews();
+  const hosted = Boolean(useHostedSession());
   // Preserve the three existing workspace entry links; their landing pages still
   // explain account choices. Domain data and additional links keep their ACLs.
-  const content = hubPages.filter(item => item.group === "content" && (residential || item.id === "projects" || item.id === "brands"));
+  const content = hubPages.filter(item => item.group === "content" && (item.id !== "knowledge" || !hosted) && (residential || item.id === "projects" || item.id === "brands"));
   const ads = hubPages.filter(item => item.group === "ads" && (finance || item.id === "registry"));
   return <nav className="hub-navigation" aria-label="เมนูหลัก"><Group name="content" items={content} section={section} pendingBrands={publisher ? pendingCount : undefined} /><Group name="ads" items={ads} section={section} />{staff && <NavLink item={hubPages.find(item => item.id === "questions")!} section={section} />}</nav>;
 }

@@ -327,9 +327,9 @@ Vision/OCR may extract **draft promotion candidates**: title, benefit, condition
 
 Plans/images are not embedded. Find eligible images by role, exact scope and reviewed alt text, then attach them with rights/citation checks. Plan dimensions may become typed candidates for MKT review, not automatically accepted measurements. Brochure PDF text may become draft sections after scope/content review and commercial-value stripping. Keep document text, OCR and image embeddings separate; there are no image embeddings in this phase.
 
-### 7.4 Future per-project review pack
+### 7.4 Per-project review pack
 
-The later screen **ตรวจข้อมูลก่อนนำเข้า** shows source-linked sections, FAQs, facts, an asset grid with suggested roles, and promotion candidates. Show conflicts against KM, REM/DW and business mapping plus named gaps, per phase. MKT marks **ถูก / ผิด / ขาด** with notes: accepted items become Hub **drafts** only, wrong items remain rejected evidence, missing items become assigned gaps. Every item exposes source/version and scope. Optional per-project Excel export uses the same pack. The current task stops at the package summary, before this screen or staging is implemented.
+The screen **ตรวจข้อมูลก่อนนำเข้า** shows source-linked sections, FAQs, facts, an asset grid with suggested roles, and promotion candidates. Show conflicts against KM, REM/DW and business mapping plus named gaps, per phase. MKT marks **ถูก / ผิด / ขาด** with notes: accepted items become Hub **drafts** only, wrong items remain rejected evidence, missing items become assigned gaps. Every item exposes source/version and scope. Optional per-project Excel export uses the same pack. The original collection milestone stopped before staging; the owner subsequently authorized the local implementation in section 7.6.
 
 ## 7.5 Local pre-audit result — 6 October 2026
 
@@ -362,6 +362,91 @@ Aggregate review receipt: `.local/km-review/collection-summary.json`, SHA-256 `e
 Unclassified files include responsive variants, site-interface graphics, logos, thumbnails and SVG/font resources; do not bulk-stage them as marketing imagery. Q69 now uses this measurement for Supabase Storage versus R2 planning. This is a **measured collection size, not an approved production allocation**: unresolved downloads make source coverage incomplete, while MKT selection, responsive-variant policy, version retention and growth determine production capacity. Q68 (CMS media export) and Q67 (coverage) remain open.
 
 Verification: 24 targeted question API tests passed through the disposable runner; 12 collector tests passed, including prompt-injection quarantine, URL/DNS/redirect restrictions, retry/failure classification, DOM/widget extraction and immutable manifest integrity. These are collection/contract checks, **not results from the future chatbot golden evaluation**. The 61 audit cases remain marked not run. Stop here for the owner's package review before staging assets or increment 1.
+
+### 7.6 Reviewed cleanup and local increment 1 — 6 October 2026
+
+The owner reviewed the collection and authorized cleanup, private staging and the staff preview. This supersedes the **collection-only stop** in 7.5; its original receipt remains historical evidence. Local only: no hosted changes, source-system writes, real rights approvals or publications. Existing brand/project RLS and readiness rules are unchanged.
+
+The [cleanup and web-team report](30-knowledge-collection-review.md) lists the new role totals, every remaining unclassified file, all robots path groups, redirect hosts and broken page/URL/section references. Of 1,222 original byte hashes, **237 are excluded chrome, 438 are collapsed variants, and 547 remain candidates**. All originals remain immutable. The tiny-icon threshold is **both edges ≤96 px plus UI/icon evidence**, not size alone. Uncertain crops remain separate. **22/547 (4.02%)** remain unclassified. Candidate bytes are **104,884,921 (100.03 MiB)**. Vision supplied role/Thai alt-text/people/marks/stock suggestions; these are not rights findings.
+
+No robots exclusion was overridden. All 68 are on `content.sena.co.th`; Q68 contains the host/path inventory for the web-team export request. The 25 allowlist/redirect exclusions do not justify a new host: 20 HTTPS asset URLs redirect to an HTTP SENA homepage, four are Facebook tracking pixels and one is a LINE UI button. Seven external videos remain links in the collection evidence. The 19 distinct 404 URLs have 91 page/section references in the broken-link report. EKAMI was rendered once more and remains **EKAMI_RENDER_PARTIAL**; a timeout never means absent content.
+
+Immutable receipts (all ignored local evidence):
+
+| Package | Manifest SHA-256 |
+|---|---|
+| `.local/knowledge-cleanup/20261006T053832304352Z` | `87f08a2135c661b6cb88cc7366d73ec0a3b3fdaa6ddeba6967e464abd5f20764` |
+| `.local/knowledge-intake/ekami-retry-2026-10-06T05-39-26-635Z` | `2078a44751c7d7e7916d6147e28c30fdd77a0493f6a21201b30860706c012624` |
+| `.local/knowledge-pilot/20261006T060343825439Z` | `cbc635e269ec3e56b5201780b9a6f25c8010fc1dbd2d6fb206e819a01bd38ab4` |
+| `.local/knowledge-index/20261006T062148782451Z` | `f0d34577c2b662bda0ff9c544c9e7e1ce5f16e2f2af5d72ee26834593269dd13` |
+
+The stager verifies manifest/payload/file hashes, byte lengths, row counts and duplicate identities **before connecting**. Apply requires the exact loopback database and `.local/postgres` data directory, uses one transaction, and stores immutable batch evidence. The observed exact replay inserted **zero rows**. Different packages cannot silently overwrite reviewed candidate identities. Private files live at `.local/knowledge-assets/<sha256>` and are absent from `hub.assets` until an explicit publisher rights approval.
+
+| Staged candidate kind | Count |
+|---|---:|
+| Sections | 221 |
+| FAQs | 124 |
+| Aliases / vocabulary | 652 |
+| Fact candidates | 172 |
+| Facilities | 32 |
+| Nearby places | 16 |
+| Assets | 547 |
+| Promotion candidates | 143 |
+| Named coverage gaps | 3 |
+| **Total** | **1,910** |
+
+Also staged: **seven source fact cards and 153 private preview chunks** (39 FAQ question variants, 114 section chunks). The FAQ index correction embeds each question variant alone, without a project-name prefix; answer/section bodies keep their self-contained project names. Both original and corrected index evidence remain. Preview uses exact cosine after SQL project filtering, PyThaiNLP keywords and RRF. `pg_trgm` resolves names/aliases. Windows embedded PostgreSQL lacks the pgvector DLL, so this local prototype stores vectors in `real[1536]` and computes exact cosine in Python; it does not introduce HNSW, partitioning or a public index.
+
+Fact cards keep raw/label/as_of REM status (including **TPRAK 3 Closed, SK2TR 1 Construction, HYABC 2 Ready**). Unreviewed locations, unit ranges, facilities, nearby places and contacts remain unknown/empty, not asserted absent. No published project version is implied. Prices, fees, availability and numeric claims never enter preview narrative answers; the current preview hands them to staff because no owner-approved dated facts were imported.
+
+Holds overlap: 84 phase decisions, 176 numeric claims, 90 commercial claims, one mapping conflict, and all 143 OCR promotion candidates with unresolved extraction/date validity. **All promotions are quarantined**, with raw numeric strings and uncertainties preserved. No OCR text or image/plan embeddings enter retrieval. Combined HYABC/HY2DE totals remain held; shared TPRAK/SK2TR content requires MKT's explicit phase decision. TPRAK cannot receive shared selling sections, offers, current facts or assets. Its preview always says the phase is closed and never presents it as on sale.
+
+The local `/knowledge` screen supports project/programme/vocabulary queues, kind counts, ten-item pagination, source links, private asset previews, flags, promotion extraction details, and MKT **ถูก / ผิด / ขาด** decisions with revision checks. Accepted sections/FAQs/aliases become draft records; rejected evidence remains immutable. Numeric/commercial/conflicting claims cannot be accepted unchanged. Shared applicability starts empty. The preview is clearly labelled **ฉบับร่าง**. Viewers can read and preview; editors/admin review; only publishers approve rights. Agencies, online staff and service consumers cannot read the namespace. The hosted navigation/proxy omit this local experiment.
+
+Bulk rights approval has a separate explicit confirmation and reason, displays affected scopes, and checks current MKT revisions, SENA ownership and all three flags as `absent`. Unknown/present flags and invalid files are ineligible. One stale/ineligible item rolls back the entire database batch. Existing file-level rights functions and audit events are reused. Nothing is automatically published. Unanswered questions create private gaps containing a question hash, not the raw customer message. Contact-like input is rejected before embeddings; imported instructions are stripped/held as evidence and cannot invoke tools.
+
+Q69 now estimates **812.53 MiB / 0.79 GiB for 51 pages** from the six distinct project-page scopes (SK2TR counted once; TPRAK not counted again). Programme-only files add 8.81 MiB. Plan approximately 1 GiB active or 3 GiB for three retained generations, **plus** original evidence, backups, derived images and database/index storage. This is a lower-bound planning estimate, not production capacity approval; blocked downloads and the 42.70 MiB BPHGH page make coverage and variance material.
+
+Reproducible commands (reviewed package hash is mandatory):
+
+```powershell
+uv run --cache-dir .local/uv-cache --project apps/api python scripts/stage-knowledge-pilot.py --package .local/knowledge-pilot/20261006T060343825439Z --manifest-sha256 cbc635e269ec3e56b5201780b9a6f25c8010fc1dbd2d6fb206e819a01bd38ab4
+# Add --apply only for the authorized local intake; exact replay is a no-op.
+uv run --cache-dir .local/uv-cache --project apps/api --env-file apps/api/.env python scripts/evaluate-knowledge.py --package .local/knowledge-pilot/20261006T060343825439Z
+npm.cmd run typecheck --prefix apps/admin
+npm.cmd run build --prefix apps/admin
+npm.cmd run test:api
+npm.cmd run test:db
+npm.cmd run test:ui -- tests/ui/knowledge-review.spec.ts
+```
+
+### 7.7 Actual evaluation and remaining delivery limits
+
+Run `.local/knowledge-evaluations/20261006T062228201466Z` executed **all 61 audit cases + 12 held-out legacy questions + one TPRAK closed-phase case = 74**, with **zero API errors**. Scores below use the recorded model judge; they require human calibration. Earlier runs and their failures remain retained. No held-out prompts were added to embeddings and the FAQ threshold was not tuned against this set.
+
+| Measure | Actual result | Gate / interpretation |
+|---|---:|---|
+| Expected behavior | 69/74 (93.24%) | Five model-judged mismatches; not a release pass |
+| No-answer correctness | 69/74 (93.24%) | ≥90%; provisional model-judged pass |
+| Recall@5 | 2/3 (66.67%) | ≥90%; **fails** on the answerable held-out subset |
+| Direct FAQ precision | 0 scored answers | ≥98%; **not measurable / not qualified** |
+| Citation precision | 0 scored substantive answers | ≥95%; **not measurable / not qualified** |
+| Groundedness | 0 scored substantive answers | ≥95%; **not measurable / not qualified** |
+| Cross-project leakage | 0 detected | Zero required; model-judged, not a proof |
+| Unsupported numeric answers | 0 detected | Zero required; model-judged, not a proof |
+| TPRAK closed-phase case | Pass | Closed, no current selling claims |
+
+The audit has no annotated relevant-chunk IDs, so it cannot supply a valid recall denominator. The three answerable legacy questions are too small a sample for release qualification. **No substantive answers were returned on this golden run**; a high handoff score must not be described as a useful-answer score. An independent exact canonical FAQ smoke returned the stored BNA7 completion answer with its citation; that smoke is not added to the golden numerator.
+
+Failed case IDs: `audit-evaluation-07`, `audit-evaluation-17`, `legacy-heldout-481`, `legacy-heldout-517`, `legacy-heldout-537`. Manual review is needed for judge inconsistencies: `517` is explicitly a held numeric claim but the judge demanded an answer, and the injection refusal was penalized despite refusing the malicious instruction. Retain the raw scores rather than silently correcting them. Question `481` missed the expected FAQ in top five; `537` retrieved it but did not clear the direct-answer threshold.
+
+**Delivered:** immutable cleanup/intake, private candidate files, extraction/quarantine, draft review UI and bulk rights action, seven source fact cards, aliases, exact scoped preview retrieval and a runnable golden harness. **Still unqualified or unfinished:** useful-answer calibration and the broader reviewed per-project evaluation set; complete typed programme rules and approved facts; promotion transfer/correction beyond the linked existing editor; individual flagged-asset intake; video-link review UI; publication-version projection and publish/withdraw index lifecycle; public chatbot/image attachments; optional Excel export. The local source preview does not implement or claim the future published-content contract. Real MKT acceptance, rights approval and publication remain human actions; none was performed during this intake.
+
+### 7.8 Verification of the local implementation
+
+Final checks on 6 October: admin typecheck and production build exited **0**; full `test:api` **1,362 passed, 11 skipped** (one existing Starlette/AnyIO deprecation warning); full `test:db` exited **0**, including SQL/RLS, concurrency and frozen DW contract checks; relevant `test:ui` **4 passed**; collector **12 passed**; cleanup unit tests **3 passed**; question catalogue/document agreement **70 IDs**. Build retains the existing Google Sans fallback warning. Real API integration covers successful publisher rights approval and atomic rollback of a stale batch; these tests use synthetic files in the disposable database only.
+
+The working stack was restored after testing. Read-only desktop/mobile smoke loaded private candidate files and showed no horizontal overflow at 390 px. Working counts remain **33 brands, four projects, 110 models, zero publication versions and six registered assets**. No MKT decisions or rights approvals were applied: draft content/FAQ/alias tables are empty until staff accept their staged candidates; there are zero candidate-to-approved-asset links. The stager's final dry-run again verified all 1,910 candidates. API/DB/UI suites used the disposable runner, not the working database.
 
 ## Appendix A. Physical source columns
 

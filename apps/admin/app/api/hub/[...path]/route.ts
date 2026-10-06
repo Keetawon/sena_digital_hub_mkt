@@ -38,6 +38,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   // Asset bytes use a bearer-authenticated direct API request, outside Vercel limits.
   if (hosted && (method === "POST" && path === "v1/admin/assets" || method === "GET" && /\/assets\/[^/]+\/file$/.test(path))) return error("กรุณาใช้ช่องทางรับส่งไฟล์ส่วนตัวของ TEST H1", 400);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
+  const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
+  const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review)$`).test(path);
+  if ((knowledgeRead || knowledgeWrite) && (hosted || !isContentStaff(role))) return error("คลังความรู้เปิดให้ทีมงานตรวจข้อมูลเฉพาะในเครื่อง", 403);
   const brandDashboard = method === "GET" && /^v1\/admin\/brands\/completeness(?:\.csv)?$/.test(path);
   const brandBulk = method === "GET" && path === "v1/admin/brands/bulk-preview" || method === "POST" && path === "v1/admin/brands/bulk-create";
   const brandConfirm = method === "POST" && new RegExp(`^v1/admin/brands/${id}/confirm-source-names$`).test(path);
@@ -63,7 +66,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(allowed[method]?.test(path) || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const validBrandQuery = brandDashboard && [...query.keys()].every(key => ["status", "missing", "search"].includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);

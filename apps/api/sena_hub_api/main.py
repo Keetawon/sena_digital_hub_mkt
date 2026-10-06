@@ -29,6 +29,7 @@ from .archive import register_archive_routes
 from .assistant import register_assistant_routes
 from .hosted_assets import BUCKET, HostedAssets
 from .brand_completeness import register_brand_completeness_routes
+from .knowledge import register_knowledge_routes
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -863,6 +864,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication)
+    register_knowledge_routes(app, authentication, database, settings)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)
     if hosted_assets:
         @app.api_route("/v1/admin/ads/{deferred_path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])

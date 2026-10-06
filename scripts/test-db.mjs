@@ -11,6 +11,8 @@ const connection = new pg.Client({ host: '127.0.0.1', user: 'postgres', password
 try {
   await connection.connect();
   connection.on('notice', (notice) => console.log(notice.message));
+  await connection.query(await readFile(new URL('../supabase/tests/knowledge_review.sql', import.meta.url), 'utf8'));
+  console.log('PASS: knowledge immutable evidence, role isolation, phase review, stale writes and rights flags');
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
   await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));
