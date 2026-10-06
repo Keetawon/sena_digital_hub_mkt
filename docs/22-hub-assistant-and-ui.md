@@ -141,8 +141,7 @@ have `aria-expanded`, `aria-controls`, visible keyboard focus and a chevron. Ope
 the current group on load; restore the other group's browser-local preference
 with every storage access guarded by try/catch. An unavailable store falls back to
 the current group being open. Collapsed children are inert/hidden to keyboard
-navigation. Animate grid rows from 0fr to 1fr and rotate the chevron with the
-existing motion tokens; reduced motion is instant. Mobile groups and children
+navigation. Open/close navigation groups instantly; the chevron changes state without animation (section 3). Mobile groups and children
 remain vertical, never a horizontal wrapping row.
 
 Navigation retains the caller's role. Entering the registry with a residential account
@@ -326,44 +325,18 @@ Readability protocol, to perform with the P1.4 screens:
    Until Thai reviewers are available, Noto-first table bodies are the default; font
    implementation can continue, but readability acceptance remains pending.
 
-## 3. Hub motion and interaction spec
+## 3. Motion — owner decision, 7 October 2026
 
-**Owner request, 1 October 2026:** replace the quiet P1.1 motion with an Apple-inspired
-language that makes page changes, loading, input and responses feel physical and
-responsive. The tokens and rules live in `apps/admin/styles/motion.css` (imported after
-`globals.css`); the shared primitives stay in `components/registry-motion.tsx`.
+This replaces the previous shared-layout/spring motion spec and all older motion references in this document.
 
-Principles: motion explains what happened and where things came from; it never delays
-data or blocks input. Only opacity, transform and a brief entrance blur animate; table
-cells, widths and heights never do, and text is never stretched by a non-uniform scale.
-Springs replace linear timing (CSS `linear()` samples of damping 0.8 and 0.62, with cubic
-fallbacks). Durations: press 110ms, quick 180ms, base 320ms, entrance 460ms, spring
-≈520ms; list stagger 38ms, capped after seven items.
+- No shared-layout IDs, row-to-card morphs, springs, scale, list/table/dashboard/card animations, page entrances or view transitions.
+- Only dialogs (including their detail surfaces), dropdowns/popovers and tab panels may fade/translate, at most 150 ms. No animated blur, dimensions, rotation, color or progress values.
+- With `prefers-reduced-motion: reduce`, transitions are instant. Loading has static placeholders plus live status text.
+- Native dialogs retain focus containment, Escape, opener focus restoration, dirty-form guards and deep links. No animation delays data or controls.
+- Shared CSS in `apps/admin/styles/motion.css` is the only timing source. `DetailDialog` and `DropdownPop` render ordinary elements; table rows and highlights stay static.
+- Verify using `next build` then `next start`, including normal/reduced motion and keyboard focus, not just the development server.
 
-| Moment | Motion | Focus, URL and reduced-motion behavior |
-|---|---|---|
-| Page change between workspaces | Cross-document View Transition: the old page dims, shrinks to 98.5% and blurs out in 200ms; the shell cross-fades; the new page's sections rise 12px out of a 6px blur, staggered | Plain links keep full navigation, URLs and history. Browsers without the API navigate instantly. Reduced motion: no transition and no entrance. |
-| Data arriving | Rows, cards and metrics rise 8px and fade in one after another; the active sidebar item settles with a small spring | Data is rendered as soon as it arrives; the animation never postpones it. Reduced motion: instant. |
-| Loading | iOS-style petal activity indicator beside the existing Thai loading text; shimmering skeleton rows (decorative, `aria-hidden`) while a list has no rows yet; full-page loading text fades in only after 150ms to avoid flicker | The live-region text is unchanged. Reduced motion: the indicator ticks slowly and the shimmer stops. |
-| Input focus | The 3px focus ring settles from 7px away onto the field with a soft halo | Ring width and colour are unchanged; forced-colours mode keeps the native outline. Reduced motion: instant ring. |
-| Invalid input / rejected step | Fields with `aria-invalid="true"` shake briefly; error summaries drop in, then shake once | Focus still moves to the error summary as before. Reduced motion: no shake. |
-| Busy action | Buttons with `aria-busy="true"` show the activity indicator and a light sweep while saving | Label text (`กำลังบันทึก…`) stays; buttons remain disabled while busy. |
-| Success response | Success notices pop with a spring and draw their check; keyed status text re-pops on every new message inside a stable live region | Announcements are unchanged. Reduced motion: instant. |
-| Buttons and cards | Press scales to 96% quickly and springs back; primary buttons gain a soft glow on hover; cards lift 3px with a spring | Hover effects only on hover-capable devices; no transforms with reduced motion. |
-| Registry list → detail card | The card grows out of its source row with a uniform spring scale (no stretched text) above a frosted backdrop; a direct link rises 18px into place | Focus moves to the card heading; Esc/Back/close restore the opener as before. Reduced motion: instant card, 80ms backdrop fade. |
-| Cascading picker (`DropdownPop`) | Drops 6px from the trigger and scales from 95% on a spring; closes in 120ms | Keyboard behavior unchanged. Reduced motion: opacity only. |
-| Residential dialogs, tabs and disclosures | Dialogs rise 18px like a sheet (translate only, so control sizes never scale) above a frosted backdrop; tab panels and opened `<details>` content rise 8px | Native dialog focus/Esc and form guards unchanged. Reduced motion: instant. |
-
-The frosted backdrop blur is static; only its opacity animates. Motion is not an
-accessibility manager: native dialog, focus and URL handling remain as specified below.
-
-Proposed list URL: `/ads/registry?registration=SN2600101Y&tab=names`, retaining
-search/filter/page on close. A direct link loads the permitted detail without needing
-the source row mounted; fade without a morph in that case. Browser Back closes detail;
-Forward reopens. Refresh does not lose the selected tab. A denied/missing record shows
-`ไม่พบรายการที่มีสิทธิ์เข้าถึง`, without revealing another agency's registration.
-Shared layout IDs are scoped per screen/code to avoid collisions. Native dialog/focus
-features may be reused; Motion is not an accessibility manager.
+Validation: typecheck and production build passed; 94 affected UI tests passed against `next start`, including normal/reduced motion, focus restoration, dropdowns, navigation, registry, financial/document workspaces and residential releases. API/schema code is unchanged in this section; the preceding full API run (1,369 passed / 11 skipped) and database run remain applicable.
 
 ## 4. Wireframes and screen behavior
 

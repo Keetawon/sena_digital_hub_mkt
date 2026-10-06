@@ -21,8 +21,5 @@
 .question-links a, .question-all-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--action); text-decoration: underline; text-underline-offset: .2em; }
 .question-all-link { margin-top: .5rem; }
 .pending-question-badge:focus-visible, .question-close:focus-visible, .question-links a:focus-visible, .question-all-link:focus-visible, .question-popover h2:focus { outline: 2px solid var(--action); outline-offset: 3px; }
-@media (prefers-reduced-motion: no-preference) {
-  .question-popover:popover-open { animation: hub-pop var(--dur-spring) var(--ease-bounce) backwards; }
-  .pending-question-badge, .question-close { transition: background-color var(--dur-quick) var(--ease-out); }
-}
+
 @media (max-width: 720px) { .question-cards { grid-template-columns: minmax(0, 1fr); } }

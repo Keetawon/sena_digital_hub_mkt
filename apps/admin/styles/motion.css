@@ -1,158 +1,20 @@
-/* Hub motion language (docs/22 §3): short, physical and purposeful.
-   Only opacity, transform and a brief entrance blur animate; layout never does.
-   Everything decorative is removed under prefers-reduced-motion. */
-:root {
-  --ease-out: cubic-bezier(.22, 1, .36, 1);
-  --ease-in: cubic-bezier(.55, 0, .75, .2);
-  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
-  /* Fallbacks for browsers without linear(); the springs below replace them. */
-  --ease-spring: cubic-bezier(.2, .9, .25, 1.02);
-  --ease-bounce: cubic-bezier(.34, 1.4, .64, 1);
-  --dur-press: 110ms;
-  --dur-quick: 180ms;
-  --dur-base: 320ms;
-  --dur-enter: 460ms;
-  --dur-spring: 520ms;
-  --stagger: 38ms;
-  --focus-halo: color-mix(in srgb, var(--focus) 16%, transparent);
-  --activity-mask: radial-gradient(farthest-side, #0000 38%, #000 40%), repeating-conic-gradient(#000 0deg 26deg, #0000 26deg 45deg);
-}
-@supports (transition-timing-function: linear(0, 1)) {
-  :root {
-    /* Damped springs sampled for CSS: 0.8 settles with ~1.5% overshoot, 0.62 with a small bounce. */
-    --ease-spring: linear(0, .025, .089, .176, .274, .375, .474, .566, .65, .723, .787, .84, .884, .919, .947, .969, .985, .997, 1.005, 1.01, 1.013, 1.015, 1.015, 1.015, 1);
-    --ease-bounce: linear(0, .042, .146, .285, .435, .583, .716, .829, .92, .988, 1.035, 1.065, 1.08, 1.084, 1.08, 1.071, 1.059, 1.046, 1.034, 1.023, 1.014, 1.006, 1.001, .997, 1);
-  }
-}
-
-@keyframes hub-enter { from { opacity: 0; transform: translateY(12px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-@keyframes hub-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@keyframes hub-pop { from { opacity: 0; transform: translateY(6px) scale(.94); } to { opacity: 1; transform: none; } }
-@keyframes hub-drop { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+/* Owner decision, 7 October 2026: only short dialog/dropdown/tab transitions. */
+:root { --dur-quick: 150ms; --ease-out: ease-out; }
+@keyframes hub-sheet { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes hub-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes hub-pill { from { opacity: .4; transform: scale(.97); } to { opacity: 1; transform: none; } }
-@keyframes hub-sheet { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-@keyframes hub-shake { 0%, 100% { transform: none; } 14% { transform: translateX(-6px); } 30% { transform: translateX(5px); } 46% { transform: translateX(-4px); } 62% { transform: translateX(2px); } 78% { transform: translateX(-1px); } }
-@keyframes hub-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
-@keyframes hub-activity { to { transform: rotate(360deg); } }
-@keyframes hub-check { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
-@keyframes hub-vt-out { to { opacity: 0; transform: scale(.985); filter: blur(3px); } }
-
-/* Activity indicator: iOS-style petals that tick around, replacing the plain ring. */
-.spinner, .hub-loading::before, button[aria-busy="true"]::before {
-  display: inline-block; width: 18px; height: 18px; flex-shrink: 0; border: 0; border-radius: 50%; color: inherit;
-  background: conic-gradient(from 0deg, color-mix(in srgb, currentColor 12%, transparent), currentColor);
-  -webkit-mask-image: var(--activity-mask); -webkit-mask-composite: source-in;
-  mask-image: var(--activity-mask); mask-composite: intersect;
-  animation: hub-activity .9s steps(8) infinite;
-}
-.spinner { width: 20px; height: 20px; color: var(--muted); }
 .hub-loading { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); }
-.hub-loading::before { content: ""; }
-button[aria-busy="true"]::before { content: ""; width: 16px; height: 16px; }
-
-/* Skeleton placeholders: a soft light sweep over warm surfaces. */
 .hub-skeleton-list { display: grid; padding: 4px 0 8px; }
 .hub-skeleton-row { display: grid; grid-template-columns: 24% 1fr 1fr 14%; gap: 16px; align-items: center; padding: 18px 12px; border-bottom: 1px solid var(--line); }
-.hub-skeleton {
-  display: block; height: 14px; border-radius: 7px;
-  background: linear-gradient(100deg, var(--surface-warm) 30%, color-mix(in srgb, var(--surface) 70%, var(--gold-light)) 50%, var(--surface-warm) 70%) var(--surface-warm);
-  background-size: 200% 100%;
-  animation: hub-shimmer 1.4s var(--ease-in-out) infinite;
-}
+.hub-skeleton { display: block; height: 14px; border-radius: 7px; background: var(--surface-warm); }
 .hub-skeleton.short { width: 60%; }
 .hub-skeleton.tall { height: 20px; }
-@media (max-width: 640px) { .hub-skeleton-row { grid-template-columns: 1fr; gap: 8px; } }
-
-/* Keyed status text: each new message pops in place inside a stable live region. */
 .hub-status-msg { display: inline-block; }
-
-/* Frosted glass behind modal surfaces; the blur itself never animates. */
-.registry-dialog .registry-backdrop { background: color-mix(in srgb, var(--sidebar) 32%, transparent); -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
-.action-dialog::backdrop { -webkit-backdrop-filter: blur(10px) saturate(140%); backdrop-filter: blur(10px) saturate(140%); }
-
+.registry-dialog .registry-backdrop { background: color-mix(in srgb, var(--sidebar) 32%, transparent); }
+@media (max-width: 640px) { .hub-skeleton-row { grid-template-columns: 1fr; gap: 8px; } }
 @media (prefers-reduced-motion: no-preference) {
-  /* Page entrance: content rises out of a soft blur, staggered by section. */
-  main > * { animation: hub-enter var(--dur-enter) var(--ease-out) backwards; }
-  main > :nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
-  main > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
-  main > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
-  main > :nth-child(n+5) { animation-delay: calc(var(--stagger) * 4); }
-  .loading-state { animation: hub-fade var(--dur-base) var(--ease-out) .15s backwards; }
-  .sidebar .nav-link.active { animation: hub-pill var(--dur-spring) var(--ease-bounce) .05s backwards; }
-
-  /* Rows and cards reveal one after another when their data arrives. */
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *) {
-    animation: hub-rise var(--dur-base) var(--ease-out) backwards;
-  }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(5) { animation-delay: calc(var(--stagger) * 4); }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(6) { animation-delay: calc(var(--stagger) * 5); }
-  :is(.registry-table tbody tr, .project-card, .brand-card, .role-card, .library-asset, .ct-card, .finance-metric, .source-cards > *, .snapshot-list > *):nth-child(n+7) { animation-delay: calc(var(--stagger) * 6); }
-
-  /* Tabs, disclosures and steps settle into place. */
-  [role="tabpanel"]:not([hidden]), .ct-detail:not([hidden]), details[open] > :not(summary) { animation: hub-rise var(--dur-base) var(--ease-out) backwards; }
-  .registry-tabs button, .detail-tabs > button, .registry-steps li { transition: color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), background-color var(--dur-base) var(--ease-out); }
-
-  /* Buttons: a quick press, a springy release and a soft glow on primary actions. */
-  .button, .registry-button, .registry-table button, .open-project, .nav-link {
-    transition: transform 420ms var(--ease-spring), background-color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), color var(--dur-quick) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
-  }
-  .button:active:not(:disabled), .registry-button:active:not(:disabled) { transform: scale(.96); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
-  .nav-link:active { transform: scale(.98); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
-  .button.primary:hover:not(:disabled), .registry-button.primary:hover:not(:disabled) { box-shadow: 0 8px 22px color-mix(in srgb, var(--action) 26%, transparent); }
-  button[aria-busy="true"] { position: relative; overflow: hidden; }
-  button[aria-busy="true"]::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface) 40%, transparent) 50%, transparent 70%);
-    background-size: 200% 100%; animation: hub-shimmer 1.2s var(--ease-in-out) infinite;
-  }
-
-  /* Cards lift with a spring and catch a little more shadow. */
-  .project-card, .brand-card, .role-card, .library-asset { transition: transform var(--dur-spring) var(--ease-spring), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-quick) var(--ease-out); }
-
-  /* Responses: success pops with a drawn check; errors drop in, then shake once. */
-  .notice.success, .hub-status-msg { animation: hub-pop var(--dur-spring) var(--ease-bounce) backwards; }
-  .notice.success > svg :is(path, polyline) { stroke-dasharray: 24; animation: hub-check var(--dur-base) var(--ease-out) .12s backwards; }
-  .notice.error, .registry-error, .finance-inline-error, .model-error-summary { animation: hub-drop .28s var(--ease-out) backwards, hub-shake .44s var(--ease-out) .28s; }
-  .inline-warning, .notice:not(.success, .error) { animation: hub-rise var(--dur-base) var(--ease-out) backwards; }
-  [aria-invalid="true"] { animation: hub-shake .44s var(--ease-out); }
-
-  /* Native dialogs rise like a sheet above a frosted backdrop; translate only, so
-     control sizes are never scaled while the dialog settles. */
-  .action-dialog[open] { animation: hub-sheet 420ms var(--ease-spring) backwards; }
-  .action-dialog[open]::backdrop { animation: hub-fade var(--dur-base) var(--ease-out) backwards; }
+  dialog[open]:not(.registry-dialog), .registry-dialog[open] .registry-card, .registry-options, .question-popover:popover-open, [role="tabpanel"]:not([hidden]) { animation: hub-sheet 150ms ease-out; }
+  dialog[open]::backdrop, .registry-dialog[open] .registry-backdrop { animation: hub-fade 150ms ease-out; }
 }
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .project-card:hover, .brand-card:hover, .role-card:hover { transform: translateY(-3px); }
-}
-
-/* Focus: the ring settles onto the field instead of snapping on. */
-@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
-  :is(.registry-input, .form-field :is(input, select, textarea), .finance-field :is(input, select, textarea), .role-picker select, input:is([type="text"], [type="search"], [type="number"], [type="date"], [type="email"], :not([type])), textarea, select) {
-    outline: 3px solid transparent; outline-offset: 7px;
-    transition: outline-offset var(--dur-spring) var(--ease-spring), outline-color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), background-color var(--dur-quick) var(--ease-out);
-  }
-  :is(.registry-input, .form-field :is(input, select, textarea), .finance-field :is(input, select, textarea), .role-picker select, input:is([type="text"], [type="search"], [type="number"], [type="date"], [type="email"], :not([type])), textarea, select):focus {
-    outline-color: var(--focus); outline-offset: 2px; border-color: var(--primary-action); box-shadow: 0 0 0 7px var(--focus-halo);
-  }
-}
-
-/* Page transitions between Hub workspaces (cross-document View Transitions).
-   The shell cross-fades; the old page dims away and the new page plays its own entrance. */
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
-  main { view-transition-name: hub-main; }
-  ::view-transition-group(hub-main) { animation: none; }
-  ::view-transition-old(hub-main) { animation: hub-vt-out 200ms var(--ease-in) backwards; }
-  ::view-transition-new(hub-main) { animation: none; }
-  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
-}
-
-/* A slow tick keeps progress visible when motion is reduced; decoration stops. */
 @media (prefers-reduced-motion: reduce) {
-  .spinner, .hub-loading::before, button[aria-busy="true"]::before { animation: hub-activity 2.4s steps(8) infinite !important; }
-  .hub-skeleton { animation: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

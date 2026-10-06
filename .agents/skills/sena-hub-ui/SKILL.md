@@ -52,22 +52,13 @@ design doc's contrast table before use. Status is never color-only; pair it with
   `--text-small`) with real Thai data and Thai users. If loopless hurts scanning, use looped Noto Sans
   Thai for table bodies and Google Sans for headings. Keep body ≥ 15px and line-height ≥ 1.5 for Thai.
 
-## Motion (`motion/react`)
+## Motion (owner decision, 7 October 2026)
 
-Reference: dribbble mp4 in the owner brief. In-app we take the interaction language, **not** the
-camera zoom or motion blur.
-
-| Pattern | Implementation | Timing |
-|---|---|---|
-| Table row → floating detail card | shared `layoutId` on row and card; `AnimatePresence` | spring (stiffness ~400, damping ~35), ≤ 300 ms perceived |
-| Backdrop | opacity 0→1 fade, no blur animation | 150–200 ms |
-| Card expand with tabs | `layout` on the card; tab underline via shared `layoutId` | 200–250 ms |
-| Dropdown / picker pop | scale 0.96→1 + opacity, origin at trigger; hover highlight via shared `layoutId` pill | 120–160 ms |
-
-- Wrap the app in `<MotionConfig reducedMotion="user">`; with reduced motion, morphs become instant/fade.
-- Animate `transform`/`opacity` only. Never animate width/height of table cells.
-- Focus moves into the card on open and returns to the row on close; `Esc` closes; the URL deep-links the open card.
-- Motion must not delay data: render content immediately and animate the container.
+- No shared-layout IDs, row-to-card morphs, springs, scale, or animations on lists, tables, dashboards and cards.
+- Only dialogs, dropdowns/popovers and tab panels may use opacity/translate transitions, at most 150 ms. Use the shared `styles/motion.css`; no per-screen timing.
+- `prefers-reduced-motion: reduce` disables all transitions immediately, including loading decoration. Loading uses static placeholders and live status text.
+- Preserve native dialog focus containment, Escape, opener focus restoration, dirty guards and deep links. Render content and controls immediately.
+- Verify a production build (`next build` + `next start`) with normal and reduced motion. The current contract supersedes earlier animated navigation and page-transition guidance.
 
 ## Screen checklist
 

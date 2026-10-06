@@ -1,13 +1,12 @@
 "use client";
 
-import { AnimatePresence, LayoutGroup } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { request } from "./hub-request";
 import { object, records, str, type RecordData as Row } from "./finance-form";
 import { display } from "./finance-display";
 import { costTypes, paymentMethods } from "./finance-fields";
 import { PendingQuestion } from "./pending-question";
-import { LoadingRows, RegistryRowSummary, RowToCard, StatusText } from "./registry-motion";
+import { LoadingRows, RegistryRowSummary, DetailDialog, StatusText } from "./registry-motion";
 import "./ads-registry.css";
 import "./ads-operations.css";
 
@@ -54,7 +53,7 @@ function Snapshot({ meta }: { meta: Row }) {
 
 export function AdsOperations({ screen }: { screen: OperationScreen }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState(""); const [morph, setMorph] = useState("");
+  const [selected, setSelected] = useState("");
   const [ready, setReady] = useState(false); const [refresh, setRefresh] = useState(0);
   const [data, setData] = useState<Collection>({ items: [], total: 0, meta: {} });
   const [detail, setDetail] = useState<Row | null>(null); const [detailError, setDetailError] = useState("");
@@ -72,10 +71,10 @@ export function AdsOperations({ screen }: { screen: OperationScreen }) {
     }
     setSelected(query.get(selectionKey) ?? ""); const next = Object.fromEntries(filterKeys.map(key => [key, query.get(key) ?? ""])); setFilters(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next); setReady(true);
   }, [screen, selectionKey]);
-  useEffect(() => { readUrl(); const pop = () => { if (restore.current) { restore.current = false; return; } if (dirtyRef.current && !window.confirm("มีหมายเหตุที่ยังไม่ได้บันทึก ต้องการละทิ้งข้อมูลหรือไม่")) { restore.current = true; window.history.forward(); return; } setDirty(false); setMorph(""); readUrl(); }; window.addEventListener("popstate", pop); return () => window.removeEventListener("popstate", pop); }, [readUrl]);
+  useEffect(() => { readUrl(); const pop = () => { if (restore.current) { restore.current = false; return; } if (dirtyRef.current && !window.confirm("มีหมายเหตุที่ยังไม่ได้บันทึก ต้องการละทิ้งข้อมูลหรือไม่")) { restore.current = true; window.history.forward(); return; } setDirty(false); readUrl(); }; window.addEventListener("popstate", pop); return () => window.removeEventListener("popstate", pop); }, [readUrl]);
   useEffect(() => { if (!dirty) return; const leave = (event: BeforeUnloadEvent) => event.preventDefault(); window.addEventListener("beforeunload", leave); return () => window.removeEventListener("beforeunload", leave); }, [dirty]);
   function navigate(updates: Record<string, string>, replace = false) { const url = new URL(window.location.href); Object.entries(updates).forEach(([key, value]) => value || (screen === "actuals" && key === "month") ? url.searchParams.set(key, value) : url.searchParams.delete(key)); window.history[replace ? "replaceState" : "pushState"]({}, "", url); readUrl(); }
-  function open(row: Row) { const key = str(screen === "actuals" ? row.line_key : screen === "documents" ? row.key : row.finding_key); setMorph(screen === "actuals" ? `${key}-${str(row.month)}` : key); openedHere.current = true; navigate({ [selectionKey]: key, ...(screen !== "exceptions" && row.month ? { month: str(row.month) } : {}) }); }
+  function open(row: Row) { const key = str(screen === "actuals" ? row.line_key : screen === "documents" ? row.key : row.finding_key); openedHere.current = true; navigate({ [selectionKey]: key, ...(screen !== "exceptions" && row.month ? { month: str(row.month) } : {}) }); }
   function close() { if (dirty && !window.confirm("มีหมายเหตุที่ยังไม่ได้บันทึก ต้องการละทิ้งข้อมูลหรือไม่")) return; setDirty(false); if (openedHere.current) { openedHere.current = false; window.history.back(); } else navigate({ [selectionKey]: "" }, true); }
   const changeFilter = (key: string, value: string) => navigate({ [key]: value, offset: "" }, true);
   useEffect(() => {
@@ -118,7 +117,7 @@ export function AdsOperations({ screen }: { screen: OperationScreen }) {
     </div><button type="button" className="registry-button mt-4" onClick={() => navigate(Object.fromEntries(filterKeys.map(key => [key, ""])), true)}>ล้างตัวกรอง</button></section>
     {screen === "actuals" && filters.bud && <p className="operations-caption">แสดงทั้งรายการที่มี BUD {filters.bud} ยอดใช้จ่ายของรายการไม่ได้แยกตาม BUD</p>}
     {error && <div className="registry-error" role="alert">{error}<button className="registry-button" onClick={() => setRefresh(value => value + 1)}>ลองอีกครั้ง</button></div>}
-    <LayoutGroup id={`operations-${screen}`}><section className="registry-panel" aria-label="รายการข้อมูล">
+    <><section className="registry-panel" aria-label="รายการข้อมูล">
       {loading && !data.items.length ? <><p role="status" className="hub-loading">กำลังโหลดรายการ…</p><LoadingRows /></> : !error && !data.items.length ? <p>{data.meta.status === "NOT_IMPORTED" && screen !== "documents" ? "ยังไม่มีข้อมูลจากคลังข้อมูล" : "ไม่พบรายการตามตัวกรอง"}</p> : !error && <>
         <p className="operations-caption" role="status">{loading ? "กำลังอัปเดตรายการ…" : `พบ ${data.total} รายการ`}</p><table className={`registry-table operations-table operations-${screen}`}><thead><tr><th>รายการและเดือน</th>{screen === "actuals" ? <><th>งบที่อนุมัติ</th><th>ใช้จ่ายสื่อถึงวันที่</th><th>ผู้สนใจและ CPL</th></> : screen === "documents" ? <><th>ประเภทและเอกสาร</th><th>สถานะและเลขอ้างอิง</th><th>ผู้รับผิดชอบและกำหนด</th></> : <><th>ผลตรวจต้นทาง</th><th>วิธีเชื่อม</th><th>การดำเนินการ</th></>}</tr></thead><tbody>{data.items.map((row, index) => {
           const key = str(screen === "actuals" ? row.line_key : screen === "documents" ? row.key : row.finding_key); const dim = object(row.dimension); const workflow = object(row.workflow);
@@ -127,9 +126,9 @@ export function AdsOperations({ screen }: { screen: OperationScreen }) {
           </tr>;
         })}</tbody></table><div className="operations-actions"><button className="registry-button" disabled={!Number(filters.offset)} onClick={() => navigate({ offset: String(Math.max(0, Number(filters.offset) - 50)) }, true)}>ก่อนหน้า</button><button className="registry-button" disabled={Number(filters.offset || 0) + data.items.length >= data.total} onClick={() => navigate({ offset: String(Number(filters.offset || 0) + 50) }, true)}>ถัดไป</button></div>
       </>}
-    </section><AnimatePresence>{selected && <RowToCard key={selected} layoutId={`${screen}-${screen === "actuals" ? `${selected}-${filters.month}` : selected}`} morph={morph === (screen === "actuals" ? `${selected}-${filters.month}` : selected)} title={title} onClose={close}>
+    </section><>{selected && <DetailDialog key={selected} dialogId={`${screen}-${screen === "actuals" ? `${selected}-${filters.month}` : selected}`} title={title} onClose={close}>
       {detailError ? <p role="alert" className="registry-error">{detailError}</p> : !detail ? <p role="status" className="hub-loading">กำลังโหลดรายละเอียด…</p> : screen === "actuals" ? <ActualDetail detail={detail} /> : screen === "documents" ? <DocumentDetail detail={detail} onChanged={() => setRefresh(value => value + 1)} /> : <FindingDetail detail={detail} onChanged={() => { setDirty(false); setRefresh(value => value + 1); }} onDirty={setDirty} />}
-    </RowToCard>}</AnimatePresence></LayoutGroup>
+    </DetailDialog>}</></>
   </>;
 }
 

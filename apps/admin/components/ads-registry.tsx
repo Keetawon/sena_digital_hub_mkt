@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { isHubStaff, isContentStaff } from "@/lib/staff";
@@ -9,7 +8,7 @@ import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
 import { RegistrationMonthlyLines } from "./finance-actions";
-import { DropdownPop, LoadingRows, RegistryRowSummary, RowToCard, StatusText } from "./registry-motion";
+import { DropdownPop, LoadingRows, RegistryRowSummary, DetailDialog, StatusText } from "./registry-motion";
 import "./ads-registry.css";
 
 const api = "v1/admin/ads";
@@ -92,7 +91,7 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState("");
-  const [morphCode, setMorphCode] = useState("");
+
   const [tab, setTab] = useState(inbox ? "bindings" : "details");
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailError, setDetailError] = useState("");
@@ -123,7 +122,7 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
     const popped = () => {
       if (restoringHistory.current) { restoringHistory.current = false; return; }
       if (dirtyRef.current && !window.confirm("มีรหัสที่ยังไม่ได้บันทึก ต้องการละทิ้งข้อมูลหรือไม่")) { restoringHistory.current = true; window.history.forward(); return; }
-      dirtyRef.current = false; setDirty(false); onDirty(false); setMorphCode(""); readUrl();
+      dirtyRef.current = false; setDirty(false); onDirty(false); readUrl();
     };
     window.addEventListener("popstate", popped);
     return () => window.removeEventListener("popstate", popped);
@@ -136,7 +135,7 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
     return () => { active = false; };
   }, [selected]);
   function open(code: string) {
-    setMorphCode(code);
+
     const url = new URL(window.location.href); url.searchParams.set("registration", code); url.searchParams.set("tab", inbox ? "bindings" : "details");
     window.history.pushState({}, "", url); internalOpen.current = true; readUrl();
   }
@@ -147,28 +146,27 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
     else { const url = new URL(window.location.href); url.searchParams.delete("registration"); url.searchParams.delete("tab"); window.history.replaceState({}, "", url); readUrl(); }
   }
   function selectTab(next: string) { if (dirty && next !== "bindings") return; const url = new URL(window.location.href); url.searchParams.set("tab", next); window.history.replaceState({}, "", url); setTab(next); }
-  return <LayoutGroup id={view}>
+  return <>
     <div className="registry-panel"><div className="grid gap-4 md:grid-cols-3"><label>ค้นหารหัสหรือชื่อ<input className="registry-input" value={q} onChange={event => { setQ(event.target.value); setOffset(0); }} /></label>{canWrite(role) ? <DropdownPop label="เอเจนซี" value={agency} options={[{ value: "", label: "ทุกเอเจนซี" }, ...options(vocab, "AGENCY")]} onChange={value => { setAgency(value); setOffset(0); }} /> : <p className="self-center">{roleLabels[role]} · แสดงเฉพาะชื่อของคุณ</p>}<DropdownPop label="สถานะรหัส" value={status} options={[{ value: "", label: "ทุกสถานะ" }, { value: "pending", label: "รอรับรหัส" }, { value: "bound", label: "ผูกรหัสแล้ว" }]} onChange={value => { setStatus(value); setOffset(0); }} /></div></div>
     {error && <div role="alert" className="registry-error">{error}<button className="registry-button ml-3" onClick={() => void load()}>ลองอีกครั้ง</button></div>}
     <div className="registry-panel"><div className="flex flex-wrap items-center justify-between gap-3 mb-4"><h2>รายการลงทะเบียน</h2><p role="status" className={loading ? "hub-loading" : undefined}>{loading ? "กำลังโหลดข้อมูล…" : `พบ ${total} รายการ`}</p></div>
       {!loading && !rows.length ? <p className="py-8 text-muted">{q || agency || status ? "ไม่พบรายการตามตัวกรอง" : "ยังไม่มีรายการลงทะเบียน"}</p> : <table className="registry-table"><thead><tr><th scope="col">รหัสและชื่อ</th><th scope="col">ขอบเขต</th><th scope="col">วัตถุประสงค์ / เอเจนซี</th><th scope="col">สถานะ</th></tr></thead><tbody>{rows.map(row => <tr key={row.registration.code} data-registration={row.registration.code}><td data-label=""><RegistryRowSummary id={`${view}-${row.registration.code}`}><button type="button" onClick={() => open(row.registration.code)} aria-label={`${inbox ? "กรอกรหัสสำหรับ" : "ดูรายละเอียด"} ${row.registration.code}`}>{row.registration.code}</button><p>{row.registration.label}</p></RegistryRowSummary></td><td data-label="ขอบเขต">{row.scope.scope_code}<p className="text-muted">{row.scope.label_th}</p></td><td data-label="วัตถุประสงค์ / เอเจนซี">{row.registration.objective}<p>{row.registration.agency}</p></td><td data-label="สถานะ">{stateLabel(row)}</td></tr>)}</tbody></table>}{loading && !rows.length && <LoadingRows />}
       <div className="flex flex-wrap justify-end gap-3 mt-5"><button className="registry-button" disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - 25))}>หน้าก่อนหน้า</button><button className="registry-button" disabled={offset + 25 >= total || loading} onClick={() => setOffset(offset + 25)}>หน้าถัดไป</button></div>
     </div>
-    <AnimatePresence>{selected && <RowToCard key={selected} layoutId={`${view}-${selected}`} morph={morphCode === selected} title={selected} onClose={close}>{detailError ? <p role="alert" className="registry-error">{detailError}</p> : detail ? <RegistrationDetail detail={detail} tab={tab} setTab={selectTab} role={role} vocab={vocab} settings={settings} dirty={dirty} onDirty={value => { dirtyRef.current = value; setDirty(value); onDirty(value); }} onUpdated={value => { setDetail(value); void load(); }} /> : <p role="status" className="hub-loading">กำลังโหลดข้อมูล…</p>}</RowToCard>}</AnimatePresence>
-  </LayoutGroup>;
+    <>{selected && <DetailDialog key={selected} dialogId={`${view}-${selected}`} title={selected} onClose={close}>{detailError ? <p role="alert" className="registry-error">{detailError}</p> : detail ? <RegistrationDetail detail={detail} tab={tab} setTab={selectTab} role={role} vocab={vocab} settings={settings} dirty={dirty} onDirty={value => { dirtyRef.current = value; setDirty(value); onDirty(value); }} onUpdated={value => { setDetail(value); void load(); }} /> : <p role="status" className="hub-loading">กำลังโหลดข้อมูล…</p>}</DetailDialog>}</>
+  </>;
 }
 
 function RegistrationDetail({ detail, tab, setTab, role, vocab, settings, dirty, onDirty, onUpdated }: { detail: Detail; tab: string; setTab: (tab: string) => void; role: LocalRole; vocab: Vocab[]; settings: Settings; dirty: boolean; onDirty: (dirty: boolean) => void; onUpdated: (value: Detail) => void }) {
-  const reduce = useReducedMotion();
   const hosted = Boolean(useHostedSession());
   return <><p className="mt-3 text-muted">{detail.registration.label} · {stateLabel(detail)}</p><div className="registry-tabs" role="tablist" aria-label="รายละเอียดทะเบียน">{tabs.map((item, index) => <button key={item.key} id={`tab-${item.key}`} role="tab" aria-selected={tab === item.key} aria-controls={`panel-${item.key}`} disabled={dirty && item.key !== "bindings"} tabIndex={tab === item.key ? 0 : -1} onClick={() => setTab(item.key)} onKeyDown={event => {
     if (dirty || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return; event.preventDefault();
     const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : -1) + 3) % 3].key;
     setTab(next); document.getElementById(`tab-${next}`)?.focus();
-  }}>{item.label}{tab === item.key && <motion.span className="registry-tab-indicator" layoutId="registry-tab" transition={{ duration: reduce ? 0 : .22 }} />}</button>)}</div>
-    <motion.div layout={!reduce} id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
+  }}>{item.label}{tab === item.key && <span className="registry-tab-indicator" />}</button>)}</div>
+    <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
       {tab === "details" ? <><dl className="registry-detail-list"><dt>ขอบเขต</dt><dd>{detail.scope.scope_code} · {detail.scope.label_th}</dd><dt>สมาชิกขอบเขต</dt><dd>{detail.members.map(member => member.member_id).join(", ") || "ยังไม่มีสมาชิก"}</dd><dt>วัตถุประสงค์</dt><dd>{detail.registration.objective}</dd><dt>เอเจนซี</dt><dd>{detail.registration.agency}</dd><dt>ออกชื่อเมื่อ</dt><dd>{date(detail.names[0]?.issued_at)} (เวลาประเทศไทย)</dd></dl><p className="mt-5 text-muted">การออกชื่อไม่ได้อนุมัติงบประมาณ ขอบเขตร่วมไม่ได้หมายถึงการแบ่งยอดตามสมาชิก</p>{canWrite(role) && !hosted && <RegistrationMonthlyLines code={detail.registration.code} />}</> : tab === "names" ? <><LaunchPacks names={detail.names} />{canWrite(role) && !hosted && <VariantForm detail={detail} vocab={vocab} settings={settings} onUpdated={onUpdated} />}</> : <BindingForm detail={detail} vocab={vocab} onDirty={onDirty} onUpdated={onUpdated} />}
-    </motion.div>
+    </div>
   </>;
 }
 
