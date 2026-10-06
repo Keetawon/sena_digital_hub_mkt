@@ -305,6 +305,16 @@ Keep original page HTML/rendered DOM and section-split extracted text with sourc
 
 Write beneath ignored `.local/knowledge-intake/<run-id>/`: immutable original bytes, pages/sections, file/reference records, failures, seed/source hashes and a manifest of relative paths/SHA-256/sizes/row counts. Build in an incomplete directory, verify hashes/counts and atomically finalize without overwriting an existing package. Later runs create new evidence, never edit old packages. Partial fetches produce a clearly incomplete coverage report with each failure. Report unique pages, successful/failed fetches, unique files and bytes by **suggested** role, plus unclassified files and video links; avoid double-counting shared bytes in totals. Measure raw HTML/metadata overhead separately for Q69. No staging/rights approval/publication follows this command automatically.
 
+The collector is `scripts/crawl-knowledge.mjs`. Run it explicitly from the repository root, using a reviewed local input and its hash (Windows system CA support preserves certificate verification):
+
+```powershell
+node --use-system-ca scripts/crawl-knowledge.mjs --input .local/km-review/crawl-input.json --input-sha256 <sha256>
+node scripts/crawl-knowledge.mjs --verify .local/knowledge-intake/<run-id>
+node --test tests/knowledge-crawler.test.mjs
+```
+
+The input has `schema_version=1`, `source_evidence` hashes, `pages[]` (`url`, exact `project_ids[]`, `programme_ids[]`, optional `render=true`), and `file_refs[]` (`url`, `page_url`, `section`, `source_ref`, exact project/programme scope candidates). An empty project list for a programme does not grant project applicability. The default isolated browser channel is `msedge`; `--channel` may select an installed Playwright channel. Per-response download limit is 128 MiB; an oversized response is an explicit failure requiring follow-up. Finalized packages are never overwritten. An interrupted `.incomplete-*` directory is not an accepted package. File roles are deterministic suggestions; vision, OCR and rights review start later.
+
 ### 7.2 Asset candidates after owner package review
 
 Only after review, stage downloaded files as private byte-deduplicated candidate assets, invisible to consumers. Suggest `hero`, `gallery`, `master_plan`, `floor_plan`, `unit_plan`, `brochure`, `promotion_banner` or video link, exact project/phase/unit-type applicability, Thai alt-text draft and people/third-party-mark/stock flags. Vision is allowed for this public source content; uncertainty stays explicit. No vision call or heuristic role implies approval.
@@ -320,6 +330,38 @@ Plans/images are not embedded. Find eligible images by role, exact scope and rev
 ### 7.4 Future per-project review pack
 
 The later screen **ตรวจข้อมูลก่อนนำเข้า** shows source-linked sections, FAQs, facts, an asset grid with suggested roles, and promotion candidates. Show conflicts against KM, REM/DW and business mapping plus named gaps, per phase. MKT marks **ถูก / ผิด / ขาด** with notes: accepted items become Hub **drafts** only, wrong items remain rejected evidence, missing items become assigned gaps. Every item exposes source/version and scope. Optional per-project Excel export uses the same pack. The current task stops at the package summary, before this screen or staging is implemented.
+
+## 7.5 Local pre-audit result — 6 October 2026
+
+Collection is complete for review, with incomplete coverage explicitly retained. **No assets staged, Hub drafts created, rights approved or content published.** Both immutable captures stay under ignored `.local/knowledge-intake/`; originals are not committed. A supplementary capture recovered three images after correcting video-thumbnail and HTML-encoded-widget URL discovery, without changing the primary evidence.
+
+| Capture directory | Manifest SHA-256 |
+|---|---|
+| `2026-10-06T04-13-14-334Z-250abbaf` | `522df59a5a4b59168ebd56a53cfc446671a3ccd417e89461a58f8d0d96863544` |
+| `2026-10-06T04-45-09-420Z-f2307b97` | `5c7980b52791a8c219f64aa9077121bf6e99ff4093954c91c4997d57c6b8e171` |
+
+Aggregate review receipt: `.local/km-review/collection-summary.json`, SHA-256 `e0c6f73c7f9b58dfb50994a59234197ca0b4007977e33d6630d04afccc9dc1a0`. `.local/km-review/collection-files.json` lists all byte-deduplicated files with source references and capture locations. Role totals below use the corrected classifier; a suggestion is not MKT confirmation. The primary manifest retains its original role suggestions for audit.
+
+- **18 pages / 278 extracted sections**: all page HTTP responses succeeded; 15 rendered successfully. EKAMI, LivNex home and RentNex home retain initial HTML with partial rendered coverage after timeouts. Those are not missing-content findings.
+- **1,321 successful file URLs → 1,222 unique byte hashes**, **125,365,277 bytes (119.56 MiB)**; seven video links retained without downloading video files.
+- **113 unsuccessful file URLs**: 68 robots exclusions, five off-allowlist URLs, 20 off-allowlist redirects, one unavailable robots policy and 19 HTTP 404s. Also 56 stylesheet failures/exclusions and three render timeouts are recorded separately. Allowlist/robots exclusions were respected. No final-run page HTTP 502 is inferred from the earlier audit.
+- Dimensions were measured for 1,294 successful URL records; seven PDF records have no applicable image dimensions and 20 image/SVG records retain explicit inspection failures (including font resources). They require classification before any asset intake.
+- Total retained bytes across the **two finalized packages**, including raw pages/scripts/styles, JSON and manifests: **160,870,376 bytes (153.42 MiB)**. The aborted certificate-diagnostic `.incomplete-*` attempt is not an accepted package or included in this measurement.
+
+| Suggested role | Unique files | Bytes | MiB |
+|---|---:|---:|---:|
+| `hero` | 4 | 857,977 | 0.82 |
+| `gallery` | 146 | 19,328,024 | 18.43 |
+| `master_plan` | 8 | 1,116,610 | 1.06 |
+| `floor_plan` | 73 | 2,357,269 | 2.25 |
+| `unit_plan` | 40 | 1,352,180 | 1.29 |
+| `brochure` | 7 | 47,339,986 | 45.15 |
+| `promotion_banner` | 13 | 1,617,892 | 1.54 |
+| `unclassified` | 931 | 51,395,339 | 49.01 |
+
+Unclassified files include responsive variants, site-interface graphics, logos, thumbnails and SVG/font resources; do not bulk-stage them as marketing imagery. Q69 now uses this measurement for Supabase Storage versus R2 planning. This is a **measured collection size, not an approved production allocation**: unresolved downloads make source coverage incomplete, while MKT selection, responsive-variant policy, version retention and growth determine production capacity. Q68 (CMS media export) and Q67 (coverage) remain open.
+
+Verification: 24 targeted question API tests passed through the disposable runner; 12 collector tests passed, including prompt-injection quarantine, URL/DNS/redirect restrictions, retry/failure classification, DOM/widget extraction and immutable manifest integrity. These are collection/contract checks, **not results from the future chatbot golden evaluation**. The 61 audit cases remain marked not run. Stop here for the owner's package review before staging assets or increment 1.
 
 ## Appendix A. Physical source columns
 

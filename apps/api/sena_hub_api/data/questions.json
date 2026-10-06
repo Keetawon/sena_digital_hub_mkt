@@ -1579,7 +1579,7 @@
       "owner_group": "it",
       "owner_th": "ทีมไอทีและเจ้าของงบระบบ",
       "question_th": "ไฟล์ production จะเก็บที่ Supabase Storage หรือ R2 และต้องใช้พื้นที่เท่าใด?",
-      "default_th": "ใช้จำนวนไบต์จริงจาก manifest แยกไฟล์ไม่ซ้ำ หลักฐาน และไฟล์ที่ดึงไม่สำเร็จ ยังไม่ย้ายขึ้นระบบ",
+      "default_th": "ผลตรวจ 6 ต.ค. 2569: ไฟล์ไม่ซ้ำ 1,222 ไฟล์ รวม 125,365,277 ไบต์ (119.56 MiB) หลักฐานสองแพ็กเกจรวม 160,870,376 ไบต์ (153.42 MiB) ยังมีไฟล์ที่ดึงไม่ได้ 113 URL ต้องเลือกสื่อจริงและนโยบายเก็บรุ่นก่อนกำหนดพื้นที่ production ยังไม่ย้ายขึ้นระบบ",
       "links": [
         {
           "href": "/",
@@ -1595,7 +1595,7 @@
         "question": "Where will production assets live (Supabase Storage or R2), and how much space is needed?",
         "owner": "ทีมไอทีและเจ้าของงบระบบ",
         "blocks": "Production storage choice and capacity",
-        "default": "Use measured unique file/package bytes after crawl, plus failed-file lower-bound warning, retention and growth. No hosted upload. See docs/30-knowledge-library.md."
+        "default": "Measured 6 October: 1,222 unique files, 125,365,277 bytes (119.56 MiB); two finalized packages including evidence total 160,870,376 bytes (153.42 MiB). 113 file URLs remain unsuccessful. Decide MKT selection, responsive variants, version retention and growth before allocating Supabase Storage or R2. No hosted upload. See docs/30-knowledge-library.md section 7.5."
       }
     },
     {
