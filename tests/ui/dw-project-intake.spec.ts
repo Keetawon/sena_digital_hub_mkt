@@ -5,7 +5,7 @@ const metadata = (code: string | null, extra = {}) => ({status_raw: code, status
   is_deleted: false, default_scope: code === '2', flags: [], exceptions: [], brand_binding_allowed: true, gold_prefill_allowed: true, first_import_only: true, ...extra});
 const reviews = [metadata('2', {brand_binding_allowed: false, exceptions: [{code: 'PROJECT_BRAND_MISSING', keys: {ProjectID: 'P0'}}]}),
   metadata('2', {gold_prefill_allowed: false, exceptions: [{code: 'GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT', keys: {project_id: 'P1'}}, {code: 'GOLD_MODEL_ID_MISSING_REM', keys: {project_id: 'P1', ModelID: '001 '}}]}),
-  metadata('3', {flags: ['changed']}), metadata('4')];
+  metadata('3', {flags: ['changed']}), metadata('4'), metadata(null)];
 
 async function setup(page: Page, role = 'viewer') {
   const writes: string[] = [];
@@ -59,4 +59,13 @@ test('source picker disables missing-brand selection and explains Gold conflict 
   await expect(picker).toContainText('ไม่จับคู่อัตโนมัติ');
   await expect(picker).toContainText('"001 "');
   expect(writes).toEqual([]);
+});
+
+test('REM status options put the raw code first and the count last', async ({page}) => {
+  await setup(page);
+  const filter=page.locator('#progress-rem-status');
+  await expect(filter.locator('option[value="2"]')).toHaveText('2 พร้อมอยู่ (2)');
+  await expect(filter.locator('option[value="3"]')).toHaveText('3 ปิดโครงการ (1)');
+  await expect(filter.locator('option[value="4"]')).toHaveText('4 ไม่ทราบสถานะ (1)');
+  await expect(filter.locator('option[value="null"]')).toHaveText('— ไม่ทราบสถานะ (1)');
 });

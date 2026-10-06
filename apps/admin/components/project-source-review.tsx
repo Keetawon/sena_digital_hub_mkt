@@ -25,5 +25,5 @@ export function SourceStatusFilter({ id, rows = [], counts, total, value, onChan
     const old = statuses.get(key);
     statuses.set(key, { label: row.source_review?.status_label ?? "ไม่ทราบสถานะ", count: (old?.count ?? 0) + 1 });
   }
-  return <div className="form-field"><label htmlFor={id}>สถานะโครงการ REM</label><select id={id} value={value} onChange={event => onChange(event.target.value)}><option value="all">ทุกสถานะ ({total ?? rows.length})</option>{(counts ? Object.entries(counts) : [...statuses]).sort(([a], [b]) => a.localeCompare(b)).map(([key, row]) => <option key={key} value={key}>{row.label} ({key}) · {row.count}</option>)}</select></div>;
+  return <div className="form-field"><label htmlFor={id}>สถานะโครงการ REM</label><select id={id} value={value} onChange={event => onChange(event.target.value)}><option value="all">ทุกสถานะ ({total ?? rows.length})</option>{(counts ? Object.entries(counts) : [...statuses]).sort(([a], [b]) => a.localeCompare(b)).map(([key, row]) => <option key={key} value={key}>{key === "null" ? "—" : key} {row.label} ({row.count})</option>)}</select></div>;
 }

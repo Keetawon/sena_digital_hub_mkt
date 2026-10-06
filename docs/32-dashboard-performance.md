@@ -65,3 +65,9 @@ four final cache/derivative smoke checks passed; full DB suites passed; 19 relev
 production UI specs passed. Earlier full API runs found the cleanup assertion and
 JSON operator-precedence issues, both corrected and covered by the passing focused
 runs. The full combined API/UI suites will run again with the remaining follow-ups.
+
+## Item 3 status labels
+
+Dashboard and source-picker filter options use `<raw code> <Thai label> (<count>)`.
+Null uses `— ไม่ทราบสถานะ`; unknown non-null codes retain their exact raw value.
+Counts and default-scope semantics are unchanged.
