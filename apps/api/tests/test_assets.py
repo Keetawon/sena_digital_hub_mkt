@@ -186,7 +186,9 @@ def test_failed_atomic_install_cleans_only_its_temporary_file(monkeypatch, tmp_p
     content = image_bytes()
     with pytest.raises(HTTPException):
         assets.install_file(content, assets.validate_file(content, "image/png", "test.png"))
-    assert [item for item in tmp_path.rglob('*') if item.is_file()] == [sentinel]
+    metadata = assets.validate_file(content, "image/png", "test.png")
+    assert assets.thumbnail_failure(metadata)['reason'] == 'storage_failed'
+    assert set(item for item in tmp_path.rglob('*') if item.is_file()) == {sentinel, assets.thumbnail_failure_path(metadata)}
 
 
 @pytest.mark.parametrize("registered", [False, True])

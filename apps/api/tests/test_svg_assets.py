@@ -170,8 +170,9 @@ def test_svg_endpoint_stores_only_clean_bytes_and_serves_csp(monkeypatch, tmp_pa
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["cache-control"] == "no-store"
     assert b"script" not in response.content and b"onload" not in response.content
-    assert response.content == next(tmp_path.iterdir()).read_bytes()
-    assert len(list(tmp_path.iterdir())) == 1
+    originals = [item for item in tmp_path.iterdir() if item.is_file()]
+    assert len(originals) == 1 and response.content == originals[0].read_bytes()
+    assert len(list((tmp_path / 'thumbnails-v1').glob('*.webp'))) == 1
 
 
 @pytest.mark.parametrize("role", ["viewer", "service_consumer"])

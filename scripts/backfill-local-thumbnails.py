@@ -3,6 +3,7 @@ import asyncio
 import json
 from pathlib import Path
 from sena_hub_api import assets
+from fastapi import HTTPException
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -15,13 +16,31 @@ async def main():
         if Path(await db.fetchval('SHOW data_directory')).resolve() != (ROOT / '.local/postgres').resolve():
             raise RuntimeError('Only the local working database is supported')
         rows = await db.fetch("SELECT checksum,mime_type,storage_path,file_size FROM hub.assets WHERE deleted_at IS NULL AND storage_path IS NOT NULL")
-        counts = {'created': 0, 'existing_or_unsupported': 0, 'missing_original': 0}
-        for row in rows:
-            path = assets.readable_file(dict(row))
-            counts['created' if assets.install_thumbnail(path.read_bytes(), dict(row)) else 'existing_or_unsupported'] += 1
-        print(json.dumps(counts))
+        print(json.dumps(backfill(rows)))
     finally:
         await db.close()
+
+
+def backfill(rows):
+    counts = {'created': 0, 'existing': 0, 'failed': 0, 'missing_or_invalid_original': 0}
+    failures = []
+    for row in rows:
+        metadata = dict(row)
+        if assets.thumbnail_path(metadata).is_file():
+            counts['existing'] += 1
+            continue
+        try:
+            path = assets.readable_file(metadata)
+            created = assets.install_thumbnail(path.read_bytes(), metadata)
+        except (HTTPException, OSError) as error:
+            assets.record_thumbnail_failure(metadata, 'original_unavailable', error)
+            counts['missing_or_invalid_original'] += 1
+        else:
+            counts['created' if created else 'existing' if assets.thumbnail_path(metadata).is_file() else 'failed'] += 1
+        failure = assets.thumbnail_failure(metadata)
+        if failure:
+            failures.append({'checksum': metadata['checksum'], 'reason': failure['reason']})
+    return {**counts, 'failures': failures}
 
 
 if __name__ == '__main__':

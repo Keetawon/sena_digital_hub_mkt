@@ -122,3 +122,30 @@ The final admin typecheck passed. Existing Google Sans fallback and Python depre
 
 Read-only screenshots (visually checked): `.local/dashboard-followup/projects.png`, `projects-table.png`,
 `sidebar.png`, `sidebar-mobile.png`, `groups.png`. No browser page errors were recorded.
+
+## SVG and PDF thumbnail follow-up
+
+Upload, knowledge intake and guarded local backfill use the same derivative installer. Sanitized
+SVG bytes are checked for canonical sanitizer equality again, then rasterized by resvg at a maximum
+96px edge; no raw SVG, script, external href/image/style or resource directory reaches the renderer.
+Transparency is preserved in WebP and displayed on the existing neutral list tile. PDFs pass the
+existing inactive-content/page-count validation and render only page 1 at 96px with PDFium. PDFium
+calls are serialized within a process, including handle cleanup; no form/JavaScript environment is
+initialized. Raster image behavior and the staff-only thumbnail endpoint remain unchanged.
+
+Rendering failures do not reject an otherwise valid original. A private checksum-keyed
+`thumbnails-v1/<checksum>.failure.json` records the reason code, exception type and UTC attempt time;
+logs use only checksum/MIME/code/type, never filenames, URLs or exception messages. A successful retry
+removes the failure marker. Backfill reports created/existing/failed/missing-or-invalid-original counts
+and a reason per failed checksum, preserving all originals and database records. No request-time
+rendering or original-file fallback. Storage failures also retain the fallback and are logged.
+
+Renderer APIs: [resvg](https://resvg-py.readthedocs.io/en/latest/api.html),
+[PDFium rendering and threading](https://pypdfium2.readthedocs.io/en/stable/python_api.html).
+
+Validation: admin typecheck/build passed; full API suite 1,400 passed / 11 skipped; disposable
+database checks passed; 13 upload/logo/thumbnail UI tests and 15 H1 loopback UI tests passed.
+The first focused run exposed two old assertions assuming the storage directory contained only
+the original; those now verify the original plus derivative explicitly. Local backfill found
+6 existing derivatives, 0 created, 0 failed and 0 missing/invalid originals. All 8 original files
+in the local store retained their SHA-256 hashes. No database records or hosted data changed.

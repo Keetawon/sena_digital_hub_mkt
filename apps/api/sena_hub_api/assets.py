@@ -3,10 +3,16 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
+import logging
+import math
 import os
+from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import tempfile
+from threading import Lock
 import unicodedata
 from urllib.parse import unquote
 import warnings
@@ -30,6 +36,13 @@ FORMATS = {"image/png": ("PNG", "png"), "image/jpeg": ("JPEG", "jpg"),
 ACTIVE_PDF_NAMES = {"/JavaScript", "/JS", "/OpenAction", "/AA", "/Launch", "/SubmitForm",
                     "/ImportData", "/EmbeddedFiles", "/EmbeddedFile", "/RichMedia", "/XFA",
                     "/AcroForm", "/URI"}
+PDF_RENDER_LOCK = Lock()  # PDFium must never be called concurrently, even for different documents.
+THUMBNAIL_SIZE = 96
+logger = logging.getLogger(__name__)
+
+
+class ThumbnailRenderError(ValueError):
+    """Stable private failure reason, without original document text."""
 
 
 def decode_filename(header: str | None) -> str:
@@ -210,28 +223,103 @@ def thumbnail_path(metadata: dict) -> Path:
     return path
 
 
-def install_thumbnail(content: bytes, metadata: dict) -> bool:
-    """96px raster derivative, generated at intake. Unsupported files use initials."""
-    if metadata.get('mime_type') not in ('image/png', 'image/jpeg', 'image/webp'):
-        return False
-    path = thumbnail_path(metadata)
-    if path.exists():
-        return False
-    with Image.open(io.BytesIO(content)) as original:
-        picture = ImageOps.exif_transpose(original).convert('RGBA')
-        picture.thumbnail((96, 96), Image.Resampling.LANCZOS)
-        output = io.BytesIO()
-        picture.save(output, 'WEBP', quality=80, method=4)
-    path.parent.mkdir(parents=True, exist_ok=True)
+def thumbnail_failure_path(metadata: dict) -> Path:
+    path = thumbnail_path(metadata).with_suffix('.failure.json')
+    if path.is_symlink() or path.resolve().parent != path.parent:
+        raise failure(404, 'file_not_found', 'ตำแหน่งบันทึกภาพย่อไม่ถูกต้อง')
+    return path
+
+
+def record_thumbnail_failure(metadata: dict, reason: str, error: Exception) -> None:
+    """Private diagnostics only; renderer messages may contain filenames or source text."""
+    record = {'checksum': metadata['checksum'], 'mime_type': metadata.get('mime_type'), 'reason': reason,
+              'exception_type': type(error).__name__, 'attempted_at': datetime.now(timezone.utc).isoformat()}
+    logger.warning('Thumbnail failed checksum=%s mime=%s reason=%s type=%s',
+                   record['checksum'], record['mime_type'], reason, record['exception_type'])
     temporary = None
     try:
+        path = thumbnail_failure_path(metadata)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.thumbnail-', delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(json.dumps(record).encode('utf8')); stream.flush(); os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    except OSError:
+        logger.error('Thumbnail failure record unavailable checksum=%s', record['checksum'])
+    finally:
+        if temporary is not None: temporary.unlink(missing_ok=True)
+
+
+def thumbnail_failure(metadata: dict) -> dict | None:
+    if thumbnail_path(metadata).is_file():
+        return None
+    path = thumbnail_failure_path(metadata)
+    return json.loads(path.read_text(encoding='utf8')) if path.is_file() else None
+
+
+def render_thumbnail(content: bytes, mime: str) -> Image.Image:
+    """Render only bounded static source bytes; never open a supplied URL or path."""
+    if mime == 'image/svg+xml':
+        import resvg_py
+        try:
+            clean, width, height = sanitize_svg(content)
+        except Exception:
+            raise ThumbnailRenderError('invalid_svg') from None
+        if clean != content:
+            raise ThumbnailRenderError('svg_not_sanitized')
+        scale = THUMBNAIL_SIZE / max(width, height)
+        png = resvg_py.svg_to_bytes(svg_string=clean.decode('utf8'), width=max(1, round(width * scale)),
+                                   height=max(1, round(height * scale)), background=None, log_information=False)
+        with Image.open(io.BytesIO(png)) as picture:
+            return picture.convert('RGBA')
+    if mime == 'application/pdf':
+        try:
+            validate_pdf(content)
+        except Exception:
+            raise ThumbnailRenderError('invalid_pdf') from None
+        with PDF_RENDER_LOCK:
+            import pypdfium2 as pdfium
+            with pdfium.PdfDocument(content) as document:
+                with closing(document[0]) as page:
+                    width, height = page.get_size()
+                    if not all(math.isfinite(v) and v > 0 for v in (width, height)):
+                        raise ThumbnailRenderError('invalid_pdf_dimensions')
+                    with closing(page.render(scale=THUMBNAIL_SIZE / max(width, height), draw_annots=False)) as bitmap:
+                        return bitmap.to_pil().convert('RGBA')  # Copy pixels before closing native handles.
+    if mime not in ('image/png', 'image/jpeg', 'image/webp'):
+        raise ThumbnailRenderError('unsupported_format')
+    with Image.open(io.BytesIO(content)) as original:
+        return ImageOps.exif_transpose(original).convert('RGBA')
+
+
+def install_thumbnail(content: bytes, metadata: dict) -> bool:
+    """Generate once at intake/backfill; keep a valid original when rendering fails."""
+    path = thumbnail_path(metadata)
+    failure_path = thumbnail_failure_path(metadata)
+    if path.exists():
+        return False
+    try:
+        with render_thumbnail(content, metadata.get('mime_type')) as picture:
+            picture.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE), Image.Resampling.LANCZOS)
+            output = io.BytesIO()
+            picture.save(output, 'WEBP', quality=80, method=4)
+    except Exception as error:
+        record_thumbnail_failure(metadata, str(error) if isinstance(error, ThumbnailRenderError) else 'render_failed', error)
+        return False
+    temporary = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.thumbnail-', delete=False) as stream:
             temporary = Path(stream.name); stream.write(output.getvalue()); stream.flush(); os.fsync(stream.fileno())
         try:
             os.link(temporary, path)
         except FileExistsError:
             return False
+        failure_path.unlink(missing_ok=True)
         return True
+    except OSError as error:
+        record_thumbnail_failure(metadata, 'storage_failed', error)
+        return False
     finally:
         if temporary is not None: temporary.unlink(missing_ok=True)
 
