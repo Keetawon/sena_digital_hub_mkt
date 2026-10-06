@@ -1,3 +1,4 @@
+import { progressFixture } from './progress-fixture';
 import { test, expect } from '@playwright/test';
 
 test('staff project thumbnails use project, brand, then initials and recover from an unavailable image', async ({page}) => {
@@ -11,10 +12,10 @@ test('staff project thumbnails use project, brand, then initials and recover fro
       if(path.includes('broken')) return route.fulfill({status:404});
       return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64')});
     }
-    return route.fulfill({json:{data:path.endsWith('/projects/progress')?{rows,counts:{}}:[]}});
+    return route.fulfill({json:{data:path.endsWith('/projects/progress')? progressFixture(route.request().url(), rows) :[]}});
   });
   await page.goto('/');
-  await expect(page.getByRole('img',{name:'ภาพโครงการ',exact:true})).toHaveAttribute('src',/project-image/);
+  await expect(page.getByRole('img',{name:'ภาพโครงการ',exact:true})).toHaveAttribute('src',/project-image\/thumbnail$/);
   await expect(page.getByRole('img',{name:'โลโก้แทนภาพ',exact:true})).toHaveAttribute('src',/brand-logo/);
   await expect(page.getByRole('img',{name:'ชื่อย่อ',exact:true})).toHaveText('ชื');
   const broken=page.getByRole('img',{name:'ภาพเสีย',exact:true}); await broken.scrollIntoViewIfNeeded();

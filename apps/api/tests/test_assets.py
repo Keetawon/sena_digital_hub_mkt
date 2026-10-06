@@ -160,7 +160,8 @@ def test_atomic_dedup_never_overwrites_and_detects_corruption(monkeypatch, tmp_p
     assert assets.install_file(content, metadata) is False
     path = assets.readable_file(metadata)
     assert path.read_bytes() == content
-    assert len(list(tmp_path.iterdir())) == 1
+    assert len([item for item in tmp_path.iterdir() if item.is_file()]) == 1
+    assert assets.readable_thumbnail(metadata).is_file()
     path.write_bytes(b"corrupted")
     with pytest.raises(HTTPException):
         assets.install_file(content, metadata)
@@ -185,7 +186,7 @@ def test_failed_atomic_install_cleans_only_its_temporary_file(monkeypatch, tmp_p
     content = image_bytes()
     with pytest.raises(HTTPException):
         assets.install_file(content, assets.validate_file(content, "image/png", "test.png"))
-    assert list(tmp_path.iterdir()) == [sentinel]
+    assert [item for item in tmp_path.rglob('*') if item.is_file()] == [sentinel]
 
 
 @pytest.mark.parametrize("registered", [False, True])

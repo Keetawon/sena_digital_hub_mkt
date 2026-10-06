@@ -1,3 +1,4 @@
+import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
 const metadata = (code: string | null, extra = {}) => ({status_raw: code, status_label: code === '2' ? 'พร้อมอยู่' : code === '3' ? 'ปิดโครงการ' : 'ไม่ทราบสถานะ',
@@ -16,7 +17,7 @@ async function setup(page: Page, role = 'viewer') {
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
-    const data = path.endsWith('/projects/progress') ? {rows, counts: {all: 2, new_from_rem: 2, filling: 0, awaiting_publisher: 0, published: 0, needs_attention: 1}} :
+    const data = path.endsWith('/projects/progress') ? progressFixture(route.request().url(), rows) :
       path.endsWith('/sources/projects') ? rows.map(row => ({...row, project_name_rem: row.name, model_count: 1, source_record: null, intake_manifest_sha256: 'a'.repeat(64)})) : [];
     await route.fulfill({json: {data}});
   });

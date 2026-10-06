@@ -11,7 +11,7 @@ import unicodedata
 from urllib.parse import unquote
 import warnings
 
-from PIL import Image
+from PIL import Image, ImageOps
 from pypdf import PdfReader
 from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject, NameObject
 from starlette.requests import ClientDisconnect, Request
@@ -167,12 +167,14 @@ def install_file(content: bytes, metadata: dict) -> bool:
         if path.exists():
             if path.stat().st_size != len(content) or hashlib.sha256(path.read_bytes()).hexdigest() != metadata["checksum"]:
                 raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่สมบูรณ์ กรุณาให้ผู้ดูแลตรวจสอบ")
+            install_thumbnail(content, metadata)
             return False
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".upload-", delete=False) as output:
             temporary = Path(output.name)
             output.write(content)
             output.flush()
             os.fsync(output.fileno())
+        install_thumbnail(content, metadata)
         os.link(temporary, path)  # Atomic creation that never replaces an existing original.
         return True
     except FileExistsError:
@@ -193,4 +195,49 @@ def readable_file(metadata: dict) -> Path:
             or path.stat().st_size > MAX_BYTES
             or hashlib.sha256(path.read_bytes()).hexdigest() != metadata.get("checksum")):
         raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่สมบูรณ์ กรุณาให้ผู้ดูแลตรวจสอบ")
+    return path
+
+
+def thumbnail_path(metadata: dict) -> Path:
+    checksum = metadata.get('checksum')
+    if not isinstance(checksum, str) or not re.fullmatch('[0-9a-f]{64}', checksum):
+        raise failure(404, 'file_not_found', 'ยังไม่มีภาพย่อ')
+    root = STORAGE_ROOT.resolve()
+    folder = root / 'thumbnails-v1'
+    path = folder / f'{checksum}.webp'
+    if root != STORAGE_ROOT.absolute() or folder.is_symlink() or path.is_symlink() or path.resolve().parent != folder:
+        raise failure(404, 'file_not_found', 'ไม่พบภาพย่อที่จัดเก็บอย่างถูกต้อง')
+    return path
+
+
+def install_thumbnail(content: bytes, metadata: dict) -> bool:
+    """96px raster derivative, generated at intake. Unsupported files use initials."""
+    if metadata.get('mime_type') not in ('image/png', 'image/jpeg', 'image/webp'):
+        return False
+    path = thumbnail_path(metadata)
+    if path.exists():
+        return False
+    with Image.open(io.BytesIO(content)) as original:
+        picture = ImageOps.exif_transpose(original).convert('RGBA')
+        picture.thumbnail((96, 96), Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        picture.save(output, 'WEBP', quality=80, method=4)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.thumbnail-', delete=False) as stream:
+            temporary = Path(stream.name); stream.write(output.getvalue()); stream.flush(); os.fsync(stream.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            return False
+        return True
+    finally:
+        if temporary is not None: temporary.unlink(missing_ok=True)
+
+
+def readable_thumbnail(metadata: dict) -> Path:
+    path = thumbnail_path(metadata)
+    if not path.is_file():
+        raise failure(404, 'file_not_found', 'ยังไม่มีภาพย่อ')
     return path

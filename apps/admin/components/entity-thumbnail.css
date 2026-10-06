@@ -6,3 +6,5 @@
 .entity-list-identity > div { min-width: 0; }
 
 .entity-thumbnail img { width: 48px; height: 48px; object-fit: contain; border-radius: inherit; }
+.entity-thumbnail { position: relative; }
+.entity-thumbnail-placeholder { position: absolute; inset: 0; background: var(--surface-warm); border-radius: inherit; }

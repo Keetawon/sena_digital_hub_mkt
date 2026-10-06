@@ -11,23 +11,26 @@ export async function privateAssetBlob(asset: FileAsset) {
   return response.blob();
 }
 
-export function AssetImage({ asset, alt, width, height, onError }: { asset: FileAsset; alt: string; width: number; height: number; onError?: () => void }) {
+export function AssetImage({ asset, alt, width, height, onError, thumbnail = false }: { asset: FileAsset; alt: string; width: number; height: number; onError?: () => void; thumbnail?: boolean }) {
   const hosted = Boolean(useHostedSession());
   const failureCallback = useRef(onError); failureCallback.current = onError;
   const [url, setUrl] = useState("");
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const derivative = `v1/admin/assets/${encodeURIComponent(asset.id)}/thumbnail`;
   useEffect(() => {
     if (!hosted) return;
     let active = true; let objectUrl = "";
     setUrl(""); setFailed(false);
-    void privateAssetBlob({ id: asset.id, public_url: null }).then(blob => {
+    const blobRequest = thumbnail ? assetFetch(derivative).then(response => { if (!response.ok) throw new Error("โหลดภาพย่อไม่ได้"); return response.blob(); }) : privateAssetBlob({ id: asset.id, public_url: null });
+    void blobRequest.then(blob => {
       if (!active) return;
       objectUrl = URL.createObjectURL(blob); setUrl(objectUrl);
     }).catch(() => { if (active) { setFailed(true); failureCallback.current?.(); } });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [hosted, asset.id]);
+  }, [hosted, asset.id, thumbnail, derivative]);
   if (hosted && !url) return <span role="status">{failed ? "โหลดภาพไม่ได้" : "กำลังโหลดภาพ…"}</span>;
-  return <img src={hosted ? url : localAssetUrl(asset)} alt={alt} width={width} height={height} loading="lazy" onError={onError} />;
+  return <>{thumbnail && !loaded && <span className="entity-thumbnail-placeholder" aria-hidden="true" />}<img src={hosted ? url : thumbnail ? `/api/hub/${derivative}` : localAssetUrl(asset)} alt={alt} width={width} height={height} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} onError={onError} /></>;
 }
 
 export function AssetFileLink({ asset, children }: { asset: FileAsset; children: ReactNode }) {

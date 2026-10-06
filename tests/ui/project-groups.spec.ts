@@ -1,3 +1,4 @@
+import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
 const stamp = '2026-10-05T00:00:00Z';
@@ -33,7 +34,7 @@ async function fixture(page: Page, role = 'publisher') {
       if (path === 'assets/synthetic-image/review') { asset.rights_status = 'approved'; return route.fulfill({ json: { data: asset } }); }
       return route.fulfill({ status: 403, json: { error: { message: 'ชุดทดสอบไม่อนุญาต' } } });
     }
-    const data = path === 'projects/progress' ? { rows, counts: {} } : path === 'brands/completeness' ? {
+    const data = path === 'projects/progress' ? progressFixture(route.request().url(), rows) : path === 'brands/completeness' ? {
       rows: [{ public_brand_id: 'BRAND', rem_brand_id: '00025', name_th: 'แบรนด์จำลอง', name_en: '', residential_project_count: 17,
         status: 'missing_data', reason_codes: [], readiness: { ready: false, percent: 0, missing: [] }, checks: {}, optional_logos: [], updated_at: stamp, updated_by: null }], counts: { total: 1 },
     } : path === 'assets/synthetic-image' ? asset : path === 'assets' ? [asset] : path === 'sources/projects' ? [{ rem_project_id: 'NEW', project_name_rem: 'โครงการ NEW', model_count: 0, public_project_id: null, source_record: null }] :

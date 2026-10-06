@@ -144,19 +144,16 @@ def test_progress_endpoint_uses_caller_and_read_only_queries(monkeypatch, role):
     record, source = fixture()
     actors = []
     class Connection:
-        async def fetch(self, sql):
-            assert sql.lstrip().startswith("SELECT")
-            return [record] if "project_detail" in sql else []
-        async def fetchval(self, sql):
-            assert sql == "SELECT hub.list_rem_projects()"
-            return [source]
+        async def fetch(self, sql, detail):
+            assert sql == "SELECT summary FROM hub.progress_rows($1)" and detail is None
+            return [{'summary': build_progress([record], [source], [], NOW)['rows'][0]}]
     @asynccontextmanager
     async def database(request, actor):
         actors.append(actor.role)
         yield Connection()
     monkeypatch.setattr(main, "database", database)
     client = TestClient(main.create_app(settings()), client=("127.0.0.1", 50000))
-    response = client.get("/v1/admin/projects/progress", headers={"Authorization": f"Bearer {TOKENS[role]}"})
+    response = client.get("/v1/admin/projects/progress?view=counts", headers={"Authorization": f"Bearer {TOKENS[role]}"})
     assert response.status_code == 200 and actors == [role]
     assert response.json()["data"]["counts"]["published"] == 1
     assert "rights_notes" not in response.text and "public_url" not in response.text
@@ -215,3 +212,20 @@ def test_completeness_counts_confirmation_and_specs_independently_and_sorts_read
     other['detail']['readiness']['ready']=False
     rows=build_progress([other,record],[source],[],NOW)['rows']
     assert rows[0]['rem_project_id']=='0007'
+
+
+def test_server_pages_keep_facets_and_source_model_counts_without_model_lists():
+    from sena_hub_api.project_progress import select_progress
+    record, source = fixture()
+    sources = [{**source, 'rem_project_id': str(i).zfill(4), 'public_project_id': None,
+                'source_record': {'ProjectStatus': '3' if i == 11 else '2', 'isDeleted': False}} for i in range(12)]
+    data = build_progress([], sources, [], NOW)
+    page = select_progress(data, page=2, size=5)
+    assert page['total'] == 11 and len(page['rows']) == 5 and page['pages'] == 3
+    assert all('recommended' not in r['checklist'] and 'models' not in r for r in page['rows'])
+    counts = select_progress(data, page=2, size=5, view='counts')
+    assert counts['counts']['new_from_rem'] == 11 and counts['statuses']['3']['count'] == 1
+    assert select_progress(data, other=True)['total'] == 12
+    assert select_progress(data, other=True, status='new_from_rem')['total'] == 11
+    assert select_progress(data, q='0011', other=True)['rows'][0]['rem_project_id'] == '0011'
+    assert select_progress(data, page=999)['page'] == 2

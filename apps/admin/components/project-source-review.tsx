@@ -18,12 +18,12 @@ export function ProjectSourceReview({ value }: { value?: SourceReview }) {
   </div>;
 }
 
-export function SourceStatusFilter({ id, rows, value, onChange }: { id: string; rows: { source_review?: SourceReview }[]; value: string; onChange: (value: string) => void }) {
+export function SourceStatusFilter({ id, rows = [], counts, total, value, onChange }: { id: string; rows?: { source_review?: SourceReview }[]; counts?: Record<string, { label: string; count: number }>; total?: number; value: string; onChange: (value: string) => void }) {
   const statuses = new Map<string, { label: string; count: number }>();
   for (const row of rows) {
     const key = row.source_review?.status_raw ?? "null";
     const old = statuses.get(key);
     statuses.set(key, { label: row.source_review?.status_label ?? "ไม่ทราบสถานะ", count: (old?.count ?? 0) + 1 });
   }
-  return <div className="form-field"><label htmlFor={id}>สถานะโครงการ REM</label><select id={id} value={value} onChange={event => onChange(event.target.value)}><option value="all">ทุกสถานะ ({rows.length})</option>{[...statuses].sort(([a], [b]) => a.localeCompare(b)).map(([key, row]) => <option key={key} value={key}>{row.label} ({key}) · {row.count}</option>)}</select></div>;
+  return <div className="form-field"><label htmlFor={id}>สถานะโครงการ REM</label><select id={id} value={value} onChange={event => onChange(event.target.value)}><option value="all">ทุกสถานะ ({total ?? rows.length})</option>{(counts ? Object.entries(counts) : [...statuses]).sort(([a], [b]) => a.localeCompare(b)).map(([key, row]) => <option key={key} value={key}>{row.label} ({key}) · {row.count}</option>)}</select></div>;
 }

@@ -1,6 +1,5 @@
 """Read-only staff progress, derived from existing readiness and frozen versions."""
 from datetime import datetime, timedelta, timezone
-from .staff_media import thumbnails
 
 
 def review_content(value):
@@ -65,9 +64,10 @@ def checklist(readiness):
     required = readiness.get('required', [{**item, 'passed': False} for item in readiness.get('missing', [])])
     recommended = readiness.get('recommended', [])
     items = required + recommended
-    passed = sum(item.get('passed') is True for item in items)
-    return {'required': required, 'recommended': recommended, 'passed': passed, 'total': len(items),
-            'percent': 100 * passed // len(items) if items else 0, 'ready': readiness.get('ready', False)}
+    passed = readiness.get('passed', sum(item.get('passed') is True for item in items))
+    total = readiness.get('total', len(items))
+    return {'required': required, 'recommended': recommended, 'passed': passed, 'total': total,
+            'percent': 100 * passed // total if total else 0, 'ready': readiness.get('ready', False)}
 
 
 def build_progress(records, sources, assets, now=None, knowledge=None):
@@ -162,27 +162,53 @@ def build_progress(records, sources, assets, now=None, knowledge=None):
     return {"rows": sorted(rows, key=lambda row: (not row['checklist']['ready'], -row['checklist']['percent'], row['rem_project_id'])), "counts": counts}
 
 
-async def read_progress(connection):
-    records = await connection.fetch("""
-        SELECT hub.project_detail(p.public_project_id) AS detail, live.payload AS live_payload,
-          (SELECT count(*) FROM hub.entity_versions history WHERE history.project_id=p.id) AS version_count,
-          (b.published_version_id IS NULL AND EXISTS(SELECT 1 FROM hub.brand_versions history WHERE history.brand_id=b.id)) AS live_brand_withdrawn
-        FROM hub.projects p LEFT JOIN hub.entity_versions live ON live.id=p.published_version_id
-        LEFT JOIN hub.brands b ON b.id=(live.payload->>'brand_id')::uuid
-        WHERE p.deleted_at IS NULL ORDER BY p.public_project_id
-    """)
-    sources = await connection.fetchval("SELECT hub.list_rem_projects()")
-    source_readiness = {r['rem_project_id']: r['readiness'] for r in await connection.fetch("SELECT * FROM hub.source_project_readiness()")}
-    sources = [{**s, 'readiness': source_readiness.get(s['rem_project_id'], {})} for s in sources]
-    knowledge = {r['project_id']: {'staged': r['staged'], 'reviewed': r['reviewed']} for r in await connection.fetch("""
-        SELECT project_id,count(*) AS staged,count(r.candidate_id) AS reviewed
-        FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.project_ids) project_id
-        LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id GROUP BY project_id
-    """)}
-    assets = await connection.fetch("SELECT id,rights_status,effective_to FROM hub.assets")
-    data = build_progress(records, sources, assets, knowledge=knowledge)
-    media = await thumbnails(connection)
-    for row in data['rows']:
-        row['thumbnail'] = media['project'].get(row['rem_project_id'])
-        row['brand_logo'] = media['brand'].get(row.get('rem_brand_id'))
-    return data
+async def read_progress(connection, detail=None):
+    cached = await connection.fetch("SELECT summary FROM hub.progress_rows($1)", detail)
+    rows = [r['summary'] for r in cached]
+    counts = {key: sum(bool(row[key]) and (row['source_review']['default_scope'] or key == 'needs_attention') for row in rows)
+              for key in ('new_from_rem', 'filling', 'awaiting_publisher', 'published', 'needs_attention')}
+    counts['all'] = sum(row['source_review']['default_scope'] for row in rows)
+    return {'rows': rows, 'counts': counts}
+
+
+TILES = ('new_from_rem', 'filling', 'awaiting_publisher', 'published', 'needs_attention')
+
+
+def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='all', other=False,
+                    brand=None, group=None, group_state=None, view='rows'):
+    """Server-side scope, faceting, stable sorting and bounded pages of stored summaries."""
+    members = [r for r in data['rows'] if (brand is None or r.get('rem_brand_id') == brand)
+               and (not group_state or r['group_status'] == group_state and
+                    (group_state != 'rem_reference' or r.get('rem_project_group_id') == group))]
+    counts = {key: sum((r['source_review']['default_scope'] or key == 'needs_attention' or other and key != 'new_from_rem')
+                      and (key == 'all' or r[key]) for r in members) for key in ('all', *TILES)}
+    statuses = {}
+    for r in members:
+        raw = r['source_review']['status_raw']
+        entry = statuses.setdefault(raw if raw is not None else 'null', {'label': r['source_review']['status_label'], 'count': 0})
+        entry['count'] += 1
+    text = q.strip().lower()
+    rows = [r for r in members if (other or r['source_review']['default_scope'] or status == 'needs_attention' and r['needs_attention'])
+            and (status == 'all' or r[status]) and (status != 'new_from_rem' or r['source_review']['default_scope'])
+            and (rem_status == 'all' or (r['source_review']['status_raw'] if r['source_review']['status_raw'] is not None else 'null') == rem_status)
+            and text in ' '.join(str(r.get(k) or '') for k in ('name', 'rem_project_id', 'brand_name', 'rem_project_group_id')).lower()]
+    if view == 'counts':
+        return {'counts': counts, 'statuses': statuses, 'status_total': len(members),
+                'brands': list({r['rem_brand_id']: r['brand_name'] or r['rem_brand_id'] for r in data['rows'] if r.get('rem_brand_id')}.items())}
+    if view == 'groups':
+        groups = {}
+        for r in rows:
+            state = r['group_status']; gid = r.get('rem_project_group_id') if state == 'rem_reference' else None
+            entry = groups.setdefault((state, gid), {'state': state, 'id': gid, 'count': 0, 'published': 0, 'filling': 0, 'awaiting_publisher': 0, 'names': []})
+            entry['count'] += 1
+            for key in ('published', 'filling', 'awaiting_publisher'): entry[key] += int(r[key])
+            if len(entry['names']) < 2: entry['names'].append(r['name'])
+        for entry in groups.values():
+            entry['brand_count'] = len({r.get('rem_brand_id') for r in data['rows'] if r['group_status'] == entry['state'] and r.get('rem_project_group_id') == entry['id']})
+        rows = sorted(groups.values(), key=lambda r: (r['state'], r['id'] or ''))
+    total = len(rows); pages = max(1, (total + size - 1) // size); page = min(page, pages)
+    selected = rows[(page - 1) * size:page * size]
+    if view == 'rows':
+        selected = [{**r, 'checklist': {k: v for k, v in r['checklist'].items() if k not in ('required', 'recommended')},
+                     'required_missing': r.get('required_missing', sum(not item['passed'] for item in r['checklist'].get('required', []))), 'gaps': {}} for r in selected]
+    return {'rows': selected, 'total': total, 'page': page, 'size': size, 'pages': pages}

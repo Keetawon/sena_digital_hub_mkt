@@ -187,3 +187,21 @@ Marketing เติมข้อมูลและสื่อที่ตนเ�
 ## Readiness decision — 7 October 2026
 
 The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.
+## Staff project progress summary (6 October 2026 follow-up)
+
+`GET /v1/admin/projects/progress` returns a server-filtered page: `rows`, `total`,
+`page`, `size`, `pages`. Parameters: `page` (1+), `size` (1–50, default 10), `q`,
+`status` (tile key), `rem_status` (exact raw code or `null`), `other` (default false),
+`brand`, `group`, `group_state`. Order: publishable first, completeness descending,
+then exact REM ID. `view=counts` returns independent tile/status counts and brand
+options; `view=groups` returns a paginated group summary. `detail=<exact REM ID>`
+returns the cached checklist for one expanded row. List responses omit checklist
+arrays/model lists. Source-only details aggregate model checks as counts.
+
+`GET /v1/admin/sources/projects` returns source summaries/counts and flags, without
+Gold model lists or private price fields. Detail/prefill endpoints retain their
+existing evidence contract. `GET /v1/admin/assets/{id}/thumbnail` serves only a
+pre-generated private 96px WebP with existing staff file authorization. Missing or
+unsupported derivatives return 404; clients use initials, never the original.
+No consumer payload or publication gate is changed. See docs/32 for cache refresh
+and performance measurements.

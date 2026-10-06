@@ -403,6 +403,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if hosted_assets:
                     remote_metadata = {**metadata, "source_system": "hub-hosted-test"}
                     await asyncio.to_thread(hosted_assets.install, content, remote_metadata)
+                    await asyncio.to_thread(asset_files.install_thumbnail, content, metadata)
                 else:
                     created = await asyncio.to_thread(asset_files.install_file, content, metadata)
         except Exception:
@@ -454,6 +455,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def staff_asset_file(asset_id: UUID, request: Request, actor: Actor = Depends(admin)):
         return await asset_file_response(asset_id, request, actor, public=False)
 
+    @app.get("/v1/admin/assets/{asset_id}/thumbnail")
+    async def staff_asset_thumbnail(asset_id: UUID, request: Request, actor: Actor = Depends(admin)):
+        require_local_assets()
+        async with database(request, actor) as connection:
+            metadata = await connection.fetchval("SELECT hub.asset_file($1)", asset_id)
+        if metadata is None:
+            raise failure(404, 'file_not_found', 'ไม่พบภาพย่อที่มีสิทธิ์เข้าถึง')
+        path = await asyncio.to_thread(asset_files.readable_thumbnail, metadata)
+        return FileResponse(path, media_type='image/webp', headers={'Cache-Control': 'no-store',
+                            'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'"})
+
     @app.get("/v1/assets/{asset_id}/file")
     async def published_asset_file(asset_id: UUID, request: Request, actor: Actor = Depends(consumer)):
         return await asset_file_response(asset_id, request, actor, public=True)
@@ -481,13 +493,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/v1/admin/sources/projects")
     async def source_projects(request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as connection:
-            return {"data": await connection.fetchval("SELECT hub.list_rem_projects()")}
+            rows = await connection.fetch("SELECT source-'readiness' AS source FROM hub.progress_inputs()")
+            return {"data": [row['source'] for row in rows]}
 
     @app.get("/v1/admin/projects/progress")
-    async def project_progress(request: Request, actor: Actor = Depends(admin)):
-        from .project_progress import read_progress
+    async def project_progress(request: Request, actor: Actor = Depends(admin),
+                               page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=50),
+                               q: str = Query('', max_length=200),
+                               status: Literal['all','new_from_rem','filling','awaiting_publisher','published','needs_attention'] = 'all',
+                               rem_status: str = Query('all', max_length=50), other: bool = False,
+                               brand: str | None = Query(None, max_length=200), group: str | None = Query(None, max_length=200),
+                               group_state: Literal['rem_reference','conflict','missing'] | None = None,
+                               view: Literal['rows','counts','groups'] = 'rows',
+                               detail: str | None = Query(None, max_length=200)):
+        from .project_progress import read_progress, select_progress
         async with database(request, actor) as connection:
-            return {"data": await read_progress(connection)}
+            data = await read_progress(connection, detail)
+        if detail is not None:
+            row = next((row for row in data['rows'] if row['rem_project_id'] == detail), None)
+            if row is None:
+                raise failure(404, 'not_found', 'ไม่พบโครงการ')
+            return {'data': row}
+        return {'data': select_progress(data, page=page, size=size, q=q, status=status, rem_status=rem_status,
+                                        other=other, brand=brand, group=group, group_state=group_state, view=view)}
 
     @app.post("/v1/admin/projects", status_code=201)
     async def create_project(body: CreateProject, request: Request, actor: Actor = Depends(writer)):

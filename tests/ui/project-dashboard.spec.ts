@@ -1,3 +1,4 @@
+import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
 const gap = { field: 'latitude', message: 'พิกัดอยู่นอกประเทศไทย ตรวจละติจูดและลองจิจูด' };
@@ -18,7 +19,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
-    const data = path.endsWith('/projects/progress') ? { rows, counts: { all: 3, new_from_rem: 1, filling: 2, awaiting_publisher: 0, published: 1, needs_attention: 1 } } :
+    const data = path.endsWith('/projects/progress') ? progressFixture(route.request().url(), rows) :
       path.endsWith('/sources/projects') ? [{ rem_project_id: 'C', project_name_rem: 'โครงการ C', model_count: 3, public_project_id: null, source_record: null, intake_manifest_sha256: null }] :
       path.endsWith('/projects/A') ? { public_project_id: 'A', public_name: { th: 'โครงการ A' }, slug: '', latitude: 0, longitude: 0,
         updated_at: '2026-10-03T00:00:00Z', published_version_id: null, publication_available: false,
@@ -91,7 +92,7 @@ test('actual local viewer dashboard matches the authenticated progress response'
   await page.goto('/');
   const dashboard = page.locator('.project-dashboard');
   await expect(dashboard.locator('tbody tr')).toHaveCount(Math.min(10, data.rows.filter((row: { source_review?: { default_scope: boolean } }) => row.source_review?.default_scope !== false).length));
-  await expect(dashboard.getByRole('button', { name: `ทั้งหมด ${data.counts.all}`, exact: true })).toBeVisible();
+  await expect(dashboard.getByRole('button', { name: `ทั้งหมด ${(await (await page.request.get('/api/hub/v1/admin/projects/progress?view=counts')).json()).data.counts.all}`, exact: true })).toBeVisible();
   await expect(dashboard.getByRole('button', { name: 'เริ่มกรอก', exact: true })).toHaveCount(0);
   expect((await page.request.get('/api/hub/v1/admin/projects/progress?unexpected=1')).status()).toBe(404);
 });

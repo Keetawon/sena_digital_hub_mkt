@@ -23,7 +23,7 @@ export function useHostedSession() { return useContext(Context); }
 
 export async function assetFetch(path: string, options: RequestInit = {}) {
   if (!currentConfig || !browser) return fetch(`/api/hub/${path}`, options);
-  if (!/^v1\/admin\/assets(?:\/[a-zA-Z0-9_-]{1,128}\/file)?$/.test(path)) throw new Error("ไม่รองรับที่อยู่ไฟล์นี้");
+  if (!/^v1\/admin\/assets(?:\/[a-zA-Z0-9_-]{1,128}\/(?:file|thumbnail))?$/.test(path)) throw new Error("ไม่รองรับที่อยู่ไฟล์นี้");
   const { data: { session }, error } = await browser.auth.getSession();
   if (error || !session) throw new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่");
   const headers = new Headers(options.headers);

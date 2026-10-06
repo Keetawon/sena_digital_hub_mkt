@@ -8,7 +8,7 @@ const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
 const uploadTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml", "application/pdf"]);
 const allowed = {
-  GET: new RegExp(`^v1/(?:admin/(?:assets(?:/${id}(?:/file)?)?|sources/(?:projects|brands)|brands(?:/${id}(?:/versions)?)?|brand-requests|projects(?:/${id}(?:/(?:versions|source-models|models/${id}|commercial-types))?)?)|assets/${id}/file|(?:projects|brands)(?:/${id})?)$`),
+  GET: new RegExp(`^v1/(?:admin/(?:assets(?:/${id}(?:/(?:file|thumbnail))?)?|sources/(?:projects|brands)|brands(?:/${id}(?:/versions)?)?|brand-requests|projects(?:/${id}(?:/(?:versions|source-models|models/${id}|commercial-types))?)?)|assets/${id}/file|(?:projects|brands)(?:/${id})?)$`),
   PATCH: new RegExp(`^v1/admin/(?:projects/${id}(?:/(?:models|commercial-types)/${id})?|brands/${id})$`),
   POST: new RegExp(`^v1/admin/(?:assets(?:/${id}/review)?|brand-requests(?:/${id}/resolve)?|brands(?:/${id}/(?:publish|withdraw|rollback|assets(?:/${id}/remove)?))?|projects(?:/${id}/(?:brand|prefill|publish|withdraw|rollback|models(?:/${id}/(?:review|assets(?:/${id}/remove)?))?|commercial-types(?:/${id}/assets(?:/${id}/remove)?)?|assets(?:/${id}/remove)?))?)$`),
   PUT: new RegExp(`^v1/admin/projects/${id}/facilities/${id}$`),
@@ -69,6 +69,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (!(allowed[method]?.test(path) || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
+  const progressQuery = method === "GET" && path === "v1/admin/projects/progress" && [...query.keys()].every(key =>
+    ["page", "size", "q", "status", "rem_status", "other", "brand", "group", "group_state", "view", "detail"].includes(key)
+      && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);
   const validBrandQuery = brandDashboard && [...query.keys()].every(key => ["status", "missing", "search"].includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);
   const adsFilters = path === "v1/admin/ads/scopes" ? ["kind", "parent_group_id"] : path === "v1/admin/ads/registrations" ? ["q", "limit", "offset", "agency", "status", "binding_status"] : [];
   const validAdsQuery = method === "GET" && adsRead && [...query.keys()].every(key => adsFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200);
@@ -90,7 +93,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     && (!query.has("version_id") || new RegExp(`^${financeId}$`).test(query.get("version_id")!))
     && (!query.has("page") || /^[1-9]\d{0,2}$/.test(query.get("page")!))
     && (!query.has("download") || /^(?:true|false)$/.test(query.get("download")!));
-  if (request.nextUrl.search && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !(method === "GET" && path === "v1/projects"
+  if (request.nextUrl.search && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);
@@ -183,7 +186,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/png") return error("รูปแบบหน้าหลักฐานไม่ถูกต้อง กรุณาเปิดไฟล์ต้นฉบับ", 502);
       return new NextResponse(upstream.body, { status: upstream.status, headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'" } });
     }
-    if ((upstream.ok || archiveFile && upstream.status === 416) && method === "GET" && path.endsWith("/file")) {
+    if ((upstream.ok || archiveFile && upstream.status === 416) && method === "GET" && (path.endsWith("/file") || path.endsWith("/thumbnail"))) {
       const downloadHeaders = new Headers({ "Cache-Control": archiveFile ? "private, no-store" : "no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": archiveFile ? "default-src 'none'; sandbox; frame-ancestors 'self'" : "default-src 'none'; sandbox; frame-ancestors 'none'", "X-Frame-Options": archiveFile ? "SAMEORIGIN" : "DENY" });
       for (const name of ["Content-Type", "Content-Disposition", "Content-Length", ...(archiveFile ? ["Content-Range", "Accept-Ranges"] : [])]) {
         const value = upstream.headers.get(name);
