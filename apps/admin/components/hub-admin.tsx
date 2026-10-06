@@ -313,12 +313,12 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     const asset = project?.assets?.find(item => name.split(".").includes(item.id));
     const linkedModel = project?.models?.find(model => name.split(".").some(part => part === model.id || part === model.public_model_id));
     if (linkedModel || asset?.public_model_id) setMediaModelId(linkedModel?.public_model_id ?? asset!.public_model_id!);
-    setTab(anchor === "models" || asset?.public_model_id ? "models" : anchor === "assets" ? "media" : "content");
+    setTab(anchor.startsWith("facilities") ? "extra" : anchor === "models" || asset?.public_model_id ? "models" : anchor === "assets" ? "media" : "content");
     setNavigationTarget(asset?.public_model_id ? "model-media" : anchor === "source" ? "gold-project_id" : anchor);
     const modelField = name.split(".").at(-1);
-    if (linkedModel && canEdit && !anyDirty && modelField && ["public_name", "bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"].includes(modelField)) {
+    if (linkedModel && canEdit && !anyDirty && modelField && ["specifications", "public_name", "bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"].includes(modelField)) {
       setModelAction({ type: "edit", model: linkedModel });
-      setNavigationTarget(`model-${modelField}`);
+      setNavigationTarget(`model-${modelField === "specifications" ? "public_name" : modelField}`);
     }
   }
 
@@ -558,6 +558,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
 
 function missingAnchor(field: string) {
   const root = field.split(".")[0];
+  if (root === "facilities") return field.replace(".", "-");
   if (/brand/i.test(field)) return "project-brand";
   if (/model/i.test(field)) return "models";
   if (/hero|thumbnail|asset/i.test(field)) return "assets";

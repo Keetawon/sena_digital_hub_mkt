@@ -66,7 +66,7 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
         <div className="table-scroll"><table className="facility-list"><caption className="sr-only">สถานะสิ่งอำนวยความสะดวก (ไม่กีดกันการเผยแพร่)</caption><thead><tr><th>รายการ</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead>{data.items.map(item => {
           const active = editing?.code === item.code;
           const status = active ? editing.status : item.status;
-          return <tbody className="facility-item" key={item.code} id={`facilities-${item.code}`}>
+          return <tbody className="facility-item" key={item.code} id={`facilities-${item.code}`} tabIndex={-1}>
           <tr><th scope="row"><h3>{item.name_th}</h3><p className="small-text muted">{item.required ? "รายการหลัก" : "ข้อมูลเพิ่มเติม"}</p></th><td>
           {!canEdit && <span>{statusLabels[status]}</span>}
           {canEdit && <fieldset className="facility-status-options" disabled={disabled || pending || Boolean(editing && !active)}>

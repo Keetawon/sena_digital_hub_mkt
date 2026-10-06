@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
+import { CompletenessBar } from "./completeness-bar";
 import { DashboardTiles } from "./dashboard-tiles";
 import { ProjectSourceReview, SourceStatusFilter, type SourceReview } from "./project-source-review";
 import { ProjectGroups, groupLabel, groupStatus, type GroupStatus } from "./project-groups";
@@ -11,6 +12,7 @@ import "./brand-admin.css";
 import "./project-groups.css";
 import "./project-dashboard.css";
 
+type Check = { field: string; message: string; passed: boolean; group?: "core" | "media" | "models" | "brand" | "extra" };
 type Gap = { field: string; message: string };
 export type ProgressRow = {
   public_project_id: string | null; rem_project_id: string; name: string; brand_name: string | null;
@@ -21,21 +23,23 @@ export type ProgressRow = {
   amenities: { collected: number; total: number } | null; waiting_on: string[]; updated_at: string | null;
   first_seen_at: string | null; age_days: number | null; age_basis: "first_import" | "first_seen" | "mirror_import" | "unknown";
   source_review?: SourceReview;
+  checklist?: { required: Check[]; recommended: Check[]; passed: number; total: number; percent: number; ready: boolean };
+  knowledge?: { reviewed: number; staged: number }; thumbnail_asset_id?: string | null;
 };
 export type Progress = { rows: ProgressRow[]; counts: Record<string, number> };
 const tiles = [{ value: "all", key: "all", label: "ทั้งหมด" }, { value: "new_from_rem", key: "new_from_rem", label: "ใหม่จาก REM" },
   { value: "filling", key: "filling", label: "กำลังกรอก" }, { value: "awaiting_publisher", key: "awaiting_publisher", label: "รอผู้เผยแพร่" },
   { value: "published", key: "published", label: "เผยแพร่แล้ว" }, { value: "needs_attention", key: "needs_attention", label: "ต้องดูแล" }];
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "Asia/Bangkok" }).format(new Date(value)) : "—";
-function Gaps({ row, group, returnTo }: { row: ProgressRow; group: keyof ProgressRow["gaps"]; returnTo: string }) {
-  if (row.new_from_rem) return <span>ยังไม่เริ่ม</span>;
-  const items = row.gaps[group];
-  if (!items.length) return <span aria-label="ครบแล้ว">✓</span>;
-  const summaries = new Map<string, number>();
-  for (const item of items) summaries.set(item.message, (summaries.get(item.message) ?? 0) + 1);
-  return <><a href={projectHref(row.public_project_id!, returnTo, items[0].field)} aria-label={`ยังขาด ${items.length} รายการ`}>{items.length} รายการ</a>
-    <ul className="project-gap-list project-gap-previews">{[...summaries].slice(0, 2).map(([message, count]) => <li key={message}><span className="project-gap-preview">{message}</span>{count > 1 && <span className="project-gap-count">({count})</span>}</li>)}</ul>
-    <details className="project-gap-summary"><summary>ดูรายการที่ยังขาด</summary><ul>{items.map((item, index) => <li key={`${item.field}-${index}`}><a href={projectHref(row.public_project_id!, returnTo, item.field)}>{item.message}{group === "models" ? ` · รายการ ${index + 1}` : ""}</a></li>)}</ul></details></>;
+const groupLabels = { core: "ข้อมูลหลัก", media: "รูปภาพ", models: "แบบบ้าน", brand: "แบรนด์", extra: "ข้อมูลเสริม" };
+function Checks({ row, returnTo, onStart }: { row: ProgressRow; returnTo: string; onStart: (id: string) => void }) {
+  return <div className="project-check-groups">{(["required", "recommended"] as const).map(level => <section key={level} aria-label={level === "required" ? "ต้องมีก่อนเผยแพร่" : "ควรเติมภายหลัง"}>
+    <h3>{level === "required" ? "ต้องมีก่อนเผยแพร่" : "ควรเติมภายหลัง"}</h3>
+    {Object.entries(groupLabels).map(([group, label]) => <div key={group}><h4>{label}</h4><ul>{(row.checklist?.[level] ?? []).filter(item => (item.group ?? "core") === group).map((item, index) => <li key={`${item.field}-${index}`}>
+      <span aria-label={item.passed ? "ครบแล้ว" : "ยังขาด"}>{item.passed ? "✓" : "○"}</span><span>{item.message}</span>
+      {item.field === "knowledge" || item.field === "nearby" ? <a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}${item.field === "nearby" ? "&kind=nearby" : ""}`}>ไปแก้<span className="sr-only"> {item.message}</span></a> : row.public_project_id ? <a href={projectHref(row.public_project_id, returnTo, item.field)}>ไปแก้<span className="sr-only"> {item.message}</span></a> : <button className="button text-button" onClick={() => onStart(row.rem_project_id)}>ไปแก้<span className="sr-only"> {item.message}</span></button>}
+    </li>)}</ul>{!(row.checklist?.[level] ?? []).some(item => (item.group ?? "core") === group) && <p className="muted small-text">ไม่มีรายการ</p>}</div>)}
+  </section>)}</div>;
 }
 function status(row: ProgressRow) {
   return row.new_from_rem ? "ใหม่จาก REM" : row.needs_attention ? "ต้องดูแล" : row.published && row.has_unpublished_changes ? "มีการแก้ไขที่ยังไม่เผยแพร่" : row.published ? "เผยแพร่แล้ว" : row.withdrawn ? "ถอนการเผยแพร่แล้ว" : row.filling ? "กำลังกรอก" : "รอผู้เผยแพร่";
@@ -44,6 +48,7 @@ function status(row: ProgressRow) {
 export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: (sourceId: string) => void }) {
   const { query, update, href } = useListQuery();
   const [data, setData] = useState<Progress | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const table = useRef<HTMLDivElement>(null);
   const filter = query.get("pstatus") || "all", search = query.get("pq") || "", sourceStatus = query.get("prem_status") || "all";
   const includeOther = query.get("pother") === "1", brandId = query.get("rem_brand"), selectedGroup = query.get("group");
@@ -70,7 +75,6 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
     `${row.name} ${row.rem_project_id} ${row.brand_name ?? ""} ${row.rem_project_group_id ?? ""}`.toLocaleLowerCase("th").includes(text));
   const pages = Math.max(1, Math.ceil(rows.length / size)), current = Math.min(page, pages), start = (current - 1) * size;
   const brandOptions = [...new Map(all.filter(row => row.rem_brand_id).map(row => [row.rem_brand_id!, row.brand_name || row.rem_brand_id!])).entries()];
-  const ageLabel = all.some(row => row.age_basis === "first_import") ? "นำเข้าครั้งแรก" : "วันนับจากพบใน REM";
   const canEdit = role === "editor" || role === "admin";
   function filterBy(values: Record<string, string | number | null>) { update({ ...values, pp: null, gp: null }); }
   function pagination(position: string) { return <WorkspacePagination id={`projects-${position}`} page={current} pages={pages} size={size} onChange={(next, count) => {
@@ -92,21 +96,31 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
     <div className="brand-dashboard-actions"><button className="button secondary" disabled={loading} onClick={() => void load()}>โหลดความคืบหน้าใหม่</button></div>
     {loading ? <p role="status">กำลังตรวจความคืบหน้าโครงการ…</p> : error ? <p role="alert" className="notice error">{error}</p> : <>
       {groupsView && !selectedGroupState ? <ProjectGroups key={`${brandId}-${filter}-${sourceStatus}-${search}-${includeOther}`} rows={rows} allRows={all} brandId={brandId} returnTo={href} /> : <>
-        <p role="status" className="small-text muted">แสดง {rows.length ? start + 1 : 0}–{Math.min(start + size, rows.length)} จาก {rows.length} โครงการ · เรียงรายการที่ยังขาดมากที่สุดก่อน</p>
+        <p role="status" className="small-text muted">แสดง {rows.length ? start + 1 : 0}–{Math.min(start + size, rows.length)} จาก {rows.length} โครงการ · เรียงตามความพร้อมเผยแพร่ แล้วตามความครบถ้วน</p>
         {pagination("top")}
-        <p className="field-help project-progress-scroll-help">เลื่อนแนวนอนเพื่อดูคอลัมน์เพิ่มเติม · ตรึง<span className="project-pin-desktop">โครงการและแบรนด์</span><span className="project-pin-tablet">ชื่อโครงการ</span>ไว้ด้านซ้าย และหัวตารางไว้ด้านบน</p>
-        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความคืบหน้าและรายการที่ยังขาดของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 11 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "แบรนด์", "ข้อมูลหลัก", "รูปภาพ", "แบบที่อยู่อาศัย", "การผูกแบรนด์", "สถานะ", "รอใคร", "ปรับปรุงล่าสุด", ageLabel, "สิ่งอำนวยความสะดวก (เสริม)"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.slice(start, start + size).map(row => <tr className="brand-table-row" key={row.rem_project_id}>
-          <td data-label="โครงการ">{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{row.rem_project_id}</p>
-            {row.public_project_id ? <a className="button secondary project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : role === "publisher" ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button secondary project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}
-            {selectedGroupState === "conflict" && <p className="small-text">กลุ่ม REM: <code>{JSON.stringify(row.rem_project_group_id ?? null)}</code><br />กลุ่มการตลาด: <code>{JSON.stringify(row.marketing_project_group_id ?? null)}</code></p>}
+        <p className="field-help project-progress-scroll-help">หัวตารางและชื่อโครงการตรึงไว้ · กดลูกศรเพื่อดูรายการตรวจ</p>
+        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความพร้อมเผยแพร่และความครบถ้วนของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 6 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "ความพร้อมเผยแพร่", "ความครบถ้วน", "รอใคร", "ปรับปรุงล่าสุด", "ความรู้"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.slice(start, start + size).map(row => {
+          const open = expanded.has(row.rem_project_id), id = `project-checks-${encodeURIComponent(row.rem_project_id)}`;
+          const checklist = row.checklist, ready = checklist?.ready ?? (!row.filling && !row.new_from_rem);
+          const missing = checklist?.required.filter(item => !item.passed).length ?? Object.values(row.gaps).flat().length;
+          return <Fragment key={row.rem_project_id}><tr className="brand-table-row project-summary-row">
+          <td data-label="โครงการ"><div className="project-row-identity">
+            <button className="project-expand" aria-label={`รายการตรวจ ${row.name}`} aria-expanded={open} aria-controls={id} onClick={() => setExpanded(previous => { const next = new Set(previous); if (next.has(row.rem_project_id)) next.delete(row.rem_project_id); else next.add(row.rem_project_id); return next; })}>{open ? "▾" : "▸"}</button>
+            {row.thumbnail_asset_id ? <img className="project-row-thumbnail" src={`/api/hub/v1/admin/assets/${encodeURIComponent(row.thumbnail_asset_id)}/file`} alt={row.name} width={48} height={48} loading="lazy" /> : <span className="project-row-thumbnail" aria-hidden="true">{Array.from(row.name).slice(0, 2).join("")}</span>}
+            <div>{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{row.rem_project_id} · {row.brand_name || "ยังไม่ระบุแบรนด์"}</p><p className="small-text">{row.source_review?.status_label || "ไม่ทราบสถานะ"} ({row.source_review?.status_raw ?? "null"})</p>
+            {row.public_project_id ? <a className="project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : role === "publisher" ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button text-button project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}</div></div>
           </td>
-          <td data-label="แบรนด์">{row.brand_name || "ยังไม่ระบุแบรนด์"}</td><td data-label="ข้อมูลหลัก"><Gaps row={row} group="core" returnTo={href} /></td><td data-label="รูปภาพ"><Gaps row={row} group="media" returnTo={href} /></td>
-          <td data-label="แบบที่อยู่อาศัย"><p>ยืนยัน {row.confirmed_models}/{row.total_models}</p><Gaps row={row} group="models" returnTo={href} /></td><td data-label="การผูกแบรนด์"><Gaps row={row} group="brand" returnTo={href} /></td>
-          <td data-label="สถานะ">{status(row)}<ProjectSourceReview value={row.source_review} />{row.attention.length > 0 && <ul className="project-gap-list">{row.attention.map((item, index) => <li key={index}><a href={projectHref(row.public_project_id!, href, item.field)}>{item.message}</a></li>)}</ul>}</td>
-          <td data-label="รอใคร">{row.waiting_on.map(role => role === "editor" ? "ผู้แก้ไข" : "ผู้เผยแพร่").join(" / ") || "—"}</td><td data-label="ปรับปรุงล่าสุด">{date(row.updated_at)}</td>
-          <td data-label={ageLabel}>{row.age_days == null ? "ไม่ทราบวันนำเข้า" : <>{row.age_days} วัน<p className="small-text muted">{row.age_basis === "first_import" ? "นำเข้าครั้งแรก" : row.age_basis === "mirror_import" ? "ใช้เวลานำเข้าสำเนาครั้งแรก" : "พบใน REM ครั้งแรก"} · {date(row.first_seen_at)}</p></>}</td>
-          <td data-label="สิ่งอำนวยความสะดวก (เสริม)">{row.amenities ? `${row.amenities.collected}/${row.amenities.total} รายการ` : "ยังไม่เริ่ม"}<p className="small-text muted">ไม่กีดกันการเผยแพร่</p></td>
-        </tr>)}</tbody></table></div>{pagination("bottom")}
+          <td data-label="ความพร้อมเผยแพร่"><strong className={`project-ready-badge ${ready ? "ready" : ""}`}>{ready ? "เผยแพร่ได้ ✓" : `ขาดข้อบังคับ ${missing}`}</strong><p className="small-text">{status(row)}</p></td>
+          <td data-label="ความครบถ้วน"><CompletenessBar passed={checklist?.passed ?? 0} total={checklist?.total ?? 0} /></td>
+          <td data-label="รอใคร">{row.waiting_on.map(role => role === "editor" ? "ผู้แก้ไข" : "ผู้เผยแพร่").join(" / ") || "—"}</td>
+          <td data-label="ปรับปรุงล่าสุด">{date(row.updated_at)}</td>
+          <td data-label="ความรู้"><a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}`}>ตรวจแล้ว {row.knowledge?.reviewed ?? 0}/{row.knowledge?.staged ?? 0}</a></td>
+          </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={6}><Checks row={row} returnTo={href} onStart={onStart} /><p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
+            <ProjectSourceReview value={row.source_review} />{row.attention.length > 0 && <ul>{row.attention.map((item, index) => <li key={index}><a href={projectHref(row.public_project_id!, href, item.field)}>{item.message}</a></li>)}</ul>}
+            <p className="small-text muted">{row.age_days == null ? "ไม่ทราบวันนำเข้า" : `${row.age_basis === "first_import" ? "นำเข้าครั้งแรก" : row.age_basis === "mirror_import" ? "ใช้เวลานำเข้าสำเนาครั้งแรก" : "พบใน REM ครั้งแรก"} · ${date(row.first_seen_at)} · ${row.age_days} วัน`}</p>
+            {selectedGroupState === "conflict" && <p>กลุ่ม REM: <code>{JSON.stringify(row.rem_project_group_id ?? null)}</code> · กลุ่มการตลาด: <code>{JSON.stringify(row.marketing_project_group_id ?? null)}</code></p>}
+          </td></tr>}</Fragment>;
+        })}</tbody></table></div>{pagination("bottom")}
         {!rows.length && <p className="empty-state compact">ไม่มีโครงการตรงกับตัวกรอง</p>}
       </>}
     </>}

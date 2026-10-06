@@ -4,6 +4,7 @@ const gap = { field: 'latitude', message: 'พิกัดอยู่นอก�
 const row = (id: string, extra: Record<string, unknown> = {}) => ({ public_project_id: id, rem_project_id: id,
   name: `โครงการ ${id}`, brand_name: 'แบรนด์จำลอง', new_from_rem: false, filling: true, awaiting_publisher: false,
   published: false, needs_attention: false, has_unpublished_changes: true, withdrawn: false, attention: [],
+  checklist: { ready: false, required: [{ ...gap, group: 'core', passed: false }], recommended: [{field: 'facilities.pool', message: 'ระบุสถานะสระว่ายน้ำ', group: 'extra', passed: true}], passed: 1, total: 2, percent: 50 }, knowledge: { reviewed: 3, staged: 10 },
   gaps: { core: [gap], media: [], models: [], brand: [] }, confirmed_models: 2, total_models: 3,
   amenities: { collected: 0, total: 6 }, waiting_on: ['editor'], updated_at: '2026-10-03T00:00:00Z',
   age_days: 10, first_seen_at: '2026-09-23T00:00:00Z', age_basis: 'mirror_import', ...extra });
@@ -29,31 +30,43 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
   return writes;
 }
 
-test('summary counts filter rows, show named gaps without percentages and separate optional amenities', async ({ page }) => {
+test('publishability, completeness and keyboard disclosure are separate and filters stay read-only', async ({ page }) => {
   const writes = await setup(page);
   const dashboard = page.locator('.project-dashboard');
-  await expect(dashboard.locator('tbody tr')).toHaveCount(3);
-  await expect(dashboard).toContainText('ยืนยัน 2/3');
-  await expect(dashboard).toContainText('ใช้เวลานำเข้าสำเนาครั้งแรก');
-  await expect(dashboard).toContainText('ไม่ทราบวันนำเข้า');
-  await expect(dashboard).not.toContainText('%');
-  await expect(dashboard).toContainText('0/6 รายการ');
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(3);
+  const first = dashboard.locator('.project-summary-row').first();
+  await expect(first).toContainText('ขาดข้อบังคับ 1');
+  await expect(first).toContainText('ความครบถ้วน 50%');
+  await expect(first.getByRole('progressbar')).toHaveAttribute('value', '1');
+  await expect(first.getByRole('link', { name: 'ตรวจแล้ว 3/10' })).toHaveAttribute('href', '/knowledge?project=A');
+  const expand = first.getByRole('button', { name: /รายการตรวจ/ });
+  await expand.focus(); await page.keyboard.press('Enter');
+  await expect(expand).toHaveAttribute('aria-expanded', 'true');
+  const detail = dashboard.locator('.project-detail-row');
+  await expect(detail.getByRole('region', { name: 'ต้องมีก่อนเผยแพร่' })).toContainText(gap.message);
+  await expect(detail.getByRole('region', { name: 'ควรเติมภายหลัง' })).toContainText('ระบุสถานะสระว่ายน้ำ');
+  await expand.press('Space'); await expect(detail).toHaveCount(0);
   await dashboard.getByRole('button', { name: 'ต้องดูแล 1', exact: true }).click();
-  await expect(dashboard.locator('tbody tr')).toHaveCount(1);
-  await expect(dashboard.locator('tbody')).toContainText('โครงการ B');
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(1);
   await dashboard.getByRole('button', { name: 'ใหม่จาก REM 1', exact: true }).click();
   await dashboard.getByRole('button', { name: 'เริ่มกรอก', exact: true }).click();
   await expect(page.getByLabel('ค้นหาชื่อหรือรหัสโครงการต้นทาง')).toHaveValue('C');
-  await expect(page.locator('#source-picker')).toContainText('โครงการ C');
   expect(writes).toEqual([]);
 });
 
-test('missing-field link opens and focuses the actual editor field', async ({ page }) => {
+test('required field links focus the editor and recommended items cannot change the badge', async ({ page }) => {
   await setup(page);
-  await page.locator('.project-dashboard tbody tr').first().getByRole('link', { name: 'ยังขาด 1 รายการ', exact: true }).click();
+  await page.locator('.project-summary-row').first().getByRole('button', { name: /รายการตรวจ/ }).click();
+  await page.locator('.project-detail-row').getByRole('link', { name: `ไปแก้ ${gap.message}` }).click();
   await expect(page).toHaveURL(/project=A&field=latitude/);
-  await expect(page.getByRole('tab', { name: /ข้อมูลหลัก/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#latitude')).toBeFocused();
+});
+
+test('ready project remains publishable below 100 percent and the bar turns green only when complete', async ({ page }) => {
+  await setup(page, 'publisher', { firstRow: { filling: false, checklist: { ready: true, required: [{field:'slug',message:'slug',group:'core',passed:true}], recommended:[{field:'knowledge',message:'ความรู้',group:'extra',passed:false}], passed:1,total:2,percent:50 } } });
+  const first=page.locator('.project-summary-row').first();
+  await expect(first).toContainText('เผยแพร่ได้ ✓');
+  await expect(first.locator('.completeness-bar')).toHaveAttribute('data-complete','false');
 });
 
 test('viewer can filter and inspect source rows on mobile without creating data', async ({ page }) => {
@@ -84,47 +97,20 @@ test('actual local viewer dashboard matches the authenticated progress response'
 });
 
 for (const width of [1440, 844]) {
-  test(`project identity stays pinned and long Thai gaps remain readable at ${width}px`, async ({ page }) => {
+  test(`compact dashboard keeps identity and header pinned at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    const models = Array.from({ length: 63 }, (_, index) => [
-      { field: `models.M${index}.match_status`, message: 'ยืนยันการจับคู่แบบกับ REM' },
-      { field: `models.M${index}.specs`, message: 'กรอกชื่อไทย ห้องนอน ห้องน้ำ และพื้นที่ใช้สอย' },
-    ]).flat();
-    const writes = await setup(page, 'publisher', { extraRows: 7, firstRow: {
-      name: 'โครงการจำลองสำหรับทดสอบข้อความภาษาไทยที่ยาว', confirmed_models: 0, total_models: 63,
-      gaps: { core: [gap], media: [], models, brand: [{ field: 'brand', message: 'เลือกแบรนด์ที่ตรงกับ REM และเผยแพร่แบรนด์พร้อมโลโก้ที่มีสิทธิ์ใช้งาน' }] },
-    } });
+    const writes = await setup(page, 'publisher', { extraRows: 7 });
     const scroll = page.getByRole('region', { name: 'ตารางความคืบหน้าโครงการ', exact: true });
-    await expect(scroll.locator('tbody tr')).toHaveCount(10);
+    await expect(scroll.locator('.project-summary-row')).toHaveCount(10);
     await scroll.scrollIntoViewIfNeeded();
-    const cells = scroll.locator('tbody tr').first().locator('td');
-    const project = cells.nth(0), brand = cells.nth(1), core = cells.nth(2), modelCell = cells.nth(4);
-    const projectBefore = (await project.boundingBox())!, brandBefore = (await brand.boundingBox())!;
-    expect((await core.boundingBox())!.width).toBeGreaterThanOrEqual(260);
-    expect((await modelCell.boundingBox())!.width).toBeGreaterThanOrEqual(290);
-    expect((await scroll.locator('tbody tr').first().boundingBox())!.height).toBeLessThan(360);
-    await expect(modelCell.locator('.project-gap-count')).toHaveText(['(63)', '(63)']);
-    await scroll.evaluate(element => { element.scrollLeft = 950; });
-    await expect.poll(async () => Math.abs((await project.boundingBox())!.x - projectBefore.x)).toBeLessThan(2);
-    if (width >= 1000) {
-      expect(Math.abs((await brand.boundingBox())!.x - brandBefore.x)).toBeLessThan(2);
-      expect(await brand.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
-    } else expect((await brand.boundingBox())!.x).toBeLessThan(brandBefore.x - 500);
-    const firstHeader = scroll.locator('th').first(), headerBefore = (await firstHeader.boundingBox())!;
+    const identity = scroll.locator('.project-summary-row').first().locator('td').first();
+    const before = (await identity.boundingBox())!;
+    expect((await scroll.locator('.project-summary-row').first().boundingBox())!.height).toBeLessThan(280);
+    await scroll.evaluate(element => { element.scrollLeft = 800; });
+    await expect.poll(async () => Math.abs((await identity.boundingBox())!.x - before.x)).toBeLessThan(2);
+    const header = scroll.locator('th').first(), top = (await header.boundingBox())!.y;
     await scroll.evaluate(element => { element.scrollTop = 220; });
-    await expect.poll(async () => Math.abs((await firstHeader.boundingBox())!.y - headerBefore.y)).toBeLessThan(2);
-    expect(await firstHeader.evaluate(element => {
-      const rect = element.getBoundingClientRect();
-      return document.elementFromPoint(rect.x + 15, rect.y + 15)?.closest('th') === element;
-    })).toBeTruthy();
-    await scroll.evaluate(element => { element.scrollTop = 0; });
-    await core.getByRole('link', { name: 'ยังขาด 1 รายการ' }).focus();
-    const focused = (await core.getByRole('link', { name: 'ยังขาด 1 รายการ' }).boundingBox())!;
-    expect(focused.x).toBeGreaterThanOrEqual(projectBefore.x + (width >= 1000 ? 440 : 260));
-    await modelCell.locator('summary').click();
-    await expect(modelCell.locator('details[open] a')).toHaveCount(126);
-    expect(await modelCell.locator('details > ul').evaluate(element => element.scrollHeight > element.clientHeight)).toBeTruthy();
-    await modelCell.locator('summary').click();
+    await expect.poll(async () => Math.abs((await header.boundingBox())!.y - top)).toBeLessThan(2);
     await scroll.evaluate(element => { element.scrollLeft = 0; element.scrollTop = 0; });
     await page.screenshot({ path: `artifacts/project-table-pinned-${width}.png` });
     expect(writes).toEqual([]);

@@ -15,3 +15,13 @@ New project versions include only models whose identity is confirmed and whose T
 No role changes, publication-pointer changes, or edits to historical versions are part of this decision. Existing safety withdrawal for revoked rights/mappings remains intact.
 
 Validation for A: admin typecheck and production build passed; full API suite 1,365 passed / 11 skipped; disposable database SQL, concurrency and export tests passed; 39 relevant browser tests passed. Tests used the disposable database and synthetic content. The existing Google Sans build fallback warning and Starlette deprecation warning remain.
+
+## B. Project progress
+
+The compact staff table shows identity/REM status, a publication badge, completeness, waiting role, update time and reviewed/staged knowledge. Readiness sorts first, then descending completeness, then exact REM ID. Existing status, scope, brand and group filters remain. Source-only identities use the same SQL checklist with empty Hub fields; their links open source selection, never create a draft implicitly.
+
+An ordinary keyboard-operable button with `aria-expanded` opens required/recommended groups, each divided into core, media, models, brand and extra. Every check has a field link; knowledge/nearby links select the exact project queue. Model confirmation and specs contribute independently. A native progress element shows the exact passed/total ratio; only a complete ratio is green. The separate badge alone indicates publication readiness.
+
+Knowledge counts include every staged candidate applicable to the project and every recorded MKT decision (accepted, rejected or missing). Reviewing a candidate does not mean accepting or publishing it. The dashboard is staff-only and performs no writes.
+
+Validation for B: typecheck/build passed; 1,366 API tests passed / 11 skipped; database checks passed; 11 project-dashboard/group UI tests passed on the production server, including keyboard expansion, field focus, pinned identity/header and mobile overflow.

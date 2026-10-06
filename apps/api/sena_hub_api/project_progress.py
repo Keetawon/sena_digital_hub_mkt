@@ -60,7 +60,16 @@ def source_membership(source):
             "group_status": "conflict" if conflict else "rem_reference" if rem_group else "missing"}
 
 
-def build_progress(records, sources, assets, now=None):
+def checklist(readiness):
+    required = readiness.get('required', [{**item, 'passed': False} for item in readiness.get('missing', [])])
+    recommended = readiness.get('recommended', [])
+    items = required + recommended
+    passed = sum(item.get('passed') is True for item in items)
+    return {'required': required, 'recommended': recommended, 'passed': passed, 'total': len(items),
+            'percent': 100 * passed // len(items) if items else 0, 'ready': readiness.get('ready', False)}
+
+
+def build_progress(records, sources, assets, now=None, knowledge=None):
     now = now or datetime.now(timezone.utc)
     asset_by_id = {str(asset["id"]): asset for asset in assets}
     source_by_id = {source["rem_project_id"]: source for source in sources}
@@ -129,7 +138,9 @@ def build_progress(records, sources, assets, now=None):
                      "new_from_rem": False, "filling": not readiness["ready"], "awaiting_publisher": awaiting,
                      "published": bool(project.get("publication_available")), "needs_attention": bool(attention), "attention": attention,
                      "has_unpublished_changes": has_changes, "withdrawn": not project.get("published_version_id") and bool(record.get("version_count")),
-                     "gaps": gaps, "confirmed_models": sum(model["match_status"] == "CONFIRMED" for model in models), "total_models": len(models),
+                     "checklist": checklist(readiness), "knowledge": (knowledge or {}).get(source_id, {'reviewed': 0, 'staged': 0}),
+                     "thumbnail_asset_id": next((a['id'] for a in project.get('assets', []) if a.get('asset_role') == 'thumbnail' and a.get('is_primary')), None),
+                     "gaps": gaps, "confirmed_models": sum(model["match_status"] == "CONFIRMED" for model in models), "total_models": source.get('model_count', len(models)),
                      "amenities": {"collected": facilities.get("collected_count", 0), "total": facilities.get("expected_count", 0)},
                      "waiting_on": (["editor"] if editor_gaps else []) + (["publisher"] if awaiting else []),
                      "updated_at": project.get("updated_at"), 'source_review': review, **age(source), **source_membership(source)})
@@ -140,12 +151,14 @@ def build_progress(records, sources, assets, now=None):
         rows.append({"public_project_id": None, "rem_project_id": source["rem_project_id"], "name": source["project_name_rem"],
                      "brand_name": source.get("brand_name_rem"), "new_from_rem": True, "filling": False, "awaiting_publisher": False,
                      "published": False, "needs_attention": False, "attention": [], "has_unpublished_changes": False, "withdrawn": False,
+                     "checklist": checklist(source.get('readiness', {})), "knowledge": (knowledge or {}).get(source['rem_project_id'], {'reviewed': 0, 'staged': 0}),
+                     "thumbnail_asset_id": None,
                      "gaps": {group: [] for group in ("core", "media", "models", "brand")}, "confirmed_models": 0, "total_models": source["model_count"],
                      "amenities": None, "waiting_on": ["editor"], "updated_at": None, 'source_review': source_review(source), **age(source), **source_membership(source)})
     counts = {key: sum(bool(row[key]) and (row['source_review']['default_scope'] or key == 'needs_attention') for row in rows)
               for key in ("new_from_rem", "filling", "awaiting_publisher", "published", "needs_attention")}
     counts["all"] = sum(row['source_review']['default_scope'] for row in rows)
-    return {"rows": sorted(rows, key=lambda row: (-sum(len(items) for items in row["gaps"].values()), row["rem_project_id"])), "counts": counts}
+    return {"rows": sorted(rows, key=lambda row: (not row['checklist']['ready'], -row['checklist']['percent'], row['rem_project_id'])), "counts": counts}
 
 
 async def read_progress(connection):
@@ -158,5 +171,12 @@ async def read_progress(connection):
         WHERE p.deleted_at IS NULL ORDER BY p.public_project_id
     """)
     sources = await connection.fetchval("SELECT hub.list_rem_projects()")
+    source_readiness = {r['rem_project_id']: r['readiness'] for r in await connection.fetch("SELECT * FROM hub.source_project_readiness()")}
+    sources = [{**s, 'readiness': source_readiness.get(s['rem_project_id'], {})} for s in sources]
+    knowledge = {r['project_id']: {'staged': r['staged'], 'reviewed': r['reviewed']} for r in await connection.fetch("""
+        SELECT project_id,count(*) AS staged,count(r.candidate_id) AS reviewed
+        FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.project_ids) project_id
+        LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id GROUP BY project_id
+    """)}
     assets = await connection.fetch("SELECT id,rights_status,effective_to FROM hub.assets")
-    return build_progress(records, sources, assets)
+    return build_progress(records, sources, assets, knowledge=knowledge)

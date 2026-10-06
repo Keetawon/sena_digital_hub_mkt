@@ -25,7 +25,7 @@ def fixture():
     return record, source
 
 
-def test_counts_follow_readiness_without_optional_amenities_or_percent_rules():
+def test_counts_follow_gate_and_completeness_is_separate():
     record, source = fixture()
     extra = {**source, "rem_project_id": "0008", "public_project_id": None}
     data = build_progress([record], [source, extra], [], NOW)
@@ -34,7 +34,7 @@ def test_counts_follow_readiness_without_optional_amenities_or_percent_rules():
     assert row["rem_project_id"] == "0007" and row["age_days"] == 40 and row["age_basis"] == "mirror_import"
     assert row["amenities"] == {"collected": 0, "total": 6}
     assert row["confirmed_models"] == row["total_models"] == 1
-    assert row["waiting_on"] == [] and "percent" not in row
+    assert row["waiting_on"] == [] and row["checklist"]["ready"]
     record["detail"]["readiness"] = {"ready": False, "percent": 100, "missing": [{"field": "latitude", "message": "พิกัดนอกประเทศไทย"}]}
     row = build_progress([record], [source], [], NOW)["rows"][0]
     assert row["filling"] and row["gaps"]["core"][0]["field"] == "latitude" and row["waiting_on"] == ["editor"]
@@ -198,3 +198,20 @@ def test_actual_staff_queries_are_read_only_and_not_capped():
         finally:
             await connection.close()
     asyncio.run(run())
+
+
+def test_completeness_counts_confirmation_and_specs_independently_and_sorts_ready_first():
+    record, source = fixture()
+    readiness = record['detail']['readiness']
+    readiness.update(required=[{'field':'slug','group':'core','passed':True}], recommended=[
+        {'field':'models.m.confirmation','group':'models','passed':False},
+        {'field':'models.m.specifications','group':'models','passed':True}])
+    row=build_progress([record],[source],[],NOW)['rows'][0]
+    assert row['checklist']['ready'] and row['checklist']['passed']==2 and row['checklist']['total']==3
+    assert row['checklist']['percent']==66 and not row['filling']
+    readiness['recommended'][0]['passed']=True
+    assert build_progress([record],[source],[],NOW)['rows'][0]['checklist']['percent']==100
+    other=deepcopy(record);other['detail']['source']={**source,'rem_project_id':'0006'}
+    other['detail']['readiness']['ready']=False
+    rows=build_progress([other,record],[source],[],NOW)['rows']
+    assert rows[0]['rem_project_id']=='0007'
