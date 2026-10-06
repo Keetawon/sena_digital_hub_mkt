@@ -156,3 +156,28 @@ test('agency keeps direct registry access and never receives financial, publicat
   for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่นโครงการ', 'ชุดเผยแพร่ข้อมูล', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
   await reveal(page, 'ข้อมูลโครงการและแบรนด์'); await expect(menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true })).toBeVisible();
 });
+
+test('sidebar hierarchy uses the same section labels and guided links in desktop and mobile', async ({ page }) => {
+  await enter(page, 'admin');
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await openMenu(page);
+    const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
+    const toggle = menu.getByRole('button', { name: 'ข้อมูลโครงการและแบรนด์', exact: true });
+    await expect(toggle).toHaveCSS('font-size', '12.5px');
+    await expect(toggle).toHaveCSS('font-weight', '700');
+    await expect(toggle.locator('svg')).toHaveCount(1);
+    const link = menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true });
+    await expect(link).toHaveCSS('font-size', '15px');
+    await expect(link.locator('svg')).toHaveCSS('width', '16px');
+    await expect(link.locator('svg')).toHaveCSS('opacity', '0.8');
+    await expect(menu.locator('.hub-nav-items').first()).toHaveCSS('border-left-width', '1px');
+    await expect(menu.locator('.hub-nav-items').first()).toHaveCSS('padding-left', '16px');
+    await expect(menu.locator('.hub-nav-standalone')).toHaveCSS('border-top-width', '1px');
+    await expect(menu.getByRole('link', { name: 'คำถามที่รอคำตอบ', exact: true })).toHaveCSS('font-size', '15.5px');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(menu.locator('.hub-nav-collapse').first()).toHaveCSS('transition-duration', '0s');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(menu.locator('.hub-nav-collapse').first()).toHaveCSS('transition-duration', '0.15s');
+  }
+});

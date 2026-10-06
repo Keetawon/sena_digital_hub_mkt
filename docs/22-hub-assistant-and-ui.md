@@ -1,5 +1,19 @@
 # 22 — Hub assistant and UI
 
+## Sidebar hierarchy follow-up (6 October 2026)
+
+Desktop and the mobile drawer share the existing group labels. Section toggles use
+12.5px bold gold text, `.04em` tracking and a right-hand chevron, without a section
+icon. Child links use 15px muted text (ink on hover), 16px icons at 80% opacity,
+and a 16px inset inside a 1px sidebar-line guide. The active child retains gold
+text, sidebar-active fill and an inset gold bar. Questions and the assistant sit
+below a divider, with 15.5px semibold ink text and 18px icons. Existing optional
+pending brand badges remain; no additional count request is required for navigation.
+Touch targets remain at least 44px. Group collapse uses a 150ms transition as an
+explicit exception to the motion restrictions below; reduced motion disables it.
+Keyboard operation, inert collapsed links, group persistence and mobile focus
+containment remain unchanged.
+
 Updated: 30 September 2026 (Asia/Bangkok). Status: **P1 implemented locally; current theme: Emerald & Champagne (§1.3); human Thai readability acceptance pending**.
 This slice covers the SENA-H registry list, registration wizard and agency ID-return
 inbox. [Doc 19 §5.1](19-campaign-naming-registry.md#51-registry-schema-sena-h-implemented-in-p1)
