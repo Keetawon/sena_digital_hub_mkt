@@ -103,6 +103,14 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
   try {
     await page.goto(`/?project=${data.project.public_project_id}`);
     await role(page, 'editor');
+    // This lifecycle checks required primary images. Optional pending images no longer block.
+    let initial = (await (await page.request.get(base)).json()).data;
+    for (const binding of initial.assets.filter((item: Asset & { is_primary: boolean }) => item.is_primary && ['hero','thumbnail'].includes(item.asset_role || ''))) {
+      const removed = await page.request.post(`${base}/assets/${binding.binding_id}/remove`, { headers, data: { updated_at: initial.updated_at } });
+      expect(removed.ok()).toBeTruthy();
+      initial = (await (await page.request.get(base)).json()).data;
+    }
+    await page.reload(); await page.getByRole('tab', { name: /รูปภาพ/ }).click();
     const uploadButton = page.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true });
     await uploadButton.click();
     await expect(page.getByRole('dialog')).toBeVisible();

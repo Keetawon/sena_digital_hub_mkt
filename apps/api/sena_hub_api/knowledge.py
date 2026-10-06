@@ -1,9 +1,9 @@
-"""Local-only pre-intake review and draft chatbot preview; no publishing endpoints."""
+"""Local-only pre-intake review and private chatbot preview; no consumer publishing endpoints."""
 from __future__ import annotations
 import hashlib,json,re
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Annotated,Literal
 from uuid import UUID
 from fastapi import Depends,Request
 from fastapi.responses import FileResponse
@@ -35,6 +35,16 @@ class Rights(Input):
 class Preview(Input):
     question:str=Field(min_length=1,max_length=1500,pattern=r'\S')
     project_id:str|None=Field(default=None,max_length=200)
+    release_id:UUID|None=None
+class QuestionReview(Input):
+    expected_revision:int=Field(ge=0)
+    decision:Literal['verified','rejected']
+    expected_answer:str=Field(min_length=1,max_length=4000,pattern=r'\S')
+    reason:str=Field(min_length=1,max_length=2000,pattern=r'\S')
+class PreviewRelease(Input):
+    expected_reviews:dict[UUID,Annotated[int,Field(ge=1)]]=Field(max_length=3000)
+    reason:str=Field(min_length=1,max_length=2000,pattern=r'\S')
+    confirmed:StrictBool
 
 def file_path(evidence):
     # Only a server-derived checksum can select a private local file.
@@ -84,16 +94,35 @@ def register_knowledge_routes(app,authentication,database,settings):
             card=await db.fetchval("SELECT payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) FROM rag.project_fact_cards WHERE rem_project_id=$1",project_id)
             if card is None and project_id not in {*PROGRAMMES,'KNOWLEDGE_TERMS'}:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
             card=card or {'name':{'th':PROGRAMMES.get(project_id,'คำศัพท์และชื่อเรียกกลาง')},'status':{'raw':None,'label':'รอตรวจขอบเขตการใช้'},'mode':'DRAFT_PREVIEW'}
-            rows=await db.fetch('''SELECT c.*,to_jsonb(r) AS review FROM hub.knowledge_candidate_rows() c
-                LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id WHERE $1=ANY(c.project_ids) OR $1=ANY(c.programme_ids)
+            rows=await db.fetch('''SELECT c.*,to_jsonb(r) AS review,
+                coalesce(a.rights_status='approved' AND a.deleted_at IS NULL AND l.review_revision=r.revision
+                  AND (a.effective_from IS NULL OR a.effective_from<=now()) AND (a.effective_to IS NULL OR a.effective_to>now()),false) AS rights_approved
+                FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
+                LEFT JOIN hub.knowledge_asset_links l ON l.candidate_id=c.id LEFT JOIN hub.assets a ON a.id=l.asset_id
+                WHERE $1=ANY(c.project_ids) OR $1=ANY(c.programme_ids)
                   OR ($1='KNOWLEDGE_TERMS' AND c.kind='alias' AND cardinality(c.project_ids)=0) ORDER BY c.kind,c.source_key''',project_id)
+            followup=await db.fetchval('SELECT hub.knowledge_followup($1)',project_id) or {}
         data=[]
         for record in rows:
             row=dict(record);row['bulk_rights_eligible']=bulk_eligible(row)
             # No filesystem paths in browser payloads.
             row['evidence']={k:v for k,v in row['evidence'].items() if k not in {'locations','validated_metadata'}}
             data.append(row)
-        return {'data':{'card':card,'items':data,'mode':'DRAFT_PREVIEW'}}
+        return {'data':{'card':card,'items':data,'followup':followup,'mode':'DRAFT_PREVIEW'}}
+
+    @app.post('/v1/admin/knowledge/questions/{question_id}/review')
+    async def question_review(question_id:str,body:QuestionReview,request:Request,actor:Actor=Depends(writer)):
+        async with database(request,actor) as db:
+            result=await db.fetchval('SELECT hub.review_knowledge_question($1,$2,$3,$4,$5)',question_id,body.expected_revision,body.decision,body.expected_answer,body.reason)
+        return {'data':result}
+
+    @app.post('/v1/admin/knowledge/projects/{project_id}/preview-release')
+    async def preview_release(project_id:str,body:PreviewRelease,request:Request,actor:Actor=Depends(staff)):
+        if actor.role!='publisher':raise failure(403,'preview_publisher_required','เฉพาะผู้เผยแพร่ที่ยืนยันชุดพรีวิวได้')
+        if not body.confirmed:raise failure(422,'preview_confirmation_required','ต้องยืนยันพรีวิวอย่างชัดเจน')
+        async with database(request,actor) as db:
+            release=await db.fetchval('SELECT hub.publish_knowledge_preview($1,$2,$3)',project_id,{str(k):v for k,v in body.expected_reviews.items()},body.reason)
+        return {'data':{'id':str(release),'mode':'PRIVATE_PREVIEW','published':False}}
 
     @app.post('/v1/admin/knowledge/candidates/{candidate_id}/review')
     async def review(candidate_id:UUID,body:Review,request:Request,actor:Actor=Depends(writer)):
@@ -164,12 +193,19 @@ def register_knowledge_routes(app,authentication,database,settings):
                     if re.search(r'(?<![A-Za-z0-9])'+re.escape(pid)+r'(?![A-Za-z0-9])',body.question,re.I):matches.add(pid)
                 if len(matches)==1:project=next(iter(matches))
                 else:return {'data':{'route':'clarify_project','answer':'กรุณาระบุโครงการหรือระยะที่ต้องการให้ชัดเจน','choices':sorted(matches or cards),'citations':[],'mode':'DRAFT_PREVIEW'}}
-            card=cards[project]
+            release=None
+            if body.release_id:
+                release=await db.fetchval('SELECT payload FROM hub.knowledge_preview_releases WHERE id=$1 AND rem_project_id=$2',body.release_id,project)
+                if release is None:raise failure(404,'preview_release_not_found','ไม่พบชุดพรีวิวของโครงการนี้')
+            card=release['fact_card'] if release else cards[project]
             routed=route_question(body.question,card)
-            if routed:return {'data':{'route':routed[0],'answer':routed[1],'project_id':project,'fact_card':card,'citations':[{'source_ref':card['status']['source_ref'],'source_url':None}] if routed[0]=='closed' else [],'mode':'DRAFT_PREVIEW'}}
+            if routed:return {'data':{'route':routed[0],'answer':routed[1],'project_id':project,'fact_card':card,'citations':[{'source_ref':card['status']['source_ref'],'source_url':None}] if routed[0]=='closed' else [],'release_id':str(body.release_id) if release else None,'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW'}}
         try:query_vector=(await embed([body.question]))[0]
         except Exception:raise failure(503,'knowledge_embedding_unavailable','บริการค้นหาความหมายยังไม่พร้อม กรุณาลองใหม่') from None
-        async with database(request,actor) as db:
+        if release:
+            rows=release['chunks']
+        else:
+          async with database(request,actor) as db:
             rows=await db.fetch('''SELECT k.*,c.kind,c.evidence,c.source_url,c.source_ref,c.batch_sha256 FROM rag.knowledge_preview_chunks k
               JOIN hub.knowledge_candidate_rows() c ON c.id=k.candidate_id LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
               WHERE $1=ANY(k.project_ids) AND k.locale='th'
@@ -179,4 +215,5 @@ def register_knowledge_routes(app,authentication,database,settings):
         if result['route']=='no_answer':
             async with database(request,actor) as db:
                 await db.execute("SELECT hub.record_knowledge_gap($1,'NO_ANSWER',$2)",project,hashlib.sha256(normalize(body.question).encode()).hexdigest())
-        return {'data':{**result,'project_id':project,'fact_card':card,'mode':'DRAFT_PREVIEW','warning':'ตัวอย่างจากฉบับร่าง ยังไม่ผ่านการเผยแพร่'}}
+        return {'data':{**result,'project_id':project,'fact_card':card,'release_id':str(body.release_id) if body.release_id else None,
+            'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW','warning':'ตัวอย่างส่วนตัว ยังไม่เผยแพร่สู่ผู้บริโภค'}}

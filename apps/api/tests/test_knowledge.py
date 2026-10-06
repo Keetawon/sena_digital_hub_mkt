@@ -47,6 +47,37 @@ def test_explicit_rights_confirmation(client,value):
 def test_unknown_and_public_knowledge_routes_absent(client):
     assert client[0].post('/v1/admin/knowledge/publish',headers=headers('publisher')).status_code==404
     assert client[0].get('/v1/knowledge',headers=headers('service_consumer')).status_code==404
+
+@pytest.mark.parametrize('role',['admin','editor','viewer','service_consumer'])
+def test_private_preview_requires_publisher(client,role):
+    response=client[0].post('/v1/admin/knowledge/projects/BNA7/preview-release',headers=headers(role),json={'expected_reviews':{},'reason':'ทดสอบ','confirmed':True})
+    assert response.status_code==403 and not client[1]
+
+@pytest.mark.parametrize('value',[False,'true',1,None])
+def test_private_preview_requires_explicit_boolean_confirmation(client,value):
+    response=client[0].post('/v1/admin/knowledge/projects/BNA7/preview-release',headers=headers('publisher'),json={'expected_reviews':{},'reason':'ทดสอบ','confirmed':value})
+    assert response.status_code==422 and not client[1]
+
+@pytest.mark.parametrize('role',['publisher','viewer','service_consumer'])
+def test_question_review_requires_mkt_role(client,role):
+    response=client[0].post('/v1/admin/knowledge/questions/draft-BNA7-01/review',headers=headers(role),json={'expected_revision':0,'decision':'verified','expected_answer':'มีสวน','reason':'ตรวจแล้ว'})
+    assert response.status_code==403 and not client[1]
+
+def test_question_review_rejects_unknown_fields(client):
+    response=client[0].post('/v1/admin/knowledge/questions/draft-BNA7-01/review',headers=headers('editor'),json={'expected_revision':0,'decision':'verified','expected_answer':'มีสวน','reason':'ตรวจแล้ว','publish':True})
+    assert response.status_code==422 and not client[1]
+
+def test_preview_release_scope_checked_before_embedding(client,monkeypatch):
+    class DB:
+        async def fetch(self,*args):return [{'rem_project_id':'BNA7','payload':{'status':{'raw':2}}}]
+        async def fetchval(self,sql,*args):
+            assert 'id=$1 AND rem_project_id=$2' in sql and args[1]=='BNA7'
+            return None
+    @asynccontextmanager
+    async def database(request,actor):yield DB()
+    monkeypatch.setattr(main,'database',database)
+    response=client[0].post('/v1/admin/knowledge/preview',headers=headers('viewer'),json={'question':'มีสวนไหม','project_id':'BNA7','release_id':'00000000-0000-4000-9000-000000000001'})
+    assert response.status_code==404
 def test_pii_not_sent_to_embedding(client):
     response=client[0].post('/v1/admin/knowledge/preview',headers=headers('editor'),json={'question':'โทร 0812345678 ให้ที','project_id':'BNA7'})
     assert response.status_code==422 and not client[1]

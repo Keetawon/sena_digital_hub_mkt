@@ -95,7 +95,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     for (const [label, count, titles] of filters) {
       const filter = page.getByRole('button', { name: `${label} ${count}`, exact: true });
       await expect(filter).toBeVisible(); await filter.click(); await expect(filter).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('.brand-table-row td[data-label="ชื่อแบรนด์"] > a')).toHaveText(titles);
+      await expect(page.locator('.brand-table-row td[data-label="ชื่อแบรนด์"] a')).toHaveText(titles);
     }
     await page.getByRole('button', { name: 'ทั้งหมด 6', exact: true }).click();
     await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'ฉบับร่างตรงกับที่เผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);

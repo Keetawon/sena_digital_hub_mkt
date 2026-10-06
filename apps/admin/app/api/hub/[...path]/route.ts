@@ -39,7 +39,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (hosted && (method === "POST" && path === "v1/admin/assets" || method === "GET" && /\/assets\/[^/]+\/file$/.test(path))) return error("กรุณาใช้ช่องทางรับส่งไฟล์ส่วนตัวของ TEST H1", 400);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
-  const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review)$`).test(path);
+  const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review|questions/${id}/review|projects/${id}/preview-release)$`).test(path);
   if ((knowledgeRead || knowledgeWrite) && (hosted || !isContentStaff(role))) return error("คลังความรู้เปิดให้ทีมงานตรวจข้อมูลเฉพาะในเครื่อง", 403);
   const brandDashboard = method === "GET" && /^v1\/admin\/brands\/completeness(?:\.csv)?$/.test(path);
   const brandBulk = method === "GET" && path === "v1/admin/brands/bulk-preview" || method === "POST" && path === "v1/admin/brands/bulk-create";

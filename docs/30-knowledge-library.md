@@ -767,3 +767,7 @@ Source names below are fully qualified. Each `[]` denotes an array path in the p
 | `solution_content_snapshots.content_json.source.fetched_at` | 6/6 (100.0%) | `staging.km_source_records.metadata.embedded_fetched_at` | Source fetch time only; not a contract-effective date. |
 | `solution_content_snapshots.content_json.source.policy` | 6/6 (100.0%) | `staging.km_source_records.metadata.source_policy` | Source extraction policy as evidence, not permission instructions or replacement for Hub review. |
 | `solution_content_snapshots.content_json.source.url` | 6/6 (100.0%) | `hub.content_sections.source_url`; `hub.faqs.source_url` | Canonical programme source citation, distinct from project pages. |
+
+## Follow-up: readiness, review and evaluation
+
+The local A–F implementation, frozen follow-up package, provisional tuning/held-out results, promotion triage and private-preview workflow are documented in [docs/31](31-readiness-and-review.md). Public publication still requires an explicit publisher action. The runtime FAQ threshold and margin remain 0.88 / 0.05. Draft MKT labels and safe-refusal evaluation scores do not constitute publication approval.

@@ -27,19 +27,22 @@ async function setup(page: Page, role = 'viewer') {
 test('default scope, raw status counts, exceptions and live closed attention are read-only', async ({page}) => {
   const writes = await setup(page);
   const dashboard = page.locator('.project-dashboard');
-  await expect(dashboard.locator('tbody tr')).toHaveCount(2);
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(2);
   await expect(dashboard).toContainText('พร้อมอยู่ (2)');
-  await expect(dashboard.getByRole('columnheader', {name: 'นำเข้าครั้งแรก', exact: true})).toBeVisible();
+  await dashboard.getByRole('button', {name: 'รายการตรวจ โครงการสมมติ 0', exact: true}).click();
+  await dashboard.getByRole('button', {name: 'รายการตรวจ โครงการสมมติ 1', exact: true}).click();
+  await expect(dashboard).toContainText('นำเข้าครั้งแรก');
   await expect(dashboard).toContainText('ต้นทางไม่มีแบรนด์');
   await expect(dashboard).toContainText('"001 "');
   await dashboard.getByRole('button', {name: 'ต้องดูแล 1', exact: true}).click();
-  await expect(dashboard.locator('tbody tr')).toHaveCount(1);
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(1);
   await expect(dashboard).toContainText('ปิดโครงการ (3)');
+  await dashboard.getByRole('button', {name: 'รายการตรวจ โครงการสมมติ 2', exact: true}).click();
   await expect(dashboard).toContainText('ต้นทางเปลี่ยน');
   await dashboard.getByRole('button', {name: 'ทั้งหมด 2', exact: true}).click();
   await dashboard.getByLabel('สถานะโครงการ REM').selectOption('4');
   await expect(dashboard.getByLabel('แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ')).toBeChecked();
-  await expect(dashboard.locator('tbody tr')).toHaveCount(1);
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(1);
   await expect(dashboard).toContainText('ไม่ทราบสถานะ (4)');
   expect(writes).toEqual([]);
 });
