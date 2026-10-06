@@ -100,6 +100,16 @@ for (const viewport of viewports) {
       await expect(primary.getByText(first.name, { exact: true })).toBeVisible();
       await expect(primary.getByText('รอตรวจสิทธิ์', { exact: true })).toBeVisible();
       await expect(page.getByRole('listitem', { name: first.name, exact: true })).toContainText('พื้นหลัง'); // Opaque-image warning never blocks the bind.
+      const uploadResult = page.getByRole('listitem', { name: first.name, exact: true });
+      await expect(uploadResult.getByRole('status')).toHaveText('ผูกโลโก้ในข้อมูลร่างแล้ว');
+      // Read both bounds in one frame, including while the page scrolls smoothly.
+      const [previewBox, detailsBox] = await uploadResult.evaluate(element =>
+        ['.asset-preview', '.project-upload-details'].map(selector => element.querySelector(selector)!.getBoundingClientRect().toJSON()));
+      expect(previewBox.width).toBeLessThanOrEqual(100);
+      expect(viewport.width > 700
+        ? previewBox.x + previewBox.width <= detailsBox.x
+        : previewBox.y + previewBox.height <= detailsBox.y).toBe(true);
+      await uploadResult.screenshot({ path: test.info().outputPath('logo-upload-result.png') });
       const old = (await data.detail()).assets.find(asset => asset.asset_role === 'logo_primary')!;
       expect(old.alt_text.th).toBe('โลโก้หลักสมมติที่กรอกในช่องนี้');
       expect(old.rights_status).toBe('pending');
@@ -184,31 +194,38 @@ for (const viewport of viewports) {
       const backgrounds = await page.evaluate(() => ['logo_white', 'logo_mono'].map(role => getComputedStyle(document.querySelector(`[data-logo-role="${role}"] .asset-preview`)!).backgroundColor));
       expect(backgrounds[0]).not.toBe(backgrounds[1]);
 
+      const previousNotes = `สิทธิ์เดิมของไฟล์สังเคราะห์ ${data.prefix}`;
+      await data.db.query('UPDATE hub.assets SET rights_notes=$2,effective_from=$3,effective_to=$4 WHERE id=$1', [assets[0].id, previousNotes, '2020-01-01T00:00:00Z', '2099-01-01T00:00:00Z']);
+      await expect(page.getByRole('button', { name: /^อนุมัติใช้โลโก้ที่เลือก/ })).toHaveCount(0);
       await session(page, 'publisher'); await page.reload();
-      for (const file of files) await page.getByLabel(`เลือกตรวจสิทธิ์ ${file.name}`, { exact: true }).check();
-      await page.getByRole('button', { name: 'อนุมัติสิทธิ์ที่เลือก (3)', exact: true }).click();
-      const rights = page.getByRole('dialog', { name: 'อนุมัติสิทธิ์โลโก้ที่เลือก', exact: true });
-      const notes = `สร้างไฟล์สังเคราะห์เพื่อทดสอบ ${data.prefix}`;
-      const reason = `อนุมัติโลโก้สมมติสามไฟล์ ${data.prefix}`;
-      await rights.getByLabel('หลักฐานและเงื่อนไขสิทธิ์ (จำเป็น)', { exact: true }).fill(notes);
-      await rights.getByLabel('เหตุผลในการตรวจสิทธิ์ (จำเป็น)', { exact: true }).fill(reason);
-      await rights.getByRole('button', { name: 'ยืนยันอนุมัติสิทธิ์ 3 ไฟล์', exact: true }).click();
-      await expect(rights.getByText('อนุมัติสิทธิ์แล้ว', { exact: true })).toHaveCount(3);
+      for (const file of files) await page.getByLabel(`เลือกอนุมัติ ${file.name}`, { exact: true }).check();
+      await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (3)', exact: true }).click();
+      const rights = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
+      const notes = viewport.width === 1366 ? '' : `หมายเหตุทดสอบ ${data.prefix}`;
+      const reason = `อนุมัติใช้โลโก้โดยผู้เผยแพร่${notes ? ` · ${notes}` : ''}`;
+      await expect(rights.getByRole('button', { name: 'ยืนยันอนุมัติ 3 ไฟล์', exact: true })).toBeEnabled();
+      await expect(rights.getByRole('textbox')).toHaveCount(1);
+      if (notes) await rights.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)', { exact: true }).fill(notes);
+      await rights.screenshot({path:`artifacts/brand-logo-approval-${viewport.width}.png`});
+      await rights.getByRole('button', { name: 'ยืนยันอนุมัติ 3 ไฟล์', exact: true }).click();
+      await expect(rights.getByText('อนุมัติใช้โลโก้แล้ว', { exact: true })).toHaveCount(3);
       await rights.getByRole('button', { name: 'ปิด', exact: true }).click();
       await expect(rights).toHaveCount(0);
       const ids = assets.map(asset => asset.id);
-      const records = (await data.db.query('SELECT id,rights_status,rights_notes,review_reason,reviewed_by,reviewed_at FROM hub.assets WHERE id=ANY($1::uuid[])', [ids])).rows;
+      const records = (await data.db.query('SELECT id,rights_status,rights_notes,review_reason,reviewed_by,reviewed_at,effective_from,effective_to FROM hub.assets WHERE id=ANY($1::uuid[])', [ids])).rows;
       expect(records).toHaveLength(3);
       for (const record of records) {
-        expect(record).toMatchObject({ rights_status: 'approved', rights_notes: notes, review_reason: reason });
-        expect(record.reviewed_by).toBeTruthy(); expect(record.reviewed_at).toBeTruthy();
+        expect(record).toMatchObject({ rights_status: 'approved', rights_notes: record.id === assets[0].id ? previousNotes : 'ผู้เผยแพร่อนุมัติใช้โลโก้ผ่านระบบ Hub', review_reason: reason });
+        expect(record.reviewed_by).toBe('00000000-0000-0000-0000-000000000002'); expect(record.reviewed_at).toBeTruthy();
+        if (record.id === assets[0].id) { expect(record.effective_from.toISOString()).toBe('2020-01-01T00:00:00.000Z'); expect(record.effective_to.toISOString()).toBe('2099-01-01T00:00:00.000Z'); }
       }
       const audits = (await data.db.query("SELECT after_row->>'id' AS asset_id,before_row->>'rights_status' AS before_status,after_row->>'rights_status' AS after_status,database_role,actor FROM audit.change_log WHERE table_name='hub.assets' AND after_row->>'id'=ANY($1::text[]) AND reason=$2", [ids, reason])).rows;
       expect(audits.map(row => row.asset_id).sort()).toEqual([...ids].sort());
       for (const row of audits) { expect(row).toMatchObject({ before_status: 'pending', after_status: 'approved', database_role: 'publisher' }); expect(row.actor).toBeTruthy(); }
+      expect((await data.db.query('SELECT published_version_id FROM hub.brands WHERE id=$1', [data.brand.id])).rows[0].published_version_id).toBeNull();
       await session(page, 'viewer'); await page.reload();
       await expect(page.locator('.brand-logo-slot').getByRole('button', { name: /^(อัปโหลด|เปลี่ยนไฟล์|เลือกจากคลัง)$/ })).toHaveCount(0);
-      await expect(page.getByLabel(/^เลือกตรวจสิทธิ์ /)).toHaveCount(0);
+      await expect(page.getByLabel(/^เลือกอนุมัติ /)).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     } finally { await data.cleanup(); }
   });
@@ -332,18 +349,18 @@ test('batch rights retry reconciles a lost response with equivalent timestamp no
     return route.fulfill({ json: { data: asset } });
   });
   await session(page, 'publisher'); await page.reload();
-  for (const name of ['rights-white.png', 'rights-mono.png']) await page.getByLabel(`เลือกตรวจสิทธิ์ ${name}`, { exact: true }).check();
-  await page.getByRole('button', { name: 'อนุมัติสิทธิ์ที่เลือก (2)', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'อนุมัติสิทธิ์โลโก้ที่เลือก', exact: true });
-  await dialog.getByLabel('หลักฐานและเงื่อนไขสิทธิ์ (จำเป็น)', { exact: true }).fill('หลักฐานสิทธิ์สังเคราะห์ชุดเดียวกัน');
-  await dialog.getByLabel('เหตุผลในการตรวจสิทธิ์ (จำเป็น)', { exact: true }).fill('ทดสอบคำตอบสูญหายโดยไม่บันทึกสิทธิ์ซ้ำ');
+  for (const name of ['rights-white.png', 'rights-mono.png']) await page.getByLabel(`เลือกอนุมัติ ${name}`, { exact: true }).check();
+  await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (2)', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
+  await dialog.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)', { exact: true }).fill('ทดสอบคำตอบสูญหายโดยไม่บันทึกสิทธิ์ซ้ำ');
+  await dialog.getByText('กำหนดช่วงเวลาใช้งาน (ไม่บังคับ)', { exact: true }).click();
   await dialog.getByLabel('เริ่มใช้สิทธิ์ (เวลาไทย)', { exact: true }).fill('2026-10-02T10:00');
-  await dialog.getByRole('button', { name: 'ยืนยันอนุมัติสิทธิ์ 2 ไฟล์', exact: true }).click();
-  await expect(dialog.getByText('อนุมัติสิทธิ์แล้ว', { exact: true })).toHaveCount(1);
+  await dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 2 ไฟล์', exact: true }).click();
+  await expect(dialog.getByText('อนุมัติใช้โลโก้แล้ว', { exact: true })).toHaveCount(1);
   await expect(dialog).toContainText('คำตอบสมมติสูญหายหลังบันทึกสิทธิ์สำเร็จ');
-  await expect(dialog.getByLabel('หลักฐานและเงื่อนไขสิทธิ์ (จำเป็น)', { exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)', { exact: true })).toBeDisabled();
   await dialog.getByRole('button', { name: 'ลองอนุมัติเฉพาะไฟล์ที่ยังไม่สำเร็จ', exact: true }).click();
-  await expect(dialog.getByText('อนุมัติสิทธิ์แล้ว', { exact: true })).toHaveCount(1);
+  await expect(dialog.getByText('อนุมัติใช้โลโก้แล้ว', { exact: true })).toHaveCount(1);
   await expect(dialog.getByText('พบผลอนุมัติที่ตรงกันแล้ว ไม่บันทึกซ้ำ', { exact: true })).toBeVisible();
   expect(reviews.map(review => review.id)).toEqual(['synthetic-rights-white.png', 'synthetic-rights-mono.png']);
   expect(reviews[0].body).toEqual(reviews[1].body);

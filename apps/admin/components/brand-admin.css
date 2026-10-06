@@ -23,9 +23,28 @@
 .brand-confirm-check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
 .brand-confirm-check input { width: 20px; height: 20px; flex: none; }
 .brand-bulk-table td { min-width: 90px; }
+.brand-table-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; margin-top: 24px; }
+.brand-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 16px 0; }
+.brand-page-size,.brand-page-controls,.brand-page-number { display: flex; align-items: center; gap: 10px; }
+.brand-pagination select { width: auto; min-width: 68px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.brand-pagination label,.brand-page-number span { white-space: nowrap; }
+.brand-selection-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-warm); }
+.brand-dashboard-table-scroll { isolation: isolate; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 16px; }
+.brand-dashboard-table-scroll:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+@media(min-width:641px) {
+  .brand-dashboard-table-scroll { max-height: min(65dvh, 680px); overflow: auto; scroll-padding-top: 100px; }
+  .brand-dashboard-table-scroll .brand-completeness-table { border-collapse: separate; border-spacing: 0; }
+  .brand-dashboard-table-scroll th { position: sticky; top: 0; z-index: 2; background: var(--canvas); box-shadow: 0 1px 0 var(--line-strong); }
+  .brand-dashboard-table-scroll td[data-label="ชื่อแบรนด์"] { min-width: 220px; }
+}
 .action-dialog:has(.brand-bulk-table) { width: min(1000px,calc(100vw - 32px)); }
 @media(max-width:1100px) { .brand-completeness-tiles { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media(max-width:640px) {
+  .brand-page-controls { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 8px; }
+  .brand-page-number { grid-column: 1 / -1; grid-row: 1; justify-content: center; }
+  .brand-pagination .button { min-width: 0; }
+  .brand-table-scroll-help { display: none; }
+  .brand-dashboard-table-scroll { border: 0; border-radius: 0; }
   .brand-completeness-tiles { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
   .brand-completeness-tiles button { padding: 12px; }
   .brand-dashboard-toolbar { grid-template-columns: 1fr; gap: 10px; }

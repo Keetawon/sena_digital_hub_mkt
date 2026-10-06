@@ -90,7 +90,7 @@ test('ordered source fields, bilingual draft and unsaved edits survive five tabs
 
 test('readiness links reveal correct tab and advanced field; model plans stay scoped', async ({ page }) => {
   await openFixture(page);
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   expect(await page.locator('.rem-model-table tbody tr td:nth-child(2)').allTextContents()).toEqual(['model-A', 'model-A2', 'model-A10', 'model-B']);
   await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets')).toContainText('project-plan.pdf');
@@ -103,7 +103,7 @@ test('readiness links reveal correct tab and advanced field; model plans stay sc
   await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await page.locator('.readiness-groups summary').filter({ hasText: 'แบบที่อยู่อาศัย' }).click();
   await page.getByRole('link', { name: 'ตรวจสอบแบบ A', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /แบบบ้าน/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#model-media')).toContainText('model-a-plan.pdf');
   await expect(page.locator('#model-media')).not.toContainText('model-b-plan.pdf');
   await page.getByText('ข้อมูลแบบจาก DW สำหรับตรวจสอบ', { exact: true }).click();
@@ -185,7 +185,7 @@ test('adding a second model plan uses the selected model route and retains exist
     project.assets.push(binding('additional-plan', 'model-A', 'floor_plan'));
     await route.fulfill({ json: { data: project } });
   });
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   const media = page.locator('#model-media');
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
   await media.getByRole('button', { name: 'เลือกใช้กับแบบที่อยู่อาศัย', exact: true }).click();

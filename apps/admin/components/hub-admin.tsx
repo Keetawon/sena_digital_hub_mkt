@@ -8,6 +8,7 @@ import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
 import { ProjectSourceReview, SourceStatusFilter, type SourceReview } from "./project-source-review";
 import { ProjectDashboard } from "./project-dashboard";
+import { useListQuery, WorkspaceBack, projectHref } from "./workspace-navigation";
 import { ProjectComparison, projectChanges, modelActorLabel } from "./project-review";
 import "./project-editor.css";
 import { ContentSource } from "./content-source";
@@ -137,33 +138,16 @@ function SetupNotice() {
 function ProjectOverview({ role }: { role: LocalRole }) {
   const [showSources, setShowSources] = useState(false);
   const [sourceSearch, setSourceSearch] = useState("");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [brandFilter, setBrandFilter] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const load = useCallback(async () => {
-    setLoading(true); setError("");
-    try { setProjects(await request<Project[]>("v1/admin/projects")); }
-    catch (error) { setError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ"); }
-    finally { setLoading(false); }
-  }, []);
-  useEffect(() => { void load(); }, [load]);
-
-  const brandOptions = [...new Map(projects.flatMap(project => project.brand_summary ? [[project.brand_summary.id, project.brand_summary] as const] : [])).values()];
-  const filteredProjects = projects.filter(project => !brandFilter || (brandFilter === "unassigned" ? !project.brand_id : project.brand_id === brandFilter));
-
+  const { href } = useListQuery();
   return <>
-    <div className="page-heading"><div><p className="eyebrow">ข้อมูลสำหรับเผยแพร่</p><h1>โครงการที่อยู่อาศัย</h1><p className="muted">ดูแลข้อมูลโครงการให้ครบถ้วน ก่อนส่งต่อให้ผู้ใช้งานข้อมูล</p></div><span className="scope-pill"><span />SENA Residential</span></div>
+    <div className="page-heading"><div><p className="eyebrow">ข้อมูลสำหรับเผยแพร่</p><h1>โครงการที่อยู่อาศัย</h1><p className="muted">ดูภาพรวมตามแบรนด์และกลุ่ม แล้วเปิดโครงการเพื่อจัดเตรียมหรือตรวจข้อมูล</p></div><span className="scope-pill"><span />SENA Residential</span></div>
+    <div className="section-heading"><h2>พื้นที่ทำงานโครงการ</h2><button className="button secondary" aria-expanded={showSources} aria-controls="source-picker" onClick={() => setShowSources(value => !value)}>{showSources ? "ปิดรายการต้นทาง" : "เลือกโครงการจากต้นทาง"}</button></div>
+    {showSources && <SourceProjects role={role} initialSearch={sourceSearch} returnTo={href} />}
     <ProjectDashboard role={role} onStart={sourceId => { setSourceSearch(sourceId); setShowSources(true); requestAnimationFrame(() => document.getElementById("source-picker")?.scrollIntoView({ block: "start" })); }} />
-    <div className="section-heading"><h2>โครงการในพื้นที่ทำงาน {!loading && !error && <span className="count">{projects.length}</span>}</h2><button className="button secondary" aria-expanded={showSources} aria-controls="source-picker" onClick={() => setShowSources(value => !value)}>{showSources ? "ปิดรายการต้นทาง" : "เลือกโครงการจากต้นทาง"}</button></div>
-    {showSources && <SourceProjects role={role} initialSearch={sourceSearch} />}
-    <div className="form-field brand-filter"><label htmlFor="project-brand-filter">กรองโครงการตามแบรนด์</label><select id="project-brand-filter" value={brandFilter} onChange={event => setBrandFilter(event.target.value)}><option value="">ทุกแบรนด์</option><option value="unassigned">ยังไม่ได้เลือกแบรนด์</option>{brandOptions.map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id}</option>)}</select></div>
-    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !filteredProjects.length ? <div className="empty-state"><Icon name="building" size={36} /><h2>{brandFilter ? "ไม่มีโครงการที่ตรงกับตัวกรองแบรนด์" : "ยังไม่มีโครงการในพื้นที่ทำงาน"}</h2><p>{brandFilter ? "เลือกทุกแบรนด์เพื่อดูโครงการทั้งหมด" : "เลือกโครงการจากรายการต้นทางเพื่อเริ่มจัดเตรียมข้อมูลร่าง"}</p></div> : <div className="project-grid">{filteredProjects.map(project => <a className="project-card" key={project.public_project_id} href={`/?project=${encodeURIComponent(project.public_project_id)}`}><div className="project-card-art" aria-hidden="true"><div className="art-frame"><Icon name="building" size={58} /></div><span className="sample-stamp">โครงการในพื้นที่ทำงาน</span></div><div className="project-card-body"><div className="project-card-meta"><span className="small-text muted">{project.brand_summary?.public_name.th || "ยังไม่ได้เลือกแบรนด์"}</span><StatusBadge project={project} /></div><h3>{project.public_name?.th || "โครงการที่ยังไม่ระบุชื่อ"}</h3><DemoFields fields={project.demo_fields} /><p className="project-id">{project.public_project_id}</p><div className="readiness-summary"><span>เงื่อนไขการเผยแพร่</span><strong>{project.readiness?.ready ? "ผ่านรายการตรวจสอบ" : `${project.readiness?.missing.length ?? 0} รายการรอตรวจสอบ`}</strong></div><div className="project-card-footer"><span className="small-text muted"><Icon name="clock" size={14} />{formatDate(project.updated_at)}</span><span className="open-project">จัดการข้อมูล<Icon name="arrow" size={18} /></span></div></div></a>)}</div>}
-    <div className="information-strip"><Icon name="document" /><p><strong>แก้ไขข้อมูลร่างได้โดยไม่กระทบข้อมูลที่เผยแพร่</strong><br /><span className="muted">ผู้เผยแพร่ตรวจสอบความพร้อมก่อนเผยแพร่ทุกครั้ง และเรียกคืนเวอร์ชันก่อนหน้าได้</span></p></div>
   </>;
 }
 
-function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initialSearch?: string }) {
+function SourceProjects({ role, initialSearch = "", returnTo = "/" }: { role: LocalRole; initialSearch?: string; returnTo?: string }) {
   const [sources, setSources] = useState<SourceProject[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<Record<string, string>>({});
@@ -186,7 +170,7 @@ function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initial
     setPending(source.rem_project_id); setError("");
     try {
       const created = await request<Project>("v1/admin/projects", "POST", { rem_project_id: source.rem_project_id, ...(selectedBrands[source.rem_project_id] ? { brand_id: selectedBrands[source.rem_project_id] } : {}) });
-      window.location.assign(`/?project=${encodeURIComponent(created.public_project_id)}`);
+      window.location.assign(projectHref(created.public_project_id, returnTo));
     } catch (error) { setError(error instanceof Error ? error.message : "สร้างข้อมูลร่างไม่สำเร็จ"); setPending(null); }
   }
   const query = search.trim().toLocaleLowerCase("th");
@@ -201,7 +185,7 @@ function SourceProjects({ role, initialSearch = "" }: { role: LocalRole; initial
       {error && <div className="notice error" role="alert">{error}<button className="button secondary" onClick={() => void load()}>โหลดรายการใหม่</button></div>}
       {loading ? <LoadingState /> : <><p className="small-text muted" role="status">พบ {filtered.length} โครงการ</p><ul className="source-cards">{filtered.map(source => <li key={source.rem_project_id}>
         <div><h3>{source.project_name_rem}</h3><ProjectSourceReview value={source.source_review} /><p className="small-text source-code">{source.rem_project_id} · {source.model_count} แบบที่อยู่อาศัย</p><p className="small-text muted">แบรนด์ต้นทาง: {source.brand_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_brand_id || "ไม่ระบุ"}</p><details><summary className="small-text muted">ข้อมูลบริษัทจากต้นทาง</summary><p className="small-text muted">{source.company_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_company_id || "ไม่ระบุ"}</p></details><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {formatDate(source.source_snapshot_at)}</p></div>
-        {source.public_project_id ? <a className="button secondary" href={`/?project=${encodeURIComponent(source.public_project_id)}`}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending) || source.source_review?.brand_binding_allowed === false} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
+        {source.public_project_id ? <a className="button secondary" href={projectHref(source.public_project_id, returnTo)}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending) || source.source_review?.brand_binding_allowed === false} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
       </li>)}</ul>{!filtered.length && <p className="muted">ไม่พบโครงการที่ตรงกับการค้นหา</p>}</>}
       {requestSource && <BrandRequestDialog sourceId={requestSource.rem_brand_id} initialName={requestSource.brand_name_rem || ""} onCancel={() => setRequestSource(null)} onCreated={() => { setRequestSource(null); setNotice("ส่งคำขอเพิ่มแบรนด์แล้ว สร้างโครงการเป็นข้อมูลร่างและเลือกแบรนด์ภายหลังได้"); }} />}
     </div>
@@ -339,7 +323,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   }
 
   if (loading) return <LoadingState />;
-  if (!project || !draft) return <><a className="back-link" href="/">← กลับไปยังโครงการทั้งหมด</a><ErrorState message={error} retry={load} /></>;
+  if (!project || !draft) return <><WorkspaceBack /><ErrorState message={error} retry={load} /></>;
   const readiness = project.readiness ?? { ready: false, percent: 0, missing: [] };
 
   function field(name: keyof Draft, multiline = false, help?: string) {
@@ -369,7 +353,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     const value = fromRem ? mirror[name] : gold;
     return <div className="form-field source-field"><span>{label}<span className="field-chip">อ่านอย่างเดียว</span></span><p id={`gold-${name}`} tabIndex={-1}>{value == null || value === "" ? "ยังไม่มีข้อมูลต้นทาง" : String(value)}{value != null && value !== "" && <small className="source-origin">{fromRem ? "จาก REM" : "จาก DW"}</small>}</p></div>;
   }
-  const tabs: { id: ProjectTab; label: string }[] = [{ id: "content", label: "ข้อมูลหลัก" }, { id: "media", label: "รูปภาพ" }, { id: "models", label: "แบบบ้าน" }, { id: "extra", label: "ข้อมูลเสริม" }, { id: "versions", label: "เผยแพร่และประวัติ" }];
+  const tabs: { id: ProjectTab; label: string }[] = [{ id: "content", label: "ข้อมูลหลัก" }, { id: "media", label: "รูปภาพ" }, { id: "models", label: "แบบที่อยู่อาศัย" }, { id: "extra", label: "ข้อมูลเสริม" }, { id: "versions", label: "เผยแพร่และประวัติ" }];
   const live = versions.find(version => version.version_id === project.published_version_id)?.payload;
   const gapsFor = (id: ProjectTab) => readiness.missing.filter(item => {
     const anchor = missingAnchor(item.field);
@@ -389,13 +373,13 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   ];
 
   return <>
-    <a className="back-link" href="/"><span aria-hidden="true">←</span>โครงการทั้งหมด</a>
+    <WorkspaceBack />
     <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={project.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={{ ...project, version_count: versions.length, has_unpublished_changes: Boolean(live && projectChanges(project, live).length) }} /></div>
     {notice && <div className="notice success" role="status"><Icon name="check" />{notice}</div>}
     {error && <div className="notice error" role="alert"><div><strong>{error}</strong>{conflict && <p>ข้อมูลร่างของคุณยังอยู่ กรุณาคัดลอกข้อความที่ต้องการเก็บ ก่อนโหลดข้อมูลล่าสุด</p>}</div>{conflict && <button className="button secondary" onClick={() => void load()}>โหลดข้อมูลล่าสุด</button>}</div>}
     <div className="project-readiness-strip" aria-label="สรุปความพร้อม"><div><strong>{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : "ยังมีเงื่อนไขก่อนเผยแพร่"}</strong><span>{readiness.ready ? "ข้อมูลที่บันทึกผ่านรายการตรวจสอบแล้ว" : `เหลือ ${readiness.missing.length} รายการที่ต้องตรวจสอบ`}</span></div><button className="button text-button" onClick={() => { setTab("versions"); requestAnimationFrame(() => document.getElementById("versions-tab")?.focus()); }}>ตรวจความพร้อม<Icon name="arrow" size={17} /></button></div>
     <p className="project-flow-hint">เริ่มจากข้อมูลและสื่อโครงการ → จัดเตรียมแบบที่อยู่อาศัย → ตรวจความพร้อมก่อนส่งต่อ</p>
-    <div className="detail-tabs project-tabs" role="tablist" aria-label="ส่วนงานโครงการ">{tabs.map((item, index) => <button key={item.id} id={`${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => goToTab(item.id)} onKeyDown={event => { const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0; if (!offset && event.key !== "Home" && event.key !== "End") return; event.preventDefault(); const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length].id; setTab(next); document.getElementById(`${next}-tab`)?.focus(); }}><span>{item.label}</span><span className="tab-count" aria-label={item.id === "models" ? `ยืนยัน ${confirmed} จาก ${project.models?.length ?? 0} แบบ; ยังขาด ${gapsFor(item.id).length}` : gapsFor(item.id).length ? `ยังขาด ${gapsFor(item.id).length}` : "ครบแล้ว"}>{item.id === "models" ? `${confirmed}/${project.models?.length ?? 0} · ` : ""}{gapsFor(item.id).length || "✓"}</span></button>)}</div>
+    <div className="detail-tabs project-tabs" role="tablist" aria-label="ส่วนงานโครงการ">{tabs.map((item, index) => <button key={item.id} id={`${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onClick={() => goToTab(item.id)} onKeyDown={event => { const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0; if (!offset && event.key !== "Home" && event.key !== "End") return; event.preventDefault(); const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length].id; setTab(next); document.getElementById(`${next}-tab`)?.focus(); }}><span>{item.label}</span><span className="tab-count" aria-label={item.id === "extra" ? "ข้อมูลเสริม ไม่กีดกันการเผยแพร่" : item.id === "models" ? `ยืนยัน ${confirmed} จาก ${project.models?.length ?? 0} แบบ; ยังขาด ${gapsFor(item.id).length}` : gapsFor(item.id).length ? `ยังขาด ${gapsFor(item.id).length}` : "ครบแล้ว"}>{item.id === "models" ? `${confirmed}/${project.models?.length ?? 0} · ` : ""}{item.id === "extra" ? "เสริม" : gapsFor(item.id).length || "✓"}</span></button>)}</div>
     <div data-project-assistant />
     <div className="project-workspace">
       <div id="content-panel" role="tabpanel" tabIndex={-1} aria-labelledby="content-tab" hidden={tab !== "content"}>
@@ -438,7 +422,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
         <section className="panel model-project-context"><div className="panel-body"><div><span className="section-chip">โครงการที่เลือก</span><h2>{project.public_name.th || project.source?.project_name_rem || "โครงการนี้"}</h2><p className="muted small-text">{project.source?.rem_project_id} · แบบทั้งหมดอยู่ภายใต้โครงการนี้</p></div><a className="button secondary" href="/" onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลโครงการที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนโครงการหรือไม่?")) event.preventDefault(); }}>เปลี่ยนโครงการ</a></div></section>
 
 
-    <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>คลิกแถวเพื่อแก้ไขรายละเอียด ตรวจการจับคู่ และเตรียมแปลนก่อนเผยแพร่</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
+    <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>{canEdit ? "คลิกแถวเพื่อแก้ไขรายละเอียด ตรวจการจับคู่ และเตรียมแปลนก่อนเผยแพร่" : "คลิกแถวเพื่อตรวจรายละเอียดและแปลน"}</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
       {canEdit && <><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "add" })}>เลือกแบบเพิ่มเติมจากต้นทาง</button>{dirty && <p className="field-help">บันทึกข้อมูลโครงการก่อนจัดการแบบที่อยู่อาศัย</p>}</>}
       {Boolean(sortedModels.length) && <div className="table-scroll"><table className="rem-model-table"><caption className="sr-only">แบบบ้านจาก REM</caption><thead><tr><th>ชื่อแบบ</th><th>ModelID</th><th>ยืนยัน</th><th>ข้อมูลครบ</th><th>แปลน</th></tr></thead><tbody>{sortedModels.map(model => <tr key={model.public_model_id} data-model-id={model.public_model_id} aria-selected={mediaModel?.public_model_id === model.public_model_id} onClick={() => { if (modelDirty || saving) return; setMediaModelId(model.public_model_id); setModelAction(canEdit && !anyDirty ? { type: "edit", model } : null); }}><td><button className="button text-button" disabled={modelDirty || saving}>{model.public_name.th || model.model_name_rem}</button></td><td>{model.rem_model_id}</td><td>{matchLabels[model.match_status]}</td><td>{model.public_name.th?.trim() && model.bedrooms != null && model.bathrooms != null && (model.usable_area_sqm ?? 0) > 0 ? "✓" : "ยังขาด"}</td><td>{project.assets?.filter(asset => asset.public_model_id === model.public_model_id && ["floor_plan", "structural_plan"].includes(asset.asset_role)).length ?? 0}</td></tr>)}</tbody></table></div>}
 

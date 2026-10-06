@@ -62,6 +62,27 @@ async function openMenu(page: Page) {
 }
 
 for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
+  test(`publisher opens an incomplete brand and its logo rights review at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport); const data = await fixture(page);
+    const pendingLogo = { ...logo, rights_status: 'pending', updated_at: stamp, rights_notes: null };
+    data.rows[2].assets = [pendingLogo];
+    data.rows[2].readiness.missing.push({ field: 'assets.logo_primary', message: 'ตรวจสิทธิ์โลโก้หลักก่อนเผยแพร่' });
+    await page.route(`**${api}/assets/${logo.id}`, route => route.fulfill({ json: { data: pendingLogo } }));
+    await page.goto('/?view=brands');
+    await expect(page.getByRole('checkbox', { name: 'เลือกเผยแพร่ ยังขาดข้อมูล', exact: true })).toBeDisabled();
+    await page.getByRole('link', { name: 'เปิดตรวจแบรนด์ ยังขาดข้อมูล', exact: true }).click();
+    await expect(page).toHaveURL(/\?brand=brd_missing&return_to=/);
+    await expect(page.locator('.detail-heading')).toContainText('ยังขาดข้อมูล');
+    await expect(page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true })).toBeDisabled();
+    await page.getByRole('checkbox', { name: `เลือกอนุมัติ ${logo.original_filename}`, exact: true }).check();
+    await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (1)', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์', exact: true })).toBeEnabled();
+    await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
+    expect(data.writes).toEqual([]);
+  });
+
   test(`brand review queue has overlapping counts and publisher menu badge at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport); const data = await fixture(page); await page.goto('/?view=brands');
     const filters: [string, number, string[]][] = [

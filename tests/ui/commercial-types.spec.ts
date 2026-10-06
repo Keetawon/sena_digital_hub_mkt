@@ -50,7 +50,7 @@ async function openFixture(page: Page, initial: CommercialType[] = [], role = 'e
     else await route.fulfill({ json: { data: [] } });
   });
   await page.goto('/?project=commercial-test');
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   await expect(page.getByRole('heading', { name: /แบบขายและรหัสแบบต้นทาง/ })).toBeVisible();
   return { project, writes, library, setConflict: (value: boolean) => { conflict = value; } };
 }
@@ -87,7 +87,7 @@ test('inline edits survive tabs and a stale revision preserves the draft for rev
   await panel.getByLabel('ห้องครัว', { exact: true }).fill('1');
   await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
   await expect(page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true })).toBeDisabled();
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   await expect(panel.getByLabel('ชื่อแบบขาย (ไทย)')).toHaveValue('Garden revised');
   setConflict(true);
   await panel.getByRole('button', { name: 'บันทึกแบบขาย', exact: true }).click();

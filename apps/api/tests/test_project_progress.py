@@ -105,6 +105,40 @@ def test_comparison_ignores_optional_collection_and_evidence():
     assert review_content(project) == review_content(record["live_payload"])
 
 
+def test_navigation_preserves_exact_membership_without_gold_substitution_or_private_values():
+    record, source = fixture()
+    source.update(rem_brand_id="00025", source_record={"ProjectGroupID": "GROUP-01 ", "ProjectStatus": "2", "isDeleted": False},
+                  gold_source={"record": {"marketing_project_group_id": "GROUP-01", "private_price": "9000000"}})
+    before = deepcopy(record)
+    row = build_progress([record], [source], [], NOW)["rows"][0]
+    assert row["rem_brand_id"] == "00025" and row["rem_project_group_id"] == "GROUP-01 "
+    assert row["marketing_project_group_id"] == "GROUP-01" and row["group_status"] == "rem_reference"
+    assert "private_price" not in str(row) and record == before
+
+
+@pytest.mark.parametrize("raw,gold,expected", [
+    ({}, {}, "missing"), ({"ProjectGroupID": ""}, {}, "missing"),
+    ({"ProjectGroupID": None}, {"marketing_project_group_id": "G"}, "missing"),
+    ({"ProjectGroupID": "G"}, {}, "rem_reference"),
+    ({"ProjectGroupID": "G"}, {"marketing_project_group_id": "G"}, "rem_reference"),
+    ({"ProjectGroupID": "G"}, {"project_identity_conflict": True}, "conflict"),
+    ({"ProjectGroupID": None, "rem_project_group_id": "LEGACY"}, {}, "missing"),
+])
+def test_source_only_navigation_membership(raw, gold, expected):
+    _, source = fixture()
+    source.update(public_project_id=None, source_record=raw, gold_source={"record": gold})
+    row = build_progress([], [source], [], NOW)["rows"][0]
+    assert row["group_status"] == expected
+    assert row["public_project_id"] is None
+
+
+def test_latest_intake_conflict_prevents_certifying_accepted_group():
+    record, source = fixture()
+    source["source_record"]["ProjectGroupID"] = "G"
+    source["source_review"] = {"default_scope": True, "exceptions": [{"code": "GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT"}]}
+    assert build_progress([record], [source], [], NOW)["rows"][0]["group_status"] == "conflict"
+
+
 @pytest.mark.parametrize("role", ["editor", "publisher", "viewer", "admin"])
 def test_progress_endpoint_uses_caller_and_read_only_queries(monkeypatch, role):
     record, source = fixture()

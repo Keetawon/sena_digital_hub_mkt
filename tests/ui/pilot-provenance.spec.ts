@@ -48,7 +48,7 @@ test('model evidence keeps raw area separate from blank approved specifications'
   });
   await page.goto('/?project=project-test');
   await expect(page.locator('.source-provenance')).toContainText(snapshotLabel);
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   await page.locator('.rem-model-table').getByRole('button', { name: 'A1-1', exact: true }).click();
   const dialog = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
   await expect(dialog).toContainText('CON4');

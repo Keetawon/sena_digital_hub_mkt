@@ -67,7 +67,7 @@ Phase B (3 October 2026) orders work by publication blockers. The eleven field r
 |---|---|
 | ข้อมูลหลัก | Eleven ordered rows, then slug, ad disclaimer and brand binding. Expanded throughout. Source values are compact read-only text; missing Gold values fall back to the existing REM mirror with **จาก REM**, including the original `project_name_en` evidence when available. No invented values and no duplicate source/brand section. |
 | รูปภาพ | Project media and existing rights status/review controls. |
-| แบบบ้าน | REM table first: name, ModelID, confirmation, complete required specs and plan count. A row opens the existing model form in place. Media remains scoped to that selected model. Marketing commercial types follow with **ยังไม่ออก API**. |
+| แบบที่อยู่อาศัย | REM table first: name, ModelID, confirmation, complete required specs and plan count. A row opens the existing model form in place. Media remains scoped to that selected model. Marketing commercial types follow with **ยังไม่ออก API**. |
 | ข้อมูลเสริม | Optional compact amenity table and SEO fields. A selected radio is the status; no duplicate chip. Amenities never block publication. |
 | เผยแพร่และประวัติ | Existing readiness, named field links, publication and history. No bottom save bar. Publish confirmation compares only published-content fields with the live version, using the brand comparison layout. |
 

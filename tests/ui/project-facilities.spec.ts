@@ -115,7 +115,7 @@ test('unsaved facility work survives tabs and blocks conflicting project and med
   await expect(page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeDisabled();
   await page.getByRole('tab', { name: /รูปภาพ/ }).click();
   await expect(page.locator('#assets').getByRole('button', { name: 'เปิดคลังสื่อ', exact: true })).toBeEnabled();
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await expect(page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true })).toHaveValue('ข้อมูลที่ยังไม่บันทึก');

@@ -90,7 +90,7 @@ function modelCard(page: Page, name: string) {
 }
 
 async function selectModel(page: Page, publicModelId: string) {
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   await page.locator(`.rem-model-table tr[data-model-id="${publicModelId}"] button`).click();
   const inline = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
   if (await inline.count()) await inline.getByRole('button', { name: 'ยกเลิก', exact: true }).click();

@@ -42,6 +42,24 @@ def gap_group(field, project):
     return "core"
 
 
+def source_membership(source):
+    """Staff navigation only: REM identity and Gold claims remain distinct."""
+    raw = source.get("source_record") or {}
+    gold = (source.get("gold_source") or {}).get("record") or {}
+    rem_group = raw.get("ProjectGroupID") if "ProjectGroupID" in raw else raw.get("rem_project_group_id")
+    marketing_group = gold.get("marketing_project_group_id")
+    # Treat a blank reference as missing without normalizing any nonblank key.
+    text_id = lambda value: value if isinstance(value, str) and value.strip() else None
+    rem_group, marketing_group = text_id(rem_group), text_id(marketing_group)
+    exceptions = (source.get("source_review") or {}).get("exceptions") or []
+    conflict = any(item.get("code") == "GOLD_PROJECT_IDENTITY_OR_GROUP_CONFLICT" for item in exceptions)
+    conflict = conflict or gold.get("project_group_conflict") in (True, "true") or gold.get("project_identity_conflict") in (True, "true")
+    # REM and Marketing group IDs belong to separate namespaces.
+    return {"rem_brand_id": text_id(source.get("rem_brand_id")), "rem_project_group_id": rem_group,
+            "marketing_project_group_id": marketing_group,
+            "group_status": "conflict" if conflict else "rem_reference" if rem_group else "missing"}
+
+
 def build_progress(records, sources, assets, now=None):
     now = now or datetime.now(timezone.utc)
     asset_by_id = {str(asset["id"]): asset for asset in assets}
@@ -114,7 +132,7 @@ def build_progress(records, sources, assets, now=None):
                      "gaps": gaps, "confirmed_models": sum(model["match_status"] == "CONFIRMED" for model in models), "total_models": len(models),
                      "amenities": {"collected": facilities.get("collected_count", 0), "total": facilities.get("expected_count", 0)},
                      "waiting_on": (["editor"] if editor_gaps else []) + (["publisher"] if awaiting else []),
-                     "updated_at": project.get("updated_at"), 'source_review': review, **age(source)})
+                     "updated_at": project.get("updated_at"), 'source_review': review, **age(source), **source_membership(source)})
 
     for source in sources:
         if source.get("public_project_id"):
@@ -123,7 +141,7 @@ def build_progress(records, sources, assets, now=None):
                      "brand_name": source.get("brand_name_rem"), "new_from_rem": True, "filling": False, "awaiting_publisher": False,
                      "published": False, "needs_attention": False, "attention": [], "has_unpublished_changes": False, "withdrawn": False,
                      "gaps": {group: [] for group in ("core", "media", "models", "brand")}, "confirmed_models": 0, "total_models": source["model_count"],
-                     "amenities": None, "waiting_on": ["editor"], "updated_at": None, 'source_review': source_review(source), **age(source)})
+                     "amenities": None, "waiting_on": ["editor"], "updated_at": None, 'source_review': source_review(source), **age(source), **source_membership(source)})
     counts = {key: sum(bool(row[key]) and (row['source_review']['default_scope'] or key == 'needs_attention') for row in rows)
               for key in ("new_from_rem", "filling", "awaiting_publisher", "published", "needs_attention")}
     counts["all"] = sum(row['source_review']['default_scope'] for row in rows)

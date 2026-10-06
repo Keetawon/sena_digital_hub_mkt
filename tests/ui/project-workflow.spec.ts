@@ -6,13 +6,16 @@ async function enter(page: Page, role: 'editor' | 'publisher' | 'viewer') {
   await page.goto('/');
   await expect(page.getByText('พื้นที่ทดสอบในเครื่อง', { exact: true })).toBeVisible();
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(role);
-  await expect(page.locator('a.project-card').first()).toBeVisible();
+  await expect(page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM')).toBeVisible();
   const response = await page.request.get('/api/hub/v1/admin/projects');
   expect(response.ok()).toBeTruthy();
   const project = (await response.json()).data.find((item: { source: { rem_project_id: string } }) => item.source.rem_project_id === 'DEMO-001');
   expect(project).toBeDefined();
   expect(project.source.rem_project_id).toBe('DEMO-001');
-  await page.locator(`a.project-card[href="/?project=${project.public_project_id}"]`).click();
+  // This original synthetic seed has no REM ProjectStatus, so opt into unknowns.
+  await page.getByRole('checkbox', { name: 'แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ' }).check();
+  await page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM').fill('DEMO-001');
+  await page.locator(`.project-dashboard a.project-row-action[href^="/?project=${project.public_project_id}&"]`).click();
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeVisible();
   return project;
 }

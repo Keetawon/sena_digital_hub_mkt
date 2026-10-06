@@ -1,5 +1,7 @@
 "use client";
 
+import { WorkspaceBack } from "./workspace-navigation";
+
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import type { Project } from "./hub-admin";
@@ -185,14 +187,14 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
     finally { setSaving(false); }
   }
   if (loading) return <Loading />;
-  if (!brand || !draft) return <><a className="back-link" href="/?view=brands">← แบรนด์ทั้งหมด</a><LoadError error={error} retry={load} /></>;
+  if (!brand || !draft) return <><WorkspaceBack fallback="/?view=brands" label="แบรนด์ทั้งหมด" /><LoadError error={error} retry={load} /></>;
   const readiness = brand.readiness ?? { ready: false, percent: 0, missing: [] };
   const changed = versionsError ? null : brandHasChanges(brand, versions);
   const currentVersion = versions.find(version => version.version_id === brand.published_version_id);
   const comparisonUnavailable = Boolean(versionsError || brand.published_version_id && !currentVersion?.payload);
   return <>
     <div className="brand-detail-workspace"><div className="brand-detail-intro">
-    <a className="back-link" href="/?view=brands">← แบรนด์ทั้งหมด</a>
+    <WorkspaceBack fallback="/?view=brands" label="แบรนด์ทั้งหมด" />
     <div className="page-heading detail-heading brand-detail-heading"><div><p className="eyebrow source-code">ข้อมูลแบรนด์ / REM {brand.rem_brand_id}</p><h1>{brand.public_name.th || "แบรนด์ที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={brand.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {date(brand.updated_at)}</p><details className="brand-source-summary" id="brand-source"><summary>ต้นทางแบรนด์ (อ่านอย่างเดียว) · {brand.source?.brand_name_rem || brand.rem_brand_id}</summary><p className="small-text muted">{brand.source ? sourceProvenance(brand.source) : "ยังไม่มีข้อมูลต้นทาง"}</p><dl className="source-list"><div><dt>รหัสแบรนด์ REM</dt><dd>{brand.rem_brand_id}</dd></div><div><dt>ชื่อแบรนด์ต้นทาง</dt><dd>{brand.source?.brand_name_rem || "—"}</dd></div><div><dt>ชื่อต้นทางภาษาอังกฤษ</dt><dd>{brand.source?.brand_name_en_rem || "—"}</dd></div><div><dt>สถานะต้นทาง</dt><dd>{brand.source?.is_deleted ? "ปิดใช้งานหรือลบแล้ว" : "ใช้งานได้"}</dd></div><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(brand.source?.source_updated_at)}</dd></div><div><dt>เวลาสกัดสำเนาต้นทาง</dt><dd>{date(brand.source?.source_snapshot_at)}</dd></div></dl></details></div><BrandStatus brand={brand} changed={changed} hasHistory={versions.length > 0} /></div>
     {comparisonUnavailable && <div className="notice error" role="alert"><p>ยังเปรียบเทียบเวอร์ชันที่เผยแพร่ไม่ได้ โหลดเวอร์ชันก่อนตรวจการเปลี่ยนแปลง</p><button className="button secondary" onClick={() => void loadVersions()}>ลองโหลดเวอร์ชันแบรนด์อีกครั้ง</button></div>}
     {notice && <p className="notice success" role="status">{notice}</p>}

@@ -181,7 +181,7 @@ test('refreshing a media conflict preserves local text without allowing it to ov
 test('model-scoped plan binding also preserves dirty project text and advances its save revision', async ({ page }) => {
   const fixture = await openFixture(page);
   await editText(page);
-  await page.getByRole('tab', { name: /แบบบ้าน/ }).click();
+  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
   const media = page.locator('#model-media');
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();

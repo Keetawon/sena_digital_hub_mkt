@@ -66,9 +66,14 @@
 .brand-favicon-preview > span { display: flex; align-items: center; flex-direction: column; gap: 12px; }
 .brand-favicon-preview img { display: block; object-fit: contain; }
 .brand-favicon-preview small { color: var(--muted); }
-.brand-logo-confirm-table .asset-preview { height: 100px; min-height: 0; }
+.brand-logo-confirm-table .asset-preview { width: 100px; max-width: 100%; height: 100px; min-height: 0; }
 .brand-logo-confirm-table .asset-preview img { width: 100%; height: 100%; object-fit: contain; }
 .brand-logo-rights-results { list-style: none; padding: 0; display: grid; gap: 10px; }
 .brand-logo-rights-results li { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; overflow-wrap: anywhere; }
 .brand-logo-rights-results li > span { font-size: var(--text-small); }
+.brand-logo-rights-results .brand-logo-approval-file { grid-template-columns: 80px minmax(0, 1fr); gap: 16px; align-items: center; }
+.brand-logo-approval-file .asset-preview { width: 80px; max-width: 100%; height: 64px; min-height: 0; }
+.brand-logo-approval-file p { margin-top: 6px; }
+.brand-logo-approval-dates { margin: 16px 0; }
+.brand-logo-approval-dates summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
 @media (max-width: 720px) { .brand-logo-slots { grid-template-columns: minmax(0, 1fr); } }
