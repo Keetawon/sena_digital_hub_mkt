@@ -1622,6 +1622,31 @@
         "blocks": "Unreviewed programme rules",
         "default": "Explicit scope per typed rule; explain approved rules with citations and staff handoff. See docs/30-knowledge-library.md."
       }
+    },
+    {
+      "id": "Q71",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "MKT Project Master (เจ้าของข้อมูลหลักโครงการการตลาด)",
+      "question_th": "โครงการ 00412: กลุ่ม REM คือ C-MIBF-BNGPU แต่ ProjectGroupMaster คือ C-MIGD-BNGPU กลุ่มใดถูกต้อง?",
+      "default_th": "เก็บรหัสทั้งสองพร้อมแหล่งที่มาและแสดงความไม่ตรงกันไว้ รอเจ้าของข้อมูลยืนยัน ไม่แก้รหัสหรือการจับคู่อัตโนมัติ",
+      "links": [
+        {
+          "href": "/?pq=00412&pother=1",
+          "label": "ตรวจโครงการ 00412"
+        },
+        {
+          "href": "/questions#Q71",
+          "label": "คำถามที่รอคำตอบ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q71",
+        "question": "Project 00412: REM group C-MIBF-BNGPU vs ProjectGroupMaster C-MIGD-BNGPU. Which is correct?",
+        "owner": "MKT Project Master",
+        "blocks": "Resolution of project 00412 group mismatch",
+        "default": "Keep both source codes and their provenance visible; await the owner's decision. Never auto-correct the codes or mappings."
+      }
     }
   ]
 }
