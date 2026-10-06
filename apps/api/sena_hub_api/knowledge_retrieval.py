@@ -51,6 +51,8 @@ async def embed(texts):
 def route_question(question,card):
     raw=card.get('status',{}).get('raw')
     if raw==3:return ('closed','โครงการระยะนี้ปิดโครงการแล้ว (สถานะ REM: 3) ไม่แสดงเป็นโครงการที่กำลังขาย กรุณาติดต่อฝ่ายขายเพื่อสอบถามโครงการระยะอื่น')
+    if card and card.get('model_catalogue_complete') is not True and re.search(r'แบบห้อง|แบบบ้าน|ห้องนอน|ห้องน้ำ|พื้นที่ใช้สอย|bedroom|bathroom|unit type|room type|floor plan',question,re.I):
+        return ('model_catalogue_handoff','ยังไม่มีข้อมูลแบบห้องที่ยืนยันครบ กรุณาติดต่อทีมโครงการเพื่อยืนยันแบบและรายละเอียด')
     if INJECTION.search(question):return ('unsafe_instruction','ไม่สามารถทำตามคำสั่งที่ให้เปิดเผยข้อมูลภายในหรือข้ามกติกาได้')
     if re.search(r'(?:เบอร์|ชื่อ|ที่อยู่|ข้อมูล).{0,20}(?:ผู้เช่า|ลูกค้า|บุคคล).{0,10}(?:อื่น|รายอื่น)|personal data|tenant phone',question,re.I):return ('private_request','ไม่สามารถค้นหรือเปิดเผยข้อมูลส่วนบุคคลของผู้อื่นได้')
     if re.search(r'โซลาร์|solar|GSB',question,re.I):

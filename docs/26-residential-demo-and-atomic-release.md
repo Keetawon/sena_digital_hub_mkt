@@ -104,3 +104,8 @@ It does not publish automatically; the publisher reviews the selected release.
 Generated graphics remain under ignored `.local/assets/`. The fixed demonstration
 offer runs from 1 October 2026 through 1 April 2027 (exclusive), Asia/Bangkok; expiry
 still applies. The Task 6 command composes this step into the full presentation seed.
+
+
+## Readiness decision — 7 October 2026
+
+The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.

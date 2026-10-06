@@ -54,7 +54,8 @@ begin
   perform hub.bind_project_asset(p,'90900000-0000-0000-0000-000000000002','master_plan','{"th":"Synthetic project master plan"}',(select updated_at from hub.projects where id=p));
   result:=hub.project_detail(current_setting('test.mm_public'));
   assert (select count(*) from jsonb_array_elements(result->'assets') a where a->>'public_model_id'=current_setting('test.mm_model'))=3, 'Multiple model media or association lost';
-  assert not (result#>>'{readiness,ready}')::boolean, 'Pending model plan did not block publication';
+  assert (result#>>'{readiness,ready}')::boolean, 'Optional pending plan blocked publication';
+  assert exists(select 1 from jsonb_array_elements(result#>'{readiness,recommended}') x where x->>'field'='assets.master_plan' and not (x->>'passed')::boolean);
   select id into binding from hub.entity_assets where project_id=p and model_id=(select id from hub.model_types where public_model_id=current_setting('test.mm_model')) and asset_role='model_image' and deleted_at is null;
   begin perform hub.unbind_project_asset(p,binding,(select updated_at from hub.projects where id=p));
     raise exception 'Project route removed model binding'; exception when no_data_found then null; end;

@@ -137,7 +137,11 @@ def test_real_postgres_staged_sources_model_edit_and_review():
             assert edited["bedrooms"] is None and edited["bathrooms"] == 1.5
             for name in ("rem_model_id", "model_name_rem", "source_fingerprint"):
                 assert edited[name] == model[name]
-            assert not draft["readiness"]["ready"]
+            assert draft["readiness"]["ready"] == original["readiness"]["ready"]
+            assert draft["readiness"]["model_catalogue_complete"] is False
+            assert any(item["field"] == f"models.{model['id']}.specifications" and not item["passed"]
+                       for item in draft["readiness"]["recommended"])
+            assert any(item["rem_model_id"] == model["rem_model_id"] for item in draft["readiness"]["excluded_models"])
             if public_before.status_code == 200:
                 assert client.get(public_path, headers=headers["service_consumer"]).json() == public_before.json()
 

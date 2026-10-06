@@ -221,3 +221,8 @@ This command does not edit Hub drafts, confirm mappings, publish content, query 
 ### Unsaved defaults and guided form update — 20 September 2026
 
 Migration `202609200012_project_gold_preview.sql` adds staff-only `gold_prefill_changes`, calculated by the same helper as explicit prefill. Opening the editor overlays these suggestions in the form without writing to the database. Existing Marketing values, deliberately cleared saved values, other locales and source identity checks remain protected. Serializing an untouched empty field does not count as a meaningful edit. Valid coordinates are suggested as a pair; HYABC has neither in the supplied Gold snapshot and displays missing-coordinate help instead. The original Thai source-quality warnings remain visible. Preview metadata is excluded from consumer publication payloads.
+
+
+## Readiness decision — 7 October 2026
+
+The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.

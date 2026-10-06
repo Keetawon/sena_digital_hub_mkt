@@ -64,7 +64,7 @@ def register_knowledge_routes(app,authentication,database,settings):
     @app.get('/v1/admin/knowledge/projects')
     async def projects(request:Request,actor:Actor=Depends(staff)):
         async with database(request,actor) as db:
-            rows=await db.fetch('SELECT rem_project_id,payload FROM rag.project_fact_cards ORDER BY rem_project_id')
+            rows=await db.fetch("SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload FROM rag.project_fact_cards ORDER BY rem_project_id")
             counts=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.project_ids) p GROUP BY p")
             programmes=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.programme_ids) p GROUP BY p")
             vocabulary_count=await db.fetchval("SELECT count(*) FROM hub.knowledge_candidate_rows() WHERE kind='alias' AND cardinality(project_ids)=0")
@@ -76,7 +76,7 @@ def register_knowledge_routes(app,authentication,database,settings):
     @app.get('/v1/admin/knowledge/projects/{project_id}')
     async def pack(project_id:str,request:Request,actor:Actor=Depends(staff)):
         async with database(request,actor) as db:
-            card=await db.fetchval('SELECT payload FROM rag.project_fact_cards WHERE rem_project_id=$1',project_id)
+            card=await db.fetchval("SELECT payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) FROM rag.project_fact_cards WHERE rem_project_id=$1",project_id)
             if card is None and project_id not in {*PROGRAMMES,'KNOWLEDGE_TERMS'}:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
             card=card or {'name':{'th':PROGRAMMES.get(project_id,'คำศัพท์และชื่อเรียกกลาง')},'status':{'raw':None,'label':'รอตรวจขอบเขตการใช้'},'mode':'DRAFT_PREVIEW'}
             rows=await db.fetch('''SELECT c.*,to_jsonb(r) AS review FROM hub.knowledge_candidate_rows() c
@@ -142,7 +142,7 @@ def register_knowledge_routes(app,authentication,database,settings):
             routed=global_route or ('owner_review_handoff','เนื้อหาและกติกาโปรแกรมยังรอเจ้าของข้อมูลตรวจขอบเขตและช่วงใช้ได้ กรุณาติดต่อเจ้าหน้าที่')
             return {'data':{'route':routed[0],'answer':routed[1],'citations':[],'mode':'DRAFT_PREVIEW'}}
         async with database(request,actor) as db:
-            cards={r['rem_project_id']:r['payload'] for r in await db.fetch('SELECT rem_project_id,payload FROM rag.project_fact_cards')}
+            cards={r['rem_project_id']:r['payload'] for r in await db.fetch("SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload FROM rag.project_fact_cards")}
             if body.project_id and body.project_id not in cards:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
             project=body.project_id
             if not project:

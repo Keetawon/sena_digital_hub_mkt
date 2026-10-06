@@ -299,3 +299,8 @@ flowchart TD
 ```
 
 **ส่วนที่เพิ่มจากตาราง routing เดิม:** ขั้น `/resolve` ข้างหน้า (ไม่งั้น bot ไม่รู้ว่าลูกค้าหมายถึงโครงการไหน) และ **guardrail ตรวจว่าทุกตัวเลขในคำตอบสืบกลับไปหา structured source ได้** — ป้องกันการแต่งราคา/โปรฯ ซึ่งเป็นความเสี่ยงที่ร้ายแรงที่สุดของ chatbot อสังหาฯ
+
+
+## Readiness decision — 7 October 2026
+
+The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.

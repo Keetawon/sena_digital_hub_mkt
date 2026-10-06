@@ -182,3 +182,8 @@ Webhook ไปยัง consumer ที่ลงทะเบียน (ลงล
 | Consumer onboarding และผลทดสอบ | เตรียม restricted test consumer ตามสิทธิ์เดิม ทดสอบ published-only/expiry/cache/webhook ด้วย harness และบันทึกผล review/ข้อบกพร่องของข้อมูลหรือ API ให้ทีม Hub แก้ |
 
 Marketing เติมข้อมูลและสื่อที่ตนเป็นเจ้าของผ่าน back office ส่วน enterprise facts ที่ผิดส่งให้เจ้าของ source แก้ ข้อมูลบังคับที่ขาดยังคงขวาง publication; ช่องว่าง optional ระบุไว้ใน contract ทีมเว็บไซต์นำข้อมูลไป render และดูแลโค้ด integration ของตนเอง การจัดเตรียมข้อมูลไม่รวมการสร้าง page builder หรือเว็บไซต์เชิงพาณิชย์ใน Hub
+
+
+## Readiness decision — 7 October 2026
+
+The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.

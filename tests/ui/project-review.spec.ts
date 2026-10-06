@@ -21,6 +21,7 @@ test('comparison excludes staff metadata and optional modules, detects multiling
 
 test('publish preview lists changed fields, role attribution and ready text; opening it writes nothing', async ({ page }) => {
   const project = fixture(), live = { ...fixture(), public_name: { th: 'ชื่อเดิม', en: 'New' } };
+  project.readiness.excluded_models = [{ rem_model_id: 'REM-PENDING', name: 'แบบรอตรวจ', reason: 'ข้อมูลจำเป็นยังไม่ครบ' }];
   const writes: string[] = [];
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'publisher', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/**', async route => {
@@ -38,6 +39,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await expect(page.locator('.version-list')).toContainText('ผู้เผยแพร่');
   await expect(page.locator('.version-list')).not.toContainText('00000000-');
   await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'ไม่รวมในการเผยแพร่' })).toContainText('REM-PENDING');
   const diff = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลโครงการ' });
   await expect(diff.locator('[data-field]')).toHaveCount(1);
   await expect(diff).toContainText('ชื่อเดิม'); await expect(diff).toContainText('ชื่อใหม่');

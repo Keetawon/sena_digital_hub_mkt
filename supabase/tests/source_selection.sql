@@ -175,8 +175,8 @@ select hub.update_model(current_setting('test.source_a')::uuid,current_setting('
   '{"bedrooms":2.5,"bathrooms":1,"usable_area_sqm":50,"parking_spaces":1}',
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid));
 do $$ begin
-  assert exists(select 1 from jsonb_array_elements(hub.project_readiness(current_setting('test.source_a')::uuid)->'missing')
-    where value->>'field' like 'models.%.match_status'), 'Exact source match bypassed human confirmation';
+  assert exists(select 1 from jsonb_array_elements(hub.project_readiness(current_setting('test.source_a')::uuid)->'recommended')
+    where value->>'field' like 'models.%.match_status' and not (value->>'passed')::boolean), 'Exact source match bypassed human confirmation';
 end $$;
 select hub.review_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid),'CONFIRMED','Human confirmed synthetic A1');
@@ -191,6 +191,10 @@ declare detail jsonb := hub.project_detail(current_setting('test.source_public')
 begin
   assert (detail#>>'{readiness,ready}')::boolean, 'Rejected unwanted model blocked complete confirmed model';
   assert jsonb_array_length(detail->'models')=2, 'Admin lost rejected mapping';
+  assert jsonb_array_length(detail#>'{readiness,required}')=10, 'Required checklist changed unexpectedly';
+  assert (select count(*) from jsonb_array_elements(detail#>'{readiness,recommended}') e where e->>'field' like 'models.%.match_status' or e->>'field' like 'models.%.specifications')=4, 'Each source model needs separate confirmation and specs items';
+  assert (detail#>>'{readiness,percent}')::integer=floor(100.0*(detail#>>'{readiness,passed}')::integer/(detail#>>'{readiness,total}')::integer), 'Completeness denominator mismatch';
+  assert detail#>>'{readiness,model_catalogue_complete}'='false', 'Rejected source model must keep catalogue incomplete';
   select value into item from jsonb_array_elements(detail->'models') where value->>'public_model_id'=current_setting('test.source_model');
   assert item->>'verified_by'='00000000-0000-0000-0000-000000000001' and item->>'verified_at' is not null, 'Human verification attribution missing';
 end $$;
@@ -220,7 +224,7 @@ set local role editor;
 select hub.review_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid),'REJECTED','Human revoked published A1');
 do $$ begin
-  assert not (hub.project_readiness(current_setting('test.source_a')::uuid)->>'ready')::boolean, 'No confirmed included model passed readiness';
+  assert (hub.project_readiness(current_setting('test.source_a')::uuid)->>'ready')::boolean, 'Models blocked required-only gate';
   assert hub.project_detail(current_setting('test.source_public'))->'publication_available'='false'::jsonb,
     'Rejected published mapping still reported available in admin';
   assert (select verified_by is null and verified_at is null from hub.model_types where public_model_id=current_setting('test.source_model')),
@@ -232,8 +236,11 @@ do $$ begin
 end $$;
 set local role publisher;
 do $$ begin
-  begin perform hub.publish_project(current_setting('test.source_a')::uuid,'No remaining models'); raise exception 'Published without included model';
-    exception when check_violation then null; end;
+  begin
+    perform hub.publish_project(current_setting('test.source_a')::uuid,'Synthetic publication with no eligible models');
+    assert (select jsonb_array_length(v.payload->'models')=0 and v.payload->>'model_catalogue_complete'='false' from hub.entity_versions v join hub.projects p on p.published_version_id=v.id where p.public_project_id=current_setting('test.source_public'));
+    raise exception 'rollback test publication' using errcode='P0004';
+  exception when assert_failure then if SQLERRM<>'rollback test publication' then raise; end if; end;
 end $$;
 set local role editor;
 select hub.review_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),

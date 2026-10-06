@@ -76,7 +76,7 @@ begin
   assert jsonb_array_length(result->'assets')=10, 'Project response lost a role collection';
   assert (select count(distinct display_order) from hub.entity_assets where project_id=p and deleted_at is null)=10,
     'Appended project attachments lost deterministic ordering';
-  assert not (result#>>'{readiness,ready}')::boolean, 'Unapproved secondary image did not block publication';
+  assert (result#>>'{readiness,ready}')::boolean, 'Optional unapproved secondary image blocked publication';
   select updated_at into stamp from hub.projects where id=p;
   begin
     perform hub.bind_project_asset(p,'91300000-0000-0000-0000-000000000003','hero','{"th":"Wrong MIME"}',stamp);

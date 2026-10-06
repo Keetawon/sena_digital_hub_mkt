@@ -399,3 +399,8 @@ role at migration `0027`, while retaining earlier migration inventories. The fin
 browser run waits for the replacement favicon filename before examining its
 previews, avoiding an assertion against the earlier desktop fixture during the
 mobile upload. No hosted database was contacted or changed.
+
+
+## Readiness decision — 7 October 2026
+
+The product owner split publication requirements from recommended completeness. The [current contract](31-readiness-and-review.md) supersedes earlier model-blocking rules in this document. Models never block publication; only confirmed models with complete required specs enter new versions. Optional media with pending/expired rights is omitted. Existing versions remain immutable. `model_catalogue_complete` is frozen in new project payloads and appended as a nullable boolean in `hub_export.project_published` (NULL for older versions). Draft fact cards expose current completeness; published fact cards use the frozen value. Incomplete/unknown catalogues cause a chatbot handoff for room/specification questions.

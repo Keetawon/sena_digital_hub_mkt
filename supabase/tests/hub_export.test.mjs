@@ -72,6 +72,8 @@ test('DW sees frozen publications, original project logo roles and eligibility; 
     const before = await published();
     assert.equal(before.brands.length, 1);
     assert.equal(before.projects.length, 1);
+    assert.equal(before.projects[0].model_catalogue_complete, true);
+    assert.equal(before.projects[0].model_catalogue_complete, true);
     assert.equal(before.brands[0].published_version_id, fixture.published_version_id);
     assert.equal(before.projects[0].published_version_id, fixture.project_version);
     assert.deepEqual(before.brands[0].logo_roles_present, ['favicon', 'logo_mono', 'logo_primary', 'logo_white']);
