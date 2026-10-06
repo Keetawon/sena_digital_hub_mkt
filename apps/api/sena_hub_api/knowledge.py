@@ -11,6 +11,7 @@ from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
 from . import assets
 from .knowledge_retrieval import embed,rank,route_question,answer_from_ranked,normalize
+from .knowledge_progress import read_summaries
 
 ROOT=Path(__file__).resolve().parents[3]
 PROGRAMMES={'LIVNEX':'LivNex','LIVNEX_GOLD':'LivNex Gold','RENTNEX':'RentNex','RENTNEX_BENEFIT':'RentNex Benefit','RENTNEX_INVEST':'RentNex Invest'}
@@ -68,8 +69,9 @@ def register_knowledge_routes(app,authentication,database,settings):
             counts=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.project_ids) p GROUP BY p")
             programmes=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.programme_ids) p GROUP BY p")
             vocabulary_count=await db.fetchval("SELECT count(*) FROM hub.knowledge_candidate_rows() WHERE kind='alias' AND cardinality(project_ids)=0")
+            summaries=await read_summaries(db,[r['rem_project_id'] for r in rows])
         totals={r['p']:r['count'] for r in counts}
-        return {'data':[{'project_id':r['rem_project_id'],'card':r['payload'],'candidates':totals.get(r['rem_project_id'],0)} for r in rows]+
+        return {'data':[{'project_id':r['rem_project_id'],'card':r['payload'],'candidates':totals.get(r['rem_project_id'],0),'progress':summaries[r['rem_project_id']]} for r in rows]+
             [{'project_id':r['p'],'card':{'name':{'th':PROGRAMMES.get(r['p'],r['p'])},'status':{'raw':None,'label':'เนื้อหาโปรแกรม รอตรวจขอบเขต'},'mode':'DRAFT_PREVIEW'},'candidates':r['count']} for r in programmes]+
             ([{'project_id':'KNOWLEDGE_TERMS','card':{'name':{'th':'คำศัพท์และชื่อเรียกกลาง'},'status':{'raw':None,'label':'คำศัพท์ ไม่ใช่โครงการ'},'mode':'DRAFT_PREVIEW'},'candidates':vocabulary_count}] if rows else [])}
 

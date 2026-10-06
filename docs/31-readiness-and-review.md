@@ -25,3 +25,13 @@ An ordinary keyboard-operable button with `aria-expanded` opens required/recomme
 Knowledge counts include every staged candidate applicable to the project and every recorded MKT decision (accepted, rejected or missing). Reviewing a candidate does not mean accepting or publishing it. The dashboard is staff-only and performs no writes.
 
 Validation for B: typecheck/build passed; 1,366 API tests passed / 11 skipped; database checks passed; 11 project-dashboard/group UI tests passed on the production server, including keyboard expansion, field focus, pinned identity/header and mobile overflow.
+
+## C. Knowledge progress
+
+The `/knowledge` dashboard contains one row for each staged pilot fact card, excluding programme and vocabulary queues. It uses all project-applicable candidates as the denominator and recorded decisions as the numerator. Pending counts identify sections, FAQs, facts, assets and promotions; other candidate types remain counted and are labelled separately. Holds without a resolved decision are conflicts. Imported gap candidates plus additional named gaps are shown without inflating the count with repeated preview no-answer logs.
+
+No legacy narrative/FAQ coverage shows `ไม่มี KM เดิม · ต้องเขียนใหม่` and an explicit reviewed/staged count for other sources. Last review shows Bangkok time and a staff name/role, never an opaque UUID. A complete review does not imply acceptance or publication. No published knowledge versions exist in this increment; the published state is reserved for an actual publication record, never inferred from 100% review or a private preview.
+
+Project links retain exact IDs in the queue URL; an unknown/non-pilot ID shows a missing-package message rather than silently opening a different project. Pending/conflict filters are read-only. A saved review refreshes both the queue and summary.
+
+Validation for C: typecheck/build passed; 1,369 API tests passed / 11 skipped; database checks passed; all 5 knowledge dashboard/review browser tests passed against the production build.

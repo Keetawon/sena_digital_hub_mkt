@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import "./knowledge-review.css";
+import { KnowledgeDashboard, type KnowledgeProject } from "./knowledge-dashboard";
 type Json = Record<string, unknown>;
 type Card = { name: { th: string }; status: { raw: number | null; label: string }; mode: string };
 type Review = { revision: number; decision: string; applies_to_project_ids: string[]; sena_owned: boolean; asset_role: string; alt_th: string };
@@ -19,7 +20,7 @@ function text(value: unknown): string {
   return value == null ? "ยังไม่มีข้อมูล" : JSON.stringify(value, null, 2);
 }
 export function KnowledgeReview({ role }: { role: string }) {
-  const [projects, setProjects] = useState<{ project_id: string; card: Card; candidates: number }[]>([]);
+  const [projects, setProjects] = useState<KnowledgeProject[]>([]);
   const [project, setProject] = useState(""); const [pack, setPack] = useState<Pack | null>(null);
   const [kind, setKind] = useState("section"); const [page, setPage] = useState(1);
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false); const [notice, setNotice] = useState("");
@@ -30,13 +31,14 @@ export function KnowledgeReview({ role }: { role: string }) {
   const [rights, setRights] = useState(false); const [question, setQuestion] = useState(""); const [answer, setAnswer] = useState<Json | null>(null);
   const dialog = useRef<HTMLDialogElement>(null); const opener = useRef<HTMLElement | null>(null);
   const canEdit = role === "editor" || role === "admin";
-  useEffect(() => { let current = true; api<typeof projects>("projects").then(rows => { if (current) { setProjects(rows); setProject(rows[0]?.project_id || ""); } }).catch(e => setError(e.message)); return () => { current = false; }; }, []);
+  useEffect(() => { let current = true; api<typeof projects>("projects").then(rows => { if (current) { setProjects(rows); const query = new URLSearchParams(window.location.search); const requested = query.get("project"); setProject(requested ? rows.find(p => p.project_id === requested)?.project_id || "" : rows[0]?.project_id || ""); if (requested && !rows.some(p => p.project_id === requested)) setNotice(`ยังไม่มีชุดความรู้สำหรับโครงการ ${requested}`); if (query.get("kind") && kinds[query.get("kind")!]) setKind(query.get("kind")!); } }).catch(e => setError(e.message)); return () => { current = false; }; }, []);
   useEffect(() => {
     if (!project) return; let current = true; setPack(null); setPage(1); setSelected(new Set()); setAnswer(null);
     api<Pack>(`projects/${encodeURIComponent(project)}`).then(value => { if (current) setPack(value); }).catch(e => { if (current) setError(e.message); }); return () => { current = false; };
   }, [project]);
   useEffect(() => { if (editing || rights) dialog.current?.showModal(); else dialog.current?.close(); }, [editing, rights]);
-  async function reload() { setPack(await api<Pack>(`projects/${encodeURIComponent(project)}`)); }
+  async function reload() { const [next, list] = await Promise.all([api<Pack>(`projects/${encodeURIComponent(project)}`),api<KnowledgeProject[]>("projects")]); setPack(next); setProjects(list); }
+  function selectProject(id: string) { setProject(id); setNotice(""); const url=new URL(window.location.href); url.searchParams.set("project",id); url.hash="knowledge-queue"; window.history.replaceState(null,"",url); document.getElementById("knowledge-queue")?.scrollIntoView({block:"start"}); }
   function close() { setEditing(null); setRights(false); opener.current?.focus(); }
   function start(item: Item, decision: string, trigger: HTMLElement) {
     opener.current = trigger; setEditing(item); setChoice(decision); setReason(""); setOwned(item.review?.sena_owned || false);
@@ -56,7 +58,8 @@ export function KnowledgeReview({ role }: { role: string }) {
   return <section className="knowledge-page">
     <header><p>คลังความรู้โครงการ · พื้นที่ส่วนตัวในเครื่อง</p><h1>ตรวจข้อมูลก่อนนำเข้า</h1><p>ตรวจเนื้อหา ระบุระยะโครงการ และยืนยันแหล่งที่มา ข้อมูลทั้งหมดเป็นหลักฐานหรือฉบับร่าง ยังไม่มีการเผยแพร่</p></header>
     {error && <p role="alert" className="error">{error}</p>}{notice && <p role="status">{notice}</p>}
-    <div className="knowledge-controls"><label>โครงการหรือระยะ<select value={project} onChange={e => setProject(e.target.value)}>{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.card.name.th} · {p.project_id}</option>)}</select></label><label>ประเภทข้อมูล<select value={kind} onChange={e => { setKind(e.target.value); setPage(1); }}>{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label} ({pack?.items.filter(i => i.kind === key).length || 0})</option>)}</select></label></div>
+    <KnowledgeDashboard projects={projects} onSelect={selectProject} />
+    <div className="knowledge-controls" id="knowledge-queue"><label>โครงการหรือระยะ<select value={project} onChange={e => selectProject(e.target.value)}><option value="" disabled>เลือกโครงการ</option>{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.card.name.th} · {p.project_id}</option>)}</select></label><label>ประเภทข้อมูล<select value={kind} onChange={e => { setKind(e.target.value); setPage(1); }}>{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label} ({pack?.items.filter(i => i.kind === key).length || 0})</option>)}</select></label></div>
     {!project && !error && <p>ยังไม่มีชุดข้อมูลนำร่องที่นำเข้าแล้ว</p>}{project && !pack && <p role="status">กำลังโหลดชุดตรวจข้อมูล…</p>}
     {pack && <><div className="knowledge-status"><strong>{pack.card.name.th}</strong><span>สถานะ REM: {pack.card.status.label} ({pack.card.status.raw ?? "ไม่ทราบค่า"})</span></div>
       {project === "TPRAK" && <p className="knowledge-warning">ระยะนี้ปิดโครงการแล้ว ห้ามผูกเนื้อหาการขาย โปรโมชั่น หรือข้อเท็จจริงปัจจุบันจากหน้าร่วมกับ SK2TR</p>}
