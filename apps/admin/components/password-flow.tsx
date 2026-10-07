@@ -53,6 +53,7 @@ export function PasswordFlow({ mode }: { mode: "signup" | "verify" | "recovery" 
     finally { setBusy(false); }
   }
   return <main className="hosted-login"><section className="registry-panel"><h1>{mode === "recovery" ? "ลืมรหัสผ่าน" : mode === "verify" ? "ยืนยันอีเมล" : "สมัครด้วยอีเมล"}</h1><form onSubmit={submit}>
+    {mode === "verify" && <p>ถ้าไม่ได้รับรหัสภายในไม่กี่นาที อีเมลนี้อาจมีบัญชีอยู่แล้ว ลองเข้าสู่ระบบด้วย Google หรือใช้ลืมรหัสผ่าน</p>}
     {stage !== "done" && <div className="form-field"><label htmlFor="otp-email">อีเมล</label><input id="otp-email" type="email" autoComplete="email" required value={email} readOnly={stage === "password"} onChange={e => setEmail(e.target.value)} /></div>}
     {(mode === "signup" && stage === "start" || stage === "password") && <><div className="form-field"><label htmlFor="new-password">รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)</label><input id="new-password" name="password" type="password" minLength={12} required autoComplete="new-password" /></div><div className="form-field"><label htmlFor="confirm-password">ยืนยันรหัสผ่าน</label><input id="confirm-password" name="confirm" type="password" minLength={12} required autoComplete="new-password" /></div></>}
     {stage === "verify" && <div className="form-field"><label htmlFor="otp-code">รหัส 6 หลัก</label><input id="otp-code" name="code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required /></div>}

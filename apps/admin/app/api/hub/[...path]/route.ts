@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback, localRequestOrigin } from "@/lib/local-session";
 import { isContentStaff, isHubStaff } from "@/lib/staff";
 import { getHostedCaller } from "@/lib/hosted-session";
+import { HubApiUnavailable, unavailableMessage } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
@@ -29,9 +30,11 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (!hosted && (!isLocalMode() || !localRequestOrigin(request))) {
     return error("ยังไม่เปิดใช้งานการยืนยันตัวตนสำหรับสภาพแวดล้อมนี้", 503);
   }
-  const caller = hosted ? await getHostedCaller() : null;
+  let caller: Awaited<ReturnType<typeof getHostedCaller>> = null;
+  try { caller = hosted ? await getHostedCaller() : null; }
+  catch (failure) { if (failure instanceof HubApiUnavailable) return error(unavailableMessage, 503); throw failure; }
   const role = hosted ? (caller ? caller.role || "viewer" : null) : await getLocalRole();
-  if (!role) return error("กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
+  if (!role) return error(hosted ? "กรุณาเข้าสู่ระบบ" : "กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
   const path = (await context.params).path.join("/");
   const method = request.method as keyof typeof allowed;
   if (hosted && !h1AllowsApi(path, method)) return error(h1Unavailable, 403);

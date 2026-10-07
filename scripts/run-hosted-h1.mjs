@@ -12,7 +12,7 @@ import { simulateHostedTest } from './simulate-hosted-test.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
 if(args.some(x=>!['--test','--existing-simulation','--api-only','--admin-only'].includes(x)) || (component && !args.includes('--existing-simulation'))) throw new Error('Invalid local simulation arguments');
-const children=[];let database,mock,closing=false,adminProcess;
+const children=[];let database,mock,closing=false,adminProcess,apiProcess;
 function child(command,arguments_,env,cwd=root) {
   const process_=spawn(command,arguments_,{cwd,env,stdio:'inherit',windowsHide:true});children.push(process_);return process_;
 }
@@ -53,15 +53,15 @@ try {
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {mock=createMockSupabase();mock.listen(54329,'127.0.0.1');await once(mock,'listening');}
   if(component!=='admin') {
-    const api=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','uvicorn','sena_hub_api.main:create_app','--factory','--host','127.0.0.1','--port','8001','--no-proxy-headers','--no-access-log'],env);
-    await ready('http://127.0.0.1:8001/health',api);
+    apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','uvicorn','sena_hub_api.main:create_app','--factory','--host','127.0.0.1','--port','8001','--no-proxy-headers','--no-access-log'],env);
+    await ready('http://127.0.0.1:8001/health',apiProcess);
   }
   if(component!=='api') {
     adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
     await ready('http://127.0.0.1:3001/login',adminProcess);
   }
   if(args.includes('--test')) {
-    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
+    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
     const [code]=await once(tests,'exit');
     if(code!==0) {await stop();process.exit(code??1);}
     // Restart only this runner's owned Next process to exercise configuration-off
@@ -74,7 +74,22 @@ try {
     adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],off,path.join(root,'apps/admin'));
     await ready('http://127.0.0.1:3001/login',adminProcess);
     const flagTests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/accounts-flags-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1-flags')],{...off,PLAYWRIGHT_CHANNEL:'msedge'});
-    const [flagCode]=await once(flagTests,'exit');await stop();process.exit(flagCode??1);
+    const [flagCode]=await once(flagTests,'exit');
+    if(flagCode!==0) {await stop();process.exit(flagCode??1);}
+    // Restore enabled providers for the OAuth outage/retry check.
+    const flagsAdminExited=once(adminProcess,'exit');
+    if(process.platform==='win32') await new Promise(resolve=>execFile('taskkill',['/PID',String(adminProcess.pid),'/T','/F'],{windowsHide:true},()=>resolve()));
+    else adminProcess.kill('SIGTERM');
+    await flagsAdminExited;
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
+    await ready('http://127.0.0.1:3001/login',adminProcess);
+    // Replace only this runner's API with a test-owned loopback outage double.
+    const apiExited=once(apiProcess,'exit');
+    if(process.platform==='win32') await new Promise(resolve=>execFile('taskkill',['/PID',String(apiProcess.pid),'/T','/F'],{windowsHide:true},()=>resolve()));
+    else apiProcess.kill('SIGTERM');
+    await apiExited;
+    const outage=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/accounts-outage-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1-outage')],{...env,HUB_ACCOUNT_OUTAGE_TEST:'1',PLAYWRIGHT_CHANNEL:'msedge'});
+    const [outageCode]=await once(outage,'exit');await stop();process.exit(outageCode??1);
   }else{
     console.log(`H1 local ${component??'demo'} ready. No hosted requests or provisioning. Ctrl+C stops owned processes.`);
     for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await stop();process.exit(0);});

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { hostedConfig, isHostedMode } from "./lib/hosted-config";
+import { readHubAccount, unavailablePage } from "./lib/hub-account";
 
 export async function proxy(request: NextRequest) {
   if (!isHostedMode()) return NextResponse.next();
@@ -23,9 +24,18 @@ export async function proxy(request: NextRequest) {
     destination.searchParams.set("next", path + request.nextUrl.search);
   } else if (user && !publicPage && path !== "/account/request" && !path.startsWith("/api/")) {
     const { data: { session } } = await client.auth.getSession();
-    const me = await fetch(`${config.apiOrigin}/v1/me`, { headers: { Authorization: `Bearer ${session?.access_token}` }, cache: "no-store" });
-    const account = me.ok ? (await me.json()).data : null;
-    if (!account || account.status !== "ACTIVE") destination = new URL("/account/request", config.adminOrigin);
+    try {
+      const { status, account } = await readHubAccount(config.apiOrigin, session?.access_token || "");
+      if (status === 401) {
+        destination = new URL("/login", config.adminOrigin);
+        destination.searchParams.set("next", path + request.nextUrl.search);
+      } else if (status === 403 || account?.status !== "ACTIVE") destination = new URL("/account/request", config.adminOrigin);
+    } catch {
+      const page = unavailablePage();
+      const unavailable = new NextResponse(page.body, { status: 503, headers: page.headers });
+      response.cookies.getAll().forEach(cookie => unavailable.cookies.set(cookie));
+      return unavailable;
+    }
   }
   if (!config.password && ["/signup", "/signup/verify", "/login/forgot"].includes(path)) destination = new URL("/login", config.adminOrigin);
   if (destination) {

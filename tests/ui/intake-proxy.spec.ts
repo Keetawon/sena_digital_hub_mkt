@@ -57,9 +57,10 @@ test('viewer cannot write through newly allowed endpoints', async ({ request }) 
 test('unknown endpoints and unsupported consumer persona remain blocked locally', async ({ request }) => {
   const unknown = await safeError(await request.get(`${type}/unsupported`, { headers: editorHeaders }), 404);
   expect(unknown.error.code).toBeUndefined();
-  await safeError(await request.get(`${project}/commercial-types`, {
+  const signedOut = await safeError(await request.get(`${project}/commercial-types`, {
     headers: { Cookie: 'sena_local_persona=service_consumer' },
   }), 401);
+  expect(signedOut.error.message).toBe('กรุณาเลือกบัญชีทดสอบก่อนใช้งาน');
 });
 
 test('cross-origin commercial and amenity writes are rejected before upstream validation', async ({ request }) => {

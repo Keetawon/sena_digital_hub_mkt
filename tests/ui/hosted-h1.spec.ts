@@ -45,7 +45,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
       const issuance = await page.request.post('/api/hub/v1/admin/ads/registrations', { headers: { Origin: origin }, data: {} });
       expect(issuance.status()).toBe(403);
       await page.getByRole('button', { name: 'ออกจากระบบ', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบพื้นที่ทดสอบ' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
       expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(401);
     });
   }
@@ -146,7 +146,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
     await page.context().addCookies([{ ...cookie!, value: `base64-${Buffer.from(JSON.stringify(session)).toString('base64url')}` }]);
     expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(401);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบพื้นที่ทดสอบ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
   });
 
   test('login rejects a control-character external return target', async ({ page }) => {

@@ -29,7 +29,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
     return true;
   }
   function newUser(email, provider) {
-    const user = { id: randomUUID(), email, aud:'authenticated', role:'authenticated', app_metadata:{provider,providers:[provider]}, user_metadata:{full_name:'ผู้สมัคร สมมติ'}, created_at:new Date(now()).toISOString() };
+    const user = { id: randomUUID(), email, aud:'authenticated', role:'authenticated', app_metadata:{provider,providers:[provider]}, user_metadata:{full_name:provider==='google'?'Synthetic Google User':'ผู้สมัคร สมมติ'}, created_at:new Date(now()).toISOString() };
     users.push(user); return user;
   }
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });

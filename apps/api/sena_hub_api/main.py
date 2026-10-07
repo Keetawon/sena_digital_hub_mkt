@@ -303,10 +303,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "ฟิลด์นี้ไม่อนุญาตให้แก้ไข" if issue["type"] == "extra_forbidden" else "รูปแบบหรือค่าของข้อมูลไม่ถูกต้อง"
             ),
         } for issue in error.errors()]
+        if request.url.path == '/v1/me/access-request':
+            from .accounts import ACCESS_FIELD_MESSAGES
+            for detail in details:
+                detail['message'] = ACCESS_FIELD_MESSAGES.get(detail['field'].split('.')[0], detail['message'])
         return JSONResponse({"error": {"code": "validation_error", "message": "กรุณาตรวจข้อมูลที่ระบุ", "details": details}}, 422)
 
     @app.exception_handler(asyncpg.PostgresError)
     async def postgres_error(request, error):
+        from .accounts import ACCOUNT_ERRORS
+        if error.detail in ACCOUNT_ERRORS:
+            status, message = ACCOUNT_ERRORS[error.detail]
+            return JSONResponse({"error": {"code": error.detail, "message": message}}, status)
         errors = {
             "42501": (403, "forbidden", "สิทธิ์ของคุณไม่อนุญาตให้ดำเนินการนี้"),
             "23514": (422, "not_ready", "ข้อมูลยังไม่ผ่านเงื่อนไข กรุณาตรวจรายการที่ยังขาดและสิทธิ์สื่อ"),

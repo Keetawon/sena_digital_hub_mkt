@@ -213,6 +213,11 @@
       "name": "202610070042_hub_accounts.sql",
       "canonical_sha256": "5a7b01b05bfd2bfd22215ea2ffe80ef58d55b74f036a4f266682cf8cf29593db",
       "executed_sha256": "5a7b01b05bfd2bfd22215ea2ffe80ef58d55b74f036a4f266682cf8cf29593db"
+    },
+    {
+      "name": "202610070043_account_request_followup.sql",
+      "canonical_sha256": "99f621ed32d3be869343efadf7316d2cbd9a858346d50a0c76a0d632183052d6",
+      "executed_sha256": "99f621ed32d3be869343efadf7316d2cbd9a858346d50a0c76a0d632183052d6"
     }
   ]
 }

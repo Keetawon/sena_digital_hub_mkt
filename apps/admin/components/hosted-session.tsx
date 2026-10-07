@@ -80,7 +80,7 @@ export function HostedLogin({ next }: { next: string }) {
       await afterSignIn(next);
     } catch { setError("เข้าสู่ระบบไม่สำเร็จ ตรวจสอบอีเมลและรหัสผ่าน"); setPending(false); }
   }
-  return <main className="hosted-login"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub · {config?.label}</p><h1>เข้าสู่ระบบพื้นที่ทดสอบ</h1>{config ? <>
+  return <main className="hosted-login"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub · {config?.label}</p><h1>เข้าสู่ระบบ</h1>{config ? <>
     {config.google && <button className="button secondary" disabled={pending} onClick={async () => {
       setPending(true); const { error } = await hostedBrowser(config).auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${config.adminOrigin}/auth/callback?next=${encodeURIComponent(next)}`, scopes: "openid email profile" } });
       if (error) { setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่"); setPending(false); }

@@ -6,6 +6,23 @@ from pydantic import BaseModel, ConfigDict, Field, AwareDatetime
 
 from .auth import Actor, failure
 
+ACCESS_FIELD_MESSAGES = {
+    'display_name_th': 'กรอกชื่อและนามสกุลภาษาไทย ไม่เกิน 200 ตัวอักษร',
+    'phone': 'กรอกเบอร์โทรศัพท์ 8–30 ตัวอักษร ใช้ตัวเลข ช่องว่าง วงเล็บ ขีด และ + ที่ต้นเบอร์เท่านั้น',
+    'team': 'กรอกทีม หรือบริษัทเอเจนซี ไม่เกิน 200 ตัวอักษร',
+    'requested_tasks': 'เลือกงานที่ต้องการทำอย่างน้อยหนึ่งข้อจากรายการ',
+    'reason': 'กรอกเหตุผล หรือโครงการที่รับผิดชอบ ไม่เกิน 2,000 ตัวอักษร',
+    'privacy_acknowledged': 'กรุณารับทราบประกาศความเป็นส่วนตัว',
+}
+
+ACCOUNT_ERRORS = {
+    'account_self_decision': (403, 'ไม่สามารถตัดสินใจหรือเปลี่ยนสิทธิ์ของบัญชีตนเองได้'),
+    'account_last_admin': (403, 'ต้องเหลือผู้ดูแลระบบที่ใช้งานอยู่ อย่างน้อยหนึ่งคน'),
+    'account_agency_invalid': (422, 'กรุณาเลือกรหัสเอเจนซีที่ถูกต้องและยังใช้งานอยู่'),
+    'account_reject_reason': (422, 'กรุณาระบุเหตุผลที่ปฏิเสธ'),
+    'account_anonymised': (422, 'เปิดคำขออีกครั้งไม่ได้ เนื่องจากลบข้อมูลส่วนบุคคลแล้ว'),
+}
+
 
 class AccessRequest(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
@@ -19,7 +36,7 @@ class AccessRequest(BaseModel):
 
 class Decision(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    action: Literal['approve', 'role', 'suspend', 'reactivate', 'reject']
+    action: Literal['approve', 'role', 'suspend', 'reactivate', 'reject', 'reopen']
     hub_role: Literal['viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency'] | None = None
     agency_code: str | None = Field(default=None, max_length=20)
     note: str = Field(default='', max_length=2000)

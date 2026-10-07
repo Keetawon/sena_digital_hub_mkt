@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getLocalRole } from "./local-session";
 import { hostedConfig, isHostedMode, accountRole } from "./hosted-config";
+import { HubApiUnavailable, readHubAccount } from "./hub-account";
 
 export const getHostedCaller = cache(async () => {
   const config = hostedConfig();
@@ -19,11 +20,11 @@ export const getHostedCaller = cache(async () => {
   if (!session) return null;
   // Verify the exact bearer we forward; the cached cookie's user/role is untrusted.
   const { data: { user }, error } = await client.auth.getUser(session.access_token);
+  if (error && (!error.status || error.status >= 500)) throw new HubApiUnavailable();
   if (error || !user) return null;
-  const response = await fetch(`${config.apiOrigin}/v1/me`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store", signal: AbortSignal.timeout(10000) });
-  if (!response.ok) return null;
-  const { data: account } = await response.json();
-  return { role: accountRole(account), account, token: session.access_token };
+  const { status, account } = await readHubAccount(config.apiOrigin, session.access_token);
+  if (status === 401) return null;
+  return { role: account ? accountRole(account) : null, account, token: session.access_token };
 });
 
 export async function getHubRole() { return isHostedMode() ? (await getHostedCaller())?.role ?? null : getLocalRole(); }

@@ -72,6 +72,18 @@ reason and audit history. Approve with a chosen role (plus agency code), change
 role, suspend, reactivate, or reject with a reason. Native confirmation dialogs
 protect granting admin and suspension. Errors leave typed fields intact.
 
+The pending tab and sidebar count submitted requests only. Signed-in accounts
+without a submission appear under **ยังไม่ส่งคำขอ**, without Approve. Google names
+without Thai characters are placeholders; Thai field errors retain typed text.
+Phone validation accepts the same characters and length as the API. Decision
+errors distinguish self decisions, the last active admin, agency codes, missing
+rejection reasons and stale rows. Notes are visible to the applicant.
+
+Admins can **เปิดรับคำขออีกครั้ง** (`reopen`) on a rejected account that has not been
+anonymised. The prior rejection note is preserved in private audit history. The
+row becomes PENDING with its request text intact, but must acknowledge privacy
+and submit again before approval. Retention also scrubs audit note text.
+
 Security-definer decisions recheck the actor in the table, forbid self decisions,
 require an unchanged `updated_at`, and serialize concurrent decisions under a
 transaction lock. At least one active admin remains. App roles cannot directly
@@ -84,6 +96,12 @@ the anonymous transition record remains. The purge is the sole operator-only
 exception to append-only events and cannot be invoked by app roles. Later sign-in
 does not restore scrubbed fields. Schedule this command daily when hosting is
 authorized; the local MVP has no hosted scheduler.
+**Purge scheduling owner: TBD at hosting time.**
+
+Operations must maintain **at least two ACTIVE admins**. `promote-admin` works
+only when no active admin exists. A single admin locked out of their Auth account
+has no in-app administrative recovery path; the bootstrap command does not
+override that existing admin.
 
 ```powershell
 uv run --project apps/api python scripts/hub-accounts.py promote-admin --email synthetic@example.test
@@ -129,6 +147,19 @@ the repo, chat, Next environment or API environment.
 7. **Hosted acceptance must prove identity linking:** password signup and Google
    sign-in with the same verified email resolve to one Auth UUID and one Hub row.
    The protocol mock simulates linking; it cannot establish hosted provider behavior.
+8. Confirm-email enforcement: sign up with a password but never enter the OTP;
+   password sign-in must fail and no session may be issued.
+9. Confirm **Site URL equals the admin origin**. Google OAuth must return through
+   `/auth/callback?next=...` successfully, including a valid internal deep link.
+   An external `next` must still fall back to a safe internal route.
+
+API outages are separate from an expired session. `/v1/me` has a ten-second
+timeout. Network failures, 5xx and invalid responses show **ระบบขัดข้องชั่วคราว
+กรุณาลองใหม่**; the browser URL/session remain intact. The Hub proxy returns 503,
+so it does not show the 401 session-expired banner. Only authentication/access
+responses and account status trigger sign-in/access-request redirects. If an
+outage follows OAuth code exchange, Retry uses the saved session and the safe
+internal destination, without exchanging the one-time code again.
 
 ## Verification and follow-up
 
@@ -162,6 +193,23 @@ Local verification on 7 October 2026:
 - Local UI suite: 203 of 205 initially passed; two obsolete role-label assertions
   were changed to expect the synthetic display name. All four tests in the two
   affected files then passed. Desktop and mobile account screenshots were reviewed.
+
+Follow-up verification after `7222c2c`, 7 October 2026:
+
+- Typecheck and the offline Webpack production build passed.
+- Full API suite: **1,420 passed, 11 skipped**, including per-field Thai errors,
+  phone parity, distinct decision errors, reopening, stale versions and retention.
+- DB suite passed, including competing reopen decisions (one audit event),
+  anonymised-request denial, last-admin protection and existing agency isolation.
+- H1 simulation: **11 protocol/profile tests and 33 browser tests passed**
+  (25 account/H1, 3 configuration/credential-boundary, 5 outage tests). The 43
+  migrations apply under simulated managed permissions. Browser checks cover
+  input retention, submitted-only counts, agency gating, rejection history,
+  resubmission, 10-second timeouts, 503 versus 401/403, and OAuth outage retry.
+- Full local UI suite: **205 passed**. The five intake-proxy tests also passed
+  after adding an explicit unchanged local-demo 401 wording assertion.
+- Thai validation and reopened-request history screenshots were reviewed locally.
+  All identities and OTP delivery were synthetic; no hosted acceptance was run.
 
 Sign-in-method question: **DECIDED, owner 7 Oct 2026: Google or email/password,
 self-registration, verified email and Hub admin approval**. Non-blocking IT
