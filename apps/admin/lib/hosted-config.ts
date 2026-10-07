@@ -1,14 +1,11 @@
 import type { LocalRole } from "./local-session";
 
-export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean };
+export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean; google: boolean; password: boolean; label: string; adminContact: string };
 
-export function verifiedRole(metadata: Record<string, unknown>): LocalRole | null {
-  const role = metadata.hub_role;
-  if (typeof role !== "string") return null;
-  if (["editor", "publisher", "viewer", "admin", "online_staff"].includes(role)) return role as LocalRole;
-  if (role === "agency" && metadata.hub_agency === "KIN") return "agency_kin";
-  if (role === "agency" && metadata.hub_agency === "COMBAY") return "agency_combay";
-  return null;
+export function accountRole(account: { status?: string; role?: string; agency?: string }): LocalRole | null {
+  if (account.status !== "ACTIVE") return null;
+  if (account.role === "agency") return account.agency === "KIN" ? "agency_kin" : account.agency === "COMBAY" ? "agency_combay" : "agency";
+  return ["editor", "publisher", "viewer", "admin", "online_staff"].includes(account.role || "") ? account.role as LocalRole : null;
 }
 
 export function isHostedMode() { return process.env.HUB_ENV === "hosted-test" && process.env.HUB_AUTH_MODE === "supabase"; }
@@ -29,7 +26,7 @@ export function hostedConfig(): HostedConfig | null {
     const url = new URL(value);
     if (url.origin !== value || url.username || url.password || (simulation ? value !== local : url.protocol !== "https:" || /^(localhost|127\.|\[::1\])/.test(url.hostname))) throw new Error("Hosted H1 origin is not allowed");
   }
-  return { supabaseUrl, publishableKey, apiOrigin, adminOrigin, simulation };
+  return { supabaseUrl, publishableKey, apiOrigin, adminOrigin, simulation, google: runtime.HUB_AUTH_GOOGLE === "1", password: runtime.HUB_AUTH_PASSWORD === "1", label: runtime.HUB_ENV_LABEL || runtime.HUB_ENV || "SENA Digital Hub", adminContact: runtime.HUB_ADMIN_CONTACT || "" };
 }
 
 export const deferredH1Sections = new Set(["finance", "actuals", "documents", "archive", "exceptions"]);

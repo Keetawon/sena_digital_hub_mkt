@@ -27,7 +27,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
-    const data = path.endsWith('/projects/review-test') ? project : path.endsWith('/projects/review-test/versions') ? [{ version_id: 'version-1', version_no: 1,
+    const data = path.endsWith('/v1/me') ? {status:'ACTIVE',role:'publisher'} : path.endsWith('/accounts/display-names') ? [{id:'00000000-0000-0000-0000-000000000002',display_name_th:'สมหญิง ผู้จัดการ'}] : path.endsWith('/projects/review-test') ? project : path.endsWith('/projects/review-test/versions') ? [{ version_id: 'version-1', version_no: 1,
       published_at: time, publisher: '00000000-0000-0000-0000-000000000002', change_reason: 'ตัวอย่าง', payload: live }] : [];
     await route.fulfill({ json: { data } });
   });
@@ -36,7 +36,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
   await expect(page.locator('.readiness-compact-number')).toHaveText('พร้อมเผยแพร่ · ไม่มีรายการค้าง');
   await expect(page.locator('.project-save-bar')).toHaveCount(0);
-  await expect(page.locator('.version-list')).toContainText('ผู้เผยแพร่');
+  await expect(page.locator('.version-list')).toContainText('สมหญิง ผู้จัดการ');
   await expect(page.locator('.version-list')).not.toContainText('00000000-');
   await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
   await expect(page.getByRole('region', { name: 'ไม่รวมในการเผยแพร่' })).toContainText('REM-PENDING');

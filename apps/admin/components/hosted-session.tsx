@@ -1,8 +1,8 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
-import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react";
-import { verifiedRole, type HostedConfig } from "@/lib/hosted-config";
+import { createContext, useContext, useState, useEffect, type FormEvent, type ReactNode } from "react";
+import { type HostedConfig } from "@/lib/hosted-config";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const Context = createContext<HostedConfig | null>(null);
@@ -17,7 +17,7 @@ export function hostedBrowser(config: HostedConfig) {
 }
 export function HostedSessionProvider({ config, children }: { config: HostedConfig | null; children: ReactNode }) {
   if (config) hostedBrowser(config);
-  return <Context value={config}>{children}</Context>;
+  return <Context value={config}><SessionNotice />{children}</Context>;
 }
 export function useHostedSession() { return useContext(Context); }
 
@@ -44,6 +44,28 @@ export function SignOut() {
   }}>{pending ? "กำลังออกจากระบบ…" : "ออกจากระบบ"}</button>{error && <span role="alert">{error}</span>}</>;
 }
 
+export function SessionNotice() {
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    const original = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await original(...args);
+      const input = args[0]; const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (response.status === 401 && (url.startsWith("/api/hub/") || currentConfig && url.startsWith(currentConfig.apiOrigin + "/v1/"))) setExpired(true);
+      return response;
+    };
+    return () => { window.fetch = original; };
+  }, []);
+  return expired ? <aside className="session-expired" role="alert">เซสชันหมดอายุ ข้อความที่ยังไม่บันทึกยังอยู่ในหน้านี้ <a href={`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`} target="_blank" rel="noopener">เข้าสู่ระบบอีกครั้งในแท็บใหม่</a> แล้วกลับมาบันทึกงาน <button onClick={() => setExpired(false)}>ปิดข้อความ</button></aside> : null;
+}
+
+export async function afterSignIn(next: string) {
+  const response = await fetch("/api/hub/v1/me", { cache: "no-store" });
+  if (!response.ok) throw new Error();
+  const { data } = await response.json();
+  window.location.assign(data.status !== "ACTIVE" ? "/account/request" : next === "/" && ["online_staff", "agency"].includes(data.role) ? "/ads/registry" : next);
+}
+
 export function HostedLogin({ next }: { next: string }) {
   const config = useHostedSession();
   const [pending, setPending] = useState(false);
@@ -53,13 +75,17 @@ export function HostedLogin({ next }: { next: string }) {
     const data = new FormData(event.currentTarget);
     setPending(true); setError("");
     try {
-      const { data: result, error: failure } = await hostedBrowser(config).auth.signInWithPassword({ email: String(data.get("email")).trim(), password: String(data.get("password")) });
-      if (failure || !result.user || !verifiedRole(result.user.app_metadata)) throw new Error();
-      // Navigation is only a convenience; server getUser and FastAPI enforce access.
-      const role = result.user.app_metadata.hub_role;
-      const target = next === "/" && ["online_staff", "agency"].includes(role) ? "/ads/registry" : next;
-      window.location.assign(target);
-    } catch { setError("เข้าสู่ระบบไม่สำเร็จ ตรวจสอบอีเมล รหัสผ่าน และสิทธิ์ที่ผู้ดูแลกำหนด"); setPending(false); }
+      const { error: failure } = await hostedBrowser(config).auth.signInWithPassword({ email: String(data.get("email")).trim(), password: String(data.get("password")) });
+      if (failure) throw new Error();
+      await afterSignIn(next);
+    } catch { setError("เข้าสู่ระบบไม่สำเร็จ ตรวจสอบอีเมลและรหัสผ่าน"); setPending(false); }
   }
-  return <main className="hosted-login"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub · TEST H1</p><h1>เข้าสู่ระบบพื้นที่ทดสอบ</h1><p>ข้อมูลสมมติเท่านั้น · ยังไม่เปิดการออกชื่อแคมเปญ</p>{config ? <form onSubmit={login}><div className="form-field"><label htmlFor="login-email">อีเมล</label><input id="login-email" name="email" type="email" required autoComplete="username" maxLength={254} autoFocus disabled={pending} /></div><div className="form-field"><label htmlFor="login-password">รหัสผ่าน</label><input id="login-password" name="password" type="password" required autoComplete="current-password" disabled={pending} /></div>{error && <p role="alert" className="field-error">{error}</p>}<button type="submit" className="button primary" disabled={pending}>{pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</button><p className="field-help">ใช้บัญชีที่ IT จัดเตรียมตามบทบาทของคุณ ไม่มีการสมัครบัญชีจากหน้านี้</p></form> : <p>หน้านี้เปิดเฉพาะพื้นที่ TEST ที่ตั้งค่าการเข้าสู่ระบบแล้ว</p>}</section></main>;
+  return <main className="hosted-login"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub · {config?.label}</p><h1>เข้าสู่ระบบพื้นที่ทดสอบ</h1>{config ? <>
+    {config.google && <button className="button secondary" disabled={pending} onClick={async () => {
+      setPending(true); const { error } = await hostedBrowser(config).auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${config.adminOrigin}/auth/callback?next=${encodeURIComponent(next)}`, scopes: "openid email profile" } });
+      if (error) { setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่"); setPending(false); }
+    }}>เข้าสู่ระบบด้วย Google</button>}
+    <form onSubmit={login}><div className="form-field"><label htmlFor="login-email">อีเมล</label><input id="login-email" name="email" type="email" required autoComplete="username" maxLength={254} autoFocus disabled={pending} /></div><div className="form-field"><label htmlFor="login-password">รหัสผ่าน</label><input id="login-password" name="password" type="password" required autoComplete="current-password" disabled={pending} /></div>{error && <p role="alert" className="field-error">{error}</p>}<button type="submit" className="button primary" disabled={pending}>{pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</button></form>
+    {config.password && <p><a href="/signup">สมัครด้วยอีเมล</a> · <a href="/login/forgot">ลืมรหัสผ่าน</a></p>}
+    <p>บัญชีใหม่ต้องส่งคำขอและรอผู้ดูแลอนุมัติก่อนใช้งาน</p></> : <p>หน้านี้เปิดเมื่อกำหนดการเข้าสู่ระบบแล้ว</p>}</section></main>;
 }

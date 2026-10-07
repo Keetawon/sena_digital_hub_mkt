@@ -11,6 +11,13 @@ export const hubPages = [
   { id: "archive", href: "/ads/archive", label: "คลังเอกสาร", group: "ads", icon: "M3 3h18v5H3zM5 8v13h14V8M9 12h6" },
   { id: "exceptions", href: "/ads/exceptions", label: "รายการที่ต้องตรวจสอบ", group: "ads", icon: "M12 3L2 21h20L12 3zM12 9v5M12 17h.01" },
   { id: "questions", href: "/questions", label: "คำถามที่รอคำตอบ", group: null, icon: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9 9a3 3 0 1 1 4 2.8c-.7.3-1 .7-1 1.7M12 17h.01" },
+  { id: "accounts", href: "/admin/accounts", label: "ผู้ใช้และสิทธิ์", group: null, icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M17 11h6" },
 ] as const;
 export const hubGroups = { content: "ข้อมูลโครงการและแบรนด์", ads: "งานโฆษณาและงบ" } as const;
 export type HubSection = typeof hubPages[number]["id"];
+
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export function safeNext(value?: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
+  try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
+}

@@ -15,7 +15,7 @@ test('knowledge progress filters pilots, preserves queue scope and shows no-KM c
   await expect(dashboard.getByRole('row')).toHaveCount(3);
   await expect(dashboard).toContainText('ตรวจแล้ว 40%');
   await expect(dashboard).toContainText('ไม่มี KM เดิม · ต้องเขียนใหม่');
-  await expect(dashboard).toContainText('ผู้แก้ไข');
+  await expect(dashboard).toContainText('สมชาย แก้ไข');
   await expect(dashboard).not.toContainText('00000000');
   await dashboard.getByRole('button',{name:'มีข้อขัดแย้ง',exact:true}).click();
   await expect(dashboard.getByRole('row')).toHaveCount(2);

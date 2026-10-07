@@ -255,10 +255,10 @@
       ],
       "doc": {
         "id_label": "Q12 — matrix confirmed",
-        "question": "Agencies return IDs only and see only their own agency's names; online_staff/admin issue. Provisioning of verified claims, production browser sign-in/session and named Thai reviewers remains open.",
+        "question": "Agency isolation remains confirmed. Sign-in method and Hub-table role authority decided by owner 7 Oct 2026; hosted credentials/readiness acceptance still pending.",
         "owner": "Product owner (29 September 2026) + IT identity admin + Online lead",
         "blocks": "Matrix resolved; real identity setup/browser session and Thai readability evidence still block production acceptance.",
-        "default": "Explicit app_metadata claims, deny missing/unknown mappings; local synthetic Online and two agency actors. Noto-first table bodies pending Thai review; no client-selected agency authorization. The existing local-session browser bridge remains local-only."
+        "default": "Owner decision 7 Oct 2026: Hub user_account is role/agency authority; JWT metadata proves no role. Google or verified email/password self-registration, followed by admin approval. Keep canonical agency isolation and local synthetic personas. See docs/33-login-and-accounts.md."
       }
     },
     {
@@ -1646,6 +1646,48 @@
         "owner": "MKT Project Master",
         "blocks": "Resolution of project 00412 group mismatch",
         "default": "Keep both source codes and their provenance visible; await the owner's decision. Never auto-correct the codes or mappings."
+      }
+    },
+    {
+      "id": "Q72",
+      "status": "RESOLVED",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของผลิตภัณฑ์และทีม IT",
+      "question_th": "เข้าสู่ระบบด้วยวิธีใด และบัญชีใหม่ได้สิทธิ์อย่างไร?",
+      "default_th": "เจ้าของตัดสินใจ 7 ต.ค. 2569: Google หรืออีเมลกับรหัสผ่าน ยืนยัน OTP สมัครเองได้และรอแอดมินอนุมัติ สิทธิ์อยู่ในตาราง Hub",
+      "links": [
+        {
+          "href": "/questions",
+          "label": "คำถามและการตัดสินใจ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q72",
+        "question": "Owner decided 7 Oct 2026: Google or verified email/password, self-signup and admin approval; Hub table owns roles.",
+        "owner": "Hub owner + IT",
+        "blocks": "Decided; hosted execution still waits for credentials ready.",
+        "default": "See docs/33-login-and-accounts.md. No secrets in chat, repo, Next or API env; configure sender and OAuth secrets in Supabase dashboard only."
+      }
+    },
+    {
+      "id": "Q73",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของผลิตภัณฑ์และทีม IT",
+      "question_th": "ภายหลังจะย้ายผู้ส่งอีเมลและโครงการ Google Cloud จาก Workspace ของเจ้าของไปบัญชี IT เมื่อใดและอย่างไร?",
+      "default_th": "ไม่กีดกัน MVP ในเครื่อง เจ้าของตั้งค่าด้วย Workspace ของตนก่อน เก็บความลับเฉพาะ Supabase dashboard และรอแผนย้ายจาก IT",
+      "links": [
+        {
+          "href": "/questions",
+          "label": "คำถามและการตัดสินใจ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q73",
+        "question": "Plan later transfer of the Workspace email sender and Google Cloud project from owner to IT ownership.",
+        "owner": "Hub owner + IT",
+        "blocks": "Non-blocking follow-up; does not block the local Accounts MVP.",
+        "default": "See docs/33-login-and-accounts.md. No secrets in chat, repo, Next or API env; configure sender and OAuth secrets in Supabase dashboard only."
       }
     }
   ]

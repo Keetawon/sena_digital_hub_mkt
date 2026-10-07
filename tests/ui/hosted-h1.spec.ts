@@ -7,7 +7,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
   test.use({ baseURL: 'http://127.0.0.1:3001' });
   const origin = 'http://127.0.0.1:3001';
   const roles = [
-    ['editor', 'ผู้แก้ไขข้อมูล', true], ['publisher', 'ผู้เผยแพร่', true],
+    ['editor', 'ผู้แก้ไขข้อมูล', true], ['publisher', 'Manager · อนุมัติและเผยแพร่', true],
     ['viewer', 'ผู้อ่านข้อมูล', true], ['admin', 'ผู้ดูแลระบบ', true],
     ['online', 'ทีมออนไลน์', false], ['agency-kin', 'เอเจนซี KIN', false],
     ['agency-combay', 'เอเจนซี COMBAY', false],

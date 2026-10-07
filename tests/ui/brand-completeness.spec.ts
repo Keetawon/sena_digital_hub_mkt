@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import { staffActorLabel } from '../../apps/admin/lib/staff';
 
 const origin='http://127.0.0.1:3000',api='/api/hub/v1/admin';
 const stamp='2026-10-02T00:00:00Z';
@@ -142,7 +141,7 @@ test('viewer can page through brands without publication controls',async({page})
   expect(f.writes).toEqual([]);
 });
 
-test('brand last editor displays known local roles and keeps unknown identities honest',async({page})=>{
+test('brand last editor displays account names and keeps legacy identities honest',async({page})=>{
   const f=await fixture(page);
   f.rows[1].updated_by='00000000-0000-0000-0000-000000000001';
   f.a.updated_by='00000000-0000-0000-0000-000000000005';
@@ -150,12 +149,10 @@ test('brand last editor displays known local roles and keeps unknown identities 
   await page.goto('/?view=brands');
   const cells=page.locator('.brand-table-row td[data-label="ปรับปรุงล่าสุด / โดย"]');
   await expect(cells.nth(0)).toContainText('ยังไม่สร้าง');
-  await expect(cells.nth(1)).toContainText('ผู้แก้ไขข้อมูล');
-  await expect(cells.nth(2)).toContainText('ผู้ดูแลระบบ');
-  await expect(cells.nth(3)).toContainText('ยังไม่มีชื่อผู้แก้ไข');
+  await expect(cells.nth(1)).toContainText('สมชาย แก้ไข');
+  await expect(cells.nth(2)).toContainText('ผู้ดูแล ตัวอย่าง');
+  await expect(cells.nth(3)).toContainText('ผู้ใช้เดิม');
   for(const cell of await cells.all()) expect(await cell.innerText()).not.toMatch(/[0-9a-f]{8}-[0-9a-f-]{27}/i);
-  expect(staffActorLabel('00000000-0000-0000-0000-000000000005',false)).toBe('ยังไม่มีชื่อผู้แก้ไข');
-  expect(staffActorLabel('ผู้แก้ไขสมมติ',false)).toBe('ผู้แก้ไขสมมติ');
   expect(f.writes).toEqual([]);
 });
 

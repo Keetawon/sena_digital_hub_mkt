@@ -1,4 +1,5 @@
 "use client";
+import { ActorName } from "./accounts";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { request } from "./hub-request";
@@ -171,7 +172,7 @@ function DocumentDetail({ detail, onChanged }: { detail: Row; onChanged: () => v
     <section className="operations-month"><h3>ตัวอย่างข้อความติดตาม</h3><p>ข้อความนี้ไม่มีวงเงิน รายละเอียด Memo หรือลิงก์ส่วนตัว และไม่มีการส่งให้ผู้อื่นจาก Hub</p><label>ข้อความที่จะคัดลอก<textarea className="registry-input operations-message" readOnly value={str(item.message_th)} onFocus={event => event.target.select()} /></label><button className="registry-button primary mt-4" disabled={busy || !item.message_th || !snapshotReady} onClick={() => void copy()}>{busy ? "กำลังคัดลอก…" : "คัดลอกข้อความติดตาม"}</button>
       <p role="status"><StatusText message={notice} /></p>{!snapshotReady && <p className="operations-caption">รอนำเข้ารอบข้อมูล TEST ก่อนบันทึกประวัติการคัดลอก สามารถอ่านข้อความตัวอย่างได้</p>}{error && <p role="alert" className="registry-error">{error}</p>}
     </section>
-    <section className="operations-month"><h3>ประวัติการติดตาม</h3>{!records(item.follow_ups).length ? <p>ยังไม่มีประวัติการคัดลอก</p> : <ul>{records(item.follow_ups).map((row, index) => <li key={str(row.id) || index}>คัดลอกข้อความ · {date(row.copied_at)} · ผู้ดำเนินการ {str(row.actor_id)}<p className="operations-message">{str(row.message_th)}</p></li>)}</ul>}</section>
+    <section className="operations-month"><h3>ประวัติการติดตาม</h3>{!records(item.follow_ups).length ? <p>ยังไม่มีประวัติการคัดลอก</p> : <ul>{records(item.follow_ups).map((row, index) => <li key={str(row.id) || index}>คัดลอกข้อความ · {date(row.copied_at)} · ผู้ดำเนินการ <ActorName id={str(row.actor_id)} /><p className="operations-message">{str(row.message_th)}</p></li>)}</ul>}</section>
   </>;
 }
 
@@ -190,6 +191,6 @@ function FindingDetail({ detail, onChanged, onDirty }: { detail: Row; onChanged:
       <label className="operations-note">หมายเหตุหรือเหตุผล<textarea className="registry-input" maxLength={2000} value={note} onChange={event => { setNote(event.target.value); onDirty(true); }} /></label>
       {error && <p className="registry-error" role="alert">{error}</p>}<div className="operations-actions"><button className="registry-button" disabled={busy} onClick={() => void save("ACKNOWLEDGED")}>รับเรื่อง</button><button className="registry-button" disabled={busy} onClick={() => void save(str(workflow.state) || "OPEN")}>บันทึกหมายเหตุและผู้รับผิดชอบ</button><button className="registry-button primary" disabled={busy} onClick={() => void save("RESOLVED")}>บันทึกว่าดำเนินการแล้ว</button></div>
       <div className="operations-actions">{Boolean(finding.line_key) && <a className="registry-button" href={`/ads/finance?view=media-lines&record=${encodeURIComponent(str(finding.line_key))}`}>เชื่อม SN กับรายการงบ</a>}{Boolean(finding.registration_code) && <a className="registry-button" href={`/ads/registry?registration=${encodeURIComponent(str(finding.registration_code))}&tab=details`}>เปิดทะเบียน SN</a>}<a className="registry-button" href="/ads/finance?view=corrections&record=new">เสนอรายการแก้ไข</a></div>
-    </section><section className="operations-month"><h3>ประวัติการดำเนินการ</h3>{!records(detail.history).length ? <p>ยังไม่มีการดำเนินการ</p> : <ul>{records(detail.history).map((row, index) => <li key={str(row.id) || index}><p>{row.action === "SOURCE_REOPEN" ? "คลังข้อมูลรอบใหม่ยังพบเงื่อนไข เปิดเรื่องอีกครั้ง" : "ทีมงานบันทึกการดำเนินการ"}</p><p>{date(row.recorded_at)} · {states[str(row.state)] ?? "บันทึกการเปลี่ยนสถานะ"}</p><p>{str(row.note)}</p><p>ผู้ดำเนินการ {str(row.actor_id ?? row.created_by) || "ระบบ"}</p></li>)}</ul>}</section>
+    </section><section className="operations-month"><h3>ประวัติการดำเนินการ</h3>{!records(detail.history).length ? <p>ยังไม่มีการดำเนินการ</p> : <ul>{records(detail.history).map((row, index) => <li key={str(row.id) || index}><p>{row.action === "SOURCE_REOPEN" ? "คลังข้อมูลรอบใหม่ยังพบเงื่อนไข เปิดเรื่องอีกครั้ง" : "ทีมงานบันทึกการดำเนินการ"}</p><p>{date(row.recorded_at)} · {states[str(row.state)] ?? "บันทึกการเปลี่ยนสถานะ"}</p><p>{str(row.note)}</p><p>ผู้ดำเนินการ <ActorName id={str(row.actor_id ?? row.created_by)} /></p></li>)}</ul>}</section>
   </>;
 }

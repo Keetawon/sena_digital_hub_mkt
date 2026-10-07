@@ -157,7 +157,7 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     expect(current.verified_by).toBe(actor);
     expect(current.verified_at).toBeTruthy();
     expect(project.readiness.missing.some(item => item.field === `models.${first.id}.match_status`)).toBeFalsy();
-    await expect(modelCard(page, current.public_name.th).locator('.review-evidence')).toContainText('ผู้แก้ไขข้อมูล');
+    await expect(modelCard(page, current.public_name.th).locator('.review-evidence')).toContainText('สมชาย แก้ไข');
 
     await selectModel(page, second.public_model_id);
     await modelCard(page, 'แบบต้นทาง บี').getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true }).click();

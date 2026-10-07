@@ -1,3 +1,5 @@
+import { getHubRole } from "@/lib/hosted-session";
+import { AccountDirectory } from "@/components/accounts";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Google_Sans } from "next/font/google";
@@ -23,6 +25,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HostedSessionProvider config={hostedConfig()}><HubMotion>{children}</HubMotion></HostedSessionProvider></body></html>;
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HostedSessionProvider config={hostedConfig()}><AccountDirectory enabled={!!(await getHubRole())}><HubMotion>{children}</HubMotion></AccountDirectory></HostedSessionProvider></body></html>;
 }

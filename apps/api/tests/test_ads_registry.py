@@ -111,7 +111,7 @@ def test_original_demo_configuration_still_works_and_optional_accounts_are_disti
         settings(demo_tokens={**TOKENS, "agency_kin": TOKENS["admin"]})
     auth = Authentication(settings())
     for key, agency, number in [("agency_kin", "KIN", 7), ("agency_combay", "COMBAY", 8)]:
-        request = Request({"type": "http", "headers": [(b"authorization", HEADERS[key]["Authorization"].encode())],
+        request = Request({"type": "http", "path": "/v1/me", "method": "GET", "headers": [(b"authorization", HEADERS[key]["Authorization"].encode())],
                            "client": ("127.0.0.1", 1)})
         actor = asyncio.run(auth(request))
         assert actor.role == "agency" and actor.agency_code == agency and actor.id.int == number
@@ -130,22 +130,19 @@ def signing_key():
     ({"hub_role": "agency", "hub_agency": "kin"}, False),
     ({"hub_role": "agency", "hub_agency": "KIN; SET ROLE admin"}, False),
 ])
-def test_agency_comes_only_from_signed_app_metadata(signing_key, metadata, accepted):
+def test_identity_verification_ignores_all_role_and_agency_metadata(signing_key, metadata, accepted):
     auth = Authentication(settings(auth_mode="supabase", environment="production", supabase_url="https://example.supabase.co"))
     public = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(signing_key.public_key()))
     public.update(kid="test-key", alg="RS256", use="sig")
     auth.jwks.fetch_data = lambda: {"keys": [public]}
     claims = {"iss": "https://example.supabase.co/auth/v1", "aud": "authenticated", "iat": int(time.time()) - 1,
-              "exp": int(time.time()) + 60, "sub": str(uuid4()), "app_metadata": metadata,
+              "exp": int(time.time()) + 60, "sub": str(uuid4()), "email": "test@example.test", "app_metadata": metadata,
               "user_metadata": {"hub_role": "admin", "hub_agency": "COMBAY"}, "role": "admin"}
     token = jwt.encode(claims, signing_key, algorithm="RS256", headers={"kid": "test-key"})
-    if accepted:
-        actor = auth.verify_jwt(token)
-        assert actor.role == metadata["hub_role"]
-        assert actor.agency_code == metadata.get("hub_agency")
-    else:
-        with pytest.raises(jwt.InvalidTokenError):
-            auth.verify_jwt(token)
+    identity = auth.verify_jwt(token)
+    assert identity["sub"] == claims["sub"]
+    assert not hasattr(identity, "agency_code")
+
 
 
 @pytest.mark.integration

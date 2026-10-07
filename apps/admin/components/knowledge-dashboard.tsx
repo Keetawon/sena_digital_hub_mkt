@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { staffActorLabel } from "@/lib/staff";
+import { ActorName } from "./accounts";
 import { EntityThumbnail, type Thumbnail } from "./entity-thumbnail";
 import { CompletenessBar } from "./completeness-bar";
 import "./knowledge-dashboard.css";
@@ -20,7 +20,7 @@ export function KnowledgeDashboard({ projects, onSelect }: { projects: Knowledge
         <td>{states[s.state] || states.not_started}</td><td>{s.has_legacy_km ? <CompletenessBar label="ตรวจแล้ว" passed={s.reviewed} total={s.staged} /> : <><strong>ไม่มี KM เดิม · ต้องเขียนใหม่</strong><p>ตรวจแล้ว {s.reviewed}/{s.staged} รายการจากแหล่งอื่น</p></>}</td>
         <td><ul>{Object.entries(kinds).map(([kind,label]) => <li key={kind}>{label}: {s.pending[kind] || 0}</li>)}</ul>{s.pending_other > 0 && <small>อื่น ๆ: {s.pending_other}</small>}</td>
         <td>ข้อขัดแย้ง {s.conflicts}<br />ข้อมูลขาด {s.gaps}</td>
-        <td>{s.last_reviewed_at ? <><time dateTime={s.last_reviewed_at}>{new Intl.DateTimeFormat("th-TH", { dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Bangkok" }).format(new Date(s.last_reviewed_at))}</time><p>{staffActorLabel(s.last_reviewed_by || "",true)}</p></> : "ยังไม่มีการตรวจ"}</td>
+        <td>{s.last_reviewed_at ? <><time dateTime={s.last_reviewed_at}>{new Intl.DateTimeFormat("th-TH", { dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Bangkok" }).format(new Date(s.last_reviewed_at))}</time><p>{<ActorName id={s.last_reviewed_by} />}</p></> : "ยังไม่มีการตรวจ"}</td>
       </tr>;
     })}</tbody></table></div>{!rows.length && <p>ไม่มีโครงการตรงกับตัวกรอง</p>}
     <p className="field-help">นับทุกผลตรวจ รวมรายการที่ผิดหรือขาด · ตรวจครบยังไม่ใช่การเผยแพร่</p>

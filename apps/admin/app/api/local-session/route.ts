@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: { message: "รูปแบบข้อมูลไม่ถูกต้อง" } }, { status: 400 });
   }
-  if (!roles.includes(role!) || !getRoleToken(role!)) {
+  if (!(roles as readonly string[]).includes(role!) || !getRoleToken(role!)) {
     return NextResponse.json({ error: { message: "ยังไม่ได้ตั้งค่าบัญชีทดสอบนี้บนเซิร์ฟเวอร์" } }, { status: 400 });
   }
   const response = NextResponse.json({ role });

@@ -40,7 +40,7 @@ export function hasSameLocalOrigin(request: { headers: Headers; url: string }) {
 export async function getLocalRole(): Promise<LocalRole | null> {
   if (!isLocalMode()) return null;
   const value = (await cookies()).get(cookieName)?.value;
-  return roles.includes(value as LocalRole) ? value as LocalRole : null;
+  return (roles as readonly string[]).includes(value || "") ? value as LocalRole : null;
 }
 
 export function getRoleToken(role: LocalRole | "service_consumer") {

@@ -275,70 +275,50 @@ without files or rights evidence, to the same reader group. These additions do
 not approve hosted execution, a hosted reader login or transfer of real brands;
 the section 6 data-owner confirmation default still applies.
 
-## 4. Real login and TEST identities
+## 4. Login and TEST identities — owner decisions, 7 October 2026
 
-The API verifies Supabase ES256/RS256 JWT signatures, issuer/audience and trusted
-`app_metadata.hub_role`, plus `hub_agency` for agencies. H1 implements browser/SSR
-login, refresh, sign-out and the verified server proxy; these are tested with the
-local Auth protocol double. Actual cloud Auth configuration and signing keys
-remain unverified until the approved hosted acceptance run.
+Google sign-in or email + password are decided. **Self sign-up replaces invite-only.**
+Every verified identity, including Google, submits an access request and has no Hub
+access until an ACTIVE admin approves it and assigns a Hub role. Super user means
+`admin`. Manager retains code `publisher`, with label **Manager · อนุมัติและเผยแพร่**.
+Only admins approve accounts and change roles; self-approval and self-role changes
+are blocked. The last active admin cannot be removed.
 
-The implementation uses Supabase browser/SSR sessions and allowlisted redirect
-URLs through the supported server-side session flow. The server verifies the
-user/session; the API independently verifies the forwarded
-access token. Do not authorize from an unverified cookie/session payload or
-client-selected headers. Use secure session-cookie settings appropriate to the
-SSR flow and protect cookie-authenticated mutations against cross-site requests.
-[Supabase server-side authentication](https://supabase.com/docs/guides/auth/server-side).
+Supabase JWTs prove identity only (signature, issuer, audience, expiry and `sub`).
+`hub.user_account` is the sole authority for account status, role and agency code.
+Neither `app_metadata` nor `user_metadata` grants a role. FastAPI performs one
+indexed account lookup per request, without an authorization cache. Next.js calls
+`/v1/me` for navigation. Suspension and role changes apply on the next request.
 
-H1 adds explicit `hosted-test` configuration with exact project/HTTPS API-origin
-checks, plus tightly bounded loopback targets for the local simulation. The
-local selector remains behind its loopback/local-mode guard. Hosted requests
-reject demo tokens, role-selector cookies and forged role headers. Do not label
-hosted TEST as local or use production mode to evade a guard. Confirm the project's
-signing algorithm is supported; do not add an HS256 fallback casually.
+The seven TEST identities below become **self-registered password accounts**:
+verify their six-digit email codes, submit requests, bootstrap the first admin via
+`scripts/hub-accounts.py promote-admin --email`, then let that admin approve the
+other six accounts. No Auth-admin service key is needed. Plus-addressing on one
+owner mailbox may be used after hosted execution is authorized; these are separate
+Auth UUIDs. Local tests use only `example.test` identities.
 
-Create the following separate, invite-only identities only after “credentials
-ready”. Use **plus-addressing on one owner-controlled mailbox**, not seven
-mailboxes. In the table, `owner@example.invalid` is a placeholder: substitute
-the mailbox supplied privately by the owner and verify that every alias reaches
-it. These remain seven distinct Auth UUIDs/passwords/role assignments; the alias
-does not grant a role. H1 currently simulates them locally. Disable public
-self-sign-up and anonymous sign-in for this TEST app.
+| Placeholder TEST identity | Hub role | Hub agency code |
+|---|---|---|
+| `owner+hub-editor@example.invalid` | `editor` | — |
+| `owner+hub-publisher@example.invalid` | `publisher` | — |
+| `owner+hub-viewer@example.invalid` | `viewer` | — |
+| `owner+hub-admin@example.invalid` | `admin` | — |
+| `owner+hub-online@example.invalid` | `online_staff` | — |
+| `owner+hub-agency-kin@example.invalid` | `agency` | `KIN` |
+| `owner+hub-agency-combay@example.invalid` | `agency` | `COMBAY` |
 
-| Plus-address template | Trusted `hub_role` | Additional metadata | Acceptance focus |
-|---|---|---|---|
-| `owner+hub-editor@example.invalid` | `editor` | None | Draft editing/upload; cannot publish or grant rights. |
-| `owner+hub-publisher@example.invalid` | `publisher` | None | Publish/review and per-file rights records; existing permission matrix. |
-| `owner+hub-viewer@example.invalid` | `viewer` | None | Read-only staff review; cannot edit/publish. |
-| `owner+hub-admin@example.invalid` | `admin` | None | Existing steward/admin operations; cannot enable TEST issuance. |
-| `owner+hub-online@example.invalid` | `online_staff` | None | Registry and marketing-ops operations; no memo approval authority. |
-| `owner+hub-agency-kin@example.invalid` | `agency` | `hub_agency=KIN` | Own campaign names and permitted ID returns; no assistant/budgets/memos. |
-| `owner+hub-agency-combay@example.invalid` | `agency` | `hub_agency=COMBAY` | Cross-agency isolation against KIN. |
+The owner sets up the Workspace email sender and Google OAuth client personally
+and enters secrets **only in the Supabase dashboard**, never in Git, chat, Next.js
+or API environment files. Confirm email is required; anonymous sign-in is off.
+The Thai OTP templates, flags, account/admin flows and owner setup checklist are
+in [docs/33](33-login-and-accounts.md). Password sign-in remains available when
+password registration/recovery is disabled while waiting for SMTP.
 
-The current app supports password sign-in but has no invitation acceptance/
-password-setup route. Complete and test that onboarding path before sending
-invitations; do not invent a callback URL or enable public sign-up as a workaround.
-Plus-address delivery also needs an approved mail route: Supabase's default SMTP
-restricts recipients to project-team addresses, so aliases are not automatically
-authorized. Use IT's existing approved SMTP if needed; do not buy a mail plan or
-grant project-team access to the seven role accounts to bypass this limit.
-[Supabase SMTP restrictions](https://supabase.com/docs/guides/auth/auth-smtp).
-
-Provision `service_consumer` separately if needed for API-only published-data
-checks; it gets no staff browser session. The DW login is PostgreSQL-only, not
-an Auth user. Test identities with missing/invalid metadata must fail closed.
-Only an authorized Auth administrator/server assigns `app_metadata`; editable
-`user_metadata` is never authority. Use the Auth UUID as audit actor and canonical
-agency vocabulary codes, not local selector aliases such as `agency_kin`.
-
-The Next.js admin service on the VPS receives only the public Supabase
-URL/publishable key and necessary server-side API configuration. The browser
-never receives migration, database,
-storage or service-role secrets. The VPS API uses the restricted runtime login.
-Auth-admin provisioning and storage-service credentials stay in separate scoped
-operator/server configuration. Leave local `.env` files and credentials local;
-copy no environment file wholesale to hosting or Git.
+Hosted execution still requires the owner's exact **“credentials ready”** signal.
+This implementation and all current acceptance evidence are local only: no hosted
+requests, no real email, no real identities. Later hosted acceptance must prove
+Google and password sign-ins with the same verified email resolve to one Auth UUID.
+Moving the sender and Cloud project to IT ownership is a non-blocking follow-up.
 
 ## 5. Hosting topology and remaining application work
 
@@ -581,7 +561,7 @@ Even hosted read-only preflight waits for the owner's IT-readiness confirmation.
 | CyberPanel/SSH access, DNS A record, SSL and secret custody | IT / DNS owner | `hub-test.sena.co.th`, existing OpenLiteSpeed 80/443, loopback apps; no hosted actions before “credentials ready”. |
 | Manual exports and demo recovery | Hub owner, with IT execution support | Manual export before every hosted change; synthetic recovery by re-seed. No paid backup service or automated schedule. |
 | TEST cost and existing VPS capacity | Hub owner + IT/Finance | Decided: Supabase Free and admin/API on the existing Hostinger VPS; no Vercel TEST project or purchase. IT capacity/access confirmation is still pending. Paid plans are revisited only for production. |
-| Test identities and mail delivery | Hub owner + IT | Seven plus-addressed aliases on one owner mailbox; invite-only, trusted role metadata. Verify SMTP and implement/test invitation/password setup before invitations; no users created now. |
+| Test identities and mail delivery | Hub owner + IT | Decided 7 Oct: self-registration with Google or verified password/OTP; Hub-table roles and admin approval. Owner configures Workspace sender/OAuth secrets only in Supabase. Hosted execution awaits “credentials ready”; see doc 33. |
 | Copy of real HYABC REM identity | IT/data owner | No; use new fictional identities. |
 | Real documents/internal-data processing | DPO/data owner, Q7/Q36 | Synthetic only; no external OCR/LLM, RAG, indexing, embeddings or ingestion work. |
 

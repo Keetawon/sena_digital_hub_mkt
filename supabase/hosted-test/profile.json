@@ -208,6 +208,11 @@
       "name": "202610070041_marketing_project_groups.sql",
       "canonical_sha256": "9aba82b45c477f96c6ad30d44e393229b9b44e8ea22fbc96fc4ae91725b281be",
       "executed_sha256": "9aba82b45c477f96c6ad30d44e393229b9b44e8ea22fbc96fc4ae91725b281be"
+    },
+    {
+      "name": "202610070042_hub_accounts.sql",
+      "canonical_sha256": "5a7b01b05bfd2bfd22215ea2ffe80ef58d55b74f036a4f266682cf8cf29593db",
+      "executed_sha256": "5a7b01b05bfd2bfd22215ea2ffe80ef58d55b74f036a4f266682cf8cf29593db"
     }
   ]
 }

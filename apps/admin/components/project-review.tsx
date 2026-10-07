@@ -40,9 +40,3 @@ export function ProjectComparison({ current, target }: { current?: Project; targ
   const changes = projectChanges(target, current);
   return <section className="brand-comparison" aria-label="เปรียบเทียบข้อมูลโครงการ"><h3>{current ? "รายการที่เปลี่ยนจากเวอร์ชันที่เผยแพร่" : "ข้อมูลที่จะเผยแพร่ครั้งแรก"}</h3>{!changes.length && <p>ไม่มีการเปลี่ยนแปลงจากเวอร์ชันที่เผยแพร่</p>}{changes.map(change => <div key={change.key} data-field={change.key} className="brand-comparison-row changed"><h4>{change.label}</h4><div className="brand-comparison-pair"><div><p className="brand-comparison-caption">ที่เผยแพร่ปัจจุบัน</p><p className="project-comparison-value">{display(change.before)}</p></div><div><p className="brand-comparison-caption">ฉบับที่จะเผยแพร่</p><p className="project-comparison-value">{display(change.after)}</p></div></div></div>)}</section>;
 }
-
-export function modelActorLabel(id: string | null) {
-  // Known local seed accounts; legacy/imported confirmations have no staff profile directory.
-  const roles: Record<string, string> = { "00000000-0000-0000-0000-000000000001": "ผู้แก้ไขข้อมูล", "00000000-0000-0000-0000-000000000005": "ผู้ดูแลระบบ" };
-  return id && roles[id] || "ผู้ยืนยันแบบ";
-}

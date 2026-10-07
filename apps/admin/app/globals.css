@@ -604,3 +604,15 @@ main:focus { outline: none; }
 .hosted-login input { min-height: 44px; width: 100%; }
 .hosted-unavailable { margin-block: 20px; }
 .hosted-h1-note { padding: 12px 24px; background: var(--surface-warm); color: var(--ink); }
+
+/* Account forms reuse the contrast-tested Hub tokens and native controls. */
+.account-page { max-width: 760px; margin: 40px auto; padding: 0 20px; }
+.accounts-admin { padding: 24px; }
+.accounts-admin > details { margin-block: 16px; }
+.account-choice { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+.account-choice input { width: auto; }
+.account-summary { display: grid; grid-template-columns: minmax(120px, 1fr) 3fr; gap: 12px; overflow-wrap: anywhere; }
+.account-summary dd { margin: 0; white-space: pre-wrap; }
+.session-expired { position: sticky; top: 0; z-index: 1000; padding: 16px; background: var(--surface-warm); color: var(--ink); border: 2px solid var(--action); }
+.accounts-admin summary { cursor: pointer; padding: 12px 0; }
+@media (max-width: 600px) { .account-summary { grid-template-columns: 1fr; } .account-summary dt { font-weight: 700; } .accounts-admin { padding: 16px; } }

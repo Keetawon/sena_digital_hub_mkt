@@ -1,0 +1,136 @@
+import { expect, test, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+
+test.describe('Accounts on loopback H1', () => {
+  test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Local H1 protocol simulation only');
+  test.use({ baseURL: 'http://127.0.0.1:3001' });
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/*', route => ['http:', 'https:'].includes(new URL(route.request().url()).protocol) && new URL(route.request().url()).hostname !== '127.0.0.1' ? route.abort() : route.continue());
+  });
+  async function login(page: Page, email = 'hub-test-admin@example.test') {
+    await page.goto('/login');
+    await page.getByLabel('อีเมล', { exact: true }).fill(email);
+    await page.getByLabel('รหัสผ่าน', { exact: true }).fill('H1-synthetic-only!');
+    await page.getByRole('button', { name: 'เข้าสู่ระบบ', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'ออกจากระบบ', exact: true })).toBeVisible();
+  }
+  async function request(page: Page, name: string) {
+    await expect(page.getByRole('heading', { name: 'ขอสิทธิ์ใช้งาน' })).toBeVisible();
+    await page.getByLabel('ชื่อและนามสกุลภาษาไทย').fill(name);
+    await page.getByLabel('เบอร์โทรศัพท์ที่ทำงาน').fill('020000000');
+    await page.getByLabel('ทีม / บริษัทเอเจนซี').fill('ทีมทดสอบ');
+    await page.getByLabel('อ่านข้อมูลโครงการ', { exact: true }).check();
+    await page.getByLabel('เหตุผล / โครงการที่รับผิดชอบ').fill('ดูแลข้อมูลสมมติ');
+    await page.getByLabel('รับทราบประกาศความเป็นส่วนตัว').check();
+    await page.getByRole('button', { name: 'ส่งคำขอ', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'รออนุมัติ', exact: true })).toBeVisible();
+    expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(403);
+  }
+  async function approve(page: Page, name: string) {
+    await page.goto('/admin/accounts');
+    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill(name);
+    const names = await page.request.get('/api/hub/v1/accounts/display-names');
+    expect(names.status()).toBe(200);
+    await expect(page.getByRole('link', {name: /ผู้ใช้และสิทธิ์/})).toBeVisible();
+    const row = page.locator('details.registry-panel').filter({ hasText: name });
+    await row.locator('summary').first().click();
+    await page.screenshot({path:'artifacts/accounts-admin.png',fullPage:true});
+    await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
+    await expect(row).toHaveCount(0);
+  }
+  test('Google PKCE first sign-in, request, admin approval, access and suspension', async ({ page, browser }) => {
+    await page.goto('/login?next=//evil.example');
+    await page.getByRole('button', { name: 'เข้าสู่ระบบด้วย Google' }).click();
+    await expect(page).toHaveURL(/\/account\/request$/);
+    await expect(page.getByRole('heading', {name:'ขอสิทธิ์ใช้งาน'})).toBeVisible();
+    await page.screenshot({path:'artifacts/accounts-request.png',fullPage:true});
+    await request(page, 'กูเกิล สมมติ');
+    const admin = await browser.newPage({ baseURL: 'http://127.0.0.1:3001' });
+    await login(admin); await approve(admin, 'กูเกิล สมมติ');
+    await page.reload(); await page.getByRole('link', { name: 'เข้าสู่พื้นที่ทำงาน' }).click();
+    await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
+    await page.getByRole('button',{name:'ออกจากระบบ',exact:true}).click();
+    await page.route('**/auth/v1/authorize?**', route => {
+      const url=new URL(route.request().url());
+      url.searchParams.set('redirect_to','http://127.0.0.1:3001/auth/callback?next=//evil.example');
+      return route.continue({url:url.href});
+    }, {times:1});
+    await page.getByRole('button',{name:'เข้าสู่ระบบด้วย Google'}).click();
+    await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
+    expect(new URL(page.url()).origin).toBe('http://127.0.0.1:3001');
+    await admin.getByRole('button', { name: /ใช้งานอยู่/ }).click();
+    const row = admin.locator('details.registry-panel').filter({ hasText: 'กูเกิล สมมติ' });
+    await row.locator('summary').first().click();
+    admin.once('dialog', d => d.accept()); await row.getByRole('button', { name: 'ระงับ', exact: true }).click();
+    await expect(row).toHaveCount(0);
+    expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(403);
+    await page.goto('/knowledge'); await expect(page).toHaveURL(/\/account\/request$/);
+    await admin.close();
+  });
+  test('email signup, wrong OTP, cooldown, request edit and approval', async ({ page, browser }) => {
+    await page.setViewportSize({width:390,height:844}); await page.emulateMedia({reducedMotion:'reduce'});
+    const email=`signup-${Date.now()}@example.test`;
+    await page.goto('/signup');
+    await page.getByLabel('อีเมล', { exact: true }).fill(email);
+    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)').fill('Synthetic-password-12!');
+    await page.getByLabel('ยืนยันรหัสผ่าน', { exact: true }).fill('Synthetic-password-12!');
+    await page.getByRole('button', { name: 'ส่งรหัสยืนยัน' }).click();
+    await expect(page).toHaveURL(/\/signup\/verify$/);
+    await expect(page.getByText(/ส่งรหัสใหม่ได้ใน/)).toBeVisible();
+    const outbox=JSON.parse(await readFile('.local/hosted-test-simulation/auth-outbox.json','utf8'));
+    const code=outbox.findLast((r: {email:string})=>r.email===email).token;
+    await page.getByLabel('รหัส 6 หลัก').fill(code==='000000'?'111111':'000000');
+    await page.getByRole('button', { name: 'ยืนยันรหัส', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('รหัสไม่ถูกต้อง');
+    await page.getByLabel('รหัส 6 หลัก').fill(code);
+    await page.getByRole('button', { name: 'ยืนยันรหัส', exact: true }).click();
+    await request(page, 'อีเมล สมมติ');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.screenshot({path:'artifacts/accounts-request-mobile.png',fullPage:true});
+    await page.getByRole('button', { name: 'แก้ไขคำขอ' }).click();
+    await page.getByLabel('ทีม / บริษัทเอเจนซี').fill('ทีมแก้ไข');
+    await page.getByRole('button', { name: 'ส่งคำขอ', exact: true }).click();
+    await expect(page.getByText('ทีมแก้ไข', { exact: true })).toBeVisible();
+    const admin=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    await login(admin); await approve(admin,'อีเมล สมมติ');
+    await page.reload(); await page.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).click();
+    await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
+    await admin.close();
+  });
+  test('forgot password keeps an identical public response for missing accounts', async ({page}) => {
+    await page.goto('/login/forgot');
+    await page.getByLabel('อีเมล',{exact:true}).fill('does-not-exist@example.test');
+    await page.getByRole('button',{name:'ส่งรหัสยืนยัน'}).click();
+    await expect(page.getByRole('status')).toContainText('หากอีเมลนี้สามารถรับรหัสได้');
+    await expect(page.getByLabel('รหัส 6 หลัก')).toBeVisible();
+  });
+  test('recovery OTP sets a new password and revokes previous refresh sessions', async ({page}) => {
+    const email=`recovery-${Date.now()}@example.test`, old='Synthetic-old-password!', password='Synthetic-new-password!';
+    const auth='http://127.0.0.1:54329/auth/v1';
+    await page.request.post(`${auth}/signup`,{data:{email,password:old}});
+    const code=async(type:string)=>(JSON.parse(await readFile('.local/hosted-test-simulation/auth-outbox.json','utf8'))).findLast((r:{email:string;type:string})=>r.email===email&&r.type===type).token;
+    const previous=await(await page.request.post(`${auth}/verify`,{data:{email,type:'email',token:await code('email')}})).json();
+    await page.goto('/login/forgot');
+    await page.getByLabel('อีเมล',{exact:true}).fill(email); await page.getByRole('button',{name:'ส่งรหัสยืนยัน'}).click();
+    await expect(page.getByRole('status')).toContainText('หากอีเมลนี้สามารถรับรหัสได้');
+    await page.getByLabel('รหัส 6 หลัก').fill(await code('recovery')); await page.getByRole('button',{name:'ยืนยันรหัส',exact:true}).click();
+    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)').fill(password);
+    await page.getByLabel('ยืนยันรหัสผ่าน',{exact:true}).fill(password);
+    await page.getByRole('button',{name:'บันทึกรหัสผ่านใหม่'}).click();
+    await expect(page.getByRole('status')).toContainText('ออกจากระบบทุกเซสชันแล้ว');
+    expect((await page.request.post(`${auth}/token?grant_type=refresh_token`,{data:{refresh_token:previous.refresh_token}})).status()).toBe(400);
+    expect((await page.request.post(`${auth}/token?grant_type=password`,{data:{email,password:old}})).status()).toBe(400);
+    expect((await page.request.post(`${auth}/token?grant_type=password`,{data:{email,password}})).status()).toBe(200);
+  });
+  test('401 keeps unsaved text and offers sign-in to the same page in a new tab', async ({page}) => {
+    await login(page); await page.goto('/admin/accounts');
+    await page.getByRole('button',{name:/ใช้งานอยู่/}).click();
+    const row=page.locator('details.registry-panel').first(); await row.locator('summary').first().click();
+    await row.getByLabel('เหตุผลการตัดสินใจ').fill('ข้อความยังไม่บันทึก');
+    await page.route('**/api/hub/v1/admin/accounts/*/decision',r=>r.fulfill({status:401,json:{error:{message:'เซสชันหมดอายุ'}}}));
+    await row.getByRole('button',{name:'เปลี่ยนบทบาท'}).click();
+    await expect(row.getByLabel('เหตุผลการตัดสินใจ')).toHaveValue('ข้อความยังไม่บันทึก');
+    const link=page.getByRole('link',{name:'เข้าสู่ระบบอีกครั้งในแท็บใหม่'});
+    await expect(link).toHaveAttribute('target','_blank'); await expect(link).toHaveAttribute('href','/login?next=%2Fadmin%2Faccounts');
+  });
+});

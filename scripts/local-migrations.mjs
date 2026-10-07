@@ -21,6 +21,7 @@ export async function applyLocalMigrations(client) {
   }
   // These fixtures are local development data, never part of a deployment migration.
   for (const [name, file] of [
+    ['local-accounts-v1', 'sample-accounts.sql'],
     ['local-seed', '../supabase/seed.sql'],
     ['local-intake-samples', 'sample-intake.sql'],
     ['local-brand-samples', 'sample-brands.sql'],

@@ -15,7 +15,7 @@ from sena_hub_api.questions import load_catalog, OWNER_GROUPS, PRESENTATION_FIEL
 ROOT = Path(__file__).resolve().parents[3]
 PATH = "/v1/admin/questions"
 TOKENS = {role: "synthetic-questions-" + role + "-" + "x" * 40 for role in DEMO_ROLES}
-HIDDEN_IDS = {"Q9", "Q10", "Q11", "Q12", "Q18", "Q20"}
+HIDDEN_IDS = {"Q9", "Q10", "Q11", "Q12", "Q18", "Q20", "Q72"}
 spec = importlib.util.spec_from_file_location("sync_questions", ROOT / "scripts" / "sync-questions.py")
 sync_questions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sync_questions)
@@ -44,7 +44,7 @@ def test_each_staff_role_receives_only_pending_thai_policy_fields(client, role):
     assert set(response.json()) == {"data"}
     assert set(response.json()["data"]) == {"questions"}
     entries = response.json()["data"]["questions"]
-    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 72)} - HIDDEN_IDS
+    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 74)} - HIDDEN_IDS
     assert {entry["owner_group"] for entry in entries} == OWNER_GROUPS
     for entry in entries:
         assert set(entry) == set(PRESENTATION_FIELDS)

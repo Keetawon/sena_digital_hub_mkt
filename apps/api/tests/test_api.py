@@ -292,25 +292,24 @@ def auth_and_claims(signing_key):
         "iss": "https://example.supabase.co/auth/v1", "aud": "authenticated",
         "iat": int(time.time()) - 1, "exp": int(time.time()) + 60,
         "sub": "00000000-0000-0000-0000-000000000002",
-        "app_metadata": {"hub_role": "publisher"},
+        "app_metadata": {"hub_role": "publisher"}, "email": "synthetic@example.test",
     }
     return auth, claims
 
 
 @pytest.mark.parametrize("hub_role", ["publisher", "admin"])
-def test_supabase_verifies_jwks_and_uses_only_app_metadata(signing_key, hub_role):
+def test_supabase_verifies_identity_and_ignores_role_metadata(signing_key, hub_role):
     auth, claims = auth_and_claims(signing_key)
     claims["app_metadata"]["hub_role"] = hub_role
     claims.update(role="service_role", user_metadata={"hub_role": "editor"})
     token = jwt.encode(claims, signing_key, algorithm="RS256", headers={"kid": "local-test-key"})
-    assert auth.verify_jwt(token).role == hub_role
+    assert auth.verify_jwt(token)["sub"] == claims["sub"]
 
 
 @pytest.mark.parametrize("changes", [
     {"iss": "https://attacker.example/auth/v1"}, {"aud": "other-app"},
     {"aud": ["authenticated", "other-app"]}, {"exp": 1},
-    {"app_metadata": {}, "user_metadata": {"hub_role": "publisher"}},
-    {"app_metadata": {"hub_role": "service_role"}}, {"sub": "not-a-uuid"},
+    {"email": ""}, {"is_anonymous": True}, {"sub": "not-a-uuid"},
 ])
 def test_supabase_rejects_invalid_claims(signing_key, changes):
     auth, claims = auth_and_claims(signing_key)

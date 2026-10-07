@@ -2,7 +2,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getLocalRole } from "./local-session";
-import { hostedConfig, isHostedMode, verifiedRole } from "./hosted-config";
+import { hostedConfig, isHostedMode, accountRole } from "./hosted-config";
 
 export const getHostedCaller = cache(async () => {
   const config = hostedConfig();
@@ -20,10 +20,10 @@ export const getHostedCaller = cache(async () => {
   // Verify the exact bearer we forward; the cached cookie's user/role is untrusted.
   const { data: { user }, error } = await client.auth.getUser(session.access_token);
   if (error || !user) return null;
-  const role = verifiedRole(user.app_metadata);
-  if (!role) return null;
-  // FastAPI independently verifies this JWT and enforces caller RLS.
-  return { role, token: session.access_token };
+  const response = await fetch(`${config.apiOrigin}/v1/me`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store", signal: AbortSignal.timeout(10000) });
+  if (!response.ok) return null;
+  const { data: account } = await response.json();
+  return { role: accountRole(account), account, token: session.access_token };
 });
 
 export async function getHubRole() { return isHostedMode() ? (await getHostedCaller())?.role ?? null : getLocalRole(); }

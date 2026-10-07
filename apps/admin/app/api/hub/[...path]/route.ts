@@ -30,13 +30,14 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     return error("ยังไม่เปิดใช้งานการยืนยันตัวตนสำหรับสภาพแวดล้อมนี้", 503);
   }
   const caller = hosted ? await getHostedCaller() : null;
-  const role = hosted ? caller?.role : await getLocalRole();
+  const role = hosted ? (caller ? caller.role || "viewer" : null) : await getLocalRole();
   if (!role) return error("กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
   const path = (await context.params).path.join("/");
   const method = request.method as keyof typeof allowed;
   if (hosted && !h1AllowsApi(path, method)) return error(h1Unavailable, 403);
   // Asset bytes use a bearer-authenticated direct API request, outside Vercel limits.
   if (hosted && (method === "POST" && path === "v1/admin/assets" || method === "GET" && /\/assets\/[^/]+\/file$/.test(path))) return error("กรุณาใช้ช่องทางรับส่งไฟล์ส่วนตัวของ TEST H1", 400);
+  const accountPath = method === "GET" && ["v1/me", "v1/accounts/display-names", "v1/admin/accounts"].includes(path) || ["POST", "PATCH"].includes(method) && path === "v1/me/access-request" || method === "POST" && /^v1\/admin\/accounts\/[0-9a-f-]{36}\/decision$/.test(path);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
   const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review|questions/${id}/review|projects/${id}/preview-release)$`).test(path);
@@ -66,7 +67,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(allowed[method]?.test(path) || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(accountPath || allowed[method]?.test(path) || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const progressQuery = method === "GET" && path === "v1/admin/projects/progress" && [...query.keys()].every(key =>
@@ -101,7 +102,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (method !== "GET" && !(hosted ? request.headers.get("origin") === configuration!.adminOrigin : hasSameLocalOrigin(request))) {
     return error("ไม่อนุญาตคำขอจากต้นทางนี้", 403);
   }
-  const token = hosted ? caller?.token : getRoleToken(path.startsWith("v1/admin/") ? role : "service_consumer");
+  const token = hosted ? caller?.token : getRoleToken(accountPath || path.startsWith("v1/admin/") ? role : "service_consumer");
   if (!token) return error("ยังไม่ได้ตั้งค่าสิทธิ์เชื่อมต่อบนเซิร์ฟเวอร์", 503);
   let base: URL;
   try {

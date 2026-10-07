@@ -92,6 +92,8 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     assert.equal((await client.query('select count(*)::int count from hub.projects')).rows[0].count,0);
     log('PASS: caller-forged GUC ignored; runtime/agency cannot enable flags or assume owners; H1 residential allowed while original deferred guard stays closed.');
     if(seed) {
+      const {IDENTITIES}=await import('./hosted-test-fixtures.mjs');
+      for (const [i,u] of IDENTITIES.entries()) await client.query("insert into hub.user_account(id,email,display_name_th,status,hub_role,agency_code) values($1,$2,$3,'ACTIVE',$4,$5) on conflict(id) do nothing",[u.id,u.email,`ผู้ทดสอบ สมมติ ${i+1}`,u.app_metadata.hub_role,u.app_metadata.hub_agency??null]);
       const {applyH1Seed}=await import('./hosted-test-seed.mjs');
       await applyH1Seed(client);await applyH1Seed(client);
       assert.equal((await client.query("select count(*)::int count from ads.setting where value<>'false'::jsonb")).rows[0].count,0);

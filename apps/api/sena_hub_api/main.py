@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from starlette.exceptions import HTTPException
 
+from .accounts import register_account_routes
 from .auth import Actor, Authentication, AUTH_ROLES, Settings, failure
 from . import assets as asset_files
 from .facilities import register_facility_routes
@@ -888,6 +889,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         row = await published_model_row(public_id, request, actor)
         return {"data": frozen_assets(row, role, row["published_model"]["public_model_id"]), "meta": public_meta(row)}
 
+    register_account_routes(app, authentication, database)
     register_facility_routes(app, admin, writer, database, detail)
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_ads_routes(app, authentication, database, settings)

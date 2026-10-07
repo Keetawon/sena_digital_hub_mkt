@@ -18,7 +18,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from sena_hub_api import assets, main
-from sena_hub_api.auth import Actor, Authentication, Settings
+from sena_hub_api.auth import Actor, Authentication, Settings, ALL_DEMO_ACTORS
 from sena_hub_api.hosted_assets import BUCKET, HostedAssets, NoRedirect
 from test_assets import image_bytes
 
@@ -93,7 +93,7 @@ def signed_client(signing_key, *, role="admin", agency=None, **changes):
         metadata["hub_agency"] = agency
     claims = {"iss": "http://127.0.0.1:54329/auth/v1", "aud": "authenticated",
               "iat": int(time.time()) - 1, "exp": int(time.time()) + 60,
-              "sub": str(UUID(int=701)), "app_metadata": metadata, **changes}
+              "sub": str(ALL_DEMO_ACTORS[f"agency_{agency.lower()}" if role == "agency" else role]), "email": "signed@example.test", "app_metadata": metadata, **changes}
     token = jwt.encode(claims, signing_key, algorithm="RS256", headers={"kid": "h1-only"})
     return TestClient(app, client=("127.0.0.1", 50000)), {"Authorization": f"Bearer {token}"}
 
@@ -112,8 +112,7 @@ def test_seven_signed_test_identities_and_module_capabilities(signing_key, role,
 
 @pytest.mark.parametrize("changes", [
     {"exp": 1}, {"iss": "https://wrong.example/auth/v1"}, {"aud": "service_role"},
-    {"app_metadata": {}, "user_metadata": {"hub_role": "admin"}},
-    {"app_metadata": {"hub_role": "agency"}}, {"app_metadata": {"hub_role": "postgres"}},
+    {"email": ""}, {"is_anonymous": True},
 ])
 def test_invalid_jwt_cannot_use_headers_or_local_cookie(signing_key, changes):
     client, headers = signed_client(signing_key, **changes)

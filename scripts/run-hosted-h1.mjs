@@ -12,7 +12,7 @@ import { simulateHostedTest } from './simulate-hosted-test.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
 if(args.some(x=>!['--test','--existing-simulation','--api-only','--admin-only'].includes(x)) || (component && !args.includes('--existing-simulation'))) throw new Error('Invalid local simulation arguments');
-const children=[];let database,mock,closing=false;
+const children=[];let database,mock,closing=false,adminProcess;
 function child(command,arguments_,env,cwd=root) {
   const process_=spawn(command,arguments_,{cwd,env,stdio:'inherit',windowsHide:true});children.push(process_);return process_;
 }
@@ -46,7 +46,7 @@ try {
   if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||dsn.port!=='55434'||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
   const env={...process.env};
   for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_')||name==='OPENAI_API_KEY')delete env[name];
-  Object.assign(env,{HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
+  Object.assign(env,{HUB_AUTH_GOOGLE:'1',HUB_AUTH_PASSWORD:'1',HUB_ENV_LABEL:'LOCAL H1',HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
     HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
     HUB_SUPABASE_STORAGE_KEY:SIMULATION_STORAGE_KEY,HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
@@ -57,12 +57,24 @@ try {
     await ready('http://127.0.0.1:8001/health',api);
   }
   if(component!=='api') {
-    const admin=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
-    await ready('http://127.0.0.1:3001/login',admin);
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
+    await ready('http://127.0.0.1:3001/login',adminProcess);
   }
   if(args.includes('--test')) {
-    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
-    const [code]=await once(tests,'exit');await stop();process.exit(code??1);
+    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
+    const [code]=await once(tests,'exit');
+    if(code!==0) {await stop();process.exit(code??1);}
+    // Restart only this runner's owned Next process to exercise configuration-off
+    // behavior through real SSR/proxy/browser paths, preserving the local mock DB.
+    const exited=once(adminProcess,'exit');
+    if(process.platform==='win32') await new Promise(resolve=>execFile('taskkill',['/PID',String(adminProcess.pid),'/T','/F'],{windowsHide:true},()=>resolve()));
+    else adminProcess.kill('SIGTERM');
+    await exited;
+    const off={...env,HUB_AUTH_PASSWORD:'0',HUB_AUTH_GOOGLE:'0'};
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],off,path.join(root,'apps/admin'));
+    await ready('http://127.0.0.1:3001/login',adminProcess);
+    const flagTests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/accounts-flags-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1-flags')],{...off,PLAYWRIGHT_CHANNEL:'msedge'});
+    const [flagCode]=await once(flagTests,'exit');await stop();process.exit(flagCode??1);
   }else{
     console.log(`H1 local ${component??'demo'} ready. No hosted requests or provisioning. Ctrl+C stops owned processes.`);
     for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await stop();process.exit(0);});

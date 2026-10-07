@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import os
-import re
 import secrets
 from dataclasses import dataclass, field
 from urllib.parse import parse_qs, urlparse
@@ -123,7 +122,7 @@ class Authentication:
             if settings.auth_mode == "supabase" else None
         )
 
-    def verify_jwt(self, token: str) -> Actor:
+    def verify_jwt(self, token: str) -> dict:
         if not self.jwks:
             raise jwt.InvalidTokenError("JWT mode is not configured")
         if jwt.get_unverified_header(token).get("alg") not in {"ES256", "RS256"}:
@@ -137,14 +136,10 @@ class Authentication:
             issuer=self.issuer,
             options={"require": ["exp", "iat", "sub", "iss", "aud"], "strict_aud": True},
         )
-        metadata = claims.get("app_metadata")
-        role = metadata.get("hub_role") if isinstance(metadata, dict) else None
-        if role not in AUTH_ROLES:
-            raise jwt.InvalidTokenError("Hub role missing")
-        agency = metadata.get("hub_agency") if role == "agency" else None
-        if role == "agency" and (not isinstance(agency, str) or not re.fullmatch(r"[A-Z0-9]{2,20}", agency)):
-            raise jwt.InvalidTokenError("Canonical Hub agency missing")
-        return Actor(UUID(claims["sub"]), role, agency)
+        if claims.get("is_anonymous") or not isinstance(claims.get("email"), str) or "@" not in claims["email"]:
+            raise jwt.InvalidTokenError("Verified email identity required")
+        UUID(claims["sub"])
+        return claims
 
     async def __call__(self, request: Request) -> Actor:
         # Do not accept client role headers, user_metadata, or the top-level JWT role.
@@ -161,15 +156,38 @@ class Authentication:
         if scheme.lower() != "bearer" or not token or len(token) > 16384 or not token.isascii():
             raise failure(401, "unauthenticated", "กรุณาเข้าสู่ระบบเพื่อใช้งาน")
 
+        claims = None
         if self.settings.auth_mode == "demo":
             for role in DEMO_ROLES:
                 configured = self.settings.demo_tokens.get(role, "")
                 if configured and secrets.compare_digest(token, configured):
-                    return Actor(ALL_DEMO_ACTORS[role], "agency" if role in DEMO_AGENCIES else role,
-                                 DEMO_AGENCIES.get(role))
+                    claims = {"sub": str(ALL_DEMO_ACTORS[role]), "email": f"demo-{role}@example.test"}
+                    break
         else:
             try:
-                return await asyncio.to_thread(self.verify_jwt, token)
+                claims = await asyncio.to_thread(self.verify_jwt, token)
             except (jwt.PyJWTError, ValueError, TypeError, KeyError):
                 pass
-        raise failure(401, "invalid_token", "ข้อมูลเข้าสู่ระบบไม่ถูกต้องหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่")
+        if claims is None:
+            raise failure(401, "invalid_token", "ข้อมูลเข้าสู่ระบบไม่ถูกต้องหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่")
+        account = await self.load_account(request, claims)
+        active = account["status"] == "ACTIVE"
+        account["role"] = account["hub_role"] if active else None
+        account["agency"] = account["agency_code"] if active else None
+        request.state.account = account
+        limited = (request.url.path == "/v1/me" and request.method == "GET" or
+                   request.url.path == "/v1/me/access-request" and request.method in {"POST", "PATCH"})
+        if not active and not limited:
+            raise failure(403, "account_inactive", "บัญชียังไม่ได้รับอนุมัติหรือถูกระงับ กรุณาตรวจสถานะคำขอ")
+        return Actor(UUID(claims["sub"]), account["role"] or "viewer", account["agency"])
+
+    async def load_account(self, request: Request, claims: dict) -> dict:
+        metadata = claims.get("app_metadata") if isinstance(claims.get("app_metadata"), dict) else {}
+        display = claims.get("user_metadata") if isinstance(claims.get("user_metadata"), dict) else {}
+        async with request.app.state.pool.acquire() as connection:
+            async with connection.transaction():
+                await connection.execute("SET LOCAL ROLE viewer")
+                await connection.execute("SELECT set_config('app.actor_id', $1, true)", claims["sub"])
+                account = await connection.fetchval("SELECT hub.account_identity($1,$2,$3)", claims["email"],
+                    str(metadata.get("provider", "email")), str(display.get("full_name", "")))
+        return account
