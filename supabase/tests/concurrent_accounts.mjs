@@ -34,6 +34,16 @@ try {
   staleReopen.catch(()=>{});
   await first.query('commit');await assert.rejects(staleReopen,{code:'40001'});await second.query('rollback');
   assert.equal((await setup.query("select count(*)::int count from hub.user_account_event where account_id=$1 and action='reopen' and previous_decision_note='original rejection'",[rejected])).rows[0].count,1);
+  // Invite creation shares the decision lock: one normalized email wins.
+  for(const [client,id] of [[first,a],[second,b]]) {
+    await client.query('begin');await client.query('set local role admin');
+    await client.query("select set_config('app.actor_id',$1,true)",[id]);
+  }
+  const invitation={email:`race-${a}@example.test`,company_type:'SENA',hub_role:'viewer'};
+  await first.query('select hub.create_invite($1)',[invitation]);
+  const duplicate=second.query('select hub.create_invite($1)',[{...invitation,email:invitation.email.toUpperCase()}]);duplicate.catch(()=>{});
+  await first.query('commit');await assert.rejects(duplicate,{code:'23505',detail:'invite_exists'});await second.query('rollback');
+  assert.equal((await setup.query('select count(*)::int count from hub.account_invite where email=$1',[invitation.email])).rows[0].count,1);
   for(const [client,id] of [[first,a],[second,b]]) {
     await client.query('begin');await client.query('set local role admin');
     await client.query("select set_config('app.actor_id',$1,true)",[id]);
@@ -49,11 +59,12 @@ try {
   await first.query('begin');await first.query('set local role admin');
   await first.query("select set_config('app.actor_id',$1,true)",[a]);
   await assert.rejects(first.query("select hub.decide_account($1,'role','viewer',null,'self',$2)",[a,stamps.find(r=>r.id===a).updated_at]),{code:'42501'});
-  console.log('PASS: concurrent reopen audits once and rejects a stale decision; cross-suspension leaves one admin');
+  console.log('PASS: concurrent invitation creation has one winner; reopen audits once; cross-suspension leaves one admin');
 } finally {
   await first.query('rollback').catch(()=>{});await second.query('rollback').catch(()=>{});
   await setup.query("update hub.user_account set status='ACTIVE' where id=any($1)",[originals.map(r=>r.id)]);
   await setup.query('delete from hub.user_account_event where account_id=any($1) or actor_id=any($1)',[[a,b,rejected]]);
   await setup.query('delete from hub.user_account where id=any($1)',[[a,b,rejected]]);
+  await setup.query('delete from hub.account_invite where created_by=any($1)',[[a,b]]);
   await Promise.all([setup.end(),first.end(),second.end()]);
 }

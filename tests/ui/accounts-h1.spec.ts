@@ -18,7 +18,8 @@ test.describe('Accounts on loopback H1', () => {
     await expect(page.getByRole('heading', { name: 'ขอสิทธิ์ใช้งาน' })).toBeVisible();
     await page.getByLabel('ชื่อและนามสกุลภาษาไทย').fill(name);
     await page.getByLabel('เบอร์โทรศัพท์ที่ทำงาน').fill('020000000');
-    await page.getByLabel('ทีม / บริษัทเอเจนซี').fill('ทีมทดสอบ');
+    await page.getByLabel('ทีม / ฝ่าย').fill('ทีมทดสอบ');
+    await page.getByLabel('บริษัท',{exact:true}).selectOption('SENA');await page.getByLabel('ตำแหน่ง',{exact:true}).fill('ผู้ประสานงาน');
     await page.getByLabel('อ่านข้อมูลโครงการ', { exact: true }).check();
     await page.getByLabel('เหตุผล / โครงการที่รับผิดชอบ').fill('ดูแลข้อมูลสมมติ');
     await page.getByLabel('รับทราบประกาศความเป็นส่วนตัว').check();
@@ -28,14 +29,13 @@ test.describe('Accounts on loopback H1', () => {
   }
   async function approve(page: Page, name: string) {
     await page.goto('/admin/accounts');
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill(name);
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(name);
     const names = await page.request.get('/api/hub/v1/accounts/display-names');
     expect(names.status()).toBe(200);
     await expect(page.getByRole('link', {name: /ผู้ใช้และสิทธิ์/})).toBeVisible();
-    const row = page.locator('details.registry-panel').filter({ hasText: name });
-    await row.locator('summary').first().click();
+    const row = page.getByRole('article').filter({ hasText: name });
     await page.screenshot({path:'artifacts/accounts-admin.png',fullPage:true});
-    await row.getByRole('button', { name: 'อนุมัติ', exact: true }).click();
+    await row.getByRole('button', { name: /^อนุมัติเป็น/ }).click();
     await expect(row).toHaveCount(0);
   }
   test('Google PKCE first sign-in, request, admin approval, access and suspension', async ({ page, browser }) => {
@@ -58,11 +58,12 @@ test.describe('Accounts on loopback H1', () => {
     await page.getByRole('button',{name:'เข้าสู่ระบบด้วย Google'}).click();
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
     expect(new URL(page.url()).origin).toBe('http://127.0.0.1:3001');
-    await admin.getByRole('button', { name: /ใช้งานอยู่/ }).click();
-    const row = admin.locator('details.registry-panel').filter({ hasText: 'กูเกิล สมมติ' });
-    await row.locator('summary').first().click();
-    admin.once('dialog', d => d.accept()); await row.getByRole('button', { name: 'ระงับ', exact: true }).click();
-    await expect(row).toHaveCount(0);
+    await admin.getByRole('tab', { name: 'ผู้ใช้ทั้งหมด' }).click();
+    const row = admin.getByRole('row').filter({ hasText: 'กูเกิล สมมติ' });
+    await row.getByRole('button',{name:'จัดการ'}).click();
+    const panel=admin.getByRole('dialog');await panel.getByLabel('เหตุผลที่ระงับบัญชี').fill('ระงับเพื่อทดสอบ');
+    await panel.getByRole('button',{name:'ระงับบัญชี',exact:true}).click();
+    await expect(panel.locator('.account-pill-suspended')).toBeVisible();
     expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(403);
     await page.goto('/knowledge'); await expect(page).toHaveURL(/\/account\/request$/);
     await admin.close();
@@ -88,7 +89,7 @@ test.describe('Accounts on loopback H1', () => {
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:'artifacts/accounts-request-mobile.png',fullPage:true});
     await page.getByRole('button', { name: 'แก้ไขคำขอ' }).click();
-    await page.getByLabel('ทีม / บริษัทเอเจนซี').fill('ทีมแก้ไข');
+    await page.getByLabel('ทีม / ฝ่าย').fill('ทีมแก้ไข');
     await page.getByRole('button', { name: 'ส่งคำขอ', exact: true }).click();
     await expect(page.getByText('ทีมแก้ไข', { exact: true })).toBeVisible();
     const admin=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
@@ -124,12 +125,15 @@ test.describe('Accounts on loopback H1', () => {
   });
   test('401 keeps unsaved text and offers sign-in to the same page in a new tab', async ({page}) => {
     await login(page); await page.goto('/admin/accounts');
-    await page.getByRole('button',{name:/ใช้งานอยู่/}).click();
-    const row=page.locator('details.registry-panel').first(); await row.locator('summary').first().click();
-    await row.getByLabel('เหตุผลการตัดสินใจ').fill('ข้อความยังไม่บันทึก');
+    await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill('hub-test-editor@example.test');
+    await page.getByRole('row').filter({hasText:'hub-test-editor@example.test'}).getByRole('button',{name:'จัดการ'}).click();
+    const row=page.getByRole('dialog');
+    await row.getByRole('radio',{name:/ผู้อ่านข้อมูล/}).check();
+    await row.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('ข้อความยังไม่บันทึก');
     await page.route('**/api/hub/v1/admin/accounts/*/decision',r=>r.fulfill({status:401,json:{error:{message:'เซสชันหมดอายุ'}}}));
-    await row.getByRole('button',{name:'เปลี่ยนบทบาท'}).click();
-    await expect(row.getByLabel('เหตุผลการตัดสินใจ')).toHaveValue('ข้อความยังไม่บันทึก');
+    await row.getByRole('button',{name:'บันทึก',exact:true}).click();
+    await expect(row.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)')).toHaveValue('ข้อความยังไม่บันทึก');
     const link=page.getByRole('link',{name:'เข้าสู่ระบบอีกครั้งในแท็บใหม่'});
     await expect(link).toHaveAttribute('target','_blank'); await expect(link).toHaveAttribute('href','/login?next=%2Fadmin%2Faccounts');
   });

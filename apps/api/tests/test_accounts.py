@@ -15,7 +15,7 @@ from sena_hub_api.main import create_app
 from sena_hub_api.accounts import ACCESS_FIELD_MESSAGES
 
 
-REQUEST = dict(display_name_th='ผู้สมัคร ทดสอบ', phone='020000000', team='ทีมสมมติ',
+REQUEST = dict(display_name_th='ผู้สมัคร ทดสอบ', phone='020000000', team='ทีมสมมติ', company_type='SENA', position='ผู้ประสานงาน',
                requested_tasks=['edit'], reason='ดูแลโครงการสมมติ', privacy_acknowledged=True)
 
 
@@ -24,7 +24,7 @@ def accounts(monkeypatch):
     identities = {'admin': '00000000-0000-0000-0000-000000000005', 'new': str(uuid4()), 'other': str(uuid4())}
     def verify(self, token):
         return {'sub': identities[token], 'email': f'{token}@example.test',
-                'app_metadata': {'provider': 'google', 'hub_role': 'admin'}, 'user_metadata': {'hub_role': 'admin'}}
+                'app_metadata': {'provider': 'google', 'hub_role': 'admin'}, 'user_metadata': {'hub_role': 'admin', 'email_verified': True}}
     monkeypatch.setattr(Authentication, 'verify_jwt', verify)
     settings = Settings(database_url=os.environ['HUB_TEST_DATABASE_URL'], auth_mode='supabase',
                         environment='production', supabase_url='https://example.supabase.co')
@@ -81,7 +81,7 @@ def test_all_other_api_routes_fail_closed(accounts, state):
         assert decision(client, 'new', 'suspend').status_code == 200
     tested = 0
     for route in client.app.routes:
-        if not isinstance(route, APIRoute) or not route.path.startswith('/v1/') or route.path in ('/v1/me', '/v1/me/access-request'):
+        if not isinstance(route, APIRoute) or not route.path.startswith('/v1/') or route.path in ('/v1/me', '/v1/me/access-request', '/v1/me/invite-accept'):
             continue
         path = route.path
         for name in route.param_convertors:
@@ -94,11 +94,12 @@ def test_all_other_api_routes_fail_closed(accounts, state):
     assert client.get('/v1/me', headers=h('new')).json()['data']['status'] == state
     if state != 'PENDING':
         assert client.patch('/v1/me/access-request', headers=h('new'), json=REQUEST).status_code == 403
+        assert client.post('/v1/me/invite-accept', headers=h('new'), json={}).status_code == 403
 
 
 @pytest.mark.parametrize('field,value', [
     ('display_name_th', 'Synthetic Google User'), ('phone', '02+000000'),
-    ('team', ''), ('requested_tasks', []), ('reason', ''), ('privacy_acknowledged', False),
+    ('team', ''), ('company_type', ''), ('company_name', 'x'*201), ('position', ''), ('position','x'*101), ('requested_tasks', []), ('reason', ''), ('privacy_acknowledged', False),
 ])
 def test_request_has_specific_thai_field_errors_without_writing(accounts, field, value):
     client, _ = accounts

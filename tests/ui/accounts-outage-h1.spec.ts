@@ -11,7 +11,8 @@ const server=createServer((req,res)=>{
   res.writeHead(status,{'Content-Type':'application/json'});
   if(status!==200) return res.end(JSON.stringify({error:{message:'บัญชียังไม่ได้รับอนุมัติ'}}));
   const data=req.url==='/v1/me'?{id:'synthetic',status:mode==='pending'?'PENDING':'ACTIVE',role:'admin',agency:null}:
-    req.url==='/v1/admin/accounts'?{items:[],events:[],agencies:[]}:[];
+    req.url==='/v1/admin/accounts'?{items:[],events:[],agencies:[],actor_id:'synthetic'}:
+    req.url==='/v1/admin/account-invites'?{items:[],login_url:'http://127.0.0.1:3001/login'}:[];
   res.end(JSON.stringify({data}));
 });
 async function login(page:Page) {
@@ -30,13 +31,13 @@ test.describe('Upstream availability is distinct from authentication',()=>{
   test.beforeEach(async({page})=>{await page.route('**/*',route=>['http:','https:'].includes(new URL(route.request().url()).protocol)&&new URL(route.request().url()).hostname!=='127.0.0.1'?route.abort():route.continue());});
   for(const failure of ['500','network','timeout'] as const) test(`${failure}: proxy API returns 503, edits survive, page shows retry without redirect`,async({page})=>{
     test.setTimeout(45000);await login(page);
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill('ข้อความยังไม่บันทึก');
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill('ข้อความยังไม่บันทึก');
     mode=failure;
     const started=Date.now();
     const response=await page.evaluate(async()=>{const r=await fetch('/api/hub/v1/me');return {status:r.status,body:await r.json()};});
     expect(response.status).toBe(503);expect(response.body.error.message).toBe('ระบบขัดข้องชั่วคราว กรุณาลองใหม่');
     if(failure==='timeout') expect(Date.now()-started).toBeGreaterThanOrEqual(9000);
-    await expect(page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม')).toHaveValue('ข้อความยังไม่บันทึก');
+    await expect(page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม')).toHaveValue('ข้อความยังไม่บันทึก');
     await expect(page.getByRole('link',{name:'เข้าสู่ระบบอีกครั้งในแท็บใหม่'})).toHaveCount(0);
     const cookiesBefore=await page.context().cookies();
     const result=await page.goto('/questions?keep=this');expect(result?.status()).toBe(503);

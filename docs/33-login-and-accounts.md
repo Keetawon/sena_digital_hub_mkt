@@ -7,14 +7,115 @@ supersedes the invite-only and JWT-metadata-role rules in doc 27 §4 and Q12.
 
 ## Identity and access
 
+### Owner decisions — 8 October 2026
+
+1. Admins may invite by email for **14 days**. Invitations cannot grant `admin`
+   or `service_consumer`; promote to admin through account management after first
+   sign-in. The existing single `hub_role` remains; per-tab permissions are later.
+2. Only **REJECT** and **SUSPEND** reasons are user-visible. `decision_note` on
+   the account row holds that reason; approve, role change, reactivate and reopen
+   clear it. Every action note remains in admin-only `user_account_event` history.
+   `/v1/me` never returns admin-only notes. Migration 44 clears legacy visible notes
+   on other statuses without deleting audit history.
+3. New/edited requests and invitation acceptance require company and position.
+   Existing accounts keep NULL fields, displayed as **ยังไม่ระบุ**.
+4. Company types: `SENA` = **เสนาดีเวลลอปเมนท์**;
+   `SENA_SUBSIDIARY` = **บริษัทในเครือเสนา** (name required);
+   `AGENCY` = **เอเจนซี** (name required for a self-request);
+   `CONTRACTOR` = **ผู้รับจ้างภายนอก** (name required).
+   Position is **1–100 characters**, as clarified by the owner. The existing team
+   field is now **ทีม / ฝ่าย**. Names/team remain capped at 200 characters.
+
+### Email invitations and confirmation proof
+
+`hub.account_invite` stores normalized lower/trimmed email, display hint,
+company/team, one allowed role and optional agency code, creator, creation/expiry,
+acceptance and cancellation. A partial unique index allows one INVITED row per
+email. EXPIRED is derived at read time; a new invitation retires an expired row.
+Admins can extend an INVITED row to 14 days from now or cancel it. Both use the
+expected `expires_at` as a stale-write guard. All changes are audited with an
+`invite_id`; there are no direct app grants on the table.
+
+Creating an invitation for an existing Hub email returns `account_exists` and the
+account UUID, with **เปิดบัญชีเดิม** in the UI. A live duplicate, admin/service role,
+or invalid agency is refused. Agency invitations lock company to the canonical
+agency code; validity is checked again when accepting. The UI displays the
+configured admin origin plus `/login`, a copy button and **สิทธิ์ผูกกับอีเมล
+ไม่ได้ผูกกับลิงก์**. No invitation email is sent. The link is public navigation,
+not a bearer credential, and has no token or email query parameter.
+
+After verified sign-in, a matching live invitation offers **ตอบรับคำเชิญ**:
+Thai full name, phone, position, prefilled company/team, privacy acknowledgement.
+Acceptance runs under the same advisory lock as account decisions and invite
+creation, then locks the account/invitation. It rechecks status, expiry, agency
+and confirmation; sets ACTIVE with the invitation’s role/agency and
+`decided_by = created_by`; marks ACCEPTED; appends `INVITE_ACCEPT`. Acceptance is
+explicit and single-use. Expired/cancelled invitations show the normal request
+with an explanatory Thai message.
+
+Email proof is **the protected `auth.users` row**: a SECURITY DEFINER helper reads
+the row by the JWT-verified `sub`, requires non-null `email_confirmed_at`, and
+compares the current Auth email case-insensitively with the invitation and Hub
+row. Neither `user_metadata`, `app_metadata`, a browser field, nor a role-bearing
+JWT is accepted as proof. Auth `created_at` and Hub `created_at` must not predate
+the invitation. Thus an older identity cannot gain an invitation’s role; use the
+queue/account panel instead. Missing Auth storage/confirmation fails closed.
+The runtime has no direct Auth-table grant; the function is the only reader.
+Before hosted acceptance, verify that the migration/function owner can SELECT
+`auth.users(id,email,email_confirmed_at,created_at)` without a service key.
+
+The loopback simulation has a protected synthetic `auth.users` table written by
+the mock Auth operator callback on signup/confirmation/Google sign-in. API tests
+also prove that metadata claiming admin or an unconfirmed email cannot match.
+No hosted call is needed for matching: the lookup stays inside PostgreSQL.
+
+Endpoints: `GET/POST /v1/admin/account-invites`,
+`POST /v1/admin/account-invites/{id}/decision`, `POST /v1/me/invite-accept`.
+Both Next proxy and H1 route allowlists include these paths. Account/request data
+has no assistant, export, RAG or embedding route.
+
+### Local redesign evidence
+
+Baseline reproduction on `34a6c36` returned HTTP 200 / ACTIVE, removed the pending
+`details` row, and rendered zero success-status messages. Evidence is in ignored
+`artifacts/accounts-baseline-feedback.json` and `.png`. The requester page also
+had a one-shot fetch, confirmed by source inspection. This was a feedback gap,
+not a failed approval; the existing stale/agency/server checks remain intact.
+
+New screenshots (local generated evidence; never committed):
+
+- `artifacts/accounts-queue.png`
+- `artifacts/accounts-users.png`
+- `artifacts/accounts-manage.png`
+- `artifacts/accounts-manage-self.png`
+- `artifacts/accounts-manage-last-admin.png`
+- `artifacts/accounts-invite-create.png`
+- `artifacts/accounts-invite-accept.png`
+- `artifacts/accounts-mobile.png`
+
+The self/last-admin screenshots use the same sole synthetic admin, because a
+real authenticated active admin viewing the sole active admin is necessarily
+viewing their own account. Server checks independently guard both rules.
+
+The redesign reuses existing tokens, with no new palette. Measured text contrast:
+
+| Foreground / background | Ratio |
+|---|---:|
+| ink / surface | 15.23:1 |
+| muted / surface | 6.23:1 |
+| muted / surface-warm | 5.15:1 |
+| success-strong / success-soft | 6.81:1 |
+| danger / danger-soft | 5.94:1 |
+| action / surface | 9.00:1 |
+
 Sign in with Google or email/password. Self sign-up is allowed. Every new identity
-has a PENDING Hub account and must submit the same access request. Supabase JWTs
+has a PENDING Hub account. Self-registered users submit an access request; an eligible email invitation allows explicit acceptance after completing the short profile form. Supabase JWTs
 prove identity only; neither app_metadata nor user_metadata authorizes access.
 Provider data set by Supabase supplies the display-only sign-in method; editable
 profile names are only initial suggestions on the request form.
 
 `hub.user_account`, keyed by Auth UUID, stores the verified email, display name,
-work phone, team/company, requested tasks, reason, privacy acknowledgement, status,
+work phone, company type/name, position, team/department, requested tasks, reason, privacy acknowledgement, status,
 role, agency code and decision fields. `hub.user_account_event` records decisions
 and request edits without copying personal request text into immutable history.
 API responses and evidence retain UUIDs; staff screens resolve display names.
@@ -26,9 +127,9 @@ and publish permissions remain unchanged. Agency approvals require an ACTIVE,
 canonical, date-valid code from `ads.vocab`; existing agency RLS is unchanged.
 
 FastAPI verifies the JWT then performs one primary-key account lookup per request,
-with no role cache. Only ACTIVE accounts receive a role. PENDING, REJECTED and
+with no role cache. ACTIVE accounts keep that single indexed lookup; only an unsubmitted PENDING account needs the extra invitation/Auth proof lookup. Only ACTIVE accounts receive a role. PENDING, REJECTED and
 SUSPENDED accounts can call `GET /v1/me`, `POST/PATCH /v1/me/access-request` (edits
-are accepted only while pending), and Auth sign-out. Other data routes reject
+are accepted only while pending), `POST /v1/me/invite-accept` (eligible pending identities only), and Auth sign-out. Other data routes reject
 them. `/health` remains public. Next.js uses `/v1/me` for redirects and navigation.
 The local persona picker remains, with matching synthetic ACTIVE table rows.
 
@@ -53,31 +154,45 @@ The local persona picker remains, with matching synthetic ACTIVE table rows.
   configure those before hosted acceptance. The mock enforces five attempts,
   ten-minute expiry, one-use codes, and resend throttling independently of UI.
 - `/account/request`: prefilled name/email, Thai full name, work phone, team or
-  agency company, task checkboxes, reason/projects and privacy acknowledgement.
+  company type/name, team/department, position, task checkboxes, reason/projects and privacy acknowledgement.
   Suggested roles: read→viewer, edit→editor, publish→publisher,
   online→online_staff, agency→agency. Suggestions never grant access.
 - After submission: **รออนุมัติ**, request summary/status, optional configured admin
   contact, edit while pending. Rejected users see the decision reason; suspended
-  users see their status. ACTIVE users can enter their workspace.
+  users see the suspension reason. ACTIVE users can enter their workspace.
 - An API 401 shows a Thai banner linking to sign-in in a new tab and the same
   page. It does not navigate, reload or reset the current form. Users return to
   their original tab and retry saving; existing dirty guards remain active.
 
 ## ผู้ใช้และสิทธิ์
 
-`/admin/accounts` is admin-only, with รออนุมัติ / ใช้งานอยู่ / ระงับ / ปฏิเสธ
-filters, name/email/team search and a sidebar pending-request count. Expand a row
-for email, sign-in method, telephone link, team, requested tasks, suggested role,
-reason and audit history. Approve with a chosen role (plus agency code), change
-role, suspend, reactivate, or reject with a reason. Native confirmation dialogs
-protect granting admin and suspension. Errors leave typed fields intact.
+`/admin/accounts` is admin-only. The header action **+ เพิ่มผู้ใช้** creates an email
+invitation. Tabs are **คำขอรออนุมัติ (n)** / **ผู้ใช้ทั้งหมด** / **คำเชิญ (n)**.
+The sidebar and queue count submitted PENDING requests only. Signed-in accounts
+without a submission remain in **ยังไม่ส่งคำขอ**, with no approval action.
 
-The pending tab and sidebar count submitted requests only. Signed-in accounts
-without a submission appear under **ยังไม่ส่งคำขอ**, without Approve. Google names
-without Thai characters are placeholders; Thai field errors retain typed text.
-Phone validation accepts the same characters and length as the API. Decision
-errors distinguish self decisions, the last active admin, agency codes, missing
-rejection reasons and stale rows. Notes are visible to the applicant.
+Queue cards show the full request and preselect the task-based suggested role;
+admin is excluded from queue approval. The approval button follows the role label.
+Agency approval requires a canonical/date-valid agency code. Reject opens an
+inline required reason. A durable `role="status"` message confirms every decision.
+**ตัดสินใจแล้ววันนี้** uses account events from every admin and Bangkok dates;
+**เปิดบัญชี** opens the managed account. Today’s decided users show **ใหม่**.
+
+The users table searches name/email/company/team and filters status/role. It
+scrolls within its own container at 400 px. **จัดการ** opens a native right-side
+modal dialog: focus enters, stays inside, Escape closes, and focus returns to the
+opener. Role cards include one-line descriptions, a before/after diff, and an
+inline checkbox before granting admin. Save requires a change. Suspend has a
+separate required user-visible reason. Self is read-only; last-admin removal is
+disabled with an explanation. Database checks remain authoritative. No new UI
+animations or transitions and no `window.confirm` in account flows.
+
+Errors stay beside the action. A stale 409 offers **โหลดข้อมูลล่าสุด** and keeps
+typed notes and selections. `/account/request` reads `/v1/me` every 30 seconds
+while visible, and on focus/visibility changes. Status changes in place without
+navigation; dirty form values remain and an ACTIVE account gets a workspace link.
+Google names without Thai are placeholders. Thai per-field validation preserves
+input; phone patterns match the API.
 
 Admins can **เปิดรับคำขออีกครั้ง** (`reopen`) on a rejected account that has not been
 anonymised. The prior rejection note is preserved in private audit history. The
@@ -90,7 +205,7 @@ transaction lock. At least one active admin remains. App roles cannot directly
 update status/roles or mutate audit events. Users read only their own full row;
 admins read all; staff directory access returns only UUID/display name.
 
-Rejected personal fields are removed after 90 days by the operator maintenance
+Rejected personal fields, including company name and position, are removed after 90 days by the operator maintenance
 command below. Audit account/actor references for those requests are anonymised;
 the anonymous transition record remains. The purge is the sole operator-only
 exception to append-only events and cannot be invoked by app roles. Later sign-in
@@ -210,6 +325,45 @@ Follow-up verification after `7222c2c`, 7 October 2026:
   after adding an explicit unchanged local-demo 401 wording assertion.
 - Thai validation and reopened-request history screenshots were reviewed locally.
   All identities and OTP delivery were synthetic; no hosted acceptance was run.
+
+Redesign verification after `34a6c36`, 8 October 2026:
+
+- Typecheck and offline Webpack build passed. Migrations **44** (company/position,
+  private notes, profile validation and purge) and **45** (invitations and protected
+  Auth confirmation) apply locally and under the managed-permission simulation.
+- Full API: **1,444 passed, 11 skipped** (baseline 1,420 + 11). New checks cover
+  invite creation/duplicates/roles, confirmed current email, older identities,
+  expiry/cancel/extend, agency validity, acceptance, profile fields and note privacy.
+- Full DB passed, including exact 14-day lifetime, no direct invite/Auth grants,
+  single-use acceptance, concurrent same-email creation (one winner), last-admin,
+  stale-row, retention and existing agency-isolation checks.
+- Full H1: **11 protocol/profile + 38 browser tests passed** (baseline 11 + 33):
+  30 main scenarios, 3 flags/credential-boundary, 5 outage scenarios. No skips or
+  retries. Initial deterministic failures exposed dialog focus loss and a test
+  clock installed after the polling timer; both were corrected. Outage fixtures
+  were updated for the new search label/invitation response before the final run.
+- Full local UI: **208 passed** (baseline 205), including local persona authority,
+  invite creation/duplicate/extend/cancel, and a contained 400 px users table.
+  No UI/H1 tests were skipped or marked flaky in the final runs.
+- Queue, users, normal/self/last-admin panels, invitation creation/acceptance and
+  400 px screenshots were reviewed. No new animations, dependencies or per-tab ACL.
+
+The 11 existing API skips are named explicitly below; none is a new accounts test.
+These require separate opt-in local integration fixtures/tools or flags:
+
+| Test | Reason |
+|---|---|
+| `test_actuals_import.py::test_real_import_replay_conflict_and_failed_rows_preserve_last_good` | Explicit migrated read-back acceptance |
+| `test_archive_db.py::test_archive_review_application_evidence_versions_and_private_access` | `HUB_ARCHIVE_TEST` opt-in |
+| `test_assistant_db.py::test_assistant_http_citations_generated_proposal_and_explicit_save` | `HUB_ASSISTANT_TEST` opt-in |
+| `test_assistant_model.py::test_sdk_reads_fictional_project_through_real_caller_rls_without_egress` | Synthetic assistant seed |
+| `test_assistant_tools_db.py::test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries` | `HUB_ASSISTANT_TEST` opt-in |
+| `test_demo_finance.py::test_finance_seed_real_controls_replay_preserved_edits_and_complete_snapshot` | `HUB_DEMO_FINANCE_TEST` opt-in |
+| `test_document_worker.py::test_real_local_image_ocr_preserves_all_occurrences_and_exact_money` | Windows OCR opt-in |
+| `test_hosted_h1.py::test_disposable_managed_simulation_end_to_end` | Separate explicit loopback H1 runner (run above) |
+| `test_hub_demo.py::test_complete_business_seed_replay_rolls_back_and_preserves_document_work` | Demo seed opt-in |
+| `test_promotions_db.py::test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback` | `HUB_PROMOTIONS_TEST` opt-in |
+| `test_residential_seed.py::test_seed_replay_preserves_originals_and_user_edits` | Fixed local test seed opt-in |
 
 Sign-in-method question: **DECIDED, owner 7 Oct 2026: Google or email/password,
 self-registration, verified email and Hub admin approval**. Non-blocking IT

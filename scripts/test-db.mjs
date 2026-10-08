@@ -12,6 +12,8 @@ try {
   await connection.connect();
   await connection.query(await readFile(new URL('../supabase/tests/accounts.sql', import.meta.url), 'utf8'));
   console.log('PASS: account RLS, decisions, append-only audit and retention');
+  await connection.query(await readFile(new URL('../supabase/tests/account_invitations.sql', import.meta.url), 'utf8'));
+  console.log('PASS: invitation grants, confirmation proof, normalized email, lifetime and one-use acceptance');
   connection.on('notice', (notice) => console.log(notice.message));
   await connection.query(await readFile(new URL('../supabase/tests/knowledge_review.sql', import.meta.url), 'utf8'));
   console.log('PASS: knowledge immutable evidence, role isolation, phase review, stale writes and rights flags');

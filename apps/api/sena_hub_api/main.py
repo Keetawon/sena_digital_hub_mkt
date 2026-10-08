@@ -303,7 +303,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "ฟิลด์นี้ไม่อนุญาตให้แก้ไข" if issue["type"] == "extra_forbidden" else "รูปแบบหรือค่าของข้อมูลไม่ถูกต้อง"
             ),
         } for issue in error.errors()]
-        if request.url.path == '/v1/me/access-request':
+        if request.url.path in ('/v1/me/access-request', '/v1/me/invite-accept'):
             from .accounts import ACCESS_FIELD_MESSAGES
             for detail in details:
                 detail['message'] = ACCESS_FIELD_MESSAGES.get(detail['field'].split('.')[0], detail['message'])

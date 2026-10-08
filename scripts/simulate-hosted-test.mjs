@@ -34,6 +34,9 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     await admin.query(`create role hub_migration_verifier login createrole noinherit nosuperuser nocreatedb noreplication nobypassrls password '${migrationPassword}'`);
     await admin.query(`create database ${identifier(connection.database)} owner hub_migration_verifier`);
     client=new pg.Client({...connection,user:'hub_migration_verifier',password:migrationPassword});await client.connect();
+    // Protected, synthetic Auth source for invite confirmation tests only. App roles
+    // have no grants; the mock's operator callback writes these rows on verification.
+    await client.query('create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz not null)');
     await assert.rejects(client.query('grant set on parameter app.ads_test_issuing to hub_migration_verifier'),denied);
     await assert.rejects(client.query("create function public.denied_parameter_probe() returns void language sql set app.ads_test_issuing='off' as 'select'"),denied);
     assert.equal((await client.query("select has_parameter_privilege(current_user,'app.ads_test_issuing','SET') allowed")).rows[0].allowed,false);
@@ -93,6 +96,7 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     log('PASS: caller-forged GUC ignored; runtime/agency cannot enable flags or assume owners; H1 residential allowed while original deferred guard stays closed.');
     if(seed) {
       const {IDENTITIES}=await import('./hosted-test-fixtures.mjs');
+      for (const u of IDENTITIES) await client.query('insert into auth.users values($1,$2,$3,$3)',[u.id,u.email,u.created_at]);
       for (const [i,u] of IDENTITIES.entries()) await client.query("insert into hub.user_account(id,email,display_name_th,status,hub_role,agency_code) values($1,$2,$3,'ACTIVE',$4,$5) on conflict(id) do nothing",[u.id,u.email,`ผู้ทดสอบ สมมติ ${i+1}`,u.app_metadata.hub_role,u.app_metadata.hub_agency??null]);
       const {applyH1Seed}=await import('./hosted-test-seed.mjs');
       await applyH1Seed(client);await applyH1Seed(client);

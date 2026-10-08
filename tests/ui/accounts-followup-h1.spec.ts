@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const auth = 'http://127.0.0.1:54329/auth/v1';
 const api = 'http://127.0.0.1:8001';
-const requestBody = { display_name_th:'ผู้สมัคร ทดสอบเพิ่มเติม', phone:'020000000', team:'ทีมสมมติ', requested_tasks:['agency'], reason:'โครงการสมมติ', privacy_acknowledged:true };
+const requestBody = { display_name_th:'ผู้สมัคร ทดสอบเพิ่มเติม', phone:'020000000', team:'ทีมสมมติ', company_type:'SENA', position:'ผู้ประสานงาน', requested_tasks:['agency'], reason:'โครงการสมมติ', privacy_acknowledged:true };
 async function identity(request: APIRequestContext, suffix: string, submitted = false) {
   const email = `followup-${suffix}-${Date.now()}@example.test`, password='Synthetic-followup-12!';
   await request.post(`${auth}/signup`, { data:{email,password} });
@@ -69,75 +69,74 @@ test.describe('Account follow-up on loopback H1',()=>{
     }
   });
 
-  test('submitted counts match, agency gates and rejection/reopen history work through the admin page',async({page,browser})=>{
+  test('submitted counts, agency gates, rejection and reopen history',async({page,browser})=>{
     const pending=await identity(page.request,'pending',true), draft=await identity(page.request,'draft');
     await login(page);await page.goto('/admin/accounts');
     const data=await(await page.request.get('/api/hub/v1/admin/accounts')).json();
     const count=data.data.items.filter((a:{status:string;privacy_acknowledged_at:string})=>a.status==='PENDING'&&a.privacy_acknowledged_at).length;
-    await expect(page.getByRole('button',{name:`รออนุมัติ (${count})`,exact:true})).toBeVisible();
+    await expect(page.getByRole('tab',{name:`คำขอรออนุมัติ (${count})`,exact:true})).toBeVisible();
     await expect(page.getByLabel('บัญชีรออนุมัติ')).toHaveText(String(count));
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill(draft.email);
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(draft.email);
     const unsubmitted=page.getByRole('region',{name:'ยังไม่ส่งคำขอ'});
-    await unsubmitted.locator('summary').first().click();
-    await expect(unsubmitted.getByRole('button',{name:'อนุมัติ',exact:true})).toHaveCount(0);
+    await expect(unsubmitted.getByRole('button',{name:/อนุมัติ/})).toHaveCount(0);
     await expect(unsubmitted).toContainText('อีเมลและรหัสผ่าน');
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill(pending.email);
-    let row=page.locator('details.registry-panel').filter({hasText:pending.email});await row.locator('summary').first().click();
-    await expect(row.getByRole('button',{name:'อนุมัติ',exact:true})).toBeDisabled();
-    await expect(row.getByText('ผู้ขอจะเห็นข้อความนี้')).toBeVisible();
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(pending.email);
+    const row=page.getByRole('article').filter({hasText:pending.email});
+    await expect(row.getByRole('button',{name:/^อนุมัติเป็น/})).toBeDisabled();
     await row.getByRole('button',{name:'ปฏิเสธ',exact:true}).click();
-    await expect(row.getByRole('alert')).toHaveText('กรุณาระบุเหตุผลที่ปฏิเสธ');
-    await row.getByLabel('รหัสเอเจนซี').selectOption('KIN');
-    await expect(row.getByRole('button',{name:'อนุมัติ',exact:true})).toBeEnabled();
-    await row.getByLabel('เหตุผลการตัดสินใจ').fill('กรุณาระบุโครงการเพิ่มเติม');
-    await row.getByRole('button',{name:'ปฏิเสธ',exact:true}).click();await expect(row).toHaveCount(0);
+    await expect(row.getByText('ผู้ขอจะเห็นข้อความนี้')).toBeVisible();
+    await expect(row.getByRole('button',{name:'ยืนยันปฏิเสธ'})).toBeDisabled();
+    await row.getByLabel('เหตุผลที่ปฏิเสธ').fill('กรุณาระบุโครงการเพิ่มเติม');
+    await row.getByRole('button',{name:'ยืนยันปฏิเสธ'}).click();await expect(row).toHaveCount(0);
     const applicant=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
     await login(applicant,pending.email,pending.password);await expect(applicant.getByText('เหตุผลจากผู้ดูแล: กรุณาระบุโครงการเพิ่มเติม')).toBeVisible();
-    await page.getByRole('button',{name:/^ปฏิเสธ \(/}).click();
-    row=page.locator('details.registry-panel').filter({hasText:pending.email});await row.locator('summary').first().click();
-    await row.getByLabel('เหตุผลการตัดสินใจ').fill('เปิดให้แก้ไขแล้ว');await row.getByRole('button',{name:'เปิดรับคำขออีกครั้ง'}).click();await expect(row).toHaveCount(0);
-    await page.getByRole('button',{name:/^รออนุมัติ \(/}).click();
-    row=page.getByRole('region',{name:'ยังไม่ส่งคำขอ'}).locator('details.registry-panel');await row.locator('summary').first().click();
-    await expect(row.getByRole('button',{name:'อนุมัติ',exact:true})).toHaveCount(0);
-    await row.getByText('ประวัติ',{exact:true}).click();await expect(row.getByText('เหตุผลที่ปฏิเสธก่อนหน้า: กรุณาระบุโครงการเพิ่มเติม')).toBeVisible();
+    await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
+    await page.getByRole('row').filter({hasText:pending.email}).getByRole('button',{name:'จัดการ'}).click();
+    const panel=page.getByRole('dialog');
+    await panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('เปิดให้แก้ไขแล้ว');await panel.getByRole('button',{name:'เปิดรับคำขออีกครั้ง'}).click();
+    await expect(panel.getByText('เหตุผลที่ปฏิเสธก่อนหน้า: กรุณาระบุโครงการเพิ่มเติม')).toBeVisible();
     await page.screenshot({path:'artifacts/accounts-reopen-history.png',fullPage:true});
-    await applicant.reload();await expect(applicant.getByLabel('ทีม / บริษัทเอเจนซี')).toHaveValue(requestBody.team);
+    await panel.getByRole('button',{name:'ปิด',exact:true}).click();
+    await applicant.reload();await expect(applicant.getByLabel('ทีม / ฝ่าย')).toHaveValue(requestBody.team);
     await applicant.getByLabel('เหตุผล / โครงการที่รับผิดชอบ').fill('โครงการสมมติเพิ่มเติม');
     await applicant.getByLabel('รับทราบประกาศความเป็นส่วนตัว').check();await applicant.getByRole('button',{name:'ส่งคำขอ',exact:true}).click();
     await expect(applicant.getByRole('heading',{name:'รออนุมัติ',exact:true})).toBeVisible();
-    await page.reload();row=page.locator('details.registry-panel').filter({hasText:pending.email});await row.locator('summary').first().click();
+    await page.reload();await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(pending.email);
     await row.getByLabel('รหัสเอเจนซี').selectOption('KIN');
     await page.route('**/api/hub/v1/admin/accounts/*/decision',route=>route.continue({postData:JSON.stringify({...route.request().postDataJSON(),agency_code:'NOTREAL'})}),{times:1});
-    await row.getByRole('button',{name:'อนุมัติ',exact:true}).click();await expect(row.getByRole('alert')).toHaveText('กรุณาเลือกรหัสเอเจนซีที่ถูกต้องและยังใช้งานอยู่');
-    await row.getByRole('button',{name:'อนุมัติ',exact:true}).click();await expect(row).toHaveCount(0);
-    await page.getByRole('button',{name:/^ใช้งานอยู่ \(/}).click();row=page.locator('details.registry-panel').filter({hasText:pending.email});await row.locator('summary').first().click();
-    await row.getByLabel('รหัสเอเจนซี').selectOption('');await expect(row.getByRole('button',{name:'เปลี่ยนบทบาท'})).toBeDisabled();
+    await row.getByRole('button',{name:/^อนุมัติเป็น/}).click();await expect(row.getByRole('alert')).toHaveText('กรุณาเลือกรหัสเอเจนซีที่ถูกต้องและยังใช้งานอยู่');
+    await row.getByRole('button',{name:/^อนุมัติเป็น/}).click();await expect(row).toHaveCount(0);
+    await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();await page.getByRole('row').filter({hasText:pending.email}).getByRole('button',{name:'จัดการ'}).click();
+    await panel.getByLabel('รหัสเอเจนซี').selectOption('');await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
     await applicant.close();
   });
 
-  test('a request edited after admin review returns a stale error without losing the decision note',async({page})=>{
+  test('stale reload keeps typed rejection text and agency choice',async({page})=>{
     const applicant=await identity(page.request,'stale',true);
-    await login(page);await page.goto('/admin/accounts');
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill(applicant.email);
-    const row=page.locator('details.registry-panel');await row.locator('summary').first().click();
-    await row.getByLabel('รหัสเอเจนซี').selectOption('KIN');
-    await row.getByLabel('เหตุผลการตัดสินใจ').fill('รอตรวจคำขอฉบับใหม่');
+    await login(page);await page.goto('/admin/accounts');await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(applicant.email);
+    const row=page.getByRole('article').filter({hasText:applicant.email});
+    await row.getByLabel('รหัสเอเจนซี').selectOption('KIN');await row.getByRole('button',{name:'ปฏิเสธ',exact:true}).click();
+    await row.getByLabel('เหตุผลที่ปฏิเสธ').fill('รอตรวจคำขอฉบับใหม่');
     expect((await page.request.patch(`${api}/v1/me/access-request`,{headers:applicant.headers,data:{...requestBody,reason:'แก้ไขโครงการหลังเปิดหน้าตรวจ'}})).status()).toBe(200);
-    await row.getByRole('button',{name:'อนุมัติ',exact:true}).click();
-    await expect(row.getByRole('alert')).toHaveText('ข้อมูลเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดก่อนบันทึก');
-    await expect(row.getByLabel('เหตุผลการตัดสินใจ')).toHaveValue('รอตรวจคำขอฉบับใหม่');
+    await row.getByRole('button',{name:'ยืนยันปฏิเสธ'}).click();
+    await expect(row.getByRole('alert')).toContainText('ข้อมูลเปลี่ยนแล้ว');
+    await row.getByRole('button',{name:'โหลดข้อมูลล่าสุด'}).click();
+    await expect(row).toContainText('แก้ไขโครงการหลังเปิดหน้าตรวจ');
+    await expect(row.getByLabel('เหตุผลที่ปฏิเสธ')).toHaveValue('รอตรวจคำขอฉบับใหม่');
     await expect(row.getByLabel('รหัสเอเจนซี')).toHaveValue('KIN');
   });
 
-  test('self-decision and last-admin errors are specific and retain the typed note',async({page})=>{
-    await login(page);await page.goto('/admin/accounts');await page.getByRole('button',{name:/^ใช้งานอยู่ \(/}).click();
-    await page.getByLabel('ค้นหาชื่อ อีเมล หรือทีม').fill('hub-test-admin@example.test');
-    const row=page.locator('details.registry-panel');await row.locator('summary').first().click();
-    await row.getByLabel('เหตุผลการตัดสินใจ').fill('ข้อความที่ยังต้องอยู่');
-    page.once('dialog',d=>d.accept());await row.getByRole('button',{name:'เปลี่ยนบทบาท'}).click();
-    await expect(row.getByRole('alert')).toHaveText('ไม่สามารถตัดสินใจหรือเปลี่ยนสิทธิ์ของบัญชีตนเองได้');
-    await row.getByRole('combobox',{name:'บทบาท',exact:true}).selectOption('viewer');await row.getByRole('button',{name:'เปลี่ยนบทบาท'}).click();
-    await expect(row.getByRole('alert')).toHaveText('ต้องเหลือผู้ดูแลระบบที่ใช้งานอยู่ อย่างน้อยหนึ่งคน');
-    await expect(row.getByLabel('เหตุผลการตัดสินใจ')).toHaveValue('ข้อความที่ยังต้องอยู่');
+  test('self is read-only and the last active admin cannot be removed',async({page})=>{
+    await login(page);await page.goto('/admin/accounts');await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
+    await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill('hub-test-admin@example.test');
+    const row=page.getByRole('row').filter({hasText:'hub-test-admin@example.test'});await expect(row.getByText('คุณ',{exact:true})).toBeVisible();
+    const opener=row.getByRole('button',{name:'จัดการ'});await opener.click();const panel=page.getByRole('dialog');
+    await expect(panel.getByText('นี่คือบัญชีของคุณ')).toBeVisible();
+    await expect(panel.getByRole('radio',{name:/ผู้แก้ไขข้อมูล/})).toBeDisabled();
+    await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toHaveCount(0);
+    await page.screenshot({path:'artifacts/accounts-manage-self.png',fullPage:false});
+    await expect(panel.getByText('ต้องเหลือผู้ดูแลระบบอย่างน้อย 1 คน')).toBeVisible();
+    await page.screenshot({path:'artifacts/accounts-manage-last-admin.png',fullPage:false});
+    await page.keyboard.press('Escape');await expect(panel).toHaveCount(0);await expect(opener).toBeFocused();
   });
 });

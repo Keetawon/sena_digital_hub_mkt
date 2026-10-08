@@ -8,11 +8,12 @@ import { createServer } from 'node:net';
 import { createMockSupabase } from './hosted-test-mock.mjs';
 import { SIMULATION_PUBLIC_KEY, SIMULATION_STORAGE_KEY } from './hosted-test-fixtures.mjs';
 import { simulateHostedTest } from './simulate-hosted-test.mjs';
+import pg from 'pg';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
 if(args.some(x=>!['--test','--existing-simulation','--api-only','--admin-only'].includes(x)) || (component && !args.includes('--existing-simulation'))) throw new Error('Invalid local simulation arguments');
-const children=[];let database,mock,closing=false,adminProcess,apiProcess;
+const children=[];let database,mock,closing=false,adminProcess,apiProcess,identityDb;
 function child(command,arguments_,env,cwd=root) {
   const process_=spawn(command,arguments_,{cwd,env,stdio:'inherit',windowsHide:true});children.push(process_);return process_;
 }
@@ -23,6 +24,7 @@ async function stop() {
     else p.kill('SIGTERM');
   }
   if(mock)await new Promise(resolve=>mock.close(resolve));
+  await identityDb?.end();
   await database?.stop();
 }
 async function ready(url,process_) {
@@ -51,7 +53,13 @@ try {
     HUB_SUPABASE_STORAGE_KEY:SIMULATION_STORAGE_KEY,HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY'])env[`HUB_DEMO_${role}_TOKEN`]='';
-  if(!component) {mock=createMockSupabase();mock.listen(54329,'127.0.0.1');await once(mock,'listening');}
+  if(!component) {
+    identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.migrationUser,password:config.migrationPassword});
+    mock=createMockSupabase({onIdentity: async user => {
+      if(!user.email.endsWith('@example.test'))throw new Error('Synthetic identities only');
+      await identityDb.query('insert into auth.users(id,email,email_confirmed_at,created_at) values($1,$2,$3,$4) on conflict(id) do update set email=excluded.email,email_confirmed_at=excluded.email_confirmed_at', [user.id,user.email,user.email_confirmed_at??null,user.created_at]);
+    }});mock.listen(54329,'127.0.0.1');await once(mock,'listening');
+  }
   if(component!=='admin') {
     apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','uvicorn','sena_hub_api.main:create_app','--factory','--host','127.0.0.1','--port','8001','--no-proxy-headers','--no-access-log'],env);
     await ready('http://127.0.0.1:8001/health',apiProcess);
@@ -61,7 +69,7 @@ try {
     await ready('http://127.0.0.1:3001/login',adminProcess);
   }
   if(args.includes('--test')) {
-    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
+    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
     const [code]=await once(tests,'exit');
     if(code!==0) {await stop();process.exit(code??1);}
     // Restart only this runner's owned Next process to exercise configuration-off

@@ -608,6 +608,51 @@ main:focus { outline: none; }
 /* Account forms reuse the contrast-tested Hub tokens and native controls. */
 .account-page { max-width: 760px; margin: 40px auto; padding: 0 20px; }
 .accounts-admin { padding: 24px; }
+.accounts-admin, .accounts-admin *, .account-dialog, .account-dialog *, .account-page, .account-page * { animation: none !important; transition: none !important; }
+.accounts-admin { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.accounts-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.accounts-heading h1, .accounts-heading h2 { margin-block: 0 8px; }
+.accounts-feedback { padding: 16px; margin-block: 16px; border: 1px solid var(--action); background: var(--surface-warm); color: var(--ink); }
+.account-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-block: 24px; }
+.account-filters { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.account-filters > label { flex: 1 1 180px; min-width: 0; }
+.account-filters > label:first-child { flex-grow: 2; }
+.account-queue { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,440px),1fr)); gap: 20px; }
+.account-request-card { min-width: 0; margin: 0; }
+.account-request-card h2, .account-invite h2 { font-size: var(--text-heading); }
+.account-request-card .account-summary { grid-template-columns: 110px minmax(0,1fr); }
+.account-pill { display: inline-block; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: var(--text-small); color: var(--ink); background: var(--surface-warm); white-space: nowrap; }
+.account-pill-active { color: var(--success-strong); background: var(--success-soft); }
+.account-pill-rejected, .account-pill-suspended { color: var(--danger); background: var(--danger-soft); }
+.account-recent { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; border-top: 1px solid var(--line); }
+.account-recent p { margin-block: 6px 0; }
+.account-recent > .button { flex-shrink: 0; }
+.account-unsubmitted { padding: 20px; margin-block: 24px; background: var(--surface-warm); color: var(--muted); border: 1px solid var(--line); }
+.account-today, .account-invite { margin-top: 24px; }
+.account-table-scroll { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+.account-table { width: 100%; min-width: 960px; border-collapse: collapse; font-family: var(--font-table); font-size: var(--text-small); }
+.account-table th, .account-table td { padding: 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); max-width: 290px; overflow-wrap: anywhere; }
+.account-table th { background: var(--surface-warm); }
+.account-table small, .account-role-card small { display: block; color: var(--muted); font-size: var(--text-small); margin-top: 4px; }
+.account-dialog { box-sizing: border-box; position: fixed; inset: 0 0 0 auto; margin: 0; width: min(640px,100%); height: 100dvh; max-height: 100dvh; max-width: 100%; padding: 28px; border: 0; border-left: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); overflow-y: auto; overflow-wrap: anywhere; }
+.account-dialog::backdrop { background: var(--scrim); animation: none; transition: none; }
+.account-dialog fieldset { min-width: 0; border: 0; padding: 0; margin-top: 24px; }
+.account-dialog legend { font-weight: 700; margin-bottom: 12px; }
+.account-role-cards { display: grid; gap: 8px; }
+.account-role-card { display: flex; align-items: start; gap: 12px; border: 1px solid var(--line-strong); padding: 14px; cursor: pointer; }
+.account-role-card:has(:checked) { border: 2px solid var(--action); padding: 13px; background: var(--surface-warm); }
+.account-role-card:has(:disabled) { cursor: default; }
+.account-role-card input { width: auto; margin-top: 6px; }
+.account-diff { padding-block: 12px; font-weight: 700; }
+.account-danger-zone { border-top: 1px solid var(--danger); margin-top: 28px; padding-top: 20px; }
+.account-action-error { margin-top: 12px; padding: 12px; border-left: 3px solid var(--danger); color: var(--danger); }
+.account-history { margin-top: 32px; border-top: 1px solid var(--line); }
+.account-history ol { padding-left: 24px; }
+.account-history li { padding-block: 12px; }
+.account-login-link { margin-block: 16px; }
+.account-login-link .form-field { margin-bottom: 8px; }
+.account-login-link [role=status] { display: block; margin-top: 8px; }
+@media (max-width: 600px) { .account-dialog { padding: 20px; } .account-recent { flex-wrap: wrap; } .account-request-card .account-summary { grid-template-columns: 1fr; } }
 .accounts-admin > details { margin-block: 16px; }
 .account-choice { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
 .account-choice input { width: auto; }

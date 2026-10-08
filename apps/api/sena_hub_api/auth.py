@@ -176,7 +176,8 @@ class Authentication:
         account["agency"] = account["agency_code"] if active else None
         request.state.account = account
         limited = (request.url.path == "/v1/me" and request.method == "GET" or
-                   request.url.path == "/v1/me/access-request" and request.method in {"POST", "PATCH"})
+                   request.url.path == "/v1/me/access-request" and request.method in {"POST", "PATCH"} or
+                   account["status"] == "PENDING" and request.url.path == "/v1/me/invite-accept" and request.method == "POST")
         if not active and not limited:
             raise failure(403, "account_inactive", "บัญชียังไม่ได้รับอนุมัติหรือถูกระงับ กรุณาตรวจสถานะคำขอ")
         return Actor(UUID(claims["sub"]), account["role"] or "viewer", account["agency"])

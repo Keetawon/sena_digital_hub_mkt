@@ -218,6 +218,16 @@
       "name": "202610070043_account_request_followup.sql",
       "canonical_sha256": "99f621ed32d3be869343efadf7316d2cbd9a858346d50a0c76a0d632183052d6",
       "executed_sha256": "99f621ed32d3be869343efadf7316d2cbd9a858346d50a0c76a0d632183052d6"
+    },
+    {
+      "name": "202610080044_account_profiles.sql",
+      "canonical_sha256": "8956fbf658697a7655802d2526998ecf354b8e0dd72f89a87bc2a6eee607ab87",
+      "executed_sha256": "8956fbf658697a7655802d2526998ecf354b8e0dd72f89a87bc2a6eee607ab87"
+    },
+    {
+      "name": "202610080045_account_invitations.sql",
+      "canonical_sha256": "8c5ca55e8fd2c50f653c959bc7d2100feca0024aa211464e8cd6c46ae9ca3ff6",
+      "executed_sha256": "8c5ca55e8fd2c50f653c959bc7d2100feca0024aa211464e8cd6c46ae9ca3ff6"
     }
   ]
 }

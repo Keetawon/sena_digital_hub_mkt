@@ -8,7 +8,7 @@ import { IDENTITIES, SIMULATION_PASSWORD, SIMULATION_STORAGE_KEY, syntheticAsset
 
 const ORIGIN = 'http://127.0.0.1:54329';
 const ADMIN_ORIGIN = 'http://127.0.0.1:3001';
-export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted-test-simulation/auth-outbox.json' } = {}) {
+export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted-test-simulation/auth-outbox.json', onIdentity = async () => {} } = {}) {
   const users = structuredClone(IDENTITIES).map(u => ({ ...u, email_confirmed_at: u.created_at }));
   const passwords = new Map(users.map(u => [u.id, SIMULATION_PASSWORD]));
   const codes = new Map(), oauth = new Map(), revoked = new Set(), sessions = new Map(), cooldowns = new Map();
@@ -80,6 +80,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
         const user = users.find(u => u.email === email && u.email_confirmed_at) || newUser(email,'google');
         user.email_confirmed_at ||= new Date(now()).toISOString();
         user.app_metadata.providers = [...new Set([...user.app_metadata.providers,'google'])];
+        await onIdentity(user);
         const code = randomBytes(24).toString('base64url');
         oauth.set(code,{user,challenge:url.searchParams.get('code_challenge'),expires:now()+60000});
         redirect.searchParams.set('code',code); res.writeHead(302,{Location:redirect.href}); return res.end();
@@ -104,6 +105,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
         if (!synthetic(email) || typeof body.password !== 'string' || body.password.length<12) return reply(422,{message:'Synthetic email and 12 character password required'});
         let user=users.find(u=>u.email===email);
         if (!user) { user=newUser(email,'email'); passwords.set(user.id,body.password); }
+        await onIdentity(user);
         if (!user.email_confirmed_at && !await sendCode(email,'email')) return reply(429,{message:'Resend cooldown'});
         return reply(200,{...user,identities:[]});
       }
@@ -117,6 +119,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
         const body=JSON.parse(bytes), key=`${body.type}:${body.email?.toLowerCase()}`, code=codes.get(key);
         if (!code || code.expires<=now() || ++code.attempts>5 || code.token!==body.token) return reply(403,{code:'otp_expired',message:'Invalid or expired code'});
         codes.delete(key); const user=users.find(u=>u.email===body.email.toLowerCase()); user.email_confirmed_at ||= new Date(now()).toISOString();
+        await onIdentity(user);
         return reply(200,session(user));
       }
       if (path === '/auth/v1/user' && req.method === 'PUT') {

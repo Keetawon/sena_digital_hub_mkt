@@ -1,6 +1,6 @@
 import { getHubRole } from "@/lib/hosted-session";
 import { HubShell } from "@/components/hub-shell";
-import { AdminAccounts } from "@/components/accounts";
+import { AdminAccounts } from "@/components/admin-accounts";
 import { roleLabels } from "@/lib/roles";
 export const dynamic = "force-dynamic";
 export default async function Page() {

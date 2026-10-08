@@ -4,20 +4,20 @@ import { SignOut, useHostedSession } from "./hosted-session";
 import { roleLabels } from "@/lib/roles";
 
 export const taskLabels: Record<string, string> = { read: "อ่านข้อมูลโครงการ", edit: "แก้ไขข้อมูลและสื่อ", publish: "อนุมัติและเผยแพร่ข้อมูล", online: "ดูแลงานโฆษณาและงบ", agency: "ทำงานในนามเอเจนซี" };
-const statuses: Record<string, string> = { PENDING: "รออนุมัติ", ACTIVE: "ใช้งานอยู่", SUSPENDED: "ระงับ", REJECTED: "ปฏิเสธ" };
-type Account = { id: string; email: string; sign_in_method: string; display_name_th: string; phone: string; team: string; requested_tasks: string[]; reason: string; privacy_acknowledged_at: string | null; status: string; hub_role: string | null; decision_note: string; agency_code: string | null; updated_at: string; anonymised_at: string | null };
-type AccountEvent = { id: string; account_id: string; actor_id: string; action: string; new_status: string; new_role: string; created_at: string; decision_note: string; previous_decision_note: string };
+export const statuses: Record<string, string> = { PENDING: "รออนุมัติ", ACTIVE: "ใช้งานอยู่", SUSPENDED: "ระงับ", REJECTED: "ปฏิเสธ" };
+export type Account = { id: string; email: string; sign_in_method: string; display_name_th: string; phone: string; team: string; requested_tasks: string[]; reason: string; privacy_acknowledged_at: string | null; status: string; hub_role: string | null; decision_note: string; agency_code: string | null; updated_at: string; anonymised_at: string | null; company_type: string | null; company_name: string | null; position: string | null; invite?: Invite | null };
+export type AccountEvent = { id: string; account_id: string; actor_id: string; action: string; new_status: string; new_role: string; created_at: string; decision_note: string; previous_decision_note: string };
 export function suggestedRole(tasks: string[]) { return tasks.includes("agency") ? "agency" : tasks.includes("publish") ? "publisher" : tasks.includes("online") ? "online_staff" : tasks.includes("edit") ? "editor" : "viewer"; }
-const label = (role: string | null) => roleLabels[role as keyof typeof roleLabels] || "ยังไม่กำหนด";
-const methodLabel = (method: string) => method === "google" ? "Google" : "อีเมลและรหัสผ่าน";
-const submittedPending = (a: Account) => a.status === "PENDING" && !!a.privacy_acknowledged_at;
-type AccountApiError = Error & { details?: { field: string; message: string }[] };
+export const label = (role: string | null) => roleLabels[role as keyof typeof roleLabels] || "ยังไม่กำหนด";
+export const methodLabel = (method: string) => method === "google" ? "Google" : "อีเมลและรหัสผ่าน";
+export const submittedPending = (a: Account) => a.status === "PENDING" && !!a.privacy_acknowledged_at;
+export type AccountApiError = Error & { status?: number; code?: string; account_id?: string; details?: { field: string; message: string }[] };
 // HTML pattern uses Unicode v mode: escaped parentheses/hyphen are the same set as the API regex.
 export const phonePattern = String.raw`^\+?[0-9 \(\)\-]{8,30}$`;
 export async function accountApi(path: string, body?: unknown, method = "POST") {
   const response = await fetch(`/api/hub/${path}`, body === undefined ? { cache: "no-store" } : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const result = await response.json();
-  if (!response.ok) throw Object.assign(new Error(result.error?.message || "ไม่สามารถโหลดข้อมูลได้"), { details: result.error?.details });
+  if (!response.ok) throw Object.assign(new Error(result.error?.message || "ไม่สามารถโหลดข้อมูลได้"), { ...result.error, status: response.status });
   return result.data;
 }
 
@@ -46,75 +46,81 @@ export function AccountDirectory({ children, enabled }: { children: ReactNode; e
 export function useAccountDirectory() { return useContext(Directory); }
 export function ActorName({ id }: { id?: string | null }) { const { names } = useAccountDirectory(); return <span title={id || undefined}>{id ? names[id] || (/^[0-9a-f-]{36}$/i.test(id) ? "ผู้ใช้เดิม" : id) : "ยังไม่มีผู้ดำเนินการ"}</span>; }
 
+export type Invite = { id: string; email: string; display_hint: string; company_type: string; company_name: string | null; team: string; hub_role: string; agency_code: string | null; status: string; expires_at: string; invited_by_name: string; message?: string };
+export const companyLabels: Record<string,string> = { SENA: "เสนาดีเวลลอปเมนท์", SENA_SUBSIDIARY: "บริษัทในเครือเสนา", AGENCY: "เอเจนซี", CONTRACTOR: "ผู้รับจ้างภายนอก" };
+export const companyLabel = (a: {company_type: string | null; company_name: string | null}) => a.company_type ? [companyLabels[a.company_type],a.company_name].filter(Boolean).join(" · ") : "ยังไม่ระบุ";
+
 export function AccessRequestPage() {
   const config = useHostedSession();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const summary = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { accountApi("v1/me").then(a => { setAccount(a); setEditing(!a.privacy_acknowledged_at && a.status === "PENDING"); }).catch(e => setError(e.message)); }, []);
-  useEffect(() => { if (error) summary.current?.focus(); }, [error]);
-  async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return;
-    const form = new FormData(event.currentTarget); setBusy(true); setError(""); setFields({});
-    try { setAccount(await accountApi("v1/me/access-request", { display_name_th: form.get("display_name_th"), phone: form.get("phone"), team: form.get("team"), requested_tasks: form.getAll("tasks"), reason: form.get("reason"), privacy_acknowledged: form.get("privacy") === "on" }, account?.privacy_acknowledged_at ? "PATCH" : "POST")); setEditing(false); }
-    catch (e) { const failure = e as AccountApiError; setError(failure.message); setFields(Object.fromEntries((failure.details || []).map(d => [d.field.split(".")[0], d.message]))); }
-    finally { setBusy(false); }
-  }
-  const fieldError = (field: string) => fields[field] && <p id={`${field}-error`} className="field-error">{fields[field]}</p>;
-  const invalid = (field: string) => ({ "aria-invalid": !!fields[field], "aria-describedby": `${field}-error` });
-  return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p><h1>{editing ? "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
-    {error && <div role="alert" tabIndex={-1} ref={summary}><p>{error}</p><ul>{Object.entries(fields).map(([key, text]) => <li key={key}><a href={`#${key}`}>{text}</a></li>)}</ul></div>}
-    {account && <><p>อีเมล: {account.email}</p>{account.decision_note && <p>เหตุผลจากผู้ดูแล: {account.decision_note}</p>}{editing ? <form onSubmit={save} noValidate>
-      <div className="form-field"><label htmlFor="display_name_th">ชื่อและนามสกุลภาษาไทย</label><input id="display_name_th" name="display_name_th" autoComplete="name" required maxLength={200} {...invalid("display_name_th")} aria-describedby="name-help display_name_th-error" defaultValue={/[ก-๙]/.test(account.display_name_th) ? account.display_name_th : ""} placeholder={/[ก-๙]/.test(account.display_name_th) ? undefined : account.display_name_th} /><p id="name-help">กรอกชื่อและนามสกุลภาษาไทย</p>{fieldError("display_name_th")}</div>
-      <div className="form-field"><label htmlFor="phone">เบอร์โทรศัพท์ที่ทำงาน</label><input id="phone" name="phone" type="tel" autoComplete="tel" required pattern={phonePattern} {...invalid("phone")} defaultValue={account.phone} />{fieldError("phone")}</div>
-      <div className="form-field"><label htmlFor="team">ทีม / บริษัทเอเจนซี</label><input id="team" name="team" required maxLength={200} {...invalid("team")} defaultValue={account.team} />{fieldError("team")}</div>
-      <fieldset id="requested_tasks" tabIndex={-1} {...invalid("requested_tasks")}><legend>งานที่ต้องการทำ (เลือกอย่างน้อยหนึ่งข้อ)</legend>{Object.entries(taskLabels).map(([key, text]) => <label className="account-choice" key={key}><input type="checkbox" name="tasks" value={key} defaultChecked={account.requested_tasks.includes(key)} />{text}</label>)}{fieldError("requested_tasks")}</fieldset>
-      <div className="form-field"><label htmlFor="reason">เหตุผล / โครงการที่รับผิดชอบ</label><textarea id="reason" name="reason" required maxLength={2000} {...invalid("reason")} defaultValue={account.reason} />{fieldError("reason")}</div>
-      <p>ข้อมูลนี้ใช้พิจารณาสิทธิ์และติดต่อเรื่องบัญชี ผู้ดูแลระบบเท่านั้นที่อ่านคำขอได้ ชื่อจะแสดงต่อทีมงานในประวัติการทำงาน ไม่ส่งคำขอให้ผู้ช่วยหรือคลัง RAG ลบข้อมูลส่วนบุคคลของคำขอที่ถูกปฏิเสธหลัง 90 วัน</p>
-      <label className="account-choice"><input id="privacy_acknowledged" type="checkbox" name="privacy" required {...invalid("privacy_acknowledged")} defaultChecked={!!account.privacy_acknowledged_at} />รับทราบประกาศความเป็นส่วนตัว</label>{fieldError("privacy_acknowledged")}
-      <button className="button primary" disabled={busy}>{busy ? "กำลังบันทึก…" : "ส่งคำขอ"}</button>
-    </form> : <><RequestSummary account={account} />{account.status === "PENDING" && <button className="button secondary" onClick={() => setEditing(true)}>แก้ไขคำขอ</button>}{account.status === "ACTIVE" && <a className="button primary" href={account.hub_role === "agency" || account.hub_role === "online_staff" ? "/ads/registry" : "/"}>เข้าสู่พื้นที่ทำงาน</a>}<p><a href="/account/request">ตรวจสถานะอีกครั้ง</a></p></>}
+  useEffect(() => {
+    let alive = true, first = true, loading = false;
+    const refresh = async () => {
+      if (document.visibilityState === "hidden" || loading) return;
+      loading = true;
+      try {
+        const a = await accountApi("v1/me");
+        if (!alive) return;
+        // An older in-flight poll must not undo a just-saved decision/acceptance.
+        setAccount(current => current && new Date(current.updated_at) > new Date(a.updated_at) ? current : a); setError("");
+        if (first) { setEditing(!a.privacy_acknowledged_at && a.status === "PENDING"); first = false; }
+      } catch (e) { if (alive) setError((e as Error).message); }
+      finally { loading = false; }
+    };
+    void refresh(); const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
+    return () => { alive = false; clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, []);
+  const workspace = account?.hub_role === "agency" || account?.hub_role === "online_staff" ? "/ads/registry" : "/";
+  return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p><h1>{editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
+    {error && <p role="alert">{error}</p>}
+    {account && <><p>อีเมล: {account.email}</p>
+      <p role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่ยังไม่บันทึกยังอยู่ในหน้านี้"}</p>
+      {["REJECTED", "SUSPENDED"].includes(account.status) && account.decision_note && <p>เหตุผลจากผู้ดูแล: {account.decision_note}</p>}
+      {account.invite?.message && <p>{account.invite.message}</p>}
+      {editing ? <RequestForm account={account} onSaved={a => { setAccount(a); setEditing(false); }} /> : <><RequestSummary account={account} />{account.status === "PENDING" && <button className="button secondary" onClick={() => setEditing(true)}>แก้ไขคำขอ</button>}</>}
+      {account.status === "ACTIVE" && <a className="button primary" href={workspace}>เข้าสู่พื้นที่ทำงาน</a>}
       {config?.adminContact && <p>ติดต่อผู้ดูแล: {config.adminContact}</p>}
     </>}</section></main>;
 }
-function RequestSummary({ account: a }: { account: Account }) { return <dl className="account-summary"><dt>ชื่อ</dt><dd>{a.display_name_th}</dd><dt>วิธีเข้าสู่ระบบ</dt><dd>{methodLabel(a.sign_in_method)}</dd><dt>โทรศัพท์</dt><dd><a href={`tel:${a.phone.replace(/[^+0-9]/g, "")}`}>{a.phone}</a></dd><dt>ทีม / บริษัท</dt><dd>{a.team}</dd><dt>งานที่ขอ</dt><dd>{a.requested_tasks.map(t => taskLabels[t]).join(" · ")}</dd><dt>บทบาทแนะนำ</dt><dd>{label(suggestedRole(a.requested_tasks))}</dd><dt>เหตุผล / โครงการ</dt><dd>{a.reason}</dd><dt>บทบาทปัจจุบัน</dt><dd>{label(a.hub_role)} {a.agency_code}</dd></dl>; }
 
-export function AdminAccounts() {
-  const [data, setData] = useState<{ items: Account[]; events: AccountEvent[]; agencies: { code: string; label_th: string }[] } | null>(null);
-  const [status, setStatus] = useState("PENDING"); const [search, setSearch] = useState(""); const [error, setError] = useState("");
-  const refresh = () => accountApi("v1/admin/accounts").then(setData).catch(e => setError(e.message));
-  useEffect(() => { void refresh(); }, []);
-  const matches = (a: Account) => a.status === status && `${a.display_name_th} ${a.email} ${a.team}`.toLowerCase().includes(search.toLowerCase());
-  const rows = data?.items.filter(a => matches(a) && (status !== "PENDING" || submittedPending(a))) || [];
-  const unsubmitted = data?.items.filter(a => matches(a) && a.status === "PENDING" && !submittedPending(a)) || [];
-  function row(a: Account) {
-    return <details className="registry-panel" key={a.id}><summary><strong>{a.display_name_th || "ยังไม่ส่งคำขอ"}</strong> · {a.email} · {methodLabel(a.sign_in_method)}</summary><RequestSummary account={a} />
-      <AccountDecision account={a} agencies={data!.agencies} onSaved={() => { void refresh(); window.dispatchEvent(new Event("hub-accounts-changed")); }} />
-      <details><summary>ประวัติ</summary><ul>{data!.events.filter(e => e.account_id === a.id).map(e => <li key={e.id}>{new Date(e.created_at).toLocaleString("th-TH")} · {({ REQUEST: "ส่ง / แก้ไขคำขอ", approve: "อนุมัติ", role: "เปลี่ยนบทบาท", suspend: "ระงับ", reactivate: "เปิดใช้งานอีกครั้ง", reject: "ปฏิเสธ", reopen: "เปิดรับคำขออีกครั้ง", BOOTSTRAP: "ตั้งผู้ดูแลคนแรก" } as Record<string,string>)[e.action] || e.action} · <ActorName id={e.actor_id} /> · {label(e.new_role)}{e.decision_note && <p>ข้อความจากผู้ดูแล: {e.decision_note}</p>}{e.previous_decision_note && <p>เหตุผลที่ปฏิเสธก่อนหน้า: {e.previous_decision_note}</p>}</li>)}</ul></details>
-    </details>;
+function RequestForm({account, onSaved}: {account: Account; onSaved: (a: Account) => void}) {
+  const [error, setError] = useState(""); const [fields, setFields] = useState<Record<string,string>>({});
+  const [busy, setBusy] = useState(false); const summary = useRef<HTMLDivElement>(null);
+  const invite = account.invite?.id ? account.invite : null;
+  const [company, setCompany] = useState(invite?.company_type || account.company_type || "");
+  const locked = invite?.hub_role === "agency";
+  useEffect(() => { if (error) summary.current?.focus(); }, [error]);
+  const fieldError = (field: string) => fields[field] && <p id={`${field}-error`} className="field-error">{fields[field]}</p>;
+  const invalid = (field: string) => ({ "aria-invalid": !!fields[field], "aria-describedby": `${field}-error` });
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (busy || account.status !== "PENDING") return;
+    const f = new FormData(event.currentTarget); setBusy(true); setError(""); setFields({});
+    const profile = {display_name_th:f.get("display_name_th"),phone:f.get("phone"),team:f.get("team"),company_type:locked ? "AGENCY" : company,
+      company_name:locked ? invite?.agency_code : f.get("company_name"),position:f.get("position"),privacy_acknowledged:f.get("privacy") === "on"};
+    try { onSaved(await accountApi(invite ? "v1/me/invite-accept" : "v1/me/access-request", invite ? {...profile,invite_id:invite.id} : {...profile,requested_tasks:f.getAll("tasks"),reason:f.get("reason")}, invite || !account.privacy_acknowledged_at ? "POST" : "PATCH")); }
+    catch (e) { const failure = e as AccountApiError; setError(failure.message); setFields(Object.fromEntries((failure.details || []).map(d => [d.field.split(".")[0], d.message]))); }
+    finally { setBusy(false); }
   }
-  return <section className="accounts-admin"><h1>ผู้ใช้และสิทธิ์</h1><p>ผู้ดูแลระบบอนุมัติบัญชีและกำหนดสิทธิ์ตามงานที่รับผิดชอบ</p>{error && <p role="alert">{error}</p>}<div className="content-actions" aria-label="สถานะบัญชี">{Object.entries(statuses).map(([key, text]) => <button className={`button ${key === status ? "primary" : "secondary"}`} key={key} aria-pressed={key === status} onClick={() => setStatus(key)}>{text} ({data?.items.filter(a => key === "PENDING" ? submittedPending(a) : a.status === key).length ?? "…"})</button>)}</div><div className="form-field"><label htmlFor="account-search">ค้นหาชื่อ อีเมล หรือทีม</label><input id="account-search" type="search" value={search} onChange={e => setSearch(e.target.value)} /></div>
-    {!data && !error && <p role="status">กำลังโหลดบัญชี…</p>}{rows.map(row)}
-    {data && !rows.length && <p>ไม่มีบัญชีในรายการนี้</p>}
-    {status === "PENDING" && unsubmitted.length > 0 && <section className="muted" aria-label="ยังไม่ส่งคำขอ"><h2>ยังไม่ส่งคำขอ ({unsubmitted.length})</h2>{unsubmitted.map(row)}</section>}
-  </section>;
+  return <form onSubmit={save} noValidate>
+    {error && <div role="alert" tabIndex={-1} ref={summary}><p>{error}</p><ul>{Object.entries(fields).map(([key,text]) => <li key={key}><a href={`#${key}`}>{text}</a></li>)}</ul></div>}
+    {invite && <p>สิทธิ์ที่ได้รับ: {label(invite.hub_role)} {invite.agency_code}</p>}
+    <div className="form-field"><label htmlFor="display_name_th">ชื่อและนามสกุลภาษาไทย</label><input id="display_name_th" name="display_name_th" autoComplete="name" required maxLength={200} {...invalid("display_name_th")} aria-describedby="name-help display_name_th-error" defaultValue={/[ก-๙]/.test(account.display_name_th) ? account.display_name_th : ""} placeholder={/[ก-๙]/.test(account.display_name_th) ? undefined : account.display_name_th} /><p id="name-help">กรอกชื่อและนามสกุลภาษาไทย</p>{fieldError("display_name_th")}</div>
+    <div className="form-field"><label htmlFor="phone">เบอร์โทรศัพท์ที่ทำงาน</label><input id="phone" name="phone" type="tel" autoComplete="tel" required pattern={phonePattern} {...invalid("phone")} defaultValue={account.phone} />{fieldError("phone")}</div>
+    <div className="form-field"><label htmlFor="company_type">บริษัท</label><select id="company_type" required value={locked ? "AGENCY" : company} onChange={e => setCompany(e.target.value)} disabled={locked} {...invalid("company_type")}><option value="">เลือกประเภทบริษัท</option>{Object.entries(companyLabels).map(([key,text]) => <option key={key} value={key}>{text}</option>)}</select>{fieldError("company_type")}</div>
+    {(company && company !== "SENA" || locked) && <div className="form-field"><label htmlFor="company_name">ชื่อบริษัท</label><input id="company_name" name="company_name" required maxLength={200} readOnly={locked} defaultValue={locked ? invite?.agency_code || "" : invite?.company_name || account.company_name || ""} {...invalid("company_name")} />{locked && <p>บริษัทผูกกับรหัสเอเจนซีในคำเชิญ</p>}{fieldError("company_name")}</div>}
+    <div className="form-field"><label htmlFor="team">ทีม / ฝ่าย</label><input id="team" name="team" required maxLength={200} {...invalid("team")} defaultValue={invite?.team || account.team} />{fieldError("team")}</div>
+    <div className="form-field"><label htmlFor="position">ตำแหน่ง</label><input id="position" name="position" required maxLength={100} {...invalid("position")} defaultValue={account.position || ""} />{fieldError("position")}</div>
+    {!invite && <><fieldset id="requested_tasks" tabIndex={-1} {...invalid("requested_tasks")}><legend>งานที่ต้องการทำ (เลือกอย่างน้อยหนึ่งข้อ)</legend>{Object.entries(taskLabels).map(([key,text]) => <label className="account-choice" key={key}><input type="checkbox" name="tasks" value={key} defaultChecked={account.requested_tasks.includes(key)} />{text}</label>)}{fieldError("requested_tasks")}</fieldset>
+      <div className="form-field"><label htmlFor="reason">เหตุผล / โครงการที่รับผิดชอบ</label><textarea id="reason" name="reason" required maxLength={2000} {...invalid("reason")} defaultValue={account.reason} />{fieldError("reason")}</div></>}
+    <p>ข้อมูลนี้ใช้พิจารณาสิทธิ์และติดต่อเรื่องบัญชี ผู้ดูแลระบบเท่านั้นที่อ่านคำขอได้ ชื่อจะแสดงต่อทีมงานในประวัติการทำงาน ไม่ส่งคำขอให้ผู้ช่วยหรือคลัง RAG ลบข้อมูลส่วนบุคคลของคำขอที่ถูกปฏิเสธหลัง 90 วัน</p>
+    <label className="account-choice"><input id="privacy_acknowledged" type="checkbox" name="privacy" required {...invalid("privacy_acknowledged")} defaultChecked={!!account.privacy_acknowledged_at} />รับทราบประกาศความเป็นส่วนตัว</label>{fieldError("privacy_acknowledged")}
+    <button className="button primary" disabled={busy || account.status !== "PENDING"}>{busy ? "กำลังบันทึก…" : invite ? "ตอบรับคำเชิญ" : "ส่งคำขอ"}</button>
+  </form>;
 }
-function AccountDecision({ account: a, agencies, onSaved }: { account: Account; agencies: { code: string; label_th: string }[]; onSaved: () => void }) {
-  const [role, setRole] = useState(a.hub_role || suggestedRole(a.requested_tasks)); const [agency, setAgency] = useState(a.agency_code || ""); const [note, setNote] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
-  async function decide(action: string) {
-    if (busy) return;
-    if (action === "reject" && !note.trim()) { setError("กรุณาระบุเหตุผลที่ปฏิเสธ"); return; }
-    if ((action === "approve" || action === "role") && role === "admin" && !window.confirm(`ยืนยันให้ ${a.display_name_th} เป็นผู้ดูแลระบบ ซึ่งอนุมัติบัญชีและเปลี่ยนสิทธิ์ผู้อื่นได้?`)) return;
-    if (action === "suspend" && !window.confirm(`ยืนยันระงับบัญชี ${a.display_name_th}? สิทธิ์จะถูกปิดในการเรียกใช้งานครั้งถัดไป`)) return;
-    setBusy(true); setError("");
-    try { await accountApi(`v1/admin/accounts/${a.id}/decision`, { action, hub_role: role, agency_code: role === "agency" ? agency || null : null, note, updated_at: a.updated_at }); onSaved(); }
-    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
-  }
-  if (a.status === "REJECTED" && a.anonymised_at) return <p>ลบข้อมูลส่วนบุคคลแล้ว ไม่สามารถเปิดคำขออีกครั้ง</p>;
-  const assigning = ["PENDING", "ACTIVE"].includes(a.status);
-  const actions = a.status === "PENDING" ? [...(submittedPending(a) ? [["approve", "อนุมัติ"]] : []), ["reject", "ปฏิเสธ"]] : a.status === "ACTIVE" ? [["role", "เปลี่ยนบทบาท"], ["suspend", "ระงับ"]] : a.status === "REJECTED" ? [["reopen", "เปิดรับคำขออีกครั้ง"]] : [["reactivate", "เปิดใช้งานอีกครั้ง"]];
-  return <div>{a.status === "REJECTED" && <p>เหตุผลที่ปฏิเสธ: {a.decision_note}</p>}{assigning && <><label className="form-field">บทบาท<select value={role} onChange={e => setRole(e.target.value)}>{["viewer", "editor", "publisher", "online_staff", "agency", "admin"].map(r => <option value={r} key={r}>{label(r)}</option>)}</select></label>{role === "agency" && <label className="form-field">รหัสเอเจนซี<select value={agency} onChange={e => setAgency(e.target.value)}><option value="">เลือกรหัสเอเจนซี</option>{agencies.map(r => <option key={r.code} value={r.code}>{r.code} · {r.label_th}</option>)}</select></label>}</>}<label className="form-field">เหตุผลการตัดสินใจ<textarea aria-describedby={`note-help-${a.id}`} value={note} maxLength={2000} onChange={e => setNote(e.target.value)} /></label><p id={`note-help-${a.id}`}>ผู้ขอจะเห็นข้อความนี้</p>{error && <p role="alert">{error}</p>}<div className="content-actions">{actions.map(([action, text]) => <button className="button secondary" disabled={busy || ["approve", "role"].includes(action) && role === "agency" && !agency} key={action} onClick={() => void decide(action)}>{text}</button>)}</div></div>;
+
+export function RequestSummary({account:a}: {account:Account}) {
+  return <dl className="account-summary"><dt>ชื่อ</dt><dd>{a.display_name_th || "ยังไม่ระบุ"}</dd><dt>วิธีเข้าสู่ระบบ</dt><dd>{methodLabel(a.sign_in_method)}</dd><dt>บริษัท</dt><dd>{companyLabel(a)}</dd><dt>ตำแหน่ง</dt><dd>{a.position || "ยังไม่ระบุ"}</dd><dt>ทีม / ฝ่าย</dt><dd>{a.team || "ยังไม่ระบุ"}</dd><dt>โทรศัพท์</dt><dd><a href={`tel:${a.phone.replace(/[^+0-9]/g, "")}`}>{a.phone || "ยังไม่ระบุ"}</a></dd><dt>งานที่ขอ</dt><dd>{a.requested_tasks.map(t => taskLabels[t]).join(" · ") || "ยังไม่ระบุ"}</dd><dt>เหตุผล / โครงการ</dt><dd>{a.reason || "ยังไม่ระบุ"}</dd></dl>;
 }
