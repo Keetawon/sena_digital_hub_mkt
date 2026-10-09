@@ -135,11 +135,11 @@ test('mobile drawer starts closed, traps focus, closes for navigation and return
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('sidebar groups toggle independently, persist and always open the active group on load', async ({ page }) => {
+test('sidebar groups toggle independently, persist even when the current page is in a collapsed group', async ({ page }) => {
   await enter(page, 'admin'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลโครงการและแบรนด์', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
   await expect(content).toHaveAttribute('aria-expanded', 'true'); await expect(ads).toHaveAttribute('aria-expanded', 'false'); await ads.click(); await content.click(); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await expect(content).toHaveAttribute('aria-expanded', 'false');
   const contentId = await content.getAttribute('aria-controls'); await expect(page.locator(`[id="${contentId}"]`)).toHaveAttribute('inert', ''); await expect(menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true })).not.toBeVisible();
-  await page.goto('/questions'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await expect(content).toHaveAttribute('aria-expanded', 'true');
+  await page.goto('/questions'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(content).toHaveAttribute('data-current', 'true'); await expect(content).toHaveAttribute('aria-description', 'มีหน้าที่กำลังใช้งานอยู่ในกลุ่มนี้');
   await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลโครงการและแบรนด์/แบรนด์ที่อยู่อาศัย');
   const paths = await menu.locator('a.nav-link svg path').evaluateAll(elements => elements.map(element => element.getAttribute('d'))); expect(new Set(paths).size).toBe(paths.length);
 });
@@ -178,6 +178,55 @@ test('sidebar hierarchy uses the same section labels and guided links in desktop
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(menu.locator('.hub-nav-collapse').first()).toHaveCSS('transition-duration', '0s');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await expect(menu.locator('.hub-nav-collapse').first()).toHaveCSS('transition-duration', '0.15s');
+    await expect(menu.locator('.hub-nav-collapse').first()).toHaveCSS('transition-duration', '0s');
   }
+});
+
+
+test('desktop rail persists, labels appear on focus and badges remain visible', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1000 }); await enter(page, 'admin');
+  const sidebar = page.getByRole('complementary', { name: 'พื้นที่ทำงาน' });
+  const toggle = sidebar.getByRole('button', { name: 'ย่อเมนู', exact: true });
+  await expect(sidebar).toHaveCSS('width', '244px');
+  await toggle.focus(); await page.keyboard.press('Enter');
+  await expect(sidebar).toHaveCSS('width', '64px');
+  await expect(sidebar.getByRole('button', { name: 'ขยายเมนู', exact: true })).toBeFocused();
+  await expect(sidebar.getByRole('button', { name: 'ขยายเมนู', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  const accounts = sidebar.getByRole('link', { name: 'ผู้ใช้และสิทธิ์', exact: true });
+  await accounts.focus(); await expect(accounts.getByRole('tooltip')).toBeVisible();
+  await expect(accounts.getByRole('tooltip')).toHaveText('ผู้ใช้และสิทธิ์');
+  const label = await accounts.getByRole('tooltip').boundingBox(); expect(label!.x).toBeGreaterThanOrEqual(64);
+  await expect(accounts.getByLabel('บัญชีรออนุมัติ')).toBeVisible();
+  await expect(sidebar.locator('.wordmark')).toHaveText('SENA.DIGITAL HUB');
+  await expect(sidebar.locator('.wordmark-full')).not.toBeVisible();
+  await expect(sidebar.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toBeVisible();
+  await page.reload(); await expect(sidebar).toHaveCSS('width', '64px');
+  await page.screenshot({ path: 'artifacts/permissions/sidebar-rail-1280.png', fullPage: true });
+  await sidebar.getByRole('button', { name: 'ขยายเมนู', exact: true }).click();
+  await page.reload(); await expect(sidebar).toHaveCSS('width', '244px');
+});
+
+test('tablet rail expands over content and closes with Escape or outside click, returning focus', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 }); await enter(page, 'admin');
+  const opener = page.getByRole('button', { name: 'ขยายเมนู', exact: true });
+  await expect(page.locator('aside.sidebar')).toHaveCSS('width', '64px');
+  const before = await page.locator('.main-shell').boundingBox();
+  await opener.focus(); await page.keyboard.press('Enter');
+  const overlay = page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true });
+  await expect(overlay).toBeVisible(); await expect(overlay).toHaveCSS('animation-name', 'none'); expect((await page.locator('.main-shell').boundingBox())!.x).toBe(before!.x);
+  await page.keyboard.press('Tab'); expect(await overlay.evaluate(e => e.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape'); await expect(overlay).not.toBeVisible(); await expect(opener).toBeFocused();
+  await page.keyboard.press('Enter'); await expect(overlay).toBeVisible();
+  await page.mouse.click(700, 150); await expect(overlay).not.toBeVisible(); await expect(opener).toBeFocused();
+});
+
+for (const width of [1280, 1024, 400]) test(`sidebar has no horizontal page overflow at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 }); await enter(page, 'admin');
+  if (width === 400) await openMenu(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.locator('.sidebar-footer')).toHaveCount(0);
+  await page.screenshot({ path: `artifacts/permissions/sidebar-${width}.png`, fullPage: true });
+  if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).click(); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await page.screenshot({ path: 'artifacts/permissions/sidebar-overlay-1024.png' }); }
+  if (width !== 1280) await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
