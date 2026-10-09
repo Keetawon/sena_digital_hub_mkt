@@ -5,14 +5,14 @@ Local execution only. Push is deferred until the final full suite passes. Each p
 
 ## Working database preservation
 
-Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.local/backups/permissions-before-20261009/sena_hub_local.dump` (6,297,298 bytes). Ignored baseline metadata is alongside it. Baseline: BNA7 exists once in `staging.rem_projects`; eight existing Hub accounts. BNA7 is staged REM source data, not an existing Hub project draft. Working cluster: `.local/postgres`. Test databases are separate disposable clusters. Final verification pending.
+Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.local/backups/permissions-before-20261009/sena_hub_local.dump` (6,297,298 bytes). Ignored baseline metadata is alongside it. Baseline: BNA7 exists once in `staging.rem_projects`; eight existing Hub accounts. BNA7 is staged REM source data, not an existing Hub project draft. Working cluster: `.local/postgres`. Test databases are separate disposable clusters. Checkpoint verification after Phases A/0 passed on 9 October 2026: BNA7 still present; the exact eight pre-existing account IDs are intact; 279 staged REM projects and four Hub projects remain. No working migration was applied. PostgreSQL/API/admin were restarted; health, home and Accounts returned HTTP 200, and the demo admin remained ACTIVE. Repeat this verification after subsequent working migrations.
 
 ## Phase status
 
 | Phase | Status | Commit | API / UI / DB / H1 gates |
 |---|---|---|---|
-| A — responsive sidebar | Passed | This phase commit (hash recorded by Phase 0) | Typecheck/build passed; API 1,444 passed + 11 skipped; DB 51 reported checks + 7 Node cases; H1 11 + 38 passed; UI 213 passed (208 → 213); sidebar rerun 13 passed |
-| 0 — baseline manifests | Not started | — | — |
+| A — responsive sidebar | Passed | `72c262f` | Typecheck/build passed; API 1,444 passed + 11 skipped; DB 51 reported checks + 7 Node cases; H1 11 + 38 passed; UI 213 passed (208 → 213); sidebar rerun 13 passed |
+| 0 — baseline manifests | Passed | This phase commit (hash recorded by Phase 1) | Typecheck/build passed; API 1,444 → 1,495 (+11 unchanged skips); DB 51 + 7 and 1,040 SQL probes passed; H1 11 + 38 passed; UI 213 → 213 passed |
 | 1 — foundations | Not started | — | — |
 | 2 — content core | Not started | — | — |
 | 3 — publication and knowledge | Not started | — | — |
@@ -22,7 +22,7 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | C — account grid and feature onboarding | Not started | — | — |
 | UAT — synthetic personas and owner pack | Not started | — | — |
 
-Counts are recorded from executed gates, not inferred from the prior report. Previously reported baseline: API 1,444 passed / 11 skipped, UI 208 passed, H1 11 protocol + 38 browser; current DB count to be measured.
+Counts are recorded from executed gates, not inferred from the prior report. Previously reported baseline: API 1,444 passed / 11 skipped, UI 208 passed, H1 11 protocol + 38 browser; Phase A measured DB count: 51 reported checks plus 7 Node cases.
 
 ## Phase A
 
@@ -44,6 +44,60 @@ Pending phase 0 action manifest and permission conversion. No authorization chan
 
 ## Resume
 
-Phase A gates are complete. Commit Phase A, then begin Phase 0 baseline manifests. Do not push until the final full programme gates pass. Restore the preserved working services after tests.
+Phases A and 0 are complete. Resume Phase 1 foundations; no permission migrations have been applied to any working database. Do not push until the final full programme gates pass. Restore the preserved working services after tests.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
+
+
+## Phase 0 — baseline manifests
+
+Recorded the 9 October decisions in docs/34 §10. Route manifest: 200 concrete method/path pairs plus ten H1 fallback method/path patterns. Entry probes use real Hub account lookup, eight synthetic personas (six roles, consumer and the second agency), all four statuses and forged role/agency claims. They stop before domain handlers; this measures the entry ceiling, while the existing domain suites and new direct SQL probes cover the DB boundary. Do not describe the route-entry probes as full mutation acceptance.
+
+Read-only catalog inspection on the verified disposable cluster through `hub_runtime` (NOSUPERUSER, NOBYPASSRLS): 223 functions, including 134 SECURITY DEFINER functions; 164 policies; 119 tables/views. Fifteen existing tables lack RLS, including staging reference sources, the progress cache/dirty queue, asset-role vocabulary and generic audit history. These are explicit migration/coverage work, not an assertion that all current tables are protected by RLS.
+
+### Conversion differences identified for owner review
+
+- Publisher loses project editing/model review through API/DB as required by content E/A separation; this also removes project draft proposals from the assistant. The earlier report called this an API-versus-UI difference; it is not safe to assume the database already denies every edit.
+- Agency and online staff lose the local proxy's service-consumer substitution for published Projects/Brands (and any other hidden content feed). Their existing landing links are also removed. This additional narrowing follows the explicit hidden-tab requirement; a separately authenticated service consumer retains its own published-feed contract.
+- Admin loses direct Hub-role execution of registry approval-switch/cancellation stewardship. This is explicitly operator-only under the new decision; it is not a manage-users power.
+- Global asset lists and bytes must narrow to authorized bindings (with a bounded upload/review workflow for new files). Old global asset visibility is not a grandfathered bypass. Exact affected endpoints and uploader handling will be recorded in Phase 2.
+- Templates otherwise preserve the intended baseline work, with named specials preserving operational distinctions. Further differences must be added before enabling their phase.
+
+### Decisions taken for owner review
+
+- Checked permission manifests are maintained test contracts; raw catalog captures, logs, screenshots and DB dumps stay ignored. No account data is included in a manifest.
+- Tests verify the disposable directory and marker on the same operator connection before fixture setup AND cleanup. Automatic review rejected the first draft's ambiguous fixed-port setup; it was never written or executed. The revised fixture includes these checks explicitly.
+- The full regression API command always collects the API directory; targeted probes must use `-k` rather than adding a file path alone.
+
+
+Phase 0 interim validation: all 33 route-manifest/persona-state cases passed (6,400 method/path entry probes), alongside the full API suite: 1,477 passed, 11 existing opt-in skips. The baseline now explicitly records schema USAGE as well as relation/function grants: revoked staging schema access makes several residual table grants unusable. Catalog comparison passed after normalizing PostgreSQL internal `char` and role-array driver representations. Direct SQL baseline probes and final phase gates are still in progress.
+
+
+### Existing opt-in API skips
+
+These 11 cases were skipped by the existing full-suite configuration; no new baseline test is skipped. H1 has its separately executed browser/DB simulation. No flaky retry was used in Phase A.
+
+- `apps/api/tests/test_actuals_import.py::test_real_import_replay_conflict_and_failed_rows_preserve_last_good`
+- `apps/api/tests/test_archive_db.py::test_archive_review_application_evidence_versions_and_private_access`
+- `apps/api/tests/test_assistant_db.py::test_assistant_http_citations_generated_proposal_and_explicit_save`
+- `apps/api/tests/test_assistant_model.py::test_sdk_reads_fictional_project_through_real_caller_rls_without_egress`
+- `apps/api/tests/test_assistant_tools_db.py::test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries`
+- `apps/api/tests/test_demo_finance.py::test_finance_seed_real_controls_replay_preserved_edits_and_complete_snapshot`
+- `apps/api/tests/test_document_worker.py::test_real_local_image_ocr_preserves_all_occurrences_and_exact_money`
+- `apps/api/tests/test_hosted_h1.py::test_disposable_managed_simulation_end_to_end`
+- `apps/api/tests/test_hub_demo.py::test_complete_business_seed_replay_rolls_back_and_preserves_document_work`
+- `apps/api/tests/test_promotions_db.py::test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback`
+- `apps/api/tests/test_residential_seed.py::test_seed_replay_preserves_originals_and_user_edits`
+
+
+Phase 0 final API gate: 1,495 passed / 11 unchanged skips (309.55s), including 34 route coverage/authentication/persona-state cases and 17 DB baseline cases. The revised positive Project RPC probe was rerun: all 17 DB cases passed (8.31s). Typecheck, offline webpack build, the 51 DB checks + 7 Node cases, and H1 11 protocol + 38 browser tests passed. UI gate is running; do not start Phase 1 until it passes.
+
+
+Phase 0 complete: full UI 213 passed (6.7m), no skips or retries. All six gates passed. Final source adds 51 API test cases (34 route/identity cases + 17 DB cases); 6,600 route probes include anonymous requests, and 1,040 direct SQL entry probes cover eight personas. No application authorization or migrations changed in Phase 0. No hosted request, email or external-system write occurred.
+
+
+## Session checkpoint after Phase 0
+
+A is `72c262f`. Phase 0 is the commit containing this entry (subject `test: freeze permission baseline and owner decisions (phase 0)`); its literal hash is recorded in the session report and will be copied into the table by Phase 1, avoiding an impossible self-referential commit hash. No push has been made. No permission storage/enforcement, account grid, onboarding or final UAT pack is implemented yet. **Resume Phase 1**, then continue 2–6, C and UAT with all gates per phase. Do not request intermediate owner testing.
+
+Working services have been restored directly from the preserved `.local/postgres` cluster, without a seed/migration runner. API and admin listen on `127.0.0.1:8000` and `127.0.0.1:3000`; PostgreSQL on `127.0.0.1:55432`. Stop these with the owner's existing authorization before disposable gates, preserving this cluster. The current local app contains the completed sidebar; it is not the final permissions UAT build. Ignored proof: `.local/permissions-gates/checkpoint-working-verification.json`. Backup remains `.local/backups/permissions-before-20261009/sena_hub_local.dump`.

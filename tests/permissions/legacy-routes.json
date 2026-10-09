@@ -1,0 +1,2767 @@
+{
+  "baseline_commit": "12772c3",
+  "meaning": "Reviewed legacy route-entry ceiling, not a substitute for DB object, ownership, scope or state checks. Empty-body probes never grant rights. H1 fallback routes are conditional.",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/me",
+      "tab": "identity/shared names",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency",
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:91",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/me/access-request",
+      "tab": "identity/shared names",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency",
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:95",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/me/access-request",
+      "tab": "identity/shared names",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency",
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:96",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/me/invite-accept",
+      "tab": "identity/shared names",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency",
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:101",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/accounts/display-names",
+      "tab": "identity/shared names",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:106",
+      "conditional_h1": false,
+      "notes": "internal staff only"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:118",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/account-invites",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:126",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/account-invites",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:132",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/account-invites/{invite_id}/decision",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:140",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/accounts/{account_id}/decision",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/accounts.py:145",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/actuals",
+      "tab": "actuals",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:107",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/actuals/{line_id}",
+      "tab": "actuals",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:111",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/document-tracking",
+      "tab": "documents",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:117",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/document-tracking/{key}",
+      "tab": "documents",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:121",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/findings",
+      "tab": "exceptions",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:127",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/findings/{key}",
+      "tab": "exceptions",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:131",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/findings/{key}/workflow",
+      "tab": "exceptions",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:144",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/document-tracking/{key}/follow-ups",
+      "tab": "documents",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/actuals.py:148",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/settings",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:153",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/vocab",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:158",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/scopes",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:167",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/registrations/preview",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:180",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/registrations",
+      "tab": "registry",
+      "level": "edit",
+      "entry_roles": [
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:189",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/registrations",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:204",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/registrations/{code}",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:228",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/registrations/{code}/names",
+      "tab": "registry",
+      "level": "edit",
+      "entry_roles": [
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:233",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/registrations/{code}/bindings",
+      "tab": "registry",
+      "level": "edit",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:240",
+      "conditional_h1": false,
+      "notes": "agency: own registration only"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/names/validate",
+      "tab": "registry",
+      "level": "view",
+      "entry_roles": [
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/ads.py:246",
+      "conditional_h1": false,
+      "notes": "pure parser; reader still checks agency via active_vocab"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive/fixtures",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:371",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive/search",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:376",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:382",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive/{document_id}",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:387",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/archive",
+      "tab": "archive",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:392",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive/{document_id}/file",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:432",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/archive/{document_id}/page",
+      "tab": "archive",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:453",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/archive/{document_id}/retry",
+      "tab": "archive",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:408",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/archive/{document_id}/confirm",
+      "tab": "archive",
+      "level": "edit/approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:409",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/archive/{document_id}/apply",
+      "tab": "archive + finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:410",
+      "conditional_h1": false,
+      "notes": "writes Hub finance only"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/archive/{document_id}/hold",
+      "tab": "archive",
+      "level": "admin",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/archive.py:411",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assistant/config",
+      "tab": "shared assistant",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:160",
+      "conditional_h1": false,
+      "notes": "tools/fields depend on role; no domain DB read"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assistant/runs/{run_id}",
+      "tab": "shared assistant",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:174",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/runs/{run_id}/cancel",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:178",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assistant/runs/{run_id}/citations/{citation_id}",
+      "tab": "shared assistant",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:234",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/runs",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:239",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/proposals",
+      "tab": "shared assistant + projects/brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:379",
+      "conditional_h1": false,
+      "notes": "project editor/publisher/admin; brand editor/admin; owner/diff checks"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/proposals/suggest",
+      "tab": "shared assistant + projects/brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:384",
+      "conditional_h1": false,
+      "notes": "project editor/publisher/admin; brand editor/admin; owner/diff checks"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assistant/proposals/{proposal_id}",
+      "tab": "shared assistant + projects/brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:402",
+      "conditional_h1": false,
+      "notes": "project editor/publisher/admin; brand editor/admin; owner/diff checks"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/proposals/{proposal_id}/confirm",
+      "tab": "shared assistant + projects/brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/assistant.py:407",
+      "conditional_h1": false,
+      "notes": "project editor/publisher/admin; brand editor/admin; owner/diff checks"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/completeness",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/brand_completeness.py:101",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/completeness.csv",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/brand_completeness.py:105",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/bulk-preview",
+      "tab": "brands",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/brand_completeness.py:111",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/bulk-create",
+      "tab": "brands",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/brand_completeness.py:117",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/confirm-source-names",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/brand_completeness.py:123",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/commercial-types",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/commercial_types.py:100",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/commercial-types",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/commercial_types.py:105",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/projects/{public_id}/commercial-types/{commercial_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/commercial_types.py:114",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/commercial-types/{commercial_id}/assets",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/commercial_types.py:124",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/commercial-types/{commercial_id}/assets/{binding_id}/remove",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/commercial_types.py:135",
+      "conditional_h1": false
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/facilities/{code}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/facilities.py:32",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/memos",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch memos"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/memos/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch memos"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/media-lines",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch media-lines"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/media-lines/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch media-lines"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/line-assignments",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch line-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/line-assignments/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch line-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/corrections",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch corrections"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/corrections/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch corrections"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/ledger-imports",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch ledger-imports"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/ledger-imports/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch ledger-imports"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/ad-accounts",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch ad-accounts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/ad-accounts/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch ad-accounts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/channel-accounts",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch channel-accounts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/channel-accounts/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch channel-accounts"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/commitments",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch commitments"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/commitments/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch commitments"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/card-statements",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch statement-controls"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/card-statements/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch statement-controls"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/card-imports",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch card-imports"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/card-imports/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch card-imports"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/cost-records",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch costs"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/cost-records/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch costs"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/document-requirements",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch document-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/document-requirements/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch document-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/memo-identifiers",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch memo-identifiers"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/memo-identifiers/{record_id}",
+      "tab": "finance",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:692",
+      "conditional_h1": false,
+      "notes": "dispatch memo-identifiers"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/registrations/{code}/line-candidates",
+      "tab": "finance + registry",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:758",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/registrations/{code}/monthly-lines",
+      "tab": "finance + registry",
+      "level": "view",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:762",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/memos",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:718",
+      "conditional_h1": false,
+      "notes": "dispatch memo_create"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/ads/memos/{record_id}",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:719",
+      "conditional_h1": false,
+      "notes": "dispatch memo_update"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/memos/{record_id}/confirm-record",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:720",
+      "conditional_h1": false,
+      "notes": "dispatch memo_confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/memo-identifiers",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:721",
+      "conditional_h1": false,
+      "notes": "dispatch memo_identifier_propose"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/memo-identifiers/{record_id}/review",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:722",
+      "conditional_h1": false,
+      "notes": "dispatch memo_identifier_review"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/memo-identifiers/{record_id}/retire",
+      "tab": "finance",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:723",
+      "conditional_h1": false,
+      "notes": "dispatch memo_identifier_retire"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/media-lines",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:724",
+      "conditional_h1": false,
+      "notes": "dispatch line_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/media-lines/{record_id}/revisions",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:725",
+      "conditional_h1": false,
+      "notes": "dispatch revision_create"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/ads/media-lines/{record_id}/revisions/{revision_id}",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:726",
+      "conditional_h1": false,
+      "notes": "dispatch revision_update"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/media-lines/{record_id}/revisions/{revision_id}/confirm",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:727",
+      "conditional_h1": false,
+      "notes": "dispatch revision_confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/media-lines/{record_id}/archive",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:728",
+      "conditional_h1": false,
+      "notes": "dispatch line_archive"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/line-assignments",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:729",
+      "conditional_h1": false,
+      "notes": "dispatch assignment_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/line-assignments/{record_id}/replace",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:730",
+      "conditional_h1": false,
+      "notes": "dispatch assignment_replace"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/line-assignments/{record_id}/end",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:731",
+      "conditional_h1": false,
+      "notes": "dispatch assignment_end"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/line-assignments/{record_id}/acknowledge",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:732",
+      "conditional_h1": false,
+      "notes": "dispatch assignment_acknowledge"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/corrections",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:733",
+      "conditional_h1": false,
+      "notes": "dispatch correction_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/corrections/{record_id}/review",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:734",
+      "conditional_h1": false,
+      "notes": "dispatch correction_review"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/corrections/{record_id}/apply",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:735",
+      "conditional_h1": false,
+      "notes": "dispatch correction_apply"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/corrections/{record_id}/retire",
+      "tab": "finance",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:736",
+      "conditional_h1": false,
+      "notes": "dispatch correction_retire"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/ad-accounts",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:737",
+      "conditional_h1": false,
+      "notes": "dispatch ad_account_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/ad-accounts/{record_id}/versions",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:738",
+      "conditional_h1": false,
+      "notes": "dispatch ad_account_version_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/ad-accounts/{record_id}/versions/confirm",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:739",
+      "conditional_h1": false,
+      "notes": "dispatch ad_account_version_confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/ad-accounts/{record_id}/versions/close",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:740",
+      "conditional_h1": false,
+      "notes": "dispatch ad_account_version_close"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/channel-accounts",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:741",
+      "conditional_h1": false,
+      "notes": "dispatch channel_account_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/channel-accounts/{record_id}/versions",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:742",
+      "conditional_h1": false,
+      "notes": "dispatch channel_account_version_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/channel-accounts/{record_id}/versions/confirm",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:743",
+      "conditional_h1": false,
+      "notes": "dispatch channel_account_version_confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/channel-accounts/{record_id}/versions/close",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:744",
+      "conditional_h1": false,
+      "notes": "dispatch channel_account_version_close"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:745",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments/{record_id}/revisions",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:746",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_revise"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments/{record_id}/activate",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:747",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_activate"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments/{record_id}/suspend",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:748",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_suspend"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments/{record_id}/covers",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:749",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_cover_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/commitments/{record_id}/occurrences",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:750",
+      "conditional_h1": false,
+      "notes": "dispatch commitment_occurrence_create"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/card-statements",
+      "tab": "finance",
+      "level": "edit/approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:751",
+      "conditional_h1": false,
+      "notes": "dispatch statement_create"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/ads/card-statements/{record_id}",
+      "tab": "finance",
+      "level": "edit/approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:752",
+      "conditional_h1": false,
+      "notes": "dispatch statement_update"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/card-imports/{record_id}/confirm",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:753",
+      "conditional_h1": false,
+      "notes": "dispatch card_batch_confirm"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/card-imports/{record_id}/replace",
+      "tab": "finance",
+      "level": "approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:754",
+      "conditional_h1": false,
+      "notes": "dispatch card_batch_replace"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/card-import-rows/{record_id}/classify",
+      "tab": "finance",
+      "level": "edit",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:755",
+      "conditional_h1": false,
+      "notes": "dispatch cost_classify"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/cost-records/{record_id}/allocations",
+      "tab": "finance",
+      "level": "edit/approve",
+      "entry_roles": [
+        "online_staff",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/finance.py:756",
+      "conditional_h1": false,
+      "notes": "dispatch cost_allocate"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/knowledge/projects",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:76",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/knowledge/projects/{project_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:91",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/knowledge/questions/{question_id}/review",
+      "tab": "knowledge",
+      "level": "edit/approve",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:113",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/knowledge/projects/{project_id}/preview-release",
+      "tab": "knowledge",
+      "level": "approve",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:119",
+      "conditional_h1": false,
+      "notes": "publisher only"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/knowledge/candidates/{candidate_id}/review",
+      "tab": "knowledge",
+      "level": "edit/approve",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:127",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/knowledge/candidates/{candidate_id}/file",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:133",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/knowledge/rights/approve",
+      "tab": "knowledge",
+      "level": "approve",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:146",
+      "conditional_h1": false,
+      "notes": "publisher only"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/knowledge/preview",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/knowledge.py:167",
+      "conditional_h1": false,
+      "notes": "private retrieval; may record gap"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assets",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:394",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assets",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:400",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assets/{asset_id}",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:424",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assets/{asset_id}/review",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:430",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assets/{asset_id}/file",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:463",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assets/{asset_id}/thumbnail",
+      "tab": "shared assets (projects/brands/knowledge)",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:467",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/assets/{asset_id}/file",
+      "tab": "published assets",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:478",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "tab": "other",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency",
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:482",
+      "conditional_h1": false,
+      "notes": "unauthenticated; no DB"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/capabilities",
+      "tab": "other",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:486",
+      "conditional_h1": false,
+      "notes": "environment feature info, not grants"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:496",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/sources/projects",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:502",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/progress",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:508",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:529",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/sources/brands",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:540",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:545",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands",
+      "tab": "brands",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:550",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/{public_id}",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:559",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/brands/{public_id}",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:564",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/{public_id}/versions",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:573",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/publish",
+      "tab": "brands",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:598",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/withdraw",
+      "tab": "brands",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:602",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/rollback",
+      "tab": "brands",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:606",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/assets",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:610",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/assets/{binding_id}/remove",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:620",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/brand",
+      "tab": "projects + brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:629",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brand-requests",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:637",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brand-requests",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:642",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brand-requests/{request_id}/resolve",
+      "tab": "brands",
+      "level": "approve",
+      "entry_roles": [
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:649",
+      "conditional_h1": false,
+      "notes": "admin-only resolution"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:657",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/projects/{public_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:662",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/source-models",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:670",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/prefill",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:676",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/models/{public_model_id}",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:685",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/models",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:693",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/projects/{public_id}/models/{public_model_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:702",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/models/{public_model_id}/review",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:712",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/versions",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:721",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/assets",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:731",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/assets/{binding_id}/remove",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:741",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/models/{public_model_id}/assets",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:750",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/models/{public_model_id}/assets/{binding_id}/remove",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:760",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/publish",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:782",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/withdraw",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:786",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/rollback",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:790",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/projects",
+      "tab": "published projects/models",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:819",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/brands",
+      "tab": "published brands",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:829",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/brands/{public_id}",
+      "tab": "published brands",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:836",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/projects/{public_id}",
+      "tab": "published projects/models",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:852",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/projects/{public_id}/models",
+      "tab": "published projects/models",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:858",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/projects/{public_id}/assets",
+      "tab": "published assets",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:868",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/models/{public_id}",
+      "tab": "published projects/models",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:886",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/models/{public_id}/assets",
+      "tab": "published assets",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:892",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/ads/{deferred_path:path}",
+      "tab": "ads groups",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:908",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/ads/{deferred_path:path}",
+      "tab": "ads groups",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:908",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/ads/{deferred_path:path}",
+      "tab": "ads groups",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:908",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/ads/{deferred_path:path}",
+      "tab": "ads groups",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:908",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/admin/ads/{deferred_path:path}",
+      "tab": "ads groups",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:908",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/assistant/{deferred_path:path}",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:909",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/assistant/{deferred_path:path}",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:909",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/assistant/{deferred_path:path}",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:909",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/assistant/{deferred_path:path}",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:909",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/admin/assistant/{deferred_path:path}",
+      "tab": "shared assistant",
+      "level": "other",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff",
+        "agency"
+      ],
+      "source": "apps/api/sena_hub_api/main.py:909",
+      "conditional_h1": true,
+      "notes": "H1 only: always 503 after I"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/promotions",
+      "tab": "promotions",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:189",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/promotions/{promotion_id}",
+      "tab": "promotions",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:194",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/promotions",
+      "tab": "promotions",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:204",
+      "conditional_h1": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/promotions/{promotion_id}",
+      "tab": "promotions",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:208",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/promotions/{promotion_id}/review",
+      "tab": "promotions",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:212",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/promotions/{promotion_id}/publish",
+      "tab": "promotions",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:216",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/promotions/{promotion_id}/withdraw",
+      "tab": "promotions",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:220",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/releases/candidates",
+      "tab": "releases",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:224",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/releases",
+      "tab": "releases",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:229",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/releases/{release_id}",
+      "tab": "releases",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:234",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/releases/publish",
+      "tab": "releases",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:239",
+      "conditional_h1": false
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/releases/{release_id}/rollback",
+      "tab": "releases",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:245",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/promotions",
+      "tab": "published promotions",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "source": "apps/api/sena_hub_api/promotions.py:251",
+      "conditional_h1": false
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/questions",
+      "tab": "questions",
+      "level": "view",
+      "entry_roles": [
+        "editor",
+        "publisher",
+        "viewer",
+        "admin",
+        "online_staff"
+      ],
+      "source": "apps/api/sena_hub_api/questions.py:71",
+      "conditional_h1": false
+    }
+  ]
+}

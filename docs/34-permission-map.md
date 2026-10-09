@@ -1264,7 +1264,7 @@ Would require explicit scope membership tables and inheritance rules (brand → 
 
 Planning estimate, not a commitment: **12–18 migrations**, **60–90 source/test/config files**, **500–900 new or adapted parameterized permission assertions**, roughly **8–12 developer-weeks** including inventory-to-test conversion, design decisions, staged integration and regression fixes. The 203 role-sensitive objects are the audit surface, not 203 necessarily separate edits. Shared SD dispatchers and joins dominate effort. Project/brand row scoping, a writable Questions workflow and new four-eyes draft stages are additional scope. No new runtime dependency is inherently required.
 
-## 8. Open questions for the owner
+## 8. Historical questions (resolved by the owner decisions in §10)
 
 1. **Exact old access or normalized grid semantics?** Keep named exceptions/limited controls for agency bindings, brand administration, finance stewardship and knowledge review, or approve intentional access changes when converting? Recommended: exact compatibility first, explicit decisions before widening.
 2. **What does Approve include?** Model matching, knowledge candidate/answer verification, file rights, finance record confirmations, publication, withdrawal and rollback currently have different role gates. Should these stay distinct? Should “approve” imply view only, as proposed, and never edit?
@@ -1282,3 +1282,41 @@ Planning estimate, not a commitment: **12–18 migrations**, **60–90 source/te
 - Existing role-denial test source was consulted, including promotion and knowledge tests. **No test suite, DB migration, application request or hosted request was run for this read-only investigation.** Runtime behavior, deployed ACL drift and timing/performance remain acceptance work for the next authorized phase.
 - Report audit: all 210 endpoint rows are unique; all 132 grant IDs, 81 policy rows and 122 role-bound function rows reconcile; every relative source link resolves and line numbers are in range; Markdown table widths are consistent. This checks inventory structure, not runtime authorization.
 - Only this report is intended for the commit. No application code, migrations, tests, generated output, environment files or credentials are included.
+
+
+## 10. Owner decisions — 9 October 2026
+
+These decisions authorize the phased implementation in §7 and resolve the earlier design questions where specified. The historical capability map above remains the baseline; implementation status and conversion differences are in [the programme log](35-permissions-implementation-log.md). No hosted execution is authorized.
+
+| Tab | View | Edit | Approve | Separate special actions |
+|---|---|---|---|---|
+| projects | V | E | A | — |
+| brands | V | E | A | `brands.manage_catalog` |
+| promotions | V | E | A | — |
+| releases | V | — | A | — |
+| knowledge | V | E | A | — |
+| registry | V | E | — | — |
+| finance | V | E | A | `finance.review_identifiers_corrections` |
+| actuals | V | — | — | — |
+| documents | V | E | — | — |
+| archive | V | E | A | `archive.legal_hold` |
+| exceptions | V | E | — | — |
+| questions | V | — | — | — |
+
+1. **Action semantics.** Projects model-match confirm/reject is E; publish/withdraw/rollback is A. Brands catalog creation, bulk creation and request resolve/reject use `brands.manage_catalog`. Knowledge candidate/evaluation review is E; asset rights approval and private preview release are A. Finance drafts are E; confirming memo records, line revisions, mappings, commitments, card batches, allocations and CONFIRMED statements is A. Identifier/correction review and retirement require `finance.review_identifiers_corrections`. Archive correct-and-confirm extraction is E; applying to finance requires Archive A **and** Finance E. Legal hold is `archive.legal_hold`. Registry issuance/names/scopes/bindings are E, but its global approval switch and cancellation remain operator-only, outside this grid and the manage-users flag. Documents/exceptions follow-up workflows are E. Actuals and Questions are read-only. Releases A additionally requires A on every member's tab inside the same transaction; a mixed unauthorized batch rolls back.
+2. **Separation of duties.** Projects, Brands, Promotions and Releases cannot have E and A together on one account; the DB and UI both enforce this. Ads/finance tabs may have both. Publisher project editing through the API is intentionally removed. Strict revision-author four-eyes checks remain future work: role/box separation does not prove that a person never edited an earlier revision before their permissions changed. Per-project/brand scoping is also deferred.
+3. **User administration.** `can_manage_users` is a separate audited flag for Accounts only. It does not confer data access. No self decisions and at least one ACTIVE manager of users remain mandatory; account status, own-grid changes and flag changes receive the same server checks and stale-version protection.
+4. **Server-owned, versioned templates.** Applying a template copies permissions to the account. Changing a template does not change existing accounts. An explicit **ใช้กับ N คน** operation requires per-account diff previews and confirmation; all changes are audited.
+
+| Template | Copied tab permissions | Specials |
+|---|---|---|
+| viewer | Projects, Brands, Promotions, Releases, Knowledge, Questions V | — |
+| editor | Projects, Brands, Promotions, Knowledge VE; Releases, Questions V | — |
+| publisher / Manager | Projects, Brands, Promotions, Releases, Knowledge VA; Questions V | — |
+| online_staff | Registry VE; Finance VEA; Actuals V; Documents VE; Archive VEA; Exceptions VE; Questions V | — |
+| admin / ผู้ดูแลระบบ | Projects VE; Brands VE; Promotions VE; Releases V; Knowledge VE; Registry VE; Finance VEA; Actuals V; Documents VE; Archive VEA; Exceptions VE; Questions V | All three named specials |
+| agency | Fixed external profile: own canonical agency registry view and native-identity binding | No editable grid, no internal-template conversion |
+
+5. **Hidden tabs.** Other tabs can receive only the minimal reference name/code needed for their own work. No hidden-tab detail, search, export/CSV, assistant answer, citation or cache payload is allowed. Asset bytes and thumbnails require an authorized binding. A Project reader without Brands V receives only the brand name. Agency scope remains an additional mandatory conjunct, never an alternative policy that ORs with general access.
+6. **Conversion.** Existing accounts copy their legacy role's template; existing admins receive the manage-users flag. Report every role/action whose effective access changes, including changes implied by hidden-tab and operator-only requirements. Expected primary change: publisher project editing is removed. Permission changes take effect on the next request; metadata and JWT claims never authorize.
+7. **Delivery.** One continuous local programme; owner tests once at the end. New tabs grant nobody access until an explicit reviewed assignment. Unmigrated groups stay under a legacy ceiling and cannot accept editable boxes until their complete DB guard coverage is proved. A disabled migration group never falls back to broader legacy access. Questions remains repository-managed/read-only. No transitions in new UI.
