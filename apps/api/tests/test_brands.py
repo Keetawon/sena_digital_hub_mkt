@@ -140,13 +140,7 @@ def test_brand_history_includes_frozen_payload_under_the_existing_caller_role(cl
                 return {"id": str(brand_id), "public_name": {"th": "ฉบับร่างที่เปลี่ยนแล้ว"},
                         "published_version_id": None}
             assert "hub.brand_versions($1)" in query and values == (brand_id,)
-            return [metadata]
-
-        async def fetch(self, query, *values):
-            calls.append((query, values))
-            assert query == "SELECT id, payload FROM hub.brand_versions WHERE brand_id=$1"
-            assert values == (brand_id,)
-            return [{"id": version_id, "payload": frozen}]
+            return [{**metadata, "payload": frozen}]
 
     @asynccontextmanager
     async def connection(request, actor):
@@ -158,7 +152,7 @@ def test_brand_history_includes_frozen_payload_under_the_existing_caller_role(cl
     assert response.status_code == 200
     assert response.json()["data"] == [{**metadata, "payload": frozen}]
     assert calls[0][1] == ("brd_review",)
-    assert len(calls) == 3 and all(query.startswith("SELECT ") for query, _ in calls)
+    assert len(calls) == 2 and all(query.startswith("SELECT ") for query, _ in calls)
 
 
 def test_brand_history_payload_is_still_denied_to_public_consumer(client):

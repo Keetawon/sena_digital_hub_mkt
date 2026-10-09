@@ -16,6 +16,20 @@ test('permission foundation projection and locked catalog use the account proxy'
   expect(catalog.templates).toHaveLength(6);
 });
 
+test('publisher content reads remain available while project draft edits deny at the API',async({page,context})=>{
+  await context.addCookies([{name:'sena_local_persona',value:'publisher',url:'http://127.0.0.1:3000'}]);
+  await page.goto('/');
+  const response=await page.request.get('/api/hub/v1/admin/projects');expect(response.status()).toBe(200);
+  const project=(await response.json()).data[0];expect(project).toBeTruthy();
+  const changed=await page.request.patch(`/api/hub/v1/admin/projects/${project.public_project_id}`,{
+    headers:{Origin:'http://127.0.0.1:3000'},data:{updated_at:project.updated_at,public_name:{th:'Synthetic denied edit'}},
+  });
+  expect(changed.status()).toBe(403);
+  expect((await page.request.get('/api/hub/v1/admin/brands')).status()).toBe(200);
+  const after=(await (await page.request.get(`/api/hub/v1/admin/projects/${project.public_project_id}`)).json()).data;
+  expect(after.updated_at).toBe(project.updated_at);expect(after.public_name).toEqual(project.public_name);
+});
+
 test('local demo users table, filters and self panel retain persona authority',async({page})=>{
   await page.goto('/admin/accounts');await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
   await page.getByLabel('กรองบทบาท').selectOption('admin');

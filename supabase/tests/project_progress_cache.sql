@@ -38,6 +38,7 @@ do $$ declare v jsonb; begin
   if exists(select 1 from jsonb_array_elements(v->'group_issues')) then raise exception 'Unexpected membership issue'; end if;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform * from hub.progress_inputs(); raise exception 'Consumer cache access'; exception when insufficient_privilege then null; end;
 end $$;

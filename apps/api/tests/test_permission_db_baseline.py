@@ -19,6 +19,14 @@ FOUNDATION_TABLES = {'hub.permission_catalog', 'hub.permission_template', 'hub.a
 FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', 'hub.permission_rows',
     'hub.copy_account_template', 'hub.can', 'hub.can_special', 'hub.can_agency_registry',
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
+CONTENT_TABLES = {'hub.' + name for name in (
+    'projects', 'model_types', 'entity_assets', 'entity_versions', 'commercial_types', 'commercial_type_sources',
+    'commercial_type_assets', 'facility_taxonomy', 'project_facilities', 'project_progress_cache', 'project_progress_dirty',
+    'brands', 'brand_versions', 'brand_assets', 'brand_requests', 'brand_bulk_runs', 'assets')}
+CONTENT_FUNCTIONS = {'hub.' + name for name in (
+    'require_permission', 'require_special', 'can_upload_asset', 'require_asset_upload', 'remember_asset_binding',
+    'can_read_asset', 'require_asset_access', 'project_permission_projection', 'project_versions', 'progress_permission_projection',
+    'asset_registered_for_cleanup', 'asset_permission_projection', 'snapshot_assets_visible')}
 FUNCTIONS_SQL = """select n.nspname||'.'||p.proname as name,pg_get_function_identity_arguments(p.oid) as arguments,
  p.prosecdef as security_definer,p.proconfig as config,
  array(select r from unnest($2::text[]) r where has_function_privilege(r,p.oid,'execute') order by r) as execute_roles
@@ -47,14 +55,23 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS
+                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
                     added = [r for r in actual if r['schema'] + '.' + r['table'] in FOUNDATION_TABLES]
                     assert len(added) == 4 and all(r['name'] == 'permission_owner' for r in added)
                     actual = [r for r in actual if r not in added]
-                assert actual == BASELINE[name], name
+                    content = [r for r in actual if r['name'] in ('content_owner', 'content_app_read', 'content_permission', 'content_snapshot_brands', 'content_snapshot_assets')]
+                    assert len(content) == 54
+                    assert all(r['schema'] + '.' + r['table'] in CONTENT_TABLES for r in content)
+                    assert all(r['permissive'] == 'RESTRICTIVE' and 'hub.can' in r['qual']
+                               for r in content if r['name'] in ('content_permission', 'content_snapshot_brands'))
+                    actual = [r for r in actual if r not in content]
+                expected = BASELINE[name]
+                if name == 'relations':
+                    expected = [{**r, 'rls': True, 'force_rls': True} if r['name'] in CONTENT_TABLES else r for r in expected]
+                assert actual == expected, name
             assert sum(f['security_definer'] for f in BASELINE['functions']) == 134
         finally:
             await db.close()

@@ -11,17 +11,20 @@ values ('SQL-TEST-CORE','SQL-TEST-M1','Synthetic SQL test model',now(),'syntheti
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-CORE-BRAND','Synthetic core test brand',now(),'synthetic-core-brand');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.fixture_brand',hub.create_brand_from_rem('SQL-CORE-BRAND')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic core brand"},"slug":"sql-core-brand","description":{"th":"Synthetic test brand only"}}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic core fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-CORE-BRAND' where rem_project_id in ('SQL-TEST-CORE');
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.project_id',hub.create_project_from_rem('SQL-TEST-CORE')::text,true);
 select hub.assign_project_brand(id,current_setting('test.fixture_brand')::uuid,updated_at) from hub.projects where id=current_setting('test.project_id')::uuid;
 select set_config('test.public_id',public_project_id,true),set_config('test.model_id',m.id::text,true),
@@ -52,6 +55,7 @@ begin
 end $$;
 
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$
 begin
   begin
@@ -62,6 +66,7 @@ begin
 end $$;
 
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 declare schema_name text;
 begin
@@ -80,6 +85,7 @@ begin
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.patch_project(current_setting('test.project_id')::uuid,
   '{"public_name":{"th":"ข้อมูลทดสอบ รุ่นหนึ่ง"},"slug":"sql-test-core","address":{"th":"ที่อยู่ทดสอบ"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"ข้อมูลทดสอบเท่านั้น"}}',
   (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
@@ -100,6 +106,7 @@ end $$;
 select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":0,"longitude":0}',
   (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
     perform hub.publish_project(current_setting('test.project_id')::uuid,'Must reject zero coordinates');
@@ -109,11 +116,14 @@ do $$ begin
     'Coordinate rejection wrote a publication';
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":13.7563,"longitude":100.5018}',
   (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.version_1',hub.publish_project(current_setting('test.project_id')::uuid,'First SQL test publish')::text,true);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.payload_1',payload::text,true) from public_api.projects where public_project_id=current_setting('test.public_id');
 do $$
 begin
@@ -122,6 +132,7 @@ begin
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.old_updated_at',updated_at::text,true) from hub.projects where id=current_setting('test.project_id')::uuid;
 select hub.patch_project(current_setting('test.project_id')::uuid,'{"public_name":{"th":"ข้อมูลทดสอบ รุ่นสอง"}}',current_setting('test.old_updated_at')::timestamptz);
 select hub.update_model(current_setting('test.project_id')::uuid,current_setting('test.public_model_id'),'{"bedrooms":3}',
@@ -134,14 +145,17 @@ begin
   exception when serialization_failure then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 begin
   assert (select payload=current_setting('test.payload_1')::jsonb from public_api.projects where public_project_id=current_setting('test.public_id')), 'Draft edit changed public snapshot';
 end $$;
 
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.version_2',hub.publish_project(current_setting('test.project_id')::uuid,'Second SQL test publish')::text,true);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 begin
   assert (select version_no=2 and payload#>>'{models,0,bedrooms}'='3'
@@ -149,15 +163,19 @@ begin
     from public_api.projects where public_project_id=current_setting('test.public_id')), 'Publish mixed old/new fields';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore version one');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 begin
   assert (select payload=current_setting('test.payload_1')::jsonb from public_api.projects where public_project_id=current_setting('test.public_id')), 'Rollback did not restore exact payload';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.withdraw_project(current_setting('test.project_id')::uuid,'SQL test withdrawal');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Withdrawal leaked';
 end $$;
@@ -167,6 +185,7 @@ end $$;
 reset role;
 update hub.assets set rights_status='revoked' where id='10000000-0000-0000-0000-000000000001';
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
     perform hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt revoked asset');
@@ -176,10 +195,12 @@ end $$;
 reset role;
 update hub.assets set rights_status='approved' where id='10000000-0000-0000-0000-000000000001';
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore eligible asset');
 reset role;
 update hub.assets set effective_to=now()-interval '1 second' where id='10000000-0000-0000-0000-000000000001';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Expired asset stayed visible';
 end $$;
@@ -187,10 +208,12 @@ reset role;
 update hub.assets set effective_to=null where id='10000000-0000-0000-0000-000000000001';
 update hub.model_types set match_status='REJECTED' where id=current_setting('test.model_id')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Revoked model mapping stayed visible';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
     perform hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt rejected mapping');
@@ -199,6 +222,7 @@ do $$ begin
 end $$;
 
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   perform hub.project_detail(current_setting('test.public_id'));
   begin

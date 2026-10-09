@@ -13,17 +13,20 @@ insert into staging.rem_models(rem_project_id,rem_model_id,model_name_rem,source
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-SOURCE-BRAND','Synthetic source test brand',now(),'synthetic-source-brand');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.fixture_brand',hub.create_brand_from_rem('SQL-SOURCE-BRAND')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic source test brand"},"slug":"sql-source-brand","description":{"th":"Synthetic test brand only"}}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic source fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-SOURCE-BRAND' where rem_project_id in ('SQL-SOURCE-A','SQL-SOURCE-B','SQL-SOURCE-C');
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.source_a',hub.create_project_from_rem('SQL-SOURCE-A')::text,true);
 select set_config('test.source_b',hub.create_project_from_rem('SQL-SOURCE-B')::text,true);
 select hub.assign_project_brand(id,current_setting('test.fixture_brand')::uuid,updated_at) from hub.projects where id in (current_setting('test.source_a')::uuid,current_setting('test.source_b')::uuid);
@@ -74,6 +77,7 @@ reset role;
 insert into staging.rem_models(rem_project_id,rem_model_id,model_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-SOURCE-A','A-2','Synthetic optional model A2',now(),'synthetic-a2');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$
 declare p uuid := current_setting('test.source_a')::uuid; ts timestamptz; detail jsonb;
 begin
@@ -136,6 +140,7 @@ begin
 end $$;
 
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$
 declare p uuid := current_setting('test.source_a')::uuid; ts timestamptz;
 begin
@@ -152,6 +157,7 @@ begin
     exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.list_rem_projects(); raise exception 'Consumer listed staged projects';
     exception when insufficient_privilege then null; end;
@@ -162,6 +168,7 @@ do $$ begin
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.patch_project(current_setting('test.source_a')::uuid,
   '{"public_name":{"th":"Synthetic commercial project"},"slug":"sql-source-test","address":{"th":"Synthetic address"},"latitude":13.7563,"longitude":100.5018,"ad_disclaimer":{"th":"Synthetic test only"}}',
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid));
@@ -200,12 +207,14 @@ begin
 end $$;
 
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_project(current_setting('test.source_a')::uuid,'Publish confirmed model only');
 do $$ begin
   assert hub.project_detail(current_setting('test.source_public'))->'publication_available'='true'::jsonb,
     'Published release excluding rejected model reported unavailable';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.source_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.source_public');
 do $$ begin
   assert (select jsonb_array_length(payload->'models')=1 and payload#>>'{models,0,rem_model_id}'='A-1'
@@ -213,14 +222,17 @@ do $$ begin
     from public_api.projects where public_project_id=current_setting('test.source_public')), 'New release included rejected model or admin metadata';
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.update_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),'{"bedrooms":3}',
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid));
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.source_payload')::jsonb from public_api.projects
     where public_project_id=current_setting('test.source_public')), 'Draft spec edit changed frozen public snapshot';
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.review_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid),'REJECTED','Human revoked published A1');
 do $$ begin
@@ -231,10 +243,12 @@ do $$ begin
     'Rejection retained confirmation attribution';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.source_public')), 'Rejected published mapping stayed publicly available';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
     perform hub.publish_project(current_setting('test.source_a')::uuid,'Synthetic publication with no eligible models');
@@ -243,6 +257,7 @@ do $$ begin
   exception when assert_failure then if SQLERRM<>'rollback test publication' then raise; end if; end;
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.review_model(current_setting('test.source_a')::uuid,current_setting('test.source_model'),
   (select updated_at from hub.projects where id=current_setting('test.source_a')::uuid),'CONFIRMED','Human reconfirmed A1');
 do $$ begin
@@ -250,6 +265,7 @@ do $$ begin
     'Reconfirmed published mapping reported unavailable in admin';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.source_payload')::jsonb from public_api.projects
     where public_project_id=current_setting('test.source_public')), 'Reconfirmation changed historical snapshot';

@@ -8,9 +8,11 @@ select set_config('test.svg_metadata',jsonb_build_object('original_filename','sy
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-SVG-BRAND','Synthetic SVG test brand',now(),'synthetic-svg-brand');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.svg_brand',hub.create_brand_from_rem('SQL-SVG-BRAND')::text,true);
-select set_config('test.svg_first',hub.register_uploaded_asset(current_setting('test.svg_metadata')::jsonb)#>>'{asset,id}',true);
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
+select set_config('test.svg_first',hub.register_uploaded_asset(current_setting('test.svg_metadata')::jsonb)#>>'{asset,id}',true);
 select set_config('test.svg_second',hub.register_uploaded_asset(current_setting('test.svg_metadata')::jsonb ||
   jsonb_build_object('checksum',repeat('f2',32),'storage_path',repeat('f2',32)||'.svg'))#>>'{asset,id}',true);
 do $$
@@ -34,6 +36,8 @@ begin
 end $$;
 select hub.bind_brand_asset(id,current_setting('test.svg_first')::uuid,'logo_primary','{"th":"โลโก้ตัวอย่างหลัก"}',updated_at)
 from hub.brands where id=current_setting('test.svg_brand')::uuid;
+select hub.bind_brand_asset(id,current_setting('test.svg_first')::uuid,'logo_white','{"th":"Synthetic retained review binding"}',updated_at)
+from hub.brands where id=current_setting('test.svg_brand')::uuid;
 select hub.bind_brand_asset(id,current_setting('test.svg_second')::uuid,'logo_primary','{"th":"โลโก้ตัวอย่างทดแทน"}',updated_at)
 from hub.brands where id=current_setting('test.svg_brand')::uuid;
 do $$ begin
@@ -43,12 +47,14 @@ do $$ begin
     and asset_role='logo_primary' and deleted_at is null)=1, 'Replacement left multiple current logos';
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   perform hub.asset_file(current_setting('test.svg_first')::uuid);
   begin perform hub.register_uploaded_asset(current_setting('test.svg_metadata')::jsonb);
     raise exception 'Viewer registered SVG'; exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.svg_first')::uuid);
     raise exception 'Consumer received unpublished SVG'; exception when no_data_found then null; end;

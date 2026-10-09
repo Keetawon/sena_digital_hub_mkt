@@ -35,7 +35,7 @@ export async function applyLocalMigrations(client) {
     }
   }
   const runtime = await client.query("SELECT 1 FROM pg_roles WHERE rolname='hub_runtime'");
-  if (runtime.rowCount) await client.query('GRANT admin,online_staff,agency TO hub_runtime');
+  if (runtime.rowCount) await client.query('GRANT admin,online_staff,agency,hub_app TO hub_runtime');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -193,6 +193,11 @@ test('PDF download, invalid file types, viewer permissions and binding conflicts
     const upload = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': 'application/pdf', 'X-Filename': encodeURIComponent(filename) }, data: pdf() });
     expect(upload.status()).toBe(201);
     const asset: Asset = (await upload.json()).data; data.created.push(asset.id);
+    await role(page, 'viewer');
+    expect((await page.request.get(`/api/hub/v1/admin/assets/${asset.id}/file`)).status()).toBe(404);
+    const hidden=(await (await page.request.get('/api/hub/v1/admin/assets')).json()).data as Asset[];
+    expect(hidden.some(item=>item.id===asset.id)).toBe(false);
+    await role(page, 'editor');
     await page.locator('input[name="assets-purpose"][value="brochure"]').check();
     await library(page);
     await expect(entry(page, filename)).toBeVisible();

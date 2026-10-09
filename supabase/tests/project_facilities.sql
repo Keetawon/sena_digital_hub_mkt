@@ -4,6 +4,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_fingerprint)
   values('SQL-FACILITIES','Facility test','synthetic');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.facility_project',hub.create_project_from_rem('SQL-FACILITIES')::text,true);
 do $$
 declare p hub.projects; result jsonb; previous_revision timestamptz; before_row jsonb;
@@ -50,6 +51,7 @@ begin
   assert result#>>'{facilities,review_status}'='draft';
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ declare p hub.projects; begin
   select * into p from hub.projects where id=current_setting('test.facility_project')::uuid;
   assert hub.project_detail(p.public_project_id)->'facilities' is not null;
@@ -57,6 +59,7 @@ do $$ declare p hub.projects; begin
     raise exception 'Viewer wrote'; exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform count(*) from hub.project_facilities;
     raise exception 'Consumer read drafts'; exception when insufficient_privilege then null; end;

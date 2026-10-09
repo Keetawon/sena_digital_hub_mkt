@@ -255,7 +255,7 @@ def test_model_numbers_must_be_finite(client, field, value):
 def test_model_review_requires_explicit_valid_decision_and_reason(client, changes):
     response = client.post("/v1/admin/projects/demo/models/model/review",
                            json={"updated_at": STAMP, "decision": "CONFIRMED", "change_reason": "ตรวจสอบต้นทางแล้ว", **changes},
-                           headers={"Authorization": f"Bearer {TOKENS['publisher']}"})
+                           headers={"Authorization": f"Bearer {TOKENS['editor']}"})
     assert response.status_code == 422
 
 

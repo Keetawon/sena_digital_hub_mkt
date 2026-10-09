@@ -11,7 +11,10 @@ insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,s
 values('91000000-0000-0000-0000-000000000001','synthetic-photo.jpg','image/jpeg','/v1/assets/91000000-0000-0000-0000-000000000001/file','approved','local-originals',repeat('c',64)||'.jpg',repeat('c',64),100),
   ('91000000-0000-0000-0000-000000000002','synthetic-plan.pdf','application/pdf','/v1/assets/91000000-0000-0000-0000-000000000002/file','pending','local-originals',repeat('d',64)||'.pdf',repeat('d',64),100),
   ('91000000-0000-0000-0000-000000000003','synthetic-plan-2.pdf','application/pdf','/v1/assets/91000000-0000-0000-0000-000000000003/file','approved','local-originals',repeat('e',64)||'.pdf',repeat('e',64),100);
+update hub.assets set provenance='upload',owner_id='00000000-0000-0000-0000-000000000001'
+where id in('91000000-0000-0000-0000-000000000001','91000000-0000-0000-0000-000000000002','91000000-0000-0000-0000-000000000003');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.ct_project',hub.create_project_from_rem('COMMERCIAL-P1')::text,true);
 select set_config('test.ct_other',hub.create_project_from_rem('COMMERCIAL-P2')::text,true);
 select set_config('test.ct_public',public_project_id,true) from hub.projects where id=current_setting('test.ct_project')::uuid;
@@ -25,6 +28,7 @@ select set_config('test.ct_before_sources',(select jsonb_agg(to_jsonb(m) order b
 select set_config('test.ct_before_payload',hub.draft_payload(current_setting('test.ct_project')::uuid)::text,true);
 select set_config('test.ct_before_versions',(select count(*)::text from hub.entity_versions),true);
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$
 declare p uuid:=current_setting('test.ct_project')::uuid; stamp timestamptz; result jsonb; c jsonb; before_count integer;
 begin
@@ -105,6 +109,7 @@ begin
 end $$;
 
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   assert jsonb_array_length(hub.project_detail(current_setting('test.ct_public'))->'commercial_types')=4,'Viewer cannot inspect drafts';
   begin perform hub.create_commercial_types(current_setting('test.ct_project')::uuid,'[{"public_name":{"th":"Denied"}}]',now());
@@ -113,6 +118,7 @@ do $$ begin
     raise exception 'Viewer wrote binding'; exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.project_detail(current_setting('test.ct_public')); raise exception 'Consumer read commercial drafts'; exception when insufficient_privilege then null; end;
   begin perform 1 from hub.commercial_types; raise exception 'Consumer read draft table'; exception when insufficient_privilege then null; end;
@@ -120,13 +126,19 @@ do $$ begin
   begin perform public_api.asset_file('91000000-0000-0000-0000-000000000001'); raise exception 'Approved but unpublished draft image leaked'; exception when no_data_found then null; end;
 end $$;
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select hub.update_commercial_type(id,current_setting('test.ct_type'),'{"source_notes":"Admin can edit content but cannot approve classification"}',updated_at)
 from hub.projects where id=current_setting('test.ct_project')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'revoked','Synthetic revocation',null,null,'Synthetic withdrawal') from hub.assets where id='91000000-0000-0000-0000-000000000002';
-select hub.update_commercial_type(id,current_setting('test.ct_type'),'{"source_notes":"Publisher can edit private drafts"}',updated_at)
-from hub.projects where id=current_setting('test.ct_project')::uuid;
+do $$ begin
+ begin perform hub.update_commercial_type(id,current_setting('test.ct_type'),'{"source_notes":"Denied publisher edit"}',updated_at)
+ from hub.projects where id=current_setting('test.ct_project')::uuid;
+ raise exception 'Publisher edited a commercial draft'; exception when insufficient_privilege then null; end;
+end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.unbind_commercial_asset(id,current_setting('test.ct_type'),current_setting('test.ct_binding')::uuid,updated_at)
 from hub.projects where id=current_setting('test.ct_project')::uuid;
 do $$ begin

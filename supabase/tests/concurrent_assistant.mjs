@@ -35,6 +35,7 @@ try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
   secondPid = (await second.query('select pg_backend_pid() pid')).rows[0].pid;
   await setup.query('begin');
+  await setup.query("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','editor')",[actor,actor+'@example.test']);
   await setup.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [actor, sourceId]);
   await setup.query('insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) values($1,$2,now(),$1)', [sourceId, 'Synthetic assistant concurrency']);
   await setup.query('set local role editor');
@@ -84,6 +85,8 @@ try {
   await setup.query('delete from hub.projects where id=$1', [projectId ?? null]);
   await setup.query('delete from staging.rem_projects where rem_project_id=$1', [sourceId]);
   await setup.query('delete from audit.change_log where actor=$1', [actor]);
+  await setup.query('delete from hub.account_permission where account_id=$1', [actor]);
+  await setup.query('delete from hub.user_account where id=$1', [actor]);
   await setup.query('commit');
   await Promise.all([setup.end(), first.end(), second.end()]);
 }

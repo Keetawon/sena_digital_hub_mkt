@@ -13,15 +13,21 @@ values ('MODEL-MEDIA-P1','A1','Synthetic A1','synthetic'),('MODEL-MEDIA-P1','B1'
 insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,storage_bucket,storage_path,checksum,file_size)
 values ('90900000-0000-0000-0000-000000000001','synthetic-model.jpg','image/jpeg','/v1/assets/90900000-0000-0000-0000-000000000001/file','approved','local-originals',repeat('9',64)||'.jpg',repeat('9',64),100),
        ('90900000-0000-0000-0000-000000000002','synthetic-plan.pdf','application/pdf','/v1/assets/90900000-0000-0000-0000-000000000002/file','pending','local-originals',repeat('8',64)||'.pdf',repeat('8',64),100);
+update hub.assets set provenance='upload',owner_id=case when id='90900000-0000-0000-0000-000000000001'
+ then '00000000-0000-0000-0000-000000000005'::uuid else '00000000-0000-0000-0000-000000000001'::uuid end
+where id in('90900000-0000-0000-0000-000000000001','90900000-0000-0000-0000-000000000002');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.mm_brand',hub.create_brand_from_rem('MODEL-MEDIA-BRAND')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic model media brand"},"slug":"model-media-brand","description":{"th":"Synthetic brand"}}',updated_at)
 from hub.brands where id=current_setting('test.mm_brand')::uuid;
 select hub.bind_brand_asset(id,'90900000-0000-0000-0000-000000000001','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.mm_brand')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_brand(current_setting('test.mm_brand')::uuid,'Synthetic brand only');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.mm_project',hub.create_project_from_rem('MODEL-MEDIA-P1')::text,true);
 select set_config('test.mm_other',hub.create_project_from_rem('MODEL-MEDIA-P2')::text,true);
 select set_config('test.mm_public',public_project_id,true) from hub.projects where id=current_setting('test.mm_project')::uuid;
@@ -64,43 +70,54 @@ begin
   perform set_config('test.mm_binding',binding::text,true);
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   begin perform hub.bind_model_asset(current_setting('test.mm_project')::uuid,current_setting('test.mm_model'),'90900000-0000-0000-0000-000000000001','model_image','{"th":"Denied"}',now());
     raise exception 'Viewer wrote media'; exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file('90900000-0000-0000-0000-000000000002'); raise exception 'Draft model file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic test PDF',null,null,'Synthetic review') from hub.assets where id='90900000-0000-0000-0000-000000000002';
 select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic project with model media');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.mm_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.mm_public');
 do $$ begin
   perform public_api.asset_file('90900000-0000-0000-0000-000000000002');
   assert exists(select 1 from jsonb_array_elements(current_setting('test.mm_payload')::jsonb->'assets') a where a->>'public_model_id'=current_setting('test.mm_model')), 'Published model association missing';
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.unbind_model_asset(id,current_setting('test.mm_model'),current_setting('test.mm_binding')::uuid,updated_at) from hub.projects where id=current_setting('test.mm_project')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.mm_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.mm_public')), 'Draft removal mutated published model media';
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.review_model(id,current_setting('test.mm_second'),updated_at,'REJECTED','Synthetic exclusion') from hub.projects where id=current_setting('test.mm_project')::uuid;
 do $$ begin
   assert exists(select 1 from jsonb_array_elements(hub.project_detail(current_setting('test.mm_public'))->'assets') a where a->>'public_model_id'=current_setting('test.mm_second')), 'Staff lost rejected model attachments';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic release excludes rejected model');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects p,jsonb_array_elements(p.payload->'assets') a where p.public_project_id=current_setting('test.mm_public') and a->>'public_model_id'=current_setting('test.mm_second')), 'Rejected model media entered new release';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'revoked','Synthetic withdrawal',null,null,'Synthetic revocation') from hub.assets where id='90900000-0000-0000-0000-000000000002';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.mm_public')), 'Revoked model plan remained published';
   begin perform public_api.asset_file('90900000-0000-0000-0000-000000000002'); raise exception 'Revoked model file leaked'; exception when no_data_found then null; end;

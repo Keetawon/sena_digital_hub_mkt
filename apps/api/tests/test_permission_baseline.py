@@ -125,6 +125,11 @@ def test_every_route_entry_uses_account_authority_despite_forged_claims(baseline
         response = client.request(method, url, headers=headers, json={} if method != 'GET' else None)
         limited = path in ('/health', '/v1/me', '/v1/me/access-request') or status == 'PENDING' and path == '/v1/me/invite-accept'
         denied = (status != 'ACTIVE' and not limited) or status == 'ACTIVE' and db_role not in entry['entry_roles']
+        # Owner-approved Phase 2 conversion: publisher draft/model/media edits
+        # require E. Model confirmation/rejection is also E.
+        if status == 'ACTIVE' and db_role == 'publisher':
+            if entry['tab'].startswith('projects') and entry['level'] == 'edit' or entry['path'].endswith('/models/{public_model_id}/review'):
+                denied = True
         expected = {403} if denied else {200, 422} if path in INLINE_READS else {204, 422}
         assert response.status_code in expected, (role, status, method, path, response.status_code)
         if path == '/v1/me':

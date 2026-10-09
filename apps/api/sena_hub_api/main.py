@@ -31,6 +31,7 @@ from .assistant import register_assistant_routes
 from .hosted_assets import BUCKET, HostedAssets
 from .brand_completeness import register_brand_completeness_routes
 from .knowledge import register_knowledge_routes
+from .content_permissions import content_rule, require_content
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -222,7 +223,8 @@ async def database(request: Request, actor: Actor):
     roles = {role: role for role in AUTH_ROLES}
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
-            await connection.execute(f"SET LOCAL ROLE {roles[actor.role]}")
+            role = "hub_app" if content_rule(request) else roles[actor.role]
+            await connection.execute(f"SET LOCAL ROLE {role}")
             await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(actor.id))
             await connection.execute("SELECT set_config('app.agency_code', $1, true)", actor.agency_code or "")
             yield connection
@@ -345,27 +347,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return JSONResponse({"error": {"code": "server_error", "message": "ระบบไม่สามารถดำเนินการได้ กรุณาลองใหม่"}}, 500)
 
-    async def admin(actor: Actor = Depends(authentication)):
+    async def admin(request: Request, actor: Actor = Depends(authentication)):
+        if require_content(request):
+            return actor
         if actor.role not in {"editor", "publisher", "viewer", "admin"}:
             raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบจัดการ")
         return actor
 
-    async def writer(actor: Actor = Depends(admin)):
+    async def writer(request: Request, actor: Actor = Depends(admin)):
+        if content_rule(request):
+            return actor
         if actor.role not in {"editor", "publisher", "admin"}:
             raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูล")
         return actor
 
-    async def administrator(actor: Actor = Depends(admin)):
+    async def administrator(request: Request, actor: Actor = Depends(admin)):
+        if content_rule(request):
+            return actor
         if actor.role != "admin":
             raise failure(403, "forbidden", "เฉพาะผู้ดูแลระบบที่มีสิทธิ์ดำเนินการนี้")
         return actor
 
-    async def brand_writer(actor: Actor = Depends(admin)):
+    async def brand_writer(request: Request, actor: Actor = Depends(admin)):
+        if content_rule(request):
+            return actor
         if actor.role not in {"editor", "admin"}:
             raise failure(403, "forbidden", "เฉพาะผู้แก้ไขหรือผู้ดูแลระบบที่แก้ไขแบรนด์ได้")
         return actor
 
-    async def publisher(actor: Actor = Depends(admin)):
+    async def publisher(request: Request, actor: Actor = Depends(admin)):
+        if content_rule(request):
+            return actor
         if actor.role != "publisher":
             raise failure(403, "forbidden", "เฉพาะผู้เผยแพร่ที่มีสิทธิ์ดำเนินการนี้")
         return actor
@@ -385,7 +397,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             async with database(request, actor) as connection:
                 await connection.execute("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", metadata["checksum"])
-                registered = await connection.fetchval("SELECT EXISTS(SELECT 1 FROM hub.assets WHERE checksum=$1)", metadata["checksum"])
+                registered = await connection.fetchval("SELECT hub.asset_registered_for_cleanup($1)", metadata["checksum"])
                 if not registered:
                     await asyncio.to_thread(asset_files.storage_path(metadata["storage_path"]).unlink, missing_ok=True)
         except Exception:
@@ -576,12 +588,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             current = await brand_detail(connection, public_id)
             brand_id = UUID(current["id"])
             versions = await connection.fetchval("SELECT hub.brand_versions($1)", brand_id)
-            # Keep the existing visibility guard and metadata. Comparisons need
-            # the immutable payload, read under the same caller role and RLS.
-            payloads = {str(row["id"]): row["payload"] for row in await connection.fetch(
-                "SELECT id, payload FROM hub.brand_versions WHERE brand_id=$1", brand_id,
-            )}
-            return {"data": [{**version, "payload": payloads.get(version["version_id"])} for version in versions]}
+            return {"data": versions}
 
     async def brand_publish_action(public_id, reason, request, actor, operation, version_id=None):
         async with database(request, actor) as connection:
@@ -722,11 +729,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def versions(public_id: str, request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as connection:
             current = await detail(connection, public_id)
-            rows = await connection.fetch(
-                "SELECT id AS version_id, version_no, payload, published_at, publisher, change_reason FROM hub.entity_versions WHERE project_id=$1 ORDER BY version_no DESC LIMIT 100",
-                UUID(current["id"]),
-            )
-            return {"data": [dict(row) for row in rows]}
+            return {"data": await connection.fetchval("SELECT hub.project_versions($1)", UUID(current["id"]))}
 
     @app.post("/v1/admin/projects/{public_id}/assets")
     async def bind_asset(public_id: str, body: BindAsset, request: Request, actor: Actor = Depends(writer)):

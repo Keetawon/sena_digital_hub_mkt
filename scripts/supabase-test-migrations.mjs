@@ -7,7 +7,7 @@ export const SOURCE = 'sena-hub-supabase-test-v2';
 export const PROFILE = 'hosted-test-settings-v1';
 export const PROJECT_REF = 'eqlrtevwpyboplljgowo';
 const SCHEMAS = ['hub', 'public_api', 'staging', 'audit', 'internal', 'rag', 'ads', 'ads_export', 'hub_export'];
-const ACTORS = ['editor', 'publisher', 'viewer', 'service_consumer', 'admin', 'online_staff', 'agency'];
+const ACTORS = ['editor', 'publisher', 'viewer', 'service_consumer', 'admin', 'online_staff', 'agency', 'hub_app'];
 const OWNERS = ['ads_registry_writer', 'ads_export_owner', 'ads_export_reader', 'ads_finance_writer', 'ads_actuals_writer', 'ads_document_worker', 'hub_export_owner'];
 const OWNER_SCHEMAS = {ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging'],hub_export_owner:['hub_export']};
 const ROLES = [...ACTORS, ...OWNERS, 'hub_runtime'];
@@ -124,6 +124,7 @@ async function inspect(client, migrations, config) {
   const actualSchemas=namespaces.map(row=>row.nspname).filter(name=>name!=='hub_deployment').sort();
   if(JSON.stringify(actualSchemas)!==JSON.stringify([...expectedSchemas].sort())) fail('Hub schemas do not match recorded migrations.');
   const expectedRoles=[...(count?ACTORS.slice(0,count>=6?5:4):[]),...(count>=14?['online_staff','agency','ads_registry_writer','ads_export_owner','ads_export_reader']:[]),...(count>=15?['ads_finance_writer']:[]),...(count>=16?['ads_actuals_writer']:[]),...(count>=22?['ads_document_worker']:[]),...(count>=27?['hub_export_owner']:[])];
+  if(count>=47) expectedRoles.push('hub_app');
   if(count>=14) {
     const flags=(await client.query("select key,value from ads.setting where key in ('sena_h_approved','hosted_test_issuing_enabled') order by key")).rows;
     if(flags.length!==2 || flags.some(row=>row.value!==false)) fail('H1 requires both issuance flags false; runner never enables or resets flags.');

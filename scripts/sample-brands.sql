@@ -21,8 +21,8 @@ reset role;
 update hub.brands set public_name='{"th":"แบรนด์จำลอง — สำหรับทดสอบเท่านั้น","en":"Synthetic demonstration brand"}',
   slug='synthetic-demo-brand',description='{"th":"แบรนด์และบริษัททั้งหมดในตัวอย่างนี้สร้างขึ้นเพื่อทดสอบ ไม่มีความเกี่ยวข้องกับแบรนด์หรือบริษัทจริง"}'
 where rem_brand_id='DEMO-BRAND-01';
-insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,rights_notes)
-values ('10000000-0000-0000-0000-000000000003','synthetic-demo-brand-logo.svg','image/svg+xml','/demo-assets/brand-logo.svg','approved','สื่อสมมติที่มากับระบบสำหรับทดสอบภายในเครื่องเท่านั้น');
+insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,rights_notes,owner_id,provenance)
+values ('10000000-0000-0000-0000-000000000003','synthetic-demo-brand-logo.svg','image/svg+xml','/demo-assets/brand-logo.svg','approved','สื่อสมมติที่มากับระบบสำหรับทดสอบภายในเครื่องเท่านั้น','00000000-0000-0000-0000-000000000005','upload');
 set local role admin;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000003','logo_primary','{"th":"โลโก้แบรนด์สมมติสำหรับทดสอบเท่านั้น"}',updated_at)
 from hub.brands where rem_brand_id='DEMO-BRAND-01';

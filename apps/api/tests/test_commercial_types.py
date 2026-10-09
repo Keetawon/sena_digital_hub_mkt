@@ -117,6 +117,9 @@ def test_bulk_uses_one_parameterized_transaction_and_returns_current_project(mon
              {"public_name": {"th": "Family"}, "source_model_ids": [MODEL]}]
     response = client.post(PREFIX, json={"updated_at": STAMP, "types": types},
                            headers={"Authorization": f"Bearer {TOKENS[role]}"})
+    if role == "publisher":
+        assert response.status_code == 403 and not transactions and not calls
+        return
     assert response.status_code == 200 and response.json()["data"] == project
     assert transactions == [role]
     assert calls[0] == ("SELECT hub.project_detail($1)", ("prj_test",))

@@ -34,6 +34,7 @@ insert into staging.dw_projects(rem_project_id,source_record,source_snapshot_at,
     now(),repeat('d',64),'{"synthetic_test":true}');
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.gold_a',hub.create_project_from_rem('SQL-GOLD-A')::text,true);
 select set_config('test.gold_b',hub.create_project_from_rem('SQL-GOLD-B')::text,true);
 select set_config('test.gold_legacy',id::text,true) from hub.projects where rem_project_id='SQL-GOLD-LEGACY';
@@ -129,6 +130,7 @@ update hub.projects set latitude=20,longitude=null where id=current_setting('tes
 insert into staging.dw_projects(rem_project_id,source_record,source_snapshot_at,source_fingerprint,provenance)
   values('SQL-GOLD-B','{"project_id":"SQL-GOLD-B","latitude":10,"longitude":100}',now(),repeat('c',64),'{"synthetic_test":true}');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$ declare p hub.projects; result jsonb; begin
   select * into p from hub.projects where id=current_setting('test.gold_b')::uuid;
   result := hub.prefill_project_from_dw(p.id,p.updated_at,repeat('c',64));
@@ -155,6 +157,7 @@ begin
   assert hub.gold_project_defaults('SQL-GOLD-A')='{}'::jsonb, 'Conflicting identity supplied defaults';
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   begin perform hub.prefill_project_from_dw(current_setting('test.gold_a')::uuid,now(),repeat('a',64));
     raise exception 'Viewer changed draft'; exception when insufficient_privilege then null; end;
@@ -164,6 +167,7 @@ do $$ begin
     and not has_function_privilege(current_user,'hub.project_detail_before_gold_preview(text)','execute'), 'Private helper exposed';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.list_rem_projects(); raise exception 'Consumer read source'; exception when insufficient_privilege then null; end;
   begin perform hub.prefill_project_from_dw(current_setting('test.gold_a')::uuid,now(),repeat('a',64));

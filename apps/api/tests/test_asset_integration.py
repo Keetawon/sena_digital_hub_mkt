@@ -58,6 +58,7 @@ def test_local_upload_dedup_rights_private_files_and_cleanup():
                 await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(UUID(int=2)))
                 for checksum in checksums:
                     await connection.execute("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", checksum)
+                    await connection.execute("DELETE FROM hub.entity_assets WHERE asset_id IN (SELECT id FROM hub.assets WHERE checksum=$1)", checksum)
                     # A concurrent user's reference is a reason to retain, never delete.
                     removed = await connection.fetchval("""DELETE FROM hub.assets a WHERE checksum=$1
                         AND NOT EXISTS (SELECT 1 FROM hub.entity_assets b WHERE b.asset_id=a.id)
@@ -90,6 +91,16 @@ def test_local_upload_dedup_rights_private_files_and_cleanup():
                 assert asset["owner_id"] == str(UUID(int=1))
                 assert asset["file_size"] == len(item[0])
                 asset_path = f"/v1/admin/assets/{asset['id']}"
+                # Only the uploader sees a new unbound file. Bind it before
+                # another staff member previews or reviews its rights.
+                assert client.get(f"{asset_path}/file", headers=headers["viewer"]).status_code == 404
+                assert client.get(f"{asset_path}/file", headers=headers["editor"]).status_code == 200
+                project = next(p for p in client.get('/v1/admin/projects', headers=headers['editor']).json()['data']
+                               if p['rem_project_id'] == 'DEMO-001')
+                bound = client.post(f"/v1/admin/projects/{project['public_project_id']}/assets", headers=headers['editor'], json={
+                    'asset_id': asset['id'], 'asset_role': 'floor_plan', 'alt_text': {'th': 'Synthetic fixture'}, 'updated_at': project['updated_at']})
+                assert bound.status_code == 200, bound.text
+                asset = client.get(asset_path, headers=headers['editor']).json()['data']
                 preview = client.get(f"{asset_path}/file", headers=headers["viewer"])
                 assert preview.status_code == 200, preview.text
                 assert preview.content == item[0]

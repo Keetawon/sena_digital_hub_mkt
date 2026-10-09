@@ -53,7 +53,7 @@ async function fixture(page: Page) {
   return {
     db, brand, name, prefix,
     file(name: string, width = 64, height = 32): FilePayload { return { name: `${prefix}-${name}`, mimeType: 'image/png', buffer: png(width, height) }; },
-    async detail(): Promise<{ assets: Asset[] }> {
+    async detail(): Promise<{ assets: Asset[]; updated_at: string }> {
       const response = await page.request.get(`${api}/brands/${brand.public_brand_id}`);
       expect(response.ok()).toBeTruthy(); return (await response.json()).data;
     },
@@ -114,6 +114,16 @@ for (const viewport of viewports) {
       expect(old.alt_text.th).toBe('โลโก้หลักสมมติที่กรอกในช่องนี้');
       expect(old.rights_status).toBe('pending');
       await expect(primary.getByRole('button', { name: 'เปลี่ยนไฟล์', exact: true })).toBeVisible();
+
+      // A replaced file stays reusable only through an authorized binding;
+      // historical ownership alone must not restore global library access.
+      const beforeRetention = await data.detail();
+      const retained = await page.request.post(`${api}/brands/${data.brand.public_brand_id}/assets`, {
+        headers, data: { updated_at: beforeRetention.updated_at, asset_id: old.id,
+          asset_role: 'logo_mono', alt_text: { th: 'โลโก้สมมติที่ยังใช้งานอยู่' } },
+      });
+      expect(retained.status()).toBe(200);
+      await page.reload();
 
       const malicious: FilePayload = { name: `${data.prefix}-replacement.svg`, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" onload="alert('unsafe')"><title>${data.prefix}</title><script>alert('unsafe')</script><foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml">unsafe</div></foreignObject><image href="https://invalid.example/private.png"/><rect width="640" height="320" fill="#145c46" onclick="alert('unsafe')"/><text x="20" y="40">Synthetic logo</text></svg>`) };
       await alt.fill('โลโก้หลัก SVG สมมติฉบับแทนที่');
@@ -221,7 +231,7 @@ for (const viewport of viewports) {
       }
       const audits = (await data.db.query("SELECT after_row->>'id' AS asset_id,before_row->>'rights_status' AS before_status,after_row->>'rights_status' AS after_status,database_role,actor FROM audit.change_log WHERE table_name='hub.assets' AND after_row->>'id'=ANY($1::text[]) AND reason=$2", [ids, reason])).rows;
       expect(audits.map(row => row.asset_id).sort()).toEqual([...ids].sort());
-      for (const row of audits) { expect(row).toMatchObject({ before_status: 'pending', after_status: 'approved', database_role: 'publisher' }); expect(row.actor).toBeTruthy(); }
+      for (const row of audits) { expect(row).toMatchObject({ before_status: 'pending', after_status: 'approved', database_role: 'hub_app', actor: '00000000-0000-0000-0000-000000000002' }); }
       expect((await data.db.query('SELECT published_version_id FROM hub.brands WHERE id=$1', [data.brand.id])).rows[0].published_version_id).toBeNull();
       await session(page, 'viewer'); await page.reload();
       await expect(page.locator('.brand-logo-slot').getByRole('button', { name: /^(อัปโหลด|เปลี่ยนไฟล์|เลือกจากคลัง)$/ })).toHaveCount(0);

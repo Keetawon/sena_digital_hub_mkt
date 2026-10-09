@@ -35,6 +35,7 @@ async function releaseLock(promise) {
 try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
   secondPid = (await second.query('select pg_backend_pid() pid')).rows[0].pid;
+  await setup.query("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','admin')",[actor,actor+'@example.test']);
   // Reuse the self-contained SQL fixture, replacing every identity/checksum for isolation.
   let fixture = (await readFile(new URL('./residential_demo.sql', import.meta.url), 'utf8')).split('-- Every new table')[0];
   fixture = fixture.replaceAll('00000000-0000-0000-0000-000000000005', actor)
@@ -44,6 +45,8 @@ try {
     .replaceAll("repeat('8',64)", `'${randomBytes(32).toString('hex')}'`);
   await setup.query(fixture);
   const project = (await setup.query("select current_setting('test.residential_project') id")).rows[0].id;
+  await setup.query("update hub.user_account set hub_role='publisher' where id=$1",[actor]);
+  await setup.query("select set_config('app.actor_id',$1,true)",[actor]);
   await setup.query('set local role editor');
   const promos = [];
   for (let n = 0; n < 2; n++) {
@@ -108,6 +111,8 @@ try {
   await setup.query('delete from staging.rem_projects where rem_project_id=$1', [key]);
   await setup.query('delete from staging.rem_brands where rem_brand_id=$1', [key]);
   await setup.query('delete from audit.change_log where actor=$1', [actor]);
+  await setup.query('delete from hub.account_permission where account_id=$1', [actor]);
+  await setup.query('delete from hub.user_account where id=$1', [actor]);
   await setup.query('commit');
   await Promise.all([setup.end(), first.end(), second.end()]);
 }

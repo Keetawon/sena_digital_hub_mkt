@@ -18,17 +18,20 @@ select set_config('test.upload_pdf',jsonb_build_object('original_filename','synt
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-ASSET-BRAND','Synthetic asset test brand',now(),'synthetic-asset-brand');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.fixture_brand',hub.create_brand_from_rem('SQL-ASSET-BRAND')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic asset brand"},"slug":"sql-asset-brand","description":{"th":"Synthetic test brand only"}}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic asset fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-ASSET-BRAND' where rem_project_id in ('SQL-ASSET-A','SQL-ASSET-B');
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.image_id',hub.register_uploaded_asset(current_setting('test.upload_image')::jsonb)#>>'{asset,id}',true);
 select set_config('test.second_id',hub.register_uploaded_asset(current_setting('test.upload_second')::jsonb)#>>'{asset,id}',true);
 select set_config('test.pdf_id',hub.register_uploaded_asset(current_setting('test.upload_pdf')::jsonb)#>>'{asset,id}',true);
@@ -91,17 +94,24 @@ begin
   perform hub.bind_project_asset(p,current_setting('test.pdf_id')::uuid,'floor_plan','{"th":"Synthetic PDF floor plan"}',ts);
   assert exists(select 1 from hub.entity_assets where project_id=p and asset_role='floor_plan'
     and asset_id=current_setting('test.pdf_id')::uuid and deleted_at is null), 'PDF floor plan was not bound';
-  perform hub.unbind_project_asset(p,(select id from hub.entity_assets where project_id=p and asset_role='floor_plan' and deleted_at is null),
-    (select updated_at from hub.projects where id=p));
   select updated_at into ts from hub.projects where id=p;
   perform hub.bind_project_asset(p,current_setting('test.pdf_id')::uuid,'brochure','{"th":"Synthetic brochure"}',ts);
+  -- Retain one authorized binding while moving this file between roles.
+  perform hub.unbind_project_asset(p,(select id from hub.entity_assets where project_id=p and asset_role='floor_plan' and deleted_at is null),
+    (select updated_at from hub.projects where id=p));
   begin perform hub.bind_project_asset(p,current_setting('test.image_id')::uuid,'floor_plan','{"th":"Stale edit"}',ts);
     raise exception 'Stale binding accepted'; exception when serialization_failure then null; end;
   begin perform hub.unbind_project_asset(p,(select id from hub.entity_assets where project_id=p and asset_role='brochure' and deleted_at is null),ts);
     raise exception 'Stale unbind accepted'; exception when serialization_failure then null; end;
 end $$;
 
+-- Another reviewer cannot see someone else's unbound upload. Put the future
+-- replacement in a separate unpublished fixture before requesting rights review.
+select hub.bind_project_asset(id,current_setting('test.second_id')::uuid,'floor_plan','{"th":"Synthetic review intake"}',updated_at)
+from hub.projects where rem_project_id='DEMO-001';
+
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   perform hub.list_assets();
   perform hub.asset_file(current_setting('test.image_id')::uuid);
@@ -111,6 +121,7 @@ do $$ begin
     raise exception 'Viewer bound asset'; exception when insufficient_privilege then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.list_assets(); raise exception 'Consumer listed private library'; exception when insufficient_privilege then null; end;
   begin perform hub.asset_file(current_setting('test.image_id')::uuid); raise exception 'Consumer previewed draft'; exception when insufficient_privilege then null; end;
@@ -141,14 +152,17 @@ begin
     'Duplicate upload changed approved registry state';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Approved unpublished file leaked'; exception when no_data_found then null; end;
   begin perform public_api.asset_file(current_setting('test.second_id')::uuid); raise exception 'Approved unbound file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.asset_version',hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publish asset test A')::text,true);
 select hub.publish_project(current_setting('test.asset_project_b')::uuid,'Publish reused asset test B');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.asset_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.asset_public_a');
 do $$ begin
   assert public_api.asset_file(current_setting('test.image_id')::uuid)->>'checksum'=repeat('a',64), 'Published image inaccessible';
@@ -160,12 +174,14 @@ end $$;
 
 -- Replacing/unbinding drafts must not retarget or delete bytes from a selected version.
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.bind_project_asset(current_setting('test.asset_project_a')::uuid,current_setting('test.second_id')::uuid,'hero','{"th":"Replacement"}',
   (select updated_at from hub.projects where id=current_setting('test.asset_project_a')::uuid));
 select hub.unbind_project_asset(current_setting('test.asset_project_a')::uuid,
   (select id from hub.entity_assets where project_id=current_setting('test.asset_project_a')::uuid and asset_role='brochure' and deleted_at is null),
   (select updated_at from hub.projects where id=current_setting('test.asset_project_a')::uuid));
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.asset_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.asset_public_a')),
     'Draft binding edit mutated selected publication';
@@ -175,6 +191,7 @@ end $$;
 
 -- One revocation invalidates every current release that references this registry object.
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(current_setting('test.image_id')::uuid,(select updated_at from hub.assets where id=current_setting('test.image_id')::uuid),
   'revoked','Synthetic rights withdrawn',null,null,'Revoke shared published image');
 do $$ begin
@@ -184,11 +201,13 @@ do $$ begin
     raise exception 'Rollback revived revoked asset'; exception when check_violation then null; end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Revoked image file leaked'; exception when no_data_found then null; end;
   begin perform public_api.asset_file(current_setting('test.pdf_id')::uuid); raise exception 'File leaked through ineligible publication'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(current_setting('test.image_id')::uuid,(select updated_at from hub.assets where id=current_setting('test.image_id')::uuid),
   'approved','Original synthetic content',now()+interval '1 day',null,'Future rights start');
 do $$ begin
@@ -201,14 +220,17 @@ select hub.review_asset(current_setting('test.image_id')::uuid,(select updated_a
   'approved','Original synthetic content',null,null,'Restore current rights');
 select hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publish replacement without brochure');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   perform public_api.asset_file(current_setting('test.second_id')::uuid);
   perform public_api.asset_file(current_setting('test.image_id')::uuid);
   begin perform public_api.asset_file(current_setting('test.pdf_id')::uuid); raise exception 'Unreferenced historical file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.withdraw_project(current_setting('test.asset_project_a')::uuid,'Withdraw replacement');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.second_id')::uuid); raise exception 'Withdrawn publication file leaked'; exception when no_data_found then null; end;
   perform public_api.asset_file(current_setting('test.image_id')::uuid);
@@ -216,6 +238,7 @@ end $$;
 reset role;
 update hub.assets set effective_to=now()-interval '1 second' where id=current_setting('test.image_id')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Expired registry file leaked'; exception when no_data_found then null; end;
 end $$;

@@ -233,6 +233,11 @@
       "name": "202610090046_permission_foundations.sql",
       "canonical_sha256": "6b104d13e4fae1a2a213badf3b8474312948e3fb728088e9284392b8d6d3e74b",
       "executed_sha256": "6b104d13e4fae1a2a213badf3b8474312948e3fb728088e9284392b8d6d3e74b"
+    },
+    {
+      "name": "202610090047_content_permissions.sql",
+      "canonical_sha256": "16b43c168320bc750a91f4e01ee63099d5d6d326c2e702b1487f4900424f8168",
+      "executed_sha256": "16b43c168320bc750a91f4e01ee63099d5d6d326c2e702b1487f4900424f8168"
     }
   ]
 }

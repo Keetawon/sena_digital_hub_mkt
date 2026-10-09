@@ -16,6 +16,7 @@ insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_
 insert into staging.rem_models(rem_project_id,rem_model_id,model_name_rem,source_updated_at,source_fingerprint)
 values ('SQL-BRAND-P1','M1','Synthetic model',now(),'synthetic-model');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.brand_a',hub.create_brand_from_rem('000-SQL-BRAND-A')::text,true);
 select set_config('test.brand_b',hub.create_brand_from_rem('000-SQL-BRAND-B')::text,true);
 select set_config('test.brand_public',public_brand_id,true) from hub.brands where id=current_setting('test.brand_a')::uuid;
@@ -41,6 +42,10 @@ select set_config('test.brand_logo_2',hub.register_uploaded_asset(jsonb_build_ob
   'asset_type','image','storage_path',repeat('e',64)||'.png','checksum',repeat('e',64),'file_size',100,'width',10,'height',10))#>>'{asset,id}',true);
 select hub.bind_brand_asset(id,current_setting('test.brand_logo')::uuid,'logo_primary','{"th":"Synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.brand_a')::uuid;
+-- Give the later replacement an authorized draft binding before another actor
+-- reviews or reuses it; unbound uploads are private to their uploader.
+select hub.bind_brand_asset(id,current_setting('test.brand_logo_2')::uuid,'logo_primary','{"th":"Synthetic review intake"}',updated_at)
+from hub.brands where id=current_setting('test.brand_b')::uuid;
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$
@@ -68,14 +73,17 @@ end $$;
 select hub.review_asset(id,updated_at,'approved','Original synthetic logo',null,null,'Publisher checked logo rights')
 from hub.assets where id in(current_setting('test.brand_logo')::uuid,current_setting('test.brand_logo_2')::uuid);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.brands where public_brand_id=current_setting('test.brand_public')), 'Draft brand leaked';
   begin perform hub.list_brands(); raise exception 'Consumer read brand drafts'; exception when insufficient_privilege then null; end;
   begin perform public_api.asset_file(current_setting('test.brand_logo')::uuid); raise exception 'Unpublished logo leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.brand_v1',hub.publish_brand(current_setting('test.brand_a')::uuid,'Publish synthetic brand one')::text,true);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   perform public_api.asset_file(current_setting('test.brand_logo')::uuid);
 end $$;
@@ -94,6 +102,7 @@ begin
   assert exists(select 1 from jsonb_array_elements(hub.list_brand_requests()) where value->>'id'=r::text and value->>'status'='resolved'), 'Resolved request missing';
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   perform hub.brand_detail(current_setting('test.brand_public'));
   perform hub.brand_versions(current_setting('test.brand_a')::uuid);
@@ -101,6 +110,7 @@ do $$ begin
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.brand_project',hub.create_project_from_rem('SQL-BRAND-P1')::text,true);
 select set_config('test.brand_project_b',hub.create_project_from_rem('SQL-BRAND-P2')::text,true);
 select set_config('test.brand_project_c',hub.create_project_from_rem('SQL-BRAND-P3')::text,true);
@@ -130,11 +140,13 @@ from hub.projects where id=current_setting('test.brand_project')::uuid;
 select hub.bind_project_asset(id,'10000000-0000-0000-0000-000000000002','thumbnail','{"th":"Synthetic thumbnail"}',updated_at)
 from hub.projects where id=current_setting('test.brand_project')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin perform hub.publish_project(current_setting('test.brand_project')::uuid,'Missing brand'); raise exception 'Otherwise-complete project published without brand';
     exception when check_violation then null; end;
 end $$;
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.assign_project_brand(id,current_setting('test.brand_a')::uuid,updated_at) from hub.projects
 where id in(current_setting('test.brand_project')::uuid,current_setting('test.brand_project_b')::uuid);
 do $$
@@ -145,8 +157,10 @@ begin
     and exists(select 1 from jsonb_array_elements(b->'projects') where value#>>'{source,company_name_rem}'='Synthetic company B'), 'Brand and company were conflated';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.branded_project_v1',hub.publish_project(current_setting('test.brand_project')::uuid,'Publish branded project')::text,true);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.branded_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.brand_project_public');
 do $$ begin
   assert (select payload#>>'{brand,public_brand_id}'=current_setting('test.brand_public') and payload->>'brand_version_id'=current_setting('test.brand_v1')
@@ -156,17 +170,21 @@ end $$;
 
 -- A changed brand draft and then a new brand release must not rewrite project v1.
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic brand two"},"description":{"th":"Changed description"}}',updated_at)
 from hub.brands where id=current_setting('test.brand_a')::uuid;
 select hub.bind_brand_asset(id,current_setting('test.brand_logo_2')::uuid,'logo_primary','{"th":"New synthetic logo"}',updated_at)
 from hub.brands where id=current_setting('test.brand_a')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload#>>'{public_name,th}'='Synthetic brand one' from public_api.brands where public_brand_id=current_setting('test.brand_public')), 'Brand draft leaked';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.brand_v2',hub.publish_brand(current_setting('test.brand_a')::uuid,'Publish changed brand')::text,true);
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.branded_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.brand_project_public')),
     'Republished brand rewrote old project snapshot';
@@ -174,14 +192,17 @@ do $$ begin
   perform public_api.asset_file(current_setting('test.brand_logo_2')::uuid);
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'revoked','Synthetic withdrawn permission',null,null,'Revoke old frozen logo') from hub.assets where id=current_setting('test.brand_logo')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert exists(select 1 from public_api.brands where public_brand_id=current_setting('test.brand_public')), 'Old logo incorrectly invalidated new brand snapshot';
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Old frozen logo rights were ignored';
   begin perform public_api.asset_file(current_setting('test.brand_logo')::uuid); raise exception 'Revoked frozen logo leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin perform hub.rollback_project(current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Invalid old logo rollback');
     raise exception 'Project rollback revived invalid frozen logo'; exception when check_violation then null; end;
@@ -189,22 +210,27 @@ end $$;
 select hub.review_asset(id,updated_at,'approved','Original synthetic permission',null,null,'Restore old logo') from hub.assets where id=current_setting('test.brand_logo')::uuid;
 select hub.publish_project(current_setting('test.brand_project')::uuid,'Adopt current published brand');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload->>'brand_version_id'=current_setting('test.brand_v2') from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'New project version did not adopt brand v2';
   begin perform public_api.asset_file(current_setting('test.brand_logo')::uuid); raise exception 'Unreferenced old logo leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.withdraw_brand(current_setting('test.brand_a')::uuid,'Withdraw dependent brand');
 do $$ begin
   assert hub.project_detail(current_setting('test.brand_project_public'))->'publication_available'='false'::jsonb, 'Withdrawn brand did not invalidate project';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file(current_setting('test.brand_logo_2')::uuid); raise exception 'Withdrawn brand logo leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.rollback_brand(current_setting('test.brand_a')::uuid,current_setting('test.brand_v1')::uuid,'Restore brand v1');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload->>'brand_version_id'=current_setting('test.brand_v2') from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Brand rollback changed frozen project version';
   perform public_api.asset_file(current_setting('test.brand_logo_2')::uuid);
@@ -214,6 +240,7 @@ reset role;
 -- however, invalidate an old brand mapping until the mismatch is resolved.
 update hub.projects set brand_id=current_setting('test.brand_b')::uuid where id=current_setting('test.brand_project')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Draft brand change invalidated frozen reference';
 end $$;
@@ -221,11 +248,13 @@ reset role;
 update hub.projects set brand_id=current_setting('test.brand_a')::uuid where id=current_setting('test.brand_project')::uuid;
 update staging.rem_projects set rem_brand_id='000-SQL-BRAND-B' where rem_project_id='SQL-BRAND-P1';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Source brand drift left mismatched publication visible';
   begin perform public_api.asset_file(current_setting('test.brand_logo_2')::uuid); raise exception 'Mismatched source publication exposed frozen logo'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin perform hub.rollback_project(current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Source mismatch rollback');
     raise exception 'Rollback accepted changed source brand'; exception when check_violation then null; end;
@@ -233,6 +262,7 @@ end $$;
 reset role;
 update staging.rem_projects set rem_brand_id=null where rem_project_id='SQL-BRAND-P1';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Missing source brand remained visible';
 end $$;
@@ -240,6 +270,7 @@ reset role;
 update staging.rem_projects set rem_brand_id='000-SQL-BRAND-A' where rem_project_id='SQL-BRAND-P1';
 update hub.assets set effective_to=now()-interval '1 second' where id=current_setting('test.brand_logo_2')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert exists(select 1 from public_api.brands where public_brand_id=current_setting('test.brand_public'))
     and not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Expired frozen logo was ignored';
@@ -248,6 +279,7 @@ reset role;
 update hub.assets set effective_to=null where id=current_setting('test.brand_logo_2')::uuid;
 update hub.assets set effective_to=now()-interval '1 second' where id=current_setting('test.brand_logo')::uuid;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.brands where public_brand_id=current_setting('test.brand_public'))
     and not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Invalid current brand did not block dependent project';
@@ -256,6 +288,7 @@ reset role;
 update hub.assets set effective_to=null where id=current_setting('test.brand_logo')::uuid;
 update staging.rem_brands set is_deleted=true where rem_brand_id='000-SQL-BRAND-A';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.brands where public_brand_id=current_setting('test.brand_public'))
     and not exists(select 1 from public_api.projects where public_project_id=current_setting('test.brand_project_public')), 'Disabled source brand remained available';

@@ -1,5 +1,7 @@
 -- Synthetic assistant ownership and explicit draft confirmation; everything rolls back.
 begin;
+insert into hub.user_account(id,email,status,hub_role) values
+ ('00000000-0000-0000-0000-000000000091','assistant-fixture@example.test','ACTIVE','admin');
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 select set_config('app.change_reason','SYNTHETIC-ASSISTANT-SQL',true);
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint) values('ASSISTANT-SQL-23','Synthetic assistant brand',now(),'synthetic-assistant-23');

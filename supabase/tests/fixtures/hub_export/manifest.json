@@ -174,7 +174,7 @@
     {
       "file": "scripts/seed-hub-content-contract.mjs",
       "sha256": "dabe560525447b47c3881413400d8e060f3853820a28bb697111c955172dbd08",
-      "normalized_lf_sha256": "dabe560525447b47c3881413400d8e060f3853820a28bb697111c955172dbd08"
+      "normalized_lf_sha256": "4f0c70dfce31e725097263ec587f8d47b6757f788b962684795b7d438399fac0"
     },
     {
       "file": "scripts/provision-dw-reader.mjs",

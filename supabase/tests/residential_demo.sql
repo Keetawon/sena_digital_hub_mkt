@@ -11,6 +11,7 @@ values('SQL-RESIDENTIAL-21','MODEL-01','Synthetic residential model',now(),'synt
 insert into staging.source_offers(source_offer_key,source_active,source_snapshot_at,source_record)
 values('SYNTHETIC:SQL:000021',true,now(),'{"synthetic_only":true}');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('test.residential_brand',hub.create_brand_from_rem('SQL-RESIDENTIAL-21')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic residential brand"},"slug":"sql-residential-21","description":{"th":"แบรนด์สังเคราะห์"}}',updated_at)
 from hub.brands where id=current_setting('test.residential_brand')::uuid;
@@ -20,11 +21,15 @@ select set_config('test.residential_thumbnail',hub.register_uploaded_asset(jsonb
  'mime_type','image/png','asset_type','image','storage_path',repeat('8',64)||'.png','checksum',repeat('8',64),'file_size',100,'width',10,'height',10))#>>'{asset,id}',true);
 select hub.bind_brand_asset(id,current_setting('test.residential_thumbnail')::uuid,'logo_primary','{"th":"โลโก้สังเคราะห์"}',updated_at)
 from hub.brands where id=current_setting('test.residential_brand')::uuid;
+select hub.bind_brand_asset(id,current_setting('test.residential_hero')::uuid,'logo_white','{"th":"Synthetic review intake"}',updated_at)
+from hub.brands where id=current_setting('test.residential_brand')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic test rights',null,null,'Synthetic test fixture')
 from hub.assets where id in(current_setting('test.residential_hero')::uuid,current_setting('test.residential_thumbnail')::uuid);
 select set_config('test.residential_brand_version',hub.publish_brand(current_setting('test.residential_brand')::uuid,'Synthetic fixture')::text,true);
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.residential_project',hub.create_project_from_rem('SQL-RESIDENTIAL-21')::text,true);
 select hub.assign_project_brand(id,current_setting('test.residential_brand')::uuid,updated_at)
 from hub.projects where id=current_setting('test.residential_project')::uuid;
@@ -39,6 +44,7 @@ from hub.projects where id=current_setting('test.residential_project')::uuid;
 select hub.bind_project_asset(id,current_setting('test.residential_thumbnail')::uuid,'thumbnail','{"th":"ภาพสังเคราะห์"}',updated_at)
 from hub.projects where id=current_setting('test.residential_project')::uuid;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.residential_project_version',hub.publish_project(current_setting('test.residential_project')::uuid,'Synthetic fixture')::text,true);
 reset role;
 
@@ -56,6 +62,7 @@ do $$ declare relation regclass;role_name text;begin
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$ declare p jsonb;begin
  p:=jsonb_build_object('project_id',current_setting('test.residential_project'),'code','SQL-PROMOTION-21','title',jsonb_build_object('th','โปรโมชั่นสังเคราะห์'),
  'summary',jsonb_build_object('th','ตัวอย่างเท่านั้น'),'conditions_public',jsonb_build_object('th','เงื่อนไขตัวอย่าง'),
@@ -73,6 +80,7 @@ do $$ declare p jsonb;begin
 end $$;
 
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 do $$ begin
  perform hub.promotion_read(current_setting('test.residential_promo')::uuid);
  begin perform hub.promotion_command('review',current_setting('test.residential_promo')::uuid,'{"expected_revision":1,"review_type":"LEGAL","decision":"APPROVED","evidence":"Synthetic","change_reason":"Admin cannot approve"}');
@@ -80,6 +88,7 @@ do $$ begin
  begin perform hub.release_publish('[]','Admin cannot publish',false);assert false,'Admin published release';exception when insufficient_privilege then null;end;
 end $$;
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
  perform hub.promotion_read(current_setting('test.residential_promo')::uuid);perform hub.release_candidates(false);perform hub.release_read();
  begin perform hub.promotion_command('update',current_setting('test.residential_promo')::uuid,'{"expected_revision":1,"title":{"th":"Viewer"}}');assert false,'Viewer edited promotion';exception when insufficient_privilege then null;end;
@@ -96,6 +105,7 @@ end $$;
 
 -- Direct RPC malformed payloads cannot bypass API validation or publication guards.
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$ declare bad jsonb;begin
  foreach bad in array array[null::jsonb,'null'::jsonb,'[]'::jsonb,'{}'::jsonb,
  '{"expected_revision":null,"title":{"th":"Bad"}}'::jsonb,'{"expected_revision":1,"published_version_id":null}'::jsonb,
@@ -108,6 +118,7 @@ do $$ declare bad jsonb;begin
 end $$;
 
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;bad jsonb;kind text;begin
  foreach bad in array array[null::jsonb,'null'::jsonb,'{}'::jsonb,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":""}'::jsonb] loop
  begin perform hub.promotion_command('publish',p,bad);assert false,'Malformed publish accepted';exception when invalid_parameter_value or check_violation or not_null_violation or serialization_failure then null;end;
@@ -119,6 +130,7 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;bad jsonb;
  perform set_config('test.residential_first_version',hub.promotion_read(p)->>'published_version_id',true);
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
  assert exists(select 1 from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Start boundary not inclusive';
  assert(select payload->>'benefit_value'='1199.99' and payload->'rag_eligible'='false'::jsonb and nullif(payload#>>'{legal_terms,th}','') is not null and nullif(payload#>>'{disclaimer,th}','') is not null from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Consumer payload lost exact amount/legal context';
@@ -144,6 +156,7 @@ do $$ declare expired uuid;p uuid:=current_setting('test.residential_promo')::uu
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.promotion_command('update',current_setting('test.residential_promo')::uuid,'{"expected_revision":1,"title":{"th":"ชื่อร่างใหม่"}}');
 select hub.update_model(project_id,public_model_id,'{"bedrooms":3}',
  (select updated_at from hub.projects where id=m.project_id)) from hub.model_types m where project_id=current_setting('test.residential_project')::uuid;
@@ -155,10 +168,12 @@ do $$ begin
  perform set_config('test.residential_second',hub.promotion_command('create',null,current_setting('test.residential_promo_body')::jsonb||'{"code":"SQL-PROMOTION-22"}'::jsonb)->>'id',true);
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin assert(select payload#>>'{title,th}'='โปรโมชั่นสังเคราะห์' from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Draft changed published snapshot';end $$;
 
 -- A mixed set fails atomically across brand, project (with model draft), and promotions.
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;members jsonb;before_count integer;begin
  foreach kind in array array['DATA','LEGAL'] loop
  perform hub.promotion_command('review',p,jsonb_build_object('expected_revision',2,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'));
@@ -207,10 +222,13 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;
 end $$;
 
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select hub.promotion_command('update',current_setting('test.residential_promo')::uuid,'{"expected_revision":2,"summary":{"th":"ร่างใหม่อีกครั้ง"}}');
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.promotion_command('review',current_setting('test.residential_promo')::uuid,'{"expected_revision":3,"review_revision":2,"review_type":"LEGAL","decision":"REVOKED","evidence":"Synthetic revocation","change_reason":"Revoke published review after draft change"}');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin assert not exists(select 1 from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Revoked published review remained visible';end $$;
 reset role;
 select 'PASS: residential roles, exact money, expiry, source withdrawal, immutable snapshots, atomic release/rollback and synthetic selection guards' as result;

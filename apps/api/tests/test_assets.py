@@ -75,7 +75,11 @@ def test_asset_role_boundaries(role, method, path):
 
 def test_production_never_uses_local_asset_storage(monkeypatch, tmp_path):
     app = create_app(settings(auth_mode="supabase", environment="production", supabase_url="https://example.supabase.co"))
-    app.dependency_overrides[app.state.authentication] = lambda: Actor(id=UUID(int=1), role="editor")
+    from fastapi import Request
+    async def verified_editor(request: Request):
+        request.state.account = {"capabilities": {"tabs": {"projects": {"view": True, "edit": True}}}}
+        return Actor(id=UUID(int=1), role="editor")
+    app.dependency_overrides[app.state.authentication] = verified_editor
     monkeypatch.setattr(assets, "STORAGE_ROOT", tmp_path / "unused")
     client = TestClient(app)
     response = client.post("/v1/admin/assets", content=image_bytes(), headers={"Content-Type": "image/png", "X-Filename": "valid.png"})
@@ -203,7 +207,7 @@ def test_failed_commit_rechecks_registry_before_removing_new_file(monkeypatch, t
         async def fetchval(self, sql, *args):
             if "register_uploaded_asset" in sql:
                 return {"asset": {}, "reused": False}
-            assert "EXISTS" in sql
+            assert sql == "SELECT hub.asset_registered_for_cleanup($1)"
             return registered
 
     @asynccontextmanager

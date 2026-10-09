@@ -19,8 +19,8 @@ try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
   for (const client of [first, second]) {
     await client.query('begin');
-    await client.query('set local role editor');
-    await client.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", ['00000000-0000-0000-0000-000000000001', reason]);
+    await client.query('set local role publisher');
+    await client.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", ['00000000-0000-0000-0000-000000000002', reason]);
   }
   const registered = (await first.query('select hub.register_uploaded_asset($1) as result', [metadata])).rows[0].result;
   assert.equal(registered.reused, false);

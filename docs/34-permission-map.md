@@ -1328,3 +1328,8 @@ These decisions authorize the phased implementation in §7 and resolve the earli
 3. **Registry stewardship:** the global approval switch and cancellation are operator-only. Removing their direct admin DB-role access is accepted because no UI path uses it; record the difference in the conversion report.
 4. **Publisher:** removal of API-only project draft editing is accepted.
 5. **Sidebar:** tablet overlays reset to the rail; desktop collapse preference persists. Both behaviours are accepted.
+
+### Phase 2 continuation — owner, 9 October 2026
+
+- After each phase passes **all** its gates, commit and push that phase to `origin/main` as a backup checkpoint. Never push a phase with incomplete or failing gates. This replaces the earlier final-programme-only push timing; local-only execution and the hosted credentials gate remain unchanged.
+- When the asset library narrows to authorized bindings, uploaders must still see and bind their own newly uploaded, not-yet-bound files during the upload/review workflow. The exact DB rule and tests are recorded in the implementation log.

@@ -1,7 +1,7 @@
 -- LOCAL DEMO ONLY. All names, specifications and coordinates below are synthetic.
 -- These are not SENA project facts, REM production records, or pilot acceptance data.
 begin;
-select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('app.change_reason','Load clearly synthetic local demo fixtures',true);
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint)
 values ('DEMO-001','ข้อมูลจำลอง — โครงการทดสอบ ไม่ใช่โครงการจริง','2026-09-16T00:00:00Z','synthetic-demo-project-v1');

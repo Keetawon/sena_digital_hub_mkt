@@ -16,7 +16,13 @@ values
  ('91300000-0000-0000-0000-000000000004','collection-second.pdf','application/pdf','/v1/assets/91300000-0000-0000-0000-000000000004/file','approved','local-originals',repeat('1d',32)||'.pdf',repeat('1d',32),100);
 
 -- Brand logo selection still replaces the previous logo; project collections do not.
+update hub.assets set provenance='upload',owner_id=case when id in('91300000-0000-0000-0000-000000000001','91300000-0000-0000-0000-000000000002')
+ then '00000000-0000-0000-0000-000000000005'::uuid else '00000000-0000-0000-0000-000000000001'::uuid end
+where id in('91300000-0000-0000-0000-000000000001','91300000-0000-0000-0000-000000000002','91300000-0000-0000-0000-000000000003','91300000-0000-0000-0000-000000000004');
 set local role admin;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
+select hub.bind_project_asset(id,'91300000-0000-0000-0000-000000000002','floor_plan','{"th":"Synthetic review intake"}',updated_at)
+from hub.projects where rem_project_id='DEMO-001';
 select set_config('test.pc_brand',hub.create_brand_from_rem('MEDIA-COLLECTION-BRAND')::text,true);
 select hub.update_brand_draft(id,'{"public_name":{"th":"Synthetic media collection brand"},"slug":"media-collection-brand","description":{"th":"Synthetic brand"}}',updated_at)
 from hub.brands where id=current_setting('test.pc_brand')::uuid;
@@ -29,8 +35,10 @@ do $$ begin
     and asset_role='logo_primary' and deleted_at is null)=1, 'Brand logo replacement changed';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.publish_brand(current_setting('test.pc_brand')::uuid,'Synthetic collection brand');
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.pc_project',hub.create_project_from_rem('MEDIA-COLLECTION-P1')::text,true);
 select set_config('test.pc_public',public_project_id,true) from hub.projects where id=current_setting('test.pc_project')::uuid;
 select set_config('test.pc_model',public_model_id,true) from hub.model_types where project_id=current_setting('test.pc_project')::uuid;
@@ -96,6 +104,7 @@ begin
 end $$;
 
 set local role viewer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ begin
   begin
     perform hub.bind_project_asset(current_setting('test.pc_project')::uuid,'91300000-0000-0000-0000-000000000001','hero','{"th":"Denied"}',now());
@@ -107,16 +116,19 @@ do $$ begin
   end;
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform public_api.asset_file('91300000-0000-0000-0000-000000000002');
     raise exception 'Secondary draft image leaked'; exception when no_data_found then null;
   end;
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic image rights',null,null,'Synthetic collection review')
 from hub.assets where id='91300000-0000-0000-0000-000000000002';
 select hub.publish_project(current_setting('test.pc_project')::uuid,'Synthetic media collections release');
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.pc_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.pc_public');
 do $$ begin
   assert jsonb_array_length(current_setting('test.pc_payload')::jsonb->'assets')=12, 'Published snapshot lost secondary attachments';
@@ -126,6 +138,7 @@ end $$;
 
 -- Removing the first image promotes the next image without rewriting a release.
 set local role editor;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$
 declare p uuid:=current_setting('test.pc_project')::uuid; role_name text; binding uuid; stamp timestamptz;
 begin
@@ -149,14 +162,17 @@ begin
     'Removing primary left a nonempty ready collection without primary';
 end $$;
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert (select payload=current_setting('test.pc_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.pc_public')),
     'Draft removal changed the selected publication';
 end $$;
 set local role publisher;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'revoked','Synthetic secondary withdrawal',null,null,'Synthetic collection withdrawal')
 from hub.assets where id='91300000-0000-0000-0000-000000000004';
 set local role service_consumer;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.pc_public')),
     'Revoked secondary brochure remained eligible in the publication';

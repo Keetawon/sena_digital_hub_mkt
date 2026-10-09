@@ -59,12 +59,13 @@ try{
     await applyLocalMigrations(db);
     assert.match(config.runtimePassword,/^[a-f0-9]{48}$/);
     await db.query(`CREATE ROLE hub_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '${config.runtimePassword}'`);
-    await db.query('GRANT editor,publisher,viewer,service_consumer,admin,online_staff,agency TO hub_runtime');
+    await db.query('GRANT editor,publisher,viewer,service_consumer,admin,online_staff,agency,hub_app TO hub_runtime');
   }finally{await db.end();}
   const uv=['--cache-dir','.cache/uv','run','--project','apps/api'];
   if(mode==='api'||mode==='all')await run('uv',[...uv,'pytest','apps/api/tests','-q','--basetemp',path.join(directory,'pytest'),'-o',`cache_dir=${path.join(directory,'pytest-cache')}`,...extra]);
   if(mode==='db'||mode==='all'){
     await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs']);
+    await run(process.execPath,['--test','tests/content-upgrade.test.mjs']);
     await run(process.execPath,['scripts/test-db.mjs']);
     const concurrency=(await readdir(path.join(root,'supabase/tests'))).filter(n=>/^concurrent_.*\.mjs$/.test(n)).sort();
     for(const name of concurrency)await run(process.execPath,[`supabase/tests/${name}`]);

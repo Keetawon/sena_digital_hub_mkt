@@ -180,7 +180,8 @@ def test_real_postgres_staged_sources_model_edit_and_review():
                 "public_name", "bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"
             )})
             assert restored.status_code == 200, restored.text
-            restored_review = review(model["match_status"], role="publisher")
+            assert review(model["match_status"], role="publisher").status_code == 403
+            restored_review = review(model["match_status"], role="editor")
             assert restored_review.status_code == 200, restored_review.text
             assert get_draft()["published_version_id"] == original["published_version_id"]
             assert client.get(public_path, headers=headers["service_consumer"]).json() == public_before.json()
