@@ -62,16 +62,18 @@ def pending_questions(catalog: dict) -> list[dict]:
             for entry in catalog["questions"] if entry["status"] == "PENDING"]
 
 
-def register_question_routes(app, authentication):
+def register_question_routes(app, authentication, database):
     from fastapi import Depends, Request
     from .auth import Actor, failure
+    from .content_permissions import require_content
 
     catalog = load_catalog()
 
     @app.get("/v1/admin/questions")
     async def questions(request: Request, actor: Actor = Depends(authentication)):
-        if actor.role not in STAFF_ROLES:
-            raise failure(403, "questions_forbidden", "หน้านี้สำหรับเจ้าหน้าที่ SENA ที่ได้รับสิทธิ์เท่านั้น")
+        require_content(request, error_code="questions_forbidden")
         if request.query_params:
             raise failure(422, "invalid_question_filter", "ไม่รองรับตัวกรองคำถามนี้")
+        async with database(request, actor) as db:
+            await db.execute("SELECT hub.require_permission('questions','view')")
         return {"data": {"questions": pending_questions(catalog)}}

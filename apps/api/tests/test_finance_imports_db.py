@@ -12,6 +12,7 @@ import pytest
 
 from sena_hub_api.finance_imports import validate_export
 from test_finance_imports import csv_data, manifest
+from test_permission_baseline import disposable_operator
 
 DSN = os.getenv("HUB_TEST_DATABASE_URL", "")
 pytestmark = [pytest.mark.integration, pytest.mark.skipif(
@@ -21,12 +22,11 @@ pytestmark = [pytest.mark.integration, pytest.mark.skipif(
 
 @asynccontextmanager
 async def local_transaction():
-    connection = await asyncpg.connect(DSN)
+    connection = await disposable_operator()
     await connection.set_type_codec("jsonb", schema="pg_catalog", encoder=json.dumps, decoder=json.loads)
     transaction = connection.transaction()
     await transaction.start()
     try:
-        await connection.execute("SET LOCAL ROLE online_staff")
         await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000006',true)")
         yield connection
     finally:
@@ -35,7 +35,15 @@ async def local_transaction():
 
 
 async def command(connection, action, payload):
-    return await connection.fetchval("SELECT ads.finance_command($1,$2::jsonb)", action, payload)
+    try:
+        async with connection.transaction():
+            await connection.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
+            await connection.execute('SET LOCAL ROLE hub_app')
+            assert tuple(await connection.fetchrow('select rolsuper,rolbypassrls from pg_roles where rolname=session_user')) == (False, False)
+            return await connection.fetchval("SELECT ads.finance_command($1,$2::jsonb)", action, payload)
+    finally:
+        await connection.execute('RESET ROLE')
+        await connection.execute('RESET SESSION AUTHORIZATION')
 
 
 def test_guarded_ledger_replay_conflict_and_atomic_whole_batch_quarantine():

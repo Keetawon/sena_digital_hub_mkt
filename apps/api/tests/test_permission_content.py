@@ -79,7 +79,7 @@ def test_content_route_map_has_no_unmapped_core_entry(permission_accounts):
 def test_content_view_revoked_at_real_sql_and_rpc(permission_accounts, tab, role):
     _, ids = permission_accounts
     async def check():
-        db = await runtime()
+        db = await runtime(probe=role != 'hub_app')
         try:
             table, rpc = ('hub.projects', 'hub.progress_rows(null)') if tab == 'projects' else ('hub.brands', 'hub.list_brands()')
             assert await call(db, ids['viewer'], f'select count(*) from {table}', role=role) > 0
@@ -249,13 +249,21 @@ def test_content_hidden_brand_and_knowledge_removed_from_details_cache_and_histo
                 assert 'brand_logo' not in row['summary'] and 'knowledge' not in row['summary']
                 if row['record'] and row['record']['detail'].get('brand'):
                     assert set(row['record']['detail']['brand']) == {'public_name'}
-            # A direct old-role query cannot recover unprojected snapshots.
-            assert await call(db, ids['viewer'], 'select count(*) from hub.entity_versions', role='viewer') == 0
+            # The real runtime has no raw snapshot-table grant.
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await call(db, ids['viewer'], 'select count(*) from hub.entity_versions')
             await call(db, ids['viewer'], 'select hub.project_versions($1)', UUID(data['id']))
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select * from hub.project_progress_cache')
         finally:
             await db.close()
+        # Historical viewer grants remain narrow even on the disposable probe;
+        # the production runtime cannot assume this legacy role.
+        probe = await runtime(probe=True)
+        try:
+            assert await call(probe, ids['viewer'], 'select count(*) from hub.entity_versions', role='viewer') == 0
+        finally:
+            await probe.close()
     asyncio.run(check())
 
 

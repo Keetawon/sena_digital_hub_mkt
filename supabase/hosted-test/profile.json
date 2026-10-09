@@ -253,6 +253,16 @@
       "name": "202610090050_operations_permissions.sql",
       "canonical_sha256": "74e7d67460a8e03877cb317587c4b1ef40726c5cfb01422743b8c810855b5088",
       "executed_sha256": "74e7d67460a8e03877cb317587c4b1ef40726c5cfb01422743b8c810855b5088"
+    },
+    {
+      "name": "202610090051_assistant_permissions.sql",
+      "canonical_sha256": "4a9d01ad5019fda5e54d37c900f62770d54aad4eefdafc7abd8e0f45c16dd6d4",
+      "executed_sha256": "4a9d01ad5019fda5e54d37c900f62770d54aad4eefdafc7abd8e0f45c16dd6d4"
+    },
+    {
+      "name": "202610090052_shared_permissions.sql",
+      "canonical_sha256": "fb96fda73a877f021308847b8506546c54615d42c734fa07f17801ebcf6961de",
+      "executed_sha256": "fb96fda73a877f021308847b8506546c54615d42c734fa07f17801ebcf6961de"
     }
   ]
 }

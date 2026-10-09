@@ -17,7 +17,7 @@ from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException
 
 from .accounts import register_account_routes
-from .auth import Actor, Authentication, AUTH_ROLES, Settings, failure
+from .auth import Actor, Authentication, Settings, failure
 from . import assets as asset_files
 from .facilities import register_facility_routes
 from .commercial_types import register_commercial_routes
@@ -31,7 +31,7 @@ from .assistant import register_assistant_routes
 from .hosted_assets import BUCKET, HostedAssets
 from .brand_completeness import register_brand_completeness_routes
 from .knowledge import register_knowledge_routes
-from .content_permissions import content_rule, require_content
+from .content_permissions import require_content, route_class
 
 
 Locale = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$")]
@@ -219,12 +219,14 @@ async def initialize_connection(connection):
 
 @asynccontextmanager
 async def database(request: Request, actor: Actor, *, audit_only: bool = False):
-    # Only server-mapped constant identifiers may enter SET ROLE.
-    roles = {role: role for role in AUTH_ROLES}
+    # Every app request uses the base role; SQL resolves table-backed authority.
+    # Machine integrations outside this API keep their separate fixed principals.
+    category = route_class(request.method, getattr(request.scope.get("route"), "path", None))
+    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public"}:
+        raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
-            role = "hub_app" if audit_only or content_rule(request) else roles[actor.role]
-            await connection.execute(f"SET LOCAL ROLE {role}")
+            await connection.execute("SET LOCAL ROLE hub_app")
             await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(actor.id))
             await connection.execute("SELECT set_config('app.agency_code', $1, true)", actor.agency_code or "")
             yield connection
@@ -346,43 +348,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse({"error": {"code": "server_error", "message": "ระบบไม่สามารถดำเนินการได้ กรุณาลองใหม่"}}, 500)
 
     async def admin(request: Request, actor: Actor = Depends(authentication)):
-        if require_content(request):
-            return actor
-        if actor.role not in {"editor", "publisher", "viewer", "admin"}:
-            raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบจัดการ")
+        if not require_content(request):
+            raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
         return actor
 
-    async def writer(request: Request, actor: Actor = Depends(admin)):
-        if content_rule(request):
-            return actor
-        if actor.role not in {"editor", "publisher", "admin"}:
-            raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูล")
-        return actor
+    # Existing route declarations retain their descriptive dependency names;
+    # the reviewed route map supplies the action, never a legacy role ceiling.
+    writer = administrator = brand_writer = publisher = admin
 
-    async def administrator(request: Request, actor: Actor = Depends(admin)):
-        if content_rule(request):
-            return actor
-        if actor.role != "admin":
-            raise failure(403, "forbidden", "เฉพาะผู้ดูแลระบบที่มีสิทธิ์ดำเนินการนี้")
-        return actor
-
-    async def brand_writer(request: Request, actor: Actor = Depends(admin)):
-        if content_rule(request):
-            return actor
-        if actor.role not in {"editor", "admin"}:
-            raise failure(403, "forbidden", "เฉพาะผู้แก้ไขหรือผู้ดูแลระบบที่แก้ไขแบรนด์ได้")
-        return actor
-
-    async def publisher(request: Request, actor: Actor = Depends(admin)):
-        if content_rule(request):
-            return actor
-        if actor.role != "publisher":
-            raise failure(403, "forbidden", "เฉพาะผู้เผยแพร่ที่มีสิทธิ์ดำเนินการนี้")
-        return actor
-
-    async def consumer(actor: Actor = Depends(authentication)):
-        if actor.role != "service_consumer":
-            raise failure(403, "forbidden", "กรุณาใช้บัญชี consumer สำหรับ API เผยแพร่")
+    async def consumer(request: Request, actor: Actor = Depends(authentication)):
+        caps = request.state.account.get("capabilities", {})
+        if actor.role != "service_consumer" and caps.get("published_consumer") is not True:
+            raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์เข้าถึง API เผยแพร่")
         return actor
 
     def require_local_assets():
@@ -822,7 +799,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         check_query(request, allowed=("brand_id",))
         async with database(request, actor) as connection:
             rows = await connection.fetch(
-                "SELECT * FROM public_api.projects WHERE ($1::text IS NULL OR payload#>>'{brand,public_brand_id}'=$1) ORDER BY public_project_id LIMIT 100",
+                "SELECT * FROM public_api.read_projects() WHERE ($1::text IS NULL OR payload#>>'{brand,public_brand_id}'=$1) ORDER BY public_project_id LIMIT 100",
                 brand_id,
             )
             return public_list(rows)
@@ -831,21 +808,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def published_brands(request: Request, actor: Actor = Depends(consumer)):
         check_query(request)
         async with database(request, actor) as connection:
-            rows = await connection.fetch("SELECT * FROM public_api.brands ORDER BY public_brand_id LIMIT 100")
+            rows = await connection.fetch("SELECT * FROM public_api.read_brands() ORDER BY public_brand_id LIMIT 100")
             return public_list(rows)
 
     @app.get("/v1/brands/{public_id}")
     async def published_brand(public_id: str, request: Request, actor: Actor = Depends(consumer)):
         check_query(request)
         async with database(request, actor) as connection:
-            row = await connection.fetchrow("SELECT * FROM public_api.brands WHERE public_brand_id=$1", public_id)
+            row = await connection.fetchrow("SELECT * FROM public_api.read_brands() WHERE public_brand_id=$1", public_id)
             if row is None:
                 raise failure(404, "not_published", "ไม่พบแบรนด์ที่เผยแพร่และยังใช้งานได้")
             return {"data": public_payload(row), "meta": public_meta(row)}
 
     async def published_project_row(public_id, request, actor):
         async with database(request, actor) as connection:
-            row = await connection.fetchrow("SELECT * FROM public_api.projects WHERE public_project_id=$1", public_id)
+            row = await connection.fetchrow("SELECT * FROM public_api.read_projects() WHERE public_project_id=$1", public_id)
             if row is None:
                 raise failure(404, "not_published", "ไม่พบโครงการที่เผยแพร่และยังใช้งานได้")
             return row
@@ -877,7 +854,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def published_model_row(public_id, request, actor):
         async with database(request, actor) as connection:
             row = await connection.fetchrow(
-                "SELECT p.*, m.item AS published_model FROM public_api.projects p "
+                "SELECT p.*, m.item AS published_model FROM public_api.read_projects() p "
                 "CROSS JOIN LATERAL jsonb_array_elements(p.payload->'models') m(item) "
                 "WHERE m.item->>'public_model_id'=$1", public_id)
             if row is None:
@@ -902,7 +879,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_facility_routes(app, admin, writer, database, detail)
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_ads_routes(app, authentication, database, settings)
-    register_question_routes(app, authentication)
+    register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)
     if hosted_assets:

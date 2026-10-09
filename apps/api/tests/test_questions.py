@@ -1,5 +1,6 @@
 """The policy catalog is read-only, staff-only and consistent with its source docs."""
 from copy import deepcopy
+from contextlib import asynccontextmanager
 import importlib.util
 import json
 from pathlib import Path
@@ -23,10 +24,16 @@ spec.loader.exec_module(sync_questions)
 
 @pytest.fixture
 def client(monkeypatch):
-    def no_database(*args, **kwargs):
-        raise AssertionError("Policy questions must not query domain records")
+    class GuardOnlyDB:
+        async def execute(self, sql, *args):
+            assert sql.strip().lower() == "select hub.require_permission('questions','view')"
+            assert not args, 'Policy questions must not query domain records'
 
-    monkeypatch.setattr(main, "database", no_database)
+    @asynccontextmanager
+    async def guard_database(*args, **kwargs):
+        yield GuardOnlyDB()
+
+    monkeypatch.setattr(main, "database", guard_database)
     settings = Settings(database_url="postgresql://test:test@127.0.0.1:55432/test", auth_mode="demo",
                         environment="local", demo_tokens=TOKENS)
     return TestClient(main.create_app(settings), client=("127.0.0.1", 50000))

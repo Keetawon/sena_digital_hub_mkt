@@ -213,7 +213,7 @@ def test_apply_uses_one_guarded_transaction_and_closes_on_failure(tmp_path, monk
         package.fingerprint, 'prior-snapshot')
     assert connect.call_args.kwargs['host'] == '127.0.0.1'
     assert connect.call_args.kwargs['port'] == 55432
-    assert any('SET LOCAL ROLE admin' in call.args[0] for call in connection.execute.call_args_list)
+    assert not any('SET LOCAL ROLE' in call.args[0] for call in connection.execute.call_args_list)
 
 
 @pytest.mark.integration
@@ -238,7 +238,7 @@ def test_real_import_replay_conflict_and_failed_rows_preserve_last_good():
             base_manifest = baseline['manifest'] if baseline else package.manifest
             base_relations = baseline['relations'] if baseline else package.relations
             stamp = max(current_at or datetime.now(timezone.utc), datetime.now(timezone.utc)) + timedelta(seconds=1)
-            await connection.execute('SET LOCAL ROLE admin')
+            await connection.execute('RESET ROLE')
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", stage.ADMIN_ACTOR)
             current = await connection.fetchval('SELECT ads.actuals_current_snapshot()')
 

@@ -77,7 +77,7 @@ def test_permission_foundation_template_projection_and_real_sql_agree(permission
     assert caps['agency_registry'] == (role == 'agency')
     assert 'legacy_hub_role' not in account
     async def check():
-        db = await runtime()
+        db = await runtime(probe=True)
         try:
             db_role = 'viewer' if role == 'pending' else role
             if role == 'service_consumer':
@@ -110,7 +110,7 @@ def test_permission_foundation_admin_endpoints_deny_forged_claims(permission_acc
 def test_permission_foundation_closed_storage_acl_and_definer_acl(permission_accounts):
     _, ids = permission_accounts
     async def check():
-        db = await runtime()
+        db = await runtime(probe=True)
         try:
             await db.execute('SET ROLE viewer')
             for table in sorted(FOUNDATION_TABLES):
@@ -142,7 +142,7 @@ def test_permission_foundation_closed_storage_acl_and_definer_acl(permission_acc
 def test_permission_foundation_missing_bad_actor_tab_level_and_agency_scope_deny(permission_accounts):
     _, ids = permission_accounts
     async def check():
-        db = await runtime()
+        db = await runtime(probe=True)
         try:
             for uid in ('', 'bad-uuid', uuid4()):
                 assert await sql_as(db, uid, 'admin', "select hub.can('projects','view')") is False
@@ -178,7 +178,7 @@ def test_permission_foundation_locked_grid_self_stale_and_flag_revocation(permis
     assert client.post(path, headers=h('admin'), json=body).status_code == 409
     async def check():
         db = await disposable_operator()
-        runtime_db = await runtime()
+        runtime_db = await runtime(probe=True)
         try:
             event = await db.fetchrow("select before_value,after_value from hub.permission_event where account_id=$1 and action='PERMISSIONS'", ids['second'])
             assert json.loads(event['before_value'])['can_manage_users'] is True
@@ -251,7 +251,7 @@ def test_permission_foundation_new_catalog_tab_defaults_to_nobody_and_template_c
     before = me(client, 'editor')['capabilities']['tabs']
     async def check():
         db = await disposable_operator()
-        caller = await runtime()
+        caller = await runtime(probe=True)
         try:
             await db.execute("insert into hub.permission_catalog(tab,label_th,nav_group,levels,sensitivity) values('synthetic_probe','ทดสอบ','other','{view}','internal')")
             await db.execute("insert into hub.permission_template(code,version,label_th,tabs) values('editor',2,'ทดสอบ','{}')")
@@ -293,7 +293,7 @@ def test_permission_foundation_concurrent_manager_removal_preserves_one(permissi
             versions = {r['id']: r['updated_at'] for r in await setup.fetch('select id,updated_at from hub.user_account where id=any($1::uuid[])', [ids['admin'], ids['second']])}
             tabs = await setup.fetchval("select tabs from hub.permission_template where code='admin' and version=1")
             async def remove(actor, target):
-                db = await runtime()
+                db = await runtime(probe=True)
                 try:
                     return await sql_as(db, actor, 'admin', 'select hub.save_account_permissions($1,$2::jsonb,false,$3)', target, tabs, versions[target])
                 except asyncpg.InsufficientPrivilegeError:

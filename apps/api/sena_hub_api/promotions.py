@@ -254,7 +254,7 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
         query(request, ("project_id", "locale"))
         async with connection(request, actor) as db:
             # Eligibility and stacking are resolved by the view before filtering.
-            rows = await db.fetch("SELECT payload,version_id,published_at FROM public_api.promotions "
+            rows = await db.fetch("SELECT payload,version_id,published_at FROM public_api.read_promotions() "
                                   "WHERE ($1::text IS NULL OR public_project_id=$1) "
                                   "ORDER BY public_project_id,priority,promotion_id", project_id)
         items = []

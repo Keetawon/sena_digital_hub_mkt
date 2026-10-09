@@ -255,7 +255,7 @@ async def apply_local(kind: str, payload: dict, actor_id: UUID) -> dict:
     try:
         await connection.set_type_codec("jsonb", schema="pg_catalog", encoder=json.dumps, decoder=json.loads)
         async with connection.transaction():
-            await connection.execute("SET LOCAL ROLE online_staff")
+            await connection.execute("SET LOCAL ROLE hub_app")
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(actor_id))
             await connection.execute("SELECT set_config('app.change_reason','Validated operator finance export',true)")
             return await connection.fetchval("SELECT ads.finance_command($1,$2::jsonb)", kind + "_import", payload)

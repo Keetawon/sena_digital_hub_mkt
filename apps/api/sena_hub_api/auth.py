@@ -189,7 +189,7 @@ class Authentication:
         display = claims.get("user_metadata") if isinstance(claims.get("user_metadata"), dict) else {}
         async with request.app.state.pool.acquire() as connection:
             async with connection.transaction():
-                await connection.execute("SET LOCAL ROLE viewer")
+                await connection.execute("SET LOCAL ROLE hub_app")
                 await connection.execute("SELECT set_config('app.actor_id', $1, true)", claims["sub"])
                 account = await connection.fetchval("SELECT hub.account_identity($1,$2,$3)", claims["email"],
                     str(metadata.get("provider", "email")), str(display.get("full_name", "")))

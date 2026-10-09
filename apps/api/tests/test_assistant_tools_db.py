@@ -34,7 +34,8 @@ def values(result):
 def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
     async def run():
         async with local_connection() as db:
-            actor_id = uuid4()
+            account_ids = {role: uuid4() for role in ('admin', 'editor', 'publisher', 'viewer', 'online_staff', 'agency', 'service_consumer')}
+            actor_id = account_ids['admin']
             actor = Actor(actor_id, "admin")
             marker = "SYNTHETIC-ASSISTANT-READERS-" + uuid4().hex
             request = Request({"type": "http", "method": "POST", "scheme": "http", "server": ("localhost", 8000),
@@ -42,29 +43,34 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
             tables = ("hub.projects", "hub.entity_versions", "hub.public_promotions", "hub.promotion_versions",
                       "ads.campaign_registration", "ads.memo", "ads.media_line", "ads.line_assignment",
                       "ads.archive_confirmation", "ads.archive_application", "ads.archive_memo_chunk",
-                      "audit.archive_access", "staging.ads_actuals_batch")
+                      "audit.archive_access", "staging.ads_actuals_batch", "hub.user_account")
 
             async def counts():
                 await db.execute("RESET ROLE")
                 return {table: await db.fetchval("SELECT count(*) FROM " + table) for table in tables}
 
             @asynccontextmanager
-            async def caller_database(_request, calling_actor):
+            async def caller_database(_request, calling_actor, *, audit_only=False):
                 prior = await db.fetchval("SELECT current_setting('role')")
                 try:
                     async with db.transaction():
                         assert calling_actor.role in {"admin", "online_staff", "editor", "publisher", "viewer", "agency", "service_consumer"}
-                        await db.execute(f"SET LOCAL ROLE {calling_actor.role}")
+                        await db.execute("SET LOCAL SESSION AUTHORIZATION hub_runtime")
+                        await db.execute("SET LOCAL ROLE hub_app")
+                        assert await db.fetchval('select session_user') == 'hub_runtime'
+                        assert not await db.fetchval('select rolsuper or rolbypassrls from pg_roles where rolname=current_user')
                         await db.execute("SELECT set_config('app.actor_id',$1,true)", str(calling_actor.id))
                         await db.execute("SELECT set_config('app.agency_code','',true)")
                         yield db
                 finally:
                     # Restore only after SAVEPOINT rollback, preserving the original SQL error.
                     if not db.is_closed():
+                        await db.execute("RESET ROLE")
+                        await db.execute("RESET SESSION AUTHORIZATION")
                         await db.execute("RESET ROLE" if prior == "none" else f"SET LOCAL ROLE {prior}")
 
             async def rpc(sql, *args, role="admin"):
-                async with caller_database(request, Actor(actor_id, role)):
+                async with caller_database(request, Actor(account_ids[role], role)):
                     return await db.fetchval(sql, *args)
 
             async def finance(action, payload):
@@ -77,6 +83,9 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
             outer = db.transaction()
             await outer.start()
             try:
+                for role, identity in account_ids.items():
+                    await db.execute("""insert into hub.user_account(id,email,status,hub_role,agency_code)
+                        values($1,$2,'ACTIVE',$3,$4)""", identity, f'{identity}@example.test', role, 'KIN' if role == 'agency' else None)
                 await db.execute("SELECT set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", str(actor_id), marker)
                 project = await db.fetchrow("SELECT * FROM hub.projects WHERE rem_project_id='DEMO-001' AND deleted_at IS NULL")
                 assert project, "The synthetic local DEMO-001 seed is required"
@@ -175,7 +184,9 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
                         entry.update(row_count=len(relations[entry["relation"]]), file_sha256=hashlib.sha256(raw).hexdigest(), snapshot_at=stamp)
                     (directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
                     package = validate_package(directory)
-                applied = await rpc("SELECT ads.apply_ads_actuals($1,$2,$3,$4)", package.manifest, package.relations, package.fingerprint, snapshot_before)
+                await db.execute("RESET ROLE")
+                await db.execute("SELECT set_config('app.actor_id',$1,true)", str(actor_id))
+                applied = await db.fetchval("SELECT ads.apply_ads_actuals($1,$2,$3,$4)", package.manifest, package.relations, package.fingerprint, snapshot_before)
                 assert applied["status"] == "APPLIED", applied
 
                 # Existing synthetic TEXT fixture, confirmed and linked only inside this rollback.
@@ -247,7 +258,7 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
                 assert retired["status"] == "UNAVAILABLE" and not retired["facts"]
                 for role, tool in (("viewer", "get_line_actuals"), ("online_staff", "get_project"), ("agency", "get_campaign"), ("service_consumer", "get_project")):
                     with pytest.raises(HTTPException) as caught:
-                        await ToolReader(request, Actor(actor_id, role), caller_database).invoke(tool, cases[tool])
+                        await ToolReader(request, Actor(account_ids[role], role), caller_database).invoke(tool, cases[tool])
                     assert caught.value.status_code == 403
                 print("PASS: 13/13 real DB readers returned checked structured evidence; exact campaign/card/amount facts, source versions and domain denials verified. No model/network evaluation performed.")
             finally:

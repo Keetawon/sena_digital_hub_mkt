@@ -121,8 +121,18 @@ def demo_fields(value):
     return sorted(field for field in markers if isinstance(field, str) and field in DEMO_FIELDS) if isinstance(markers, list) else []
 
 
-def permitted_tools(role):
-    return [name for name in TOOL_INPUTS if role in (CONTENT_ROLES if name in CONTENT_TOOLS else ADS_ROLES)]
+def tool_source_kind(name, inputs=None, context=None):
+    if name == "check_publish_readiness": return inputs.entity_type
+    if name == "search_content":
+        return "project" if inputs.project_id or (context or {}).get("project_id") else "brand"
+    return {"get_project": "project", "find_projects": "project", "get_models": "project", "get_brand": "brand",
+            "get_promotions": "promotion", "get_project_marketing": "media_line", "get_campaign": "campaign",
+            "find_campaigns": "campaign", "get_line_actuals": "media_line", "explain_name": "naming_rule",
+            "search_documents": "memo"}[name]
+
+
+def finance_filters(name, inputs):
+    return name == "find_campaigns" and any(getattr(inputs, key, None) is not None for key in ("month", "memo_no", "fee_po_ref"))
 
 
 def decode(value):
@@ -202,14 +212,24 @@ class ToolReader:
         payload = {"action": action, "outcome": outcome, "original_role": self.actor.role,
                    "original_actor_id": str(self.actor.id), "document_id": document_id,
                    "version_id": version_id, "page": page, "request_id": str(uuid4()), "bytes": None}
-        async with self.database(self.request, Actor(self.actor.id, "admin")) as db:
+        async with self.database(self.request, self.actor, audit_only=True) as db:
             await db.fetchval("SELECT ads.archive_access($1::jsonb)", payload)
 
+    async def access(self, name=None, kind=None, financial=False):
+        try:
+            return await self.query("SELECT internal.assistant_access($1,$2,$3)::text", name, kind, financial)
+        except asyncpg.InsufficientPrivilegeError:
+            raise failure(403, "assistant_tool_forbidden", "บัญชีนี้ไม่มีสิทธิ์อ่านข้อมูลส่วนนี้") from None
+
     async def invoke(self, name, arguments):
-        if name not in permitted_tools(self.actor.role):
-            if name == "search_documents": await self.archive_audit("SEARCH", "DENIED")
+        if name not in TOOL_INPUTS:
             raise failure(403, "assistant_tool_forbidden", "บัญชีนี้ไม่มีสิทธิ์อ่านข้อมูลส่วนนี้")
         inputs = TOOL_INPUTS[name].model_validate(arguments)
+        try:
+            await self.access(name, tool_source_kind(name, inputs, self.context), finance_filters(name, inputs))
+        except Exception:
+            if name == "search_documents": await self.archive_audit("SEARCH", "DENIED")
+            raise
         project = getattr(inputs, "project_id", None)
         locked = self.context.get("project_id")
         brand = self.context.get("brand_id")
@@ -264,8 +284,7 @@ class ToolReader:
         pointer = str(version_id) if version_id else value.get("published_version_id")
         if not pointer or (version_id is None and not value.get("publication_available")):
             return None
-        table, owner = ("entity_versions", "project_id") if kind == "project" else ("brand_versions", "brand_id")
-        row = await self.query(f"SELECT jsonb_build_object('payload',payload,'published_at',published_at)::text FROM hub.{table} WHERE {owner}=$1 AND id=$2", UUID(value["id"]), UUID(pointer))
+        row = await self.query("SELECT internal.assistant_content_version($1,$2,$3)::text", kind, identity, UUID(pointer))
         if not row:
             return None
         return row["payload"], pointer, "PUBLISHED" if pointer == value.get("published_version_id") and value.get("publication_available") else "HISTORICAL", row["published_at"]
@@ -375,9 +394,9 @@ class ToolReader:
         if p.as_of and abs((now - p.as_of).total_seconds()) > 60:
             e.result["pending_question_ids"] = ["Q44"]
             return e.unavailable("ยังไม่รองรับการยืนยันสถานะโปรโมชั่นย้อนหลัง")
-        project = await self.content("project", p.project_id, "draft")
+        project = await self.query("SELECT internal.assistant_project_reference($1)", p.project_id)
         if not project: return e.unavailable()
-        rows = await self.query("SELECT hub.promotion_read(null,$1::jsonb)::text", {"project_id": project[0]["id"], "limit": 10})
+        rows = await self.query("SELECT hub.promotion_read(null,$1::jsonb)::text", {"project_id": str(project), "limit": 10})
         for row in rows.get("items", []):
             published = row.get("published")
             if not row.get("publication_available") or not published: continue
@@ -412,7 +431,7 @@ class ToolReader:
         return e.result
 
     async def find_campaigns(self, p, e):
-        rows = await self.query("SELECT r.code FROM ads.campaign_registration r WHERE ($2::text IS NULL OR r.agency=$2) AND strpos(lower(r.code||' '||r.label),lower($1))>0 AND ($3::date IS NULL AND $4::text IS NULL AND $5::text IS NULL OR EXISTS(SELECT 1 FROM ads.line_assignment a JOIN ads.media_line l ON l.id=a.line_id AND l.state='ACTIVE' JOIN ads.media_line_revision v ON v.line_id=l.id AND v.status='APPROVED' JOIN ads.media_line_component c ON c.revision_id=v.id LEFT JOIN ads.memo m ON m.id=c.memo_id WHERE a.code=r.code AND a.status='ACTIVE' AND a.acknowledged_revision_id=v.id AND ($3::date IS NULL OR a.month=$3) AND ($4::text IS NULL OR m.memo_no=$4) AND ($5::text IS NULL OR c.fee_po_ref=$5))) ORDER BY r.code LIMIT $6",
+        rows = await self.query("SELECT internal.assistant_campaign_codes($1,$2,$3,$4,$5,$6) AS code",
             p.query, p.agency, p.month, p.memo_no, p.fee_po_ref, p.limit, many=True)
         for row in rows:
             item = await self.get_campaign(CampaignInput(code_or_name=row["code"]), Evidence(e.result["tool"]))
@@ -422,7 +441,7 @@ class ToolReader:
 
     async def get_project_marketing(self, p, e):
         # The financial role reads exact P2 phase component IDs, never residential drafts or labels.
-        lines = await self.query("SELECT DISTINCT l.id FROM ads.media_line l JOIN ads.media_line_revision r ON r.line_id=l.id AND r.status='APPROVED' JOIN ads.media_line_component c ON c.revision_id=r.id WHERE c.rem_project_id=$1 AND l.state='ACTIVE' AND (l.month=$2 OR $2 BETWEEN l.period_start_month AND l.period_end_month) ORDER BY l.id LIMIT 10", p.rem_project_id, p.month, many=True)
+        lines = await self.query("SELECT internal.assistant_marketing_lines($1,$2) AS id", p.rem_project_id, p.month, many=True)
         if not lines: return e.unavailable("ยังไม่มีข้อมูลการเชื่อมที่ยืนยันแล้ว")
         for line in lines:
             item = await self.get_line_actuals(ActualsInput(line_id=line["id"], month=p.month.isoformat()), Evidence(e.result["tool"]))
@@ -481,6 +500,6 @@ class ToolReader:
             source = e.source("internal_memo", "memo", row["document_id"], row["version_id"], "CONFIRMED", as_of=row.get("confirmed_at"), page=row["page"])
             e.fact(source, "memo_no", "เลข Memo หลัก", row["memo_no"], "identifier")
             e.fact(source, "subject", "เรื่อง", narrative(row["subject"]))
-            e.fact(source, "gross_amount", "ยอดรวมจากทะเบียน P2", row["gross_amount"], "money", "THB")
+            e.fact(source, "gross_amount", "ยอดรวมจากทะเบียน P2", row.get("gross_amount"), "money", "THB")
             e.fact(source, "bud", "BUD", row["bud"], "identifier")
         return e.result if e.result["facts"] else e.unavailable("ยังไม่พบบันทึกข้อความที่ยืนยันและเชื่อมทะเบียนตามสิทธิ์ คลังนี้ไม่ค้นใบแจ้งยอดบัตร")

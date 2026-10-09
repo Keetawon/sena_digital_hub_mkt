@@ -47,11 +47,27 @@ def test_brand_routes_require_authentication(client, method, path):
     ("viewer", "POST", "/v1/admin/projects/prj_test/brand"),
     ("publisher", "POST", "/v1/admin/brand-requests"),
     ("editor", "POST", f"/v1/admin/brand-requests/{ID}/resolve"),
-    ("service_consumer", "GET", "/v1/admin/brands"), ("admin", "GET", "/v1/brands"),
+    ("service_consumer", "GET", "/v1/admin/brands"),
 ])
 def test_brand_role_boundaries(client, role, method, path):
     response = client.request(method, path, headers={"Authorization": f"Bearer {TOKENS[role]}", "X-Hub-Role": "publisher"})
     assert response.status_code == 403
+
+
+def test_internal_admin_keeps_identity_when_reading_published_brands(client, monkeypatch):
+    calls = []
+    class DB:
+        async def fetch(self, query, *args):
+            assert 'FROM public_api.read_brands()' in query
+            calls.append(query)
+            return []
+    @asynccontextmanager
+    async def database(request, actor):
+        assert actor.role == 'admin' and actor.id == DEMO_ACTORS['admin']
+        yield DB()
+    monkeypatch.setattr(main, 'database', database)
+    response = client.get('/v1/brands', headers={'Authorization': f"Bearer {TOKENS['admin']}"})
+    assert response.status_code == 200 and response.json()['data'] == [] and calls
 
 
 def test_admin_role_is_appended_and_missing_token_fails_closed():

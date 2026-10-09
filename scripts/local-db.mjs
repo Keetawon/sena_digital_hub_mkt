@@ -51,7 +51,8 @@ try {
   // Generated hexadecimal secret, never supplied as arbitrary SQL text.
   if (!/^[a-f0-9]{48}$/.test(config.runtimePassword)) throw new Error('Invalid local runtime credential');
   await client.query(`ALTER ROLE hub_runtime PASSWORD '${config.runtimePassword}'`);
-  await client.query('GRANT editor,publisher,viewer,service_consumer,admin,online_staff,agency TO hub_runtime');
+  await client.query('REVOKE editor,publisher,viewer,admin,online_staff,agency,service_consumer FROM hub_runtime');
+  await client.query('GRANT hub_app TO hub_runtime WITH ADMIN FALSE,INHERIT FALSE,SET TRUE');
   await client.end();
   const common = [
     'HUB_ENV=local', 'HUB_AUTH_MODE=demo',

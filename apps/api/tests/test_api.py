@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from contextlib import asynccontextmanager
 
 import asyncpg
 import jwt
@@ -8,7 +9,8 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from sena_hub_api.auth import Authentication, ROLES, Settings
+from sena_hub_api.auth import Authentication, DEMO_ACTORS, ROLES, Settings
+from sena_hub_api import main
 from sena_hub_api.main import AddModel, CreateProject, PatchModel, PatchProject, create_app
 
 
@@ -130,7 +132,6 @@ def test_unexpected_error_logs_traceback_without_private_input(caplog):
     ("editor", "POST", "/v1/admin/projects/demo/withdraw"),
     ("viewer", "PATCH", "/v1/admin/projects/demo"),
     ("service_consumer", "GET", "/v1/admin/projects"),
-    ("publisher", "GET", "/v1/projects"),
     ("service_consumer", "GET", "/v1/admin/sources/projects"),
     ("service_consumer", "GET", "/v1/admin/projects/demo/source-models"),
     ("viewer", "POST", "/v1/admin/projects"),
@@ -147,6 +148,23 @@ def test_role_cannot_be_overridden_by_client_header(client, role, method, path):
         "Authorization": f"Bearer {TOKENS[role]}", "X-Hub-Role": "publisher",
     })
     assert response.status_code == 403
+
+
+def test_published_read_keeps_internal_actor_despite_forged_role_header(client, monkeypatch):
+    calls = []
+    class DB:
+        async def fetch(self, query, *args):
+            assert 'FROM public_api.read_projects()' in query
+            calls.append(query)
+            return []
+    @asynccontextmanager
+    async def database(request, actor):
+        assert actor.role == 'publisher' and actor.id == DEMO_ACTORS['publisher']
+        yield DB()
+    monkeypatch.setattr(main, 'database', database)
+    response = client.get('/v1/projects', headers={
+        'Authorization': f"Bearer {TOKENS['publisher']}", 'X-Hub-Role': 'service_consumer'})
+    assert response.status_code == 200 and response.json()['data'] == [] and calls
 
 
 @pytest.mark.parametrize("body", [

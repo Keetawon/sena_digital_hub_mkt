@@ -55,6 +55,9 @@ def account_lookup_for_route_unit_tests(monkeypatch):
             for action in ('finance.review_identifiers_corrections', 'archive.legal_hold'):
                 capabilities['special_actions'][action] = role == 'admin'
             capabilities['agency_registry'] = role in DEMO_AGENCIES
+            capabilities['tabs']['questions'] = {'view': role in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'}, 'edit': False, 'approve': False}
+            capabilities['published_consumer'] = role in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'}
+            capabilities['can_manage_users'] = role == 'admin'
             return {'id': claims['sub'], 'email': claims['email'], 'status': 'ACTIVE',
                     'hub_role': 'agency' if role in DEMO_AGENCIES else role,
                     'agency_code': DEMO_AGENCIES.get(role), 'display_name_th': role,

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback, localRequestOrigin } from "@/lib/local-session";
-import { isContentStaff, isHubStaff } from "@/lib/staff";
 import { getHostedCaller } from "@/lib/hosted-session";
-import { HubApiUnavailable, unavailableMessage } from "@/lib/hub-account";
+import { HubApiUnavailable, unavailableMessage, readHubAccount } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
@@ -18,7 +17,7 @@ const financeId = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 const financeCollections = "memos|memo-identifiers|media-lines|line-assignments|corrections|ledger-imports|ad-accounts|channel-accounts|commitments|card-statements|card-imports|cost-records|document-requirements";
 const financeList = new RegExp(`^v1/admin/ads/(?:${financeCollections})$`);
 const financeAllowed = {
-  GET: new RegExp(`^v1/admin/ads/(?:(?:${financeCollections})(?:/${financeId})?|registrations/SN\\d{7}[A-Z0-9]/(?:monthly-lines|line-candidates))$`),
+  GET: new RegExp(`^v1/admin/ads/(?:finance-references|(?:${financeCollections})(?:/${financeId})?|registrations/SN\\d{7}[A-Z0-9]/(?:monthly-lines|line-candidates))$`),
   POST: new RegExp(`^v1/admin/ads/(?:memos(?:/${financeId}/confirm-record)?|memo-identifiers(?:/${financeId}/(?:review|retire))?|media-lines(?:/${financeId}/(?:archive|revisions(?:/${financeId}/confirm)?))?|line-assignments(?:/${financeId}/(?:replace|end|acknowledge))?|corrections(?:/${financeId}/(?:review|apply|retire))?|(?:ad-accounts|channel-accounts)(?:/${financeId}/versions(?:/(?:confirm|close))?)?|commitments(?:/${financeId}/(?:revisions|activate|suspend|covers|occurrences))?|card-statements|card-imports/${financeId}/(?:confirm|replace)|card-import-rows/${financeId}/classify|cost-records/${financeId}/allocations)$`),
   PATCH: new RegExp(`^v1/admin/ads/(?:(?:memos|card-statements)/${financeId}|media-lines/${financeId}/revisions/${financeId})$`),
 };
@@ -44,29 +43,23 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
   const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review|questions/${id}/review|projects/${id}/preview-release)$`).test(path);
-  if ((knowledgeRead || knowledgeWrite) && (hosted || !isContentStaff(role))) return error("คลังความรู้เปิดให้ทีมงานตรวจข้อมูลเฉพาะในเครื่อง", 403);
+  if ((knowledgeRead || knowledgeWrite) && hosted) return error("คลังความรู้เปิดให้ทีมงานตรวจข้อมูลเฉพาะในเครื่อง", 403);
   const brandDashboard = method === "GET" && /^v1\/admin\/brands\/completeness(?:\.csv)?$/.test(path);
   const brandBulk = method === "GET" && path === "v1/admin/brands/bulk-preview" || method === "POST" && path === "v1/admin/brands/bulk-create";
   const brandConfirm = method === "POST" && new RegExp(`^v1/admin/brands/${id}/confirm-source-names$`).test(path);
-  if (brandDashboard && !isContentStaff(role) || brandBulk && (hosted || role !== "admin") || brandConfirm && !["editor", "admin"].includes(role)) return error("ไม่มีสิทธิ์ดำเนินการกับแบรนด์", 403);
-  if (questionsRead && !isHubStaff(role)) return error("ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน", 403);
+  if (brandBulk && hosted) return error("ไม่มีสิทธิ์ดำเนินการกับแบรนด์", 403);
   const assistantRead = method === "GET" && new RegExp(`^v1/admin/assistant/(?:config|runs/${financeId}(?:/citations/${financeId})?|proposals/${financeId})$`).test(path);
   const assistantWrite = method === "POST" && new RegExp(`^v1/admin/assistant/(?:runs(?:/${financeId}/cancel)?|proposals(?:/(?:suggest|${financeId}/confirm))?)$`).test(path);
   const assistantRun = assistantWrite && path === "v1/admin/assistant/runs";
-  if ((assistantRead || assistantWrite) && !isHubStaff(role)) return error("ไม่มีสิทธิ์ใช้งานผู้ช่วยภายใน", 403);
   const contentRead = method === "GET" && new RegExp(`^v1/admin/(?:promotions(?:/${financeId})?|releases(?:/(?:candidates|${financeId}))?)$`).test(path);
   const promotionDraft = method === "POST" && path === "v1/admin/promotions" || method === "PATCH" && new RegExp(`^v1/admin/promotions/${financeId}$`).test(path);
   const contentPublish = method === "POST" && new RegExp(`^v1/admin/(?:promotions/${financeId}/(?:review|publish|withdraw)|releases/(?:publish|${financeId}/rollback))$`).test(path);
-  if (contentRead && !isContentStaff(role) || promotionDraft && !["editor", "admin"].includes(role) || contentPublish && role !== "publisher") return error("ไม่มีสิทธิ์ดำเนินการกับเนื้อหาที่อยู่อาศัย", 403);
   const operationsRead = method === "GET" && new RegExp(`^v1/admin/ads/(?:actuals(?:/${financeId})?|(?:document-tracking|findings)(?:/[a-f0-9]{64})?)$`).test(path);
   const operationsWrite = method === "POST" && /^v1\/admin\/ads\/(?:document-tracking\/[a-f0-9]{64}\/follow-ups|findings\/[a-f0-9]{64}\/workflow)$/.test(path);
-  if ((operationsRead || operationsWrite) && !["online_staff", "admin"].includes(role)) return error("ไม่มีสิทธิ์เข้าถึงผลการตลาดและเอกสาร", 403);
   const archiveRead = method === "GET" && new RegExp(`^v1/admin/ads/archive(?:/(?:fixtures|search|${financeId}(?:/(?:file|page))?))?$`).test(path);
   const archiveWrite = method === "POST" && new RegExp(`^v1/admin/ads/archive(?:/${financeId}/(?:retry|confirm|apply|hold))?$`).test(path);
   const archiveFile = archiveRead && path.endsWith("/file");
   const archivePage = archiveRead && path.endsWith("/page");
-  if ((archiveRead || archiveWrite) && !["online_staff", "admin"].includes(role)) return error("ไม่มีสิทธิ์เข้าถึงคลังเอกสาร", 403);
-  if (archiveWrite && path.endsWith("/hold") && role !== "admin") return error("การกำหนดให้เก็บรักษาเอกสารต้องดำเนินการโดยผู้ดูแลระบบ", 403);
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
@@ -105,7 +98,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (method !== "GET" && !(hosted ? request.headers.get("origin") === configuration!.adminOrigin : hasSameLocalOrigin(request))) {
     return error("ไม่อนุญาตคำขอจากต้นทางนี้", 403);
   }
-  const token = hosted ? caller?.token : getRoleToken(accountPath || path.startsWith("v1/admin/") ? role : "service_consumer");
+  let token = hosted ? caller?.token : getRoleToken(role);
   if (!token) return error("ยังไม่ได้ตั้งค่าสิทธิ์เชื่อมต่อบนเซิร์ฟเวอร์", 503);
   let base: URL;
   try {
@@ -113,6 +106,20 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     if (!hosted && (!isLoopback(base.hostname) || !["http:", "https:"].includes(base.protocol) || base.username || base.password)) throw new Error();
   } catch {
     return error("การตั้งค่าที่อยู่บริการข้อมูลไม่ถูกต้อง", 503);
+  }
+  // The local external persona adapter is a published-site preview only.
+  // Recheck the actual selected account before the historical consumer substitution;
+  // internal callers keep their identity and use the guarded public SQL readers.
+  if (!hosted && !accountPath && !path.startsWith("v1/admin/")) {
+    try {
+      const identity = await readHubAccount(base.origin, token);
+      if (!identity.account) return error("กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", identity.status);
+      if (identity.account.status !== "ACTIVE") return error("บัญชียังไม่ได้รับอนุมัติหรือถูกระงับ กรุณาตรวจสถานะคำขอ", 403);
+      if (identity.account.role === "agency") {
+        token = getRoleToken("service_consumer");
+        if (!token) return error("ยังไม่ได้ตั้งค่าสิทธิ์เชื่อมต่อบนเซิร์ฟเวอร์", 503);
+      }
+    } catch (failure) { if (failure instanceof HubApiUnavailable) return error(unavailableMessage, 503); throw failure; }
   }
   const upload = method === "POST" && path === "v1/admin/assets";
   let body: string | ArrayBuffer | undefined;
@@ -123,7 +130,6 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     headers.Range = range;
   }
   if (method !== "GET") {
-    if (upload && role === "viewer") return error("บัญชีผู้อ่านไม่สามารถอัปโหลดไฟล์ได้", 403);
     const limit = upload ? maxUploadBytes : assistantWrite ? 20_000 : 100_000;
     const length = request.headers.get("content-length");
     if (length && (!/^\d+$/.test(length) || Number(length) > limit)) return error("ข้อมูลมีขนาดเกินกำหนด", 413);

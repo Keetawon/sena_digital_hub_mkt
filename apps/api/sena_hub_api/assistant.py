@@ -18,7 +18,7 @@ from pydantic import AwareDatetime, Field, StringConstraints, ValidationError, m
 from starlette.exceptions import HTTPException
 
 from .auth import Actor, failure
-from .assistant_tools import Input, Identifier, Month, STAFF_ROLES, CONTENT_ROLES, ADS_ROLES, TOOL_SCHEMAS, TOOL_LABELS, ToolReader, campaign_version, decode, permitted_tools
+from .assistant_tools import Input, Identifier, Month, STAFF_ROLES, TOOL_SCHEMAS, TOOL_LABELS, TOOL_INPUTS, ToolReader, campaign_version, decode, finance_filters
 
 BANGKOK = timezone(timedelta(hours=7), "Asia/Bangkok")
 
@@ -161,12 +161,11 @@ def register_assistant_routes(app, authentication, database, settings):
     async def config(request: Request, actor: Actor = Depends(staff)):
         from .assistant_model import model_configuration
         provider = model_configuration()
-        fields = {}
-        if actor.role in {"editor", "publisher", "admin"}: fields["project"] = ["meta_title.th", "meta_description.th"]
-        if actor.role in {"editor", "admin"}: fields["brand"] = ["description.th"]
-        return {"data": {"session_key": hashlib.sha256(f"{actor.id}:{actor.role}:{provider['config_version']}".encode()).hexdigest(),
-            "mode": "fake", "live_available": provider["live_available"] and "get_project" in permitted_tools(actor.role),
-            "allowed_tools": permitted_tools(actor.role), "proposal_fields": fields,
+        access = await ToolReader(request, actor, database).access()
+        fields = access["proposal_fields"]
+        return {"data": {"session_key": hashlib.sha256(f"{access['fingerprint']}:{provider['config_version']}".encode()).hexdigest(),
+            "mode": "fake", "live_available": provider["live_available"] and "get_project" in access["allowed_tools"],
+            "allowed_tools": access["allowed_tools"], "proposal_fields": fields,
             "message_th": "ยังไม่ได้ตั้งค่าโมเดลจริง ใช้ข้อมูลสาธิต" if not provider["live_available"] else "โหมดจริงใช้ได้เฉพาะคำถามข้อมูลสมมติที่กำหนด",
             "live_questions": [{"id": item["id"], "label_th": item["label_th"]} for item in provider["golden_questions"]],
             "pending_question_ids": ["Q36", "Q38", "Q42", "Q43", "Q44"]}}
@@ -188,14 +187,12 @@ def register_assistant_routes(app, authentication, database, settings):
         reader = ToolReader(request, actor, database)
         kind, identity, version = source["entity_type"], source["entity_id"], source["version"]
         if kind in {"project", "brand"}:
-            if actor.role not in CONTENT_ROLES: raise failure(403, "assistant_forbidden", "ไม่มีสิทธิ์เปิดแหล่งอ้างอิงนี้")
             current = await reader.content(kind, identity, "draft" if version.startswith("draft:") else "published", None if version.startswith("draft:") else UUID(version))
             if not current or current[1] != version: raise failure(409, "assistant_source_changed", "ฉบับร่างเปลี่ยนแล้ว กรุณาถามใหม่จากข้อมูลล่าสุด")
             reference = "draft_at=" + quote(version[6:], safe="") if version.startswith("draft:") else "version=" + quote(version, safe="")
             return {"source_href": f"/?{kind}={quote(identity, safe='')}&{reference}",
                     "metadata": {"visibility": current[2], "version": version, "environment": "local-test", "synthetic": False, "as_of": current[3]}}
         if kind == "promotion":
-            if actor.role not in CONTENT_ROLES: raise failure(403, "assistant_forbidden", "ไม่มีสิทธิ์เปิดแหล่งอ้างอิงนี้")
             row = await reader.query("SELECT hub.promotion_read($1)::text", UUID(identity))
             if version.startswith("draft:"):
                 valid = version == "draft:" + str(row["draft_revision"])
@@ -203,7 +200,6 @@ def register_assistant_routes(app, authentication, database, settings):
                 valid = row.get("publication_available") and str(row.get("published_version_id")) == version
             if not valid: raise failure(409, "assistant_source_changed", "โปรโมชั่นหรือรุ่นข้อมูลเปลี่ยนแล้ว")
             return {"source_href": "/promotions?promotion=" + quote(identity, safe=""), "metadata": {"version": version, "environment": "local-test"}}
-        if actor.role not in ADS_ROLES: raise failure(403, "assistant_forbidden", "ไม่มีสิทธิ์เปิดแหล่งอ้างอิงนี้")
         if kind == "campaign":
             row = await reader.query("SELECT ads.registration_detail($1)::text", identity)
             if not row: raise failure(404, "assistant_not_found", "ไม่พบรายการที่คุณเข้าถึงได้")
@@ -228,6 +224,7 @@ def register_assistant_routes(app, authentication, database, settings):
             await reader.archive_audit("DETAIL", "ALLOWED", document_id=identity, version_id=version, page=source.get("page"))
             return {"source_href": "/ads/archive?document=" + quote(identity, safe=""), "metadata": {"version": version, "page": source["page"], "environment": "local-test"}}
         if kind == "naming_rule" and identity == "SENA-H" and version == "1":
+            await reader.access("explain_name", "naming_rule")
             return {"source_href": "/ads/registry", "metadata": {"version": version, "environment": "local-test"}}
         raise failure(404, "assistant_not_found", "ไม่พบแหล่งอ้างอิงที่รองรับ")
 
@@ -241,8 +238,9 @@ def register_assistant_routes(app, authentication, database, settings):
         from .assistant_model import run_model, model_configuration, LIVE_PROJECT_ID, verify_live_projection
         provider = model_configuration()
         scope = body.context.model_dump(mode="json", exclude_none=True)
+        access = await ToolReader(request, actor, database).access()
         if body.mode == "live":
-            if not provider["live_available"] or "get_project" not in permitted_tools(actor.role):
+            if not provider["live_available"] or "get_project" not in access["allowed_tools"]:
                 raise failure(503, "assistant_live_unavailable", "ยังไม่ได้ตั้งค่าโมเดลจริง ใช้ข้อมูลสาธิต")
             scope = {"project_id": LIVE_PROJECT_ID, "visibility": "draft"}
             candidate = await ToolReader(request, actor, database, scope).invoke("get_project", scope)
@@ -259,15 +257,22 @@ def register_assistant_routes(app, authentication, database, settings):
         async def emit(event, data):
             await queue.put((event, {"run_id": str(run_id), **data}))
 
+        async def unchanged_access():
+            current = await reader.access()
+            if current["fingerprint"] != access["fingerprint"]:
+                raise failure(403, "assistant_permissions_changed", "สิทธิ์เปลี่ยนแล้ว กรุณาเริ่มคำถามใหม่ ข้อความที่ยังไม่ส่งยังอยู่")
+
         async def invoke(name, arguments):
-            if name not in permitted_tools(actor.role): raise failure(403, "assistant_tool_forbidden", "ไม่มีสิทธิ์ใช้เครื่องมือนี้")
+            if name not in access["allowed_tools"]: raise failure(403, "assistant_tool_forbidden", "ไม่มีสิทธิ์ใช้เครื่องมือนี้")
             tick = time.monotonic()
             await emit("tool_start", {"tool_name": name, "label_th": TOOL_LABELS[name]})
             outcome = "ERROR"; result = None
             try:
                 # Recheck bearer identity before each domain transaction; RLS remains authoritative.
                 if await authentication(request) != actor: raise failure(403, "assistant_actor_changed", "บัญชีเปลี่ยนแล้ว กรุณาเริ่มใหม่")
+                await unchanged_access()
                 result = await reader.invoke(name, arguments)
+                await unchanged_access()
                 outcome = "SUCCESS" if result["status"] == "OK" else "NO_ANSWER"
                 return result
             except HTTPException:
@@ -279,7 +284,8 @@ def register_assistant_routes(app, authentication, database, settings):
             finally:
                 projection = [{key: source[key] for key in ("namespace", "entity_type", "entity_id", "version", "page") if key in source} for source in (result or {}).get("sources", [])] if outcome == "SUCCESS" else []
                 receipt = await rpc(request, actor, "SELECT internal.assistant_tool_record($1,$2::jsonb)::text", run_id,
-                    {"tool_name": name, "outcome": outcome, "duration_ms": int((time.monotonic() - tick) * 1000), "sources": projection})
+                    {"tool_name": name, "outcome": outcome, "duration_ms": int((time.monotonic() - tick) * 1000), "sources": projection,
+                     "requires_finance": finance_filters(name, TOOL_INPUTS[name].model_validate(arguments)) if outcome == "SUCCESS" else False})
                 if result and outcome == "SUCCESS":
                     for source, citation in zip(result["sources"], receipt["citations"], strict=True):
                         sources[source["id"]] = source; citations[source["id"]] = citation
@@ -292,9 +298,10 @@ def register_assistant_routes(app, authentication, database, settings):
             status, error_code, usage = "ERROR", None, {"input_tokens": 0, "output_tokens": 0}
             try:
                 async with asyncio.timeout(60):
-                    result = await run_model(message=body.message, context={"allowed_tools": permitted_tools(actor.role), "tool_schemas": TOOL_SCHEMAS, "scope": scope},
+                    result = await run_model(message=body.message, context={"allowed_tools": access["allowed_tools"], "tool_schemas": TOOL_SCHEMAS, "scope": scope},
                         invoke_tool=invoke, emit=emit, mode=body.mode, golden_id=body.golden_id)
                 chosen = selected_facts(result, facts)
+                await unchanged_access()
                 if await authentication(request) != actor: raise failure(403, "assistant_actor_changed", "บัญชีเปลี่ยนแล้ว")
                 usage = result["usage"]
                 used_sources = list(dict.fromkeys(fact["source_id"] for fact in chosen))
@@ -311,12 +318,14 @@ def register_assistant_routes(app, authentication, database, settings):
                     if source.get("valid_until") and datetime.fromisoformat(source["valid_until"]) <= datetime.now(timezone.utc):
                         raise ValueError("Expired evidence")
                     # No unsupported block is released before source/version checks complete.
+                    await rpc(request, actor, "SELECT internal.assistant_citation_read($1,$2)::text", run_id, UUID(citations[source_id]["id"]))
                     checked = await citation_source(request, actor, citations[source_id])
                     if checked["metadata"].get("visibility", source["visibility"]) != source["visibility"]:
                         raise ValueError("Publication state changed")
                 if not chosen:
                     await emit("answer_delta", {"block_id": "no-answer", "text": "ยังไม่มีข้อมูลที่ยืนยันได้สำหรับคำถามนี้", "citation_ids": [], "metadata": {"environment": "local-test", "synthetic": body.mode == "live"}})
                 for source_id in used_sources:
+                    await unchanged_access()
                     source, citation = sources[source_id], citations[source_id]
                     if source.get("valid_until") and datetime.fromisoformat(source["valid_until"]) <= datetime.now(timezone.utc):
                         raise ValueError("Expired evidence")
@@ -372,19 +381,21 @@ def register_assistant_routes(app, authentication, database, settings):
 
         return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
-    def proposal_permission(actor, entity_type=None):
-        if actor.role not in {"editor", "publisher", "admin"} or entity_type == "brand" and actor.role == "publisher":
+    async def proposal_permission(request, actor, entity_type=None):
+        access = await ToolReader(request, actor, database).access()
+        fields = access["proposal_fields"]
+        if not fields or entity_type is not None and entity_type not in fields:
             raise failure(403, "assistant_proposal_forbidden", "ไม่มีสิทธิ์แก้ข้อความฉบับร่างของรายการนี้")
 
     @app.post(prefix + "/proposals", status_code=201)
     async def propose(body: Proposal, request: Request, actor: Actor = Depends(staff)):
-        proposal_permission(actor, body.entity_type)
+        await proposal_permission(request, actor, body.entity_type)
         return {"data": await rpc(request, actor, "SELECT internal.assistant_proposal_create($1::jsonb)::text", body.model_dump(mode="json", exclude_none=True))}
 
     @app.post(prefix + "/proposals/suggest", status_code=201)
     async def suggest(body: SuggestProposal, request: Request, actor: Actor = Depends(staff)):
         from .assistant_model import suggest_draft_text
-        proposal_permission(actor, body.entity_type)
+        await proposal_permission(request, actor, body.entity_type)
         queries = {
             ("project", "meta_title.th"): "SELECT jsonb_build_object('text',meta_title->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.projects WHERE id=$1 AND deleted_at IS NULL",
             ("project", "meta_description.th"): "SELECT jsonb_build_object('text',meta_description->>$2,'updated_at',updated_at,'demo_fields',demo_fields)::text FROM hub.projects WHERE id=$1 AND deleted_at IS NULL",
@@ -401,10 +412,10 @@ def register_assistant_routes(app, authentication, database, settings):
 
     @app.get(prefix + "/proposals/{proposal_id}")
     async def proposal(proposal_id: UUID, request: Request, actor: Actor = Depends(staff)):
-        proposal_permission(actor)
+        await proposal_permission(request, actor)
         return {"data": await rpc(request, actor, "SELECT internal.assistant_proposal_read($1)::text", proposal_id)}
 
     @app.post(prefix + "/proposals/{proposal_id}/confirm")
     async def confirm(proposal_id: UUID, body: ConfirmProposal, request: Request, actor: Actor = Depends(staff)):
-        proposal_permission(actor)
+        await proposal_permission(request, actor)
         return {"data": await rpc(request, actor, "SELECT internal.assistant_proposal_apply($1,$2)::text", proposal_id, body.digest)}

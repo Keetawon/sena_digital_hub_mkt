@@ -52,6 +52,20 @@ OPERATIONS_TABLES |= {'staging.' + name for name in ('ads_ledger_batch', 'ads_le
     'ads_actuals_batch', 'ads_actuals_current', 'ads_actuals_dim', 'ads_actuals_bridge', 'ads_actuals_monthly', 'ads_actuals_finding')}
 OPERATIONS_TABLES |= {'audit.archive_access'}
 OPERATIONS_FUNCTIONS = {'hub.workflow_actor_label', 'hub.operations_projection'}
+ASSISTANT_TABLES = {'internal.' + name for name in ('assistant_run', 'assistant_tool', 'assistant_citation',
+    'assistant_proposal', 'assistant_proposal_application')} | {'audit.assistant_proposal_event'}
+ASSISTANT_POLICIES = {'assistant_run_owner', 'assistant_tool_owner', 'assistant_citation_owner',
+    'assistant_proposal_owner', 'assistant_application_owner', 'assistant_event_owner'}
+ASSISTANT_FUNCTIONS = {'internal.' + name for name in ('assistant_require_actor', 'assistant_can_source',
+    'assistant_access', 'assistant_content_version', 'assistant_project_reference', 'assistant_campaign_codes', 'assistant_marketing_lines')}
+SHARED_TABLES = {'audit.change_log', 'hub.asset_roles', 'hub.user_account', 'hub.user_account_event', 'hub.account_invite'}
+SHARED_TABLES |= {'staging.' + name for name in ('ads_scope_import', 'dw_project_groups', 'dw_projects', 'intake_batches',
+    'project_group_evidence', 'project_intake_evidence', 'project_intake_receipts', 'rem_brands', 'rem_companies', 'rem_models', 'rem_projects')}
+SHARED_FUNCTIONS = {'hub.account_directory', 'hub.finance_references', 'hub.require_public_reader',
+    'public_api.read_projects', 'public_api.read_brands', 'public_api.read_promotions'}
+TECHNICAL_TABLES = {'hub.demo_assets', 'hub.demo_release_selection', 'staging.source_offers'}
+TECHNICAL_ONLY_FUNCTIONS = {'ads.cancel_registration', 'ads.set_approval', 'ads.actuals_current_snapshot',
+    'ads.apply_ads_actuals', 'ads.archive_claim', 'ads.archive_heartbeat', 'ads.archive_finish'}
 FUNCTIONS_SQL = """select n.nspname||'.'||p.proname as name,pg_get_function_identity_arguments(p.oid) as arguments,
  p.prosecdef as security_definer,p.proconfig as config,
  array(select r from unnest($2::text[]) r where has_function_privilege(r,p.oid,'execute') order by r) as execute_roles
@@ -66,10 +80,14 @@ SCHEMAS_SQL = """select nspname as name,array(select r from unnest($2::text[]) r
  where has_schema_privilege(r,oid,'usage') order by r) as usage_roles from pg_namespace where nspname=any($1) order by 1"""
 
 
-async def runtime():
-    db = await asyncpg.connect(os.environ['HUB_TEST_DATABASE_URL'])
+async def runtime(*, probe=False):
+    db = await asyncpg.connect(os.environ['HUB_TEST_PROBE_DATABASE_URL' if probe else 'HUB_TEST_DATABASE_URL'])
     attributes = await db.fetchrow('select rolname,rolsuper,rolbypassrls from pg_roles where rolname=current_user')
-    assert tuple(attributes.values()) == ('hub_runtime', False, False)
+    assert tuple(attributes.values()) == ('hub_permission_probe' if probe else 'hub_runtime', False, False)
+    if probe:
+        memberships = await db.fetch("select r.rolname,m.admin_option,m.inherit_option,m.set_option from pg_auth_members m join pg_roles r on r.oid=m.roleid where m.member=current_user::regrole")
+        assert {r['rolname'] for r in memberships} == set(ROLES) | {'hub_app'}
+        assert all(not r['admin_option'] and not r['inherit_option'] and r['set_option'] for r in memberships)
     return db
 
 
@@ -80,7 +98,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS
+                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -112,14 +130,27 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     assert all(r['permissive'] == 'RESTRICTIVE' and 'hub.can' in r['qual'] and r['with_check'] == 'false'
                                for r in operations if r['name'] == 'operations_permission')
                     actual = [r for r in actual if r not in operations]
+                    assistant = [r for r in actual if r['name'] in ASSISTANT_POLICIES]
+                    assert len(assistant) == 6
+                    assert all(r['schema'] + '.' + r['table'] in ASSISTANT_TABLES and r['cmd'] == 'SELECT'
+                               and 'hub.permission_actor()' in r['qual'] and 'current_setting' not in r['qual']
+                               and set(r['roles']) == {'hub_app', 'admin', 'editor', 'publisher', 'viewer', 'online_staff'} for r in assistant)
+                    owners = [r for r in actual if r['name'] in ('assistant_technical_owner', 'shared_owner')]
+                    assert len(owners) == len(ASSISTANT_TABLES | SHARED_TABLES) == 22
+                    assert all(r['qual'] == r['with_check'] == 'true' and r['roles'] == ['postgres'] for r in owners)
+                    clock = [r for r in actual if r['name'] == 'actuals_audit_clock']
+                    assert len(clock) == 1 and clock[0]['roles'] == ['ads_actuals_writer'] and clock[0]['cmd'] == 'SELECT'
+                    actual = [r for r in actual if r not in assistant + owners + clock]
                 expected = BASELINE[name]
                 if name == 'policies':
-                    expected = [r for r in expected if r['name'] not in REGISTRY_REPLACED_POLICIES]
+                    expected = [r for r in expected if r['name'] not in REGISTRY_REPLACED_POLICIES | ASSISTANT_POLICIES]
                 if name == 'functions':
                     expected = [{**r, 'security_definer': True} if r['name'] == 'ads.finance_invariant' else r for r in expected]
-                    expected = [{**r, 'execute_roles': []} if r['name'] in ('ads.cancel_registration', 'ads.set_approval') else r for r in expected]
+                    expected = [{**r, 'execute_roles': []} if r['name'] in TECHNICAL_ONLY_FUNCTIONS else r for r in expected]
+                    expected = [{**r, 'execute_roles': ['admin', 'editor', 'online_staff', 'publisher', 'viewer']}
+                                if r['name'] in ('internal.assistant_proposal_create', 'internal.assistant_proposal_read', 'internal.assistant_proposal_apply') else r for r in expected]
                 if name == 'relations':
-                    expected = [{**r, 'rls': True, 'force_rls': True} if r['name'] in CONTENT_TABLES | PUBLICATION_TABLES else r for r in expected]
+                    expected = [{**r, 'rls': True, 'force_rls': True} if r['name'] in CONTENT_TABLES | PUBLICATION_TABLES | SHARED_TABLES else r for r in expected]
                     expected = [{**r, 'grants': [g for g in r['grants'] if g not in ('admin:INSERT', 'admin:UPDATE')]}
                                 if r['name'] in ('ads.vocab', 'ads.scope_code', 'ads.scope_member') else r for r in expected]
                 assert actual == expected, name
@@ -130,9 +161,9 @@ def test_live_catalog_matches_reviewed_local_baseline():
 
 
 @pytest.mark.parametrize('persona', tuple(ALL_DEMO_ACTORS))
-def test_direct_relation_grants_under_real_non_superuser_runtime(persona):
+def test_direct_relation_grants_under_disposable_legacy_probe(persona):
     async def check():
-        db = await runtime()
+        db = await runtime(probe=True)
         role = 'agency' if persona in DEMO_AGENCIES else persona
         try:
             for relation in BASELINE['relations']:
@@ -174,7 +205,7 @@ READ_ENTRIES = [
 @pytest.mark.parametrize('persona', tuple(ALL_DEMO_ACTORS))
 def test_security_definer_read_entry_ceilings_and_positive_neighbours(persona):
     async def check():
-        db = await runtime()
+        db = await runtime(probe=True)
         role = 'agency' if persona in DEMO_AGENCIES else persona
         try:
             for tab, sql, allowed in READ_ENTRIES:
@@ -190,6 +221,42 @@ def test_security_definer_read_entry_ceilings_and_positive_neighbours(persona):
                             await db.execute(sql)
                 finally:
                     await transaction.rollback()
+        finally:
+            await db.close()
+    asyncio.run(check())
+
+
+def test_every_base_relation_has_a_reviewed_force_rls_boundary():
+    async def check():
+        db = await runtime()
+        try:
+            rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
+            tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
+            classified = (FOUNDATION_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
+                          OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+            assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
+            assert all(r['rls'] and r['force_rls'] for r in tables.values())
+            policies = await db.fetch(POLICIES_SQL, SCHEMAS)
+            # These three operator-only staging/seed relations intentionally have
+            # FORCE RLS with no policy: the application can never read them.
+            policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
+            assert set(tables) - policy_tables == TECHNICAL_TABLES
+            # Domain tables need an actual permission predicate, not just RLS on.
+            domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES
+            guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
+                token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency('))}
+            # Registry children inherit the parent's RLS through EXISTS; the
+            # issuance counter is entirely denied to application roles.
+            for table, parent in {'scope_member': 'ads.scope_code', 'campaign_name': 'ads.campaign_registration',
+                                  'native_binding': 'ads.campaign_registration', 'code_sequence': None}.items():
+                policy = next(r for r in policies if r['schema'] == 'ads' and r['table'] == table
+                              and r['name'] == 'registry_permission')
+                assert policy['permissive'] == 'RESTRICTIVE' and policy['with_check'] == 'false'
+                assert ('EXISTS' in policy['qual'] and parent in policy['qual']) if parent else policy['qual'] == 'false'
+                guarded.add('ads.' + table)
+            assert domain <= guarded, domain - guarded
+            assert all(not r['grants'] for name, r in tables.items()
+                       if name in FOUNDATION_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
         finally:
             await db.close()
     asyncio.run(check())

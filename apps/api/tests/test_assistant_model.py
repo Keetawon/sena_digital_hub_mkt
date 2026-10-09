@@ -147,32 +147,55 @@ def test_unsafe_and_historical_questions_do_not_call_tools(message):
 
 
 @pytest.mark.skipif(os.environ.get('HUB_ASSISTANT_TEST') != '1', reason='Requires local synthetic assistant seed')
-def test_sdk_reads_fictional_project_through_real_caller_rls_without_egress():
+def test_sdk_reads_fictional_project_through_real_caller_rls_without_egress(monkeypatch):
     from contextlib import asynccontextmanager
-    from uuid import UUID
+    import importlib.util
+    import openai
     from sena_hub_api.auth import Actor
     from sena_hub_api.assistant_tools import ToolReader, TOOL_SCHEMAS
     from sena_hub_api.document_worker import local_connection
+    monkeypatch.setattr(openai, "AsyncOpenAI", lambda **kw: pytest.fail("Synthetic runtime test called a provider"))
+    spec = importlib.util.spec_from_file_location('assistant_fixture_seed', Path(__file__).resolve().parents[3] / 'scripts/seed-assistant-demo.py')
+    seed_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(seed_module)
     async def run():
         async with local_connection() as db:
-            @asynccontextmanager
-            async def caller_database(request,actor):
-                async with db.transaction():
-                    await db.execute('SET LOCAL ROLE viewer')
-                    await db.execute("SELECT set_config('app.actor_id',$1,true)",str(actor.id))
-                    yield db
-            reader=ToolReader(None,Actor(UUID(int=3),'viewer'),caller_database,{'project_id':model.LIVE_PROJECT_ID})
-            result=await reader.invoke('get_project',{'project_id':model.LIVE_PROJECT_ID,'visibility':'draft'})
-            checked=model.verify_live_projection(result)
-            assert {f['field']:f['value'] for f in checked['facts']} == model.LIVE_VALUES
-            returned=[]
-            async def invoke(name,args):
-                value=await reader.invoke(name,args)
-                returned.extend(value['facts'])
-                return value
-            async def emit(*args): pass
-            answer=await model.run_model(message='แนะนำโครงการนี้',context={'project_id':model.LIVE_PROJECT_ID,
-                'allowed_tools':['get_project'],'tool_schemas':TOOL_SCHEMAS},invoke_tool=invoke,emit=emit,mode='fake')
-            assert answer['fact_ids']==[f['id'] for f in returned if f['availability']=='AVAILABLE']
-            assert answer['provider']=='fake'
+            tables = ('hub.projects', 'staging.rem_projects', 'hub.user_account')
+            before = {table: await db.fetchval('select count(*) from ' + table) for table in tables}
+            outer = db.transaction()
+            await outer.start()
+            try:
+                await seed_module.seed(db)
+                actor_id = uuid4()
+                await db.execute("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','viewer')", actor_id, f'{actor_id}@example.test')
+                @asynccontextmanager
+                async def caller_database(request, actor, *, audit_only=False):
+                    try:
+                        async with db.transaction():
+                            await db.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
+                            await db.execute('SET LOCAL ROLE hub_app')
+                            assert await db.fetchval('select session_user') == 'hub_runtime'
+                            assert not await db.fetchval('select rolsuper or rolbypassrls from pg_roles where rolname=current_user')
+                            await db.execute("SELECT set_config('app.actor_id',$1,true)", str(actor.id))
+                            yield db
+                    finally:
+                        await db.execute('RESET ROLE')
+                        await db.execute('RESET SESSION AUTHORIZATION')
+                reader = ToolReader(None, Actor(actor_id, 'viewer'), caller_database, {'project_id': model.LIVE_PROJECT_ID})
+                result = await reader.invoke('get_project', {'project_id': model.LIVE_PROJECT_ID, 'visibility': 'draft'})
+                checked = model.verify_live_projection(result)
+                assert {f['field']: f['value'] for f in checked['facts']} == model.LIVE_VALUES
+                returned = []
+                async def invoke(name, args):
+                    value = await reader.invoke(name, args)
+                    returned.extend(value['facts'])
+                    return value
+                async def emit(*args): pass
+                answer = await model.run_model(message='แนะนำโครงการนี้', context={'project_id': model.LIVE_PROJECT_ID,
+                    'allowed_tools': ['get_project'], 'tool_schemas': TOOL_SCHEMAS}, invoke_tool=invoke, emit=emit, mode='fake')
+                assert answer['fact_ids'] == [f['id'] for f in returned if f['availability'] == 'AVAILABLE']
+                assert answer['provider'] == 'fake'
+            finally:
+                await outer.rollback()
+                assert {table: await db.fetchval('select count(*) from ' + table) for table in tables} == before
     asyncio.run(run())

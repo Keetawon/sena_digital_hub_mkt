@@ -1,36 +1,52 @@
 -- Synthetic assistant ownership and explicit draft confirmation; everything rolls back.
 begin;
 insert into hub.user_account(id,email,status,hub_role) values
- ('00000000-0000-0000-0000-000000000091','assistant-fixture@example.test','ACTIVE','admin');
-select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
+ ('00000000-0000-0000-0000-000000000091','assistant-editor@example.test','ACTIVE','editor'),
+ ('00000000-0000-0000-0000-000000000092','assistant-peer@example.test','ACTIVE','editor'),
+ ('00000000-0000-0000-0000-000000000093','assistant-admin@example.test','ACTIVE','admin'),
+ ('00000000-0000-0000-0000-000000000094','assistant-viewer@example.test','ACTIVE','viewer'),
+ ('00000000-0000-0000-0000-000000000095','assistant-publisher@example.test','ACTIVE','publisher'),
+ ('00000000-0000-0000-0000-000000000096','assistant-online@example.test','ACTIVE','online_staff');
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000093',true);
 select set_config('app.change_reason','SYNTHETIC-ASSISTANT-SQL',true);
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint) values('ASSISTANT-SQL-23','Synthetic assistant brand',now(),'synthetic-assistant-23');
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint,rem_brand_id) values('ASSISTANT-SQL-23','Synthetic assistant project',now(),'synthetic-assistant-23','ASSISTANT-SQL-23');
-set local role admin;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000093',true);
 select set_config('test.assistant_brand',hub.create_brand_from_rem('ASSISTANT-SQL-23')::text,true);
 select hub.update_brand_draft(id,'{"description":{"th":"ข้อความแบรนด์ตัวอย่าง","en":"Keep English brand"}}',updated_at) from hub.brands where id=current_setting('test.assistant_brand')::uuid;
-set local role editor;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 select set_config('test.assistant_project',hub.create_project_from_rem('ASSISTANT-SQL-23')::text,true);
 select hub.patch_project(id,'{"meta_title":{"th":"ชื่อตัวอย่าง","en":"Keep English title"},"meta_description":{"th":"คำอธิบายตัวอย่าง","en":"Keep English description"}}',updated_at) from hub.projects where id=current_setting('test.assistant_project')::uuid;
 reset role;
 select hub.mark_demo_fields('project',current_setting('test.assistant_project')::uuid,array['meta_title.th','meta_description.th']);
 select hub.mark_demo_fields('brand',current_setting('test.assistant_brand')::uuid,array['description.th']);
 
-do $$ declare table_name regclass;role_name text;begin
- foreach table_name in array array['internal.assistant_run'::regclass,'internal.assistant_tool'::regclass,'internal.assistant_citation'::regclass,'internal.assistant_proposal'::regclass,'internal.assistant_proposal_application'::regclass,'audit.assistant_proposal_event'::regclass] loop
+set local session authorization hub_runtime;
+set local role hub_app;
+do $$ declare table_name regclass;role_name text;actor_uuid uuid;begin
+ for table_name in select c.oid::regclass from pg_class c join pg_namespace n on n.oid=c.relnamespace
+ where (n.nspname='internal' and c.relname in('assistant_run','assistant_tool','assistant_citation','assistant_proposal','assistant_proposal_application'))
+ or (n.nspname='audit' and c.relname='assistant_proposal_event') loop
  assert(select relrowsecurity and relforcerowsecurity from pg_class where oid=table_name),'Assistant table lacks forced RLS';
- foreach role_name in array array['editor','publisher','viewer','admin','online_staff','agency','service_consumer','ads_export_reader'] loop
+ foreach role_name in array array['hub_app','editor','publisher','viewer','admin','online_staff','agency','service_consumer','ads_export_reader'] loop
  assert not has_table_privilege(role_name,table_name,'SELECT,INSERT,UPDATE,DELETE'),'Assistant table directly accessible';end loop;end loop;
  foreach role_name in array array['agency','service_consumer','ads_export_reader'] loop
  assert not has_function_privilege(role_name,'internal.assistant_run_create(jsonb)','EXECUTE'),'Denied role can start assistant';end loop;
- assert not has_function_privilege('viewer','internal.assistant_proposal_create(jsonb)','EXECUTE'),'Viewer can create drafts';
- assert not has_function_privilege('online_staff','internal.assistant_proposal_apply(uuid,text)','EXECUTE'),'Finance role can write residential drafts';
- foreach role_name in array array['editor','publisher','viewer','admin','online_staff'] loop
- execute format('set local role %I',role_name);
+ assert current_user='hub_app' and session_user='hub_runtime','Not the real runtime role';
+ assert not (select rolsuper or rolbypassrls from pg_roles where rolname=current_user),'Runtime bypasses RLS';
+ foreach actor_uuid in array array['00000000-0000-0000-0000-000000000091'::uuid,'00000000-0000-0000-0000-000000000093'::uuid,'00000000-0000-0000-0000-000000000094'::uuid,'00000000-0000-0000-0000-000000000095'::uuid,'00000000-0000-0000-0000-000000000096'::uuid] loop
+ perform set_config('app.actor_id',actor_uuid::text,true);
  perform internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1"}');
- reset role;end loop;
+ if actor_uuid in ('00000000-0000-0000-0000-000000000094'::uuid,'00000000-0000-0000-0000-000000000096'::uuid) then
+  begin perform internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_title.th','expected_updated_at',now(),'new_text','Forbidden'));
+  assert false,'Account without Projects E created a draft';exception when insufficient_privilege then null;end;
+ end if;
+ end loop;
 end $$;
-set local role editor;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 select set_config('test.assistant_run',internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1","scope_project_id":"prj_synthetic"}')->>'id',true);
 do $$ declare r jsonb;t jsonb;begin
  begin perform internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1","prompt":"must not store"}');assert false,'Raw prompt accepted';exception when invalid_parameter_value then null;end;
@@ -46,11 +62,13 @@ do $$ declare r jsonb;t jsonb;begin
  begin perform internal.assistant_citation_read(current_setting('test.assistant_run')::uuid,current_setting('test.assistant_citation')::uuid);assert false,'Foreign actor read citation';exception when no_data_found then null;end;
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 end $$;
-set local role admin;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000093',true);
 do $$ begin
- begin perform internal.assistant_run_read(current_setting('test.assistant_run')::uuid);assert false,'Changed role inherited prior run';exception when no_data_found then null;end;
+ begin perform internal.assistant_run_read(current_setting('test.assistant_run')::uuid);assert false,'Different account inherited prior run';exception when no_data_found then null;end;
 end $$;
-set local role editor;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 do $$ declare r jsonb;p jsonb;stamp timestamptz;before_markers text[];begin
  select updated_at,demo_fields into stamp,before_markers from hub.projects where id=current_setting('test.assistant_project')::uuid;
  p:=internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_description.th','expected_updated_at',stamp,'new_text','คำอธิบายที่ปรับปรุงสำหรับเดโม','run_id',current_setting('test.assistant_run'),'citations',jsonb_build_array(current_setting('test.assistant_citation'))));
@@ -76,20 +94,24 @@ do $$ declare r jsonb;p jsonb;stamp timestamptz;before_markers text[];begin
  begin perform internal.assistant_proposal_apply(current_setting('test.assistant_proposal')::uuid,current_setting('test.assistant_digest'));assert false,'Foreign proposal applied';exception when no_data_found then null;end;
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 end $$;
-set local role publisher;
-do $$ declare p jsonb;begin
- p:=internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_title.th','expected_updated_at',(select updated_at from hub.projects where id=current_setting('test.assistant_project')::uuid),'new_text','Publisher draft text'));
- perform internal.assistant_proposal_apply((p->>'id')::uuid,p->>'digest');
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000095',true);
+do $$ begin
+ begin perform internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_title.th','expected_updated_at',(select updated_at from hub.projects where id=current_setting('test.assistant_project')::uuid),'new_text','Forbidden publisher project edit'));assert false,'Publisher wrote project draft';exception when insufficient_privilege then null;end;
  begin perform internal.assistant_proposal_create(jsonb_build_object('entity_type','brand','entity_id',current_setting('test.assistant_brand'),'field_path','description.th','expected_updated_at',(select updated_at from hub.brands where id=current_setting('test.assistant_brand')::uuid),'new_text','Forbidden publisher brand edit'));assert false,'Publisher wrote brand draft';exception when insufficient_privilege then null;end;
 end $$;
-set local role editor;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 do $$ declare p jsonb;begin
  p:=internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_title.th','expected_updated_at',(select updated_at from hub.projects where id=current_setting('test.assistant_project')::uuid),'new_text','Marker must still exist'));
  perform set_config('test.assistant_unmarked',p->>'id',true);perform set_config('test.assistant_unmarked_digest',p->>'digest',true);
 end $$;
 reset role;
+reset session authorization;
 update hub.projects set demo_fields=array['meta_description.th'] where id=current_setting('test.assistant_project')::uuid;
-set local role editor;
+set local session authorization hub_runtime;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 do $$ begin
  begin perform internal.assistant_proposal_apply(current_setting('test.assistant_unmarked')::uuid,current_setting('test.assistant_unmarked_digest'));assert false,'Removed marker ignored';exception when insufficient_privilege then null;end;
  begin perform internal.assistant_proposal_create(jsonb_build_object('entity_type','project','entity_id',current_setting('test.assistant_project'),'field_path','meta_title.th','expected_updated_at',(select updated_at from hub.projects where id=current_setting('test.assistant_project')::uuid),'new_text','Not synthetic'));assert false,'Unmarked field proposed';exception when insufficient_privilege then null;end;
@@ -98,7 +120,8 @@ do $$ begin
  begin perform internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,'{"tool_name":"explain_name","outcome":"SUCCESS","duration_ms":1,"sources":[]}');assert false,'Finished run accepted tool';exception when serialization_failure then null;end;
  begin perform internal.assistant_run_finish(current_setting('test.assistant_run')::uuid,'{"status":"ERROR"}');assert false,'Terminal status overwritten';exception when serialization_failure then null;end;
 end $$;
-set local role online_staff;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000096',true);
 do $$ declare run_id uuid;begin
  run_id:=(internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1"}')->>'id')::uuid;
  begin perform internal.assistant_tool_record(run_id,'{"tool_name":"search_documents","outcome":"SUCCESS","duration_ms":1,"sources":[{"namespace":"internal_memo","entity_type":"statement","entity_id":"secret","version":"1"}]}');assert false,'Statement citation accepted';exception when invalid_parameter_value then null;end;
@@ -108,12 +131,15 @@ do $$ declare run_id uuid;begin
  begin perform internal.assistant_tool_record(run_id,'{"tool_name":"search_documents","outcome":"NO_ANSWER","duration_ms":1,"sources":[]}');assert false,'Tool quota exceeded';exception when program_limit_exceeded then null;end;
 end $$;
 reset role;
+reset session authorization;
 -- Temporary test-only SELECT grants prove the ownership policies independently of RPC checks.
-grant select on internal.assistant_run,internal.assistant_tool,internal.assistant_citation to editor,viewer;
-set local role editor;
+grant select on internal.assistant_run,internal.assistant_tool,internal.assistant_citation to hub_app;
+set local session authorization hub_runtime;
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 do $$ begin
  assert(select count(*)>0 from internal.assistant_run),'Owner RLS hid all own runs';
- assert not exists(select 1 from internal.assistant_run where actor_role<>'editor'),'Role RLS widened';
+ assert not exists(select 1 from internal.assistant_run where actor_id<>hub.permission_actor()),'UUID RLS widened';
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000099',true);
  assert not exists(select 1 from internal.assistant_run),'Foreign actor bypassed run RLS';
  assert not exists(select 1 from internal.assistant_tool),'Foreign actor bypassed tool RLS';
@@ -121,10 +147,11 @@ do $$ begin
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
 end $$;
 reset role;
-revoke select on internal.assistant_run,internal.assistant_tool,internal.assistant_citation from editor,viewer;
+reset session authorization;
+revoke select on internal.assistant_run,internal.assistant_tool,internal.assistant_citation from hub_app;
 do $$ begin
- assert(select count(*)=3 from internal.assistant_proposal_application where actor_id='00000000-0000-0000-0000-000000000091'),'Proposal application count differs';
- assert(select count(*)=3 from audit.assistant_proposal_event where actor_id='00000000-0000-0000-0000-000000000091' and action='APPLIED'),'Application audit missing';
+ assert(select count(*)=2 from internal.assistant_proposal_application where actor_id='00000000-0000-0000-0000-000000000091'),'Proposal application count differs';
+ assert(select count(*)=2 from audit.assistant_proposal_event where actor_id='00000000-0000-0000-0000-000000000091' and action='APPLIED'),'Application audit missing';
  assert not exists(select 1 from audit.change_log where table_name='internal.assistant_proposal' and actor='00000000-0000-0000-0000-000000000091'),'Proposal text duplicated in generic audit';
  begin update internal.assistant_proposal set new_text='Mutation';assert false,'Immutable diff mutated';exception when check_violation then null;end;
  begin delete from internal.assistant_run;assert false,'Run audit deleted';exception when check_violation then null;end;

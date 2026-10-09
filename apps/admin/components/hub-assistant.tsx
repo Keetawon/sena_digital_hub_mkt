@@ -14,6 +14,7 @@ type Metadata = { visibility?: string; version?: string | number | null; environ
 type Block = { id: string; text: string; metadata: Metadata; citation_ids: string[] };
 type Citation = { id: string; label_th: string };
 type Turn = { key: string; question: string; mode: "fake" | "live"; run_id: string | null; blocks: Block[]; citations: Citation[]; status: string; error: string };
+type TypedDraft = { text: string; rationale: string };
 type Proposal = { id: string; entity_type: "project" | "brand"; entity_id: string; field_path: string; old_text: string | null; new_text: string; expected_updated_at: string; status: string; digest: string };
 const contextLabels = { project_id: "โครงการ", brand_id: "แบรนด์", rem_project_id: "รหัสโครงการ REM", code: "รหัสแคมเปญ SN", line_id: "รายการสื่อ" } as const;
 type ContextKind = keyof typeof contextLabels;
@@ -53,33 +54,40 @@ function CitationButton({ citation, run }: { citation: Citation; run: string }) 
   }
   return <div><button type="button" className="button secondary" disabled={busy} aria-busy={busy} onClick={() => void check()}>{citation.label_th}</button>{error && <p role="alert" className="notice error">{error}</p>}{source && <><a className="assistant-citation-link" href={source.source_href} target="_blank" rel="noopener noreferrer">เปิดต้นทางที่ตรวจสิทธิ์แล้ว{source.source?.page != null && ` · หน้า ${source.source.page}`}</a><MetadataView value={source.metadata ?? {}} /></>}</div>;
 }
-function DraftProposal({ context, config }: { context: Context; config: Config }) {
+function DraftProposal({ context, config, draft, onDraft, onDenied }: { context: Context; config: Config; draft: TypedDraft; onDraft: (value: TypedDraft) => void; onDenied: (error: unknown) => void }) {
   const entityType = context.project_id ? "project" : context.brand_id ? "brand" : null;
   const publicId = context.project_id ?? context.brand_id;
   const fields = entityType ? config.proposal_fields?.[entityType] ?? [] : [];
   const [target, setTarget] = useState<Record<string, unknown> | null>(null); const [field, setField] = useState(fields[0] ?? "");
-  const [text, setText] = useState(""); const [rationale, setRationale] = useState(""); const [proposal, setProposal] = useState<Proposal | null>(null);
+  const { text, rationale } = draft; const setText = (text: string) => onDraft({ ...draft, text }); const setRationale = (rationale: string) => onDraft({ ...draft, rationale }); const [proposal, setProposal] = useState<Proposal | null>(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [saved, setSaved] = useState(false); const [stale, setStale] = useState(false);
+  useEffect(() => { setTarget(null); setProposal(null); setSaved(false); setStale(false); }, [config.session_key]);
   if (!entityType || !publicId || !fields.length) return null;
+  function failed(error: unknown) {
+    setError(messageOf(error));
+    const status = (error as { status?: number }).status;
+    if (status === 401 || status === 403) onDenied(error);
+    if (status === 409) setStale(true);
+  }
   async function load() {
     setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
     try { setTarget(await request<Record<string, unknown>>(`v1/admin/${entityType === "project" ? "projects" : "brands"}/${encodeURIComponent(publicId!)}`)); }
-    catch (error) { setError(messageOf(error)); } finally { setBusy(false); }
+    catch (error) { failed(error); } finally { setBusy(false); }
   }
   async function propose(event: FormEvent) {
     event.preventDefault(); if (!target) return; setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
     try { setProposal(await request<Proposal>(`${base}/proposals`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, new_text: text, expected_updated_at: target.updated_at, rationale })); }
-    catch (error) { setError(messageOf(error)); if ((error as { status?: number }).status === 409) setStale(true); } finally { setBusy(false); }
+    catch (error) { failed(error); } finally { setBusy(false); }
   }
   async function suggest() {
     if (!target) return; setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
     try { setProposal(await request<Proposal>(`${base}/proposals/suggest`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, expected_updated_at: target.updated_at })); }
-    catch (error) { setError(messageOf(error)); if ((error as { status?: number }).status === 409) setStale(true); } finally { setBusy(false); }
+    catch (error) { failed(error); } finally { setBusy(false); }
   }
   async function confirm() {
     if (!proposal || stale) return; setBusy(true); setError("");
     try { const result = await request<{ proposal: Proposal }>(`${base}/proposals/${proposal.id}/confirm`, "POST", { digest: proposal.digest, confirmed: true }); setProposal(result.proposal); setSaved(true); }
-    catch (error) { setError(messageOf(error)); if ((error as { status?: number }).status === 409) setStale(true); } finally { setBusy(false); }
+    catch (error) { failed(error); } finally { setBusy(false); }
   }
   const oldValue = target ? (target[field.split(".")[0]] as Record<string, unknown> | undefined)?.th : null;
   return <section className="assistant-proposal"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>แก้ได้เฉพาะช่องข้อความตัวอย่างที่ระบบอนุญาต การส่งแชตไม่ใช่คำสั่งบันทึก และไม่เปลี่ยนฉบับเผยแพร่</p><button className="button secondary" type="button" onClick={() => void load()} disabled={busy}>{target ? "โหลดฉบับร่างล่าสุดเพื่อทบทวนใหม่" : "โหลดข้อความฉบับร่างที่มีสิทธิ์แก้"}</button>{error && <p role="alert" className="notice error">{error}</p>}{target && <form onSubmit={propose}><div className="form-field"><label htmlFor="assistant-draft-field">ช่องข้อความ</label><select id="assistant-draft-field" value={field} onChange={event => { setField(event.target.value); setProposal(null); setSaved(false); }} disabled={busy}>{fields.map(path => <option key={path} value={path}>{fieldLabels[path] ?? "ข้อความที่ระบบอนุญาต"}</option>)}</select></div><p>ข้อความปัจจุบัน: {typeof oldValue === "string" && oldValue ? oldValue : "ยังไม่มีข้อความ"}</p><button className="button secondary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void suggest()}>ให้ผู้ช่วยเสนอข้อความ</button><p className="assistant-meta">ผู้ช่วยจำลองในเครื่องเสนอจากข้อความเดิม ไม่ได้เรียกโมเดลจริง หรือกรอกข้อความที่คุณเขียนเองด้านล่างเพื่อสร้างข้อเสนอ</p><div className="form-field"><label htmlFor="assistant-draft-new">ข้อความที่เสนอ</label><textarea id="assistant-draft-new" rows={4} maxLength={4000} value={text} disabled={busy} onChange={event => { setText(event.target.value); setProposal(null); setSaved(false); }} required /></div><div className="form-field"><label htmlFor="assistant-draft-reason">เหตุผลที่เสนอ</label><textarea id="assistant-draft-reason" rows={2} maxLength={1000} value={rationale} disabled={busy} onChange={event => { setRationale(event.target.value); setProposal(null); setSaved(false); }} /></div><button className="button secondary" type="submit" disabled={busy || !text.trim() || stale} aria-busy={busy}>สร้างข้อเสนอเพื่อดูความแตกต่าง</button></form>}{proposal && <section aria-label="ความแตกต่างของข้อความที่เสนอ"><dl className="assistant-diff"><div><dt>ก่อนแก้ไข</dt><dd>{proposal.old_text || "ยังไม่มีข้อความ"}</dd></div><div><dt>หลังแก้ไข</dt><dd>{proposal.new_text}</dd></div></dl><p className="assistant-meta">รุ่นข้อมูลอ้างอิง <code>{proposal.expected_updated_at}</code></p>{saved ? <p role="status" className="notice success">บันทึกฉบับร่างแล้ว · ฉบับเผยแพร่ยังไม่เปลี่ยน</p> : <button className="button primary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void confirm()}>ยืนยันบันทึกเป็นฉบับร่าง</button>}</section>}</section>;
@@ -87,6 +95,8 @@ function DraftProposal({ context, config }: { context: Context; config: Config }
 
 export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigationTarget: HTMLElement | null; onNavigationOpen: () => HTMLElement | null }) {
   const [open, setOpen] = useState(false); const [config, setConfig] = useState<Config | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
+  const configKey = useRef<string | null>(null); const checkingConfig = useRef(false);
+  const [drafts, setDrafts] = useState<Record<string, TypedDraft>>({});
   const [context, setContext] = useState<Context>({}); const [contextKind, setContextKind] = useState<ContextKind>("project_id"); const [contextId, setContextId] = useState(""); const [month, setMonth] = useState(""); const [visibility, setVisibility] = useState<"draft" | "published">("draft");
   const [mode, setMode] = useState<"fake" | "live">("fake"); const [question, setQuestion] = useState(""); const [golden, setGolden] = useState(""); const [turns, setTurns] = useState<Turn[]>([]); const [busy, setBusy] = useState(false); const [status, setStatus] = useState("");
   const [tab, setTab] = useState<"chat" | "draft">("chat"); const [saveBarClearance, setSaveBarClearance] = useState(0);
@@ -127,16 +137,41 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     return () => { changes.disconnect(); resize.disconnect(); window.removeEventListener("scroll", measure, true); window.removeEventListener("resize", measure); };
   }, []);
   useEffect(() => { if (open) { shown.current = true; dialog.current?.showModal(); } else { contextPopover.current?.hidePopover(); dialog.current?.close(); if (shown.current) (opener.current?.isConnected && opener.current.getClientRects().length ? opener.current : trigger.current?.getClientRects().length ? trigger.current : floatingTrigger.current)?.focus(); } }, [open]);
-  useEffect(() => { if (open && !config && !loading) void loadConfig(); }, [open]);
+  useEffect(() => {
+    if (open) void loadConfig();
+    const refresh = () => { if (open && document.visibilityState === "visible") void loadConfig(); };
+    window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("hub-accounts-changed", refresh);
+    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); window.removeEventListener("hub-accounts-changed", refresh); };
+  }, [open]);
   useEffect(() => { if (open && config && tab === "chat") (mode === "fake" ? composer.current : goldenInput.current)?.focus({ preventScroll: true }); }, [open, config, mode]);
   function contextSaved(next: Context, value = config) {
     setContext(next); const key = (Object.keys(contextLabels) as ContextKind[]).find(key => next[key]); setContextKind(key ?? "project_id"); setContextId(key ? next[key]! : ""); setMonth(next.month?.slice(0, 7) ?? ""); setVisibility(next.visibility ?? "draft");
     if (value) try { sessionStorage.setItem(`hub-assistant-context:${value.session_key}`, JSON.stringify(next)); } catch { /* Context still remains available in this mounted session. */ }
   }
+  function invalidateAccess(error: unknown) {
+    stop(); setTurns([]); setConfig(null); contextSaved({}, null);
+    try { if (configKey.current) sessionStorage.removeItem(`hub-assistant-context:${configKey.current}`); } catch { /* Browser storage is optional. */ }
+    configKey.current = null; setError(messageOf(error));
+  }
   async function loadConfig() {
+    if (checkingConfig.current) return; checkingConfig.current = true;
     setLoading(true); setError("");
-    try { const value = await request<Config>(`${base}/config`); setConfig(value); setGolden(value.live_questions[0]?.id ?? ""); let next = pageContext(); try { const stored = sessionStorage.getItem(`hub-assistant-context:${value.session_key}`); if (stored != null) next = cleanContext(JSON.parse(stored)); } catch { /* Invalid storage never becomes a request context. */ } contextSaved(next, value); }
-    catch (error) { setError(messageOf(error)); } finally { setLoading(false); }
+    try {
+      const value = await request<Config>(`${base}/config`);
+      const changed = configKey.current !== null && configKey.current !== value.session_key;
+      if (changed) {
+        stop(); setTurns([]); setStatus("สิทธิ์เปลี่ยนแล้ว ล้างคำตอบเดิมเพื่อป้องกันข้อมูลที่ไม่เปิดให้ดู ข้อความที่ยังไม่ส่งและร่างที่พิมพ์เองยังอยู่");
+        try { sessionStorage.removeItem(`hub-assistant-context:${configKey.current}`); } catch { /* Browser storage is optional. */ }
+      }
+      if (configKey.current === null || changed) {
+        let next = changed ? {} : pageContext();
+        if (!changed) try { const stored = sessionStorage.getItem(`hub-assistant-context:${value.session_key}`); if (stored != null) next = cleanContext(JSON.parse(stored)); } catch { /* Invalid storage never becomes a request context. */ }
+        contextSaved(next, value);
+      }
+      configKey.current = value.session_key; setConfig(value); setGolden(current => current || value.live_questions[0]?.id || "");
+    } catch (error) { invalidateAccess(error); }
+    finally { checkingConfig.current = false; setLoading(false); }
   }
   function toggle(next: boolean, source?: HTMLElement) {
     if (next && source) { opener.current = source; setTab("chat"); }
@@ -216,11 +251,13 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
           <div ref={latest} tabIndex={-1} />
         </section>
         <section id="assistant-draft" role="tabpanel" aria-labelledby="assistant-tab-draft" hidden={tab !== "draft"}>
-          {config && (draftContextAllowed ? <DraftProposal key={JSON.stringify(context)} context={context} config={config} /> : <div className="assistant-empty"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>{draftAllowed ? "เลือกบริบทโครงการหรือแบรนด์ที่มีสิทธิ์แก้ไข เพื่อดูข้อเสนอและตรวจความแตกต่างก่อนยืนยัน" : "บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง อ่านข้อมูลผ่านแชทได้ตามสิทธิ์เดิม"}</p>{draftAllowed && <button className="button secondary" type="button" onClick={() => contextPopover.current?.showPopover()}>เลือกบริบทสำหรับร่าง</button>}</div>)}
+          {config && (draftContextAllowed ? <DraftProposal key={JSON.stringify(context)} context={context} config={config} draft={drafts[JSON.stringify(context)] ?? { text: "", rationale: "" }} onDraft={draft => setDrafts(previous => ({ ...previous, [JSON.stringify(context)]: draft }))} onDenied={invalidateAccess} /> : <div className="assistant-empty"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>{draftAllowed ? "เลือกบริบทโครงการหรือแบรนด์ที่มีสิทธิ์แก้ไข เพื่อดูข้อเสนอและตรวจความแตกต่างก่อนยืนยัน" : "บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง อ่านข้อมูลผ่านแชทได้ตามสิทธิ์เดิม"}</p>{draftAllowed && <button className="button secondary" type="button" onClick={() => contextPopover.current?.showPopover()}>เลือกบริบทสำหรับร่าง</button>}</div>)}
         </section>
+        {!draftContextAllowed && Object.values(drafts).some(draft => draft.text || draft.rationale) && <details><summary>ข้อความร่างที่คุณพิมพ์ไว้และยังไม่ได้บันทึก</summary>{Object.values(drafts).filter(draft => draft.text || draft.rationale).map((draft, index) => <div key={index}><label className="form-field">ข้อความที่พิมพ์ไว้<textarea readOnly value={draft.text} /></label><label className="form-field">เหตุผลที่พิมพ์ไว้<textarea readOnly value={draft.rationale} /></label></div>)}</details>}
       </div>
       <footer className="assistant-footer" hidden={tab !== "chat"}>
         <div className="assistant-run-status"><p role="status" aria-live="polite">{status}</p>{turns.length > 0 && <button className="assistant-latest" type="button" onClick={() => { latest.current?.scrollIntoView({ block: "nearest", behavior: "instant" }); latest.current?.focus({ preventScroll: true }); }}>ไปยังคำตอบล่าสุด</button>}</div>
+        {!config && question && <div className="form-field"><label htmlFor="assistant-question">คำถามสำหรับโหมดจำลองในเครื่อง</label><textarea ref={composer} id="assistant-question" rows={2} value={question} readOnly /><p>ข้อความที่ยังไม่ส่งยังอยู่ คัดลอกเก็บไว้หรือโหลดผู้ช่วยอีกครั้งเมื่อมีสิทธิ์</p></div>}
         {config && <form className="assistant-composer" onSubmit={ask}>
           {mode === "fake" ? <div className="form-field"><label htmlFor="assistant-question">คำถามสำหรับโหมดจำลองในเครื่อง</label><textarea ref={composer} id="assistant-question" rows={2} value={question} maxLength={2000} onChange={event => setQuestion(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} disabled={busy} required aria-describedby="assistant-composer-help" /><p id="assistant-composer-help" className="field-help">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · ข้อความอยู่ในเครื่อง</p></div> : <div className="form-field"><label htmlFor="assistant-golden">คำถามข้อมูลสมมติที่อนุญาต</label><select ref={goldenInput} id="assistant-golden" value={golden} disabled={busy} onChange={event => setGolden(event.target.value)} aria-describedby="assistant-composer-help">{config.live_questions.map(item => <option key={item.id} value={item.id}>{item.label_th}</option>)}</select><p id="assistant-composer-help" className="field-help">ใช้คำถามสมมติที่กำหนดเท่านั้น ไม่ส่งข้อความหรือบริบทที่เลือก</p></div>}
           <div className="assistant-actions"><button className="button primary" type="submit" disabled={busy || mode === "fake" && !question.trim() || mode === "live" && (!golden || !config.live_available)} aria-busy={busy}>ส่งคำถาม</button>{busy && <button className="button secondary" type="button" onClick={stop}>หยุดการตอบ</button>}</div>

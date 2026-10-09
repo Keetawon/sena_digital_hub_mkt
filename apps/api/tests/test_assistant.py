@@ -37,18 +37,24 @@ class Store:
     def __init__(self):
         self.calls, self.audits, self.runs, self.citations = [], [], {}, {}
         self.finish_error = False
+        self.fingerprint = "synthetic-capabilities-1"
         self.project = {"id": str(uuid4()), "public_project_id": PROJECT, "rem_project_id": "0000123",
             "updated_at": STAMP, "public_name": {"th": "โครงการสมมติ"}, "meta_title": {"th": "หัวข้อสมมติ"},
             "meta_description": {"th": "ข้อความสำหรับทดสอบ"}, "demo_fields": ["meta_title.th", "meta_description.th"],
             "published_version_id": None, "publication_available": False}
 
     @asynccontextmanager
-    async def database(self, request, actor):
+    async def database(self, request, actor, *, audit_only=False):
         self.actor = actor
         yield self
 
     async def fetchval(self, sql, *args):
         self.calls.append((sql, deepcopy(args), self.actor.role))
+        if "assistant_access" in sql:
+            tools = list(TOOL_INPUTS) if self.actor.role == "admin" else list(TOOL_INPUTS)[:7] if self.actor.role in {"viewer", "editor", "publisher"} else list(TOOL_INPUTS)[7:]
+            if args and args[0] is not None and args[0] not in tools: raise asyncpg.InsufficientPrivilegeError("Denied")
+            fields = {"project": ["meta_title.th", "meta_description.th"], "brand": ["description.th"]} if self.actor.role in {"editor", "admin"} else {}
+            return json.dumps({"allowed_tools": tools, "proposal_fields": fields, "fingerprint": self.fingerprint})
         if "archive_access" in sql:
             self.audits.append(args[0]); return str(uuid4())
         if "assistant_run_create" in sql:
@@ -96,7 +102,7 @@ def test_entry_preserves_role_specific_tools_and_proposal_acl(boundary, role):
     assert ("get_project" in result["allowed_tools"]) == (role != "online_staff")
     assert ("get_line_actuals" in result["allowed_tools"]) == (role in {"admin", "online_staff"})
     assert ("brand" in result["proposal_fields"]) == (role in {"admin", "editor"})
-    assert not result["live_available"] and not store.calls
+    assert not result["live_available"] and all("assistant_access" in sql for sql, _, _ in store.calls)
 
 
 @pytest.mark.parametrize("body", [{"message": "x", "role": "admin"}, {"message": "private", "mode": "live", "golden_id": "synthetic-project"},
@@ -170,7 +176,7 @@ def test_tool_context_locks_and_document_denial_audit_before_domain_queries():
             with pytest.raises(Exception) as error:
                 await ToolReader(None, actor, store.database, scope).invoke(tool, arguments)
             assert error.value.status_code == 403
-        assert not store.calls
+        assert all("assistant_access" in sql for sql, _, _ in store.calls)
         with pytest.raises(Exception) as error:
             await ToolReader(None, Actor(ALL_DEMO_ACTORS["viewer"], "viewer"), store.database).invoke("search_documents", {"query": "memo"})
         assert error.value.status_code == 403 and len(store.audits) == 1
@@ -276,3 +282,16 @@ def test_model_cannot_omit_promotion_terms_or_validity(boundary, monkeypatch):
     source["valid_until"] = "2000-01-01T00:00:00+00:00"
     expired = events(client.post(PREFIX + "/runs", headers=headers(), json={"message": "x"}))
     assert not any(name in {"answer_delta", "done"} for name, _ in expired)
+
+
+def test_grid_change_during_model_wait_hides_answer_without_role_change(boundary, monkeypatch):
+    client, store = boundary
+    async def run(**kwargs):
+        evidence = await kwargs["invoke_tool"]("get_project", {"project_id": PROJECT})
+        assert "capabilities" not in kwargs["context"] and "fingerprint" not in kwargs["context"]
+        store.fingerprint = "synthetic-capabilities-2"
+        return {"fact_ids": [evidence["facts"][0]["id"]], "provider": "fake", "usage": {"input_tokens": 0, "output_tokens": 0}}
+    monkeypatch.setattr(assistant_model, "run_model", run)
+    output = events(client.post(PREFIX + "/runs", headers=headers(), json={"message": "x"}))
+    assert any(name == "error" for name, _ in output)
+    assert not any(name in {"answer_delta", "citation", "done"} for name, _ in output)

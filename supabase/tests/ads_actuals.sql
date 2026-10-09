@@ -25,12 +25,15 @@ do $$ declare r text;t regclass;begin
  assert not has_function_privilege(r,'ads.actuals_command(text,text,jsonb)','EXECUTE'),'Denied role received workflow';
  end loop;
  assert not has_function_privilege('online_staff','ads.apply_ads_actuals(jsonb,jsonb,text,text)','EXECUTE');
+ assert not has_function_privilege('admin','ads.apply_ads_actuals(jsonb,jsonb,text,text)','EXECUTE');
+ assert not has_function_privilege('hub_app','ads.actuals_current_snapshot()','EXECUTE');
  assert not has_function_privilege('online_staff','ads.actuals_documents(date)','EXECUTE');
  assert not has_function_privilege('online_staff','ads.actuals_context_changed(timestamptz)','EXECUTE');
  assert not (select rolcanlogin or rolsuper or rolbypassrls or rolcreaterole from pg_roles where rolname='ads_actuals_writer');
 end $$;
 
-set local role admin;
+-- ETL is an operator ACL, independent of the manage-users flag.
+reset role;
 do $$ declare m jsonb;rs jsonb;common jsonb;answer jsonb;doc jsonb;fkey text:=repeat('a',64);snapshot text:='01600000-0000-0000-0000-000000000006';
 lineid text:='01600000-0000-0000-0000-000000000003';revision text:='01600000-0000-0000-0000-000000000004';newm jsonb;newrs jsonb;k text;bad jsonb;wf jsonb;v int;prior_snapshot text;recurs boolean;
 begin

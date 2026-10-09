@@ -1,7 +1,7 @@
 """Reviewed content entry map. SQL rechecks every capability before work.
 
-Unlisted groups retain their locked legacy dependency until their own phase.
-No caller-supplied path or role chooses a broader database role.
+Every application route has an explicit capability or shared boundary.
+Unknown routes never select a broader legacy database role.
 """
 
 from fastapi import Request
@@ -9,6 +9,8 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('GET', '/v1/admin/questions'): ('questions', 'view'),
+    ('GET', '/v1/admin/ads/finance-references'): ('finance', 'view'),
     ('GET', '/v1/admin/brands/completeness'): ('brands', 'view'),
     ('GET', '/v1/admin/brands/completeness.csv'): ('brands', 'view'),
     ('GET', '/v1/admin/brands/bulk-preview'): ('brands', 'brands.manage_catalog'),
@@ -178,6 +180,52 @@ CONTENT_RULES = {
     ('POST', '/v1/admin/ads/archive/{document_id}/apply'): ('archive', 'approve'),
     ('POST', '/v1/admin/ads/archive/{document_id}/hold'): ('archive', 'archive.legal_hold'),
 }
+
+
+# These surfaces have SQL identity/ownership or fixed technical boundaries rather
+# than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
+SHARED_RULES = {
+    ('GET', '/health'): 'health',
+    ('GET', '/v1/capabilities'): 'environment',
+    ('GET', '/v1/me'): 'own_account',
+    ('POST', '/v1/me/access-request'): 'own_account',
+    ('PATCH', '/v1/me/access-request'): 'own_account',
+    ('POST', '/v1/me/invite-accept'): 'own_account',
+    ('GET', '/v1/accounts/display-names'): 'internal',
+    ('GET', '/v1/admin/accounts'): 'accounts',
+    ('GET', '/v1/admin/account-invites'): 'accounts',
+    ('POST', '/v1/admin/account-invites'): 'accounts',
+    ('POST', '/v1/admin/account-invites/{invite_id}/decision'): 'accounts',
+    ('POST', '/v1/admin/accounts/{account_id}/decision'): 'accounts',
+    ('GET', '/v1/admin/permissions/catalog'): 'accounts',
+    ('POST', '/v1/admin/accounts/{account_id}/permissions'): 'accounts',
+    ('GET', '/v1/admin/assistant/config'): 'assistant',
+    ('GET', '/v1/admin/assistant/runs/{run_id}'): 'assistant',
+    ('POST', '/v1/admin/assistant/runs/{run_id}/cancel'): 'assistant',
+    ('GET', '/v1/admin/assistant/runs/{run_id}/citations/{citation_id}'): 'assistant',
+    ('POST', '/v1/admin/assistant/runs'): 'assistant',
+    ('POST', '/v1/admin/assistant/proposals'): 'assistant',
+    ('POST', '/v1/admin/assistant/proposals/suggest'): 'assistant',
+    ('GET', '/v1/admin/assistant/proposals/{proposal_id}'): 'assistant',
+    ('POST', '/v1/admin/assistant/proposals/{proposal_id}/confirm'): 'assistant',
+    ('GET', '/v1/assets/{asset_id}/file'): 'public',
+    ('GET', '/v1/projects'): 'public',
+    ('GET', '/v1/brands'): 'public',
+    ('GET', '/v1/brands/{public_id}'): 'public',
+    ('GET', '/v1/projects/{public_id}'): 'public',
+    ('GET', '/v1/projects/{public_id}/models'): 'public',
+    ('GET', '/v1/projects/{public_id}/assets'): 'public',
+    ('GET', '/v1/models/{public_id}'): 'public',
+    ('GET', '/v1/models/{public_id}/assets'): 'public',
+    ('GET', '/v1/promotions'): 'public',
+    **{(method, path): 'unavailable'
+       for path in ('/v1/admin/ads/{deferred_path:path}', '/v1/admin/assistant/{deferred_path:path}')
+       for method in ('GET', 'POST', 'PATCH', 'PUT', 'DELETE')},
+}
+
+
+def route_class(method: str, path: str | None) -> str | None:
+    return 'capability' if (method, path) in CONTENT_RULES else SHARED_RULES.get((method, path))
 
 
 def content_rule(request: Request):

@@ -141,7 +141,7 @@ test('sidebar and floating triggers reopen one conversation and return focus to 
   await composer.press('Enter'); await expect(panel.locator('.assistant-turn')).toHaveCount(1);
   await expect.poll(() => data.posts.length).toBe(1); await panel.getByRole('button', { name: 'ปิดผู้ช่วย', exact: true }).click();
   await expect(floating).toBeFocused(); await sidebar.click();
-  await expect(panel.locator('.assistant-turn')).toHaveCount(1); expect(data.reads.filter(path => path === '/config')).toHaveLength(1);
+  await expect(panel.locator('.assistant-turn')).toHaveCount(1); await expect.poll(() => data.reads.filter(path => path === '/config').length).toBeGreaterThanOrEqual(3);
 });
 
 test('Enter sends once, Shift+Enter inserts a newline and suggestion chips only fill the composer', async ({ page }) => {

@@ -66,11 +66,30 @@ def test_asset_routes_require_auth_before_sql(method, path):
     ("viewer", "POST", f"/v1/admin/projects/demo/assets/{ASSET_ID}/remove"),
     ("service_consumer", "GET", "/v1/admin/assets"),
     ("service_consumer", "GET", f"/v1/admin/assets/{ASSET_ID}/file"),
-    ("publisher", "GET", f"/v1/assets/{ASSET_ID}/file"),
 ])
 def test_asset_role_boundaries(role, method, path):
     client = TestClient(create_app(settings()), client=("127.0.0.1", 50000))
     assert client.request(method, path, headers={"Authorization": f"Bearer {TOKENS[role]}"}).status_code == 403
+
+
+def test_internal_publisher_reads_public_asset_through_published_binding(monkeypatch, tmp_path):
+    path = tmp_path / 'synthetic.png'
+    content = image_bytes()
+    path.write_bytes(content)
+    class DB:
+        async def fetchval(self, query, asset_id):
+            assert query == 'SELECT public_api.asset_file($1)' and asset_id == UUID(ASSET_ID)
+            return {'mime_type': 'image/png', 'original_filename': path.name}
+    @asynccontextmanager
+    async def database(request, actor):
+        assert actor.role == 'publisher' and actor.id == UUID(int=2)
+        yield DB()
+    monkeypatch.setattr(main, 'database', database)
+    monkeypatch.setattr(assets, 'readable_file', lambda metadata: path)
+    client = TestClient(create_app(settings()), client=('127.0.0.1', 50000))
+    response = client.get(f'/v1/assets/{ASSET_ID}/file', headers={'Authorization': f"Bearer {TOKENS['publisher']}"})
+    assert response.status_code == 200 and response.content == content
+    assert response.headers['cache-control'] == 'no-store'
 
 
 def test_production_never_uses_local_asset_storage(monkeypatch, tmp_path):

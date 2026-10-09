@@ -472,7 +472,7 @@ def test_annual_commitment_card_cost_caps_and_exact_monthly_allocation():
             try:
                 await main.initialize_connection(connection)
                 async with connection.transaction():
-                    await connection.execute("SET LOCAL ROLE online_staff")
+                    await connection.execute("SET LOCAL ROLE hub_app")
                     await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000006',true)")
                     return decode_finance(await connection.fetchval("SELECT ads.finance_command('card_import',$1::jsonb)::text", payload))
             finally:
@@ -671,7 +671,7 @@ def test_confirmed_brand_split_controls_satang_and_cannot_be_overridden():
             try:
                 await main.initialize_connection(connection)
                 async with connection.transaction():
-                    await connection.execute("SET LOCAL ROLE online_staff")
+                    await connection.execute("SET LOCAL ROLE hub_app")
                     await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000006',true)")
                     return decode_finance(await connection.fetchval("SELECT ads.finance_command('card_import',$1::jsonb)::text", {
                         "source_fingerprint": hashlib.sha256(uuid4().bytes).hexdigest(), "statement_control_id": statement["id"],

@@ -155,7 +155,7 @@ def test_finance_seed_real_controls_replay_preserved_edits_and_complete_snapshot
                     for row in items:
                         row.update(snapshot_id=newer_manifest['snapshot_id'], snapshot_at=later)
                 package, _ = seed_module.package_files(newer_manifest, newer_relations)
-                await db.execute('SET LOCAL ROLE admin')
+                await db.execute('RESET ROLE')
                 result = await db.fetchval('SELECT ads.apply_ads_actuals($1,$2,$3,$4)', package.manifest, package.relations,
                                           package.fingerprint, manifest['snapshot_id'])
                 assert result['status'] == 'APPLIED'

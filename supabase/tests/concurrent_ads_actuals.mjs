@@ -21,7 +21,8 @@ const hash = (value) => createHash('sha256').update(JSON.stringify(value)).diges
 
 async function begin(client) {
   await client.query('begin');
-  await client.query('set local role admin');
+  // Both connections are verified disposable operators; ETL has no human grant.
+  await client.query('reset role');
   await client.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason','P3 synthetic concurrency',true)", [actor]);
 }
 async function apply(client, bundle, expected) {

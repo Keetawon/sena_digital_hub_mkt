@@ -141,7 +141,7 @@ def test_archive_review_application_evidence_versions_and_private_access(monkeyp
             await connection.execute("RESET ROLE")
             await connection.execute("UPDATE ads.archive_job SET created_at='1900-01-01' WHERE id=$1", UUID(doc["job"]["id"]))
             async with connection.transaction():
-                await connection.execute("SET LOCAL ROLE admin")
+                await connection.execute("SET LOCAL ROLE ads_document_worker")
                 await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true)")
                 claimed = await connection.fetchval("SELECT ads.archive_claim('synthetic-api-test',120)")
                 assert claimed["document_id"] == doc["id"] and "truth" not in claimed

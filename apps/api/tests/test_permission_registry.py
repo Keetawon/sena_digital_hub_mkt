@@ -24,7 +24,7 @@ async def call(db, actor, query, *args, role='hub_app', agency='COMBAY'):
 
 
 @asynccontextmanager
-async def rows(ids, invalid_agency=None):
+async def rows(ids, invalid_agency=None, *, role='hub_app'):
     db = await disposable_operator()
     tx = db.transaction()
     await tx.start()
@@ -46,7 +46,9 @@ async def rows(ids, invalid_agency=None):
             assignments = {'inactive': "status='INACTIVE'", 'alias': "alias_of='COMBAY'",
                            'future': "active_from=current_date+100", 'expired': "active_to=current_date-100"}
             await db.execute('update ads.vocab set ' + assignments[invalid_agency] + " where vocab_type='AGENCY' and code='KIN'")
-        await db.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
+        assert role in ('hub_app', 'admin', 'online_staff', 'agency')
+        principal = 'hub_runtime' if role == 'hub_app' else 'hub_permission_probe'
+        await db.execute('SET LOCAL SESSION AUTHORIZATION ' + principal)
         assert tuple(await db.fetchrow('select rolsuper,rolbypassrls from pg_roles where rolname=session_user')) == (False, False)
         yield db, scope, result
     finally:
@@ -68,7 +70,7 @@ def test_registry_route_coverage(permission_accounts):
 def test_registry_view_off_denies_all_rows_and_read_helpers(permission_accounts, role):
     _, ids = permission_accounts
     async def check():
-        async with rows(ids) as (db, scope, data):
+        async with rows(ids, role=role) as (db, scope, data):
             for table in REGISTRY_TABLES - {'ads.setting', 'ads.code_sequence', 'ads.native_binding'}:
                 assert await call(db, ids['admin'], f'select count(*) from {table}', role=role) > 0
             await call(db, ids['admin'], 'select ads.registry_settings()', role=role)
@@ -79,7 +81,7 @@ def test_registry_view_off_denies_all_rows_and_read_helpers(permission_accounts,
             for entry in ('ads.registry_settings()', 'ads.test_issuing_enabled()'):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['admin'], 'select ' + entry, role=role)
-            await call(db, ids['admin'], "select ads.finance_read('memos',null,'{}')", role='admin')
+            await call(db, ids['admin'], "select ads.finance_read('memos',null,'{}')", role=role)
     asyncio.run(check())
 
 
@@ -115,7 +117,7 @@ def test_registry_each_mutation_requires_edit_and_view(permission_accounts, entr
 def test_agency_scope_ignores_forged_role_and_agency_guc(permission_accounts, role):
     _, ids = permission_accounts
     async def check():
-        async with rows(ids) as (db, scope, data):
+        async with rows(ids, role=role) as (db, scope, data):
             own, other = data['KIN'], data['COMBAY']
             assert await call(db, ids['agency'], 'select hub.registry_agency()', role=role, agency='COMBAY') == 'KIN'
             assert await call(db, ids['agency'], 'select ads.registration_detail($1)', other['registration']['code'], role=role) is None

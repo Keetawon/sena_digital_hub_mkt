@@ -17,8 +17,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | 2 — content core | Passed and pushed | `af64b21` | Typecheck/build passed; API 1,527 → 1,556 (+11 unchanged skips); UI 214 → 215; DB 51 + 7 → 51 + 8; H1 11 + 38 |
 | 3 — publication and knowledge | Passed and pushed | `1259972` | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
 | 4 — registry | Passed and pushed | `0ca0d75` | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
-| 5 — finance, operations, archive | In progress | — | No gates passed yet |
-| 6 — shared and residual authority | Not started | — | — |
+| 5 — finance, operations, archive | Passed and pushed | `cdc1c59` | Typecheck/build passed; API 1,628 → 1,672 (+11 unchanged skips); UI 219 → 221; DB 51 + 8; H1 11 + 38 |
+| 6 — shared and residual authority | Passed; checkpoint ready | This checkpoint | Typecheck/build passed; API 1,672 → 1,766 (11 → 8 existing skips); UI 221 → 229; DB 51 + 8; H1 11 + 38 |
 | C — account grid and feature onboarding | Not started | — | — |
 | UAT — synthetic personas and owner pack | Not started | — | — |
 
@@ -298,7 +298,7 @@ Working PostgreSQL/API/admin were restored; health, home, Accounts, all migrated
 
 Checkpoint subject: **`feat: enforce registry permissions and table-backed agency scope (phase 4)`**. Push this completed phase, then resume at **Phase 5**. Only read-only Finance/Archive preparation has occurred; no Phase 5 application, migration or test changes are included here.
 
-## Phase 5 implementation — in progress
+## Phase 5 implementation — passed
 
 Phase 4 committed and pushed as **`0ca0d75`**; clean main verified before this phase. Migration 50 is not applied to the working database. All grids remain locked. No commit/push until every gate passes.
 
@@ -332,7 +332,7 @@ A parallel read-only review found a missing shared projection: Actuals campaign 
 Final bridge/entry focused checks passed **45 tests**, 28.60s; the complete DB rerun passed **51 reported SQL/concurrency checks + 8 Node cases** against the final migration 50 checksum. The H1 browser gate then exposed a deterministic test synchronization gap in `hosted-h1.spec.ts` (cached progress case): its second login navigation began before the asynchronous logout assigned `/login`, causing `net::ERR_ABORTED`. The trace shows logout click completion at 48,902.5 ms, the premature second navigation at 48,905 ms, and logout's competing redirect at 48,919.5 ms. The test now waits for the exact logout URL and login heading; no application change, retry, skip or arbitrary sleep. H1 is rerunning in full. API/UI remain in the sequential final pipeline.
 
 
-The final API gate passed **1,672 tests / 11 unchanged opt-in skips**, 325.18s (Phase 4: 1,628). Final H1 passed **11 protocol + 38 browser tests**, native exit 0, after the synchronization correction. The first full UI command stopped before browser collection: `seed-document-demo.py` used actor UUID `?0041`, absent from the eight demo accounts. Its existing guarded synthetic seed now inserts that ACTIVE online-staff fixture only if absent, allowing the existing template trigger to establish authority; replay never reactivates or overwrites an existing account. No working seed ran. The full UI gate is now running with that corrected fixture.
+The final API gate passed **1,672 tests / 11 unchanged opt-in skips**, 325.18s (Phase 4: 1,628). Final H1 passed **11 protocol + 38 browser tests**, native exit 0, after the synchronization correction. The first full UI command stopped before browser collection: `seed-document-demo.py` used actor UUID `…0041`, absent from the eight demo accounts. Its existing guarded synthetic seed now inserts that ACTIVE online-staff fixture only if absent, allowing the existing template trigger to establish authority; replay never reactivates or overwrites an existing account. No working seed ran. The full UI gate is now running with that corrected fixture.
 
 
 ### Phase 5 final gates and working upgrade
@@ -350,3 +350,54 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phase5-2026-10-09T13-43-41
 Working PostgreSQL/API/admin were restored. Health, home, Accounts, migrated content/Registry, Finance, Actuals, Documents, Exceptions, Archive, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase5-working-services.json`.
 
 Checkpoint subject: **`feat: enforce finance and operations capabilities (phase 5)`**. Commit and push this passed phase, then resume at **Phase 6**. Read-only Phase 6 and C plans are prepared in ignored `.local/permissions-gates/`; no Phase 6 application or migration changes are included.
+
+
+## Phase 6 implementation — passed
+
+Phase 5 passed all gates and pushed as **`cdc1c59`**; clean main and matching origin/main verified before starting this phase. Working services were restored, backed-up migration 50 applied, BNA7 and all eight account fields preserved. Phase 6 application work now proceeds in parallel across assistant guards, residual SQL/runtime membership, and shared API/proxy coverage. No Phase 6 migrations are applied to the working database; no commit/push before all gates pass.
+
+### Decisions taken for owner review
+
+- Keep all 12 grids `LEGACY_LOCKED` through Phase 6. Phase C must finish capability-driven page/navigation/control rendering before general editable grids are enabled; the SQL guards and reduced runtime must already pass here. A disabled group never falls back to a legacy role.
+- Exact public website payloads are available to ACTIVE internal accounts with no tab boxes. Direct agency API access remains denied. Preserve the historical **local synthetic agency public-site preview** adapter, but recheck that selected agency's real account is ACTIVE before substituting the published-only machine consumer. Inactive accounts lose that preview on the next request. This preserves the owner's external boundary without treating the adapter as internal management access.
+- Finance receives only currently usable vocabulary code/label and scope UUID/code/label references when Registry is hidden. It cannot search or obtain Registry members, source snapshots, bindings or detail through this projection.
+- Actuals ETL application/current pointer and Archive worker claim/heartbeat/finish become operator/worker-only. Legacy admin loses direct RPC access; no UI path used these technical operations. This is an explicit additional conversion difference.
+- Existing role-specific SQL denial probes use a separate ephemeral disposable-only non-superuser login after runtime memberships are removed. Normal API/UI and base-role probes continue to use the actual `hub_runtime`, which cannot assume legacy human roles or the probe. No probe principal is provisioned in the working database or H1 deployment.
+
+### Integration checkpoint
+
+Typecheck and offline build passed. The first focused API run completed **344 passed / 38 failed / 3 existing opt-in skips**, 185.75s. Thirty-three failures were historical-role fixtures trying to use the newly restricted runtime; they now use the explicit disposable probe only for those historical cases. The actual base-role cases still use `hub_runtime`. One content test now asserts the stronger raw snapshot ACL denial while preserving its historical-role RLS check. The inventory check distinguishes three deliberately closed, FORCE-RLS staging/seed tables with no application policy from ordinary guarded tables. Three assistant stream failures exposed stale references to removed role constants in citation validation; those checks are removed, leaving the source-specific SQL guards authoritative.
+
+The first local H1 run passed the **11 protocol checks and non-superuser 50→52 migration/replay checks**, then failed **11 browser cases / 19 passed** in its first browser group. These failures share an Accounts directory 403; investigation is in progress. This is not a passed H1 gate. No new skip/retry was added, no working upgrade ran, and Phase 6 remains uncommitted.
+
+The H1 directory 403 was a real nested ACL error: the new migration-owned projection called `ads.active_vocab`, owned by `ads_registry_writer`, without an EXECUTE grant to the non-superuser migration owner. Local postgres masked it. Both bounded reference projections now use the exact ACTIVE/canonical/inclusive Bangkok-date predicate directly; no grants broadened. A synthetic regression covers active, proposed, inactive, aliased, future and expired entries. The final H1 rerun passed **11 protocol + 38 browser cases**, native exit 0, with migration 52 checksum `fb96fda73a877f021308847b8506546c54615d42c734fa07f17801ebcf6961de`.
+
+A residual ACL audit also restored exact operator-only EXECUTE on the two Registry stewardship functions, which Phase 4 had removed from human roles. The non-superuser H1 operator reaches input validation while every application/human role remains denied. The first DB runs exposed old assistant fixtures switching SQL roles without changing their account identity, then a test-only regclass lookup requiring audit-schema usage; both fixtures are corrected. The populated assistant SQL/HTTP opt-in tests are now being exercised via an explicit `--assistant-fixtures` disposable API option. It seeds only checked-in synthetic Actuals/Archive packs. No working fixtures, real provider calls or additional authority are introduced.
+
+Additional conversion details: assistant marketing summaries require Finance V **and** Actuals V because they include actuals; historical campaign citations whose old filter provenance was not stored conservatively require Finance V. Fixed repository question IDs remain minimal references only; hidden question content still requires Questions V. Runtime execution uses only `hub_app`; legacy NOLOGIN roles remain solely for historical compatibility probes and technical ACL inventory, with no application runtime membership.
+
+The first full API gate with populated assistant fixtures finished **1,721 passed / 36 failed / 8 existing opt-in skips**, 383.66s. Thirty-four failures were older unit expectations that denied public website feeds to internal accounts or expected raw public views rather than the new guarded wrappers. These are being aligned with the owner's explicit public-feed decision while retaining agency/consumer boundaries and the verified actor identity. One newly added vocabulary test attempted forbidden cleanup of immutable vocabulary rows; its unique synthetic rows now live only until disposable-cluster teardown. The third newly enabled assistant test lacked its fictional project fixture and is now seeded inside a rollback with a table-backed viewer. The other two populated assistant integrations and all 64 new assistant permission cases passed.
+
+Review also found cached assistant draft source/diff text retained after a denied refresh. A shared invalidation path now clears all source-derived state on denied reload/confirmation or failed capability refresh, while retaining the unsent question and authored draft/reason. Four browser cases cover changed permissions, 401, 403 and denied source reload. Typecheck and offline build passed again after this change. The final DB gate passed **51 reported SQL/concurrency checks + 8 Node cases**; final H1 against the rebuilt UI passed **11 protocol + 38 browser cases**, native exit 0. Full UI is running; the corrected full API gate remains required. No Phase 6 working upgrade or push yet.
+
+The first full UI run finished **225 passed / 4 failed**, 6.2 minutes. All four new assistant revocation cases correctly removed source data and preserved the authored values in the failure snapshots; the assertions used the wrong implicit-label locator for the recovery textareas. They now use the visible textbox accessibility role/name. This is a test correction, with no application change, rebuild, skip or retry. Corrected full API and UI gates are running sequentially on fresh disposable clusters.
+
+Final API passed **1,766 tests / 8 existing opt-in skips**, 355.23s (Phase 5: 1,672 / 11 skips). All three previously skipped assistant integrations now run, with real non-superuser execution, populated synthetic tool results, HTTP proposal/citation checks and the fictional model fixture; no provider is constructed. The other additions cover assistant revocation, public-reader identity/status, exhaustive route/RLS/default-ACL inventory and bounded shared projections. Final UI remains in progress.
+
+The eight remaining opt-in skips are explicitly: `test_actuals_import.py::test_real_import_replay_conflict_and_failed_rows_preserve_last_good`; `test_archive_db.py::test_archive_review_application_evidence_versions_and_private_access`; `test_demo_finance.py::test_finance_seed_real_controls_replay_preserved_edits_and_complete_snapshot`; `test_document_worker.py::test_real_local_image_ocr_preserves_all_occurrences_and_exact_money`; `test_hosted_h1.py::test_disposable_managed_simulation_end_to_end`; `test_hub_demo.py::test_complete_business_seed_replay_rolls_back_and_preserves_document_work`; `test_promotions_db.py::test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback`; `test_residential_seed.py::test_seed_replay_preserves_originals_and_user_edits`. No skip was added. The separate full DB and loopback H1 suites remain required and passed as recorded above.
+
+### Phase 6 final gates and working upgrade
+
+- Typecheck and offline webpack production build passed.
+- API: **1,766 passed / 8 unchanged opt-in skips**, 355.23s (Phase 5: 1,672 / 11 skips). Ninety-one new cases plus three newly enabled assistant integrations account for the increase. No provider calls.
+- UI: **229 passed**, 5.8 minutes (Phase 5: 221); zero final failures, skips or retries. All eight new shared/assistant cases passed, including 401/403 recovery with retained typed drafts.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged, with populated upgrade through migration 52. Permission-specific SQL also runs under the real non-superuser runtime in API tests.
+- Local H1: **11 protocol + 38 browser cases passed**, native exit 0, all 52 migrations under the non-superuser migration owner. Replay preserves credentials and cannot restore the removed runtime memberships. No hosted request or real email occurred.
+
+Logs: `.local/permissions-gates/phase6-{typecheck,build,db,api,ui,h1}.log`. All gates passed before the working upgrade. Migrations 51/52 and their profile checksums are now frozen. Migration 51 guards assistant tools, history, citations and proposals; migration 52 closes shared/account/public boundaries, residual FORCE RLS/default ACLs, operator entry points and runtime memberships.
+
+Fresh pre-upgrade dump: **`.local/backups/permissions-phase6-2026-10-09T14-44-01-236Z/sena_hub_local.dump`**, 6,464,903 bytes. The guarded upgrade verified the real working data directory, applied only migrations 51/52 and their history entries transactionally, and compared every existing account field before committing. Verified **BNA7 = 1; all 8 existing accounts and every field unchanged; 279 staged REM projects; 4 Hub projects; one ACTIVE manage-users account preserved**. Proof: `.local/permissions-gates/phase6-working-verification.json`.
+
+Working PostgreSQL/API/admin were restored. Health, home, Accounts, all migrated content/Registry/operations routes, Finance references, Questions, assistant config, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED` until Phase C finishes the UI integration. Proof: `.local/permissions-gates/phase6-working-services.json`. No working seed or upstream write ran.
+
+Checkpoint subject: **`feat: enforce shared permissions and retire legacy runtime roles (phase 6)`**. Commit and push this passed phase, then resume at **Phase C**. Only read-only Phase C plans/contracts exist in ignored `.local/permissions-gates/`; no Phase C implementation is included.

@@ -662,6 +662,13 @@ def register_finance_routes(app, authentication, database):
 
     prefix = "/v1/admin/ads"
 
+    @app.get(prefix + "/finance-references")
+    async def references(request: Request, actor: Actor = Depends(staff)):
+        if request.query_params:
+            raise failure(422, "invalid_finance_reference", "ไม่รองรับตัวกรองข้อมูลอ้างอิงนี้")
+        async with finance_database(request, actor) as connection:
+            return {"data": await connection.fetchval("SELECT hub.finance_references()")}
+
     async def read(request, actor, resource, key=None, filters=None):
         async with finance_database(request, actor) as connection:
             result = decode_finance(await connection.fetchval(

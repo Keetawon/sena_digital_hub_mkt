@@ -427,7 +427,7 @@ async def seed(db):
         stamp = max(await db.fetchval('SELECT clock_timestamp()'), datetime.fromisoformat(current['manifest']['snapshot_at']) + timedelta(microseconds=1)).isoformat()
         commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
         package, files = build_package(current, state, receipt, stamp, commit)
-    await db.execute('SET LOCAL ROLE admin')
+    await db.execute('RESET ROLE')
     applied = await db.fetchval('SELECT ads.apply_ads_actuals($1,$2,$3,$4)', package.manifest, package.relations,
                                 package.fingerprint, current['manifest']['snapshot_id'])
     await db.execute('RESET ROLE')

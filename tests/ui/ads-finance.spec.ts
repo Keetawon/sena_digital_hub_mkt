@@ -32,8 +32,10 @@ async function fixture(page: Page, role = 'online_staff') {
       if (parts[0] === 'corrections' && parts[2] === 'apply') Object.assign(record!.targets[0], { status: 'APPLIED' });
       return route.fulfill({ json: { data: record ?? { id: parts[1] ?? 'success' } } });
     }
-    if (path === 'vocab') return route.fulfill({ json: { data: [{ vocab_type: 'BUD', code: 'SID', label_th: 'งบทดสอบ', can_use: true }, { vocab_type: 'BUD', code: 'SENA', label_th: 'งบทดสอบสอง', can_use: true }, { vocab_type: 'AGENCY', code: 'KIN', label_th: 'KIN', can_use: true }] } });
-    if (path === 'scopes') return route.fulfill({ json: { data: url.searchParams.get('kind') === 'A' ? [{ scope_id: ids.scope, scope_code: 'C-DEMO-TEST1', label_th: 'โครงการทดสอบ', can_use: true }] : [] } });
+    if (path === 'finance-references') return route.fulfill({ json: { data: {
+      vocab: [{ vocab_type: 'BUD', code: 'SID', label_th: 'งบทดสอบ', can_use: true }, { vocab_type: 'BUD', code: 'SENA', label_th: 'งบทดสอบสอง', can_use: true }, { vocab_type: 'AGENCY', code: 'KIN', label_th: 'KIN', can_use: true }],
+      scopes: [{ scope_id: ids.scope, scope_code: 'C-DEMO-TEST1', label_th: 'โครงการทดสอบ', can_use: true }],
+    } } });
     if (path.endsWith('/line-candidates')) return route.fulfill({ json: { data: [{ ...data['media-lines'][0], eligible: true }] } });
     if (path.endsWith('/monthly-lines')) return route.fulfill({ json: { data: [] } });
     const rows = data[parts[0]] ?? [];

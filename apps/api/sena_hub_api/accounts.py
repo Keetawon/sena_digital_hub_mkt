@@ -105,12 +105,12 @@ def register_account_routes(app, authentication, database):
     @app.post('/v1/me/access-request')
     @app.patch('/v1/me/access-request')
     async def submit(body: AccessRequest, request: Request, actor: Actor = Depends(authentication)):
-        async with database(request, Actor(actor.id, 'viewer')) as db:
+        async with database(request, actor) as db:
             return {'data': await db.fetchval('select hub.submit_access_request($1::jsonb)', body.model_dump())}
 
     @app.post('/v1/me/invite-accept')
     async def accept(body: InviteAcceptance, request: Request, actor: Actor = Depends(authentication)):
-        async with database(request, Actor(actor.id, 'viewer')) as db:
+        async with database(request, actor) as db:
             return {'data': await db.fetchval('select hub.accept_account_invite($1::jsonb)', body.model_dump(mode='json'))}
 
     @app.get('/v1/accounts/display-names')
@@ -121,7 +121,7 @@ def register_account_routes(app, authentication, database):
             return {'data': [dict(row) for row in await db.fetch('select * from hub.account_display_names()')]}
 
     async def admin(actor: Actor = Depends(authentication)):
-        if actor.role != 'admin' or not actor.can_manage_users:
+        if not actor.can_manage_users:
             raise failure(403, 'forbidden', 'เฉพาะผู้ดูแลระบบ')
         return actor
 
@@ -139,10 +139,7 @@ def register_account_routes(app, authentication, database):
     @app.get('/v1/admin/accounts')
     async def accounts(request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as db:
-            rows = await db.fetch('select * from hub.user_account order by created_at desc')
-            events = await db.fetch('select * from hub.user_account_event order by created_at desc')
-            agencies = await db.fetch("select code,label_th from ads.vocab where vocab_type='AGENCY' and status='ACTIVE' and alias_of is null and (active_from is null or active_from<=current_date) and (active_to is null or active_to>=current_date) order by code")
-            return {'data': {'items': [dict(r) for r in rows], 'events': [dict(r) for r in events], 'agencies': [dict(r) for r in agencies], 'actor_id': str(actor.id)}}
+            return {'data': await db.fetchval('select hub.account_directory()')}
 
     @app.get('/v1/admin/account-invites')
     async def invites(request: Request, actor: Actor = Depends(admin)):

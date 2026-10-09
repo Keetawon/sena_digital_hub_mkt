@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from sena_hub_api import main
-from sena_hub_api.auth import DEMO_ROLES, Settings
+from sena_hub_api.auth import ALL_DEMO_ACTORS, DEMO_ROLES, Settings
 
 
 @pytest.mark.integration
@@ -26,7 +26,7 @@ def test_assistant_http_citations_generated_proposal_and_explicit_save(monkeypat
     before, project, brand = {}, {}, {}
     source = "ASSISTANT-HTTP-" + uuid4().hex[:10]
     tables = ("hub.projects", "hub.brands", "staging.rem_projects", "staging.rem_brands", "internal.assistant_run",
-        "internal.assistant_tool", "internal.assistant_citation", "internal.assistant_proposal", "internal.assistant_proposal_application")
+        "internal.assistant_tool", "internal.assistant_citation", "internal.assistant_proposal", "internal.assistant_proposal_application", "hub.user_account")
 
     async def counts():
         await connection.execute("RESET ROLE")
@@ -34,14 +34,15 @@ def test_assistant_http_citations_generated_proposal_and_explicit_save(monkeypat
 
     async def seed():
         nonlocal project, brand
-        await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true)")
+        assert await connection.fetchval("select count(*) from hub.user_account where id=any($1::uuid[]) and status='ACTIVE'", list(ALL_DEMO_ACTORS.values())) == len(ALL_DEMO_ACTORS)
+        await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(ALL_DEMO_ACTORS['admin']))
         await connection.execute("INSERT INTO staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint) VALUES($1,'SYNTHETIC ONLY',now(),'synthetic')", source)
         await connection.execute("INSERT INTO staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint,rem_brand_id) VALUES($1,'SYNTHETIC ONLY',now(),'synthetic',$1)", source)
-        await connection.execute("SET LOCAL ROLE admin")
+        await connection.execute("SET LOCAL ROLE hub_app")
         brand_id = await connection.fetchval("SELECT hub.create_brand_from_rem($1)", source)
         await connection.fetchval("SELECT hub.update_brand_draft(id,$2::jsonb,updated_at) FROM hub.brands WHERE id=$1", brand_id,
             {"description": {"th": "คำอธิบายแบรนด์สมมติ", "en": "Preserve brand English"}})
-        await connection.execute("SET LOCAL ROLE editor")
+        await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(ALL_DEMO_ACTORS['editor']))
         project_id = await connection.fetchval("SELECT hub.create_project_from_rem($1)", source)
         await connection.fetchval("SELECT hub.patch_project(id,$2::jsonb,updated_at) FROM hub.projects WHERE id=$1", project_id,
             {"public_name": {"th": "โครงการสมมติสำหรับทดสอบ"}, "meta_title": {"th": "หัวข้อสมมติ", "en": "Preserve English"},
@@ -53,9 +54,25 @@ def test_assistant_http_citations_generated_proposal_and_explicit_save(monkeypat
         brand = await connection.fetchval("SELECT to_jsonb(b) FROM hub.brands b WHERE id=$1", brand_id)
 
     @asynccontextmanager
-    async def database(request, actor):
-        async with connection.transaction():
-            await connection.execute(f"SET LOCAL ROLE {actor.role}")
+    async def runtime_connection():
+        try:
+            async with connection.transaction():
+                await connection.execute("SET LOCAL SESSION AUTHORIZATION hub_runtime")
+                await connection.execute("SET LOCAL ROLE hub_app")
+                assert await connection.fetchval('select session_user') == 'hub_runtime'
+                assert not await connection.fetchval('select rolsuper or rolbypassrls from pg_roles where rolname=current_user')
+                yield connection
+        finally:
+            await connection.execute("RESET ROLE")
+            await connection.execute("RESET SESSION AUTHORIZATION")
+
+    class Pool:
+        def acquire(self):
+            return runtime_connection()
+
+    @asynccontextmanager
+    async def database(request, actor, *, audit_only=False):
+        async with runtime_connection():
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(actor.id))
             yield connection
 
@@ -70,6 +87,9 @@ def test_assistant_http_citations_generated_proposal_and_explicit_save(monkeypat
             before = await counts()
             outer = connection.transaction(); await outer.start()
             await seed()
+            # A real table lookup is used; the autouse route-unit double applies
+            # only to apps without a pool. Every acquisition assumes hub_app.
+            app.state.pool = Pool()
             yield
         finally:
             if outer: await outer.rollback()

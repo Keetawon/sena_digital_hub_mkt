@@ -1,0 +1,6 @@
+{
+  "phase": 6,
+  "routes": [
+    {"method": "GET", "path": "/v1/admin/ads/finance-references", "tab": "finance", "level": "view", "entry_roles": ["admin", "online_staff"], "conditional_h1": false, "source": "apps/api/sena_hub_api/finance.py"}
+  ]
+}

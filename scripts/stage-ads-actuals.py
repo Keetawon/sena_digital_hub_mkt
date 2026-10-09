@@ -32,7 +32,7 @@ async def apply_local(package, *, expected_snapshot_id=AUTO_POINTER):
             raise ValueError('Connected database is not the fixed local Hub TEST target')
         await connection.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
         async with connection.transaction():
-            await connection.execute('SET LOCAL ROLE admin')
+            # Verified operator connection owns the ETL ACL; manage-users is unrelated.
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", ADMIN_ACTOR)
             await connection.execute("SELECT set_config('app.change_reason','Apply verified synthetic DW P3 TEST snapshot',true)")
             if expected_snapshot_id is AUTO_POINTER:

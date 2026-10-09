@@ -99,12 +99,17 @@ do $$ declare d jsonb;claim jsonb;begin
  d:=ads.archive_receive(jsonb_build_object('fixture_id','sql-archive-memo-v2','document_id',d->'id','expected_revision',d->'revision'));
  assert jsonb_array_length(d->'versions')=2,'Old immutable evidence lost';
  assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=0,'Old version remained in search after new source receipt';
+ begin perform ads.archive_claim('ADMIN-DENIED',120); assert false,'Admin entered worker queue'; exception when insufficient_privilege then null; end;
+ set local role ads_document_worker;
  claim:=ads.archive_claim('SQL-UNAVAILABLE',120);
  d:=ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,null,'OCR_UNAVAILABLE');
  assert d#>>'{job,status}'='FAILED' and d->'extraction'='null'::jsonb,'Unavailable engine fabricated extraction';
+ set local role admin;
  d:=ads.archive_command('retry',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','expected_version_id',d->'current_version_id','reason','Synthetic retry after engine availability'));
+ set local role ads_document_worker;
  claim:=ads.archive_claim('SQL-RETRY',120);assert(claim->>'attempt')::integer=2,'Retry lost attempt history';
  d:=ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,current_setting('test.archive_memo_result')::jsonb);
+ set local role admin;
  perform ads.archive_command('hold',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','held',true,'reason','Isolate next worker fixture'));
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
  perform ads.archive_access(jsonb_build_object('action','DOWNLOAD','outcome','DENIED','original_role','agency','original_actor_id','00000000-0000-0000-0000-000000000041','document_id',d->'id','version_id',current_setting('test.archive_memo_version'),'request_id',gen_random_uuid(),'bytes',0));

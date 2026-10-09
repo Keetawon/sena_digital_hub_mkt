@@ -33,7 +33,7 @@ def test_operations_route_coverage(permission_accounts):
               for method in r.methods}
     expected = {k for k, v in CONTENT_RULES.items() if v[0] in READ}
     assert actual == expected
-    assert len(actual) == 86
+    assert len(actual) == 87
 
 
 @pytest.mark.parametrize('role', ['hub_app', 'admin', 'online_staff'])
@@ -43,7 +43,7 @@ def test_finance_every_command_denied_when_its_box_is_off(permission_accounts, r
     async def check():
         actor = ids['admin']
         await set_bit(actor, 'finance', **({level: []} if level == 'special_actions' else {'can_' + level: False}))
-        db = await runtime()
+        db = await runtime(probe=role != 'hub_app')
         try:
             # Neighboring V survives, and a different tab remains readable.
             assert await call(db, actor, "select ads.finance_read('memos')", role=role)
@@ -62,7 +62,7 @@ def test_operations_view_off_blocks_sql_and_keeps_neighbor(permission_accounts, 
     _, ids = permission_accounts
     async def check():
         actor = ids['admin']
-        db = await runtime()
+        db = await runtime(probe=role != 'hub_app')
         try:
             assert await call(db, actor, 'select ' + READ[tab], role=role)
             await set_bit(actor, tab, can_edit=False, can_approve=False, special_actions=[], can_view=False)
@@ -95,15 +95,15 @@ def test_archive_cross_tab_and_special_denials_precede_target_lookup(permission_
     _, ids = permission_accounts
     async def check():
         await set_bit(ids['admin'], tab, **({bit: []} if bit == 'special_actions' else {'can_' + bit: False}))
-        db = await runtime()
-        try:
-            for role in ('hub_app', 'admin', 'online_staff'):
+        for role in ('hub_app', 'admin', 'online_staff'):
+            db = await runtime(probe=role != 'hub_app')
+            try:
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['admin'], 'select ads.archive_command($1,$2,$3::jsonb)',
                                action, uuid4(), json.dumps(payload), role=role)
                 assert await call(db, ids['admin'], 'select ads.archive_read()', role=role)
-        finally:
-            await db.close()
+            finally:
+                await db.close()
     asyncio.run(check())
 
 
@@ -247,6 +247,8 @@ def test_actuals_campaign_bridge_hides_other_tabs_and_keeps_platform_observation
             expected = {**observations, **({} if 'registry' in hidden_tabs else registry),
                         **({} if 'finance' in hidden_tabs else finance)}
             for role in ('hub_app', 'admin', 'online_staff'):
+                principal = 'hub_runtime' if role == 'hub_app' else 'hub_permission_probe'
+                await db.execute('SET LOCAL SESSION AUTHORIZATION ' + principal)
                 after = json.loads(await call(db, ids['admin'], query, line_key, role=role))
                 assert after['campaigns'] == [expected]
                 assert after['months'][0]['platform_media_spend'] == '12.34'

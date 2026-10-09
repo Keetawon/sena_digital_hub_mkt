@@ -17,7 +17,7 @@ from test_permission_content import call, set_bit
 
 
 @asynccontextmanager
-async def rows(ids):
+async def rows(ids, *, role='hub_app'):
     db = await disposable_operator()
     transaction = db.transaction()
     await transaction.start()
@@ -44,7 +44,9 @@ async def rows(ids):
                    'assets': [{'asset_id': '10000000-0000-0000-0000-000000000001', 'role': 'hero'}]}
         await db.execute("insert into hub.knowledge_preview_releases(id,rem_project_id,payload,reason,created_by) values($1,$2,$3::jsonb,'Synthetic',$4)",
                          preview, key, json.dumps(payload), ids['publisher'])
-        await db.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
+        assert role in ('hub_app', 'editor', 'publisher', 'viewer', 'admin')
+        principal = 'hub_runtime' if role == 'hub_app' else 'hub_permission_probe'
+        await db.execute('SET LOCAL SESSION AUTHORIZATION ' + principal)
         assert tuple(await db.fetchrow('select rolsuper,rolbypassrls from pg_roles where rolname=session_user')) == (False, False)
         yield db, {'promotion': promotion, 'release': release, 'candidate': candidate, 'preview': preview, 'project': key}
     finally:
@@ -70,7 +72,7 @@ def test_publication_routes_have_complete_mapping(permission_accounts):
 def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_accounts, tab, table, rpc, role):
     _, ids = permission_accounts
     async def check():
-        async with rows(ids) as (db, data):
+        async with rows(ids, role=role) as (db, data):
             reads = [rpc]
             if tab == 'releases':
                 reads.append('hub.release_candidates(false)')

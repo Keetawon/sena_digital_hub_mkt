@@ -8,6 +8,8 @@ export const PROFILE = 'hosted-test-settings-v1';
 export const PROJECT_REF = 'eqlrtevwpyboplljgowo';
 const SCHEMAS = ['hub', 'public_api', 'staging', 'audit', 'internal', 'rag', 'ads', 'ads_export', 'hub_export'];
 const ACTORS = ['editor', 'publisher', 'viewer', 'service_consumer', 'admin', 'online_staff', 'agency', 'hub_app'];
+const RUNTIME_ROLES = ['hub_app'];
+const MEMBERSHIP_CUTOFF = 52;
 const OWNERS = ['ads_registry_writer', 'ads_export_owner', 'ads_export_reader', 'ads_finance_writer', 'ads_actuals_writer', 'ads_document_worker', 'hub_export_owner'];
 const OWNER_SCHEMAS = {ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging'],hub_export_owner:['hub_export']};
 const ROLES = [...ACTORS, ...OWNERS, 'hub_runtime'];
@@ -132,14 +134,16 @@ async function inspect(client, migrations, config) {
   const { rows: roles } = await client.query('select rolname,rolsuper,rolcreaterole,rolcreatedb,rolreplication,rolbypassrls,rolinherit,rolcanlogin from pg_roles where rolname=any($1)', [ROLES]);
   for (const role of roles) {
     if (role.rolname === 'hub_runtime') {
-      if (rows.length !== migrations.length || !history.hub) fail('Unexpected existing runtime login.');
+      const knownUpgrade = [50,51].includes(count) && migrations.some(m => m.name === '202610090052_shared_permissions.sql');
+      if ((rows.length !== migrations.length && !knownUpgrade) || !history.hub) fail('Unexpected existing runtime login.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
     if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');
   }
   if (expectedRoles.some(name => !roles.some(role => role.rolname === name))) fail('A recorded Hub role is missing.');
   if (roles.some(role => role.rolname === 'hub_runtime')) {
     const memberships = (await client.query("select r.rolname,m.admin_option,m.inherit_option,m.set_option from pg_auth_members m join pg_roles r on r.oid=m.roleid where m.member='hub_runtime'::regrole")).rows;
-    if (memberships.length !== ACTORS.length || memberships.some(row => !ACTORS.includes(row.rolname) || row.admin_option || row.inherit_option || !row.set_option)) fail('Runtime role memberships differ from the approved actor roles.');
+    const allowedRuntime = count >= MEMBERSHIP_CUTOFF ? RUNTIME_ROLES : ACTORS;
+    if (memberships.length !== allowedRuntime.length || memberships.some(row => !allowedRuntime.includes(row.rolname) || row.admin_option || row.inherit_option || !row.set_option)) fail('Runtime role memberships differ from the approved actor roles.');
     if (!(await client.query(`select 1 from hub_deployment.target where project_ref=$1 and source=$2 and runtime_ready`, [config.projectRef, SOURCE])).rowCount) fail('Existing runtime login lacks deployment provenance.');
   }
   return { rows, actor: actor.name, runtimeExists: roles.some(role => role.rolname === 'hub_runtime') };
@@ -221,7 +225,8 @@ export async function runMigrations(client, config, { log = console.log, migrati
       try {
         // Only a SCRAM verifier enters SQL/server statement logs, never plaintext.
         await client.query(`create role hub_runtime login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls password ${literal(scramVerifier(config.runtimePassword))}`);
-        await client.query(`grant ${ACTORS.join(',')} to hub_runtime with admin false,inherit false,set true`);
+        const allowedRuntime = migrations.length >= MEMBERSHIP_CUTOFF ? RUNTIME_ROLES : ACTORS;
+        await client.query(`grant ${allowedRuntime.join(',')} to hub_runtime with admin false,inherit false,set true`);
         const { rows: [database] } = await client.query('select current_database() as name');
         await client.query(`grant connect on database ${identifier(database.name)} to hub_runtime`);
         await client.query('grant usage on schema hub to hub_runtime; grant execute on function hub.hosted_test_profile() to hub_runtime');

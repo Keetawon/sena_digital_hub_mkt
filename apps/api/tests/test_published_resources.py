@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from sena_hub_api import main
-from sena_hub_api.auth import DEMO_ROLES
+from sena_hub_api.auth import ALL_DEMO_ACTORS, DEMO_ROLES
 from test_api import settings
 
 
@@ -24,20 +24,21 @@ def fixture(monkeypatch):
               {"id": "model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_synthetic"},
               {"id": "other-model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_other"},
               {"id": "model-image", "asset_role": "model_image", "public_model_id": "mdl_synthetic"}]
-    state = {"available": True, "calls": [], "row": {"public_project_id": "prj_synthetic", "version_no": 7,
+    state = {"available": True, "calls": [], "actors": [], "row": {"public_project_id": "prj_synthetic", "version_no": 7,
              "published_at": "2026-10-02T01:00:00Z", "publisher": "synthetic-publisher", "source_updated_at": None,
              "payload": {"models": [model], "assets": assets}, "published_model": model}}
 
     class DB:
         async def fetchrow(self, sql, *args):
             state["calls"].append((sql, args))
-            assert "FROM public_api.projects" in sql and "hub." not in sql and "staging." not in sql
+            assert "FROM public_api.read_projects()" in sql and "hub." not in sql and "staging." not in sql
             expected = "mdl_synthetic" if "published_model" in sql else "prj_synthetic"
             return deepcopy(state["row"]) if state["available"] and args == (expected,) else None
 
     @asynccontextmanager
     async def database(request, actor):
-        assert actor.role == "service_consumer"
+        assert actor.role in {'viewer', 'editor', 'publisher', 'admin', 'online_staff', 'service_consumer'}
+        state['actors'].append(actor)
         yield DB()
 
     monkeypatch.setattr(main, "database", database)
@@ -45,12 +46,16 @@ def fixture(monkeypatch):
 
 
 @pytest.mark.parametrize("path", PATHS)
-@pytest.mark.parametrize("role,status", [(None, 401), *[(role, 403) for role in DEMO_ROLES if role != "service_consumer"]])
-def test_child_reads_retain_consumer_boundary(fixture, path, role, status):
+@pytest.mark.parametrize("role,status", [(None, 401), *[(role, 403 if role.startswith('agency_') else 200) for role in DEMO_ROLES]])
+def test_child_reads_allow_active_internal_and_consumer_but_keep_external_boundary(fixture, path, role, status):
     client, state = fixture
     headers = {"Authorization": f"Bearer {TOKENS[role]}"} if role else {}
     assert client.get(path, headers=headers).status_code == status
-    assert not state["calls"]
+    if status == 200:
+        assert state['calls'] and len(state['actors']) == 1
+        assert state['actors'][0].role == role and state['actors'][0].id == ALL_DEMO_ACTORS[role]
+    else:
+        assert not state['calls'] and not state['actors']
 
 
 def test_scope_exact_ids_order_and_containing_project_metadata(fixture):
@@ -78,7 +83,7 @@ def test_parent_ineligibility_and_unknown_ids_never_fall_back_to_drafts(fixture,
     assert client.get(path.replace("_synthetic", "_unknown"), headers=HEADERS).status_code == 404
     state["available"] = False
     assert client.get(path, headers=HEADERS).status_code == 404
-    assert all("public_api.projects" in sql for sql, _ in state["calls"])
+    assert all("public_api.read_projects()" in sql for sql, _ in state["calls"])
 
 
 @pytest.mark.parametrize("path,query", [(PATHS[0], "?draft=true"), (PATHS[2], "?version_id=other"),

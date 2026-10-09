@@ -45,7 +45,18 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     const migrations=await loadMigrations();
     await runMigrations(client,config,{log,migrations});
     assert.equal((await client.query("select count(*)::int count from pg_namespace where nspname in('hub','ads','hub_deployment')")).rows[0].count,0);
-    config.apply=true;await runMigrations(client,config,{log,migrations});
+    config.apply=true;
+    await runMigrations(client,config,{log,migrations:migrations.slice(0,50)});
+    const upgradePassword=(await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword;
+    // Populate a source and account before FORCE RLS is strengthened.
+    await client.query("insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) values('SYNTHETIC-UPGRADE','Synthetic upgrade',now(),'synthetic')");
+    await client.query("insert into hub.user_account(id,email,status,hub_role) values('00000000-0000-0000-0000-000000000090','upgrade@example.test','ACTIVE','viewer')");
+    const upgradeAccount=(await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row;
+    await runMigrations(client,config,{log,migrations});
+    assert.equal((await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword,upgradePassword);
+    assert.deepEqual((await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row,upgradeAccount);
+    assert.equal((await client.query("select count(*)::int count from staging.rem_projects where rem_project_id='SYNTHETIC-UPGRADE'")).rows[0].count,1);
+    await client.query("delete from hub.account_permission where account_id='00000000-0000-0000-0000-000000000090'; delete from hub.permission_event where account_id='00000000-0000-0000-0000-000000000090'; delete from hub.user_account where id='00000000-0000-0000-0000-000000000090'; delete from staging.rem_projects where rem_project_id='SYNTHETIC-UPGRADE'");
     assert.equal((await client.query('select count(*)::int count from hub_deployment.schema_migrations')).rows[0].count,migrations.length);
     assert.equal((await client.query("select rolsuper from pg_roles where rolname=current_user")).rows[0].rolsuper,false);
     const baseline=(await client.query("select name,checksum,executed_checksum from hub_deployment.schema_migrations where name like '%0014_%'")).rows[0];
@@ -54,6 +65,18 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
       assert.equal((await client.query("select pg_has_role(current_user,$1,'SET') allowed",[role])).rows[0].allowed,false);
       for(const schema of schemas) assert.equal((await client.query("select has_schema_privilege($1,$2,'CREATE') allowed",[role,schema])).rows[0].allowed,false);
     }
+    for(const signature of ['ads.cancel_registration(text,text)','ads.set_approval(boolean,text,text)']) {
+      assert.equal((await client.query("select has_function_privilege(current_user,$1,'EXECUTE') allowed",[signature])).rows[0].allowed,true);
+      for(const role of ['hub_app','admin','editor','publisher','viewer','online_staff','agency','service_consumer']) {
+        assert.equal((await client.query("select has_function_privilege($1,$2,'EXECUTE') allowed",[role,signature])).rows[0].allowed,false);
+      }
+    }
+    // Reach input validation as the non-superuser operator, with no technical
+    // owner membership. Invalid inputs cannot change the issuance switch/data.
+    await client.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000090',false)");
+    await assert.rejects(client.query("select ads.cancel_registration('SYNTHETIC-NONE','')"),error=>error.code==='23514');
+    await assert.rejects(client.query("select ads.set_approval(null,'','')"),error=>error.code==='23514');
+    await client.query("select set_config('app.actor_id','',false)");
     const beforePassword=(await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword;
     const replay=[];await runMigrations(client,config,{migrations,log:line=>replay.push(line)});
     assert.equal(replay.some(line=>line.startsWith('Applied:')),false);
@@ -72,7 +95,9 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     await assert.rejects(runtime.query('select * from hub_deployment.target'),denied);
     await assert.rejects(runtime.query('select * from ads.campaign_registration'),denied);
     for(const role of Object.keys(owners)) await assert.rejects(runtime.query(`set role ${identifier(role)}`),denied);
-    for(const role of ['admin','online_staff','agency']) {
+    for(const role of ['admin','editor','publisher','viewer','online_staff','agency','service_consumer']) await assert.rejects(runtime.query(`set role ${identifier(role)}`),denied);
+    assert.deepEqual((await client.query("select r.rolname from pg_auth_members m join pg_roles r on r.oid=m.roleid where m.member='hub_runtime'::regrole order by r.rolname")).rows.map(r=>r.rolname),['hub_app']);
+    for(const role of ['hub_app']) {
       await runtime.query(`set role ${identifier(role)}`);
       await runtime.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',false)");
       await runtime.query("select set_config('app.ads_test_issuing','on',false)");
@@ -84,7 +109,7 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
       else await assert.rejects(runtime.query('select * from ads.setting'),denied);
       await runtime.query('reset role');
     }
-    await runtime.query('set role publisher');
+    await runtime.query('set role hub_app');
     await runtime.query('select hub.residential_environment()');
     await assert.rejects(runtime.query('select hub.residential_local()'),denied);
     await runtime.query('reset role');

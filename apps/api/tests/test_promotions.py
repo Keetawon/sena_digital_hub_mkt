@@ -88,7 +88,9 @@ def test_editorial_readers_preserve_exact_values_and_trusted_actor(boundary, rol
         assert response.json()["data"] == store.result
         assert response.headers["cache-control"] == "no-store"
     assert all(actor.role == role and actor.id == ALL_DEMO_ACTORS[role] for actor in store.actors)
-    assert client.get("/v1/promotions", headers=headers(role)).status_code == 403
+    assert client.get("/v1/promotions", headers=headers(role)).status_code == 200
+    assert 'FROM public_api.read_promotions()' in store.calls[-1][0]
+    assert store.actors[-1].role == role and store.actors[-1].id == ALL_DEMO_ACTORS[role]
 
 
 def test_anonymous_and_method_override_cannot_reach_data(boundary):
@@ -196,18 +198,19 @@ def test_atomic_release_is_one_guarded_call_and_stale_errors_do_not_leak_data(bo
     assert store.calls[0][1][-1] is True
 
 
-def test_consumer_reads_only_snapshot_projection_with_exact_id_and_legal_fallback(boundary):
+@pytest.mark.parametrize('role', ['service_consumer', 'viewer', 'editor', 'publisher', 'admin', 'online_staff'])
+def test_active_reader_reads_only_snapshot_projection_with_exact_id_and_legal_fallback(boundary, role):
     client, store = boundary
-    response = client.get("/v1/promotions", headers=headers("service_consumer"), params={"project_id": "prj_000031", "locale": "en"})
+    response = client.get("/v1/promotions", headers=headers(role), params={"project_id": "prj_000031", "locale": "en"})
     assert response.status_code == 200
     item = response.json()["data"][0]
     assert item["benefit_value"] == "100000000000.01" and item["title"] == "Demo offer"
     assert item["legal_terms"] == DRAFT["legal_terms"]["th"] and item["disclaimer"] == DRAFT["disclaimer"]["th"]
     assert item["meta"]["is_fallback_locale"] and item["meta"]["version_id"] == ID
     assert response.headers["cache-control"] == "no-store"
-    assert "FROM public_api.promotions" in store.calls[-1][0]
+    assert "FROM public_api.read_promotions()" in store.calls[-1][0]
     assert store.calls[-1][1] == ("prj_000031",)
-    assert store.actors[-1].role == "service_consumer"
+    assert store.actors[-1].role == role and store.actors[-1].id == ALL_DEMO_ACTORS[role]
 
 
 @pytest.mark.parametrize("query", ["as_of=2000-01-01", "project_id=x&project_id=y", "include_expired=true", "source_active_flag=true", "locale=../private"])

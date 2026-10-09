@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import time
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import jwt
@@ -11,6 +12,7 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from sena_hub_api.auth import Authentication, DEMO_ROLES, ROLES, Settings
+from sena_hub_api import main
 from sena_hub_api.main import create_app
 
 TOKENS = {role: f"ads-test-only-{role}-" + "x" * 40 for role in DEMO_ROLES}
@@ -51,9 +53,21 @@ def test_existing_residential_roles_do_not_gain_registry_access(client, role, me
 
 
 @pytest.mark.parametrize("role", ["online_staff", "agency_kin", "agency_combay"])
-def test_registry_roles_do_not_gain_residential_access(client, role):
+def test_registry_roles_do_not_gain_residential_management_access(client, monkeypatch, role):
     assert client.get("/v1/admin/projects", headers=HEADERS[role]).status_code == 403
-    assert client.get("/v1/projects", headers=HEADERS[role]).status_code == 403
+    calls = []
+    class DB:
+        async def fetch(self, query, *args):
+            assert 'FROM public_api.read_projects()' in query
+            calls.append(query)
+            return []
+    @asynccontextmanager
+    async def database(request, actor):
+        assert actor.role == role == 'online_staff'
+        yield DB()
+    monkeypatch.setattr(main, 'database', database)
+    assert client.get("/v1/projects", headers=HEADERS[role]).status_code == (200 if role == 'online_staff' else 403)
+    assert bool(calls) == (role == 'online_staff')
 
 
 @pytest.mark.parametrize("role", ["agency_kin", "agency_combay"])
