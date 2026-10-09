@@ -81,7 +81,15 @@ do $$ declare b jsonb; begin
   begin perform * from ads.setting; raise exception 'Agency read private setting'; exception when insufficient_privilege then null; end;
 end $$;
 select set_config('app.agency_code','UNKNOWN',true);
-do $$ begin assert not exists(select 1 from ads.campaign_registration), 'Unknown agency did not fail closed'; end $$;
+do $$ begin
+  assert exists(select 1 from ads.campaign_registration where code=current_setting('test.ads_a')), 'Forged session agency changed the table-backed scope';
+  assert not exists(select 1 from ads.campaign_registration where code=current_setting('test.ads_b')), 'Forged session agency widened scope';
+end $$;
+reset role;
+insert into hub.user_account(id,email,status,hub_role,agency_code)
+ values('40000000-0000-0000-0000-000000000099','registry-sql@example.test','ACTIVE','agency','BRANDSTROM');
+set local role agency;
+select set_config('app.actor_id','40000000-0000-0000-0000-000000000099',true);
 select set_config('app.agency_code','BRANDSTROM',true);
 do $$ begin
   assert not exists(select 1 from ads.native_binding where account_id='000ACC'), 'Agency read another binding';
@@ -90,6 +98,7 @@ end $$;
 
 reset role;
 update ads.scope_code set status='INACTIVE' where scope_id='40000000-0000-0000-0000-000000000001';
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000006',true);
 set local role online_staff;
 do $$ begin
   begin perform ads.preview_existing_scope('40000000-0000-0000-0000-000000000003'); raise exception 'Preview accepted inactive phase parent'; exception when check_violation then null; end;
@@ -130,6 +139,11 @@ do $$ begin
   begin perform * from ads.campaign_registration; raise exception 'Residential role read ads'; exception when insufficient_privilege then null; end;
 end $$;
 set local role admin;
+do $$ begin
+  begin perform ads.cancel_registration(current_setting('test.ads_a'),'Application cancellation denied');
+    raise exception 'Admin cancelled operator-only registry'; exception when insufficient_privilege then null; end;
+end $$;
+reset role;
 select ads.cancel_registration(current_setting('test.ads_a'),'ยกเลิกข้อมูลทดสอบ');
 do $$ begin
   assert ads.registration_detail(current_setting('test.ads_a'))#>>'{registration,status}'='CANCELLED', 'Cancellation failed';

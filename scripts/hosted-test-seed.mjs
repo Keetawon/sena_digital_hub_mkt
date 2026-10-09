@@ -27,8 +27,10 @@ export async function applyH1Seed(client) {
           : `revoke ${role} from ${quote(target.operator)} granted by ${quote(target.operator)}`);
       }
     }
+    // The verified deployment owner inspects configuration before any accounts
+    // exist. Application reads require a real ACTIVE Registry account.
+    const { rows: [flags] } = await client.query("select jsonb_build_object('sena_h_approved',exists(select 1 from ads.setting where key='sena_h_approved' and value='true'::jsonb)) as settings,exists(select 1 from ads.setting where key='hosted_test_issuing_enabled' and value='true'::jsonb) as test");
     await client.query('set local role admin');
-    const { rows: [flags] } = await client.query('select ads.registry_settings() as settings,ads.test_issuing_enabled() as test');
     const codes = (await client.query("select ads.sn_code(2026,90001) as code,90001 as sequence_no,'KIN' as agency union all select ads.sn_code(2026,90002),90002,'COMBAY'")).rows;
     await client.query('reset role');
     if (flags.test || flags.settings.sena_h_approved) throw new Error('H1 requires approval and TEST issuance off.');

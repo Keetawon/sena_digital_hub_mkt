@@ -264,10 +264,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     if await connection.fetchval("SELECT hub.hosted_test_profile()") is not True:
                         raise RuntimeError("ฐานข้อมูลไม่ได้ใช้โปรไฟล์ H1 ที่ได้รับอนุญาต")
                     async with connection.transaction():
-                        await connection.execute("SET LOCAL ROLE admin")
-                        flags = await connection.fetchval("SELECT ads.registry_settings()")
-                        issuing = await connection.fetchval("SELECT ads.test_issuing_enabled()")
-                        if flags["sena_h_approved"] is not False or issuing is not False:
+                        await connection.execute("SET LOCAL ROLE hub_app")
+                        if await connection.fetchval("SELECT hub.registry_startup_ready()") is not True:
                             raise RuntimeError("H1 ต้องปิดการออกชื่อและคงสถานะรออนุมัติ")
             yield
         finally:

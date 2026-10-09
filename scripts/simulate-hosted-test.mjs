@@ -76,7 +76,9 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
       await runtime.query(`set role ${identifier(role)}`);
       await runtime.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',false)");
       await runtime.query("select set_config('app.ads_test_issuing','on',false)");
-      assert.equal((await runtime.query('select ads.test_issuing_enabled() enabled')).rows[0].enabled,false);
+      // No account exists yet: even forged role/issuance settings cannot read
+      // Registry configuration or authorize a mutation.
+      await assert.rejects(runtime.query('select ads.test_issuing_enabled() enabled'),denied);
       await assert.rejects(runtime.query("update ads.setting set value='true' where key='hosted_test_issuing_enabled'"),denied);
       if(role!=='agency') await assert.rejects(runtime.query("select ads.issue_registration('00000000-0000-0000-0000-000000000001','LEADS','KIN')"),denied);
       else await assert.rejects(runtime.query('select * from ads.setting'),denied);

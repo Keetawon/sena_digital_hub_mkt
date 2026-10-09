@@ -8,6 +8,7 @@ from fastapi import Depends, Query, Request
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from .auth import Actor, failure
+from .content_permissions import require_content
 from . import naming
 
 ScopeKind = Literal["A", "B", "C", "D", "E", "F"]
@@ -102,18 +103,12 @@ def register_ads_routes(app, authentication, database, settings):
             raise
 
     async def reader(request: Request, actor: Actor = Depends(authentication)):
-        if actor.role not in {"admin", "online_staff", "agency"}:
-            raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์เข้าถึงทะเบียนชื่อแคมเปญ")
+        require_content(request)
         if actor.role == "agency":
             async with ads_database(request, actor) as connection:
                 active = await active_vocab(connection, "AGENCY", actor.agency_code)
             if not active:
                 raise failure(403, "agency_unavailable", "บัญชีนี้ยังไม่มีเอเจนซีที่ได้รับอนุมัติในทะเบียน")
-        return actor
-
-    async def writer(actor: Actor = Depends(authentication)):
-        if actor.role not in {"admin", "online_staff"}:
-            raise failure(403, "forbidden", "เฉพาะทีมออนไลน์และผู้ดูแลทะเบียนที่ออกชื่อได้")
         return actor
 
     async def active_vocab(connection, kind, code):
@@ -178,7 +173,7 @@ def register_ads_routes(app, authentication, database, settings):
             return {"data": [decorate_scope(row["scope"], row["members"]) for row in rows]}
 
     @app.post("/v1/admin/ads/registrations/preview")
-    async def preview(body: RegistrationInput, request: Request, actor: Actor = Depends(writer)):
+    async def preview(body: RegistrationInput, request: Request, actor: Actor = Depends(reader)):
         async with ads_database(request, actor) as connection:
             result, example = await selected_scope(connection, body)
             fields = example.split("__")
@@ -187,7 +182,7 @@ def register_ads_routes(app, authentication, database, settings):
                              "code_note": "รหัสจะออกเมื่อบันทึก"}}
 
     @app.post("/v1/admin/ads/registrations", status_code=201)
-    async def register(body: RegistrationInput, request: Request, actor: Actor = Depends(writer)):
+    async def register(body: RegistrationInput, request: Request, actor: Actor = Depends(reader)):
         async with ads_database(request, actor) as connection:
             await selected_scope(connection, body)
             if not (await registry_settings(connection))["can_issue"]:
@@ -231,7 +226,7 @@ def register_ads_routes(app, authentication, database, settings):
             return {"data": decorate_detail(await connection.fetchval("SELECT ads.registration_detail($1)", code))}
 
     @app.post("/v1/admin/ads/registrations/{code}/names")
-    async def add_name(code: str, body: VariantInput, request: Request, actor: Actor = Depends(writer)):
+    async def add_name(code: str, body: VariantInput, request: Request, actor: Actor = Depends(reader)):
         async with ads_database(request, actor) as connection:
             if not (await registry_settings(connection))["can_issue"]:
                 raise failure(409, "pattern_pending", "รออนุมัติรูปแบบชื่อ ยังไม่สามารถออกชื่อสำหรับใช้งานจริง")

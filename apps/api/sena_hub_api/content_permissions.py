@@ -81,6 +81,16 @@ CONTENT_RULES = {
     ('GET', '/v1/admin/knowledge/candidates/{candidate_id}/file'): ('knowledge', 'view'),
     ('POST', '/v1/admin/knowledge/rights/approve'): ('knowledge', 'approve'),
     ('POST', '/v1/admin/knowledge/preview'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/ads/settings'): ('registry', 'view'),
+    ('GET', '/v1/admin/ads/vocab'): ('registry', 'view'),
+    ('GET', '/v1/admin/ads/scopes'): ('registry', 'view'),
+    ('POST', '/v1/admin/ads/registrations/preview'): ('registry', 'edit'),
+    ('POST', '/v1/admin/ads/registrations'): ('registry', 'edit'),
+    ('GET', '/v1/admin/ads/registrations'): ('registry', 'view'),
+    ('GET', '/v1/admin/ads/registrations/{code}'): ('registry', 'view'),
+    ('POST', '/v1/admin/ads/registrations/{code}/names'): ('registry', 'edit'),
+    ('POST', '/v1/admin/ads/registrations/{code}/bindings'): ('registry', 'edit'),
+    ('POST', '/v1/admin/ads/names/validate'): ('registry', 'view'),
 }
 
 
@@ -106,6 +116,11 @@ def require_content(request: Request) -> bool:
         allowed = caps.get("special_actions", {}).get(level) is True
     else:
         allowed = caps.get("tabs", {}).get(tab, {}).get(level) is True
+    if tab == "registry" and caps.get("agency_registry") is True:
+        # Fixed external profile: registry read and own-agency binding only.
+        # SQL separately checks the target registration's canonical agency.
+        allowed = level == "view" or rule == ('registry', 'edit') and getattr(
+            request.scope.get('route'), 'path', None) == '/v1/admin/ads/registrations/{code}/bindings'
     if not allowed:
         raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์ดำเนินการในแท็บนี้")
     return True

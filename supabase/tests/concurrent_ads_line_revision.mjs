@@ -64,6 +64,7 @@ try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
   await setup.query('begin');
   await setup.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [actor, reason]);
+  await setup.query("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','admin')", [actor, `${actor}@example.test`]);
   for (const [id, kind, code, members, parent] of [
     [scope, 'GROUP', token, [{ member_type: 'GROUP', member_id: token }], null],
     [phase, 'PHASE', token + '-A', [{ member_type: 'PHASE', member_id: '0000' + actor, parent_group_id: token }], token],
@@ -154,6 +155,8 @@ try {
   await setup.query('delete from ads.scope_member where scope_id=any($1::uuid[])', [[scope, phase]]);
   await setup.query('delete from ads.scope_code where scope_id=any($1::uuid[])', [[scope, phase]]);
   await setup.query('delete from audit.change_log where actor=$1', [actor]);
+  await setup.query("set local session_replication_role='origin'");
+  await setup.query('delete from hub.user_account where id=$1', [actor]);
   await setup.query('commit');
   await Promise.all([setup.end(), first.end(), second.end()]);
 }

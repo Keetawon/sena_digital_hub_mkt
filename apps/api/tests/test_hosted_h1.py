@@ -302,11 +302,10 @@ def test_startup_requires_profile_and_both_issuance_flags_off(monkeypatch, profi
         async def transaction(self):
             yield
         async def execute(self, query):
-            assert query == "SET LOCAL ROLE admin"
+            assert query == "SET LOCAL ROLE hub_app"
         async def fetchval(self, query):
             return {"SELECT hub.hosted_test_profile()": profile,
-                    "SELECT ads.registry_settings()": {"sena_h_approved": approved},
-                    "SELECT ads.test_issuing_enabled()": issuing}[query]
+                    "SELECT hub.registry_startup_ready()": profile and not approved and not issuing}[query]
     class Pool:
         @asynccontextmanager
         async def acquire(self):

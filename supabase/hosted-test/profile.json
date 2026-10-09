@@ -243,6 +243,11 @@
       "name": "202610090048_publication_knowledge_permissions.sql",
       "canonical_sha256": "f8eecb2fb005d42bbcedb9676287d38b64a79ddd38623e5ba91d0a21c7c78a47",
       "executed_sha256": "f8eecb2fb005d42bbcedb9676287d38b64a79ddd38623e5ba91d0a21c7c78a47"
+    },
+    {
+      "name": "202610090049_registry_permissions.sql",
+      "canonical_sha256": "13364137236cc1de6becf22f1e4aca8f8cbafc7c1019625fcde47e1e892789d8",
+      "executed_sha256": "13364137236cc1de6becf22f1e4aca8f8cbafc7c1019625fcde47e1e892789d8"
     }
   ]
 }

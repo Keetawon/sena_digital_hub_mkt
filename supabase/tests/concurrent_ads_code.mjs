@@ -18,6 +18,7 @@ const codes = [];
 let pending;
 try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
+  await setup.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000006',false)");
   assert.equal((await setup.query('select ads.test_issuing_enabled() as enabled')).rows[0].enabled, true, 'Local fixture override is required');
   await setup.query('begin');
   await setup.query("select set_config('app.change_reason',$1,true)", [reason]);

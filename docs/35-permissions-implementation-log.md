@@ -15,8 +15,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | 0 — baseline manifests | Passed | `08267d3` | Typecheck/build passed; API 1,444 → 1,495 (+11 unchanged skips); DB 51 + 7 and 1,040 SQL probes passed; H1 11 + 38 passed; UI 213 → 213 passed |
 | 1 — foundations | Passed | `6261f53` | Typecheck/build passed; API 1,495 → 1,527 (+11 unchanged skips); UI 213 → 214; DB 51 + 7 plus foundation SQL probes; H1 11 + 38 |
 | 2 — content core | Passed and pushed | `af64b21` | Typecheck/build passed; API 1,527 → 1,556 (+11 unchanged skips); UI 214 → 215; DB 51 + 7 → 51 + 8; H1 11 + 38 |
-| 3 — publication and knowledge | Passed | Commit with this log; literal hash in next phase | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
-| 4 — registry | Not started | — | — |
+| 3 — publication and knowledge | Passed and pushed | `1259972` | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
+| 4 — registry | Passed | Commit with this log; literal hash in next phase | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
 | 5 — finance, operations, archive | Not started | — | — |
 | 6 — shared and residual authority | Not started | — | — |
 | C — account grid and feature onboarding | Not started | — | — |
@@ -44,7 +44,7 @@ The Phase 0 action manifest is frozen. Phase 1 has copied the templates and intr
 
 ## Resume
 
-Phases A, 0, 1, 2 and 3 are complete. Next: **Phase 4 — registry**, then 5–6, C and UAT. Phase 2 is pushed as `af64b21`; Phase 3 commit subject is `feat: enforce publication and knowledge permissions (phase 3)`. Record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 48 is applied to the backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each subsequent phase only after all its gates pass. No permission grid is editable yet, and this is not the final UAT build.
+Phases A, 0, 1, 2, 3 and 4 are complete. Next: **Phase 5 — finance, operations and archive**, then 6, C and UAT. Phase 2 is pushed as `af64b21`; Phase 3 as `1259972`. Phase 4 commit subject is `feat: enforce registry permissions and table-backed agency scope (phase 4)`; record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 49 is applied to the backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each subsequent phase only after all its gates pass. No permission grid is editable yet, and this is not the final UAT build.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
 
@@ -254,3 +254,46 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phase3-2026-10-09T09-50-53
 Working PostgreSQL/API/admin were restored; health, home, Accounts, Projects, Brands, Assets, Promotions, Releases, Knowledge, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase3-working-services.json`. No working seed runner or upstream write was used.
 
 Checkpoint commit subject: **`feat: enforce publication and knowledge permissions (phase 3)`**. Every gate passed; push this phase under the owner's revised protocol. No Phase 4 application changes are included. Resume at **Phase 4 — registry** after verifying the checkpoint push.
+
+## Phase 4 implementation
+
+Phase 3 pushed as **`1259972`**, with clean tree and matching origin/main verified before beginning. Working services were restored and checked at that checkpoint, then stopped under the owner's existing permission for separate disposable tests. Migration 49 is **not applied to the working database**; no Phase 4 commit/push is allowed before every gate passes.
+
+Migration 49 adds table-backed Registry guards to ten API routes and the real SQL entry points, including previews, scope creation, issuance, variants and native binding. Eight existing FORCE RLS tables receive restrictive predicates alongside the old legacy/technical policies. Application roles gain no direct DML. Agency scope comes from the ACTIVE account's canonical, date-valid vocabulary code; changing either the SQL role or `app.agency_code` cannot widen it. Agency binding audit still records `AGENCY_RETURNED`. External scope remains mandatory when the caller uses `hub_app`.
+
+### Decisions taken for owner review
+
+- Global approval/cancellation are operator-only as accepted. Their application EXECUTE grants are removed; the operator connection is the authority and a required actor UUID supplies audit attribution only. User-management flags confer no stewardship power.
+- Direct legacy-admin INSERT/UPDATE on Registry vocabulary and source scope/member tables is also removed. These are operator maintenance paths with no UI endpoint; retaining them would bypass Registry E and create a hidden grid exception. Registry E still creates valid combined scopes through the guarded function. This is an additional explicit conversion difference; imported vocab/source maintenance remains possible through the operator connection.
+- Active shared scope/vocabulary references remain available to valid agencies as before; compound scopes and registration/name/binding data remain limited to their own agency. Finance/shared cross-tab projections remain Phase 5/6 work, so every grid stays `LEGACY_LOCKED`.
+- The local issuance override and H1's reviewed settings-based override are preserved separately. The migration wraps each installed helper's existing body without changing its source of configuration. Pre-account H1 seeding checks configuration through its already-verified deployment-owner connection, rather than impersonating an application account that does not yet exist.
+
+### Gates / current checkpoint
+
+Typecheck and offline build passed. The first DB attempt passed the SQL/domain checks and stopped at the concurrency fixture's old actor-less call to Registry configuration. That setup now supplies the existing synthetic online account; no authorization exception was added. API and local H1 gates are running. Two new browser cases cover next-request Registry revocation and the fixed agency boundary. No new skip or flaky retry is intended. The working database remains at migration 48.
+
+H1's first run exposed API startup's legacy admin-role configuration read before an account exists. A bounded `hub.registry_startup_ready()` technical RPC now returns only whether the DB-proven H1 profile has both issuance flags off. It cannot return Registry data or grant a user permission. Startup uses `hub_app`, not admin impersonation. H1 then passed **11 protocol + 38 browser**; the final ACL correction below requires its checksum rerun.
+
+The first API command included explicit file paths but the disposable runner also supplies its full test directory, so it ran the **full suite**, not only the intended focused selection: **1,620 passed / 8 failed / 11 unchanged skips**, 462.60s. Four failures exposed one real missing helper EXECUTE grant for `hub_app` in invoker `ads.preview_scope`; four were the new invalid-agency fixture retaining the application's local role while preparing operator-only vocabulary changes. The helper grant and fixture reset are corrected. The proper `-k` focused selection is running before final full gates; no application guard was loosened and no failed phase is pushed.
+
+The focused rerun passed **45 tests** (30.32s), covering all 26 new Registry cases, live inventory probes and both formerly failing end-to-end flows. The next DB run reached a second old concurrency fixture (`concurrent_ads_line_revision.mjs`) whose random actor UUID had no account. It now creates an ACTIVE synthetic admin-template account and removes it with normal FK cleanup afterward. The complete DB gate then passed **51 reported checks + 8 Node cases**. Final local H1 passed **11 + 38** against migration 49's final checksum.
+
+The focused UI run first had one pass and one failure: the new agency case assumed another test had created registrations. It now creates its own KIN/COMBAY registrations through the real guarded API and asserts both the positive own row and denied other detail. Focused UI: **2 passed**, 3.7s. The final full API and UI gates are running sequentially; no further application/migration changes have been made since these successful focused gates.
+
+Final full API gate: **1,628 passed / 11 unchanged opt-in skips**, 503.91s (Phase 3: 1,602). All 26 new Registry probes passed. The full UI gate is running; typecheck/build/DB/H1 already passed. Migration 49 remains unapplied to the working database until UI also passes and a fresh pre-upgrade dump is taken.
+
+### Phase 4 final gates and working upgrade
+
+- Typecheck and offline webpack production build passed.
+- API: **1,628 passed / 11 unchanged opt-in skips**, 503.91s (Phase 3: 1,602). The 26 new cases cover ten exact route mappings, real non-superuser SQL reads/mutations, single-bit revocation and positive neighbors, unchanged permissive policies unable to bypass the restrictive predicates, forged role/agency settings, canonical/date-valid agency scope, next-request suspension, operator-only decisions, FORCE RLS and closed helper ACLs.
+- UI: **219 passed**, 7.1 minutes (Phase 3: 217); zero failures/skips/retries. Registry revocation and independent KIN/COMBAY browser fixtures pass alongside every previous workflow.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged. Full populated upgrade now applies through migration 49; direct permission-specific SQL cases also run in the API suite.
+- Local H1: **11 protocol + 38 browser cases passed**, including all 49 migrations with the non-superuser migration owner. The original local and H1 issuance mechanisms remain distinct and closed. No hosted request or email occurred.
+
+Logs: `.local/permissions-gates/phase4-{typecheck,build,db,api,ui,h1}.log`. Migration 49 and its profile checksum are frozen after application. All gates passed before the working upgrade.
+
+Fresh pre-upgrade dump: **`.local/backups/permissions-phase4-2026-10-09T10-30-54-008Z/sena_hub_local.dump`**, 6,409,625 bytes. The guarded operation verified the actual working directory, applied only migration 49 and its history entry in one transaction, and compared every existing account field before committing. Verified: **BNA7 = 1; all 8 existing accounts and every field unchanged; 279 staged REM projects; 4 Hub projects; the active manage-users account preserved**. Proof: `.local/permissions-gates/phase4-working-verification.json`.
+
+Working PostgreSQL/API/admin were restored; health, home, Accounts, all migrated content routes, Registry settings/list, `/v1/me` and the catalog returned 200. Admin remains ACTIVE with manage-users enabled; all 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase4-working-services.json`. No working seeds or upstream writes ran.
+
+Checkpoint subject: **`feat: enforce registry permissions and table-backed agency scope (phase 4)`**. Push this completed phase, then resume at **Phase 5**. Only read-only Finance/Archive preparation has occurred; no Phase 5 application, migration or test changes are included here.
