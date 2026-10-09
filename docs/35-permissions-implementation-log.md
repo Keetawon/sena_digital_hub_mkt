@@ -1,7 +1,7 @@
 # Permissions implementation log
 
 Owner programme: 9 October 2026. Starting commit: `12772c3` on `main`.
-Local execution only. Push is deferred until the final full suite passes. Each phase must pass typecheck, offline build, DB, API, UI and loopback H1 gates before the next begins. No owner testing between phases.
+Local execution only. Push is deferred until the final full suite passes, except for the owner's explicit 9 October checkpoint commit-and-push request recorded below. Each phase must pass typecheck, offline build, DB, API, UI and loopback H1 gates before the next begins. No owner testing between phases.
 
 ## Working database preservation
 
@@ -13,8 +13,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 |---|---|---|---|
 | A — responsive sidebar | Passed | `72c262f` | Typecheck/build passed; API 1,444 passed + 11 skipped; DB 51 reported checks + 7 Node cases; H1 11 + 38 passed; UI 213 passed (208 → 213); sidebar rerun 13 passed |
 | 0 — baseline manifests | Passed | `08267d3` | Typecheck/build passed; API 1,444 → 1,495 (+11 unchanged skips); DB 51 + 7 and 1,040 SQL probes passed; H1 11 + 38 passed; UI 213 → 213 passed |
-| 1 — foundations | Passed | This phase commit (hash recorded by Phase 2) | Typecheck/build passed; API 1,495 → 1,527 (+11 unchanged skips); UI 213 → 214; DB 51 + 7 plus foundation SQL probes; H1 11 + 38 |
-| 2 — content core | Not started | — | — |
+| 1 — foundations | Passed | `6261f53` | Typecheck/build passed; API 1,495 → 1,527 (+11 unchanged skips); UI 213 → 214; DB 51 + 7 plus foundation SQL probes; H1 11 + 38 |
+| 2 — content core | In progress | — | DB boundary inventory and design in progress |
 | 3 — publication and knowledge | Not started | — | — |
 | 4 — registry | Not started | — | — |
 | 5 — finance, operations, archive | Not started | — | — |
@@ -137,3 +137,15 @@ Validation: focused foundation SQL/API checks passed after correcting two test h
 Before applying migration 46 to the working cluster, a fresh custom-format dump was created at `.local/backups/permissions-phase1-2026-10-09T05-25-05-749Z/sena_hub_local.dump` (6,297,298 bytes). The guarded operation verified the actual `.local/postgres` directory, applied only migration 46 transactionally with its history entry, and compared every old account field before committing. Verified afterward: **BNA7 = 1 staged row; all eight original accounts and all their pre-existing fields unchanged; 279 staged REM projects; four Hub projects**. The existing admin retains its flag. Proof: `.local/permissions-gates/phase1-working-verification.json`. No seed runner or external-system write was used.
 
 Phase 1 commit subject: `feat: add guarded permission foundations (phase 1)`. Its literal hash will be recorded by Phase 2 to avoid a self-referential hash. Next phase: **2 — content core**. Permission boxes are still locked; do not hand this checkpoint to the owner as the final UAT build. No push yet.
+
+## Phase 2 resume checkpoint — investigation only
+
+Last completed phase commit: **`6261f53`**. No Phase 2 application code, migration or tests have been changed. This checkpoint records the Phase 1 hash and Phase 2 starting state.
+
+Read-only inspection of the working local function catalog is saved in ignored `.local/permissions-gates/phase2-hub-functions.json`. Implementation must cover the callable content RPCs and their renamed `*_before_*` helpers, progress cache projections, minimal brand references inside project payloads, and asset visibility/binding operations. Keep public consumer payloads on their existing boundary. Do not mark a tab editable until its complete DB guard coverage is proved. The next required work is migration 47/content-core guards and the direct runtime deny cases; no Phase 2 gate has run.
+
+Working services have been restored after the completed tests: PostgreSQL `127.0.0.1:55432`, API `127.0.0.1:8000`, admin `http://127.0.0.1:3000`. Health, home and Accounts returned 200; the existing admin is ACTIVE with manage-users enabled; all 12 tab grids remain locked. Ignored proof: `.local/permissions-gates/phase1-working-services.json`. Stop these using the owner's existing permission before the next disposable gates. The app is a Phase 1 checkpoint, not the final UAT build. Continue Phase 2, then 3–6, C and UAT; no intermediate owner testing and no push until the programme's final full suite passes.
+
+### Owner checkpoint push exception — 9 October 2026
+
+After the Phase 1 report, the owner explicitly requested “commit & push?”. This authorizes a separate documentation checkpoint commit and pushing the completed A/0/1 commits to `origin/main` now, before the remaining programme phases. It does not authorize hosted execution, deployment, or any claim that the full permissions programme is complete. The checkpoint changes documentation only; the completed Phase 1 gates above remain the latest application validation. Subsequent phase pushes retain the original final-suite gate unless the owner directs otherwise.
