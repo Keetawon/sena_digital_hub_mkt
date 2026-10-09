@@ -10,6 +10,7 @@ from fastapi import Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from .auth import Actor, failure
+from .content_permissions import require_content
 from .finance import Month
 
 Key = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -68,9 +69,8 @@ class FollowUpInput(SnapshotInput):
 
 
 def register_actuals_routes(app, authentication, database, settings):
-    async def staff(actor: Actor = Depends(authentication)):
-        if actor.role not in {"online_staff", "admin"}:
-            raise failure(403, "actuals_forbidden", "เฉพาะทีมออนไลน์และผู้ดูแลที่มีสิทธิ์เข้าถึงข้อมูลการตลาด")
+    async def staff(request: Request, actor: Actor = Depends(authentication)):
+        require_content(request, error_code="actuals_forbidden")
         target = urlparse(settings.database_url)
         if settings.environment != "local" or target.hostname != "127.0.0.1" or target.port != 55432 or target.path != "/sena_hub_local":
             raise failure(403, "actuals_test_only", "ข้อมูลตัวอย่างนี้เปิดเฉพาะระบบทดสอบภายในเครื่อง")

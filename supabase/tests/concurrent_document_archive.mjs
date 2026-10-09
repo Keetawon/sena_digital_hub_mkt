@@ -35,6 +35,7 @@ try {
   secondPid = (await second.query('select pg_backend_pid() pid')).rows[0].pid;
   await setup.query('begin');
   await setup.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [actor, fixtureId]);
+  await setup.query("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','online_staff')", [actor, actor + '@example.test']);
   const memoNo = (await setup.query("select 'MO2610'||lpad(n::text,3,'0') value from generate_series(0,899) n where not exists(select 1 from ads.memo_identifier where identifier='MO2610'||lpad(n::text,3,'0')) order by n limit 1")).rows[0].value;
   const fields = { memo_no: memoNo, subject: 'Synthetic concurrency memo', requesting_bud: 'C1', gross_amount: '123.45', mirrored_status: 'APPROVED', approval_date: '2026-10-01', period_start: '2026-10-01', period_end: '2026-10-31' };
   const result = { pages: [{ page: 1, method: 'TEXT', text: 'SYNTHETIC CONCURRENCY MEMO', confidence: null }], fields, field_sources: Object.fromEntries(Object.keys(fields).map(k => [k, { page: 1, confidence: null }])), rows: [], controls: {} };
@@ -103,6 +104,8 @@ try {
   await setup.query('delete from ads.memo_identifier where memo_id in(select id from ads.memo where created_by=$1)', [actor]);
   await setup.query('delete from ads.memo where created_by=$1', [actor]);
   await setup.query('delete from audit.change_log where actor=$1', [actor]);
+  await setup.query("set local session_replication_role='origin'");
+  await setup.query('delete from hub.user_account where id=$1', [actor]);
   await setup.query('commit');
   await Promise.all([setup.end(), first.end(), second.end()]);
 }

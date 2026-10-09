@@ -41,6 +41,17 @@ REGISTRY_TABLES = {'ads.' + name for name in ('vocab', 'scope_code', 'scope_memb
 REGISTRY_FUNCTIONS = {'hub.registry_agency', 'hub.require_registry', 'hub.registry_startup_ready'}
 REGISTRY_REPLACED_POLICIES = {'agency_vocab', 'agency_registration', 'agency_names', 'agency_bindings',
     'agency_binding_check', 'agency_scopes', 'agency_members'}
+OPERATIONS_TABLES = {'ads.' + name for name in (
+    'memo', 'memo_identifier', 'media_line', 'media_line_revision', 'media_line_component', 'line_budget_item',
+    'correction', 'correction_target', 'line_assignment', 'document_requirement', 'ad_account', 'channel_account',
+    'account_mapping', 'recurring_commitment', 'commitment_version', 'commitment_memo_cover', 'commitment_occurrence',
+    'card_statement_control', 'cost_record', 'cost_allocation_set', 'cost_allocation',
+    'finding_workflow', 'finding_history', 'document_follow_up', 'archive_fixture', 'archive_document', 'archive_version',
+    'archive_receipt', 'archive_job', 'archive_attempt', 'archive_extraction', 'archive_confirmation', 'archive_application', 'archive_memo_chunk')}
+OPERATIONS_TABLES |= {'staging.' + name for name in ('ads_ledger_batch', 'ads_ledger_row', 'ads_card_batch', 'ads_card_row',
+    'ads_actuals_batch', 'ads_actuals_current', 'ads_actuals_dim', 'ads_actuals_bridge', 'ads_actuals_monthly', 'ads_actuals_finding')}
+OPERATIONS_TABLES |= {'audit.archive_access'}
+OPERATIONS_FUNCTIONS = {'hub.workflow_actor_label', 'hub.operations_projection'}
 FUNCTIONS_SQL = """select n.nspname||'.'||p.proname as name,pg_get_function_identity_arguments(p.oid) as arguments,
  p.prosecdef as security_definer,p.proconfig as config,
  array(select r from unnest($2::text[]) r where has_function_privilege(r,p.oid,'execute') order by r) as execute_roles
@@ -69,7 +80,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS
+                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -95,10 +106,17 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     assert all(r['permissive'] == 'RESTRICTIVE' and r['with_check'] == 'false'
                                for r in registry if r['name'] == 'registry_permission')
                     actual = [r for r in actual if r not in registry]
+                    operations = [r for r in actual if r['name'] in ('operations_owner', 'operations_permission')]
+                    assert len(operations) == 2 * len(OPERATIONS_TABLES) == 90
+                    assert all(r['schema'] + '.' + r['table'] in OPERATIONS_TABLES for r in operations)
+                    assert all(r['permissive'] == 'RESTRICTIVE' and 'hub.can' in r['qual'] and r['with_check'] == 'false'
+                               for r in operations if r['name'] == 'operations_permission')
+                    actual = [r for r in actual if r not in operations]
                 expected = BASELINE[name]
                 if name == 'policies':
                     expected = [r for r in expected if r['name'] not in REGISTRY_REPLACED_POLICIES]
                 if name == 'functions':
+                    expected = [{**r, 'security_definer': True} if r['name'] == 'ads.finance_invariant' else r for r in expected]
                     expected = [{**r, 'execute_roles': []} if r['name'] in ('ads.cancel_registration', 'ads.set_approval') else r for r in expected]
                 if name == 'relations':
                     expected = [{**r, 'rls': True, 'force_rls': True} if r['name'] in CONTENT_TABLES | PUBLICATION_TABLES else r for r in expected]

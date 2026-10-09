@@ -1,5 +1,6 @@
 -- Independent synthetic metadata/result fixtures; every database change rolls back.
 begin;
+insert into hub.user_account(id,email,status,hub_role) values('00000000-0000-0000-0000-000000000041','archive-sql@example.test','ACTIVE','online_staff');
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 select set_config('app.change_reason','Synthetic archive SQL contract',true);
 -- Keep these worker claims isolated from any queued local demonstration.
@@ -38,6 +39,7 @@ do $$ declare t regclass;role_name text;begin
  begin perform ads.archive_read();assert false,'Restricted role read archive';exception when insufficient_privilege then null;end;
  execute 'reset role';end loop;
 end $$;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 set local role online_staff;
 do $$ begin
  begin perform ads.archive_receive('{"fixture_id":"arbitrary-real-pdf","synthetic":true}');assert false,'Client synthetic flag accepted';exception when invalid_parameter_value then null;end;
@@ -57,6 +59,7 @@ do $$ declare claim jsonb:=current_setting('test.archive_claim')::jsonb;begin
  perform ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,current_setting('test.archive_memo_result')::jsonb);
  begin perform ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,current_setting('test.archive_memo_result')::jsonb);assert false,'Finished job replay overwritten';exception when serialization_failure then null;end;
 end $$;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 set local role online_staff;
 do $$ declare d jsonb;body jsonb;begin
  d:=ads.archive_read(current_setting('test.archive_memo')::uuid);
@@ -79,11 +82,13 @@ end $$;
 reset role;
 do $$ begin
  update ads.memo set mirrored_status='CANCELLED' where id=current_setting('test.archive_p2_memo')::uuid;
- set local role online_staff;
+ perform set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
+set local role online_staff;
  assert(ads.archive_search(current_setting('test.archive_memo_no'))->>'total')::integer=0,'P2 status change left stale source facts in search';
  reset role;
  update ads.memo set mirrored_status='APPROVED' where id=current_setting('test.archive_p2_memo')::uuid;
 end $$;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 set local role admin;
 do $$ declare d jsonb;claim jsonb;begin
  d:=ads.archive_read(current_setting('test.archive_memo')::uuid);
@@ -101,9 +106,11 @@ do $$ declare d jsonb;claim jsonb;begin
  claim:=ads.archive_claim('SQL-RETRY',120);assert(claim->>'attempt')::integer=2,'Retry lost attempt history';
  d:=ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,current_setting('test.archive_memo_result')::jsonb);
  perform ads.archive_command('hold',(d->>'id')::uuid,jsonb_build_object('expected_revision',d->'revision','held',true,'reason','Isolate next worker fixture'));
+ perform set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
  perform ads.archive_access(jsonb_build_object('action','DOWNLOAD','outcome','DENIED','original_role','agency','original_actor_id','00000000-0000-0000-0000-000000000041','document_id',d->'id','version_id',current_setting('test.archive_memo_version'),'request_id',gen_random_uuid(),'bytes',0));
 end $$;
 
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 set local role online_staff;
 select set_config('test.archive_statement',ads.archive_receive('{"fixture_id":"sql-archive-statement"}')->>'id',true);
 set local role ads_document_worker;
@@ -113,6 +120,7 @@ do $$ declare claim jsonb:=current_setting('test.archive_claim')::jsonb;bad json
  bad:=jsonb_set(jsonb_set(bad,'{rows,0,amount}','"110.00"'),'{rows,1,amount}','"-20.00"');
  perform ads.archive_finish((claim->>'job_id')::uuid,(claim->>'lease_token')::uuid,bad);
 end $$;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000041',true);
 set local role online_staff;
 do $$ declare d jsonb;body jsonb;before_target uuid;begin
  d:=ads.archive_read(current_setting('test.archive_statement')::uuid);

@@ -16,8 +16,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | 1 — foundations | Passed | `6261f53` | Typecheck/build passed; API 1,495 → 1,527 (+11 unchanged skips); UI 213 → 214; DB 51 + 7 plus foundation SQL probes; H1 11 + 38 |
 | 2 — content core | Passed and pushed | `af64b21` | Typecheck/build passed; API 1,527 → 1,556 (+11 unchanged skips); UI 214 → 215; DB 51 + 7 → 51 + 8; H1 11 + 38 |
 | 3 — publication and knowledge | Passed and pushed | `1259972` | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
-| 4 — registry | Passed | Commit with this log; literal hash in next phase | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
-| 5 — finance, operations, archive | Not started | — | — |
+| 4 — registry | Passed and pushed | `0ca0d75` | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
+| 5 — finance, operations, archive | In progress | — | No gates passed yet |
 | 6 — shared and residual authority | Not started | — | — |
 | C — account grid and feature onboarding | Not started | — | — |
 | UAT — synthetic personas and owner pack | Not started | — | — |
@@ -44,7 +44,7 @@ The Phase 0 action manifest is frozen. Phase 1 has copied the templates and intr
 
 ## Resume
 
-Phases A, 0, 1, 2, 3 and 4 are complete. Next: **Phase 5 — finance, operations and archive**, then 6, C and UAT. Phase 2 is pushed as `af64b21`; Phase 3 as `1259972`. Phase 4 commit subject is `feat: enforce registry permissions and table-backed agency scope (phase 4)`; record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 49 is applied to the backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each subsequent phase only after all its gates pass. No permission grid is editable yet, and this is not the final UAT build.
+Phases A, 0, 1, 2, 3, 4 and 5 are complete. Next: **Phase 6 ? shared and residual authority**, then C and UAT. Phase 4 is pushed as `0ca0d75`; Phase 5 checkpoint subject is `feat: enforce finance and operations capabilities (phase 5)`. Record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 50 is applied to the freshly backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each phase only after all gates pass. All grids remain locked; this is not the final UAT build.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
 
@@ -297,3 +297,56 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phase4-2026-10-09T10-30-54
 Working PostgreSQL/API/admin were restored; health, home, Accounts, all migrated content routes, Registry settings/list, `/v1/me` and the catalog returned 200. Admin remains ACTIVE with manage-users enabled; all 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase4-working-services.json`. No working seeds or upstream writes ran.
 
 Checkpoint subject: **`feat: enforce registry permissions and table-backed agency scope (phase 4)`**. Push this completed phase, then resume at **Phase 5**. Only read-only Finance/Archive preparation has occurred; no Phase 5 application, migration or test changes are included here.
+
+## Phase 5 implementation — in progress
+
+Phase 4 committed and pushed as **`0ca0d75`**; clean main verified before this phase. Migration 50 is not applied to the working database. All grids remain locked. No commit/push until every gate passes.
+
+### Decisions taken for owner review
+
+- Finance assignment changes, mapping closure, commitment suspension and line archival require A because they change financial applicability. Draft creation, interpretation and imports require E. Identifier/correction review and retirement use only the named special plus V.
+- Statement writes require A when either the existing or requested statement is CONFIRMED; removing confirmation also requires A. An omitted status cannot evade the check. The existing Finance advisory lock protects the status lookup and mutation together.
+- Archive apply always requires Archive A plus Finance E. `CARD_CREATE` additionally requires Finance A: its established atomic workflow creates a CONFIRMED statement before importing its rows. Making it a draft would quarantine the import and change the business workflow. Default admin/online templates already include both; no bypass of confirmation rules is introduced.
+- User-facing operations move to table capabilities now. Worker/ETL/export credentials and shared assistant paths remain the explicit Phase 6 boundary; no account grid is unlocked before that coverage passes.
+
+
+### Phase 5 gates / current checkpoint
+
+Typecheck and offline production build passed. The first focused run was **509 passed / 10 failed / 3 existing skips** (131.02s): six expected the established `actuals_forbidden` code, now preserved; four exposed deferred financial consistency triggers executing after the command's definer context ended. The existing fixed-row `finance_invariant` trigger now runs as its existing non-login finance owner, with no caller EXECUTE grant or direct application table access.
+
+The second focused run passed **557 / 3 failed / 3 existing skips** (192.24s). Two new fixtures omitted the required statement due date or resolved a regclass before selecting an execution role. The third exposed a real JSON-null `control_totals` case in the Actuals projection; the projection now checks the JSON type before removing financial totals. One subsequent run stopped at collection because of a quote typo in the new inventory assertion; fixed and syntax checked. These are corrections, not flaky retries or added skips.
+
+Migration 50 explicitly guards 41 Finance dispatcher actions (including the two local import actions), 86 API routes, Archive apply's conjunction, and each Documents/Exceptions workflow. Forty-five existing relations retain FORCE RLS and receive 90 owner/restrictive policies. Only bounded RPCs are granted to the base role. Actuals cached Finance payloads are reduced in SQL when Finance V is absent; hidden cross-tab finding context and document source links are withheld. Archive search does not search hidden Finance aliases or expose its record status. Workflow owner labels come from the account table for attribution only. Archive access auditing uses the base role's insert-only RPC, without impersonating admin.
+
+The initial H1 invocation reported all **11 protocol + 38 browser** tests passed; PowerShell's redirected native stderr nevertheless yielded a shell exit 1. The final migration checksum changed for the null fix, so H1 is rerunning with an explicit native exit code. Focused permission and full DB gates are running. The working database remains at migration 49; no working upgrade or Phase 5 push has occurred.
+
+
+Focused permission rerun: **41 passed**, 42.78s. Full DB initially exposed Archive's old UUID-only SQL actor; the fixture now creates an ACTIVE online account and uses the actual seeded admin identity for legal hold. An intermediate rerun used the consumer UUID instead of the admin UUID; corrected after checking the actor catalog. Archive and Actuals concurrency fixtures now also create their own ACTIVE accounts and clean them up with normal account FK behavior. The final DB gate passed **51 reported SQL/concurrency checks + 8 Node cases**, including the populated upgrade through migration 50. Final H1 passed **11 protocol + 38 browser** with native exit code 0. Full API and UI gates are running sequentially. No working migration or Phase 5 commit/push yet.
+
+
+The first full API gate was interrupted with no final result after 1,296 reported outcomes (77%); its process/session no longer existed after the owner resumed. It is **not a passed gate**. Its one reported failure was located from the unchanged 1,680-test collection order: ACTIVE online-staff in the baseline route-entry probe. Archive legal hold was historically checked inside the handler; its new early capability dependency correctly denies before that probe's stubbed handler. The expected entry result now reflects this earlier denial; effective default access does not broaden or narrow. The final full API/UI gates must restart.
+
+A parallel read-only review found a missing shared projection: Actuals campaign bridge rows still exposed Registry binding details and Finance assignment/correction IDs when those tabs were hidden. Migration 50 and a real-runtime regression test are being extended with a bounded bridge projection. This invalidates the earlier migration checksum's DB/H1 gates; rerun them before committing. Typecheck/build remain passed because no admin source changed. Working database is still at migration 49.
+
+
+Final bridge/entry focused checks passed **45 tests**, 28.60s; the complete DB rerun passed **51 reported SQL/concurrency checks + 8 Node cases** against the final migration 50 checksum. The H1 browser gate then exposed a deterministic test synchronization gap in `hosted-h1.spec.ts` (cached progress case): its second login navigation began before the asynchronous logout assigned `/login`, causing `net::ERR_ABORTED`. The trace shows logout click completion at 48,902.5 ms, the premature second navigation at 48,905 ms, and logout's competing redirect at 48,919.5 ms. The test now waits for the exact logout URL and login heading; no application change, retry, skip or arbitrary sleep. H1 is rerunning in full. API/UI remain in the sequential final pipeline.
+
+
+The final API gate passed **1,672 tests / 11 unchanged opt-in skips**, 325.18s (Phase 4: 1,628). Final H1 passed **11 protocol + 38 browser tests**, native exit 0, after the synchronization correction. The first full UI command stopped before browser collection: `seed-document-demo.py` used actor UUID `?0041`, absent from the eight demo accounts. Its existing guarded synthetic seed now inserts that ACTIVE online-staff fixture only if absent, allowing the existing template trigger to establish authority; replay never reactivates or overwrites an existing account. No working seed ran. The full UI gate is now running with that corrected fixture.
+
+
+### Phase 5 final gates and working upgrade
+
+- Typecheck and offline webpack production build passed.
+- API: **1,672 passed / 11 unchanged opt-in skips**, 325.18s (Phase 4: 1,628). Forty-four new cases verify all 86 route mappings, real non-superuser V/E/A/special denials and positive neighbors, statement-state guards, Archive destination conjunctions, FORCE RLS/private ACLs, next-request revocation, and hidden Finance/Registry cached projections.
+- UI: **221 passed**, 5.6 minutes (Phase 4: 219), zero failures/skips/retries in the final run. Both new revocation cases traverse the real Next proxy. The earlier fixture stop and H1 navigation synchronization correction are recorded above.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged, including populated upgrade through migration 50. Permission-specific direct SQL probes also run in the API suite.
+- Local H1: **11 protocol + 38 browser cases passed**, native exit 0, all 50 migrations under the non-superuser migration owner. No hosted request or real email occurred.
+
+Logs: `.local/permissions-gates/phase5-{typecheck,build,db,api,ui,h1}.log`. All gates passed before the working upgrade. Migration 50/profile checksum are frozen after application.
+
+Fresh pre-upgrade dump: **`.local/backups/permissions-phase5-2026-10-09T13-43-41-162Z/sena_hub_local.dump`**, 6,420,650 bytes. The guarded operation verified the actual working data directory, applied only migration 50 and its history entry transactionally, and compared every existing account field before commit. Verified **BNA7 = 1; all 8 existing accounts and every field unchanged; 279 staged REM projects; 4 Hub projects; one ACTIVE manage-users account preserved**. Proof: `.local/permissions-gates/phase5-working-verification.json`. No working seed or upstream write ran.
+
+Working PostgreSQL/API/admin were restored. Health, home, Accounts, migrated content/Registry, Finance, Actuals, Documents, Exceptions, Archive, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase5-working-services.json`.
+
+Checkpoint subject: **`feat: enforce finance and operations capabilities (phase 5)`**. Commit and push this passed phase, then resume at **Phase 6**. Read-only Phase 6 and C plans are prepared in ignored `.local/permissions-gates/`; no Phase 6 application or migration changes are included.

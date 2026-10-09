@@ -91,6 +91,92 @@ CONTENT_RULES = {
     ('POST', '/v1/admin/ads/registrations/{code}/names'): ('registry', 'edit'),
     ('POST', '/v1/admin/ads/registrations/{code}/bindings'): ('registry', 'edit'),
     ('POST', '/v1/admin/ads/names/validate'): ('registry', 'view'),
+    ('POST', '/v1/admin/ads/memos'): ('finance', 'edit'),
+    ('PATCH', '/v1/admin/ads/memos/{record_id}'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/memos/{record_id}/confirm-record'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/memo-identifiers'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/memo-identifiers/{record_id}/review'): ('finance', 'finance.review_identifiers_corrections'),
+    ('POST', '/v1/admin/ads/memo-identifiers/{record_id}/retire'): ('finance', 'finance.review_identifiers_corrections'),
+    ('POST', '/v1/admin/ads/media-lines'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/media-lines/{record_id}/revisions'): ('finance', 'edit'),
+    ('PATCH', '/v1/admin/ads/media-lines/{record_id}/revisions/{revision_id}'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/media-lines/{record_id}/revisions/{revision_id}/confirm'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/media-lines/{record_id}/archive'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/line-assignments'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/line-assignments/{record_id}/replace'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/line-assignments/{record_id}/end'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/line-assignments/{record_id}/acknowledge'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/corrections'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/corrections/{record_id}/review'): ('finance', 'finance.review_identifiers_corrections'),
+    ('POST', '/v1/admin/ads/corrections/{record_id}/apply'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/corrections/{record_id}/retire'): ('finance', 'finance.review_identifiers_corrections'),
+    ('POST', '/v1/admin/ads/ad-accounts'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/ad-accounts/{record_id}/versions'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/ad-accounts/{record_id}/versions/confirm'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/ad-accounts/{record_id}/versions/close'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/channel-accounts'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/channel-accounts/{record_id}/versions'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/channel-accounts/{record_id}/versions/confirm'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/channel-accounts/{record_id}/versions/close'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/commitments'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/commitments/{record_id}/revisions'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/commitments/{record_id}/activate'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/commitments/{record_id}/suspend'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/commitments/{record_id}/covers'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/commitments/{record_id}/occurrences'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/card-statements'): ('finance', ('edit', 'approve')),
+    ('PATCH', '/v1/admin/ads/card-statements/{record_id}'): ('finance', ('edit', 'approve')),
+    ('POST', '/v1/admin/ads/card-imports/{record_id}/confirm'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/card-imports/{record_id}/replace'): ('finance', 'approve'),
+    ('POST', '/v1/admin/ads/card-import-rows/{record_id}/classify'): ('finance', 'edit'),
+    ('POST', '/v1/admin/ads/cost-records/{record_id}/allocations'): ('finance', 'approve'),
+    ('GET', '/v1/admin/ads/memos'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/memos/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/media-lines'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/media-lines/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/line-assignments'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/line-assignments/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/corrections'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/corrections/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/ledger-imports'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/ledger-imports/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/ad-accounts'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/ad-accounts/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/channel-accounts'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/channel-accounts/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/commitments'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/commitments/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/card-statements'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/card-statements/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/card-imports'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/card-imports/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/cost-records'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/cost-records/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/document-requirements'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/document-requirements/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/memo-identifiers'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/memo-identifiers/{record_id}'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/registrations/{code}/line-candidates'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/registrations/{code}/monthly-lines'): ('finance', 'view'),
+    ('GET', '/v1/admin/ads/actuals'): ('actuals', 'view'),
+    ('GET', '/v1/admin/ads/actuals/{line_id}'): ('actuals', 'view'),
+    ('GET', '/v1/admin/ads/document-tracking'): ('documents', 'view'),
+    ('GET', '/v1/admin/ads/document-tracking/{key}'): ('documents', 'view'),
+    ('GET', '/v1/admin/ads/findings'): ('exceptions', 'view'),
+    ('GET', '/v1/admin/ads/findings/{key}'): ('exceptions', 'view'),
+    ('POST', '/v1/admin/ads/findings/{key}/workflow'): ('exceptions', 'edit'),
+    ('POST', '/v1/admin/ads/document-tracking/{key}/follow-ups'): ('documents', 'edit'),
+    ('GET', '/v1/admin/ads/archive'): ('archive', 'view'),
+    ('GET', '/v1/admin/ads/archive/fixtures'): ('archive', 'view'),
+    ('GET', '/v1/admin/ads/archive/search'): ('archive', 'view'),
+    ('GET', '/v1/admin/ads/archive/{document_id}'): ('archive', 'view'),
+    ('GET', '/v1/admin/ads/archive/{document_id}/file'): ('archive', 'view'),
+    ('GET', '/v1/admin/ads/archive/{document_id}/page'): ('archive', 'view'),
+    ('POST', '/v1/admin/ads/archive'): ('archive', 'edit'),
+    ('POST', '/v1/admin/ads/archive/{document_id}/retry'): ('archive', 'edit'),
+    ('POST', '/v1/admin/ads/archive/{document_id}/confirm'): ('archive', 'edit'),
+    ('POST', '/v1/admin/ads/archive/{document_id}/apply'): ('archive', 'approve'),
+    ('POST', '/v1/admin/ads/archive/{document_id}/hold'): ('archive', 'archive.legal_hold'),
 }
 
 
@@ -99,7 +185,7 @@ def content_rule(request: Request):
     return CONTENT_RULES.get((request.method, getattr(route, "path", None)))
 
 
-def require_content(request: Request) -> bool:
+def require_content(request: Request, *, error_code: str = "forbidden") -> bool:
     rule = content_rule(request)
     if rule is None:
         return False
@@ -112,6 +198,10 @@ def require_content(request: Request) -> bool:
             # Rights reviewers retain upload intake, without gaining permission
             # to edit or bind a project/brand. SQL checks the same disjunction.
             allowed = allowed or caps.get("tabs", {}).get("knowledge", {}).get("approve") is True
+    elif isinstance(level, tuple):
+        # Statement writes: SQL checks the existing and requested review status
+        # under its Finance lock. A draft needs E; a confirmed write needs A.
+        allowed = any(caps.get("tabs", {}).get(tab, {}).get(item) is True for item in level)
     elif "." in level:
         allowed = caps.get("special_actions", {}).get(level) is True
     else:
@@ -121,6 +211,8 @@ def require_content(request: Request) -> bool:
         # SQL separately checks the target registration's canonical agency.
         allowed = level == "view" or rule == ('registry', 'edit') and getattr(
             request.scope.get('route'), 'path', None) == '/v1/admin/ads/registrations/{code}/bindings'
+    if rule == ('archive', 'approve'):
+        allowed = allowed and caps.get('tabs', {}).get('finance', {}).get('edit') is True
     if not allowed:
-        raise failure(403, "forbidden", "บัญชีนี้ไม่มีสิทธิ์ดำเนินการในแท็บนี้")
+        raise failure(403, error_code, "บัญชีนี้ไม่มีสิทธิ์ดำเนินการในแท็บนี้")
     return True

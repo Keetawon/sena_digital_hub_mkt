@@ -62,6 +62,7 @@ async function blockedThenRelease(promise) {
 try {
   await Promise.all([setup.connect(), first.connect(), second.connect()]);
   await second.query("select set_config('application_name',$1,false)", ['p3-race-second-' + actor]);
+  await setup.query("insert into hub.user_account(id,email,status,hub_role) values($1,$2,'ACTIVE','admin')", [actor, actor + '@example.test']);
   const current = (await setup.query('select b.* from staging.ads_actuals_current c left join staging.ads_actuals_batch b on b.id=c.batch_id')).rows[0];
   previousBatch = current?.id ?? null;
   previousSnapshot = current?.snapshot_id ?? null;
@@ -121,6 +122,8 @@ try {
     }
     await setup.query('delete from staging.ads_actuals_batch where created_by=$1', [actor]);
     await setup.query('delete from audit.change_log where actor=$1', [actor]);
+    await setup.query("set local session_replication_role='origin'");
+    await setup.query('delete from hub.user_account where id=$1', [actor]);
     await setup.query('commit');
   }
   await Promise.all([setup.end(), first.end(), second.end()]);

@@ -17,6 +17,7 @@ from fastapi import Depends, Query, Request
 from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, model_validator
 
 from .auth import Actor, failure
+from .content_permissions import require_content
 from .ads import SourceId
 
 CostType = Literal["MEDIA", "AGENCY_FEE", "CHANNEL", "TOOL", "BANK_FEE"]
@@ -633,14 +634,8 @@ def decode_finance(value):
 
 
 def register_finance_routes(app, authentication, database):
-    async def staff(actor: Actor = Depends(authentication)):
-        if actor.role not in {"online_staff", "admin"}:
-            raise failure(403, "finance_forbidden", "เฉพาะทีมออนไลน์และผู้ดูแลที่มีสิทธิ์เข้าถึงข้อมูลการตลาดและงบประมาณ")
-        return actor
-
-    async def administrator(actor: Actor = Depends(staff)):
-        if actor.role != "admin":
-            raise failure(403, "finance_review_forbidden", "เฉพาะผู้ดูแลที่มีสิทธิ์ยืนยันการแก้ไขรหัสและชื่ออ้างอิง")
+    async def staff(request: Request, actor: Actor = Depends(authentication)):
+        require_content(request, error_code="finance_forbidden")
         return actor
 
     @asynccontextmanager
@@ -698,9 +693,9 @@ def register_finance_routes(app, authentication, database):
     }.items():
         add_read(path, resource)
 
-    def add_command(path, action, model, *, method="POST", admin_only=False, status=200, id_field="id"):
+    def add_command(path, action, model, *, method="POST", status=200, id_field="id"):
         # Static typed routes share transport only; clients cannot choose an RPC or actor.
-        async def endpoint(body, request: Request, actor: Actor = Depends(administrator if admin_only else staff)):
+        async def endpoint(body, request: Request, actor: Actor = Depends(staff)):
             payload = body.model_dump(mode="json", exclude_unset=True)
             for source, target in (("record_id", id_field), ("revision_id", "revision_id")):
                 if source in request.path_params:
@@ -719,8 +714,8 @@ def register_finance_routes(app, authentication, database):
     add_command("/memos/{record_id}", "memo_update", MemoUpdate, method="PATCH")
     add_command("/memos/{record_id}/confirm-record", "memo_confirm", Expected)
     add_command("/memo-identifiers", "memo_identifier_propose", MemoAlias, status=201)
-    add_command("/memo-identifiers/{record_id}/review", "memo_identifier_review", ReviewInput, admin_only=True)
-    add_command("/memo-identifiers/{record_id}/retire", "memo_identifier_retire", CloseInput, admin_only=True)
+    add_command("/memo-identifiers/{record_id}/review", "memo_identifier_review", ReviewInput)
+    add_command("/memo-identifiers/{record_id}/retire", "memo_identifier_retire", CloseInput)
     add_command("/media-lines", "line_create", LineCreate, status=201)
     add_command("/media-lines/{record_id}/revisions", "revision_create", RevisionCreate, status=201)
     add_command("/media-lines/{record_id}/revisions/{revision_id}", "revision_update", RevisionCreate, method="PATCH")
@@ -731,9 +726,9 @@ def register_finance_routes(app, authentication, database):
     add_command("/line-assignments/{record_id}/end", "assignment_end", CloseInput)
     add_command("/line-assignments/{record_id}/acknowledge", "assignment_acknowledge", AssignmentAcknowledge)
     add_command("/corrections", "correction_create", CorrectionCreate, status=201)
-    add_command("/corrections/{record_id}/review", "correction_review", ReviewInput, admin_only=True)
+    add_command("/corrections/{record_id}/review", "correction_review", ReviewInput)
     add_command("/corrections/{record_id}/apply", "correction_apply", CorrectionApply)
-    add_command("/corrections/{record_id}/retire", "correction_retire", CloseInput, admin_only=True)
+    add_command("/corrections/{record_id}/retire", "correction_retire", CloseInput)
     add_command("/ad-accounts", "ad_account_create", AdAccountCreate, status=201)
     add_command("/ad-accounts/{record_id}/versions", "ad_account_version_create", AdMappingCreate, status=201)
     add_command("/ad-accounts/{record_id}/versions/confirm", "ad_account_version_confirm", MappingConfirm)

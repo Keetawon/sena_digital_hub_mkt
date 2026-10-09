@@ -19,6 +19,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstra
 from starlette.exceptions import HTTPException
 
 from .auth import Actor, failure
+from .content_permissions import require_content
 from .finance import CostType, Day, Money, Month, Reason, Token, nonblank
 
 Revision = Annotated[int, Field(strict=True, ge=1, le=2147483647)]
@@ -298,9 +299,9 @@ def register_archive_routes(app, authentication, database, settings):
         payload = {"action": action_for(request), "outcome": outcome, "original_role": actor.role if actor else "anonymous",
                    "original_actor_id": str(actor.id) if actor else None, "document_id": str(document_id) if document_id else None,
                    "version_id": str(version_id) if version_id else None, "page": page, "request_id": str(request_id), "bytes": count}
-        # Only this fixed insert-only RPC uses the server audit role. Never a client-selected command.
-        audit_actor = Actor(actor.id if actor else UUID(int=0), "admin")
-        async with database(request, audit_actor) as db:
+        # The base role may call this insert-only audit RPC, even after a denial.
+        audit_actor = actor or Actor(UUID(int=0), "viewer")
+        async with database(request, audit_actor, audit_only=True) as db:
             await db.fetchval("SELECT ads.archive_access($1::jsonb)", payload)
 
     @app.middleware("http")
@@ -326,9 +327,11 @@ def register_archive_routes(app, authentication, database, settings):
             await audit(request, None, "DENIED")
             raise
         request.state.archive_actor = actor
-        if actor.role not in {"online_staff", "admin"}:
+        try:
+            require_content(request, error_code="archive_forbidden")
+        except HTTPException:
             await audit(request, actor, "DENIED")
-            raise failure(403, "archive_forbidden", "คลังเอกสารเปิดเฉพาะทีมออนไลน์และผู้ดูแลในระบบทดสอบภายในเครื่อง")
+            raise
         return actor
 
     @asynccontextmanager
@@ -394,11 +397,8 @@ def register_archive_routes(app, authentication, database, settings):
         check_query(request)
         return await rpc(request, actor, "SELECT ads.archive_receive($1::jsonb)::text", body.model_dump(mode="json", exclude_none=True), document_id=body.document_id)
 
-    def command_route(action, model, admin_only=False):
+    def command_route(action, model):
         async def command(document_id: UUID, body, request: Request, actor: Actor = Depends(staff)):
-            if admin_only and actor.role != "admin":
-                await audit(request, actor, "DENIED", document_id=document_id)
-                raise failure(403, "archive_hold_forbidden", "เฉพาะผู้ดูแลที่กำหนดหรือยกเลิกการเก็บรักษาตามกฎหมายได้")
             check_query(request)
             return await rpc(request, actor, "SELECT ads.archive_command($1,$2,$3::jsonb)::text", action, document_id,
                              body.model_dump(mode="json", exclude_unset=True), document_id=document_id)
@@ -408,7 +408,7 @@ def register_archive_routes(app, authentication, database, settings):
     command_route("retry", Retry)
     command_route("confirm", Confirm)
     command_route("apply", Apply)
-    command_route("hold", Hold, admin_only=True)
+    command_route("hold", Hold)
 
     async def version_bytes(request, actor, document_id, version_id, page, *, statement_only=False):
         async with connection(request, actor) as db:

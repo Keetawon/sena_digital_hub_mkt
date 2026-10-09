@@ -86,6 +86,9 @@ test.describe('H1 disposable managed-permission simulation', () => {
     expect(counts.counts.all).toBe(1);expect(counts.statuses['2'].count).toBe(1);
     await expect(page.locator('.project-summary-row')).toHaveCount(1);
     await page.getByRole('button',{name:'ออกจากระบบ',exact:true}).click();
+    // signOut awaits Auth before assigning /login; a second goto must not race it.
+    await page.waitForURL(`${origin}/login`);
+    await expect(page.getByRole('heading',{name:'เข้าสู่ระบบ',exact:true})).toBeVisible();
     await login(page,'agency-kin');
     expect((await page.request.get('/api/hub/v1/admin/projects/progress')).status()).toBe(403);
   });

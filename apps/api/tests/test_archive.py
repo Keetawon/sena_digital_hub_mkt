@@ -49,7 +49,7 @@ class Store:
         return json.dumps(self.result)
 
     @asynccontextmanager
-    async def database(self, request, actor):
+    async def database(self, request, actor, *, audit_only=False):
         self.actors.append(actor)
         yield self
 
@@ -75,7 +75,7 @@ def test_private_archive_denials_are_audited_without_any_data_access(boundary, r
     assert not store.calls
     assert len(store.audits) == 7
     assert all(event["outcome"] == "DENIED" and event["original_actor_id"] == str(ALL_DEMO_ACTORS[role]) for event in store.audits)
-    assert all(actor.role == "admin" for actor in store.actors)  # Fixed insert-only audit RPC only.
+    assert all(actor.role == ("agency" if role.startswith("agency_") else role) for actor in store.actors)  # No admin impersonation.
     assert all(event["original_role"] == ("agency" if role.startswith("agency_") else role) for event in store.audits)
 
 

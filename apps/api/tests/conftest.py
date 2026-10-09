@@ -48,6 +48,12 @@ def account_lookup_for_route_unit_tests(monkeypatch):
             capabilities['tabs']['releases'] = {'view': view, 'edit': False, 'approve': approve}
             capabilities['tabs']['registry'] = {'view': role in {'admin', 'online_staff'},
                                                 'edit': role in {'admin', 'online_staff'}, 'approve': False}
+            for tab in ('finance', 'archive', 'actuals', 'documents', 'exceptions'):
+                capabilities['tabs'][tab] = {'view': role in {'admin', 'online_staff'},
+                    'edit': tab != 'actuals' and role in {'admin', 'online_staff'},
+                    'approve': tab in {'finance', 'archive'} and role in {'admin', 'online_staff'}}
+            for action in ('finance.review_identifiers_corrections', 'archive.legal_hold'):
+                capabilities['special_actions'][action] = role == 'admin'
             capabilities['agency_registry'] = role in DEMO_AGENCIES
             return {'id': claims['sub'], 'email': claims['email'], 'status': 'ACTIVE',
                     'hub_role': 'agency' if role in DEMO_AGENCIES else role,

@@ -3,6 +3,7 @@ import asyncio
 import json
 from pathlib import Path
 import sys
+from uuid import UUID
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'apps/api'))
@@ -18,6 +19,11 @@ async def seed(db, fixtures):
     receipts = []
     await db.execute('RESET ROLE')
     await db.execute('SELECT hub.require_demo_seeder()')
+    # Keep the historical fixture author, but authorize through its Hub account.
+    # Replay never restores a suspended account or overwrites its permissions.
+    await db.execute("""INSERT INTO hub.user_account(id,email,display_name_th,status,hub_role)
+        VALUES($1,'demo-document-seeder@example.test','ผู้สร้าง เอกสารตัวอย่าง','ACTIVE','online_staff')
+        ON CONFLICT(id) DO NOTHING""", UUID(ACTOR))
     await db.execute("SELECT set_config('app.actor_id',$1,true)", ACTOR)
     await db.execute('SELECT pg_advisory_xact_lock(1560022)')
     for metadata, truth in fixtures:

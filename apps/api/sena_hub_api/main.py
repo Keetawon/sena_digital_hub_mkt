@@ -218,12 +218,12 @@ async def initialize_connection(connection):
 
 
 @asynccontextmanager
-async def database(request: Request, actor: Actor):
+async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     # Only server-mapped constant identifiers may enter SET ROLE.
     roles = {role: role for role in AUTH_ROLES}
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
-            role = "hub_app" if content_rule(request) else roles[actor.role]
+            role = "hub_app" if audit_only or content_rule(request) else roles[actor.role]
             await connection.execute(f"SET LOCAL ROLE {role}")
             await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(actor.id))
             await connection.execute("SELECT set_config('app.agency_code', $1, true)", actor.agency_code or "")

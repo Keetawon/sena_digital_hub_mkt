@@ -86,9 +86,9 @@ def test_archive_review_application_evidence_versions_and_private_access(monkeyp
             "subject": "Synthetic corporate alias " + marker, "requesting_bud": "SID"})
 
     @asynccontextmanager
-    async def database(request, actor):
+    async def database(request, actor, *, audit_only=False):
         async with connection.transaction():
-            await connection.execute(f"SET LOCAL ROLE {actor.role}")
+            await connection.execute("SET LOCAL ROLE hub_app" if audit_only else f"SET LOCAL ROLE {actor.role}")
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(actor.id))
             yield connection
 

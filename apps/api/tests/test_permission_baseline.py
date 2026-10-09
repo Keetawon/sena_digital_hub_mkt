@@ -138,6 +138,10 @@ def test_every_route_entry_uses_account_authority_despite_forged_claims(baseline
             # These guards used to live inside handlers, beyond this entry probe.
             if entry['path'].endswith('/preview-release') or entry['path'].endswith('/rights/approve'):
                 denied = db_role != 'publisher'
+        if status == 'ACTIVE' and path == '/v1/admin/ads/archive/{document_id}/hold':
+            # Phase 5 moves the existing inline legal-hold guard ahead of the
+            # stubbed handler. Default template access is unchanged.
+            denied = db_role != 'admin'
         expected = {403} if denied else {200, 422} if path in INLINE_READS else {204, 422}
         assert response.status_code in expected, (role, status, method, path, response.status_code)
         if path == '/v1/me':
