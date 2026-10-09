@@ -4,6 +4,18 @@ test.beforeEach(async({context})=>{
   await context.addCookies([{name:'sena_local_persona',value:'admin',url:'http://127.0.0.1:3000'}]);
 });
 
+test('permission foundation projection and locked catalog use the account proxy',async({page})=>{
+  await page.goto('/admin/accounts');
+  const account=(await (await page.request.get('/api/hub/v1/me')).json()).data;
+  expect(account.capabilities.can_manage_users).toBe(true);
+  expect(account.capabilities.tabs.projects).toEqual({view:true,edit:true,approve:false});
+  expect(account.capabilities.published_consumer).toBe(true);
+  const response=await page.request.get('/api/hub/v1/admin/permissions/catalog');expect(response.status()).toBe(200);
+  const catalog=(await response.json()).data;expect(catalog.tabs).toHaveLength(12);
+  expect(catalog.tabs.every((tab:{rollout_state:string})=>tab.rollout_state==='LEGACY_LOCKED')).toBe(true);
+  expect(catalog.templates).toHaveLength(6);
+});
+
 test('local demo users table, filters and self panel retain persona authority',async({page})=>{
   await page.goto('/admin/accounts');await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
   await page.getByLabel('กรองบทบาท').selectOption('admin');

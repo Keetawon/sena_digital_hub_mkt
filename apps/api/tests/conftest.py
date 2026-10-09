@@ -37,7 +37,8 @@ def account_lookup_for_route_unit_tests(monkeypatch):
             assert role is not None, 'Unit test must supply an explicit account fixture'
             return {'id': claims['sub'], 'email': claims['email'], 'status': 'ACTIVE',
                     'hub_role': 'agency' if role in DEMO_AGENCIES else role,
-                    'agency_code': DEMO_AGENCIES.get(role), 'display_name_th': role}
+                    'agency_code': DEMO_AGENCIES.get(role), 'display_name_th': role,
+                    'can_manage_users': role == 'admin'}
         return await original(self, request, claims)
 
     monkeypatch.setattr(Authentication, 'load_account', lookup)

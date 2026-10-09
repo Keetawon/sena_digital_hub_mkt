@@ -2,7 +2,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, Request, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, field_validator
+from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, StrictBool, field_validator
 
 from .auth import Actor, failure
 
@@ -31,6 +31,9 @@ ACCOUNT_ERRORS = {
     'invite_exists': (409, 'มีคำเชิญที่ยังใช้งานได้สำหรับอีเมลนี้แล้ว'),
     'invite_role_invalid': (422, 'คำเชิญไม่สามารถให้สิทธิ์ผู้ดูแลระบบได้'),
     'invite_unavailable': (422, 'คำเชิญไม่พร้อมใช้งาน กรุณาตรวจสถานะแล้วส่งคำขอตามปกติ'),
+    'permission_combination': (422, 'ชุดสิทธิ์ไม่ถูกต้อง กรุณาตรวจสิทธิ์ดู แก้ไข และอนุมัติ'),
+    'permission_locked': (403, 'สิทธิ์ส่วนนี้ยังไม่เปิดให้ปรับ รอการตรวจสอบฐานข้อมูลให้ครบก่อน'),
+    'permission_fixed_profile': (403, 'ไม่สามารถปรับตารางสิทธิ์ของบัญชีภายนอกหรือบัญชีที่ไม่ได้ใช้งาน'),
 }
 
 
@@ -87,6 +90,13 @@ class Decision(BaseModel):
     updated_at: AwareDatetime
 
 
+class PermissionChange(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    tabs: dict[str, list[str]] = Field(max_length=12)
+    can_manage_users: StrictBool
+    updated_at: AwareDatetime
+
+
 def register_account_routes(app, authentication, database):
     @app.get('/v1/me')
     async def me(request: Request, actor: Actor = Depends(authentication)):
@@ -111,9 +121,20 @@ def register_account_routes(app, authentication, database):
             return {'data': [dict(row) for row in await db.fetch('select * from hub.account_display_names()')]}
 
     async def admin(actor: Actor = Depends(authentication)):
-        if actor.role != 'admin':
+        if actor.role != 'admin' or not actor.can_manage_users:
             raise failure(403, 'forbidden', 'เฉพาะผู้ดูแลระบบ')
         return actor
+
+    @app.get('/v1/admin/permissions/catalog')
+    async def permission_catalog(request: Request, actor: Actor = Depends(admin)):
+        async with database(request, actor) as db:
+            return {'data': await db.fetchval('select hub.permission_catalog_read()')}
+
+    @app.post('/v1/admin/accounts/{account_id}/permissions')
+    async def permissions(account_id: UUID, body: PermissionChange, request: Request, actor: Actor = Depends(admin)):
+        async with database(request, actor) as db:
+            return {'data': await db.fetchval('select hub.save_account_permissions($1,$2,$3,$4)',
+                account_id, body.tabs, body.can_manage_users, body.updated_at)}
 
     @app.get('/v1/admin/accounts')
     async def accounts(request: Request, actor: Actor = Depends(admin)):

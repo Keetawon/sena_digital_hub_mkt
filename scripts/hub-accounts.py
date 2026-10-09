@@ -36,13 +36,14 @@ async def run(args):
                 count = await db.fetchval('select hub.purge_rejected_accounts()')
                 print(f'Anonymised {count} rejected requests older than 90 days.')
                 return
-            if await db.fetchval("select exists(select 1 from hub.user_account where status='ACTIVE' and hub_role='admin')"):
+            if await db.fetchval("select exists(select 1 from hub.user_account where status='ACTIVE' and can_manage_users)"):
                 raise ValueError('An active admin already exists. Use the admin page.')
-            rows = await db.fetch('select id from hub.user_account where lower(email)=lower($1) and anonymised_at is null for update', args.email)
+            rows = await db.fetch('select id,can_manage_users from hub.user_account where lower(email)=lower($1) and anonymised_at is null for update', args.email)
             if len(rows) != 1:
                 raise ValueError('Exactly one existing verified sign-in/account row is required. Sign in once first.')
-            await db.execute("update hub.user_account set status='ACTIVE',hub_role='admin',agency_code=null,decided_at=now(),decision_note='Operator bootstrap',updated_at=clock_timestamp() where id=$1", rows[0]['id'])
+            await db.execute("update hub.user_account set status='ACTIVE',hub_role='admin',can_manage_users=true,agency_code=null,decided_at=now(),decision_note='Operator bootstrap',updated_at=clock_timestamp() where id=$1", rows[0]['id'])
             await db.execute("insert into hub.user_account_event(account_id,action,new_status,new_role) values($1,'BOOTSTRAP','ACTIVE','admin')", rows[0]['id'])
+            await db.execute("insert into hub.permission_event(account_id,action,before_value,after_value) values($1,'BOOTSTRAP',jsonb_build_object('can_manage_users',$2::boolean),jsonb_build_object('can_manage_users',true))", rows[0]['id'], rows[0]['can_manage_users'])
             print('First ACTIVE admin created; operator action audited. No Auth secret or email used.')
     finally:
         await db.close()

@@ -111,6 +111,7 @@ class Actor:
     id: UUID
     role: str
     agency_code: str | None = None
+    can_manage_users: bool = False
 
 
 class Authentication:
@@ -180,7 +181,8 @@ class Authentication:
                    account["status"] == "PENDING" and request.url.path == "/v1/me/invite-accept" and request.method == "POST")
         if not active and not limited:
             raise failure(403, "account_inactive", "บัญชียังไม่ได้รับอนุมัติหรือถูกระงับ กรุณาตรวจสถานะคำขอ")
-        return Actor(UUID(claims["sub"]), account["role"] or "viewer", account["agency"])
+        return Actor(UUID(claims["sub"]), account["role"] or "viewer", account["agency"],
+                     active and account.get("can_manage_users") is True)
 
     async def load_account(self, request: Request, claims: dict) -> dict:
         metadata = claims.get("app_metadata") if isinstance(claims.get("app_metadata"), dict) else {}

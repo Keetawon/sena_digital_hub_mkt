@@ -228,6 +228,11 @@
       "name": "202610080045_account_invitations.sql",
       "canonical_sha256": "8c5ca55e8fd2c50f653c959bc7d2100feca0024aa211464e8cd6c46ae9ca3ff6",
       "executed_sha256": "8c5ca55e8fd2c50f653c959bc7d2100feca0024aa211464e8cd6c46ae9ca3ff6"
+    },
+    {
+      "name": "202610090046_permission_foundations.sql",
+      "canonical_sha256": "6b104d13e4fae1a2a213badf3b8474312948e3fb728088e9284392b8d6d3e74b",
+      "executed_sha256": "6b104d13e4fae1a2a213badf3b8474312948e3fb728088e9284392b8d6d3e74b"
     }
   ]
 }

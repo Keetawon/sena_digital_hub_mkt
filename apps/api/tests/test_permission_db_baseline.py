@@ -13,6 +13,12 @@ from sena_hub_api.auth import ALL_DEMO_ACTORS, DEMO_AGENCIES
 BASELINE = json.loads((Path(__file__).resolve().parents[3] / 'tests/permissions/legacy-db.json').read_text(encoding='utf-8'))
 SCHEMAS = ['hub', 'ads', 'audit', 'staging', 'internal', 'rag', 'public_api']
 ROLES = ['admin', 'editor', 'publisher', 'viewer', 'online_staff', 'agency', 'service_consumer']
+# Explicit Phase 1 additions. The 45-migration historical manifest is immutable;
+# foundation tests below/next door verify the new FORCE RLS and closed ACLs.
+FOUNDATION_TABLES = {'hub.permission_catalog', 'hub.permission_template', 'hub.account_permission', 'hub.permission_event'}
+FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', 'hub.permission_rows',
+    'hub.copy_account_template', 'hub.can', 'hub.can_special', 'hub.can_agency_registry',
+    'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
 FUNCTIONS_SQL = """select n.nspname||'.'||p.proname as name,pg_get_function_identity_arguments(p.oid) as arguments,
  p.prosecdef as security_definer,p.proconfig as config,
  array(select r from unnest($2::text[]) r where has_function_privilege(r,p.oid,'execute') order by r) as execute_roles
@@ -40,6 +46,14 @@ def test_live_catalog_matches_reviewed_local_baseline():
         try:
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
+                if name in ('relations', 'functions'):
+                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS
+                    assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
+                    actual = [r for r in actual if r['name'] not in additions]
+                if name == 'policies':
+                    added = [r for r in actual if r['schema'] + '.' + r['table'] in FOUNDATION_TABLES]
+                    assert len(added) == 4 and all(r['name'] == 'permission_owner' for r in added)
+                    actual = [r for r in actual if r not in added]
                 assert actual == BASELINE[name], name
             assert sum(f['security_definer'] for f in BASELINE['functions']) == 134
         finally:
