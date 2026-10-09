@@ -71,7 +71,7 @@ def test_preview_release_scope_checked_before_embedding(client,monkeypatch):
     class DB:
         async def fetch(self,*args):return [{'rem_project_id':'BNA7','payload':{'status':{'raw':2}}}]
         async def fetchval(self,sql,*args):
-            assert 'id=$1 AND rem_project_id=$2' in sql and args[1]=='BNA7'
+            assert 'hub.knowledge_preview_read($1,$2)' in sql and args[1]=='BNA7'
             return None
     @asynccontextmanager
     async def database(request,actor):yield DB()

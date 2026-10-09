@@ -1,4 +1,4 @@
-"""Reviewed Phase 2 entry map. SQL rechecks every capability before work.
+"""Reviewed content entry map. SQL rechecks every capability before work.
 
 Unlisted groups retain their locked legacy dependency until their own phase.
 No caller-supplied path or role chooses a broader database role.
@@ -61,6 +61,26 @@ CONTENT_RULES = {
     ('POST', '/v1/admin/projects/{public_id}/publish'): ('projects', 'approve'),
     ('POST', '/v1/admin/projects/{public_id}/withdraw'): ('projects', 'approve'),
     ('POST', '/v1/admin/projects/{public_id}/rollback'): ('projects', 'approve'),
+    ('GET', '/v1/admin/promotions'): ('promotions', 'view'),
+    ('GET', '/v1/admin/promotions/{promotion_id}'): ('promotions', 'view'),
+    ('POST', '/v1/admin/promotions'): ('promotions', 'edit'),
+    ('PATCH', '/v1/admin/promotions/{promotion_id}'): ('promotions', 'edit'),
+    ('POST', '/v1/admin/promotions/{promotion_id}/review'): ('promotions', 'approve'),
+    ('POST', '/v1/admin/promotions/{promotion_id}/publish'): ('promotions', 'approve'),
+    ('POST', '/v1/admin/promotions/{promotion_id}/withdraw'): ('promotions', 'approve'),
+    ('GET', '/v1/admin/releases/candidates'): ('releases', 'view'),
+    ('GET', '/v1/admin/releases'): ('releases', 'view'),
+    ('GET', '/v1/admin/releases/{release_id}'): ('releases', 'view'),
+    ('POST', '/v1/admin/releases/publish'): ('releases', 'approve'),
+    ('POST', '/v1/admin/releases/{release_id}/rollback'): ('releases', 'approve'),
+    ('GET', '/v1/admin/knowledge/projects'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/knowledge/projects/{project_id}'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/knowledge/questions/{question_id}/review'): ('knowledge', 'edit'),
+    ('POST', '/v1/admin/knowledge/projects/{project_id}/preview-release'): ('knowledge', 'approve'),
+    ('POST', '/v1/admin/knowledge/candidates/{candidate_id}/review'): ('knowledge', 'edit'),
+    ('GET', '/v1/admin/knowledge/candidates/{candidate_id}/file'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/knowledge/rights/approve'): ('knowledge', 'approve'),
+    ('POST', '/v1/admin/knowledge/preview'): ('knowledge', 'view'),
 }
 
 

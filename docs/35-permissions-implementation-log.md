@@ -14,8 +14,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | A — responsive sidebar | Passed | `72c262f` | Typecheck/build passed; API 1,444 passed + 11 skipped; DB 51 reported checks + 7 Node cases; H1 11 + 38 passed; UI 213 passed (208 → 213); sidebar rerun 13 passed |
 | 0 — baseline manifests | Passed | `08267d3` | Typecheck/build passed; API 1,444 → 1,495 (+11 unchanged skips); DB 51 + 7 and 1,040 SQL probes passed; H1 11 + 38 passed; UI 213 → 213 passed |
 | 1 — foundations | Passed | `6261f53` | Typecheck/build passed; API 1,495 → 1,527 (+11 unchanged skips); UI 213 → 214; DB 51 + 7 plus foundation SQL probes; H1 11 + 38 |
-| 2 — content core | Passed | This phase commit; subject below | Typecheck/build passed; API 1,527 → 1,556 (+11 unchanged skips); UI 214 → 215; DB 51 + 7 → 51 + 8; H1 11 + 38 |
-| 3 — publication and knowledge | Not started | — | — |
+| 2 — content core | Passed and pushed | `af64b21` | Typecheck/build passed; API 1,527 → 1,556 (+11 unchanged skips); UI 214 → 215; DB 51 + 7 → 51 + 8; H1 11 + 38 |
+| 3 — publication and knowledge | Passed | Commit with this log; literal hash in next phase | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
 | 4 — registry | Not started | — | — |
 | 5 — finance, operations, archive | Not started | — | — |
 | 6 — shared and residual authority | Not started | — | — |
@@ -44,7 +44,7 @@ The Phase 0 action manifest is frozen. Phase 1 has copied the templates and intr
 
 ## Resume
 
-Phases A, 0, 1 and 2 are complete. Next: **Phase 3 — content publication and knowledge**, then 4–6, C and UAT. Phase 2 started from clean origin/main `488664c`; its commit subject is `feat: enforce content permissions and bound asset visibility (phase 2)`. Record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 47 is applied to the backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each subsequent phase only after all its gates pass. No permission grid is editable yet, and this is not the final UAT build.
+Phases A, 0, 1, 2 and 3 are complete. Next: **Phase 4 — registry**, then 5–6, C and UAT. Phase 2 is pushed as `af64b21`; Phase 3 commit subject is `feat: enforce publication and knowledge permissions (phase 3)`. Record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 48 is applied to the backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each subsequent phase only after all its gates pass. No permission grid is editable yet, and this is not the final UAT build.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
 
@@ -214,3 +214,43 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phase2-2026-10-09T08-56-48
 Working PostgreSQL (`55432`), API (`8000`) and admin (`3000`) were restarted. Health, home, Accounts, Projects, Brands, Assets, `/v1/me` and permission catalog checks returned 200. Admin is ACTIVE with manage-users enabled; all 12 tab grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase2-working-services.json`. The two failed upgrade attempts above rolled back safely; the successful full upgrade test now prevents their recurrence.
 
 Checkpoint commit subject: **`feat: enforce content permissions and bound asset visibility (phase 2)`**. This completed phase may be pushed under the owner's revised protocol. No Phase 3 implementation is included in this commit. Next gates must extend the current populated-upgrade coverage for any new backfill/DDL interaction.
+
+## Phase 3 implementation
+
+Phase 2 committed and pushed as **`af64b21`**; HEAD and origin/main matched and the tree was clean before Phase 3. Working services were then stopped using the owner's existing permission, for separate disposable gates. Migration 48 is **not applied to the working database** and this phase must not be committed/pushed before every gate passes.
+
+Migration 48 replaces the promotion/release/knowledge role checks with table-backed capabilities and extends `hub_app` to the 20 associated API routes. It keeps the existing business validation, draft revisions, publication pointers, locks and rollback behavior. Release publish/rollback checks A for every member tab before any member write, including the synthetic demo branch. Release candidates/history omit hidden-tab members. Twenty-one publication/knowledge relations receive FORCE RLS plus restrictive capability policies; renamed private implementation functions remain uncallable by application roles.
+
+Private knowledge preview reads now use a projected RPC: removing Projects V makes draft model-catalogue completeness unknown; current asset visibility filters frozen media references. Direct raw preview rows cannot bypass that projection. Knowledge V is checked before evidence, file, retrieval and citation paths; review remains E and rights/private-preview release remains A. The knowledge binding function must already be able to read the asset before inserting its binding. Public website feeds remain unchanged. All 12 grids stay locked pending the remaining shared boundaries.
+
+### Decisions taken for owner review
+
+- Promotion drafts remain editor/admin work at both API and DB; the old route registration already passed `brand_writer`, which denied publisher. The new E mapping preserves that boundary. The accepted Projects E removal remains the effective content-role conversion; there is no additional publisher promotion-draft removal.
+- A Knowledge-only reader receives unknown model-catalogue completeness rather than a hidden Projects draft flag; the existing preview uses its specification handoff. Knowledge evidence/fact cards stay in their own review domain, and no account/permission rows enter retrieval.
+- Release metadata remains in Releases; hidden member records/candidates are omitted. A release can only be rolled back when all member A permissions are currently present, including members omitted from a reader's view.
+
+### Gates / current checkpoint
+
+The complete populated-upgrade test passes through migration 48. Typecheck and offline build passed. Local H1 passed **11 protocol + 38 browser**. First focused run: 163 passed / 55 failed / one existing opt-in skip; 52 failures were older route doubles missing promotion/release capabilities, and three were the new fixture mixing manually started and asyncpg-managed transactions. Both test setups were corrected; focused rerun **103 passed / one existing skip**. The first DB attempt found older knowledge fixtures using an absent/invisible asset; fixtures now supply an owned, never-bound upload, preserving the actual unknown-stock classification assertion. DB subsequently passed **51 reported checks + 8 Node cases**.
+
+The first full API run ended **1,590 passed / 12 failed / 11 unchanged skips**. The 12 new V-off probes attempted to retain E/A in storage, but the foundation CHECK constraint already prohibits that state. The corrected probes assert atomic rejection of that inconsistent row, verify the original capability remains, then revoke the action and V and assert SQL denial. This retains the stronger existing invariant; no application constraint was weakened. The 46 publication cases also now cover all knowledge read helpers and release candidates with V off under each real runtime role. A focused rerun and the final full API/UI gates are running. No new skip or flaky retry is used.
+
+Corrected focused probes: **46 passed**, 47.36s. The subsequent full API gate passed **1,602 tests / 11 unchanged opt-in skips**, 434.46s. The UI gate is running against that candidate; DB/H1/typecheck/build remain passed, and migration 48 is still unapplied to the working database. Do not push this phase until UI and the preserved working upgrade are verified.
+
+The first full UI run ended **216 passed / one failed** (6.8m). Only the new Knowledge revocation assertion failed: its generic `alert` selector matched both the visible Thai permission error and Next.js's hidden route announcer. The selector now targets the permission error text. The focused two-case rerun passed (4.0s); a complete UI rerun is required. No application behavior changed for this correction and no flaky retry or skip was introduced.
+
+### Phase 3 final gates and working upgrade
+
+- Typecheck and offline webpack production build passed.
+- API: **1,602 passed / 11 unchanged opt-in skips**, 434.46s (Phase 2: 1,556). The 46 new cases cover the 20 mapped routes, direct real non-superuser SQL/SD denials and positive neighbors, E/A and V revocation, mixed-release publish/rollback atomicity, hidden release members, private preview projections, retrieval denial before embedding, FORCE RLS and closed helper ACLs.
+- UI: **217 passed**, 6.9 minutes (Phase 2: 215); no skips or retries. Both new browser cases pass through the actual proxy. The preceding selector failure and correction are recorded above.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged. The populated upgrade now executes both migrations 47 and 48 after the synthetic 1–46 fixtures. Permission-specific SQL probes additionally run in the API suite.
+- Local H1: **11 protocol + 38 browser tests passed**, unchanged, including all 48 migrations under the non-superuser migration owner. No hosted request or email occurred.
+
+Logs: `.local/permissions-gates/phase3-{typecheck,build,db,api,ui,h1}.log`. All gates completed before the working upgrade. Migration 48 and its profile checksum are frozen after application.
+
+Fresh pre-upgrade dump: **`.local/backups/permissions-phase3-2026-10-09T09-50-53-916Z/sena_hub_local.dump`**, 6,373,987 bytes. The guarded operation verified the actual working data directory, applied only migration 48 and its history entry transactionally, and compared every account field before committing. Result: **BNA7 = 1; all 8 existing accounts and every field unchanged; 279 staged REM projects; 4 Hub projects; the active manage-users account preserved**. Proof: `.local/permissions-gates/phase3-working-verification.json`.
+
+Working PostgreSQL/API/admin were restored; health, home, Accounts, Projects, Brands, Assets, Promotions, Releases, Knowledge, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED`. Proof: `.local/permissions-gates/phase3-working-services.json`. No working seed runner or upstream write was used.
+
+Checkpoint commit subject: **`feat: enforce publication and knowledge permissions (phase 3)`**. Every gate passed; push this phase under the owner's revised protocol. No Phase 4 application changes are included. Resume at **Phase 4 — registry** after verifying the checkpoint push.

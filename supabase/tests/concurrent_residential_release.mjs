@@ -14,7 +14,7 @@ const actor = randomUUID(), key = `SQL-RES-RACE-${randomUUID()}`.toUpperCase();
 let pending;
 const begin = async (client, role = 'publisher') => {
   await client.query('begin');
-  await client.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [actor, key]);
+  await client.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [role==='editor'?'00000000-0000-0000-0000-000000000001':actor, key]);
   await client.query(`set local role ${role}`);
 };
 const rpc = async (client, action, id, payload) => (await client.query('select hub.promotion_command($1,$2,$3::jsonb) value', [action, id, JSON.stringify(payload)])).rows[0].value;
@@ -45,7 +45,6 @@ try {
     .replaceAll("repeat('8',64)", `'${randomBytes(32).toString('hex')}'`);
   await setup.query(fixture);
   const project = (await setup.query("select current_setting('test.residential_project') id")).rows[0].id;
-  await setup.query("update hub.user_account set hub_role='publisher' where id=$1",[actor]);
   await setup.query("select set_config('app.actor_id',$1,true)",[actor]);
   await setup.query('set local role editor');
   const promos = [];
@@ -58,6 +57,8 @@ try {
     });
     promos.push(promotion);
   }
+  await setup.query('reset role');
+  await setup.query("update hub.user_account set hub_role='publisher' where id=$1",[actor]);
   await setup.query('set local role publisher');
   for (const promotion of promos) {
     for (const review_type of ['DATA', 'LEGAL']) await rpc(setup, 'review', promotion.id, {

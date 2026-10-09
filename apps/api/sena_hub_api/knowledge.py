@@ -13,6 +13,7 @@ from . import assets
 from .knowledge_retrieval import embed,rank,route_question,answer_from_ranked,normalize
 from .knowledge_progress import read_summaries
 from .staff_media import thumbnails
+from .content_permissions import require_content
 
 ROOT=Path(__file__).resolve().parents[3]
 PROGRAMMES={'LIVNEX':'LivNex','LIVNEX_GOLD':'LivNex Gold','RENTNEX':'RentNex','RENTNEX_BENEFIT':'RentNex Benefit','RENTNEX_INVEST':'RentNex Invest'}
@@ -65,12 +66,9 @@ def bulk_eligible(row):
         and not evidence.get('file_validation_error') and evidence.get('validated_metadata') is not None)
 
 def register_knowledge_routes(app,authentication,database,settings):
-    async def staff(actor:Actor=Depends(authentication)):
+    async def staff(request:Request,actor:Actor=Depends(authentication)):
         if settings.environment!='local':raise failure(403,'knowledge_local_only','คลังความรู้ระยะทดลองใช้ได้เฉพาะในเครื่อง')
-        if actor.role not in {'editor','publisher','viewer','admin'}:raise failure(403,'knowledge_forbidden','ไม่มีสิทธิ์เข้าถึงคลังความรู้โครงการ')
-        return actor
-    async def writer(actor:Actor=Depends(staff)):
-        if actor.role not in {'editor','admin'}:raise failure(403,'knowledge_review_forbidden','เฉพาะผู้แก้ไขหรือผู้ดูแลระบบที่ตรวจข้อมูลได้')
+        require_content(request)
         return actor
 
     @app.get('/v1/admin/knowledge/projects')
@@ -111,21 +109,20 @@ def register_knowledge_routes(app,authentication,database,settings):
         return {'data':{'card':card,'items':data,'followup':followup,'mode':'DRAFT_PREVIEW'}}
 
     @app.post('/v1/admin/knowledge/questions/{question_id}/review')
-    async def question_review(question_id:str,body:QuestionReview,request:Request,actor:Actor=Depends(writer)):
+    async def question_review(question_id:str,body:QuestionReview,request:Request,actor:Actor=Depends(staff)):
         async with database(request,actor) as db:
             result=await db.fetchval('SELECT hub.review_knowledge_question($1,$2,$3,$4,$5)',question_id,body.expected_revision,body.decision,body.expected_answer,body.reason)
         return {'data':result}
 
     @app.post('/v1/admin/knowledge/projects/{project_id}/preview-release')
     async def preview_release(project_id:str,body:PreviewRelease,request:Request,actor:Actor=Depends(staff)):
-        if actor.role!='publisher':raise failure(403,'preview_publisher_required','เฉพาะผู้เผยแพร่ที่ยืนยันชุดพรีวิวได้')
         if not body.confirmed:raise failure(422,'preview_confirmation_required','ต้องยืนยันพรีวิวอย่างชัดเจน')
         async with database(request,actor) as db:
             release=await db.fetchval('SELECT hub.publish_knowledge_preview($1,$2,$3)',project_id,{str(k):v for k,v in body.expected_reviews.items()},body.reason)
         return {'data':{'id':str(release),'mode':'PRIVATE_PREVIEW','published':False}}
 
     @app.post('/v1/admin/knowledge/candidates/{candidate_id}/review')
-    async def review(candidate_id:UUID,body:Review,request:Request,actor:Actor=Depends(writer)):
+    async def review(candidate_id:UUID,body:Review,request:Request,actor:Actor=Depends(staff)):
         async with database(request,actor) as db:
             result=await db.fetchval('SELECT hub.review_knowledge_candidate($1,$2,$3,$4,$5,$6,$7,$8)',candidate_id,body.expected_revision,body.decision,body.applies_to_project_ids,body.reason,body.sena_owned,body.asset_role,body.alt_th)
         return {'data':result}
@@ -145,7 +142,6 @@ def register_knowledge_routes(app,authentication,database,settings):
 
     @app.post('/v1/admin/knowledge/rights/approve')
     async def rights(body:Rights,request:Request,actor:Actor=Depends(staff)):
-        if actor.role!='publisher':raise failure(403,'knowledge_rights_forbidden','เฉพาะผู้เผยแพร่ที่อนุมัติสิทธิ์ได้')
         if not body.confirmed or len({i.candidate_id for i in body.items})!=len(body.items):raise failure(422,'knowledge_confirmation','กรุณายืนยันรายการไฟล์ที่ไม่ซ้ำกัน')
         async with database(request,actor) as db:
             approved=[]
@@ -195,7 +191,7 @@ def register_knowledge_routes(app,authentication,database,settings):
                 else:return {'data':{'route':'clarify_project','answer':'กรุณาระบุโครงการหรือระยะที่ต้องการให้ชัดเจน','choices':sorted(matches or cards),'citations':[],'mode':'DRAFT_PREVIEW'}}
             release=None
             if body.release_id:
-                release=await db.fetchval('SELECT payload FROM hub.knowledge_preview_releases WHERE id=$1 AND rem_project_id=$2',body.release_id,project)
+                release=await db.fetchval('SELECT hub.knowledge_preview_read($1,$2)',body.release_id,project)
                 if release is None:raise failure(404,'preview_release_not_found','ไม่พบชุดพรีวิวของโครงการนี้')
             card=release['fact_card'] if release else cards[project]
             routed=route_question(body.question,card)

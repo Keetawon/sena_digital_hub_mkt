@@ -28,6 +28,12 @@ do $$ begin
 end $$;
 select hub.review_knowledge_candidate('00000000-0000-4000-9000-000000000002',0,'accepted',array['KN-PILOT'],'ยืนยันเฉพาะระยะที่เปิด',false,null,null);
 select hub.review_knowledge_candidate('00000000-0000-4000-9000-000000000004',0,'accepted',array['KN-PILOT'],'ตรวจไฟล์สมมติ',true,'gallery','สวนสมมติ');
+reset role;
+-- Reach the classification guard using a real visible upload with the exact
+-- candidate checksum, rather than failing earlier on an inaccessible UUID.
+insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,checksum,owner_id,provenance)
+ values('00000000-0000-4000-9000-000000009999','synthetic.png','image/png','https://example.test/synthetic.png','approved',repeat('b',64),
+ '00000000-0000-0000-0000-000000000002','upload');
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin

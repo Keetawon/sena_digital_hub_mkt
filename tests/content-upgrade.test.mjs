@@ -37,7 +37,8 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const bound=(await db.query('select asset_id from hub.entity_assets union select asset_id from hub.brand_assets')).rows.map(row=>row.asset_id);
     assert.ok(bound.length>0);
     await db.query("select set_config('app.actor_id','',false),set_config('app.change_reason','',false)");
-    await db.query(await readFile(path.join(migrations,'202610090047_content_permissions.sql'),'utf8'));
+    for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort())
+      await db.query(await readFile(path.join(migrations,name),'utf8'));
     assert.deepEqual(await accounts(),beforeAccounts);
     assert.deepEqual(await editors(),beforeEditors);
     assert.equal(Number((await db.query('select count(*) from hub.assets where id=any($1::uuid[]) and first_bound_at is not null',[bound])).rows[0].count),bound.length);

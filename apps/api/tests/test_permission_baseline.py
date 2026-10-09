@@ -130,6 +130,14 @@ def test_every_route_entry_uses_account_authority_despite_forged_claims(baseline
         if status == 'ACTIVE' and db_role == 'publisher':
             if entry['tab'].startswith('projects') and entry['level'] == 'edit' or entry['path'].endswith('/models/{public_model_id}/review'):
                 denied = True
+            # Promotion drafts remain denied to publisher at both boundaries;
+            # the old brand_writer dependency already enforced this entry rule.
+            if entry['tab'] == 'promotions' and entry['level'] == 'edit':
+                denied = True
+        if status == 'ACTIVE' and entry['path'].startswith('/v1/admin/knowledge/'):
+            # These guards used to live inside handlers, beyond this entry probe.
+            if entry['path'].endswith('/preview-release') or entry['path'].endswith('/rights/approve'):
+                denied = db_role != 'publisher'
         expected = {403} if denied else {200, 422} if path in INLINE_READS else {204, 422}
         assert response.status_code in expected, (role, status, method, path, response.status_code)
         if path == '/v1/me':

@@ -71,7 +71,7 @@ def test_content_route_map_has_no_unmapped_core_entry(permission_accounts):
                 '/v1/admin/assets', '/v1/admin/sources/projects', '/v1/admin/sources/brands')
     actual = {(method, route.path) for route in client.app.routes if isinstance(route, APIRoute)
               and route.path.startswith(prefixes) for method in route.methods}
-    assert actual == set(CONTENT_RULES)
+    assert actual == {key for key in CONTENT_RULES if key[1].startswith(prefixes)}
 
 
 @pytest.mark.parametrize('tab', ['projects', 'brands'])

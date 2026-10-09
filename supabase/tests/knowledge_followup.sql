@@ -50,8 +50,9 @@ do $$ declare expected jsonb; begin
 end $$;
 reset role;
 select set_config('app.change_reason','synthetic rights fixture',true);
-insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,checksum)
- values('00000000-0000-4000-9800-000000000099','synthetic.png','image/png','https://example.test/synthetic.png','approved',repeat('d',64));
+insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,checksum,owner_id,provenance)
+ values('00000000-0000-4000-9800-000000000099','synthetic.png','image/png','https://example.test/synthetic.png','approved',repeat('d',64),
+ '00000000-0000-0000-0000-000000000002','upload');
 set local role publisher;
 select hub.knowledge_link_approved_asset('00000000-0000-4000-9800-000000000002','00000000-0000-4000-9800-000000000099',1);
 do $$ declare expected jsonb; release_id uuid; begin
