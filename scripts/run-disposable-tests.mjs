@@ -33,6 +33,10 @@ if(assistantFixtures)env.HUB_ASSISTANT_TEST='1';
 for(const [role,key] of Object.entries({EDITOR:'editorToken',PUBLISHER:'publisherToken',VIEWER:'viewerToken',SERVICE_CONSUMER:'consumerToken',ADMIN:'adminToken',ONLINE_STAFF:'onlineStaffToken',AGENCY_KIN:'agencyKinToken',AGENCY_COMBAY:'agencyCombayToken'})){
   assert.ok(config[key],`Missing local ${role} credential; run dev:db setup first`);env[`HUB_DEMO_${role}_TOKEN`]=config[key];
 }
+// Optional UAT identities are seeded only by their dedicated fixtures. Fresh
+// random tokens prevent Next's generated env fallback, without changing the
+// historical eight-account baseline used by the rest of the suites.
+for(const persona of ['UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${persona}_TOKEN`]=randomBytes(32).toString('hex');
 const server=new EmbeddedPostgres({databaseDir:dataDirectory,user:'postgres',password:config.adminPassword,port:55432,persistent:true,authMethod:'scram-sha-256',
   initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
 const probePassword=randomBytes(24).toString('hex');

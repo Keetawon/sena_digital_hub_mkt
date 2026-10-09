@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { hostedConfig, isHostedMode } from "./lib/hosted-config";
 import { canOpenPage } from "./lib/hub-permissions";
-import { cookieName, getRoleToken, isLocalMode, localApiOrigin, roles, type LocalRole } from "./lib/local-session";
+import { cookieName, getRoleToken, isLocalMode, localApiOrigin, localPersonas, type LocalRole } from "./lib/local-session";
 import { readHubAccount, unavailablePage } from "./lib/hub-account";
 
 export async function proxy(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
   if (!isHostedMode()) {
     if (!isLocalMode() || path.startsWith("/api/") || /^\/(account|login|signup|auth)(\/|$)/.test(path)) return NextResponse.next();
     const persona = request.cookies.get(cookieName)?.value;
-    const token = (roles as readonly string[]).includes(persona || "") ? getRoleToken(persona as LocalRole) : null;
+    const token = (localPersonas as readonly string[]).includes(persona || "") ? getRoleToken(persona as LocalRole) : null;
     if (!token) return NextResponse.next();
     try {
       const { status, account } = await readHubAccount(localApiOrigin(), token);

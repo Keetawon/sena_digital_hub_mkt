@@ -19,8 +19,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | 4 — registry | Passed and pushed | `0ca0d75` | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
 | 5 — finance, operations, archive | Passed and pushed | `cdc1c59` | Typecheck/build passed; API 1,628 → 1,672 (+11 unchanged skips); UI 219 → 221; DB 51 + 8; H1 11 + 38 |
 | 6 — shared and residual authority | Passed and pushed | `0dc28f3` | Typecheck/build passed; API 1,672 → 1,766 (11 → 8 existing skips); UI 221 → 229; DB 51 + 8; H1 11 + 38 |
-| C — account grid and feature onboarding | Passed | This checkpoint; subject below | Typecheck/build passed; API 1,766 → 1,816 (+8 unchanged opt-in skips); UI 229 → 249; DB 51 + 8; H1 11 + 38 → 11 + 39 |
-| UAT — synthetic personas and owner pack | Not started | — | — |
+| C — account grid and feature onboarding | Passed and pushed | `8ae525d` | Typecheck/build passed; API 1,766 → 1,816 (+8 unchanged opt-in skips); UI 229 → 249; DB 51 + 8; H1 11 + 38 → 11 + 39 |
+| UAT — synthetic personas and owner pack | Passed; final checkpoint | This commit, subject below | Typecheck/build passed; API 1,816 → 1,830 (+8 unchanged opt-in skips); UI 249 → 253; DB 51 + 8; H1 11 + 39 |
 
 Counts are recorded from executed gates, not inferred from the prior report. Previously reported baseline: API 1,444 passed / 11 skipped, UI 208 passed, H1 11 protocol + 38 browser; Phase A measured DB count: 51 reported checks plus 7 Node cases.
 
@@ -40,11 +40,11 @@ Typecheck passed. Automated sidebar cases added for persistence, active-group co
 
 ## Conversion report
 
-The Phase 0 action manifest is frozen. Phase 1 has copied the templates and introduced the manage-users flag; domain migrations remain ahead. The detailed differences and owner answers below distinguish accepted changes from the superseded proposal to restrict published consumer feeds.
+The Phase 0 action manifest is frozen. Phases 1–6 and C copied the templates, introduced the separate manage-users flag and completed database enforcement for all twelve tabs. The detailed differences and owner answers below distinguish accepted changes from the superseded proposal to restrict published consumer feeds. The final conversion summary is recorded at the end of this log.
 
 ## Resume
 
-Phases A, 0–6 are complete and pushed. Phase C has passed all gates and its backed-up working upgrade; checkpoint it, then resume at **UAT — synthetic personas and owner pack**. Migration 53 is applied to the working local database, with BNA7, all eight existing account rows and all existing permission rows verified unchanged. Working PostgreSQL/API/admin are restored; all twelve grids are now MIGRATED and editable through the guarded Accounts UI. Push each phase only after all gates pass. The UAT accounts/guide are not complete yet; no owner testing is requested between phases.
+All implementation phases **A, 0–6, C and UAT are complete and passed every gate**. Phase C is **`8ae525d`**; the final UAT checkpoint has subject **`test: deliver local permissions UAT pack`** (resolve its literal hash with `git log -1 --format=%H -- docs/37-uat-permissions-th.md`; a commit cannot embed its own hash). No implementation phase remains to resume. The owner can now perform the single local session in docs/37. Migration 53 is the final schema migration; all twelve grids are MIGRATED. PostgreSQL/API/admin are restored, BNA7 and all eight original accounts/permission rows are intact, and three synthetic UAT accounts were added after a fresh backup. Final verification and backup paths are below. Hosted execution remains blocked.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
 
@@ -467,3 +467,47 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phasec-2026-10-09T16-03-43
 Working PostgreSQL/API/admin were restored. Health, home, Accounts, all migrated domain routes, `/v1/me` and the permission catalog returned 200; all **12 tabs are MIGRATED with guards ready**. Proof: `.local/permissions-gates/phasec-working-services.json`.
 
 Checkpoint subject: **`feat: manage per-user capabilities and feature rollout (phase C)`**. Commit/push this passed phase, then implement the final UAT pack. Read-only UAT persona/client plans are in ignored `.local/permissions-gates/`; no UAT seed has run. The next phase records this checkpoint's literal hash, avoiding a self-referential commit hash.
+
+## UAT implementation — passed
+
+Phase C passed every gate and pushed as **`8ae525d`**. Clean main matched origin/main before this phase started. Three implementation streams cover optional local identities and a guarded idempotent seed, the local persona/navigation integration and real browser acceptance cases, and the Thai owner guide/screenshots. No UAT working seed has run; no migration after 53 is planned. The working services are restored and will be stopped for disposable gates under the owner's existing permission, then restarted afterward.
+
+### Decisions taken for owner review
+
+- Preserve the existing eight demo identity mappings, account fields and permission rows. Add three separate optional synthetic identities for the second manager, suspended account and **สมชาย ทดสอบ**. Their selectors choose identity only; the Hub account/permission tables remain authoritative. Local tokens are randomly generated into ignored configuration and never sent as client props or logged. H1 explicitly excludes them.
+- Somchai starts with editor v1 provenance customised to exactly Projects VE, Brands V, Promotions V and Finance VE. Other tabs are unchecked. Existing seed rows are preserved on replay, including owner edits and suspension; the seed is not a reset command.
+- Rehearse the new-tab notice using the existing, fully guarded **Actuals** tab by changing only its onboarding presentation bit. This is explicitly a synthetic rollout exercise, not a newly shipped tab. No default, permission box, label, guard or template changes. Existing acknowledgements remain intact and replay does not undo owner acknowledgements. Somchai initially lacks Actuals, so the owner can review and apply a real V-only assignment. Genuine new-catalog default denial remains covered by disposable SQL/API tests; no fake live catalog/nav tab is added.
+- Screenshots distinguish the real local application/H1 flows from controlled synthetic examples for otherwise unavailable states such as a separate last-manager panel. The guide uses synthetic Hub content only; BNA7 and staged REM records are preservation checks, not UAT edit targets.
+
+### UAT integration checks
+
+Typecheck and offline webpack build passed. The focused API gate passed **14 new cases**, 5.23s, with one existing Starlette deprecation warning. The initial focused browser run passed three cases and failed one assertion expecting an ads group toggle: Somchai can view only Finance in that group, so the existing navigation correctly renders its one link directly. The assertion now verifies all four visible tabs and every hidden tab/API instead of requiring that redundant heading. The corrected focused browser gate passed **all four cases**, 15.5s; no application change or weakened authorization assertion. Screenshot review requested viewport-sized dialog captures so the long underlying table does not shrink the evidence. Full DB/API/UI/H1 gates remain required before working seeding or checkpointing.
+
+Full DB passed **51 reported SQL/concurrency checks + 8 Node cases**. Full loopback H1 passed **11 protocol + 39 browser cases** (31 core, 3 flags, 5 outage), native exit 0, including all 53 migrations and populated upgrades. The new UAT token slots are explicitly empty in H1. Source review and a scan of 72 browser-static/UAT-artifact files found no configured local secret values. The seed receipt is ignored by subsequent migration checksum iteration and does not reset profiles or acknowledgements. Full API and UI remain ahead at this checkpoint; the working database is still stopped and untouched by UAT.
+
+Final API passed **1,830 tests / 8 unchanged opt-in skips / 6 existing deprecation warnings**, 420.73s (Phase C: 1,816). All fourteen UAT cases ran, including real-runtime exact permissions, profile replay preservation, conflict rollback and target refusal. The eight named skips remain the same list recorded in Phase 6; H1 runs separately and passed. Full UI is running; no working UAT seed has run yet.
+
+### UAT final gates and working handoff
+
+- Typecheck and offline webpack production build passed.
+- API: **1,830 passed / 8 unchanged opt-in skips / 6 existing deprecation warnings**, 420.73s; Phase C was 1,816. All fourteen new UAT cases ran. The eight exact skip names are listed in the Phase 6 final notes; none was added or hidden. The H1 wrapper's opt-in case is exercised by the separate H1 gate.
+- UI: **253 passed**, 6.5 minutes; Phase C was 249. Zero final failures, skips or retries. Four real DB-backed UAT cases cover identity switching from suspended/forbidden pages, Somchai's exact grid, denied hidden APIs/CSV, the real rollout preview, no-self, next-request revocation and suspension. Existing keyboard/sidebar/mobile and account grid cases also passed.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged. Real-runtime permission deny/neighbor/SECURITY DEFINER probes additionally passed inside the API suite.
+- Loopback H1: **11 protocol + 39 browser cases**, unchanged, native exit 0. All 53 migrations and populated upgrade simulations passed. No hosted/provider request or real email occurred.
+
+Final logs: `.local/permissions-gates/uat-{typecheck,build,db,api,ui,h1}.log`. Earlier focused runs remain separately named. All thirty screenshot links in docs/37 resolve; the permission grid, Actuals diff, mobile drawer and last-manager states were visually reviewed. Screenshots remain ignored in `artifacts/`, with real/disposable/controlled-fixture provenance in the guide. The mobile drawer's existing short animation is fast-forwarded only for its screenshot; application behavior is unchanged.
+
+After every gate passed, the preserved working PostgreSQL was restarted. The guarded UAT command verified the actual loopback database/data directory and made a fresh custom-format dump **`.local/backups/permissions-uat-20261009T163505848366Z/sena_hub_local.dump`**, **6,536,328 bytes**, before inserting any row. It added exactly three accounts and compared all eight pre-existing account rows, their permission rows, existing notice acknowledgments and full BNA7 source rows before commit. Result: **all eight original accounts and every field unchanged; original permissions unchanged; BNA7 = 1 unchanged; 279 staged REM projects; 4 Hub projects; 11 accounts total; 2 ACTIVE manage-users accounts**. No schema migration after 53, business seed, source write or upstream call ran. Verification: the backup directory's `verification.json` and `.local/permissions-gates/uat-working-services.json`.
+
+The working API and admin app are restored at **http://127.0.0.1:8000** and **http://127.0.0.1:3000**. Read-only service checks verified both managers, Somchai's exact four-tab/two-edit/no-approve/no-manage projection, the suspended status page and immediate work denial, KIN/COMBAY Registry access and content denial, and all twelve ready/MIGRATED catalog entries. The secondary manager sees the synthetic Actuals rollout notice. Generated local tokens remain solely in ignored configuration; no service key or client token prop was added.
+
+### Final conversion summary and remaining boundaries
+
+- Publisher loses the sixteen mapped Projects E surfaces, including model review and assistant project-draft proposals; publication authority remains A. This is the accepted content E/A separation change.
+- Internal asset metadata, bytes, thumbnails and reuse follow authorized bindings. The uploader exception is limited to an owned `provenance='upload'` file with `first_bound_at IS NULL` and a current qualifying upload capability (Projects E, Brands E, Knowledge E or A). First binding is monotonic; unbinding cannot reopen the exception, and revocation takes effect on the next request. No arbitrary retention window was invented.
+- Legacy admin loses Registry approval-switch/cancellation and raw vocabulary/source-scope DML, plus Actuals ETL/current-pointer and Archive worker RPCs. These are operator/worker operations, never powers of manage-users or data boxes. Existing UI work remains possible.
+- Hidden management data is also withheld from shared references, caches, CSV, assistant and citations. Published consumer payloads remain readable by every ACTIVE internal account regardless of boxes; agency/external boundaries remain fixed. Archive CARD_CREATE additionally needs Finance A because it creates a confirmed statement; marketing summaries need Finance V and Actuals V, and historical campaign citations conservatively need Finance V where provenance is absent.
+- Templates copy data boxes without granting manage-users. Bulk changes preserve that flag, require a per-account preview/confirmation, exclude self/inactive/external identities and are bounded to 100 accounts. An inactive agency with an invalid code still requires operator correction before reactivation. These owner-review decisions are detailed in the relevant phase sections.
+- Actuals notice is an explicit rehearsal on an existing guarded tab, not a new shipped tab. Original account rows/boxes and all acknowledgments were preserved. The last-manager visual uses a disclosed controlled fixture; the original working admin was never removed to manufacture that state.
+
+No implementation phase remains. Owner manual UAT has **not yet been performed**; use docs/37 for the single approximately 45-minute session. Hosted execution, real Google/email acceptance, strict revision-author four-eyes and per-project/brand scoping remain intentionally outside this local delivery under the owner's decisions. Commit and push this passed UAT checkpoint with the subject above; its final hash is reported in the delivery message and Git history.

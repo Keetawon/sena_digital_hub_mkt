@@ -1,8 +1,10 @@
 "use client";
-import { useHubPermissions } from "./accounts";
+import { accountApi, useHubPermissions } from "./accounts";
+import { canOpenPage } from "@/lib/hub-permissions";
+import { workspaceLanding } from "./hub-navigation-data";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { roleLabels } from "@/lib/roles";
+import { roleLabels, localPersonas } from "@/lib/roles";
 import type { LocalRole } from "@/lib/local-session";
 import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { PendingQuestion } from "./pending-question";
@@ -77,10 +79,19 @@ export function AdsFinance({ initialRole, localMode }: { initialRole: LocalRole 
     }).catch(err => { if (alive) setError(err.message); }); return () => { alive = false; };
   }, [initialRole, localMode, refresh]);
   useEffect(() => { setDetail(null); setDetailError(""); if (!selected || selected === "new" || !permissions.can("finance")) return; let alive = true; request<RecordData>(`${financeApi}/${view}/${encodeURIComponent(selected)}`).then(result => { if (alive) setDetail(result); }).catch(err => { if (alive) setDetailError(err.message); }); return () => { alive = false; }; }, [selected, view, refresh, initialRole]);
-  async function switchRole(value: string) { if (dirty && !window.confirm("มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนบัญชีและละทิ้งข้อมูลหรือไม่")) return; const response = await fetch("/api/local-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: value }) }); if (response.ok) { setDirty(false); window.location.reload(); } else setError("เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
+  async function switchRole(value: string) {
+    if (dirty && !window.confirm("มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนบัญชีและละทิ้งข้อมูลหรือไม่")) return;
+    try {
+      const response = await fetch("/api/local-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: value }) });
+      if (!response.ok) throw new Error("เปลี่ยนบัญชีทดสอบไม่สำเร็จ");
+      setDirty(false); window.dispatchEvent(new Event("hub-accounts-changed"));
+      const me = await accountApi("v1/me");
+      window.location.assign(me.status !== "ACTIVE" ? "/account/request" : canOpenPage(me, location.pathname, new URLSearchParams(location.search)) ? location.pathname + location.search : workspaceLanding(me.capabilities));
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "ระบบขัดข้องชั่วคราว กรุณาลองใหม่"); }
+  }
   function saved(record: RecordData) { setDirty(false); setNotice("บันทึกข้อมูลแล้ว"); if (selected === "new" && record.id) navigate({ record: str(record.id) }, true); setRefresh(value => value + 1); }
   const filter = (key: string, value: string) => navigate({ [key]: value, offset: "" }, true);
-  return <HubShell publisher={localMode && initialRole === "publisher"} section="finance" staff={localMode && isHubStaff(initialRole)} residential={localMode && isContentStaff(initialRole)} registry finance={permissions.can("finance")} roleLabel={initialRole ? roles[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner"><p><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} onChange={event => void switchRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roles).filter(([value]) => value !== "agency").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}>
+  return <HubShell publisher={localMode && initialRole === "publisher"} section="finance" staff={localMode && isHubStaff(initialRole)} residential={localMode && isContentStaff(initialRole)} registry finance={permissions.can("finance")} roleLabel={initialRole ? roles[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner"><p><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} onChange={event => void switchRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{localPersonas.map(value => <option key={value} value={value}>{roles[value]}</option>)}</select></label></div>}>
     {!localMode ? <p>กรุณาตั้งค่าการเข้าสู่ระบบก่อนใช้งาน</p> : !permissions.can("finance") ? <section className="registry-panel"><h1 id="registry-title">ไม่มีสิทธิ์เข้าถึงงบและค่าใช้จ่าย</h1><p className="mt-4">ข้อมูลนี้สำหรับทีมออนไลน์และผู้ดูแลที่ได้รับสิทธิ์เท่านั้น เอเจนซีดูชื่อของตนเองและส่งคืนรหัสได้ในทะเบียนแคมเปญ</p><a className="registry-button mt-4" href="/ads/registry">กลับไปทะเบียนแคมเปญ</a></section> : <>
       <nav className="finance-nav" aria-label="เมนูงบและค่าใช้จ่าย">{Object.entries(financeViews).map(([key, item]) => <a key={key} href={`/ads/finance?view=${key}`} aria-current={view === key ? "page" : undefined} onClick={event => { event.preventDefault(); navigate({ view: key, record: "", q: "", month: "", agency: "", bud: "", scope_id: "", status: "", offset: "" }); }}>{item.title}</a>)}</nav>
       <div className="finance-heading"><div><h1 id="registry-title" tabIndex={-1}>{current.title}</h1><p className="text-muted">{current.description}</p></div>{current.create && (permissions.can("finance", "edit") || view === "card-statements" && permissions.can("finance", "approve")) && <button className="registry-button primary" onClick={() => navigate({ record: "new" })}>{current.create}</button>}</div>

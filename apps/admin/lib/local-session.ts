@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
-import { roles, type LocalRole } from "./roles";
+import { localPersonas, type LocalRole } from "./roles";
 
-export { roles, roleLabels, type LocalRole } from "./roles";
+export { roles, localPersonas, roleLabels, type LocalRole } from "./roles";
 const cookieName = "sena_local_persona";
 export { cookieName };
 
@@ -40,7 +40,7 @@ export function hasSameLocalOrigin(request: { headers: Headers; url: string }) {
 export async function getLocalRole(): Promise<LocalRole | null> {
   if (!isLocalMode()) return null;
   const value = (await cookies()).get(cookieName)?.value;
-  return (roles as readonly string[]).includes(value || "") ? value as LocalRole : null;
+  return (localPersonas as readonly string[]).includes(value || "") ? value as LocalRole : null;
 }
 
 export function getRoleToken(role: LocalRole | "service_consumer") {

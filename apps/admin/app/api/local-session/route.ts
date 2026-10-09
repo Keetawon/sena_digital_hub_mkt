@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookieName, getRoleToken, hasSameLocalOrigin, isLocalMode, localRequestOrigin, LocalRole, roles } from "@/lib/local-session";
+import { cookieName, getRoleToken, hasSameLocalOrigin, isLocalMode, localRequestOrigin, LocalRole, localPersonas } from "@/lib/local-session";
 
 export async function POST(request: NextRequest) {
   if (!isLocalMode() || !localRequestOrigin(request)) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: { message: "รูปแบบข้อมูลไม่ถูกต้อง" } }, { status: 400 });
   }
-  if (!(roles as readonly string[]).includes(role!) || !getRoleToken(role!)) {
+  if (!(localPersonas as readonly string[]).includes(role!) || !getRoleToken(role!)) {
     return NextResponse.json({ error: { message: "ยังไม่ได้ตั้งค่าบัญชีทดสอบนี้บนเซิร์ฟเวอร์" } }, { status: 400 });
   }
   const response = NextResponse.json({ role });

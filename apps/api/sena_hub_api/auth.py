@@ -18,6 +18,13 @@ DEMO_ROLES = (*ROLES, "online_staff", "agency_kin", "agency_combay")
 DEMO_ACTORS = {role: UUID(int=index + 1) for index, role in enumerate(ROLES)}
 ALL_DEMO_ACTORS = {role: UUID(int=index + 1) for index, role in enumerate(DEMO_ROLES)}
 DEMO_AGENCIES = {"agency_kin": "KIN", "agency_combay": "COMBAY"}
+# Optional local identities, not roles or permission templates. Keep historical
+# demo enumerations/UUIDs stable; account_identity still supplies every authority.
+LOCAL_UAT_ACTORS = {
+    "uat_admin": UUID("ec4582d4-c806-5b44-bc73-d6c358e45a83"),
+    "uat_suspended": UUID("d66df957-c45f-5ed7-ac2f-371645c1a91b"),
+    "uat_somchai": UUID("2499dad0-228e-5633-9565-20e8935bcc82"),
+}
 HOSTED_TEST_REF = "eqlrtevwpyboplljgowo"
 
 
@@ -84,7 +91,14 @@ class Settings:
             if any(extra) and (any(len(token) < 32 or not token.isascii() for token in extra)
                                or len(set(tokens + extra)) != len(DEMO_ROLES)):
                 raise ValueError("token สาธิตทะเบียนต้องกำหนดครบทั้ง 3 บัญชีและต่างจากทุกบัญชีเดิม")
+            uat = [self.demo_tokens.get(persona, "") for persona in LOCAL_UAT_ACTORS]
+            existing = [value for value in tokens + extra if value]
+            if any(uat) and (any(len(token) < 32 or not token.isascii() for token in uat)
+                            or len(set(existing + uat)) != len(existing) + len(uat)):
+                raise ValueError("บัญชี UAT ในเครื่องต้องกำหนดครบ 3 token และต่างจากทุกบัญชีเดิม")
         elif self.auth_mode == "supabase":
+            if any(self.demo_tokens.get(persona) for persona in LOCAL_UAT_ACTORS):
+                raise ValueError("บัญชี UAT ใช้ได้เฉพาะโหมดสาธิตในเครื่อง")
             url = urlparse(self.supabase_url)
             if ((url.scheme != "https" and not self.hosted_test_simulation) or not url.hostname
                     or url.path not in {"", "/"} or url.query or url.fragment or url.username):
@@ -98,7 +112,7 @@ class Settings:
             database_url=os.getenv("HUB_DATABASE_URL", ""),
             auth_mode=os.getenv("HUB_AUTH_MODE", ""),
             environment=os.getenv("HUB_ENV", ""),
-            demo_tokens={role: os.getenv(f"HUB_DEMO_{role.upper()}_TOKEN", "") for role in DEMO_ROLES},
+            demo_tokens={role: os.getenv(f"HUB_DEMO_{role.upper()}_TOKEN", "") for role in (*DEMO_ROLES, *LOCAL_UAT_ACTORS)},
             supabase_url=os.getenv("HUB_SUPABASE_URL", "").rstrip("/"),
             hosted_test_simulation=os.getenv("HUB_HOSTED_TEST_SIMULATION", "") == "1",
             admin_origin=os.getenv("HUB_ADMIN_ORIGIN", "").rstrip("/"),
@@ -159,10 +173,11 @@ class Authentication:
 
         claims = None
         if self.settings.auth_mode == "demo":
-            for role in DEMO_ROLES:
+            for role, identity in {**ALL_DEMO_ACTORS, **LOCAL_UAT_ACTORS}.items():
                 configured = self.settings.demo_tokens.get(role, "")
                 if configured and secrets.compare_digest(token, configured):
-                    claims = {"sub": str(ALL_DEMO_ACTORS[role]), "email": f"demo-{role}@example.test"}
+                    email = f"{role.replace('_', '-')}@example.test" if role in LOCAL_UAT_ACTORS else f"demo-{role}@example.test"
+                    claims = {"sub": str(identity), "email": email}
                     break
         else:
             try:

@@ -1,2 +1,4 @@
 import { AccessRequestPage } from "@/components/accounts";
-export default function Page() { return <AccessRequestPage />; }
+import { getLocalRole, isLocalMode } from "@/lib/local-session";
+export const dynamic = "force-dynamic";
+export default async function Page() { return <AccessRequestPage localMode={isLocalMode()} initialRole={await getLocalRole()} />; }

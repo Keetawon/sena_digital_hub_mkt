@@ -2,7 +2,7 @@
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { hubPages, workspaceLanding } from "./hub-navigation-data";
 import { SignOut, useHostedSession } from "./hosted-session";
-import { roleLabels, roles, type LocalRole } from "@/lib/roles";
+import { roleLabels, localPersonas, type LocalRole } from "@/lib/roles";
 import { can, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
 
 export const taskLabels: Record<string, string> = { read: "อ่านข้อมูลโครงการ", edit: "แก้ไขข้อมูลและสื่อ", publish: "อนุมัติและเผยแพร่ข้อมูล", online: "ดูแลงานโฆษณาและงบ", agency: "ทำงานในนามเอเจนซี" };
@@ -112,7 +112,7 @@ export function LocalPersonaPicker({ initialRole = null }: { initialRole?: Local
     } catch (failure) { setError((failure as AccountApiError).status === 503 || failure instanceof TypeError ? "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" : failure instanceof Error ? failure.message : "เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
     finally { setBusy(false); }
   }
-  return <div className="registry-panel"><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={selected} disabled={busy} onChange={event => void select(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{roles.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>{error && <p role="alert">{error}</p>}</div>;
+  return <div className="registry-panel"><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={selected} disabled={busy} onChange={event => void select(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{localPersonas.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>{error && <p role="alert">{error}</p>}</div>;
 }
 
 export function ActorName({ id }: { id?: string | null }) { const { names } = useAccountDirectory(); return <span title={id || undefined}>{id ? names[id] || (/^[0-9a-f-]{36}$/i.test(id) ? "ผู้ใช้เดิม" : id) : "ยังไม่มีผู้ดำเนินการ"}</span>; }
@@ -121,7 +121,7 @@ export type Invite = { id: string; email: string; display_hint: string; company_
 export const companyLabels: Record<string,string> = { SENA: "เสนาดีเวลลอปเมนท์", SENA_SUBSIDIARY: "บริษัทในเครือเสนา", AGENCY: "เอเจนซี", CONTRACTOR: "ผู้รับจ้างภายนอก" };
 export const companyLabel = (a: {company_type: string | null; company_name: string | null}) => a.company_type ? [companyLabels[a.company_type],a.company_name].filter(Boolean).join(" · ") : "ยังไม่ระบุ";
 
-export function AccessRequestPage() {
+export function AccessRequestPage({ localMode = false, initialRole = null }: { localMode?: boolean; initialRole?: LocalRole | null }) {
   const config = useHostedSession();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
@@ -158,7 +158,7 @@ export function AccessRequestPage() {
     return () => { alive = false; clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, []);
   const workspace = workspaceLanding(account?.capabilities);
-  return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p><h1>{editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
+  return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p>{localMode && <LocalPersonaPicker initialRole={initialRole} />}<h1>{editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
     {error && <p role="alert">{error}</p>}
     {account && <><p>อีเมล: {account.email}</p>
       <p role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่คุณกรอกยังอยู่ในหน้านี้"}</p>

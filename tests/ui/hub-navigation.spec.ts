@@ -196,6 +196,7 @@ test('desktop rail persists, labels appear on focus and badges remain visible', 
   await expect(accounts.getByRole('tooltip')).toHaveText('ผู้ใช้และสิทธิ์');
   const label = await accounts.getByRole('tooltip').boundingBox(); expect(label!.x).toBeGreaterThanOrEqual(64);
   await expect(accounts.getByLabel('บัญชีรออนุมัติ')).toBeVisible();
+  await page.screenshot({ path: 'artifacts/permissions-uat/sidebar-focus-1280.png', fullPage: false });
   await expect(sidebar.locator('.wordmark')).toHaveText('SENA.DIGITAL HUB');
   await expect(sidebar.locator('.wordmark-full')).not.toBeVisible();
   await expect(sidebar.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toBeVisible();
@@ -224,7 +225,7 @@ for (const width of [1280, 1024, 400]) test(`sidebar has no horizontal page over
   if (width === 400) await openMenu(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.locator('.sidebar-footer')).toHaveCount(0);
-  await page.screenshot({ path: `artifacts/permissions/sidebar-${width}.png`, fullPage: true });
+  await page.screenshot({ path: `artifacts/permissions/sidebar-${width}.png`, fullPage: width !== 400 });
   if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).click(); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await page.screenshot({ path: 'artifacts/permissions/sidebar-overlay-1024.png' }); }
   if (width !== 1280) await page.keyboard.press('Escape');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

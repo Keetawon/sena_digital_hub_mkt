@@ -8,6 +8,9 @@ export async function ensureLocalAdminToken(config) {
     onlineStaffToken: 'HUB_DEMO_ONLINE_STAFF_TOKEN',
     agencyKinToken: 'HUB_DEMO_AGENCY_KIN_TOKEN',
     agencyCombayToken: 'HUB_DEMO_AGENCY_COMBAY_TOKEN',
+    uatAdminToken: 'HUB_DEMO_UAT_ADMIN_TOKEN',
+    uatSuspendedToken: 'HUB_DEMO_UAT_SUSPENDED_TOKEN',
+    uatSomchaiToken: 'HUB_DEMO_UAT_SOMCHAI_TOKEN',
   };
   let changed = false;
   for (const key of Object.keys(tokens)) {

@@ -41,9 +41,11 @@ async function manage(page:Page,id=target){await page.getByRole('tab',{name:'ผ
 test('template copy stages boxes; special actions need view and editorial edit/approve exclude each other',async({page})=>{
   const state=await setup(page);const panel=await manage(page);
   await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
+  await panel.locator('.permission-template-actions').scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/manage-normal-grid.png',fullPage:false});
   await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('publisher:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
   await expect(panel.getByRole('checkbox',{name:'โครงการ อนุมัติ',exact:true})).toBeChecked();await expect(panel.getByRole('checkbox',{name:'โครงการ แก้ไข',exact:true})).toBeDisabled();
   await expect(panel.getByLabel('ความแตกต่างของสิทธิ์').first()).toContainText('โครงการ: ดู · แก้ไข → ดู · อนุมัติ');expect(state.calls).toHaveLength(0);
+  await panel.getByLabel('ความแตกต่างของสิทธิ์').first().scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/template-diff.png'});
   await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('admin:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
   await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).not.toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการทะเบียนแบรนด์',exact:true})).toBeChecked();
   await panel.getByRole('checkbox',{name:'แบรนด์ ดู',exact:true}).uncheck();await expect(panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true})).not.toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการทะเบียนแบรนด์',exact:true})).toBeDisabled();
@@ -73,15 +75,18 @@ test('a newer server template does not change pinned boxes until explicitly appl
 test('manager flag requires explicit confirmation independent of template, and self remains read-only',async({page})=>{
   const state=await setup(page);let panel=await manage(page);
   await panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true}).check();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
+  await panel.getByRole('checkbox',{name:/ยืนยันให้สิทธิ์ผู้ดูแลระบบ/}).scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/manager-confirmation.png',fullPage:false});
   await panel.getByRole('checkbox',{name:/ยืนยันให้สิทธิ์ผู้ดูแลระบบ/}).focus();await page.keyboard.press('Space');await panel.getByRole('button',{name:'บันทึก',exact:true}).click();
   await expect(panel.getByRole('status')).toContainText('ปรับสิทธิ์');expect(state.calls[0].body).toMatchObject({can_manage_users:true,confirm_manage_users:true,template:{code:'editor',version:1}});
   await page.keyboard.press('Escape');panel=await manage(page,actor);await expect(panel.getByText('นี่คือบัญชีของคุณ')).toBeVisible();await expect(panel.getByLabel('แม่แบบสิทธิ์',{exact:true})).toBeDisabled();await expect(panel.getByRole('checkbox',{name:'โครงการ ดู',exact:true})).toBeDisabled();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toHaveCount(0);
+  await page.screenshot({path:'artifacts/permissions-uat/manage-self.png',fullPage:false});
 });
 
 test('last manager lock follows the independent flag even when the legacy role is viewer',async({page})=>{
   await setup(page,{last:true});const panel=await manage(page);await expect(panel.getByText('ต้องเหลือผู้ดูแลระบบอย่างน้อย 1 คน')).toBeVisible();
   await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).toBeDisabled();await expect(panel.getByRole('button',{name:'ระงับบัญชี',exact:true})).toBeDisabled();
   await expect(panel.getByLabel('แม่แบบสิทธิ์',{exact:true})).toBeEnabled();
+  await page.screenshot({path:'artifacts/permissions-uat/manage-last-manager.png',fullPage:false});
 });
 
 test('fixed agency history shows the actual code correction and admin note',async({page})=>{
@@ -129,12 +134,13 @@ test('batch template review shows exclusions, invalidates on selection change an
   const state=await setup(page);await page.getByRole('button',{name:'ปรับสิทธิ์หลายบัญชี',exact:true}).click();const panel=page.getByRole('dialog');
   await panel.getByRole('checkbox',{name:new RegExp(`${target}@example.test`)}).check();await panel.getByRole('checkbox',{name:new RegExp(`${actor}@example.test`)}).check();await panel.getByRole('button',{name:'ดูความแตกต่างก่อนยืนยัน',exact:true}).click();
   await expect(panel.getByRole('region',{name:'ตัวอย่างการปรับสิทธิ์'})).toContainText('บัญชีของคุณ');await expect(panel.getByRole('button',{name:'ใช้กับ 1 คน',exact:true})).toBeDisabled();
+  await panel.getByRole('region',{name:'ตัวอย่างการปรับสิทธิ์'}).scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/batch-diff.png',fullPage:false});
   await panel.getByLabel('เลือกกลุ่มด้วย').selectOption('team');await expect(panel.getByRole('region',{name:'ตัวอย่างการปรับสิทธิ์'})).toHaveCount(0);await panel.getByLabel('ทีมที่ต้องการ').selectOption('ทีมสมมติ');await panel.getByRole('button',{name:'ดูความแตกต่างก่อนยืนยัน',exact:true}).click();await panel.getByRole('checkbox',{name:'ยืนยันความแตกต่างของทุกบัญชีที่แสดง'}).check();await panel.getByRole('button',{name:'ใช้กับ 1 คน',exact:true}).click();
   await expect(page.locator('.accounts-feedback[role=status]')).toContainText('ปรับสิทธิ์ 1 คนแล้ว');expect(state.calls.at(-1)?.body.selection).toEqual({kind:'team',team:'ทีมสมมติ'});
 });
 
 test('new tab assignment changes only that tab and acknowledgement grants nothing',async({page})=>{
-  const state=await setup(page,{newTab:true});const notice=page.getByRole('region',{name:'แท็บใหม่ แท็บสมมติใหม่'});await notice.getByRole('button',{name:'กำหนดสิทธิ์แท็บนี้'}).click();let panel=page.getByRole('dialog');
+  const state=await setup(page,{newTab:true});const notice=page.getByRole('region',{name:'แท็บใหม่ แท็บสมมติใหม่'});await page.screenshot({path:'artifacts/permissions-uat/new-tab-controlled.png',fullPage:false});await notice.getByRole('button',{name:'กำหนดสิทธิ์แท็บนี้'}).click();let panel=page.getByRole('dialog');
   await panel.getByLabel('เลือกกลุ่มด้วย').selectOption('template');await panel.getByLabel('แม่แบบเดิม',{exact:true}).selectOption('editor');await panel.getByRole('checkbox',{name:'แท็บสมมติใหม่ ดู',exact:true}).check();await panel.getByRole('checkbox',{name:'แท็บสมมติใหม่ แก้ไข',exact:true}).check();await panel.getByRole('button',{name:'ดูความแตกต่างก่อนยืนยัน'}).click();await expect(panel.getByLabel('ความแตกต่างของสิทธิ์')).toContainText('แท็บสมมติใหม่: ไม่มีสิทธิ์ → ดู · แก้ไข');
   await panel.getByRole('checkbox',{name:'ยืนยันความแตกต่างของทุกบัญชีที่แสดง'}).check();await panel.getByRole('button',{name:'ใช้กับ 1 คน',exact:true}).click();await expect(panel).toHaveCount(0);expect(state.calls.at(-1)?.body.change).toEqual({kind:'tab',tab:'synthetic_feature',levels:['view','edit']});
   await notice.getByRole('button',{name:'รับทราบโดยไม่ให้สิทธิ์'}).click();await expect(notice).toHaveCount(0);expect(state.calls.at(-1)).toEqual({path:'permissions/notices/synthetic_feature/ack',body:{catalog_digest:'synthetic-catalog-digest'}});
@@ -144,5 +150,6 @@ test('invite pins an explicit server template version and 400px panel stays keyb
   const state=await setup(page);await page.setViewportSize({width:400,height:860});const opener=page.getByRole('button',{name:'+ เพิ่มผู้ใช้',exact:true});await opener.click();const panel=page.getByRole('dialog');
   await expect(panel.getByRole('option',{name:/ผู้ดูแลระบบ/})).toHaveCount(0);await panel.getByLabel('อีเมล',{exact:true}).fill('permission-invite@example.test');await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('publisher:1');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);for(let n=0;n<18;n++){await page.keyboard.press('Tab');expect(await page.evaluate(()=>!!document.activeElement?.closest('dialog'))).toBe(true);}
+  await panel.getByRole('heading').scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/mobile-panel-400.png',fullPage:false});
   await panel.getByRole('button',{name:'สร้างคำเชิญ',exact:true}).click();await expect(panel).toHaveCount(0);expect(state.calls[0].body.template).toEqual({code:'publisher',version:1});expect(state.calls[0].body).not.toHaveProperty('can_manage_users');
 });

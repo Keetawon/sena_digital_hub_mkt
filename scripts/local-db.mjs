@@ -64,6 +64,9 @@ try {
     `HUB_DEMO_ONLINE_STAFF_TOKEN=${config.onlineStaffToken}`,
     `HUB_DEMO_AGENCY_KIN_TOKEN=${config.agencyKinToken}`,
     `HUB_DEMO_AGENCY_COMBAY_TOKEN=${config.agencyCombayToken}`,
+    `HUB_DEMO_UAT_ADMIN_TOKEN=${config.uatAdminToken}`,
+    `HUB_DEMO_UAT_SUSPENDED_TOKEN=${config.uatSuspendedToken}`,
+    `HUB_DEMO_UAT_SOMCHAI_TOKEN=${config.uatSomchaiToken}`,
   ].join('\n');
   const environments = [
     ['apps/api/.env', `${common}\nHUB_DATABASE_URL=postgresql://hub_runtime:${config.runtimePassword}@127.0.0.1:${port}/sena_hub_local\nHUB_TEST_DATABASE_URL=postgresql://hub_runtime:${config.runtimePassword}@127.0.0.1:${port}/sena_hub_local\n`],

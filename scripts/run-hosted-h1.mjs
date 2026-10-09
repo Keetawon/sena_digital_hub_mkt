@@ -52,7 +52,7 @@ try {
     HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
     HUB_SUPABASE_STORAGE_KEY:SIMULATION_STORAGE_KEY,HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
-  for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY'])env[`HUB_DEMO_${role}_TOKEN`]='';
+  for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY','UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {
     identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.migrationUser,password:config.migrationPassword});
     mock=createMockSupabase({onIdentity: async user => {
