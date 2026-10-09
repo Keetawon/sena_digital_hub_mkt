@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { hostedConfig } from "@/lib/hosted-config";
-import { safeNext } from "@/components/hub-navigation-data";
+import { canOpenPage } from "@/lib/hub-permissions";
+import { safeNext, workspaceLanding } from "@/components/hub-navigation-data";
 import { readHubAccount, unavailablePage } from "@/lib/hub-account";
 
 export async function GET(request: NextRequest) {
@@ -20,7 +21,10 @@ export async function GET(request: NextRequest) {
     try {
       const { status, account } = await readHubAccount(config.apiOrigin, data.session.access_token);
       if (status === 401) response.headers.set("Location", new URL("/login", config.adminOrigin).href);
-      else if (account?.status === "ACTIVE") response.headers.set("Location", new URL(safeNext(request.nextUrl.searchParams.get("next")), config.adminOrigin).href);
+      else if (account?.status === "ACTIVE") {
+        const requested = new URL(safeNext(request.nextUrl.searchParams.get("next")), config.adminOrigin);
+        response.headers.set("Location", canOpenPage(account, requested.pathname, requested.searchParams) ? requested.href : new URL(workspaceLanding(account.capabilities), config.adminOrigin).href);
+      }
     } catch {
       // The OAuth code is already consumed; retry the destination using the saved session.
       const page = unavailablePage(safeNext(request.nextUrl.searchParams.get("next")));

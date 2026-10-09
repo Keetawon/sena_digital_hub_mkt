@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = json.loads((ROOT / 'tests/permissions/legacy-routes.json').read_text(encoding='utf-8'))
 FOUNDATION = json.loads((ROOT / 'tests/permissions/foundation-routes.json').read_text(encoding='utf-8'))
 SHARED = json.loads((ROOT / 'tests/permissions/shared-routes.json').read_text(encoding='utf-8'))
-ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes']
+ACCOUNTS_UI = json.loads((ROOT / 'tests/permissions/accounts-ui-routes.json').read_text(encoding='utf-8'))
+ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes']
 ROLES = ('viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency_kin', 'agency_combay', 'service_consumer')
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
@@ -98,7 +99,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     client, _ = baseline_client
     actual = {(method, route.path) for route in client.app.routes if isinstance(route, APIRoute) for method in route.methods}
     expected = {(r['method'], r['path']) for r in ROUTES}
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes'])
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 

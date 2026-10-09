@@ -4,10 +4,10 @@ import { useEffect, useId, useState } from "react";
 import "./hub-navigation.css";
 
 import { hubPages, hubGroups, type HubSection } from "./hub-navigation-data";
-import { useAccountDirectory } from "./accounts";
+import { useHubPermissions } from "./accounts";
 import { useBrandReviews } from "./brand-review";
 import { useHostedSession } from "./hosted-session";
-type Item = typeof hubPages[number];
+type Item = { id: HubSection; href: string; label: string; group: "content" | "ads" | null; icon: string };
 function NavIcon({ path }: { path: string }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>; }
 function NavLink({ item, section, pendingBrands, pendingAccounts }: { item: Item; section: HubSection; pendingBrands?: number | null; pendingAccounts?: number | null }) {
   const count = item.id === "brands" ? pendingBrands : item.id === "accounts" ? pendingAccounts : undefined;
@@ -22,13 +22,15 @@ function Group({ name, items, section, pendingBrands }: { name: keyof typeof hub
   function toggle() { const next = !open; setOpen(next); try { localStorage.setItem(`hub-navigation:${name}`, next ? "open" : "closed"); } catch { /* Navigation remains usable without storage. */ } }
   return <section className="hub-nav-group"><button type="button" className="hub-nav-toggle" aria-label={hubGroups[name]} aria-description={current && !open ? "มีหน้าที่กำลังใช้งานอยู่ในกลุ่มนี้" : undefined} data-current={current && !open} aria-expanded={open} aria-controls={controls} onClick={toggle}><span className="hub-nav-label">{hubGroups[name]}</span><span className="hub-nav-tooltip" role="tooltip">{hubGroups[name]}</span><svg className="hub-nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><div id={controls} className="hub-nav-collapse" data-open={open} inert={!open} aria-hidden={!open}><div className="hub-nav-items">{items.map(item => <NavLink key={item.id} item={item} section={section} pendingBrands={pendingBrands} />)}</div></div></section>;
 }
-export function HubNavigation({ section, residential, finance, staff, publisher = false }: { section: HubSection; residential: boolean; finance: boolean; staff: boolean; publisher?: boolean }) {
-  const accounts = useAccountDirectory();
+export function HubNavigation({ section }: { section: HubSection }) {
+  const accounts = useHubPermissions();
   const { pendingCount } = useBrandReviews();
   const hosted = Boolean(useHostedSession());
-  // Preserve the three existing workspace entry links; their landing pages still
-  // explain account choices. Domain data and additional links keep their ACLs.
-  const content = hubPages.filter(item => item.group === "content" && (item.id !== "knowledge" || !hosted) && (residential || item.id === "projects" || item.id === "brands"));
-  const ads = hubPages.filter(item => item.group === "ads" && (finance || item.id === "registry"));
-  return <nav className="hub-navigation" aria-label="เมนูหลัก"><Group name="content" items={content} section={section} pendingBrands={publisher ? pendingCount : undefined} /><Group name="ads" items={ads} section={section} />{staff && <div className="hub-nav-standalone"><NavLink item={hubPages.find(item => item.id === "questions")!} section={section} /></div>}{accounts.admin && <NavLink item={hubPages.find(item => item.id === "accounts")!} section={section} pendingAccounts={accounts.pending ?? null} />}</nav>;
+  const items: Item[] = hubPages.flatMap(item => {
+    const tab = accounts.capabilities.catalog?.find(tab => tab.tab === item.id);
+    if (!tab || !accounts.can(item.id) || item.id === "knowledge" && hosted) return [];
+    return [{ ...item, label: tab.label_th, group: tab.nav_group === "content" || tab.nav_group === "ads" ? tab.nav_group : null }];
+  });
+  const content = items.filter(item => item.group === "content"), ads = items.filter(item => item.group === "ads");
+  return <nav className="hub-navigation" aria-label="เมนูหลัก"><Group name="content" items={content} section={section} pendingBrands={accounts.can("brands", "approve") ? pendingCount : undefined} /><Group name="ads" items={ads} section={section} />{items.filter(item => item.group === null).map(item => <div className="hub-nav-standalone" key={item.id}><NavLink item={item} section={section} /></div>)}{accounts.admin && <NavLink item={hubPages.find(item => item.id === "accounts")!} section={section} pendingAccounts={accounts.pending ?? null} />}</nav>;
 }

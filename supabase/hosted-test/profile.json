@@ -263,6 +263,11 @@
       "name": "202610090052_shared_permissions.sql",
       "canonical_sha256": "fb96fda73a877f021308847b8506546c54615d42c734fa07f17801ebcf6961de",
       "executed_sha256": "fb96fda73a877f021308847b8506546c54615d42c734fa07f17801ebcf6961de"
+    },
+    {
+      "name": "202610090053_account_permission_management.sql",
+      "canonical_sha256": "d7a2e87af035a55a52a09f6ac5efbd5474900873a4fe8f4447605a8b5b2ccdec",
+      "executed_sha256": "d7a2e87af035a55a52a09f6ac5efbd5474900873a4fe8f4447605a8b5b2ccdec"
     }
   ]
 }

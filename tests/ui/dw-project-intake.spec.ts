@@ -18,6 +18,7 @@ async function setup(page: Page, role = 'viewer') {
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
+    if(path==='/api/hub/v1/me')return route.continue();
     const data = path.endsWith('/projects/progress') ? progressFixture(route.request().url(), rows) :
       path.endsWith('/sources/projects') ? rows.map(row => ({...row, project_name_rem: row.name, model_count: 1, source_record: null, intake_manifest_sha256: 'a'.repeat(64)})) : [];
     await route.fulfill({json: {data}});

@@ -4,7 +4,7 @@ test.beforeEach(async({context})=>{
   await context.addCookies([{name:'sena_local_persona',value:'admin',url:'http://127.0.0.1:3000'}]);
 });
 
-test('permission foundation projection and locked catalog use the account proxy',async({page})=>{
+test('permission projection and migrated catalog use the account proxy',async({page})=>{
   await page.goto('/admin/accounts');
   const account=(await (await page.request.get('/api/hub/v1/me')).json()).data;
   expect(account.capabilities.can_manage_users).toBe(true);
@@ -12,7 +12,7 @@ test('permission foundation projection and locked catalog use the account proxy'
   expect(account.capabilities.published_consumer).toBe(true);
   const response=await page.request.get('/api/hub/v1/admin/permissions/catalog');expect(response.status()).toBe(200);
   const catalog=(await response.json()).data;expect(catalog.tabs).toHaveLength(12);
-  expect(catalog.tabs.every((tab:{rollout_state:string})=>tab.rollout_state==='LEGACY_LOCKED')).toBe(true);
+  expect(catalog.tabs.every((tab:{rollout_state:string})=>tab.rollout_state==='MIGRATED')).toBe(true);
   expect(catalog.templates).toHaveLength(6);
 });
 
@@ -32,11 +32,12 @@ test('publisher content reads remain available while project draft edits deny at
 
 test('local demo users table, filters and self panel retain persona authority',async({page})=>{
   await page.goto('/admin/accounts');await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
-  await page.getByLabel('กรองบทบาท').selectOption('admin');
+  await page.getByLabel('กรองแม่แบบ').selectOption('admin');
   const row=page.getByRole('row').filter({has:page.getByText('คุณ',{exact:true})});
   const button=row.getByRole('button',{name:'จัดการ'});await button.click();
   const dialog=page.getByRole('dialog');await expect(dialog.getByText('นี่คือบัญชีของคุณ')).toBeVisible();
-  await expect(dialog.getByRole('radio',{name:/ผู้แก้ไขข้อมูล/})).toBeDisabled();
+  await expect(dialog.getByLabel('แม่แบบสิทธิ์',{exact:true})).toBeDisabled();
+  await expect(dialog.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).toBeDisabled();
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(button).toBeFocused();
 });
 

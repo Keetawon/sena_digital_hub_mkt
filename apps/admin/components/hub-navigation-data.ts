@@ -1,3 +1,4 @@
+import { can, type CapabilityProjection } from "@/lib/hub-permissions";
 export const hubPages = [
   { id: "projects", href: "/", label: "โครงการที่อยู่อาศัย", group: "content", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" },
   { id: "brands", href: "/?view=brands", label: "แบรนด์ที่อยู่อาศัย", group: "content", icon: "M4 21V6l8-3v18M12 9h8v12M2 21h20M7 8v2M7 13v2M16 12v2M16 17v2" },
@@ -20,4 +21,8 @@ export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "
 export function safeNext(value?: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
   try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
+}
+
+export function workspaceLanding(capabilities?: CapabilityProjection) {
+  return hubPages.find(page => page.id === "accounts" ? capabilities?.can_manage_users : can(capabilities, page.id))?.href ?? "/";
 }

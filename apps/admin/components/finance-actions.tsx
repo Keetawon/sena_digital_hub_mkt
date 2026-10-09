@@ -1,4 +1,6 @@
 "use client";
+import { canFinanceAction } from "@/lib/hub-permissions";
+import { useHubPermissions } from "./accounts";
 
 import { useEffect, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
@@ -20,6 +22,7 @@ const allocationFields: Field[] = [f("method", "วิธีแบ่งค่�
 type Action = { label: string; path: string; fields: Field[]; fixed?: RecordData; initial?: RecordData; method?: string; note?: string };
 
 export function FinanceActions({ view, record, role, choices, onSaved, onDirty }: { view: FinanceView; record: RecordData; role: LocalRole; choices: Choices; onSaved: (record: RecordData) => void; onDirty: (dirty: boolean) => void }) {
+  const permissions = useHubPermissions();
   const [selected, setSelected] = useState(""); const [dirty, setDirty] = useState(false); const base = `${financeApi}/${view}/${record.id}`;
   const version = { expected_version: Number(record.row_version ?? 1) };
   const actions: Action[] = [];
@@ -28,7 +31,7 @@ export function FinanceActions({ view, record, role, choices, onSaved, onDirty }
     add("แก้ไขข้อมูลที่บันทึก", "", memoFields.filter(field => field.key !== "memo_no"), { method: "PATCH", initial: record, note: "เมื่อแก้ข้อมูลวงเงินหรือหลักฐานที่ยืนยันแล้ว รายการงบและภาระผูกพันที่เกี่ยวข้องจะรอตรวจสอบอีกครั้ง" });
     if (record.record_status !== "CONFIRMED") add("ยืนยันข้อมูลที่บันทึก", "/confirm-record", [], { note: "ยืนยันว่าข้อมูลตรงกับ E-memo การกระทำนี้ไม่ใช่การอนุมัติ Memo" });
     actions.push({ label: "เสนอเลข Memo อ้างอิง", path: `${financeApi}/memo-identifiers`, fields: [f("identifier", "เลข Memo อ้างอิงตามต้นทาง", { required: true }), reason, evidence], fixed: { memo_id: record.id }, note: `เลขหลักคือ ${record.memo_no} เลขอ้างอิงที่มีลำดับต่างกันต้องมีหลักฐาน ห้ามรวม Memo โดยคาดเดา` });
-    if (role === "admin") records(record.identifiers).filter(item => item.kind === "ALIAS").forEach(item => {
+    if (permissions.special("finance.review_identifiers_corrections")) records(record.identifiers).filter(item => item.kind === "ALIAS").forEach(item => {
       if (item.status === "PROPOSED") actions.push({ label: `ตรวจเลขอ้างอิง ${item.identifier}`, path: `${financeApi}/memo-identifiers/${item.id}/review`, fields: [f("decision", "ผลการตรวจเลขอ้างอิง", { options: options({ APPROVE: "ยืนยันเลขอ้างอิงนี้", REJECT: "ไม่ยืนยัน" }), required: true }), reason], fixed: { expected_version: Number(item.row_version ?? 1) }, note: `เปรียบเทียบเลขต้นทาง ${item.identifier} กับเลขหลัก ${record.memo_no} ตามหลักฐานก่อนยืนยัน` });
       if (item.status === "CONFIRMED") actions.push({ label: `เลิกใช้เลขอ้างอิง ${item.identifier}`, path: `${financeApi}/memo-identifiers/${item.id}/retire`, fields: [reason], fixed: { expected_version: Number(item.row_version ?? 1) } });
     });
@@ -46,9 +49,9 @@ export function FinanceActions({ view, record, role, choices, onSaved, onDirty }
     });
   }
   if (view === "corrections") {
-    if (record.status === "PROPOSED" && role === "admin") add("ตรวจสอบข้อเสนอแก้ไข", "/review", [f("decision", "ผลการตรวจข้อเสนอ", { options: options({ APPROVE: "อนุมัติข้อเสนอแก้ไข", REJECT: "ไม่อนุมัติข้อเสนอ" }), required: true }), reason], { note: "การอนุมัติยังไม่นำไปใช้ ต้องเลือกเดือนและยืนยันการนำไปใช้แยกต่างหาก" });
+    if (record.status === "PROPOSED" && permissions.special("finance.review_identifiers_corrections")) add("ตรวจสอบข้อเสนอแก้ไข", "/review", [f("decision", "ผลการตรวจข้อเสนอ", { options: options({ APPROVE: "อนุมัติข้อเสนอแก้ไข", REJECT: "ไม่อนุมัติข้อเสนอ" }), required: true }), reason], { note: "การอนุมัติยังไม่นำไปใช้ ต้องเลือกเดือนและยืนยันการนำไปใช้แยกต่างหาก" });
     if (record.status === "APPROVED") add("นำการแก้ไขไปใช้ในเดือนที่เลือก", "/apply", [f("months", "เดือนที่จะนำไปใช้", { type: "multi", options: records(record.targets).filter(item => item.status !== "APPLIED").map(item => ({ value: str(item.month), label: display(item.month) })) }), reason], { note: "ใช้เฉพาะเดือนที่เลือก ไม่เปลี่ยนชื่อแคมเปญ รายการนำเข้า หรือการเชื่อมที่บันทึกไว้โดยอัตโนมัติ" });
-    if (record.status !== "RETIRED" && role === "admin") add("เลิกใช้ข้อเสนอแก้ไข", "/retire", [reason]);
+    if (record.status !== "RETIRED" && permissions.special("finance.review_identifiers_corrections")) add("เลิกใช้ข้อเสนอแก้ไข", "/retire", [reason]);
   }
   if (view === "ad-accounts" || view === "channel-accounts") {
     const fields = view === "ad-accounts" ? adMappingFields : channelMappingFields;
@@ -71,13 +74,14 @@ export function FinanceActions({ view, record, role, choices, onSaved, onDirty }
     if (record.status !== "CONFIRMED" && record.status !== "SUPERSEDED") records(record.rows).forEach(row => actions.push({ label: `ตรวจประเภทค่าใช้จ่ายแถว ${row.row_no ?? row.source_row_number ?? row.row_number}`, path: `${financeApi}/card-import-rows/${row.id}/classify`, fields: [f("costs", "รายการค่าใช้จ่าย", { type: "rows", fields: classifiedFields, hint: "ถ้ามีหลายประเภทในแถวเดียว ให้แยกยอดโดยผลรวมเท่ากับยอดแถวนั้น" })], fixed: { expected_version: Number(row.row_version ?? 1) }, initial: { costs: records(row.costs) }, note: "ไม่ใช้คำบรรยายร่วมของ LINE OA เพื่อเดาบัญชี หากไม่มีหลักฐานให้คงสถานะรอตรวจสอบบัญชี" }));
   }
   if (view === "cost-records") add("จัดสรรค่าใช้จ่ายตามเดือน", "/allocations", allocationFields, { fixed: { ...version, expected_allocation_set_id: record.current_allocation_set_id ?? records(record.allocations).find(item => item.status === "CONFIRMED")?.id ?? null }, note: "ระบบแบ่งหน่วยสตางค์ให้ผลรวมตรงกับยอดเรียกเก็บ เศษสตางค์อยู่เดือนแรกตามลำดับ ห้ามนับเงินสดและค่าใช้จ่ายตามเดือนซ้ำ" });
-  const active = actions.find(item => item.label === selected);
+  const availableActions = actions.filter(action => view === "card-statements" ? permissions.can("finance", "edit") || permissions.can("finance", "approve") : canFinanceAction(permissions.capabilities, action.path));
+  const active = availableActions.find(item => item.label === selected);
   return <section className="mt-5">
-    {view === "media-lines" && record.state === "ACTIVE" && !record.archived_at && <details className="finance-details"><summary>เชื่อมชื่อแคมเปญกับรายการงบนี้</summary><AssignmentEditor choices={choices} preferredLine={str(record.id)} onSaved={onSaved} onDirty={onDirty} /></details>}
-    {view === "media-lines" && records(record.assignments).filter(item => item.status === "ACTIVE").map(item => <details className="finance-details" key={str(item.id)}><summary>เปลี่ยนรายการงบของ {str(item.code)} · {display(item.month)}</summary><AssignmentEditor code={str(item.code)} existing={item} choices={choices} onSaved={onSaved} onDirty={onDirty} /></details>)}
+    {permissions.can("finance", "approve") && view === "media-lines" && record.state === "ACTIVE" && !record.archived_at && <details className="finance-details"><summary>เชื่อมชื่อแคมเปญกับรายการงบนี้</summary><AssignmentEditor choices={choices} preferredLine={str(record.id)} onSaved={onSaved} onDirty={onDirty} /></details>}
+    {permissions.can("finance", "approve") && view === "media-lines" && records(record.assignments).filter(item => item.status === "ACTIVE").map(item => <details className="finance-details" key={str(item.id)}><summary>เปลี่ยนรายการงบของ {str(item.code)} · {display(item.month)}</summary><AssignmentEditor code={str(item.code)} existing={item} choices={choices} onSaved={onSaved} onDirty={onDirty} /></details>)}
     {view === "card-imports" && <><section className="registry-panel"><h3>เทียบยอดตามรายการกับใบแจ้งยอด</h3><div className="finance-metrics">{["net_total", "declared_total", "difference"].map(key => <dl className="finance-metric" key={key}><dt>{{ net_total: "ยอดตามรายการ", declared_total: "ยอดตามใบแจ้งยอด", difference: "ผลต่าง" }[key]}</dt><dd>{display(record[key] ?? object(record.statement_control)[key], key)}</dd></dl>)}</div><p>รายการที่มีวัน ยอด และคำบรรยายเหมือนกันยังคงเป็นคนละรายการ</p></section><DataRows rows={records(record.rows)} keys={["row_no", "charge_date", "amount", "direction", "review_status"]} />{records(record.rows).map(row => <details className="finance-details" key={str(row.id)}><summary>รายละเอียดแถว {str(row.row_no ?? row.source_row_number ?? row.row_number)}</summary><DetailFacts record={row} /><DataRows rows={records(row.costs)} keys={["cost_type", "amount", "bud", "attribution_status", "document_status"]} />{records(row.costs).map(cost => <a className="registry-button mt-3" key={str(cost.id)} href={`/ads/finance?view=cost-records&record=${cost.id}`}>เปิดค่าใช้จ่าย {display(cost.cost_type)} · {display(cost.amount, "amount")}</a>)}</details>)}</>}
     {(view === "card-imports" || view === "ledger-imports") && <p className="registry-banner">ผู้ดูแลการนำเข้าจะส่งสำเนาตารางที่ตรวจและตัดข้อมูลส่วนบุคคลแล้วเข้าสู่ Hub จากนั้นทีมงานตรวจใบรับนำเข้าในหน้านี้ กระบวนการต้นทางยังคงเดิม</p>}
-    {actions.length > 0 && <><h3>ดำเนินการกับรายการนี้</h3><div className="finance-actions">{actions.map(action => <button key={action.label} type="button" className="registry-button" aria-expanded={selected === action.label} onClick={() => { if (dirty && !window.confirm("มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนการดำเนินการและละทิ้งข้อมูลหรือไม่")) return; setDirty(false); onDirty(false); setSelected(selected === action.label ? "" : action.label); }}>{action.label}</button>)}</div>{active && <FinanceForm key={`${selected}-${record.row_version}`} title={active.label} submitLabel={active.label} path={active.path} method={active.method} fields={active.fields} choices={choices} initial={active.initial} fixed={active.fixed} note={active.note} onSaved={value => { setDirty(false); setSelected(""); onSaved(value); }} onDirty={value => { setDirty(value); onDirty(value); }} />}</>}
+    {availableActions.length > 0 && <><h3>ดำเนินการกับรายการนี้</h3><div className="finance-actions">{availableActions.map(action => <button key={action.label} type="button" className="registry-button" aria-expanded={selected === action.label} onClick={() => { if (dirty && !window.confirm("มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนการดำเนินการและละทิ้งข้อมูลหรือไม่")) return; setDirty(false); onDirty(false); setSelected(selected === action.label ? "" : action.label); }}>{action.label}</button>)}</div>{active && <FinanceForm key={`${selected}-${record.row_version}`} title={active.label} submitLabel={active.label} path={active.path} method={active.method} fields={active.fields} choices={choices} initial={active.initial} fixed={active.fixed} note={active.note} onSaved={value => { setDirty(false); setSelected(""); onSaved(value); }} onDirty={value => { setDirty(value); onDirty(value); }} />}</>}
   </section>;
 }
 

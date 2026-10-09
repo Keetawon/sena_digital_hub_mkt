@@ -20,7 +20,8 @@ async function activeSection(page: Page, name: string) {
 
 async function openMenu(page: Page) {
   const trigger = page.getByRole('button', { name: 'เปิดเมนู', exact: true });
-  if (await trigger.isVisible()) {
+  if ((page.viewportSize()?.width ?? 1280) <= 720) {
+    await expect(trigger).toBeVisible();
     await expect(page.locator('.hub-mobile-drawer')).toHaveCount(1);
     if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
   }
@@ -60,19 +61,16 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('admin');
 });
 
-test('opening the registry from the shared menu preserves the residential role', async ({ page }) => {
+test('hidden registry stays denied and local return preserves the residential identity', async ({ page }) => {
   await enter(page, 'editor');
   const registryRequests: string[] = [];
   page.on('request', request => { if (request.url().includes(api)) registryRequests.push(request.url()); });
-  await page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
-  await activeSection(page, 'ทะเบียนแคมเปญ');
-  await expect(page.getByRole('heading', { name: 'เลือกบัญชีสำหรับทะเบียนแคมเปญ', exact: true })).toBeVisible();
-  await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
-  await expect(page.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toHaveCount(0);
+  expect((await page.goto('/ads/registry'))?.status()).toBe(403);
+  await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
   expect(registryRequests).toEqual([]);
   expect((await page.request.get(`${api}/registrations`)).status()).toBe(403);
-  await reveal(page, 'ข้อมูลโครงการและแบรนด์');
-  await page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true }).click();
+  await page.getByRole('link', { name: 'กลับไปเลือกบัญชีทดสอบ', exact: true }).click();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
 });
 
@@ -154,7 +152,8 @@ test('agency keeps direct registry access and never receives financial, publicat
   expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role: 'agency_kin' } })).ok()).toBeTruthy(); await page.goto('/ads/registry'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await expect(menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true })).toHaveCount(0); await expect(menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่นโครงการ', 'ชุดเผยแพร่ข้อมูล', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
-  await reveal(page, 'ข้อมูลโครงการและแบรนด์'); await expect(menu.getByRole('link', { name: 'โครงการที่อยู่อาศัย', exact: true })).toBeVisible();
+  await expect(menu.getByRole('button', { name: 'ข้อมูลโครงการและแบรนด์', exact: true })).toHaveCount(0);
+  for (const name of ['โครงการที่อยู่อาศัย', 'แบรนด์ที่อยู่อาศัย']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
 });
 
 test('sidebar hierarchy uses the same section labels and guided links in desktop and mobile', async ({ page }) => {

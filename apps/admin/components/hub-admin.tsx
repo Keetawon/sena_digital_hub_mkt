@@ -1,5 +1,8 @@
 "use client";
-import { ActorName } from "./accounts";
+import { useHubPermissions } from "./accounts";
+import { canOpenPage } from "@/lib/hub-permissions";
+import { workspaceLanding } from "./hub-navigation-data";
+import { ActorName, accountApi } from "./accounts";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { roleLabels as roles, type LocalRole } from "@/lib/roles";
@@ -106,6 +109,7 @@ function coordinateError(name: "latitude" | "longitude", value: string) {
 }
 
 export function HubAdmin({ localMode, initialRole, projectId, brandId = null, view = null, sourceVersion = null, sourceDraftAt = null }: { localMode: boolean; initialRole: LocalRole | null; projectId: string | null; brandId?: string | null; view?: string | null; sourceVersion?: string | null; sourceDraftAt?: string | null }) {
+  const permissions = useHubPermissions();
   const enabled = localMode || Boolean(useHostedSession());
   const [role, setRole] = useState<LocalRole | null>(initialRole);
   const [switching, setSwitching] = useState(false);
@@ -122,14 +126,15 @@ export function HubAdmin({ localMode, initialRole, projectId, brandId = null, vi
       if (!response.ok) throw new Error(body.error?.message ?? "เปลี่ยนบัญชีทดสอบไม่สำเร็จ");
       setHasUnsavedDraft(false); setRole(nextRole);
       window.dispatchEvent(new Event("hub-accounts-changed"));
-      if (nextRole === "online_staff" || nextRole.startsWith("agency_")) window.location.assign("/ads/registry");
+      const me = await accountApi("v1/me");
+      window.location.assign(canOpenPage(me, location.pathname, new URLSearchParams(location.search)) ? location.pathname + location.search : workspaceLanding(me.capabilities));
     } catch (error) { setSessionError(error instanceof Error ? error.message : "เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
     finally { setSwitching(false); }
   }
 
   return <HubShell publisher={enabled && role === "publisher"} section={brandsView ? "brands" : "projects"} staff={enabled && isHubStaff(role)} residential={enabled && isContentStaff(role)} finance={role === "admin" || role === "online_staff"} roleLabel={role ? roles[role] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><div className="local-note"><Icon name="shield" size={18} /><span><strong>พื้นที่ทดสอบในเครื่อง</strong> · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด</span></div><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={role ?? ""} disabled={switching} onChange={event => void selectRole(event.target.value as LocalRole)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roles).filter(([value]) => value !== "agency").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}>
         {sessionError && <div className="notice error" role="alert">{sessionError}</div>}
-        {!enabled ? <SetupNotice /> : !role ? <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยินดีต้อนรับสู่พื้นที่ทดสอบ</p><h1>เริ่มจากบทบาทของคุณ</h1><p className="muted">ทดลองจัดเตรียมข้อมูลและตรวจสอบความพร้อมก่อนเผยแพร่<br className="desktop-only" /> เลือกบัญชีทดสอบเพื่อเริ่มใช้งาน บัญชีเหล่านี้ไม่ใช่ระบบเข้าสู่ระบบจริง</p><div className="role-cards">{(Object.keys(roles) as LocalRole[]).map(value => <button key={value} className="role-card" disabled={switching} onClick={() => void selectRole(value)}><Icon name={value === "editor" ? "document" : value === "publisher" ? "shield" : "grid"} /><strong>{roles[value]}</strong><span>{value === "editor" ? "แก้ไขและบันทึกข้อมูลร่าง" : value === "publisher" ? "ตรวจสอบ เผยแพร่ และคืนค่า" : value === "admin" ? "จัดการแบรนด์ คำขอ และข้อมูลร่าง" : "อ่านข้อมูลและตรวจสอบสถานะ"}</span><Icon name="arrow" /></button>)}</div></section> : (sourceVersion || sourceDraftAt) && (projectId || brandId) ? <ContentSource key={`${role}-${sourceVersion ?? sourceDraftAt}`} kind={brandId ? "brand" : "project"} publicId={(brandId ?? projectId)!} version={sourceVersion} draftAt={sourceDraftAt} allowed={isContentStaff(role)} /> : brandsView ? <BrandWorkspace key={`${role}-${brandId || "overview"}`} brandId={brandId} role={role} onDirtyChange={setHasUnsavedDraft} /> : projectId ? <ProjectDetail key={`${projectId}-${role}`} projectId={projectId} role={role} onDirtyChange={setHasUnsavedDraft} /> : <ProjectOverview key={role} role={role} />}
+        {!enabled ? <SetupNotice /> : !role ? <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยินดีต้อนรับสู่พื้นที่ทดสอบ</p><h1>เริ่มจากบทบาทของคุณ</h1><p className="muted">ทดลองจัดเตรียมข้อมูลและตรวจสอบความพร้อมก่อนเผยแพร่<br className="desktop-only" /> เลือกบัญชีทดสอบเพื่อเริ่มใช้งาน บัญชีเหล่านี้ไม่ใช่ระบบเข้าสู่ระบบจริง</p><div className="role-cards">{(Object.keys(roles) as LocalRole[]).map(value => <button key={value} className="role-card" disabled={switching} onClick={() => void selectRole(value)}><Icon name={value === "editor" ? "document" : value === "publisher" ? "shield" : "grid"} /><strong>{roles[value]}</strong><span>{value === "editor" ? "แก้ไขและบันทึกข้อมูลร่าง" : value === "publisher" ? "ตรวจสอบ เผยแพร่ และคืนค่า" : value === "admin" ? "จัดการแบรนด์ คำขอ และข้อมูลร่าง" : "อ่านข้อมูลและตรวจสอบสถานะ"}</span><Icon name="arrow" /></button>)}</div></section> : (sourceVersion || sourceDraftAt) && (projectId || brandId) ? <ContentSource key={`${role}-${sourceVersion ?? sourceDraftAt}`} kind={brandId ? "brand" : "project"} publicId={(brandId ?? projectId)!} version={sourceVersion} draftAt={sourceDraftAt} allowed={permissions.can(brandId ? "brands" : "projects")} /> : brandsView ? <BrandWorkspace key={`${role}-${brandId || "overview"}`} brandId={brandId} role={role} onDirtyChange={setHasUnsavedDraft} /> : projectId ? <ProjectDetail key={`${projectId}-${role}`} projectId={projectId} role={role} onDirtyChange={setHasUnsavedDraft} /> : <ProjectOverview key={role} role={role} />}
   </HubShell>;
 }
 
@@ -150,6 +155,7 @@ function ProjectOverview({ role }: { role: LocalRole }) {
 }
 
 function SourceProjects({ role, initialSearch = "", returnTo = "/" }: { role: LocalRole; initialSearch?: string; returnTo?: string }) {
+  const permissions = useHubPermissions();
   const [sources, setSources] = useState<SourceProject[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<Record<string, string>>({});
@@ -163,10 +169,10 @@ function SourceProjects({ role, initialSearch = "", returnTo = "/" }: { role: Lo
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     setLoading(true); setError("");
-    try { const [sourceRows, brandRows] = await Promise.all([request<SourceProject[]>("v1/admin/sources/projects"), request<Brand[]>("v1/admin/brands")]); setSources(sourceRows); setBrands(brandRows); }
+    try { const [sourceRows, brandRows] = await Promise.all([request<SourceProject[]>("v1/admin/sources/projects"), permissions.can("brands") ? request<Brand[]>("v1/admin/brands") : Promise.resolve([])]); setSources(sourceRows); setBrands(brandRows); }
     catch (error) { setError(error instanceof Error ? error.message : "โหลดรายการต้นทางไม่สำเร็จ"); }
     finally { setLoading(false); }
-  }, []);
+  }, [permissions.capabilities]);
   useEffect(() => { void load(); }, [load]);
   async function select(source: SourceProject) {
     setPending(source.rem_project_id); setError("");
@@ -187,7 +193,7 @@ function SourceProjects({ role, initialSearch = "", returnTo = "/" }: { role: Lo
       {error && <div className="notice error" role="alert">{error}<button className="button secondary" onClick={() => void load()}>โหลดรายการใหม่</button></div>}
       {loading ? <LoadingState /> : <><p className="small-text muted" role="status">พบ {filtered.length} โครงการ</p><ul className="source-cards">{filtered.map(source => <li key={source.rem_project_id}>
         <div><h3>{source.project_name_rem}</h3><ProjectSourceReview value={source.source_review} /><ProjectGroupSummary value={source} details /><p className="small-text source-code">{source.rem_project_id} · {source.model_count} แบบที่อยู่อาศัย</p><p className="small-text muted">แบรนด์ต้นทาง: {source.brand_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_brand_id || "ไม่ระบุ"}</p><details><summary className="small-text muted">ข้อมูลบริษัทจากต้นทาง</summary><p className="small-text muted">{source.company_name_rem || "ยังไม่มีข้อมูลชื่อ"} · รหัส {source.rem_company_id || "ไม่ระบุ"}</p></details><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {formatDate(source.source_snapshot_at)}</p></div>
-        {source.public_project_id ? <a className="button secondary" href={projectHref(source.public_project_id, returnTo)}>เปิดโครงการที่มีอยู่</a> : role === "editor" || role === "admin" ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending) || source.source_review?.brand_binding_allowed === false} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending)} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
+        {source.public_project_id ? <a className="button secondary" href={projectHref(source.public_project_id, returnTo)}>เปิดโครงการที่มีอยู่</a> : permissions.can("projects", "edit") ? <div className="source-project-actions"><div className="form-field"><label htmlFor={`source-brand-${source.rem_project_id}`}>แบรนด์สำหรับ {source.project_name_rem}</label><select id={`source-brand-${source.rem_project_id}`} value={selectedBrands[source.rem_project_id] || ""} disabled={Boolean(pending) || source.source_review?.brand_binding_allowed === false} onChange={event => setSelectedBrands(previous => ({ ...previous, [source.rem_project_id]: event.target.value }))}><option value="">เลือกภายหลัง (ยังเผยแพร่ไม่ได้)</option>{brands.filter(brand => source.rem_brand_id && brand.rem_brand_id === source.rem_brand_id && !brand.source?.is_deleted).map(brand => <option key={brand.id} value={brand.id}>{brand.public_name.th || brand.rem_brand_id} · {brand.publication_available ? "เผยแพร่แล้ว" : "ฉบับร่าง"}</option>)}</select></div><button className="button primary" disabled={Boolean(pending)} onClick={() => void select(source)}>{pending === source.rem_project_id ? "กำลังสร้างข้อมูลร่าง…" : "เลือกโครงการนี้"}</button><button className="button secondary" disabled={Boolean(pending) || !permissions.can("brands", "edit")} onClick={() => setRequestSource(source)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div> : <span className="small-text muted">บัญชีนี้ดูต้นทางได้เท่านั้น</span>}
       </li>)}</ul>{!filtered.length && <p className="muted">ไม่พบโครงการที่ตรงกับการค้นหา</p>}</>}
       {requestSource && <BrandRequestDialog sourceId={requestSource.rem_brand_id} initialName={requestSource.brand_name_rem || ""} onCancel={() => setRequestSource(null)} onCreated={() => { setRequestSource(null); setNotice("ส่งคำขอเพิ่มแบรนด์แล้ว สร้างโครงการเป็นข้อมูลร่างและเลือกแบรนด์ภายหลังได้"); }} />}
     </div>
@@ -202,6 +208,7 @@ function LoadingState() { return <div className="loading-state" role="status"><s
 function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
 
 function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
+  const permissions = useHubPermissions();
   const [project, setProject] = useState<Project | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -221,8 +228,8 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof Draft, string>>>({});
   const [conflict, setConflict] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
-  const canEdit = role === "editor" || role === "admin";
-  const canPublish = role === "publisher";
+  const canEdit = permissions.can("projects", "edit");
+  const canPublish = permissions.can("projects", "approve");
   const dirty = Boolean(project && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(project)));
   const relatedDirty = commercialDirty || facilitiesDirty || modelDirty;
   const anyDirty = dirty || relatedDirty;

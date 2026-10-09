@@ -18,8 +18,8 @@ Before any new migration: native PostgreSQL custom-format `pg_dump` saved to `.l
 | 3 — publication and knowledge | Passed and pushed | `1259972` | Typecheck/build passed; API 1,556 → 1,602 (+11 unchanged skips); UI 215 → 217; DB 51 + 8; H1 11 + 38 |
 | 4 — registry | Passed and pushed | `0ca0d75` | Typecheck/build passed; API 1,602 → 1,628 (+11 unchanged skips); UI 217 → 219; DB 51 + 8; H1 11 + 38 |
 | 5 — finance, operations, archive | Passed and pushed | `cdc1c59` | Typecheck/build passed; API 1,628 → 1,672 (+11 unchanged skips); UI 219 → 221; DB 51 + 8; H1 11 + 38 |
-| 6 — shared and residual authority | Passed; checkpoint ready | This checkpoint | Typecheck/build passed; API 1,672 → 1,766 (11 → 8 existing skips); UI 221 → 229; DB 51 + 8; H1 11 + 38 |
-| C — account grid and feature onboarding | Not started | — | — |
+| 6 — shared and residual authority | Passed and pushed | `0dc28f3` | Typecheck/build passed; API 1,672 → 1,766 (11 → 8 existing skips); UI 221 → 229; DB 51 + 8; H1 11 + 38 |
+| C — account grid and feature onboarding | Passed | This checkpoint; subject below | Typecheck/build passed; API 1,766 → 1,816 (+8 unchanged opt-in skips); UI 229 → 249; DB 51 + 8; H1 11 + 38 → 11 + 39 |
 | UAT — synthetic personas and owner pack | Not started | — | — |
 
 Counts are recorded from executed gates, not inferred from the prior report. Previously reported baseline: API 1,444 passed / 11 skipped, UI 208 passed, H1 11 protocol + 38 browser; Phase A measured DB count: 51 reported checks plus 7 Node cases.
@@ -44,7 +44,7 @@ The Phase 0 action manifest is frozen. Phase 1 has copied the templates and intr
 
 ## Resume
 
-Phases A, 0, 1, 2, 3, 4 and 5 are complete. Next: **Phase 6 ? shared and residual authority**, then C and UAT. Phase 4 is pushed as `0ca0d75`; Phase 5 checkpoint subject is `feat: enforce finance and operations capabilities (phase 5)`. Record its literal hash in the next phase rather than inventing a self-referential hash here. Migration 50 is applied to the freshly backed-up working local database, with BNA7 and every existing account field verified intact. Working PostgreSQL/API/admin are restored. Push each phase only after all gates pass. All grids remain locked; this is not the final UAT build.
+Phases A, 0–6 are complete and pushed. Phase C has passed all gates and its backed-up working upgrade; checkpoint it, then resume at **UAT — synthetic personas and owner pack**. Migration 53 is applied to the working local database, with BNA7, all eight existing account rows and all existing permission rows verified unchanged. Working PostgreSQL/API/admin are restored; all twelve grids are now MIGRATED and editable through the guarded Accounts UI. Push each phase only after all gates pass. The UAT accounts/guide are not complete yet; no owner testing is requested between phases.
 
 Phase A full UI gate: 213 passed in 6.5 minutes, no skips/retries/failures. All 13 sidebar cases passed. Screenshot review prompted an explicit overlay-visible wait; the focused sidebar rerun passed all 13 cases in 19.2 seconds. Artifacts: `artifacts/permissions/sidebar-{1280,1024,400}.png`, `sidebar-rail-1280.png`, `sidebar-overlay-1024.png`. No authorization SQL changed in this phase, so permission-specific DB deny additions start with the permissions phases.
 
@@ -401,3 +401,69 @@ Fresh pre-upgrade dump: **`.local/backups/permissions-phase6-2026-10-09T14-44-01
 Working PostgreSQL/API/admin were restored. Health, home, Accounts, all migrated content/Registry/operations routes, Finance references, Questions, assistant config, `/v1/me` and the permission catalog returned 200. All 12 grids remain `LEGACY_LOCKED` until Phase C finishes the UI integration. Proof: `.local/permissions-gates/phase6-working-services.json`. No working seed or upstream write ran.
 
 Checkpoint subject: **`feat: enforce shared permissions and retire legacy runtime roles (phase 6)`**. Commit and push this passed phase, then resume at **Phase C**. Only read-only Phase C plans/contracts exist in ignored `.local/permissions-gates/`; no Phase C implementation is included.
+
+
+## Phase C implementation — passed
+
+Phase 6 committed and pushed as **`0dc28f3`**. Clean main was verified before edits. Working services remain restored with migrations through 52; no Phase C migration has been applied there. Three parallel implementation streams cover SQL/API and invariant tests, capability-driven navigation/domain controls, and Accounts grid/bulk UI. The root stream covers feature coverage, documentation and gate integration. No commit/push before every gate passes.
+
+### Decisions taken for owner review
+
+- Applying any data template, including admin, preserves the separate manage-users flag. New internal approvals default to no user-management power; a confirmed individual flag change is required to grant it. Bulk changes preserve management flags. Invites retain the earlier restriction against the admin template and pin an exact immutable template version.
+- Agency accounts remain fixed external profiles. An administrator can still correct their canonical/date-valid agency code inside that profile; switching between internal and external profiles or editing agency boxes is refused.
+- Batch selection is bounded to 100 resolved accounts and supports explicit IDs, exact team or stored template provenance (including customised accounts). Preview explicitly excludes self, inactive and external accounts. Apply rechecks the complete target membership and per-account diff under the account decision lock; stale/tampered previews change nothing. Larger rollouts use multiple reviewed batches.
+- New-tab acknowledgment records only the current manager's receipt and grants nothing. Existing twelve tabs start without rollout notices; new catalog entries default to notice-required and deny. Template changes never recopy existing accounts automatically.
+- Earlier phases intentionally left both `guards_ready` and rollout state unchanged. Migration 53 must attest the exact twelve reviewed groups against the installed guard functions and FORCE RLS relations, then set ready/MIGRATED together. Their passed Phase 2–6 runtime deny suites are the evidence; no frozen migration is changed.
+- Domain visibility revocation clears withheld mounted data. Only values actually typed by the current user may be retained in an in-memory, labelled recovery area; no passwords/files, prefilled server data, invitation/request fields, browser storage or assistant transfer. Accounts recovery is opt-in for user-authored admin notes and decision reasons only. Identity changes clear that recovery. Capability changes remount the state-owning workspace so cross-tab cached projections are also discarded; typed text is recovered outside that boundary.
+
+### Coverage and documentation
+
+`docs/36-adding-feature-permissions.md` records the Thai workflow summary, required permission card and English developer checklist. Coverage additions exercise the coverage checks themselves: unknown API methods/routes and nav tabs, unreviewed tables, disabled/non-forced RLS and policies with removed permission predicates must fail. Final counts will be recorded from completed gates, not estimates.
+
+
+### Phase C integration checks
+
+The first disposable check applied migration 53 and passed live inventory plus four coverage mutation probes, but all twelve new tab cases stopped at `/v1/me`: the new catalog query reused the existing PL/pgSQL record name `c`, causing SQL 42702. Renaming the query alias fixed the root cause. The focused foundation/coverage rerun passed **51 tests**, 30.18s. A wider accounts/invitations/bootstrap/permissions run passed **92 tests**, 51.57s; later-added pinned-version/retention cases still require the final run.
+
+Review found first-admin bootstrap depended on the removed role-update copy trigger. The operator script now explicitly copies the current admin template and confirmed manager flag through the private audited writer in the same transaction; its regression test passed in the 92-case run. Legacy role changes no longer perform an implicit template copy.
+
+Initial offline build caught a briefly incomplete JSX history-label edit; corrected, then build and typecheck passed. Subsequent capability-control edits require a fresh final build. The first full DB gate passed domain/upgrade checks and most concurrency probes, then the residential release fixture failed because it changed an account's legacy role expecting the retired trigger to grant new boxes. The fixture is being corrected to establish its synthetic permissions explicitly; no application guard is relaxed.
+
+Automatic approval review initially rejected a local migration-source patch as insufficiently authorized. Supplying the owner's explicit Phase C scope resolved the rejection. No working/hosted DB action was attempted by that patch.
+
+
+The full API diagnostic run passed **1,815 tests / 8 unchanged opt-in skips**, 428.28s. It began before the final concurrency correction below and is not the final Phase C gate. Final typecheck/offline build passed; focused UI and full loopback H1 browser gates are now running.
+
+Read-only concurrency review found that a PENDING request could change team while a batch was applying: it could not receive extra access, but could alter the complete excluded membership after the final preview. Migration 53 now makes request submission and operator purge take the existing account decision lock before row locks. A two-runtime-connection regression verifies the request waits during apply. Re-run full DB/API against this final checksum. The local non-superuser H1 migration-only simulation passed all 53 migrations, populated 50→52→53 upgrades, exact account/source preservation, runtime credential retention and closed owner/legacy-role ACLs.
+
+Additional owner-review decisions: established Thai navigation labels are stored in the catalog to avoid label churn. The agency root page is a neutral landing with its Registry link: the old root was a management dashboard, not a public-preview screen. The existing published-only local API adapter remains unchanged. An ACTIVE agency code can be corrected within its fixed profile; a suspended agency with an expired code still needs an operator correction before reactivation, retaining the prior ACTIVE-only edit rule. Projects without Brands V show the brand reference name only; the full Brands picker/detail/search are withheld, while Project E remains usable.
+
+The initial focused browser run finished **15 passed / 9 failed**; H1's first browser group finished **26 passed / 4 failed**, so neither counted as a gate. Shared template selects wrapped their options inside the label, preventing exact accessible-name lookup; both now use explicit label/ID associations. Two new browser assertions also needed precise outage/combobox selectors. H1 caught a real invite-acceptance navigation defect: acceptance returned a raw account without capabilities, so the immediate workspace link pointed to `/` until the next poll. Refresh `/v1/me` before offering that link, without treating a refresh failure as a failed acceptance. No assertion was weakened and no test skipped.
+
+The corrected full DB gate passed **51 reported SQL/concurrency checks + 8 Node cases** against final migration 53. The final full API gate is running with the request/batch concurrency regression enabled. Working services are stopped under the owner's prior authorization while disposable gates use their ports; the preserved working database has not received migration 53.
+
+The final API gate passed **1,816 tests / 8 unchanged opt-in skips / 6 warnings**, 463.09s, including the real-runtime request/batch lock regression. A second H1 run passed the corrected acceptance, self and unsaved-text cases, but two test-only issues remained: the old diff assertion omitted the now-visible template versions, and the new identity-switch case used Playwright's single-page context helper for two tabs. Both were corrected without application changes or weakened assertions. The identity-switch regression additionally protects request fields from carrying across accounts; same-account approval refresh still preserves dirty edits.
+
+Final UI review corrected two presentation omissions: agency-code audit history now shows its actual old/new codes, and Registry V-only readers must retain the existing authorized binding list while its edit controls are absent. No DB/API authority changed. The template selector flex rule follows the corrected explicit-label markup. Full UI/H1 gates must finish against the final rebuilt application before checkpointing.
+
+The H1 core browser group then passed **31 cases** (one new cross-session identity case) and auth-flag cases passed **3**, but its separate outage fixture still supplied a role-only `/v1/me` stub. The new fail-closed page guard correctly refused that fixture before the outage assertions; the stub now supplies a bounded manage-users/Questions capability projection and matching catalog. The actual timeout/401/403/cookie/unsaved-text assertions remain unchanged. A related fixture audit found broad domain mocks swallowing `/v1/me`; those identity reads now use the real local API projection instead of introducing a role fallback.
+
+Complete H1 subsequently passed **11 protocol + 39 browser cases** (31 core, 3 flags, 5 outage). The first full UI diagnostic finished **237 passed / 12 failed**: eight expected module-denial messages had moved to the earlier page HTTP 403 boundary; two navigation cases expected links now intentionally hidden; assistant/mobile helpers also used a one-time visibility check before the capability-bound controls mounted. Assertions now retain API denial, no protected fetches, tenant isolation, unsaved text and focus checks while awaiting the intended controls. All eleven new Accounts grid cases passed in that diagnostic. No retries or skips concealed failures.
+
+The denial review also found a real local-only recovery gap: returning to `/` as a non-Project persona did not expose the picker because the Project boundary correctly withheld that workspace. A neutral picker now renders only when a server page explicitly enables local demo mode; it selects identity through the existing endpoint, reads fresh `/v1/me` and lands on an authorized page. The denied source workspace remains unmounted. The final rebuilt full UI gate is running; do not checkpoint until it passes.
+
+### Phase C final gates and working upgrade
+
+- Typecheck and offline webpack production build passed against the final application.
+- API: **1,816 passed / 8 unchanged opt-in skips / 6 warnings**, 463.09s (Phase 6: 1,766). All new accounts/grid/batch/bootstrap/feature-coverage tests ran, including real-runtime concurrency and next-request revocation probes. The eight skip names remain the existing Actuals import, Archive rollback, Finance demo seed, Windows OCR, separately executed H1 wrapper, Hub demo seed, Promotions rollback and residential-seed opt-ins listed earlier; no new test is skipped.
+- UI: **249 passed**, 6.7 minutes (Phase 6: 229), zero failures/skips/retries in the final run. Includes eleven new Accounts cases and nine new capability/navigation/cache cases, plus all existing domains and sidebar checks.
+- DB: **51 reported SQL/concurrency checks + 8 Node cases**, unchanged. The API gate additionally exercises the real non-superuser SQL permission/definer boundary and coverage mutation probes.
+- Loopback H1: **11 protocol + 39 browser cases passed** (31 core, 3 auth flags, 5 upstream outage), native exit 0. The added real-session identity-switch case clears the previous identity's request fields. All 53 migrations and the populated 50→52→53 non-superuser upgrade simulation also passed. No hosted/provider request or real email occurred.
+
+Final logs: `.local/permissions-gates/phasec-{typecheck,build,db,api,ui,h1}-final.log`; migration simulation: `phasec-h1-migration.log`. Earlier diagnostic failures and their causes are preserved above and in separate ignored logs. No failed phase was pushed.
+
+Fresh pre-upgrade dump: **`.local/backups/permissions-phasec-2026-10-09T16-03-43-172Z/sena_hub_local.dump`**, 6,502,063 bytes. The guarded upgrade verified the working data directory, applied only migration 53 transactionally and compared every pre-existing account field and permission row before commit. Verified **BNA7 = 1; all 8 existing accounts and every field unchanged; all existing permission rows unchanged; 279 staged REM projects; 4 Hub projects; one ACTIVE manage-users account preserved**. Proof: `.local/permissions-gates/phasec-working-verification.json`. No working seed or upstream write ran. Migration 53 and its profile checksum are now frozen.
+
+Working PostgreSQL/API/admin were restored. Health, home, Accounts, all migrated domain routes, `/v1/me` and the permission catalog returned 200; all **12 tabs are MIGRATED with guards ready**. Proof: `.local/permissions-gates/phasec-working-services.json`.
+
+Checkpoint subject: **`feat: manage per-user capabilities and feature rollout (phase C)`**. Commit/push this passed phase, then implement the final UAT pack. Read-only UAT persona/client plans are in ignored `.local/permissions-gates/`; no UAT seed has run. The next phase records this checkpoint's literal hash, avoiding a self-referential commit hash.

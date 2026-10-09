@@ -2,7 +2,7 @@ import type { LocalRole } from "./local-session";
 
 export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean; google: boolean; password: boolean; label: string; adminContact: string };
 
-export function accountRole(account: { status?: string; role?: string; agency?: string }): LocalRole | null {
+export function accountRole(account: { status?: string; role?: string; agency?: string | null }): LocalRole | null {
   if (account.status !== "ACTIVE") return null;
   if (account.role === "agency") return account.agency === "KIN" ? "agency_kin" : account.agency === "COMBAY" ? "agency_combay" : "agency";
   return ["editor", "publisher", "viewer", "admin", "online_staff"].includes(account.role || "") ? account.role as LocalRole : null;
@@ -34,6 +34,8 @@ export const h1Unavailable = "ยังไม่เปิดใช้งาน�
 
 export function h1AllowsApi(path: string, method: string) {
   if (path === "v1/admin/permissions/catalog") return method === "GET";
+  if (/^v1\/admin\/permissions\/(?:preview|apply)$/.test(path)) return method === "POST";
+  if (/^v1\/admin\/permissions\/notices\/[a-z_]+\/ack$/.test(path)) return method === "POST";
   if (/^v1\/admin\/accounts\/[0-9a-f-]{36}\/permissions$/.test(path)) return method === "POST";
   if (path === "v1/me/invite-accept") return method === "POST";
   if (/^v1\/admin\/account-invites(?:\/[0-9a-f-]{36}\/decision)?$/.test(path)) return method === "POST" || method === "GET" && path === "v1/admin/account-invites";

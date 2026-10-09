@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 import { ActorName } from "./accounts";
 
 import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
@@ -73,6 +74,7 @@ export function Preview({ asset, alt }: { asset: { id: string; mime_type: string
 export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, onProjectChanged, model, unsavedProjectDetails = false }: {
   project: T; role: LocalRole; disabled: boolean; onProjectChanged: (project: T) => void; model?: ModelOwner; unsavedProjectDetails?: boolean;
 }) {
+  const permissions = useHubPermissions();
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,8 +83,8 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
   const [search, setSearch] = useState("");
   const [purpose, setPurpose] = useState<AssetRole>("hero");
   const [dialog, setDialog] = useState<{ type: "upload" } | { type: "bind" | "review" | "approve"; asset: Asset } | { type: "remove"; binding: AssetBinding } | null>(null);
-  const canEdit = role === "editor" || role === "admin";
-  const canReview = role === "publisher";
+  const canEdit = permissions.can(project.public_brand_id ? "brands" : "projects", "edit");
+  const canReview = permissions.can(project.public_brand_id ? "brands" : "projects", "approve");
   const [preparingReview, setPreparingReview] = useState(false);
   const isBrand = Boolean(project.public_brand_id);
   const isProject = !isBrand && !model;

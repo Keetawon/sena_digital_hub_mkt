@@ -1,3 +1,4 @@
+import type { HubAccount } from "./hub-permissions";
 export const unavailableMessage = "ระบบขัดข้องชั่วคราว กรุณาลองใหม่";
 export class HubApiUnavailable extends Error {
   constructor() { super(unavailableMessage); }
@@ -10,7 +11,7 @@ export async function readHubAccount(apiOrigin: string, token: string) {
     if (!response.ok) throw new HubApiUnavailable();
     const { data } = await response.json();
     if (!data || !["ACTIVE", "PENDING", "REJECTED", "SUSPENDED"].includes(data.status)) throw new HubApiUnavailable();
-    return { status: 200, account: data as { status: string; role?: string; agency?: string } };
+    return { status: 200, account: data as HubAccount };
   } catch { throw new HubApiUnavailable(); }
 }
 

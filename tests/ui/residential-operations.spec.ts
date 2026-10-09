@@ -68,7 +68,7 @@ test('residential workspaces deny online staff and agencies without fetching con
     await session(page, role); const requests: string[] = [];
     const capture = (request: { url: () => string }) => { if (/\/api\/hub\/v1\/admin\/(promotions|releases)(\/|\?|$)/.test(request.url())) requests.push(request.url()); };
     page.on('request', capture);
-    for (const path of ['promotions', 'releases']) { await page.goto(`/${path}`); await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงงานเนื้อหาที่อยู่อาศัย' })).toBeVisible(); await expect(page.getByRole('navigation', { name: 'งานเนื้อหาที่อยู่อาศัย' })).toHaveCount(0); }
+    for (const path of ['promotions', 'releases']) { expect((await page.goto(`/${path}`))?.status()).toBe(403); await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible(); await expect(page.getByRole('navigation', { name: 'งานเนื้อหาที่อยู่อาศัย' })).toHaveCount(0); }
     expect(requests).toEqual([]); page.off('request', capture);
     for (const path of ['promotions', 'releases', 'releases/candidates?demo_mode=true']) expect((await page.request.get(`${api}/${path}`)).status()).toBe(403);
   }

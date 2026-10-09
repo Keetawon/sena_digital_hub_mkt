@@ -34,7 +34,7 @@ async function mocked(page: Page, role = 'editor') {
   });
   return { posts, reads, config, setResponse: (value: string) => { response = value; }, denyCitation: () => { citationDenied = true; }, makeStale: () => { stale = true; }, holdConfig: () => { let release!: () => void; configGate = new Promise<void>(resolve => { release = resolve; }); return release; } };
 }
-async function open(page: Page) { await page.goto('/questions'); const sidebar = page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true }); await (await sidebar.isVisible() ? sidebar : page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }).getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); return page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); }
+async function open(page: Page) { await page.goto('/questions'); const sidebar = page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true }); await ((page.viewportSize()?.width ?? 1280) > 720 ? sidebar : page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }).getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); return page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); }
 
 async function fullyExposed(locator: Locator) {
   // Visibility alone allows a composer below the fold. Check viewport bounds,

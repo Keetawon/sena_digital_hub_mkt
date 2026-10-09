@@ -59,6 +59,12 @@ try {
   }
   await setup.query('reset role');
   await setup.query("update hub.user_account set hub_role='publisher' where id=$1",[actor]);
+  // Operator fixture setup explicitly copies the publisher template. Updating
+  // compatibility role metadata no longer grants permission boxes in Phase C.
+  await setup.query(`select hub.write_account_access($1,jsonb_build_object(
+    'tabs',hub.normalise_permission_tabs(t.tabs),'can_manage_users',false,
+    'template',jsonb_build_object('code',t.code,'version',t.version),'customised',false),
+    $1,'TEST_TEMPLATE_APPLY') from hub.permission_template t where t.code='publisher' and t.version=1`,[actor]);
   await setup.query('set local role publisher');
   for (const promotion of promos) {
     for (const review_type of ['DATA', 'LEGAL']) await rpc(setup, 'review', promotion.id, {
@@ -113,6 +119,7 @@ try {
   await setup.query('delete from staging.rem_brands where rem_brand_id=$1', [key]);
   await setup.query('delete from audit.change_log where actor=$1', [actor]);
   await setup.query('delete from hub.account_permission where account_id=$1', [actor]);
+  await setup.query('delete from hub.permission_event where account_id=$1 or actor_id=$1', [actor]);
   await setup.query('delete from hub.user_account where id=$1', [actor]);
   await setup.query('commit');
   await Promise.all([setup.end(), first.end(), second.end()]);

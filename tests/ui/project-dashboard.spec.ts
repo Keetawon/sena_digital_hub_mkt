@@ -19,6 +19,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
+    if(path==='/api/hub/v1/me')return route.continue();
     const data = path.endsWith('/projects/progress') ? progressFixture(route.request().url(), rows) :
       path.endsWith('/sources/projects') ? [{ rem_project_id: 'C', project_name_rem: 'โครงการ C', model_count: 3, public_project_id: null, source_record: null, intake_manifest_sha256: null }] :
       path.endsWith('/projects/A') ? { public_project_id: 'A', public_name: { th: 'โครงการ A' }, slug: '', latitude: 0, longitude: 0,

@@ -56,10 +56,11 @@ test('finance denies agency access before requesting any financial rows', async 
   await expect(page.getByRole('heading', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   await expect(page.getByText('ยังไม่มีรายการลงทะเบียน', { exact: true })).toBeVisible();
   page.on('request', request => { if (request.url().includes(api)) requests.push(request.url()); });
-  await page.goto('/ads/finance?view=memos');
-  await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงงบและค่าใช้จ่าย' })).toBeVisible();
+  expect((await page.goto('/ads/finance?view=memos'))?.status()).toBe(403);
+  await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'งานงบและค่าใช้จ่าย', exact: true })).toHaveCount(0);
   expect(requests).toEqual([]);
+  expect((await page.request.get(`${api}/memos`)).status()).toBe(403);
   expect(clientErrors).toEqual([]);
 });
 

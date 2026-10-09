@@ -52,6 +52,9 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
     await client.query("insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) values('SYNTHETIC-UPGRADE','Synthetic upgrade',now(),'synthetic')");
     await client.query("insert into hub.user_account(id,email,status,hub_role) values('00000000-0000-0000-0000-000000000090','upgrade@example.test','ACTIVE','viewer')");
     const upgradeAccount=(await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row;
+    // Exercise the published Phase 6 checkpoint before applying Accounts C.
+    // Both upgrades retain the already-provisioned runtime credential.
+    await runMigrations(client,config,{log,migrations:migrations.slice(0,52)});
     await runMigrations(client,config,{log,migrations});
     assert.equal((await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword,upgradePassword);
     assert.deepEqual((await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row,upgradeAccount);

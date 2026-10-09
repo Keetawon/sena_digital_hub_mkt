@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { getLocalRole } from "./local-session";
+import { getLocalRole, getRoleToken, localApiOrigin } from "./local-session";
 import { hostedConfig, isHostedMode, accountRole } from "./hosted-config";
 import { HubApiUnavailable, readHubAccount } from "./hub-account";
 
@@ -27,4 +27,15 @@ export const getHostedCaller = cache(async () => {
   return { role: account ? accountRole(account) : null, account, token: session.access_token };
 });
 
-export async function getHubRole() { return isHostedMode() ? (await getHostedCaller())?.role ?? null : getLocalRole(); }
+export const getHubCaller = cache(async () => {
+  if (isHostedMode()) return getHostedCaller();
+  const selected = await getLocalRole();
+  const token = selected ? getRoleToken(selected) : null;
+  if (!token) return null;
+  const { status, account } = await readHubAccount(localApiOrigin(), token);
+  if (status === 401) return null;
+  // The cookie identifies a synthetic persona only; every permission is from /me.
+  return { role: selected, account, token };
+});
+export async function getHubAccount() { return (await getHubCaller())?.account ?? null; }
+export async function getHubRole() { return (await getHubCaller())?.role ?? null; }

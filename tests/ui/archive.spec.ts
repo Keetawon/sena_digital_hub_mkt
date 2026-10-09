@@ -66,7 +66,7 @@ async function fixture(page: Page, role = 'online_staff') {
 test('archive denies residential and agency roles without private fetches or controls', async ({ page }) => {
   for (const role of ['editor', 'publisher', 'viewer', 'agency_kin', 'agency_combay']) {
     await session(page, role); const reads: string[] = []; const capture = (request: { url: () => string }) => { if (request.url().includes(api)) reads.push(request.url()); }; page.on('request', capture);
-    await page.goto('/ads/archive'); await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงคลังเอกสาร' })).toBeVisible(); expect(reads).toEqual([]); page.off('request', capture);
+    expect((await page.goto('/ads/archive'))?.status()).toBe(403); await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible(); expect(reads).toEqual([]); page.off('request', capture);
     for (const path of ['', '/fixtures', '/search?q=MO2610901', `/${memoId}`, `/${memoId}/file?version_id=${memoVersion}`, `/${statementId}/page?version_id=${statementVersion}&page=1`]) expect((await page.request.get(api + path)).status()).toBe(403);
   }
 });

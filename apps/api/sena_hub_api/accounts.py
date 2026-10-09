@@ -1,8 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Depends, Request, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, StrictBool, field_validator, model_validator
 
 from .auth import Actor, failure
 
@@ -34,6 +34,9 @@ ACCOUNT_ERRORS = {
     'permission_combination': (422, 'ชุดสิทธิ์ไม่ถูกต้อง กรุณาตรวจสิทธิ์ดู แก้ไข และอนุมัติ'),
     'permission_locked': (403, 'สิทธิ์ส่วนนี้ยังไม่เปิดให้ปรับ รอการตรวจสอบฐานข้อมูลให้ครบก่อน'),
     'permission_fixed_profile': (403, 'ไม่สามารถปรับตารางสิทธิ์ของบัญชีภายนอกหรือบัญชีที่ไม่ได้ใช้งาน'),
+    'permission_admin_confirmation': (422, 'กรุณายืนยันการให้สิทธิ์จัดการผู้ใช้'),
+    'template_version_stale': (409, 'แม่แบบเปลี่ยนแล้ว กรุณาโหลดข้อมูลใหม่'),
+    'permission_preview_stale': (409, 'ข้อมูลเปลี่ยนแล้ว กรุณาดูตัวอย่างสิทธิ์ใหม่ก่อนยืนยัน'),
 }
 
 
@@ -64,6 +67,12 @@ class InviteAcceptance(AccountProfile):
     invite_id: UUID
 
 
+class TemplateRef(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    code: Literal['viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency']
+    version: int = Field(gt=0, strict=True)
+
+
 class InviteCreate(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     email: str = Field(max_length=254, pattern=r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
@@ -71,7 +80,8 @@ class InviteCreate(BaseModel):
     company_type: Literal['SENA', 'SENA_SUBSIDIARY', 'AGENCY', 'CONTRACTOR']
     company_name: str | None = Field(default=None, max_length=200)
     team: str = Field(default='', max_length=200)
-    hub_role: Literal['viewer', 'editor', 'publisher', 'online_staff', 'agency']
+    hub_role: Literal['viewer', 'editor', 'publisher', 'online_staff', 'agency'] | None = None
+    template: TemplateRef | None = None
     agency_code: str | None = Field(default=None, max_length=20)
 
 
@@ -88,13 +98,77 @@ class Decision(BaseModel):
     agency_code: str | None = Field(default=None, max_length=20)
     note: str = Field(default='', max_length=2000)
     updated_at: AwareDatetime
+    template: TemplateRef | None = None
+    tabs: dict[str, list[str]] | None = Field(default=None, max_length=64)
+    can_manage_users: StrictBool | None = None
+    confirm_manage_users: StrictBool = False
+
+    @model_validator(mode='after')
+    def approval_fields(self):
+        if self.action != 'approve' and self.model_fields_set & {
+            'template', 'tabs', 'can_manage_users', 'confirm_manage_users'
+        }:
+            raise ValueError('Custom permissions require an approval or permission update')
+        return self
 
 
 class PermissionChange(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    tabs: dict[str, list[str]] = Field(max_length=12)
-    can_manage_users: StrictBool
+    template: TemplateRef | None = None
+    tabs: dict[str, list[str]] | None = Field(default=None, max_length=64)
+    can_manage_users: StrictBool | None = None
+    confirm_manage_users: StrictBool = False
+    agency_code: str | None = Field(default=None, max_length=20)
+    note: str = Field(default='', max_length=2000)
     updated_at: AwareDatetime
+
+
+class AccountsSelection(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    kind: Literal['accounts']
+    account_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+
+class TemplateSelection(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    kind: Literal['template']
+    code: TemplateRef.__annotations__['code']
+
+
+class TeamSelection(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    kind: Literal['team']
+    team: str = Field(min_length=1, max_length=200)
+
+
+class TemplateAssignment(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    kind: Literal['template']
+    template: TemplateRef
+
+
+class TabAssignment(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    kind: Literal['tab']
+    tab: str = Field(min_length=1, max_length=64)
+    levels: list[str] = Field(max_length=16)
+
+
+class PermissionBatch(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    selection: Annotated[AccountsSelection | TemplateSelection | TeamSelection, Field(discriminator='kind')]
+    change: Annotated[TemplateAssignment | TabAssignment, Field(discriminator='kind')]
+    note: str = Field(default='', max_length=2000)
+
+
+class PermissionBatchApply(PermissionBatch):
+    digest: str = Field(pattern='^[a-f0-9]{64}$')
+    confirmed: Literal[True]
+
+
+class PermissionNoticeAck(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    catalog_digest: str = Field(pattern='^[a-f0-9]{64}$')
 
 
 def register_account_routes(app, authentication, database):
@@ -133,8 +207,24 @@ def register_account_routes(app, authentication, database):
     @app.post('/v1/admin/accounts/{account_id}/permissions')
     async def permissions(account_id: UUID, body: PermissionChange, request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as db:
-            return {'data': await db.fetchval('select hub.save_account_permissions($1,$2,$3,$4)',
-                account_id, body.tabs, body.can_manage_users, body.updated_at)}
+            return {'data': await db.fetchval('select hub.configure_account_access($1,$2::jsonb)',
+                account_id, body.model_dump(mode='json', exclude_unset=True))}
+
+    @app.post('/v1/admin/permissions/preview')
+    async def preview_permissions(body: PermissionBatch, request: Request, actor: Actor = Depends(admin)):
+        async with database(request, actor) as db:
+            return {'data': await db.fetchval('select hub.preview_account_permissions($1::jsonb)', body.model_dump(mode='json'))}
+
+    @app.post('/v1/admin/permissions/apply')
+    async def apply_permissions(body: PermissionBatchApply, request: Request, actor: Actor = Depends(admin)):
+        async with database(request, actor) as db:
+            return {'data': await db.fetchval('select hub.apply_account_permissions($1::jsonb,$2)',
+                body.model_dump(mode='json', exclude={'digest', 'confirmed'}), body.digest)}
+
+    @app.post('/v1/admin/permissions/notices/{tab}/ack')
+    async def acknowledge_notice(tab: str, body: PermissionNoticeAck, request: Request, actor: Actor = Depends(admin)):
+        async with database(request, actor) as db:
+            return {'data': await db.fetchval('select hub.ack_permission_notice($1,$2)', tab, body.catalog_digest)}
 
     @app.get('/v1/admin/accounts')
     async def accounts(request: Request, actor: Actor = Depends(admin)):
@@ -150,7 +240,7 @@ def register_account_routes(app, authentication, database):
     @app.post('/v1/admin/account-invites')
     async def invite(body: InviteCreate, request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as db:
-            result = await db.fetchval('select hub.create_invite($1::jsonb)', body.model_dump())
+            result = await db.fetchval('select hub.create_invite($1::jsonb)', body.model_dump(mode='json', exclude_unset=True))
             if result.get('error') == 'account_exists':
                 raise HTTPException(409, {'code': 'account_exists', 'message': 'มีบัญชีนี้แล้ว กรุณาจัดการบัญชีเดิม', 'account_id': result['account_id']})
             return {'data': result}
@@ -163,5 +253,8 @@ def register_account_routes(app, authentication, database):
     @app.post('/v1/admin/accounts/{account_id}/decision')
     async def decide(account_id: UUID, body: Decision, request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as db:
+            if body.action == 'approve':
+                return {'data': await db.fetchval('select hub.approve_account_access($1,$2::jsonb)',
+                    account_id, body.model_dump(mode='json', exclude_unset=True))}
             return {'data': await db.fetchval('select hub.decide_account($1,$2,$3,$4,$5,$6)', account_id,
                 body.action, body.hub_role, body.agency_code, body.note, body.updated_at)}

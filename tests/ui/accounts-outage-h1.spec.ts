@@ -4,15 +4,21 @@ import { once } from 'node:events';
 
 // The H1 runner has stopped only its own API. Auth and Next remain real loopback processes.
 let mode: 'ok' | '500' | 'network' | 'timeout' | '401' | '403' | 'pending' = 'ok';
+const questions={tab:'questions',label_th:'คำถามที่รอคำตอบ',nav_group:null,levels:['view'],special_actions:[],special_labels:{},separate_edit_approve:false,agency_visible:false,sensitivity:'internal',rollout_state:'MIGRATED',guards_ready:true};
+const catalog={tabs:[questions],templates:[{code:'admin',version:1,label_th:'ผู้ดูแลระบบ',tabs:{questions:['view']}}],catalog_digest:'0'.repeat(64)};
 const server=createServer((req,res)=>{
   if(mode==='network') return req.socket.destroy();
   if(mode==='timeout') return;
   const status=['500','401','403'].includes(mode)?Number(mode):200;
   res.writeHead(status,{'Content-Type':'application/json'});
   if(status!==200) return res.end(JSON.stringify({error:{message:'บัญชียังไม่ได้รับอนุมัติ'}}));
-  const data=req.url==='/v1/me'?{id:'synthetic',status:mode==='pending'?'PENDING':'ACTIVE',role:'admin',agency:null}:
+  const active=mode!=='pending';
+  const capabilities={tabs:active?{questions:{view:true,edit:false,approve:false}}:{},special_actions:{},can_manage_users:active,agency_registry:false,published_consumer:active,locked_tabs:[],template:active?'admin':null,template_version:active?1:null,catalog:[questions]};
+  const data=req.url==='/v1/me'?{id:'synthetic',status:active?'ACTIVE':'PENDING',role:active?'admin':null,hub_role:active?'admin':null,agency:null,can_manage_users:active,capabilities,pending_count:0,
+      email:'outage@example.test',display_name_th:'ผู้ทดสอบ ระบบขัดข้อง',phone:'',team:'',requested_tasks:[],reason:'',privacy_acknowledged_at:null,company_type:null,company_name:null,position:null,decision_note:'',agency_code:null,anonymised_at:null,updated_at:'2026-10-09T00:00:00Z'}:
     req.url==='/v1/admin/accounts'?{items:[],events:[],agencies:[],actor_id:'synthetic'}:
-    req.url==='/v1/admin/account-invites'?{items:[],login_url:'http://127.0.0.1:3001/login'}:[];
+    req.url==='/v1/admin/account-invites'?{items:[],login_url:'http://127.0.0.1:3001/login'}:
+    req.url==='/v1/admin/permissions/catalog'?catalog:[];
   res.end(JSON.stringify({data}));
 });
 async function login(page:Page) {

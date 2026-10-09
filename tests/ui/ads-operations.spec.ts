@@ -62,8 +62,8 @@ test('P3 denies financial screens and API to agencies and residential-only roles
     const capture = (request: { url: () => string }) => { if (/\/api\/hub\/v1\/admin\/ads\/(actuals|document-tracking|findings)(?:\?|\/|$)/.test(request.url())) requests.push(request.url()); };
     page.on('request', capture);
     for (const route of ['actuals', 'documents', 'exceptions']) {
-      await page.goto(`/ads/${route}`);
-      await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงผลการตลาดและเอกสาร', exact: true })).toBeVisible();
+      expect((await page.goto(`/ads/${route}`))?.status()).toBe(403);
+      await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'งานงบและค่าใช้จ่าย' })).toHaveCount(0);
     }
     expect(requests).toEqual([]); page.off('request', capture);

@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 import { useEffect, useRef, useState } from "react";
 import "./knowledge-review.css";
 import { KnowledgeDashboard, type KnowledgeProject } from "./knowledge-dashboard";
@@ -21,6 +22,7 @@ function text(value: unknown): string {
   return value == null ? "ยังไม่มีข้อมูล" : JSON.stringify(value, null, 2);
 }
 export function KnowledgeReview({ role }: { role: string }) {
+  const permissions = useHubPermissions();
   const [projects, setProjects] = useState<KnowledgeProject[]>([]);
   const [project, setProject] = useState(""); const [pack, setPack] = useState<Pack | null>(null);
   const [promotionFilter,setPromotionFilter] = useState("promotions"), [candidateTarget,setCandidateTarget] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function KnowledgeReview({ role }: { role: string }) {
   const [assetRole, setAssetRole] = useState("gallery"); const [alt, setAlt] = useState("");
   const [rights, setRights] = useState(false); const [question, setQuestion] = useState(""); const [answer, setAnswer] = useState<Json | null>(null);
   const dialog = useRef<HTMLDialogElement>(null); const opener = useRef<HTMLElement | null>(null);
-  const canEdit = role === "editor" || role === "admin";
+  const canEdit = permissions.can("knowledge", "edit");
   useEffect(() => { let current = true; api<typeof projects>("projects").then(rows => { if (current) { setProjects(rows); const query = new URLSearchParams(window.location.search); const requested = query.get("project"); setProject(requested ? rows.find(p => p.project_id === requested)?.project_id || "" : rows[0]?.project_id || ""); if (requested && !rows.some(p => p.project_id === requested)) setNotice(`ยังไม่มีชุดความรู้สำหรับโครงการ ${requested}`); if (query.get("kind") && kinds[query.get("kind")!]) setKind(query.get("kind")!); } }).catch(e => setError(e.message)); return () => { current = false; }; }, []);
   useEffect(() => {
     if (!project) return; let current = true; setPack(null); setPage(1); setSelected(new Set()); setAnswer(null);
@@ -70,7 +72,7 @@ export function KnowledgeReview({ role }: { role: string }) {
     {pack && <><KnowledgeFollowup key={project} project={project} items={pack.items} data={pack.followup} role={role} onChanged={reload} onKind={value=>{setKind(value);setPage(1);}} onCandidate={openCandidate} /><div className="knowledge-status"><strong>{pack.card.name.th}</strong><span>สถานะ REM: {pack.card.status.label} ({pack.card.status.raw ?? "ไม่ทราบค่า"})</span></div>
       {project === "TPRAK" && <p className="knowledge-warning">ระยะนี้ปิดโครงการแล้ว ห้ามผูกเนื้อหาการขาย โปรโมชั่น หรือข้อเท็จจริงปัจจุบันจากหน้าร่วมกับ SK2TR</p>}
       {kind === "promotion" && <label>กรองภาพโปรโมชั่น<select value={promotionFilter} onChange={e=>{setPromotionFilter(e.target.value);setPage(1);}}><option value="promotions">ภาพโปรโมชั่น · น่าจะยังใช้ได้ก่อน</option><option value="current">มีวันที่และน่าจะยังใช้ได้</option><option value="unknown">ไม่ทราบวันสิ้นสุด</option><option value="expired">น่าจะหมดอายุ</option><option value="text">มีข้อความแต่ไม่ใช่โปรโมชั่น</option><option value="all">ภาพทั้งหมดตามหลักฐานเดิม</option></select></label>}
-      <div className="knowledge-controls"><p>พบ {filtered.length} รายการ · หน้า {page} จาก {Math.max(1, Math.ceil(filtered.length / 10))}</p><button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>หน้าก่อนหน้า</button><button disabled={page * 10 >= filtered.length} onClick={() => setPage(p => p + 1)}>หน้าถัดไป</button>{role === "publisher" && kind === "asset" && <button disabled={!selected.size || busy} onClick={e => { opener.current = e.currentTarget; setRights(true); setReason(""); }}>อนุมัติสิทธิ์ที่เลือก ({selected.size})</button>}</div>
+      <div className="knowledge-controls"><p>พบ {filtered.length} รายการ · หน้า {page} จาก {Math.max(1, Math.ceil(filtered.length / 10))}</p><button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>หน้าก่อนหน้า</button><button disabled={page * 10 >= filtered.length} onClick={() => setPage(p => p + 1)}>หน้าถัดไป</button>{permissions.can("knowledge", "approve") && kind === "asset" && <button disabled={!selected.size || busy} onClick={e => { opener.current = e.currentTarget; setRights(true); setReason(""); }}>อนุมัติสิทธิ์ที่เลือก ({selected.size})</button>}</div>
       {!filtered.length && <p>ยังไม่มีรายการประเภทนี้ในชุดข้อมูล</p>}
       <div className={kind === "asset" ? "knowledge-assets" : "knowledge-items"}>{filtered.slice((page - 1) * 10, page * 10).map(item => {
         const e = item.evidence; const classification = e.classification as Json | undefined; const blocked = item.holds.some(h => h !== "needs_phase_decision");
@@ -81,7 +83,7 @@ export function KnowledgeReview({ role }: { role: string }) {
           <p>ระยะที่อ้างถึง: {item.project_ids.join(", ") || "ยังไม่ระบุโครงการ"}</p><p className="knowledge-source">{item.source_url && /^https:\/\//.test(item.source_url) ? <a href={item.source_url} target="_blank" rel="noreferrer">เปิดแหล่งข้อมูล</a> : "หลักฐานจากชุดนำเข้า"} · <code>{item.source_ref}</code></p>
           <p>ผลตรวจ: {item.review ? ({ accepted: "ถูก · ฉบับร่าง", rejected: "ผิด · เก็บหลักฐานเดิม", missing: "ขาด · รอผู้รับผิดชอบ" }[item.review.decision] || "รอตรวจ") : "รอตรวจ"}</p>
           {canEdit && <div className="knowledge-actions"><button disabled={busy || blocked || project === "TPRAK"} onClick={ev => start(item, "accepted", ev.currentTarget)}>ถูก</button><button disabled={busy} onClick={ev => start(item, "rejected", ev.currentTarget)}>ผิด</button><button disabled={busy} onClick={ev => start(item, "missing", ev.currentTarget)}>ขาด</button></div>}
-          {role === "publisher" && item.kind === "asset" && <label><input type="checkbox" disabled={!item.bulk_rights_eligible || busy} checked={selected.has(item.id)} onChange={ev => setSelected(previous => { const next = new Set(previous); if (ev.target.checked) next.add(item.id); else next.delete(item.id); return next; })} /> เลือกอนุมัติสิทธิ์{!item.bulk_rights_eligible && <small> · ต้องให้ MKT ยืนยันว่าเป็นไฟล์ของ SENA และไม่มีธงรอตรวจ</small>}</label>}
+          {permissions.can("knowledge", "approve") && item.kind === "asset" && <label><input type="checkbox" disabled={!item.bulk_rights_eligible || busy} checked={selected.has(item.id)} onChange={ev => setSelected(previous => { const next = new Set(previous); if (ev.target.checked) next.add(item.id); else next.delete(item.id); return next; })} /> เลือกอนุมัติสิทธิ์{!item.bulk_rights_eligible && <small> · ต้องให้ MKT ยืนยันว่าเป็นไฟล์ของ SENA และไม่มีธงรอตรวจ</small>}</label>}
         </article>;
       })}</div>
       <section className="knowledge-preview"><h2>ทดลองคำตอบจากคลังความรู้ฉบับร่าง</h2><p>ใช้ตรวจคุณภาพภายในเท่านั้น ราคา ห้องว่าง และเงื่อนไขที่ยังไม่ยืนยันจะส่งต่อเจ้าหน้าที่</p><form onSubmit={async event => { event.preventDefault(); setBusy(true); setError(""); try { setAnswer(await api<Json>("preview", { question, project_id: project })); } catch (e) { setError(e instanceof Error ? e.message : "ทดลองคำตอบไม่สำเร็จ"); } finally { setBusy(false); } }}><label>คำถามทดลอง<textarea value={question} onChange={e => setQuestion(e.target.value)} required maxLength={1500} /></label><button disabled={busy || !question.trim()}>{busy ? "กำลังตรวจข้อมูล…" : "ทดลองคำตอบ"}</button></form>{answer && <div role="status" className="knowledge-answer"><p><strong>ตัวอย่างฉบับร่าง · ยังไม่เผยแพร่</strong></p><p>{String(answer.answer)}</p>{Array.isArray(answer.citations) && answer.citations.map((c: Json, i: number) => <p key={i}>อ้างอิง: {String(c.source_ref)}</p>)}</div>}</section>

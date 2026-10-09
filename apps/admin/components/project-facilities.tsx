@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 
 import { FormEvent, useEffect, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
@@ -23,13 +24,14 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
   project: Project; role: LocalRole; disabled: boolean;
   onDirtyChange: (dirty: boolean) => void; onProjectChanged: (project: Project) => void;
 }) {
+  const permissions = useHubPermissions();
   const [editing, setEditing] = useState<Facility | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const data = project.facilities;
-  const canEdit = role === "editor" || role === "admin";
+  const canEdit = permissions.can("projects", "edit");
   useEffect(() => { onDirtyChange(Boolean(editing) || pending); return () => onDirtyChange(false); }, [editing, pending, onDirtyChange]);
 
   function edit(item: Facility, status = item.status, openDetails = false) {

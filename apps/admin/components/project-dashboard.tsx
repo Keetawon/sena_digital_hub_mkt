@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
@@ -49,6 +50,7 @@ function status(row: ProgressRow) {
 }
 
 export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: (sourceId: string) => void }) {
+  const permissions = useHubPermissions();
   const { query, update, href } = useListQuery();
   const [data, setData] = useState<Progress | null>(null), [loading, setLoading] = useState(true), [error, setError] = useState("");
   const [facets, setFacets] = useState<Facets | null>(null);
@@ -87,7 +89,7 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
       catch { setDetailErrors(previous => ({ ...previous, [id]: "โหลดรายการตรวจไม่ได้ กรุณาปิดแล้วเปิดใหม่" })); }
     }
   }
-  const canEdit = role === "editor" || role === "admin";
+  const canEdit = permissions.can("projects", "edit");
   function filterBy(values: Record<string, string | number | null>) { update({ ...values, pp: null, gp: null }); }
   function pagination(position: string) { return <WorkspacePagination id={`projects-${position}`} page={current} pages={pages} size={size} onChange={(next, count) => {
     update({ pp: next, ps: count }); if (position === "bottom") { table.current?.focus({ preventScroll: true }); table.current?.scrollIntoView({ block: "start" }); }
@@ -122,13 +124,13 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
             <EntityThumbnail name={row.name} image={row.thumbnail} fallback={row.brand_logo} brandKey={row.rem_brand_id} />
             <div>{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{row.rem_project_id} · {row.brand_name || "ยังไม่ระบุแบรนด์"}</p><p className="small-text">{row.source_review?.status_label || "ไม่ทราบสถานะ"} ({row.source_review?.status_raw ?? "null"})</p>
             <ProjectGroupSummary value={row} />
-            {row.public_project_id ? <a className="project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : role === "publisher" ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button text-button project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}</div></div>
+            {row.public_project_id ? <a className="project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : permissions.can("projects", "approve") ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button text-button project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}</div></div>
           </td>
           <td data-label="ความพร้อมเผยแพร่"><strong className={`project-ready-badge ${ready ? "ready" : ""}`}>{ready ? "เผยแพร่ได้ ✓" : `ขาดข้อบังคับ ${missing}`}</strong><p className="small-text">{status(row)}</p></td>
           <td data-label="ความครบถ้วน"><CompletenessBar passed={checklist?.passed ?? 0} total={checklist?.total ?? 0} /></td>
           <td data-label="รอใคร">{row.waiting_on.map(role => role === "editor" ? "ผู้แก้ไข" : "ผู้เผยแพร่").join(" / ") || "—"}</td>
           <td data-label="ปรับปรุงล่าสุด">{date(row.updated_at)}</td>
-          <td data-label="ความรู้"><a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}`}>ตรวจแล้ว {row.knowledge?.reviewed ?? 0}/{row.knowledge?.staged ?? 0}</a></td>
+          <td data-label="ความรู้">{permissions.can("knowledge") ? <a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}`}>ตรวจแล้ว {row.knowledge?.reviewed ?? 0}/{row.knowledge?.staged ?? 0}</a> : "—"}</td>
           </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={6}>{details[row.rem_project_id] ? <Checks row={details[row.rem_project_id]} returnTo={href} onStart={onStart} /> : <p role={detailErrors[row.rem_project_id] ? "alert" : "status"}>{detailErrors[row.rem_project_id] || "กำลังโหลดรายการตรวจ…"}</p>}<p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
             <ProjectSourceReview value={row.source_review} />{row.attention.length > 0 && <ul>{row.attention.map((item, index) => <li key={index}><a href={projectHref(row.public_project_id!, href, item.field)}>{item.message}</a></li>)}</ul>}
             <p className="small-text muted">{row.age_days == null ? "ไม่ทราบวันนำเข้า" : `${row.age_basis === "first_import" ? "นำเข้าครั้งแรก" : row.age_basis === "mirror_import" ? "ใช้เวลานำเข้าสำเนาครั้งแรก" : "พบใน REM ครั้งแรก"} · ${date(row.first_seen_at)} · ${row.age_days} วัน`}</p>

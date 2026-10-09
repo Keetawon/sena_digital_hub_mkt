@@ -48,3 +48,9 @@ export function getRoleToken(role: LocalRole | "service_consumer") {
   const token = process.env[key];
   return token && token.length >= 32 ? token : null;
 }
+
+export function localApiOrigin() {
+  const origin = new URL(process.env.HUB_API_URL || "http://127.0.0.1:8000");
+  if (!isLocalMode() || !isLoopback(origin.hostname) || !["http:", "https:"].includes(origin.protocol) || origin.username || origin.password) throw new Error("การตั้งค่าบริการในเครื่องไม่ถูกต้อง");
+  return origin.origin;
+}

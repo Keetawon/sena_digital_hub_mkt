@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 import { ActorName } from "./accounts";
 
 import { WorkspaceBack } from "./workspace-navigation";
@@ -24,7 +25,7 @@ export type Brand = BrandSummary & {
   projects: { id: string; public_project_id: string; public_name: Localized; source: { rem_project_id: string; rem_company_id: string | null; company_name_rem: string | null } }[];
 };
 type BrandRequest = { id: string; requested_name: string; rem_brand_id: string | null; reason: string; status: "open" | "resolved" | "rejected"; brand_id: string | null; resolution_reason: string | null; created_at: string; created_by: string; updated_at: string };
-const mayEdit = (role: LocalRole) => role === "editor" || role === "admin";
+
 const message = (error: unknown) => error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง";
 const date = (value?: string | null) => value ? new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(value)) : "ไม่ได้ระบุ";
 const sourceDate = (value?: string | null) => value ? date(value) : "ยังยืนยันเวลา/เขตเวลาต้นทางไม่ได้";
@@ -44,6 +45,7 @@ export function BrandWorkspace({ brandId, role, onDirtyChange }: { brandId: stri
 }
 
 function BrandOverview({ role }: { role: LocalRole }) {
+  const permissions = useHubPermissions();
   const { rows, reload: load, enabled } = useBrandReviews();
   const brands = rows.map(row => row.brand);
   const [sources, setSources] = useState(false);
@@ -51,15 +53,16 @@ function BrandOverview({ role }: { role: LocalRole }) {
   return <>
     <div className="page-heading"><div><p className="eyebrow">ข้อมูลแบรนด์ที่ใช้ร่วมกัน</p><h1>แบรนด์ที่อยู่อาศัย</h1><p className="muted">จัดเตรียมชื่อ รายละเอียด และโลโก้ให้ตรวจสอบก่อนเผยแพร่</p></div><span className="scope-pill"><span />SENA Residential</span></div>
     <BrandDashboard role={role} onChanged={load}>
-      {role === "admin" && <BrandRequests role={role} brands={brands} />}
+      {permissions.special("brands.manage_catalog") && <BrandRequests role={role} brands={brands} />}
       <div className="section-heading"><h2>แบรนด์ในพื้นที่ทำงาน</h2><button className="button secondary" aria-expanded={sources} aria-controls="brand-source-picker" onClick={() => setSources(!sources)}>{sources ? "ปิดต้นทางแบรนด์" : "ดูแบรนด์จากต้นทาง"}</button></div>
       {sources && <BrandSourcePicker role={role} />}
     </BrandDashboard>
-    {role !== "admin" && <BrandRequests role={role} brands={brands} />}
+    {!permissions.special("brands.manage_catalog") && <BrandRequests role={role} brands={brands} />}
   </>;
 }
 
 function BrandSourcePicker({ role }: { role: LocalRole }) {
+  const permissions = useHubPermissions();
   const [sources, setSources] = useState<BrandSource[]>([]);
   const [search, setSearch] = useState("");
   const [usage, setUsage] = useState("residential");
@@ -81,7 +84,7 @@ function BrandSourcePicker({ role }: { role: LocalRole }) {
     <div className="form-field"><label htmlFor="source-brand-search">ค้นหาแบรนด์ต้นทาง</label><input id="source-brand-search" type="search" value={search} onChange={event => setSearch(event.target.value)} /></div>
     <p className="read-only-note">การสร้างแบรนด์เชื่อมเฉพาะรหัสต้นทาง ทีมงานต้องจัดเตรียมชื่อที่เผยแพร่ คำอธิบาย ชื่ออ้างอิง และโลโก้ใน Hub</p>
     {notice && <p className="notice success" role="status">{notice}</p>}{error && <LoadError error={error} retry={load} />}
-    {loading ? <Loading /> : <><p className="small-text muted" role="status" aria-atomic="true">พบ {filtered.length} แบรนด์ต้นทาง</p>{!filtered.length && <p className="empty-state compact">ไม่พบแบรนด์ที่ตรงกับตัวกรอง</p>}<ul className="source-cards">{filtered.map(source => <li key={source.rem_brand_id}><div><h3>{source.brand_name_rem || "ยังไม่มีชื่อภาษาไทยต้นทาง"}</h3><p className="small-text source-code">รหัส REM {source.rem_brand_id} · {source.brand_name_en_rem || "ยังไม่มีชื่อภาษาอังกฤษต้นทาง"}</p><p className="small-text">สถานะต้นทาง: {sourceStatus(source) === "active" ? "ยังไม่ถูกลบ" : sourceStatus(source) === "deleted" ? "ถูกลบแล้ว · สร้างแบรนด์ไม่ได้" : "ยังไม่ทราบ · สร้างแบรนด์ไม่ได้"} · โครงการที่อยู่อาศัย {source.residential_project_count ?? 0} โครงการ</p><div className="brand-statuses">{(source.exception_codes ?? []).map(code => <span className="status-badge brand-unpublished" key={code}>{sourceExceptionLabels[code] ?? "ข้อยกเว้นที่ต้องตรวจสอบ"}</span>)}</div><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {date(source.source_snapshot_at)}</p></div><div className="brand-row-actions">{source.public_brand_id ? <a className="button secondary" href={brandHref(source.public_brand_id)}>เปิดแบรนด์ที่มีอยู่</a> : role === "admin" ? <button className="button primary" disabled={Boolean(pending) || sourceStatus(source) !== "active"} onClick={() => void create(source)}>{pending === source.rem_brand_id ? "กำลังสร้างแบรนด์…" : "นำแบรนด์นี้เข้าระบบ"}</button> : role === "editor" ? <button className="button secondary" disabled={sourceStatus(source) !== "active"} onClick={() => setRequested(source)}>ขอเพิ่มแบรนด์นี้</button> : <span className="small-text muted">ผู้ดูแลระบบเป็นผู้นำเข้าแบรนด์</span>}</div></li>)}</ul></>}
+    {loading ? <Loading /> : <><p className="small-text muted" role="status" aria-atomic="true">พบ {filtered.length} แบรนด์ต้นทาง</p>{!filtered.length && <p className="empty-state compact">ไม่พบแบรนด์ที่ตรงกับตัวกรอง</p>}<ul className="source-cards">{filtered.map(source => <li key={source.rem_brand_id}><div><h3>{source.brand_name_rem || "ยังไม่มีชื่อภาษาไทยต้นทาง"}</h3><p className="small-text source-code">รหัส REM {source.rem_brand_id} · {source.brand_name_en_rem || "ยังไม่มีชื่อภาษาอังกฤษต้นทาง"}</p><p className="small-text">สถานะต้นทาง: {sourceStatus(source) === "active" ? "ยังไม่ถูกลบ" : sourceStatus(source) === "deleted" ? "ถูกลบแล้ว · สร้างแบรนด์ไม่ได้" : "ยังไม่ทราบ · สร้างแบรนด์ไม่ได้"} · โครงการที่อยู่อาศัย {source.residential_project_count ?? 0} โครงการ</p><div className="brand-statuses">{(source.exception_codes ?? []).map(code => <span className="status-badge brand-unpublished" key={code}>{sourceExceptionLabels[code] ?? "ข้อยกเว้นที่ต้องตรวจสอบ"}</span>)}</div><p className="small-text muted">{sourceProvenance(source)}</p><p className="small-text muted">ปรับปรุงต้นทาง: {sourceDate(source.source_updated_at)}</p><p className="small-text muted">เวลาสกัดสำเนาต้นทาง: {date(source.source_snapshot_at)}</p></div><div className="brand-row-actions">{source.public_brand_id ? <a className="button secondary" href={brandHref(source.public_brand_id)}>เปิดแบรนด์ที่มีอยู่</a> : permissions.special("brands.manage_catalog") ? <button className="button primary" disabled={Boolean(pending) || sourceStatus(source) !== "active"} onClick={() => void create(source)}>{pending === source.rem_brand_id ? "กำลังสร้างแบรนด์…" : "นำแบรนด์นี้เข้าระบบ"}</button> : permissions.can("brands", "edit") ? <button className="button secondary" disabled={sourceStatus(source) !== "active"} onClick={() => setRequested(source)}>ขอเพิ่มแบรนด์นี้</button> : <span className="small-text muted">ผู้ดูแลระบบเป็นผู้นำเข้าแบรนด์</span>}</div></li>)}</ul></>}
     {requested && <BrandRequestDialog sourceId={requested.rem_brand_id} initialName={requested.brand_name_rem || ""} onCancel={() => setRequested(null)} onCreated={() => { setRequested(null); setNotice("ส่งคำขอแล้ว ผู้ดูแลระบบจะตรวจสอบก่อนสร้างหรือเชื่อมแบรนด์"); }} />}
   </div></section>;
 }
@@ -108,6 +111,7 @@ export function BrandRequestDialog({ sourceId, initialName = "", onCancel, onCre
 }
 
 function BrandRequests({ role, brands }: { role: LocalRole; brands: Brand[] }) {
+  const permissions = useHubPermissions();
   const [items, setItems] = useState<BrandRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -116,8 +120,8 @@ function BrandRequests({ role, brands }: { role: LocalRole; brands: Brand[] }) {
   const [resolving, setResolving] = useState<BrandRequest | null>(null);
   const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(await request<BrandRequest[]>("v1/admin/brand-requests")); } catch (error) { setError(message(error)); } finally { setLoading(false); } }, []);
   useEffect(() => { void load(); }, [load]);
-  return <section className="panel brand-requests" id="brand-requests"><div className="panel-heading"><div><h2>คำขอเพิ่มแบรนด์ {!loading && !error && <span className="count" aria-label={`รอตรวจสอบ ${items.filter(item => item.status === "open").length} คำขอ`}>{items.filter(item => item.status === "open").length}</span>}</h2><p>ทีมงานส่งคำขอ ผู้ดูแลระบบตรวจสอบและบันทึกผล</p></div>{mayEdit(role) && <button className="button secondary" onClick={() => setCreating(true)}>ขอเพิ่มแบรนด์</button>}</div><div className="panel-body">
-    {notice && <p className="notice success" role="status">{notice}</p>}{loading ? <Loading /> : error ? <LoadError error={error} retry={load} /> : !items.length ? <p className="muted">ยังไม่มีคำขอเพิ่มแบรนด์</p> : <ul className="brand-request-list">{items.map(item => <li key={item.id}><div className="brand-card-heading"><h3>{item.requested_name}</h3><span className="status-badge draft">{item.status === "open" ? "รอตรวจสอบ" : item.status === "resolved" ? "เชื่อมแบรนด์แล้ว" : "ปฏิเสธคำขอ"}</span></div><p className="small-text source-code">รหัสแบรนด์ REM: {item.rem_brand_id || "ไม่ได้ระบุ"}</p><p>{item.reason}</p><p className="small-text muted">ขอเมื่อ {date(item.created_at)} · โดย <ActorName id={item.created_by} /></p>{item.resolution_reason && <p className="read-only-note">ผลพิจารณา: {item.resolution_reason}</p>}{item.brand_id && brands.find(brand => brand.id === item.brand_id) && <a className="asset-file-link" href={brandHref(brands.find(brand => brand.id === item.brand_id)!.public_brand_id)}>เปิดแบรนด์ที่เชื่อม</a>}{role === "admin" && item.status === "open" && <button className="button secondary" onClick={() => setResolving(item)}>พิจารณาคำขอ</button>}</li>)}</ul>}
+  return <section className="panel brand-requests" id="brand-requests"><div className="panel-heading"><div><h2>คำขอเพิ่มแบรนด์ {!loading && !error && <span className="count" aria-label={`รอตรวจสอบ ${items.filter(item => item.status === "open").length} คำขอ`}>{items.filter(item => item.status === "open").length}</span>}</h2><p>ทีมงานส่งคำขอ ผู้ดูแลระบบตรวจสอบและบันทึกผล</p></div>{permissions.can("brands", "edit") && <button className="button secondary" onClick={() => setCreating(true)}>ขอเพิ่มแบรนด์</button>}</div><div className="panel-body">
+    {notice && <p className="notice success" role="status">{notice}</p>}{loading ? <Loading /> : error ? <LoadError error={error} retry={load} /> : !items.length ? <p className="muted">ยังไม่มีคำขอเพิ่มแบรนด์</p> : <ul className="brand-request-list">{items.map(item => <li key={item.id}><div className="brand-card-heading"><h3>{item.requested_name}</h3><span className="status-badge draft">{item.status === "open" ? "รอตรวจสอบ" : item.status === "resolved" ? "เชื่อมแบรนด์แล้ว" : "ปฏิเสธคำขอ"}</span></div><p className="small-text source-code">รหัสแบรนด์ REM: {item.rem_brand_id || "ไม่ได้ระบุ"}</p><p>{item.reason}</p><p className="small-text muted">ขอเมื่อ {date(item.created_at)} · โดย <ActorName id={item.created_by} /></p>{item.resolution_reason && <p className="read-only-note">ผลพิจารณา: {item.resolution_reason}</p>}{item.brand_id && brands.find(brand => brand.id === item.brand_id) && <a className="asset-file-link" href={brandHref(brands.find(brand => brand.id === item.brand_id)!.public_brand_id)}>เปิดแบรนด์ที่เชื่อม</a>}{permissions.special("brands.manage_catalog") && item.status === "open" && <button className="button secondary" onClick={() => setResolving(item)}>พิจารณาคำขอ</button>}</li>)}</ul>}
     {creating && <BrandRequestDialog onCancel={() => setCreating(false)} onCreated={() => { setCreating(false); setNotice("ส่งคำขอเพิ่มแบรนด์แล้ว"); void load(); }} />}
     {resolving && <ResolveBrandDialog item={resolving} brands={brands} onCancel={() => setResolving(null)} onReload={async () => { await load(); setResolving(null); }} onSaved={() => { setResolving(null); setNotice("บันทึกผลพิจารณาคำขอแล้ว"); void load(); }} />}
   </div></section>;
@@ -150,6 +154,7 @@ type BrandDraft = { name: string; nameEn: string; description: string; slug: str
 const draftFrom = (brand: Brand): BrandDraft => ({ name: brand.public_name.th ?? "", nameEn: brand.public_name.en ?? "", description: brand.description?.th ?? "", slug: brand.slug ?? "", status: brand.status });
 
 function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
+  const permissions = useHubPermissions();
   const { reload: reloadReviews } = useBrandReviews();
   const [brand, setBrand] = useState<Brand | null>(null);
   const [draft, setDraft] = useState<BrandDraft | null>(null);
@@ -165,8 +170,8 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
   const errorSummary = useRef<HTMLDivElement>(null);
   const base = `v1/admin/brands/${encodeURIComponent(brandId)}`;
   const dirty = Boolean(brand && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(brand)));
-  const canEdit = mayEdit(role);
-  const canPublish = role === "publisher";
+  const canEdit = permissions.can("brands", "edit");
+  const canPublish = permissions.can("brands", "approve");
   const update = (data: Brand) => { setBrand(data); setDraft(draftFrom(data)); void reloadReviews(); };
   const loadVersions = useCallback(async () => { try { setVersions(await request<BrandVersion[]>(`${base}/versions`)); setVersionsError(""); } catch (error) { setVersionsError(message(error)); } }, [base]);
   const load = useCallback(async () => {
@@ -264,22 +269,24 @@ function BrandPublishDialog({ action, brand, current, onCancel, onSaved }: { act
 }
 
 export function ProjectBrandCard({ project, role, disabled, onChanged }: { project: Project; role: LocalRole; disabled: boolean; onChanged: (project: Project) => void }) {
+  const permissions = useHubPermissions();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [choosing, setChoosing] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setBrands(await request<Brand[]>("v1/admin/brands")); } catch (error) { setError(message(error)); } finally { setLoading(false); } }, []);
+  const load = useCallback(async () => { setLoading(true); setError(""); try { setBrands(permissions.can("brands") ? await request<Brand[]>("v1/admin/brands") : []); } catch (error) { setError(message(error)); } finally { setLoading(false); } }, [permissions.capabilities]);
   useEffect(() => { void load(); }, [load]);
   const matching = brands.filter(brand => project.source?.rem_brand_id && brand.rem_brand_id === project.source.rem_brand_id && !brand.source?.is_deleted);
   const summary = project.brand_summary;
+  if (!permissions.can("brands")) return <section className="panel"><div className="panel-body"><h2>แบรนด์</h2><p>{summary?.public_name.th || project.source?.brand_name_rem || "ยังไม่ระบุ"}</p></div></section>;
   return <section className="panel" id="project-brand"><div className="panel-heading"><div><h2>แบรนด์และบริษัทตามต้นทาง</h2><p>เลือกเฉพาะแบรนด์ที่ตรงกับรหัสต้นทาง บริษัทอ้างอิงจากโครงการโดยตรง</p></div></div><div className="panel-body">
     <dl className="model-source"><div><dt>รหัสแบรนด์ REM (อ่านอย่างเดียว)</dt><dd>{project.source?.rem_brand_id || "ยังไม่มีรหัสแบรนด์ต้นทาง"}</dd></div><div><dt>ชื่อแบรนด์ต้นทาง</dt><dd>{project.source?.brand_name_rem || "ยังไม่มีข้อมูลชื่อแบรนด์"}</dd></div><div><dt>บริษัทตามโครงการ (อ่านอย่างเดียว)</dt><dd>{project.source?.company_name_rem || "ยังไม่มีข้อมูลชื่อบริษัท"}</dd></div><div><dt>รหัสบริษัท REM</dt><dd>{project.source?.rem_company_id || "ไม่ได้ระบุ"}</dd></div></dl>
     {project.source?.source_review?.brand_binding_allowed === false && <p className="field-error">ต้นทางไม่มีแบรนด์ที่ใช้งานได้ จึงยังผูกแบรนด์ไม่ได้</p>}
     <div className="brand-association"><h3>แบรนด์ที่เลือกให้โครงการ</h3>{summary ? <><a className="asset-file-link" href={brandHref(summary.public_brand_id)}>{summary.public_name.th || summary.rem_brand_id}</a><BrandStatus brand={summary} />{summary.rem_brand_id !== project.source?.rem_brand_id && <p className="field-error">แบรนด์ที่เลือกไม่ตรงกับต้นทางปัจจุบัน กรุณาตรวจสอบใหม่</p>}</> : <p className="muted">ยังไม่ได้เลือกแบรนด์ ต้องเลือกแบรนด์ที่เผยแพร่และตรงกับต้นทางก่อนเผยแพร่โครงการ</p>}</div>
     {notice && <p className="notice success" role="status">{notice}</p>}{error && <LoadError error={error} retry={load} />}
-    {mayEdit(role) && <>{disabled && <p className="field-help">บันทึกข้อมูลโครงการก่อนเปลี่ยนแบรนด์หรือส่งคำขอ</p>}<div className="model-actions"><button className="button secondary" disabled={disabled || loading || !matching.length || project.source?.source_review?.brand_binding_allowed === false} onClick={() => setChoosing(true)}>เลือกแบรนด์ที่ตรงกับต้นทาง</button><button className="button secondary" disabled={disabled} onClick={() => setRequesting(true)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div>{!loading && !error && !matching.length && <p className="field-help">ยังไม่มีแบรนด์ในระบบที่ตรงกับต้นทาง ส่งคำขอให้ผู้ดูแลตรวจสอบได้</p>}</>}
+    {permissions.can("projects", "edit") && <>{disabled && <p className="field-help">บันทึกข้อมูลโครงการก่อนเปลี่ยนแบรนด์หรือส่งคำขอ</p>}<div className="model-actions"><button className="button secondary" disabled={disabled || loading || !matching.length || project.source?.source_review?.brand_binding_allowed === false} onClick={() => setChoosing(true)}>เลือกแบรนด์ที่ตรงกับต้นทาง</button><button className="button secondary" disabled={disabled || !permissions.can("brands", "edit")} onClick={() => setRequesting(true)}>ขอเพิ่มแบรนด์สำหรับโครงการ</button></div>{!loading && !error && !matching.length && <p className="field-help">ยังไม่มีแบรนด์ในระบบที่ตรงกับต้นทาง ส่งคำขอให้ผู้ดูแลตรวจสอบได้</p>}</>}
     {choosing && <AssignBrandDialog project={project} brands={matching} onCancel={() => setChoosing(false)} onSaved={data => { onChanged(data); setChoosing(false); setNotice("บันทึกแบรนด์ของโครงการแล้ว ต้องเผยแพร่โครงการอีกครั้งเพื่อส่งข้อมูลเวอร์ชันใหม่"); }} onReload={async () => { const data = await request<Project>(`v1/admin/projects/${project.public_project_id}`); onChanged(data); await load(); setChoosing(false); }} />}
     {requesting && <BrandRequestDialog sourceId={project.source?.rem_brand_id} initialName={project.source?.brand_name_rem || ""} onCancel={() => setRequesting(false)} onCreated={() => { setRequesting(false); setNotice("ส่งคำขอเพิ่มแบรนด์สำหรับโครงการแล้ว"); }} />}
   </div></section>;

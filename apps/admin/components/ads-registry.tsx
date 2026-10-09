@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { roleLabels } from "@/lib/roles";
@@ -27,12 +28,12 @@ const scopeLabels: Record<string, string> = { A: "A · ทั้งกลุ่�
 const tabs = [{ key: "details", label: "รายละเอียด" }, { key: "names", label: "ชื่อและลิงก์ติดตาม" }, { key: "bindings", label: "รหัสบนแพลตฟอร์ม" }];
 function message(error: unknown) { return error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง"; }
 function date(value?: string) { return value ? new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(value)) : "ยังไม่มีข้อมูล"; }
-function canWrite(role: LocalRole | null) { return role === "online_staff" || role === "admin"; }
-function canRead(role: LocalRole | null) { return canWrite(role) || role === "agency_kin" || role === "agency_combay"; }
+
 function options(vocab: Vocab[], kind: string) { return vocab.filter(item => item.vocab_type === kind).map(item => ({ value: item.code, label: `${item.code} · ${item.label_th}${!item.can_use ? " (ยังไม่เปิดใช้)" : ""}`, disabled: !item.can_use })); }
 function stateLabel(detail: Detail) { return detail.registration.status === "CANCELLED" ? "ยกเลิกแล้ว" : detail.bindings.length ? "ผูกรหัสแล้ว" : "รอรับรหัส"; }
 
 export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: LocalRole | null; localMode: boolean; screen: "list" | "new" | "inbox" }) {
+  const permissions = useHubPermissions();
   const hosted = Boolean(useHostedSession());
   const enabled = localMode || hosted;
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -43,7 +44,7 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
   const [dirty, setDirty] = useState(false);
   const load = useCallback(async () => {
     setError("");
-    if (!enabled || !canRead(initialRole)) { setSettings(null); setVocab([]); setLoading(false); return; }
+    if (!enabled || !permissions.can("registry")) { setSettings(null); setVocab([]); setLoading(false); return; }
     setLoading(true);
     try { const [current, values] = await Promise.all([request<Settings>(`${api}/settings`), request<Vocab[]>(`${api}/vocab`)]); setSettings(current); setVocab(values); }
     catch (err) { setError(message(err)); }
@@ -65,23 +66,24 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
       setDirty(false); window.location.assign(screen === "new" ? "/ads/registry" : window.location.pathname);
     } catch (err) { setError(message(err)); setSwitching(false); }
   }
-  return <HubShell publisher={enabled && initialRole === "publisher"} section="registry" staff={enabled && isHubStaff(initialRole)} residential={enabled && isContentStaff(initialRole)} registry finance={canWrite(initialRole)} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).filter(([value]) => value !== "agency").map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
-    <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{canWrite(initialRole) && !hosted && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
+  return <HubShell publisher={enabled && initialRole === "publisher"} section="registry" staff={enabled && isHubStaff(initialRole)} residential={enabled && isContentStaff(initialRole)} registry finance={permissions.can("registry", "edit")} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{Object.entries(roleLabels).filter(([value]) => value !== "agency").map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>}>
+    <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{permissions.can("registry", "edit") && !hosted && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
     <h1 id="registry-title" tabIndex={-1}>{screen === "new" ? "ลงทะเบียนแคมเปญ" : screen === "inbox" ? "ส่งคืนรหัสแคมเปญ" : "ทะเบียนแคมเปญ"}</h1>
     <p className="text-muted">{screen === "inbox" ? "ส่งรหัสบัญชีและแคมเปญจากแพลตฟอร์มให้ตรงกับชื่อที่ได้รับ" : "ชื่อกลางสำหรับเปิดแคมเปญและเชื่อมรหัสบนแพลตฟอร์ม"}</p>
     {!settings?.sena_h_approved && <aside className="registry-banner" aria-label="สถานะการอนุมัติรูปแบบชื่อ"><strong>รออนุมัติรูปแบบชื่อ</strong><p>{settings?.test_mode ? "ข้อมูลทดสอบ ห้ามใช้เปิดแคมเปญจริง" : "ยังไม่เปิดการออกชื่อสำหรับใช้งานจริง"}</p></aside>}
     {localMode && isHubStaff(initialRole) && <PendingQuestion id="Q2" />}
     {error && <div className="registry-error" role="alert">{error}<button className="registry-button ml-3" onClick={() => void load()}>ลองอีกครั้ง</button></div>}
-    {!enabled ? <p>กรุณาตั้งค่าการเข้าสู่ระบบก่อนใช้งาน</p> : !initialRole || !canRead(initialRole) ? <section className="registry-panel" aria-labelledby="registry-access-title">
+    {!enabled ? <p>กรุณาตั้งค่าการเข้าสู่ระบบก่อนใช้งาน</p> : !initialRole || !permissions.can("registry") ? <section className="registry-panel" aria-labelledby="registry-access-title">
       <h2 id="registry-access-title">เลือกบัญชีสำหรับทะเบียนแคมเปญ</h2>
       <p className="mt-3">{initialRole ? `ขณะนี้ใช้บัญชี “${roleLabels[initialRole]}” สำหรับงานข้อมูลโครงการ ซึ่งไม่มีสิทธิ์เข้าทะเบียนแคมเปญ` : "กรุณาเลือกบัญชีทดสอบให้ตรงกับงานที่ต้องการ"}</p>
       <p className="text-muted mt-3">ทีมออนไลน์ลงทะเบียนและออกชื่อได้ ส่วนเอเจนซีอ่านเฉพาะชื่อของตนเองและส่งคืนรหัสแคมเปญ</p>
       <div className="flex flex-wrap gap-3 mt-5">{localMode && (["online_staff", "agency_kin", "agency_combay"] as const).map(role => <button key={role} type="button" className={`registry-button${role === "online_staff" ? " primary" : ""}`} disabled={switching} onClick={() => void changeRole(role)}>ใช้บัญชีทดสอบ{roleLabels[role]}</button>)}<a className="registry-button" href="/">กลับไปงานข้อมูลโครงการ</a></div>
-    </section> : loading ? <p role="status" className="hub-loading">กำลังโหลดข้อมูล…</p> : settings && (screen === "new" ? hosted ? <p role="note">ยังไม่เปิดการออกชื่อแคมเปญใน H1</p> : canWrite(initialRole) ? <RegistrationWizard settings={settings} vocab={vocab} onDirty={setDirty} /> : <p role="alert">บัญชีนี้ส่งคืนรหัสและอ่านชื่อของตนเองได้เท่านั้น</p> : <RegistryList role={initialRole} settings={settings} vocab={vocab} inbox={screen === "inbox"} onDirty={setDirty} />)}
+    </section> : loading ? <p role="status" className="hub-loading">กำลังโหลดข้อมูล…</p> : settings && (screen === "new" ? hosted ? <p role="note">ยังไม่เปิดการออกชื่อแคมเปญใน H1</p> : permissions.can("registry", "edit") ? <RegistrationWizard settings={settings} vocab={vocab} onDirty={setDirty} /> : <p role="alert">บัญชีนี้ส่งคืนรหัสและอ่านชื่อของตนเองได้เท่านั้น</p> : <RegistryList role={initialRole} settings={settings} vocab={vocab} inbox={screen === "inbox"} onDirty={setDirty} />)}
   </HubShell>;
 }
 
 function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRole; settings: Settings; vocab: Vocab[]; inbox: boolean; onDirty: (dirty: boolean) => void }) {
+  const permissions = useHubPermissions();
   const [rows, setRows] = useState<Detail[]>([]);
   const [q, setQ] = useState("");
   const [agency, setAgency] = useState("");
@@ -147,7 +149,7 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
   }
   function selectTab(next: string) { if (dirty && next !== "bindings") return; const url = new URL(window.location.href); url.searchParams.set("tab", next); window.history.replaceState({}, "", url); setTab(next); }
   return <>
-    <div className="registry-panel"><div className="grid gap-4 md:grid-cols-3"><label>ค้นหารหัสหรือชื่อ<input className="registry-input" value={q} onChange={event => { setQ(event.target.value); setOffset(0); }} /></label>{canWrite(role) ? <DropdownPop label="เอเจนซี" value={agency} options={[{ value: "", label: "ทุกเอเจนซี" }, ...options(vocab, "AGENCY")]} onChange={value => { setAgency(value); setOffset(0); }} /> : <p className="self-center">{roleLabels[role]} · แสดงเฉพาะชื่อของคุณ</p>}<DropdownPop label="สถานะรหัส" value={status} options={[{ value: "", label: "ทุกสถานะ" }, { value: "pending", label: "รอรับรหัส" }, { value: "bound", label: "ผูกรหัสแล้ว" }]} onChange={value => { setStatus(value); setOffset(0); }} /></div></div>
+    <div className="registry-panel"><div className="grid gap-4 md:grid-cols-3"><label>ค้นหารหัสหรือชื่อ<input className="registry-input" value={q} onChange={event => { setQ(event.target.value); setOffset(0); }} /></label>{!permissions.capabilities.agency_registry ? <DropdownPop label="เอเจนซี" value={agency} options={[{ value: "", label: "ทุกเอเจนซี" }, ...options(vocab, "AGENCY")]} onChange={value => { setAgency(value); setOffset(0); }} /> : <p className="self-center">{roleLabels[role]} · แสดงเฉพาะชื่อของคุณ</p>}<DropdownPop label="สถานะรหัส" value={status} options={[{ value: "", label: "ทุกสถานะ" }, { value: "pending", label: "รอรับรหัส" }, { value: "bound", label: "ผูกรหัสแล้ว" }]} onChange={value => { setStatus(value); setOffset(0); }} /></div></div>
     {error && <div role="alert" className="registry-error">{error}<button className="registry-button ml-3" onClick={() => void load()}>ลองอีกครั้ง</button></div>}
     <div className="registry-panel"><div className="flex flex-wrap items-center justify-between gap-3 mb-4"><h2>รายการลงทะเบียน</h2><p role="status" className={loading ? "hub-loading" : undefined}>{loading ? "กำลังโหลดข้อมูล…" : `พบ ${total} รายการ`}</p></div>
       {!loading && !rows.length ? <p className="py-8 text-muted">{q || agency || status ? "ไม่พบรายการตามตัวกรอง" : "ยังไม่มีรายการลงทะเบียน"}</p> : <table className="registry-table"><thead><tr><th scope="col">รหัสและชื่อ</th><th scope="col">ขอบเขต</th><th scope="col">วัตถุประสงค์ / เอเจนซี</th><th scope="col">สถานะ</th></tr></thead><tbody>{rows.map(row => <tr key={row.registration.code} data-registration={row.registration.code}><td data-label=""><RegistryRowSummary id={`${view}-${row.registration.code}`}><button type="button" onClick={() => open(row.registration.code)} aria-label={`${inbox ? "กรอกรหัสสำหรับ" : "ดูรายละเอียด"} ${row.registration.code}`}>{row.registration.code}</button><p>{row.registration.label}</p></RegistryRowSummary></td><td data-label="ขอบเขต">{row.scope.scope_code}<p className="text-muted">{row.scope.label_th}</p></td><td data-label="วัตถุประสงค์ / เอเจนซี">{row.registration.objective}<p>{row.registration.agency}</p></td><td data-label="สถานะ">{stateLabel(row)}</td></tr>)}</tbody></table>}{loading && !rows.length && <LoadingRows />}
@@ -158,6 +160,7 @@ function RegistryList({ role, settings, vocab, inbox, onDirty }: { role: LocalRo
 }
 
 function RegistrationDetail({ detail, tab, setTab, role, vocab, settings, dirty, onDirty, onUpdated }: { detail: Detail; tab: string; setTab: (tab: string) => void; role: LocalRole; vocab: Vocab[]; settings: Settings; dirty: boolean; onDirty: (dirty: boolean) => void; onUpdated: (value: Detail) => void }) {
+  const permissions = useHubPermissions();
   const hosted = Boolean(useHostedSession());
   return <><p className="mt-3 text-muted">{detail.registration.label} · {stateLabel(detail)}</p><div className="registry-tabs" role="tablist" aria-label="รายละเอียดทะเบียน">{tabs.map((item, index) => <button key={item.key} id={`tab-${item.key}`} role="tab" aria-selected={tab === item.key} aria-controls={`panel-${item.key}`} disabled={dirty && item.key !== "bindings"} tabIndex={tab === item.key ? 0 : -1} onClick={() => setTab(item.key)} onKeyDown={event => {
     if (dirty || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return; event.preventDefault();
@@ -165,7 +168,7 @@ function RegistrationDetail({ detail, tab, setTab, role, vocab, settings, dirty,
     setTab(next); document.getElementById(`tab-${next}`)?.focus();
   }}>{item.label}{tab === item.key && <span className="registry-tab-indicator" />}</button>)}</div>
     <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
-      {tab === "details" ? <><dl className="registry-detail-list"><dt>ขอบเขต</dt><dd>{detail.scope.scope_code} · {detail.scope.label_th}</dd><dt>สมาชิกขอบเขต</dt><dd>{detail.members.map(member => member.member_id).join(", ") || "ยังไม่มีสมาชิก"}</dd><dt>วัตถุประสงค์</dt><dd>{detail.registration.objective}</dd><dt>เอเจนซี</dt><dd>{detail.registration.agency}</dd><dt>ออกชื่อเมื่อ</dt><dd>{date(detail.names[0]?.issued_at)} (เวลาประเทศไทย)</dd></dl><p className="mt-5 text-muted">การออกชื่อไม่ได้อนุมัติงบประมาณ ขอบเขตร่วมไม่ได้หมายถึงการแบ่งยอดตามสมาชิก</p>{canWrite(role) && !hosted && <RegistrationMonthlyLines code={detail.registration.code} />}</> : tab === "names" ? <><LaunchPacks names={detail.names} />{canWrite(role) && !hosted && <VariantForm detail={detail} vocab={vocab} settings={settings} onUpdated={onUpdated} />}</> : <BindingForm detail={detail} vocab={vocab} onDirty={onDirty} onUpdated={onUpdated} />}
+      {tab === "details" ? <><dl className="registry-detail-list"><dt>ขอบเขต</dt><dd>{detail.scope.scope_code} · {detail.scope.label_th}</dd><dt>สมาชิกขอบเขต</dt><dd>{detail.members.map(member => member.member_id).join(", ") || "ยังไม่มีสมาชิก"}</dd><dt>วัตถุประสงค์</dt><dd>{detail.registration.objective}</dd><dt>เอเจนซี</dt><dd>{detail.registration.agency}</dd><dt>ออกชื่อเมื่อ</dt><dd>{date(detail.names[0]?.issued_at)} (เวลาประเทศไทย)</dd></dl><p className="mt-5 text-muted">การออกชื่อไม่ได้อนุมัติงบประมาณ ขอบเขตร่วมไม่ได้หมายถึงการแบ่งยอดตามสมาชิก</p>{permissions.can("finance") && !hosted && <RegistrationMonthlyLines code={detail.registration.code} />}</> : tab === "names" ? <><LaunchPacks names={detail.names} />{permissions.can("registry", "edit") && !hosted && <VariantForm detail={detail} vocab={vocab} settings={settings} onUpdated={onUpdated} />}</> : permissions.can("registry", "edit") || permissions.capabilities.agency_registry ? <BindingForm detail={detail} vocab={vocab} onDirty={onDirty} onUpdated={onUpdated} /> : <><p>ดูรหัสที่ผูกไว้ได้เท่านั้น</p><BindingList bindings={detail.bindings} /></>}
     </div>
   </>;
 }
@@ -193,6 +196,10 @@ function VariantForm({ detail, vocab, settings, onUpdated }: { detail: Detail; v
   return <form className="registry-panel" onSubmit={save}><h3>เพิ่มรูปแบบย่อยภายใต้รหัสเดิม</h3><p className="text-muted mb-4">ชื่อแต่ละรูปแบบคงเดิมหลังออกชื่อ ใช้ SN เดียวกันสำหรับทะเบียนนี้</p><DropdownPop label="รูปแบบย่อยเพิ่มเติม" value={variant} options={[{ value: "", label: "ไม่มีรูปแบบย่อย", disabled: false }, ...options(vocab, "VARIANT")].map(option => ({ ...option, disabled: option.disabled || detail.names.some(name => (name.variant || "") === option.value) }))} onChange={setVariant} disabled={saving || !settings.can_issue} />{error && <p role="alert" className="registry-error">{error}</p>}<button className="registry-button primary mt-4" aria-busy={saving} disabled={saving || !settings.can_issue || detail.names.some(name => (name.variant || "") === variant)}>ออกชื่อรูปแบบย่อย</button></form>;
 }
 
+function BindingList({ bindings }: { bindings: Binding[] }) {
+  return <><h3 className="mt-7">รหัสที่ส่งแล้ว</h3>{bindings.length ? <ul className="pl-5">{bindings.map((binding, i) => <li key={`${binding.platform}-${binding.account_id}-${binding.campaign_id}-${i}`}>{binding.platform} · {binding.account_id} · {binding.campaign_id}</li>)}</ul> : <p className="text-muted">ยังไม่มีรหัสบนแพลตฟอร์ม</p>}</>;
+}
+
 function BindingForm({ detail, vocab, onDirty, onUpdated }: { detail: Detail; vocab: Vocab[]; onDirty: (dirty: boolean) => void; onUpdated: (value: Detail) => void }) {
   const [nameId, setNameId] = useState(detail.names[0]?.name_id ?? "");
   const [platform, setPlatform] = useState("GOOGLE");
@@ -216,7 +223,7 @@ function BindingForm({ detail, vocab, onDirty, onUpdated }: { detail: Detail; vo
     } catch (err) { setError(message(err)); }
     finally { setSaving(false); }
   }
-  return <><form onSubmit={save} noValidate><div className="grid gap-5 md:grid-cols-2"><DropdownPop label="ชื่อที่ออกแล้ว" value={nameId} options={detail.names.map(name => ({ value: name.name_id, label: name.variant || "ชื่อหลัก" }))} onChange={setNameId} disabled={saving} /><DropdownPop label="แพลตฟอร์ม" value={platform} options={options(vocab, "PLATFORM")} onChange={setPlatform} disabled={saving} /><label>รหัสบัญชีโฆษณา<input id="binding-account" className="registry-input" type="text" value={account} disabled={saving} onChange={event => { setAccount(event.target.value); onDirty(true); }} required maxLength={128} autoComplete="off" /></label><label>รหัสแคมเปญ<input id="binding-campaign" className="registry-input" type="text" value={campaign} disabled={saving} onChange={event => { setCampaign(event.target.value); onDirty(true); }} required maxLength={128} autoComplete="off" /></label></div><p className="text-muted mt-4">เก็บรหัสตามต้นทาง รวมเลขศูนย์นำหน้า ส่งรหัสได้หลายแคมเปญต่อหนึ่งชื่อ</p>{error && <div ref={summary} tabIndex={-1} className="registry-error" role="alert">{error}<p><a href="#binding-account">ตรวจรหัสบัญชีโฆษณา</a> · <a href="#binding-campaign">ตรวจรหัสแคมเปญ</a></p></div>}<p role="status" className="text-success mt-3"><StatusText message={notice} /></p><button className="registry-button primary mt-4" aria-busy={saving} disabled={saving || !nameId || detail.registration.status === "CANCELLED"}>{saving ? "กำลังบันทึก…" : "บันทึกรหัส"}</button></form><h3 className="mt-7">รหัสที่ส่งแล้ว</h3>{detail.bindings.length ? <ul className="pl-5">{detail.bindings.map((binding, i) => <li key={`${binding.platform}-${binding.account_id}-${binding.campaign_id}-${i}`}>{binding.platform} · {binding.account_id} · {binding.campaign_id}</li>)}</ul> : <p className="text-muted">ยังไม่มีรหัสบนแพลตฟอร์ม</p>}</>;
+  return <><form onSubmit={save} noValidate><div className="grid gap-5 md:grid-cols-2"><DropdownPop label="ชื่อที่ออกแล้ว" value={nameId} options={detail.names.map(name => ({ value: name.name_id, label: name.variant || "ชื่อหลัก" }))} onChange={setNameId} disabled={saving} /><DropdownPop label="แพลตฟอร์ม" value={platform} options={options(vocab, "PLATFORM")} onChange={setPlatform} disabled={saving} /><label>รหัสบัญชีโฆษณา<input id="binding-account" className="registry-input" type="text" value={account} disabled={saving} onChange={event => { setAccount(event.target.value); onDirty(true); }} required maxLength={128} autoComplete="off" /></label><label>รหัสแคมเปญ<input id="binding-campaign" className="registry-input" type="text" value={campaign} disabled={saving} onChange={event => { setCampaign(event.target.value); onDirty(true); }} required maxLength={128} autoComplete="off" /></label></div><p className="text-muted mt-4">เก็บรหัสตามต้นทาง รวมเลขศูนย์นำหน้า ส่งรหัสได้หลายแคมเปญต่อหนึ่งชื่อ</p>{error && <div ref={summary} tabIndex={-1} className="registry-error" role="alert">{error}<p><a href="#binding-account">ตรวจรหัสบัญชีโฆษณา</a> · <a href="#binding-campaign">ตรวจรหัสแคมเปญ</a></p></div>}<p role="status" className="text-success mt-3"><StatusText message={notice} /></p><button className="registry-button primary mt-4" aria-busy={saving} disabled={saving || !nameId || detail.registration.status === "CANCELLED"}>{saving ? "กำลังบันทึก…" : "บันทึกรหัส"}</button></form><BindingList bindings={detail.bindings} /></>;
 }
 
 function RegistrationWizard({ settings, vocab, onDirty }: { settings: Settings; vocab: Vocab[]; onDirty: (dirty: boolean) => void }) {

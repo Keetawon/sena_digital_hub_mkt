@@ -1,5 +1,7 @@
 "use client";
 
+import { safeNext, workspaceLanding } from "./hub-navigation-data";
+import { canOpenPage } from "@/lib/hub-permissions";
 import { createBrowserClient } from "@supabase/ssr";
 import { createContext, useContext, useState, useEffect, type FormEvent, type ReactNode } from "react";
 import { type HostedConfig } from "@/lib/hosted-config";
@@ -63,7 +65,8 @@ export async function afterSignIn(next: string) {
   const response = await fetch("/api/hub/v1/me", { cache: "no-store" });
   if (!response.ok) throw new Error();
   const { data } = await response.json();
-  window.location.assign(data.status !== "ACTIVE" ? "/account/request" : next === "/" && ["online_staff", "agency"].includes(data.role) ? "/ads/registry" : next);
+  const requested = new URL(safeNext(next), window.location.origin);
+  window.location.assign(data.status !== "ACTIVE" ? "/account/request" : canOpenPage(data, requested.pathname, requested.searchParams) ? requested.pathname + requested.search : workspaceLanding(data.capabilities));
 }
 
 export function HostedLogin({ next }: { next: string }) {

@@ -32,6 +32,7 @@ test('staff project thumbnails use project, brand, then initials and recover fro
   const rows=[{name:'ภาพโครงการ',thumbnail:image,brand_logo:logo},{name:'โลโก้แทนภาพ',thumbnail:null,brand_logo:logo},{name:'ชื่อย่อ',thumbnail:null,brand_logo:null},{name:'ภาพเสีย',thumbnail:{id:'broken',public_url:null},brand_logo:logo}].map((r,i)=>({...base,...r,rem_project_id:String(i)}));
   await page.route('**/api/hub/**',async route=>{
     const path=new URL(route.request().url()).pathname;
+    if(path==='/api/hub/v1/me')return route.continue();
     if(path.includes('/assets/')) {
       if(path.includes('broken')) return route.fulfill({status:404});
       return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64')});

@@ -25,11 +25,12 @@ test('knowledge permission revocation reaches the browser on the next request wi
     await page.goto('/knowledge');
     expect((await page.request.get('/api/hub/v1/admin/knowledge/projects')).status()).toBe(200);
     await db.query("update hub.account_permission set can_view=false where account_id=$1 and tab='knowledge'", [viewer]);
-    await page.reload();
-    await expect(page.getByRole('alert').filter({ hasText: 'ไม่มีสิทธิ์' })).toBeVisible();
+    expect((await page.reload())?.status()).toBe(403);
+    await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/knowledge$/);
     const account = (await (await page.request.get('/api/hub/v1/me')).json()).data;
     expect(account.status).toBe('ACTIVE');expect(account.capabilities.tabs.knowledge.view).toBe(false);
+    expect((await page.request.get('/api/hub/v1/admin/knowledge/projects')).status()).toBe(403);
     expect((await page.request.post('/api/hub/v1/admin/knowledge/preview', {
       headers: { Origin: 'http://127.0.0.1:3000' }, data: { question: 'Synthetic permission test' },
     })).status()).toBe(403);

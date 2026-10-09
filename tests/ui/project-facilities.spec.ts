@@ -39,9 +39,10 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
   const writes: { code: string; body: Record<string, unknown> }[] = [];
   const unexpectedWrites: string[] = [];
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
-  // Every Hub request is intercepted: these tests never write a real project.
+  // Domain requests are intercepted; identity reads retain the real capability projection.
   await page.route('**/api/hub/**', async route => {
     const request = route.request();
+    if(new URL(request.url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
     const facility = path.match(/^projects\/facility-test\/facilities\/([^/]+)$/);
     if (request.method() === 'PUT' && facility) {

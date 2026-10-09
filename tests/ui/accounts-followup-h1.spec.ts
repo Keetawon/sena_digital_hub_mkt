@@ -132,7 +132,8 @@ test.describe('Account follow-up on loopback H1',()=>{
     const row=page.getByRole('row').filter({hasText:'hub-test-admin@example.test'});await expect(row.getByText('คุณ',{exact:true})).toBeVisible();
     const opener=row.getByRole('button',{name:'จัดการ'});await opener.click();const panel=page.getByRole('dialog');
     await expect(panel.getByText('นี่คือบัญชีของคุณ')).toBeVisible();
-    await expect(panel.getByRole('radio',{name:/ผู้แก้ไขข้อมูล/})).toBeDisabled();
+    await expect(panel.getByLabel('แม่แบบสิทธิ์',{exact:true})).toBeDisabled();
+    await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).toBeDisabled();
     await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toHaveCount(0);
     await page.screenshot({path:'artifacts/accounts-manage-self.png',fullPage:false});
     await expect(panel.getByText('ต้องเหลือผู้ดูแลระบบอย่างน้อย 1 คน')).toBeVisible();

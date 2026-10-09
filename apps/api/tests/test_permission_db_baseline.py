@@ -19,6 +19,11 @@ FOUNDATION_TABLES = {'hub.permission_catalog', 'hub.permission_template', 'hub.a
 FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', 'hub.permission_rows',
     'hub.copy_account_template', 'hub.can', 'hub.can_special', 'hub.can_agency_registry',
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
+ACCOUNT_UI_TABLES = {'hub.permission_notice_ack'}
+ACCOUNT_UI_FUNCTIONS = {'hub.' + name for name in (
+    'normalise_permission_tabs', 'account_access', 'permission_catalog_digest', 'resolve_account_access',
+    'write_account_access', 'configure_account_access', 'approve_account_access', 'permission_batch_preview',
+    'preview_account_permissions', 'apply_account_permissions', 'ack_permission_notice')}
 CONTENT_TABLES = {'hub.' + name for name in (
     'projects', 'model_types', 'entity_assets', 'entity_versions', 'commercial_types', 'commercial_type_sources',
     'commercial_type_assets', 'facility_taxonomy', 'project_facilities', 'project_progress_cache', 'project_progress_dirty',
@@ -98,10 +103,14 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    account_ui = [r for r in actual if r['schema'] + '.' + r['table'] in ACCOUNT_UI_TABLES]
+                    assert len(account_ui) == 1 and all(r['name'] == 'permission_notice_owner' and r['roles'] == ['postgres']
+                        and r['qual'] == r['with_check'] == 'true' for r in account_ui)
+                    actual = [r for r in actual if r not in account_ui]
                     added = [r for r in actual if r['schema'] + '.' + r['table'] in FOUNDATION_TABLES]
                     assert len(added) == 4 and all(r['name'] == 'permission_owner' for r in added)
                     actual = [r for r in actual if r not in added]
@@ -226,37 +235,42 @@ def test_security_definer_read_entry_ceilings_and_positive_neighbours(persona):
     asyncio.run(check())
 
 
+async def assert_reviewed_database_boundary(db):
+    """Read-only live coverage assertion, also exercised by mutation probes."""
+    rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
+    tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
+    classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+    assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
+    assert all(r['rls'] and r['force_rls'] for r in tables.values())
+    policies = await db.fetch(POLICIES_SQL, SCHEMAS)
+    # These three operator-only staging/seed relations intentionally have
+    # FORCE RLS with no policy: the application can never read them.
+    policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
+    assert set(tables) - policy_tables == TECHNICAL_TABLES
+    # Domain tables need an actual permission predicate, not just RLS on.
+    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES
+    guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
+        token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency('))}
+    # Registry children inherit the parent's RLS through EXISTS; the
+    # issuance counter is entirely denied to application roles.
+    for table, parent in {'scope_member': 'ads.scope_code', 'campaign_name': 'ads.campaign_registration',
+                          'native_binding': 'ads.campaign_registration', 'code_sequence': None}.items():
+        policy = next(r for r in policies if r['schema'] == 'ads' and r['table'] == table
+                      and r['name'] == 'registry_permission')
+        assert policy['permissive'] == 'RESTRICTIVE' and policy['with_check'] == 'false'
+        assert ('EXISTS' in policy['qual'] and parent in policy['qual']) if parent else policy['qual'] == 'false'
+        guarded.add('ads.' + table)
+    assert domain <= guarded, domain - guarded
+    assert all(not r['grants'] for name, r in tables.items()
+               if name in FOUNDATION_TABLES | ACCOUNT_UI_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+
+
 def test_every_base_relation_has_a_reviewed_force_rls_boundary():
     async def check():
         db = await runtime()
         try:
-            rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
-            tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
-            classified = (FOUNDATION_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                          OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
-            assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
-            assert all(r['rls'] and r['force_rls'] for r in tables.values())
-            policies = await db.fetch(POLICIES_SQL, SCHEMAS)
-            # These three operator-only staging/seed relations intentionally have
-            # FORCE RLS with no policy: the application can never read them.
-            policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
-            assert set(tables) - policy_tables == TECHNICAL_TABLES
-            # Domain tables need an actual permission predicate, not just RLS on.
-            domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES
-            guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
-                token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency('))}
-            # Registry children inherit the parent's RLS through EXISTS; the
-            # issuance counter is entirely denied to application roles.
-            for table, parent in {'scope_member': 'ads.scope_code', 'campaign_name': 'ads.campaign_registration',
-                                  'native_binding': 'ads.campaign_registration', 'code_sequence': None}.items():
-                policy = next(r for r in policies if r['schema'] == 'ads' and r['table'] == table
-                              and r['name'] == 'registry_permission')
-                assert policy['permissive'] == 'RESTRICTIVE' and policy['with_check'] == 'false'
-                assert ('EXISTS' in policy['qual'] and parent in policy['qual']) if parent else policy['qual'] == 'false'
-                guarded.add('ads.' + table)
-            assert domain <= guarded, domain - guarded
-            assert all(not r['grants'] for name, r in tables.items()
-                       if name in FOUNDATION_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+            await assert_reviewed_database_boundary(db)
         finally:
             await db.close()
     asyncio.run(check())

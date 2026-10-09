@@ -1,0 +1,24 @@
+.permission-grid-scroll { max-width: 100%; overflow-x: auto; margin-block: 16px; border: 1px solid var(--line); }
+.permission-grid { width: 100%; min-width: 350px; border-collapse: collapse; table-layout: fixed; }
+.permission-grid th, .permission-grid td { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: middle; }
+.permission-grid th:first-child { width: 52%; text-align: left; }
+.permission-grid th:not(:first-child), .permission-grid td { text-align: center; }
+.permission-grid thead { background: var(--surface-warm); }
+.permission-grid small { display: block; font-weight: 400; color: var(--muted); }
+.permission-cell { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.permission-grid input, .permission-batch input[type=checkbox] { width: 20px; height: 20px; flex-shrink: 0; }
+.permission-special label { display: flex; gap: 12px; min-height: 44px; align-items: center; text-align: left; }
+.permission-special td { padding-left: 20px; background: var(--surface-warm); }
+.permission-diff { padding: 12px 16px; margin-block: 16px; border-left: 3px solid var(--action); background: var(--surface-warm); }
+.permission-diff ul { padding-left: 20px; margin-block: 8px; }
+.permission-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.permission-chips .account-pill { white-space: normal; }
+.permission-template-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.permission-template-actions > .form-field { flex: 1 1 200px; }
+.permission-batch-list { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; margin-block: 16px; }
+.permission-batch-list label { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); padding: 12px; }
+.permission-batch-target { border-top: 1px solid var(--line); padding-block: 16px; }
+.permission-notice { padding: 16px; border: 1px solid var(--action); background: var(--surface-warm); margin-block: 16px; }
+.permission-notice p { margin-top: 0; }
+.permission-history-note { white-space: pre-wrap; }
+.permission-grid *, .permission-batch *, .permission-notice * { animation: none !important; transition: none !important; }

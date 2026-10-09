@@ -70,7 +70,7 @@ def test_permission_foundation_template_projection_and_real_sql_agree(permission
     client, ids = permission_accounts
     account = me(client, role)
     caps = account['capabilities']
-    assert len(caps['tabs']) == len(caps['locked_tabs']) == 12
+    assert len(caps['tabs']) == 12 and caps['locked_tabs'] == []
     assert len(caps['special_actions']) == 3
     assert caps['can_manage_users'] == (role == 'admin')
     assert caps['published_consumer'] == (role not in ('agency', 'service_consumer', 'pending'))
@@ -164,8 +164,18 @@ def test_permission_foundation_locked_grid_self_stale_and_flag_revocation(permis
     row = me(client, 'second')
     path = f'/v1/admin/accounts/{ids["second"]}/permissions'
     body = {'tabs': tabs, 'can_manage_users': False, 'updated_at': row['updated_at']}
-    denied = client.post(path, headers=h('admin'), json={**body, 'tabs': {**tabs, 'projects': []}})
-    assert denied.status_code == 403 and denied.json()['error']['code'] == 'permission_locked'
+    async def rollout(state):
+        db = await disposable_operator()
+        try:
+            await db.execute("update hub.permission_catalog set rollout_state=$1 where tab='projects'", state)
+        finally:
+            await db.close()
+    asyncio.run(rollout('LEGACY_LOCKED'))
+    try:
+        denied = client.post(path, headers=h('admin'), json={**body, 'tabs': {**tabs, 'projects': []}})
+        assert denied.status_code == 403 and denied.json()['error']['code'] == 'permission_locked'
+    finally:
+        asyncio.run(rollout('MIGRATED'))
     assert client.post(f'/v1/admin/accounts/{ids["admin"]}/permissions', headers=h('admin'), json=body).status_code == 403
     assert client.post(path, headers=h('admin'), json=body).status_code == 200
     # Same session/JWT, next request: no accounts or catalog, data role unchanged.
@@ -238,10 +248,12 @@ def test_permission_foundation_locked_state_cannot_pretend_guards_exist(permissi
     async def check():
         db = await disposable_operator()
         try:
+            await db.execute("update hub.permission_catalog set rollout_state='LEGACY_LOCKED',guards_ready=false where tab='projects'")
             for state in ('MIGRATED', 'DISABLED'):
                 with pytest.raises(asyncpg.CheckViolationError):
                     await db.execute("update hub.permission_catalog set rollout_state=$1 where tab='projects'", state)
         finally:
+            await db.execute("update hub.permission_catalog set rollout_state='MIGRATED',guards_ready=true where tab='projects'")
             await db.close()
     asyncio.run(check())
 
@@ -254,12 +266,17 @@ def test_permission_foundation_new_catalog_tab_defaults_to_nobody_and_template_c
         caller = await runtime(probe=True)
         try:
             await db.execute("insert into hub.permission_catalog(tab,label_th,nav_group,levels,sensitivity) values('synthetic_probe','ทดสอบ','other','{view}','internal')")
-            await db.execute("insert into hub.permission_template(code,version,label_th,tabs) values('editor',2,'ทดสอบ','{}')")
             for role in ('admin', 'editor', 'viewer'):
                 assert await sql_as(caller, ids[role], role, "select hub.can('synthetic_probe','view')") is False
             assert await db.fetchval('select permission_template_version from hub.user_account where id=$1', ids['editor']) == 1
+            transaction = db.transaction()
+            await transaction.start()
+            try:
+                await db.execute("insert into hub.permission_template(code,version,label_th,tabs) values('editor',2,'ทดสอบ','{}')")
+                assert await db.fetchval('select permission_template_version from hub.user_account where id=$1', ids['editor']) == 1
+            finally:
+                await transaction.rollback()
         finally:
-            await db.execute("delete from hub.permission_template where code='editor' and version=2")
             await db.execute("delete from hub.permission_catalog where tab='synthetic_probe'")
             await db.close()
             await caller.close()

@@ -1,0 +1,8 @@
+{
+  "phase": "C",
+  "routes": [
+    {"method": "POST", "path": "/v1/admin/permissions/preview", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "POST", "path": "/v1/admin/permissions/apply", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "POST", "path": "/v1/admin/permissions/notices/{tab}/ack", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"}
+  ]
+}

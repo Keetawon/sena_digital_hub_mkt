@@ -1,11 +1,13 @@
 "use client";
-import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { hubPages, workspaceLanding } from "./hub-navigation-data";
 import { SignOut, useHostedSession } from "./hosted-session";
-import { roleLabels } from "@/lib/roles";
+import { roleLabels, roles, type LocalRole } from "@/lib/roles";
+import { can, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
 
 export const taskLabels: Record<string, string> = { read: "อ่านข้อมูลโครงการ", edit: "แก้ไขข้อมูลและสื่อ", publish: "อนุมัติและเผยแพร่ข้อมูล", online: "ดูแลงานโฆษณาและงบ", agency: "ทำงานในนามเอเจนซี" };
 export const statuses: Record<string, string> = { PENDING: "รออนุมัติ", ACTIVE: "ใช้งานอยู่", SUSPENDED: "ระงับ", REJECTED: "ปฏิเสธ" };
-export type Account = { id: string; email: string; sign_in_method: string; display_name_th: string; phone: string; team: string; requested_tasks: string[]; reason: string; privacy_acknowledged_at: string | null; status: string; hub_role: string | null; decision_note: string; agency_code: string | null; updated_at: string; anonymised_at: string | null; company_type: string | null; company_name: string | null; position: string | null; invite?: Invite | null };
+export type Account = { id: string; email: string; sign_in_method: string; display_name_th: string; phone: string; team: string; requested_tasks: string[]; reason: string; privacy_acknowledged_at: string | null; status: string; hub_role: string | null; decision_note: string; agency_code: string | null; updated_at: string; anonymised_at: string | null; company_type: string | null; company_name: string | null; position: string | null; invite?: Invite | null; access?: AccountAccess; can_manage_users?: boolean; capabilities?: CapabilityProjection };
 export type AccountEvent = { id: string; account_id: string; actor_id: string; action: string; new_status: string; new_role: string; created_at: string; decision_note: string; previous_decision_note: string };
 export function suggestedRole(tasks: string[]) { return tasks.includes("agency") ? "agency" : tasks.includes("publish") ? "publisher" : tasks.includes("online") ? "online_staff" : tasks.includes("edit") ? "editor" : "viewer"; }
 export const label = (role: string | null) => roleLabels[role as keyof typeof roleLabels] || "ยังไม่กำหนด";
@@ -21,32 +23,101 @@ export async function accountApi(path: string, body?: unknown, method = "POST") 
   return result.data;
 }
 
-const Directory = createContext<{ names: Record<string, string>; admin: boolean; pending: number | null }>({ names: {}, admin: false, pending: null });
+const emptyDirectory = { names: {} as Record<string, string>, admin: false, pending: null as number | null, account: null as HubAccount | null, capabilities: emptyCapabilities, ready: false, signedOut: false, error: "" };
+const Directory = createContext(emptyDirectory);
 export function AccountDirectory({ children, enabled }: { children: ReactNode; enabled: boolean }) {
-  const [value, setValue] = useState({ names: {} as Record<string, string>, admin: false, pending: null as number | null });
+  const [value, setValue] = useState(emptyDirectory);
+  const current = useRef<HubAccount | null>(null);
+  const edits = useRef(new Map<string, { label: string; value: string }>());
+  const [recovery, setRecovery] = useState<{ label: string; value: string }[]>([]);
   useEffect(() => {
     // Login/request pages don't query the staff directory or the admin queue.
     if (/^\/(login|signup|auth|account)(\/|$)/.test(location.pathname)) return;
-    let alive = true;
+    let alive = true, loading = false, activated = enabled;
+    function preserveTyped() { setRecovery(Array.from(edits.current.values())); }
     async function refresh() {
+      if (!activated || loading || document.visibilityState === "hidden") return;
+      loading = true;
       try {
-        const me = await accountApi("v1/me"); if (me.status !== "ACTIVE") return;
-        if (alive) setValue(previous => ({ ...previous, admin: me.role === "admin", pending: null }));
-        const staff = ["editor", "publisher", "viewer", "admin", "online_staff"].includes(me.role);
+        const me: HubAccount = await accountApi("v1/me");
+        const prior = current.current;
+        if (prior?.id && prior.id !== me.id) { edits.current.clear(); setRecovery([]); }
+        else if (prior && capabilityKey(prior) !== capabilityKey(me)) preserveTyped();
+        current.current = me;
+        const caps = me.status === "ACTIVE" ? me.capabilities ?? emptyCapabilities : emptyCapabilities;
+        const admin = caps.can_manage_users === true;
+        if (alive) setValue(previous => ({ ...previous, account: me, capabilities: caps, admin, pending: admin ? me.pending_count ?? null : null, ready: true, signedOut: false, error: "" }));
+        const staff = me.status === "ACTIVE" && caps.published_consumer;
         const names = staff ? await accountApi("v1/accounts/display-names") : [];
-        const accounts = me.role === "admin" ? await accountApi("v1/admin/accounts") : null;
-        if (alive) setValue({ names: Object.fromEntries(names.map((r: Account) => [r.id, r.display_name_th])), admin: me.role === "admin", pending: accounts ? accounts.items.filter(submittedPending).length : null });
-      } catch { /* Existing page error handling owns a failed session. */ }
+        if (alive) setValue(previous => ({ ...previous, names: Object.fromEntries(names.map((r: Account) => [r.id, r.display_name_th])) }));
+      } catch (error) {
+        if ([401, 403].includes((error as AccountApiError).status ?? 0)) { preserveTyped(); if (alive) setValue({ ...emptyDirectory, ready: true, signedOut: true }); }
+        else if (alive) setValue(previous => ({ ...previous, ready: true, error: "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" }));
+      } finally { loading = false; }
     }
-    if (enabled) void refresh(); window.addEventListener("hub-accounts-changed", refresh);
-    return () => { alive = false; window.removeEventListener("hub-accounts-changed", refresh); };
+    const capture = (event: Event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement)) return;
+      if (/^\/(account|login|signup|auth)(\/|$)/.test(location.pathname)) return;
+      // Account source/search/invite fields never enter recovery. Only authored
+      // administrative notes opt in, scoped to this identity and this document.
+      if (/^\/admin\/accounts(\/|$)/.test(location.pathname) && !input.matches("textarea[data-permission-recovery]")) return;
+      if (input instanceof HTMLInputElement && ["password", "file", "hidden", "checkbox", "radio", "submit", "button", "reset"].includes(input.type)) return;
+      if (input.disabled || "readOnly" in input && input.readOnly) return;
+      const labelNode = input.labels?.[0]?.cloneNode(true) as HTMLElement | undefined;
+      labelNode?.querySelectorAll("input, textarea, select").forEach(node => node.remove());
+      const label = input.getAttribute("aria-label") || labelNode?.textContent?.trim() || input.name || "ข้อความที่กรอก";
+      edits.current.set(input.id || `${input.name}:${label}`, { label, value: input.value });
+    };
+    if (enabled) void refresh(); else setValue({ ...emptyDirectory, ready: true });
+    const changed = () => { activated = true; void refresh(); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("hub-accounts-changed", changed); window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
+    document.addEventListener("input", capture); document.addEventListener("change", capture);
+    return () => { alive = false; clearInterval(timer); window.removeEventListener("hub-accounts-changed", changed); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); document.removeEventListener("input", capture); document.removeEventListener("change", capture); };
   }, [enabled]);
-  return <Directory value={value}>{children}</Directory>;
+  return <Directory value={value}>{value.error && value.account && <p role="alert">{value.error}</p>}{children}{recovery.length > 0 && <aside className="registry-panel" aria-label="ข้อความที่คุณกรอก"><h2>สิทธิ์เปลี่ยนแล้ว ข้อความที่คุณกรอกยังอยู่</h2><p>ข้อมูลต้นทางที่ไม่มีสิทธิ์ดูถูกปิดแล้ว คัดลอกข้อความที่ต้องการเก็บก่อนเปลี่ยนหน้า</p>{recovery.map((item, index) => <div className="form-field" key={index}><label htmlFor={`hub-recovered-${index}`}>{item.label}</label><textarea id={`hub-recovered-${index}`} readOnly value={item.value} /></div>)}<button type="button" className="button secondary" onClick={() => { setRecovery([]); edits.current.clear(); }}>เก็บข้อความแล้ว ปิดรายการนี้</button></aside>}</Directory>;
 }
 export function useAccountDirectory() { return useContext(Directory); }
+export function useHubPermissions() {
+  const directory = useAccountDirectory();
+  return { ...directory, can: (tab: string, level: "view" | "edit" | "approve" = "view") => can(directory.capabilities, tab, level),
+    special: (action: string) => canSpecial(directory.capabilities, action) };
+}
+
+// Mount the owning workspace only while its source tab remains readable. This is
+// outside components that own caches; revocation discards their server data.
+export function PermissionBoundary({ tab, children, localMode = false, initialRole = null }: { tab: string; children: ReactNode; localMode?: boolean; initialRole?: LocalRole | null }) {
+  const permissions = useHubPermissions();
+  if (!permissions.ready) return <p role="status">กำลังตรวจสิทธิ์การใช้งาน…</p>;
+  if (permissions.error && !permissions.account) return <p role="alert">{permissions.error}</p>;
+  if (!permissions.signedOut && !permissions.account || permissions.account?.status === "ACTIVE" && (tab === "accounts" ? permissions.admin : permissions.can(tab))) return <Fragment key={capabilityKey(permissions.account)}>{children}</Fragment>;
+  return <main className="account-page"><section className="registry-panel"><h1>ไม่มีสิทธิ์เข้าถึงหน้านี้</h1>{localMode && <LocalPersonaPicker initialRole={initialRole} />}<p>ข้อมูลต้นทางถูกปิดแล้ว ข้อความที่คุณกรอกเก็บไว้ด้านล่าง</p>{permissions.signedOut ? <a href={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}>เข้าสู่ระบบอีกครั้ง</a> : permissions.account?.status !== "ACTIVE" ? <a href="/account/request">ตรวจสถานะบัญชี</a> : <nav aria-label="หน้าที่คุณมีสิทธิ์">{hubPages.filter(page => page.id === "accounts" ? permissions.admin : permissions.can(page.id)).map(page => <p key={page.id}><a href={page.href}>{permissions.capabilities.catalog?.find(tab => tab.tab === page.id)?.label_th ?? page.label}</a></p>)}</nav>}</section></main>;
+}
+
+// Available only when a server page explicitly enables local demo mode. The
+// selected label chooses a synthetic identity; /me remains the authority.
+export function LocalPersonaPicker({ initialRole = null }: { initialRole?: LocalRole | null }) {
+  const [selected, setSelected] = useState(initialRole ?? "");
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  async function select(next: string) {
+    setBusy(true); setError("");
+    try {
+      const response = await fetch("/api/local-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: next }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message || "เปลี่ยนบัญชีทดสอบไม่สำเร็จ");
+      setSelected(next); window.dispatchEvent(new Event("hub-accounts-changed"));
+      const account: HubAccount = await accountApi("v1/me");
+      location.assign(account.status === "ACTIVE" ? workspaceLanding(account.capabilities) : "/account/request");
+    } catch (failure) { setError((failure as AccountApiError).status === 503 || failure instanceof TypeError ? "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" : failure instanceof Error ? failure.message : "เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
+    finally { setBusy(false); }
+  }
+  return <div className="registry-panel"><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={selected} disabled={busy} onChange={event => void select(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{roles.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>{error && <p role="alert">{error}</p>}</div>;
+}
+
 export function ActorName({ id }: { id?: string | null }) { const { names } = useAccountDirectory(); return <span title={id || undefined}>{id ? names[id] || (/^[0-9a-f-]{36}$/i.test(id) ? "ผู้ใช้เดิม" : id) : "ยังไม่มีผู้ดำเนินการ"}</span>; }
 
-export type Invite = { id: string; email: string; display_hint: string; company_type: string; company_name: string | null; team: string; hub_role: string; agency_code: string | null; status: string; expires_at: string; invited_by_name: string; message?: string };
+export type Invite = { id: string; email: string; display_hint: string; company_type: string; company_name: string | null; team: string; hub_role: string; agency_code: string | null; status: string; expires_at: string; invited_by_name: string; message?: string; permission_template?: string; permission_template_version?: number; template?: TemplateRef; template_label?: string };
 export const companyLabels: Record<string,string> = { SENA: "เสนาดีเวลลอปเมนท์", SENA_SUBSIDIARY: "บริษัทในเครือเสนา", AGENCY: "เอเจนซี", CONTRACTOR: "ผู้รับจ้างภายนอก" };
 export const companyLabel = (a: {company_type: string | null; company_name: string | null}) => a.company_type ? [companyLabels[a.company_type],a.company_name].filter(Boolean).join(" · ") : "ยังไม่ระบุ";
 
@@ -55,6 +126,19 @@ export function AccessRequestPage() {
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(false);
+  async function checkAcceptedAccess() {
+    setCheckingAccess(true); setError("");
+    try { const fresh: Account = await accountApi("v1/me"); setAccount(current => current && current.id === fresh.id && new Date(current.updated_at) > new Date(fresh.updated_at) ? current : fresh); }
+    catch { setError("บัญชีเปิดใช้งานแล้ว แต่ยังตรวจสิทธิ์พื้นที่ทำงานไม่สำเร็จ กรุณาลองตรวจสถานะอีกครั้ง"); }
+    finally { setCheckingAccess(false); }
+  }
+  function savedRequest(saved: Account) {
+    // The mutation result proves the completed outcome, but has no capability
+    // projection. Never re-submit acceptance if its separate /me read fails.
+    setAccount(saved); setEditing(false); setError("");
+    if (saved.status === "ACTIVE") void checkAcceptedAccess();
+  }
   useEffect(() => {
     let alive = true, first = true, loading = false;
     const refresh = async () => {
@@ -64,7 +148,7 @@ export function AccessRequestPage() {
         const a = await accountApi("v1/me");
         if (!alive) return;
         // An older in-flight poll must not undo a just-saved decision/acceptance.
-        setAccount(current => current && new Date(current.updated_at) > new Date(a.updated_at) ? current : a); setError("");
+        setAccount(current => current && current.id === a.id && new Date(current.updated_at) > new Date(a.updated_at) ? current : a); setError("");
         if (first) { setEditing(!a.privacy_acknowledged_at && a.status === "PENDING"); first = false; }
       } catch (e) { if (alive) setError((e as Error).message); }
       finally { loading = false; }
@@ -73,15 +157,15 @@ export function AccessRequestPage() {
     window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
     return () => { alive = false; clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, []);
-  const workspace = account?.hub_role === "agency" || account?.hub_role === "online_staff" ? "/ads/registry" : "/";
+  const workspace = workspaceLanding(account?.capabilities);
   return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p><h1>{editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
     {error && <p role="alert">{error}</p>}
     {account && <><p>อีเมล: {account.email}</p>
-      <p role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่ยังไม่บันทึกยังอยู่ในหน้านี้"}</p>
+      <p role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่คุณกรอกยังอยู่ในหน้านี้"}</p>
       {["REJECTED", "SUSPENDED"].includes(account.status) && account.decision_note && <p>เหตุผลจากผู้ดูแล: {account.decision_note}</p>}
       {account.invite?.message && <p>{account.invite.message}</p>}
-      {editing ? <RequestForm account={account} onSaved={a => { setAccount(a); setEditing(false); }} /> : <><RequestSummary account={account} />{account.status === "PENDING" && <button className="button secondary" onClick={() => setEditing(true)}>แก้ไขคำขอ</button>}</>}
-      {account.status === "ACTIVE" && <a className="button primary" href={workspace}>เข้าสู่พื้นที่ทำงาน</a>}
+      {editing ? <RequestForm key={account.id} account={account} onSaved={savedRequest} /> : <><RequestSummary account={account} />{account.status === "PENDING" && <button className="button secondary" onClick={() => setEditing(true)}>แก้ไขคำขอ</button>}</>}
+      {account.status === "ACTIVE" && (account.capabilities ? <a className="button primary" href={workspace}>เข้าสู่พื้นที่ทำงาน</a> : <button type="button" className="button secondary" disabled={checkingAccess} onClick={() => void checkAcceptedAccess()}>{checkingAccess ? "กำลังตรวจสิทธิ์พื้นที่ทำงาน…" : "ตรวจสถานะพื้นที่ทำงานอีกครั้ง"}</button>)}
       {config?.adminContact && <p>ติดต่อผู้ดูแล: {config.adminContact}</p>}
     </>}</section></main>;
 }

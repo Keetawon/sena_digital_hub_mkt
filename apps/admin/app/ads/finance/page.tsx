@@ -1,3 +1,4 @@
+import { PermissionBoundary } from "@/components/accounts";
 import { getHubRole } from "@/lib/hosted-session";
 import { AdsFinance } from "@/components/ads-finance";
 import { isLocalMode, roleLabels } from "@/lib/local-session";
@@ -9,5 +10,5 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   const role = await getHubRole();
   if (isHostedMode()) return <HubShell section="finance" staff={isHubStaff(role)} residential={isContentStaff(role)} publisher={role === "publisher"} finance={role === "admin" || role === "online_staff"} roleLabel={role ? roleLabels[role] : "ยังไม่ได้เข้าสู่ระบบ"}>{null}</HubShell>;
-  return <AdsFinance initialRole={role} localMode={isLocalMode()} />;
+  return <PermissionBoundary tab={"finance"}><AdsFinance initialRole={role} localMode={isLocalMode()} /></PermissionBoundary>;
 }

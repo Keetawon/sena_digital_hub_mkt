@@ -57,14 +57,17 @@ def test_request_approval_immediate_role_suspend_and_privacy(accounts):
     assert client.get('/v1/admin/accounts', headers=h('new')).status_code == 403
     names = client.get('/v1/accounts/display-names', headers=h('new')).json()['data']
     assert all(set(row) == {'id', 'display_name_th'} for row in names)
-    assert decision(client, 'new', 'role', 'agency', 'KIN').status_code == 200
-    assert client.get('/v1/admin/projects', headers=h('new')).status_code == 403
-    registrations = client.get('/v1/admin/ads/registrations', headers=h('new')).json()['data']
+    assert decision(client, 'new', 'role', 'agency', 'KIN').status_code == 403
+    assert client.get('/v1/admin/projects', headers=h('new')).status_code == 200
+    assert client.post('/v1/me/access-request', headers=h('other'), json=REQUEST).status_code == 200
+    assert decision(client, 'other', 'approve', 'agency', 'KIN').status_code == 200
+    assert client.get('/v1/admin/projects', headers=h('other')).status_code == 403
+    registrations = client.get('/v1/admin/ads/registrations', headers=h('other')).json()['data']
     assert all(r['registration']['agency'] == 'KIN' for r in registrations)
-    assert decision(client, 'new', 'suspend').status_code == 200
-    assert client.get('/v1/admin/ads/registrations', headers=h('new')).status_code == 403
-    assert decision(client, 'new', 'reactivate').status_code == 200
-    assert client.get('/v1/admin/ads/registrations', headers=h('new')).status_code == 200
+    assert decision(client, 'other', 'suspend').status_code == 200
+    assert client.get('/v1/admin/ads/registrations', headers=h('other')).status_code == 403
+    assert decision(client, 'other', 'reactivate').status_code == 200
+    assert client.get('/v1/admin/ads/registrations', headers=h('other')).status_code == 200
     assert decision(client, 'admin', 'role', 'viewer').status_code == 403
     assert decision(client, 'admin', 'suspend').status_code == 403
 
@@ -135,7 +138,7 @@ def test_account_decision_errors_and_reopen_preserve_notes(accounts):
         assert result.json()['error']['code'] == code
         assert 'สิทธิ์สื่อ' not in result.json()['error']['message']
     assert decision(client, 'admin', 'role', 'admin').json()['error']['code'] == 'account_self_decision'
-    assert decision(client, 'admin', 'suspend').json()['error']['code'] == 'account_last_admin'
+    assert decision(client, 'admin', 'suspend').json()['error']['code'] == 'account_self_decision'
     assert decision(client, 'new', 'reject', note='ขอรายละเอียดเพิ่มเติม').status_code == 200
     rejected = client.get('/v1/me', headers=h('new')).json()['data']
     assert decision(client, 'new', 'reopen', note='กรุณาแก้ไขแล้วส่งใหม่').status_code == 200

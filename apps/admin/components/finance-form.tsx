@@ -1,4 +1,6 @@
 "use client";
+import { useHubPermissions } from "./accounts";
+import { canFinanceAction } from "@/lib/hub-permissions";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { request } from "./hub-request";
@@ -63,8 +65,11 @@ export function FinanceForm({ title, submitLabel = "บันทึกร่า�
   const prefix = useId();
   const summary = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) summary.current?.focus(); }, [error]);
+  const permissions = useHubPermissions();
+  const permitted = canFinanceAction(permissions.capabilities, path, { ...value, review_status: initial.review_status === "CONFIRMED" ? "CONFIRMED" : value.review_status });
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!permitted) { setError("ไม่มีสิทธิ์ดำเนินการนี้ ข้อความที่กรอกยังอยู่"); return; }
     const invalid = Array.from(event.currentTarget.elements).filter(item => item instanceof HTMLInputElement || item instanceof HTMLSelectElement || item instanceof HTMLTextAreaElement).filter(item => !(item as HTMLInputElement).validity.valid) as HTMLInputElement[];
     if (invalid.length) {
       setErrors(Object.fromEntries(invalid.map(item => [item.id, item.validity.valueMissing ? "กรุณาระบุข้อมูล" : "กรุณาตรวจสอบรูปแบบข้อมูล"] ))); setError("กรุณาตรวจสอบช่องที่ระบุด้านล่างก่อนบันทึก"); return;
@@ -78,5 +83,5 @@ export function FinanceForm({ title, submitLabel = "บันทึกร่า�
     catch (err) { setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง"); }
     finally { setBusy(false); }
   }
-  return <form onSubmit={submit} noValidate className="registry-panel"><h3>{title}</h3>{note && <p className="finance-caption mb-4">{note}</p>}{error && <div className="registry-error" role="alert" ref={summary} tabIndex={-1}><strong>{error}</strong>{Object.entries(errors).map(([id, text]) => <p key={id}><a href={`#${id}`}>{(document.getElementById(id) as HTMLInputElement | null)?.labels?.[0]?.textContent ?? "ช่องข้อมูล"}: {text}</a></p>)}</div>}<fieldset disabled={busy} className="border-0 p-0 min-w-0"><Fields fields={fields} value={value} setValue={next => { setValue(next); onDirty(true); }} choices={choices} prefix={prefix} errors={errors} /><div className="finance-actions"><button className="registry-button primary" aria-busy={busy} disabled={busy}>{busy ? "กำลังบันทึก…" : submitLabel}</button></div></fieldset></form>;
+  return <form onSubmit={submit} noValidate className="registry-panel"><h3>{title}</h3>{note && <p className="finance-caption mb-4">{note}</p>}{error && <div className="registry-error" role="alert" ref={summary} tabIndex={-1}><strong>{error}</strong>{Object.entries(errors).map(([id, text]) => <p key={id}><a href={`#${id}`}>{(document.getElementById(id) as HTMLInputElement | null)?.labels?.[0]?.textContent ?? "ช่องข้อมูล"}: {text}</a></p>)}</div>}<fieldset disabled={busy} className="border-0 p-0 min-w-0"><Fields fields={fields} value={value} setValue={next => { setValue(next); onDirty(true); }} choices={choices} prefix={prefix} errors={errors} /><div className="finance-actions"><button className="registry-button primary" aria-busy={busy} disabled={busy || !permitted}>{busy ? "กำลังบันทึก…" : submitLabel}</button></div></fieldset></form>;
 }

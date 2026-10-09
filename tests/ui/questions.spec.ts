@@ -50,8 +50,8 @@ test('agency and unrecognized service sessions cannot fetch or render staff ques
     const requests: string[] = [];
     const capture = (request: { url: () => string }) => { if (request.url().includes(api)) requests.push(request.url()); };
     page.on('request', capture);
-    await page.goto('/questions');
-    await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงคำถามของทีมงาน', exact: true })).toBeVisible();
+    expect((await page.goto('/questions'))?.status()).toBe(403);
+    await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'คำถามที่รอคำตอบ', exact: true, includeHidden: true })).toHaveCount(0);
     await expect(page.locator('.question-card')).toHaveCount(0);
     expect(requests).toEqual([]);

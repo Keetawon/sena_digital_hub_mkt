@@ -28,21 +28,21 @@ async function create(page: Page, agency: string) {
   return (await response.json()).data as Detail;
 }
 
-test('residential account can explicitly switch into the registry without a permission dead end', async ({ page }) => {
+test('hidden registry denies the residential account, which can return and explicitly switch local persona', async ({ page }) => {
   await page.goto('/');
   const session = await page.request.post('/api/local-session', { headers, data: { role: 'editor' } });
   expect(session.ok()).toBeTruthy();
   await page.reload();
   const registryRequests: string[] = [];
   page.on('request', request => { if (request.url().includes(api)) registryRequests.push(request.url()); });
-  await page.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'เลือกบัญชีสำหรับทะเบียนแคมเปญ', exact: true })).toBeVisible();
-  await expect(page.getByText('ขณะนี้ใช้บัญชี “ผู้แก้ไขข้อมูล”', { exact: false })).toBeVisible();
-  await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
-  await expect(page.getByRole('button', { name: 'ลองอีกครั้ง', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toHaveCount(0);
+  expect((await page.goto('/ads/registry'))?.status()).toBe(403);
+  await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
   expect(registryRequests).toEqual([]);
   expect((await page.request.get(`${api}/registrations`)).status()).toBe(403);
-  await page.getByRole('button', { name: 'ใช้บัญชีทดสอบทีมออนไลน์', exact: true }).click();
+  await page.getByRole('link', { name: 'กลับไปเลือกบัญชีทดสอบ', exact: true }).click();
+  await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('editor');
+  await role(page,'online_staff');
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('online_staff');
   await expect(page.getByRole('heading', { name: 'รายการลงทะเบียน', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toBeVisible();
@@ -153,8 +153,9 @@ test('agency sees only its own names and returns multiple exact source IDs witho
   await expect(page.getByLabel('รหัสแคมเปญ', { exact: true })).toHaveValue('000006');
   // A failed binding keeps the editable draft; explicitly discard it for navigation.
   page.once('dialog', prompt => prompt.accept());
-  await page.goto('/ads/registry/new');
-  await expect(page.getByText('บัญชีนี้ส่งคืนรหัสและอ่านชื่อของตนเองได้เท่านั้น')).toBeVisible();
+  expect((await page.goto('/ads/registry/new'))?.status()).toBe(403);
+  await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
+  expect((await page.request.post(`${api}/registrations`, { headers, data: {} })).status()).toBe(403);
 });
 
 test('C scope requires distinct phases and keyboard pickers expose the server preview', async ({ page }) => {

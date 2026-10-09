@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 import { useState } from "react";
 import { request } from "./hub-request";
 
@@ -11,6 +12,7 @@ type Candidate = { id: string; kind: string; evidence: Record<string, unknown>; 
 export function KnowledgeFollowup({ project, items, data, role, onChanged, onKind, onCandidate }: {
   project: string; items: Candidate[]; data?: Followup; role: string; onChanged: () => Promise<void>; onKind: (kind: string) => void; onCandidate: (id: string) => void;
 }) {
+  const permissions = useHubPermissions();
   const questions = data?.questions ?? [], releases = data?.preview_releases ?? [];
   const [editing,setEditing] = useState<FollowupQuestion | null>(null),[answer,setAnswer] = useState(""),[reason,setReason] = useState("");
   const [decision,setDecision] = useState("verified"),[error,setError] = useState(""),[busy,setBusy] = useState(false);
@@ -19,7 +21,7 @@ export function KnowledgeFollowup({ project, items, data, role, onChanged, onKin
   const accepted = items.filter(i => i.review?.decision === "accepted" && i.review.applies_to_project_ids.includes(project));
   const heroes = accepted.filter(i => i.kind === "asset" && i.review?.asset_role === "hero");
   const assets = accepted.filter(i => i.kind === "asset");
-  const canReview = role === "editor" || role === "admin";
+  const canReview = permissions.can("knowledge", "edit");
   const checklist = [
     ["เนื้อหา","section"], ["คำถามพบบ่อย","faq"], ["ข้อเท็จจริง","fact"], ["ภาพหลัก","hero"], ["แกลเลอรี","gallery"], ["แปลน","plans"], ["โปรโมชั่น","promotion"], ["อนุมัติสิทธิ์เป็นชุด","rights"], ["เผยแพร่สู่พรีวิวส่วนตัว","preview"],
   ];
@@ -51,7 +53,7 @@ export function KnowledgeFollowup({ project, items, data, role, onChanged, onKin
   return <section className="knowledge-followup" aria-label="ตรวจครบวงจรและชุดคำถามทดสอบ">
     {project === "BNA7" && <><h2>รายการตรวจ BNA7 ก่อนส่งพรีวิว</h2><ul className="knowledge-checklist">{checklist.map(([label,key])=><li key={key}><strong>{label}</strong><span>{count(key)}</span>{key !== "preview" && <button onClick={()=>onKind(["hero","gallery","plans","rights"].includes(key)?"asset":key)}>เปิดตรวจ</button>}</li>)}</ul></>}
     <p>ภาพหลักต้องเลือกหนึ่งภาพต่อโครงการหรือระยะ · ภาพที่ต้นทางเสนอเป็นภาพหลักอื่น ๆ เริ่มเป็นข้อเสนอแกลเลอรี</p>
-    {role === "publisher" && project !== "TPRAK" && <button onClick={()=>{setReleaseOpen(true);setReleaseReason("");setConfirmed(false);}}>ตรวจและยืนยันชุดพรีวิวส่วนตัว</button>}
+    {permissions.can("knowledge", "approve") && project !== "TPRAK" && <button onClick={()=>{setReleaseOpen(true);setReleaseReason("");setConfirmed(false);}}>ตรวจและยืนยันชุดพรีวิวส่วนตัว</button>}
     {releases.length > 0 && <p>ชุดพรีวิวล่าสุด: <code>{releases[0].id}</code> · ใช้เฉพาะทีมงานในเครื่อง</p>}
     {error && <p role="alert">{error}</p>}
     {releaseOpen && <form onSubmit={createPreview} className="knowledge-item"><h3>ยืนยันพรีวิวส่วนตัวของ {project}</h3><p>เฉพาะเนื้อหาที่ตรวจรับและไฟล์ที่มีสิทธิ์ปัจจุบัน · ภาพหลัก {heroes.length}/1 · {accepted.length} รายการ · ไม่มีการเผยแพร่สู่ผู้บริโภค</p>

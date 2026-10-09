@@ -129,9 +129,10 @@ test.describe('Accounts on loopback H1', () => {
     await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill('hub-test-editor@example.test');
     await page.getByRole('row').filter({hasText:'hub-test-editor@example.test'}).getByRole('button',{name:'จัดการ'}).click();
     const row=page.getByRole('dialog');
-    await row.getByRole('radio',{name:/ผู้อ่านข้อมูล/}).check();
+    await row.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('viewer:1');
+    await row.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
     await row.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('ข้อความยังไม่บันทึก');
-    await page.route('**/api/hub/v1/admin/accounts/*/decision',r=>r.fulfill({status:401,json:{error:{message:'เซสชันหมดอายุ'}}}));
+    await page.route('**/api/hub/v1/admin/accounts/*/permissions',r=>r.fulfill({status:401,json:{error:{message:'เซสชันหมดอายุ'}}}));
     await row.getByRole('button',{name:'บันทึก',exact:true}).click();
     await expect(row.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)')).toHaveValue('ข้อความยังไม่บันทึก');
     const link=page.getByRole('link',{name:'เข้าสู่ระบบอีกครั้งในแท็บใหม่'});

@@ -1,4 +1,5 @@
 "use client";
+import { useHubPermissions } from "./accounts";
 import { ActorName } from "./accounts";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -84,7 +85,8 @@ function PublisherActions({ row, onSaved, onDirty }: { row: Promotion; onSaved: 
 }
 
 export function PromotionsWorkspace({ role }: { role: LocalRole }) {
-  const canEdit = role === "editor" || role === "admin";
+  const permissions = useHubPermissions();
+  const canEdit = permissions.can("promotions", "edit");
   const [dirty, setDirty] = useState(false); const { params, navigate } = useContentLocation(dirty);
   const project = params.get("project_id") ?? ""; const selected = params.get("promotion") ?? ""; const offset = Number(params.get("offset") ?? "0") || 0;
   const [projects, setProjects] = useState<Project[]>([]); const [rows, setRows] = useState<Promotion[]>([]); const [total, setTotal] = useState(0); const [row, setRow] = useState<Promotion | null>(null);
@@ -101,7 +103,7 @@ export function PromotionsWorkspace({ role }: { role: LocalRole }) {
       <DemoFields fields={row.demo_fields} /><p>ร่างรุ่น {row.draft_revision} · แก้ไขล่าสุด {dateTime(row.updated_at)}</p><Ready value={row.readiness} />
       {canEdit ? <PromotionDraft key={`${row.id}-${row.draft_revision}`} promotion={row} projects={projects} defaultProject={project} onSaved={saved} onDirty={setDirty} /> : <PromotionText promotion={row} />}{dirty && <p role="status">มีการแก้ไขที่ยังไม่บันทึก</p>}
       <section className="content-review"><h3>ผลการตรวจแยกตามรุ่นร่าง</h3>{row.reviews?.length ? row.reviews.map((review, index) => <details key={index}><summary>{typeLabel(review.review_type)} · รุ่น {review.review_revision} · {review.decision === "APPROVED" ? "ตรวจผ่าน" : "ถอนผลการตรวจ"}{review.review_revision !== row.draft_revision ? " · ไม่ใช่ผลตรวจของร่างปัจจุบัน" : ""}</summary><p className="content-copy">{review.evidence}</p><p>{dateTime(review.reviewed_at)} · <ActorName id={review.reviewed_by} /></p></details>) : <p>ยังไม่มีผลการตรวจ</p>}</section>
-      {role === "publisher" && <PublisherActions key={`${row.id}-${row.draft_revision}`} row={row} onSaved={saved} onDirty={setDirty} />}
+      {permissions.can("promotions", "approve") && <PublisherActions key={`${row.id}-${row.draft_revision}`} row={row} onSaved={saved} onDirty={setDirty} />}
       <section className="registry-panel"><h3>ฉบับเผยแพร่ที่แยกจากร่าง</h3><p>{publicationLabel(row)}</p>{row.published ? <><p>ฉบับ {row.published.version_no} · เผยแพร่เมื่อ {dateTime(row.published.published_at)}</p><p>สถานะตามช่วงเวลา: {Date.now() < new Date(row.published.payload.starts_at).getTime() ? "ยังไม่เริ่มใช้สิทธิ์" : Date.now() >= new Date(row.published.payload.ends_at).getTime() ? "หมดอายุแล้ว" : "อยู่ในช่วงใช้สิทธิ์"} · การให้สิทธิ์จริงยังต้องผ่านการตรวจโครงการ ต้นทาง และผลการตรวจจากเซิร์ฟเวอร์ทุกครั้ง</p><PromotionText promotion={row.published.payload} /></> : <p>ยังไม่มีฉบับเผยแพร่</p>}</section>
       <section className="content-history"><h3>ประวัติฉบับเผยแพร่</h3>{row.versions?.length ? <ul>{row.versions.map(version => <li key={version.id}>ฉบับ {version.version_no} · {dateTime(version.published_at)} · <code>{version.id}</code></li>)}</ul> : <p>ยังไม่มีประวัติ</p>}</section>
     </>}</DetailDialog>}

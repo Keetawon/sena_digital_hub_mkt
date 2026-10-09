@@ -36,7 +36,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     let navigations=0;requester.on('framenavigated',()=>navigations++);
     await login(page);await page.goto('/admin/accounts');await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(user.email);
     const card=page.getByRole('article').filter({hasText:user.email});
-    await expect(card.getByRole('combobox',{name:'บทบาท',exact:true})).toHaveValue('editor');
+    await expect(card.getByRole('combobox',{name:'แม่แบบสิทธิ์',exact:true})).toHaveValue('editor:1');
     await expect(page.getByLabel('บัญชีรออนุมัติ')).toHaveText(/^\d+$/);
     await page.screenshot({path:'artifacts/accounts-queue.png',fullPage:true});
     await card.getByRole('button',{name:'อนุมัติเป็น ผู้แก้ไขข้อมูล',exact:true}).click();
@@ -57,15 +57,17 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     await opener.focus();await page.keyboard.press('Enter');const panel=page.getByRole('dialog');
     await expect(panel.getByRole('button',{name:'ปิด',exact:true})).toBeFocused();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
     await page.keyboard.press('Tab');expect(await page.evaluate(()=>!!document.activeElement?.closest('dialog'))).toBe(true);
-    await panel.getByRole('radio',{name:/Manager/}).check();await expect(panel.locator('.account-diff')).toContainText('ผู้แก้ไขข้อมูล  → Manager');
+    await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('publisher:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
+    const diff=panel.getByLabel('ความแตกต่างของสิทธิ์').first();await expect(diff).toContainText('แม่แบบ: ผู้แก้ไขข้อมูล · รุ่น 1 → Manager — อนุมัติและเผยแพร่ · รุ่น 1');
     await panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('บันทึกเฉพาะผู้ดูแล');
     await page.screenshot({path:'artifacts/accounts-manage.png',fullPage:false});
-    await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.locator('.account-diff')).toHaveText('ยังไม่มีการเปลี่ยนแปลง');
-    await panel.getByRole('radio',{name:/ผู้ดูแลระบบ/}).check();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
+    await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(diff).toHaveText('ยังไม่มีการเปลี่ยนแปลง');
+    await panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true}).check();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
     const confirm=panel.getByRole('checkbox',{name:/ยืนยันให้สิทธิ์ผู้ดูแลระบบ/});await confirm.focus();await page.keyboard.press('Space');
     await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeEnabled();
-    await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('ผู้ดูแลระบบ');
-    await panel.getByRole('radio',{name:/Manager/}).check();await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.locator('.account-diff')).toHaveText('ยังไม่มีการเปลี่ยนแปลง');
+    await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(diff).toHaveText('ยังไม่มีการเปลี่ยนแปลง');
+    await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).toBeChecked();
+    await panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true}).uncheck();await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(diff).toHaveText('ยังไม่มีการเปลี่ยนแปลง');
     for(let n=0;n<20;n++){await page.keyboard.press('Tab');expect(await page.evaluate(()=>!!document.activeElement?.closest('dialog'))).toBe(true);}
     await page.keyboard.press('Escape');await expect(panel).toHaveCount(0);await expect(opener).toBeFocused();
     const me=await(await page.request.get(`${api}/v1/me`,{headers:user.headers})).json();expect(me.data.decision_note).toBe('');
@@ -75,8 +77,8 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     const email=`invited-${Date.now()}@example.test`;await login(page);await page.goto('/admin/accounts');
     await page.getByRole('button',{name:'+ เพิ่มผู้ใช้',exact:true}).click();const panel=page.getByRole('dialog');
     await panel.getByLabel('อีเมล',{exact:true}).fill(email);await panel.getByLabel('ชื่อสำหรับอ้างอิง (ไม่บังคับ)').fill('เพื่อนร่วมงาน สมมติ');
-    await panel.getByRole('combobox',{name:'บทบาท',exact:true}).selectOption('agency');await panel.getByLabel('รหัสเอเจนซี').selectOption('KIN');await panel.getByLabel('ทีม / ฝ่าย').fill('ทีมเอเจนซีสมมติ');
-    await expect(panel.getByRole('option',{name:'ผู้ดูแลระบบ',exact:true})).toHaveCount(0);
+    await panel.getByRole('combobox',{name:'แม่แบบสิทธิ์',exact:true}).selectOption('agency:1');await panel.getByLabel('รหัสเอเจนซี').selectOption('KIN');await panel.getByLabel('ทีม / ฝ่าย').fill('ทีมเอเจนซีสมมติ');
+    await expect(panel.getByRole('option',{name:/ผู้ดูแลระบบ/})).toHaveCount(0);
     await page.screenshot({path:'artifacts/accounts-invite-create.png',fullPage:false});
     await panel.getByRole('button',{name:'สร้างคำเชิญ',exact:true}).click();await expect(panel).toHaveCount(0);
     await expect(page.getByRole('article').filter({hasText:email})).toContainText('รอตอบรับ');
@@ -85,7 +87,16 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     await expect(requester.getByLabel('ทีม / ฝ่าย')).toHaveValue('ทีมเอเจนซีสมมติ');await expect(requester.getByLabel('ชื่อบริษัท',{exact:true})).toHaveValue('KIN');await expect(requester.getByLabel('ชื่อบริษัท',{exact:true})).toHaveAttribute('readonly','');
     await requester.getByLabel('ชื่อและนามสกุลภาษาไทย').fill('ผู้รับเชิญ สมมติ');await requester.getByLabel('เบอร์โทรศัพท์ที่ทำงาน').fill('020000000');await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ผู้ประสานงาน');await requester.getByLabel('รับทราบประกาศความเป็นส่วนตัว').check();
     await expect(requester.getByLabel('เหตุผล / โครงการที่รับผิดชอบ')).toHaveCount(0);await requester.screenshot({path:'artifacts/accounts-invite-accept.png',fullPage:true});
-    await requester.getByRole('button',{name:'ตอบรับคำเชิญ',exact:true}).click();await requester.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).click();await expect(requester).toHaveURL(/\/ads\/registry$/);
+    let failAccessRead=false,acceptPosts=0;
+    await requester.route('**/api/hub/v1/me/invite-accept',async route=>{acceptPosts++;const response=await route.fetch();if(response.ok())failAccessRead=true;await route.fulfill({response});});
+    await requester.route('**/api/hub/v1/me',route=>{if(failAccessRead){failAccessRead=false;return route.fulfill({status:503,json:{error:{message:'ระบบขัดข้องชั่วคราว'}}});}return route.continue();});
+    await requester.getByRole('button',{name:'ตอบรับคำเชิญ',exact:true}).click();
+    await expect(requester.getByRole('alert').filter({hasText:'บัญชีเปิดใช้งานแล้ว'})).toBeVisible();
+    await expect(requester.getByRole('status')).toContainText('ใช้งานอยู่');await expect(requester.locator('.account-summary')).toContainText('ผู้ประสานงาน');
+    await expect(requester.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'})).toHaveCount(0);
+    await requester.getByRole('button',{name:'ตรวจสถานะพื้นที่ทำงานอีกครั้ง',exact:true}).click();
+    await expect(requester.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'})).toHaveAttribute('href','/ads/registry');expect(acceptPosts).toBe(1);
+    await requester.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).click();await expect(requester).toHaveURL(/\/ads\/registry$/);
     await page.reload();await page.getByRole('tab',{name:/^คำเชิญ/}).click();await expect(page.getByRole('article').filter({hasText:email})).toContainText('ตอบรับแล้ว');await requester.close();
   });
 
@@ -97,6 +108,22 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     await expect(requester.getByLabel('ตำแหน่ง',{exact:true})).toHaveValue('ข้อความยังไม่บันทึก');await expect(requester.getByRole('button',{name:'ส่งคำขอ',exact:true})).toBeDisabled();await expect(requester.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'})).toBeVisible();
     await page.setViewportSize({width:400,height:860});await findUser(page,user.email);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'artifacts/accounts-mobile.png',fullPage:true});
     await page.getByRole('row').filter({hasText:user.email}).getByRole('button',{name:'จัดการ'}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(page.getByRole('dialog')).toBeVisible();await requester.close();
+  });
+
+  test('request refresh after a real session identity switch discards the prior identity fields',async({page,browser})=>{
+    const first=await identity(page.request,`request-first-${Date.now()}@example.test`);
+    const second=await identity(page.request,`request-second-${Date.now()}@example.test`);
+    // Make the first account newer, so timestamp ordering cannot stand in for identity.
+    expect((await page.request.patch(`${api}/v1/me/access-request`,{headers:first.headers,data:{...profile,position:'ตำแหน่งบัญชีแรก'}})).status()).toBe(200);
+    const context=await browser.newContext({baseURL:'http://127.0.0.1:3001'});const requester=await context.newPage();
+    await login(requester,first.email,first.password);await requester.getByRole('button',{name:'แก้ไขคำขอ'}).click();
+    await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ข้อความส่วนตัวของบัญชีแรกที่ยังไม่บันทึก');
+    const switcher=await context.newPage();await login(switcher,second.email,second.password);
+    await requester.bringToFront();await requester.evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await expect(requester.getByText(`อีเมล: ${second.email}`,{exact:true})).toBeVisible();
+    await expect(requester.getByLabel('ตำแหน่ง',{exact:true})).toHaveValue(profile.position);
+    expect(await requester.locator('input,textarea').evaluateAll(nodes=>nodes.some(node=>(node as HTMLInputElement).value==='ข้อความส่วนตัวของบัญชีแรกที่ยังไม่บันทึก'))).toBe(false);
+    await context.close();
   });
 
   test('stale queue reload keeps typed text when another admin decision removes the pending status',async({page})=>{
