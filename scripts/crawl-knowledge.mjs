@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
+import { extractSenaProject } from './sena-project-extract.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -185,6 +186,8 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
   if (sha256(inputBytes) !== inputHash) throw new Error('input_hash_mismatch');
   const input = JSON.parse(inputBytes);
   if (input.schema_version !== 1 || !Array.isArray(input.pages) || !Array.isArray(input.file_refs)) throw new Error('invalid_input');
+  const maxPages = input.max_pages ?? 80;
+  if (!Number.isInteger(maxPages) || maxPages < input.pages.length || maxPages > 500) throw new Error('invalid_page_limit');
   for (const row of input.pages) if (!allowedUrl(row.url) || !Array.isArray(row.project_ids) || !Array.isArray(row.programme_ids)) throw new Error('invalid_page_scope_or_url');
   const { chromium } = await import('@playwright/test');
   const browser = await chromium.launch({ channel, headless: true });
@@ -217,8 +220,8 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
       const programmePage = !page.programme_ids.length || /^\/(?:faq|terms|conditions?|benefit-program|invest|livnex-gold|about|privacy|contact)(?:\/|$)/i.test(target.pathname);
       if (scoped && programmePage && !/logout|login|cart|checkout|wp-admin|wp-json|feed|\.(?:css|js|xml|zip)$/i.test(target.pathname) && !target.search && !knownPages.has(url)) {
         knownPages.add(url);
-        if (pageQueue.length < 80) pageQueue.push({ url, project_ids: page.project_ids, programme_ids: page.programme_ids, discovered_from: page.url });
-        else failure('page', { url, page_url: page.url }, { reason: 'page_limit_80_requires_followup' });
+        if (pageQueue.length < maxPages) pageQueue.push({ url, project_ids: page.project_ids, programme_ids: page.programme_ids, discovered_from: page.url, extractor: page.extractor });
+        else failure('page', { url, page_url: page.url }, { reason: `page_limit_${maxPages}_requires_followup` });
       }
     }
   };
@@ -247,7 +250,8 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
       row.original_blob = await blob(result.body);
       if (!/html/.test(result.mime)) { failure('page', source, { ...result, reason: 'unexpected_page_mime' }); continue; }
       await parsePage.setContent(result.body.toString('utf8'), { waitUntil: 'domcontentloaded' });
-      let extracted = await parsePage.evaluate(extractDocument);
+      const extractor = source.extractor === 'sena_project_v1' ? extractSenaProject : extractDocument;
+      let extracted = await parsePage.evaluate(extractor);
       // Render JS-dependent pages when static extraction has little content or a hydration shell.
       if (extracted.visible_text_length < 1200 || /id=["'](?:app|root)["'][^>]*>\s*<\//.test(result.body.toString('utf8')) || source.render === true) {
         const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false });
@@ -271,18 +275,19 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
           await rendered.goto(source.url, { waitUntil: 'networkidle', timeout: 90000 });
           // Trigger lazy content without clicking forms or accepting any consent.
           for (let y = 0; y < Math.min(await rendered.evaluate(() => document.body.scrollHeight), 50000); y += 1000) { await rendered.evaluate(y => window.scrollTo(0, y), y); await delay(80); }
-          const dynamic = await rendered.evaluate(extractDocument);
+          const dynamic = await rendered.evaluate(extractor);
           extracted = { ...dynamic, refs: [...extracted.refs, ...dynamic.refs], stylesheets: [...extracted.stylesheets, ...dynamic.stylesheets] };
           row.rendered_blob = await blob(Buffer.from(await rendered.content())); row.render_status = 'ok';
         } catch (error) { row.render_status = 'failed'; failure('render', source, { reason: error.name || 'render_failed' }); }
         finally { await context.close(); await Promise.allSettled([...pending]); }
       } else row.render_status = 'not_needed_static_content';
       row.title = extracted.title; row.coverage = row.render_status === 'failed' ? 'partial_render_failed' : 'fetched';
+      if (extracted.website) row.website = extracted.website;
       row.sections = extracted.sections.map(section => ({ ...section, ...cleanText(section.text), applicability_status: 'needs_scope_review' }));
       if (!row.sections.length) { row.coverage = 'empty_extraction'; failure('page', source, { ...result, reason: 'empty_extraction_not_missing_content' }); }
       for (const ref of extracted.refs) addRef(ref, row);
       // Escaped JSON/lazy-image URLs can sit in data attributes or hydration script data.
-      for (const url of embeddedFileUrls(result.body.toString('utf8'))) addRef({ url, section: 'embedded_url_reference', kind: 'file' }, row);
+      if (source.extractor !== 'sena_project_v1') for (const url of embeddedFileUrls(result.body.toString('utf8'))) addRef({ url, section: 'embedded_url_reference', kind: 'file' }, row);
       for (const css of new Set(extracted.stylesheets.map(u => normalizeUrl(u, row.final_url)))) await cssAssets(css, row);
       await saveJson(`page-${String(index + 1).padStart(3,'0')}.json`, row);
     }
@@ -325,7 +330,8 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
     await saveJson('failures.json', failures); await saveJson('http-events.json', fetcher.events); await saveJson('render-requests.json', renderRequests);
     summary.evidence_bytes_before_summary_and_manifest = Object.values(manifestFiles).reduce((n,f) => n + f.bytes, 0);
     await saveJson('summary.json', summary);
-    const manifest = { contract_version: 'sena-knowledge-preaudit-v1', created_at: new Date().toISOString(), collector_sha256: collectorSha256, input_sha256: inputHash, source_evidence: input.source_evidence, files: manifestFiles, summary };
+    const manifest = { contract_version: 'sena-knowledge-preaudit-v1', created_at: new Date().toISOString(), collector_sha256: collectorSha256,
+      project_extractor_sha256: sha256(await fs.readFile(new URL('./sena-project-extract.mjs', import.meta.url))), input_sha256: inputHash, source_evidence: input.source_evidence, files: manifestFiles, summary };
     await fs.writeFile(path.join(work, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx' });
     await verifyPackage(work); await fs.rename(work, final);
     const manifestHash = sha256(await fs.readFile(path.join(final, 'manifest.json')));

@@ -1,6 +1,16 @@
 import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
+test('public website source remark is visible in the approval/source column', async ({ page }) => {
+  await setup(page, 'editor', { firstRow: { website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] } });
+  const table = page.getByRole('region', { name: 'ตารางความคืบหน้าโครงการ', exact: true });
+  await expect(table.getByRole('columnheader', { name: 'อนุมัติโดย / แหล่งข้อมูล', exact: true })).toBeVisible();
+  await expect(table.getByText('ดึงจากเว็บไซต์สาธารณะ SENA', { exact: true })).toBeVisible();
+  await expect(table).toContainText('ยังไม่ใช่การอนุมัติโดยบุคคล');
+  await page.setViewportSize({ width: 400, height: 850 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+});
+
 const gap = { field: 'latitude', message: 'พิกัดอยู่นอกประเทศไทย ตรวจละติจูดและลองจิจูด' };
 const row = (id: string, extra: Record<string, unknown> = {}) => ({ public_project_id: id, rem_project_id: id,
   name: `โครงการ ${id}`, brand_name: 'แบรนด์จำลอง', new_from_rem: false, filling: true, awaiting_publisher: false,

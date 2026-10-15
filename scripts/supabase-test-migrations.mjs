@@ -135,7 +135,8 @@ async function inspect(client, migrations, config) {
   for (const role of roles) {
     if (role.rolname === 'hub_runtime') {
       const knownUpgrade = [50,51].includes(count) && migrations.some(m => m.name === '202610090052_shared_permissions.sql')
-        || count === 52 && migrations.some(m => m.name === '202610090053_account_permission_management.sql');
+        || count === 52 && migrations.some(m => m.name === '202610090053_account_permission_management.sql')
+        || count === 53 && migrations.some(m => m.name === '202610150054_public_website_drafts.sql');
       if ((rows.length !== migrations.length && !knownUpgrade) || !history.hub) fail('Unexpected existing runtime login.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
     if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');

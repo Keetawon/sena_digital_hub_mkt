@@ -6,6 +6,7 @@ import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
 import { EntityThumbnail, type Thumbnail } from "./entity-thumbnail";
 import { CompletenessBar } from "./completeness-bar";
+import { PublicWebsiteSource, type WebsiteSource } from "./public-website-source";
 import { DashboardTiles } from "./dashboard-tiles";
 import { ProjectSourceReview, ProjectGroupSummary, SourceStatusFilter, type SourceReview, type ProjectGroupInfo } from "./project-source-review";
 import { ProjectGroups, groupLabel, type GroupStatus } from "./project-groups";
@@ -27,6 +28,7 @@ export type ProgressRow = ProjectGroupInfo & {
   source_review?: SourceReview; thumbnail?: Thumbnail | null; brand_logo?: Thumbnail | null;
   checklist?: { required: Check[]; recommended: Check[]; passed: number; total: number; percent: number; ready: boolean };
   required_missing?: number;
+  website_sources?: WebsiteSource[];
   knowledge?: { reviewed: number; staged: number }; thumbnail_asset_id?: string | null;
 };
 export type Progress = { rows: ProgressRow[]; total: number; page: number; size: number; pages: number };
@@ -114,7 +116,7 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
         <p role="status" className="small-text muted">แสดง {rows.length ? start + 1 : 0}–{Math.min(start + size, total)} จาก {total} โครงการ · เรียงตามความพร้อมเผยแพร่ แล้วตามความครบถ้วน</p>
         {pagination("top")}
         <p className="field-help project-progress-scroll-help">หัวตารางและชื่อโครงการตรึงไว้ · กดลูกศรเพื่อดูรายการตรวจ</p>
-        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความพร้อมเผยแพร่และความครบถ้วนของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 6 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "ความพร้อมเผยแพร่", "ความครบถ้วน", "รอใคร", "ปรับปรุงล่าสุด", "ความรู้"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.map(row => {
+        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความพร้อมเผยแพร่และความครบถ้วนของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 7 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "ความพร้อมเผยแพร่", "ความครบถ้วน", "รอใคร", "ปรับปรุงล่าสุด", "อนุมัติโดย / แหล่งข้อมูล", "ความรู้"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.map(row => {
           const open = expanded.has(row.rem_project_id), id = `project-checks-${encodeURIComponent(row.rem_project_id)}`;
           const checklist = row.checklist, ready = checklist?.ready ?? (!row.filling && !row.new_from_rem);
           const missing = row.required_missing ?? checklist?.required?.filter(item => !item.passed).length ?? Object.values(row.gaps).flat().length;
@@ -130,8 +132,9 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
           <td data-label="ความครบถ้วน"><CompletenessBar passed={checklist?.passed ?? 0} total={checklist?.total ?? 0} /></td>
           <td data-label="รอใคร">{row.waiting_on.map(role => role === "editor" ? "ผู้แก้ไข" : "ผู้เผยแพร่").join(" / ") || "—"}</td>
           <td data-label="ปรับปรุงล่าสุด">{date(row.updated_at)}</td>
+          <td data-label="อนุมัติโดย / แหล่งข้อมูล">{row.website_sources?.length ? <PublicWebsiteSource sources={row.website_sources} /> : "—"}</td>
           <td data-label="ความรู้">{permissions.can("knowledge") ? <a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}`}>ตรวจแล้ว {row.knowledge?.reviewed ?? 0}/{row.knowledge?.staged ?? 0}</a> : "—"}</td>
-          </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={6}>{details[row.rem_project_id] ? <Checks row={details[row.rem_project_id]} returnTo={href} onStart={onStart} /> : <p role={detailErrors[row.rem_project_id] ? "alert" : "status"}>{detailErrors[row.rem_project_id] || "กำลังโหลดรายการตรวจ…"}</p>}<p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
+          </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={7}>{details[row.rem_project_id] ? <Checks row={details[row.rem_project_id]} returnTo={href} onStart={onStart} /> : <p role={detailErrors[row.rem_project_id] ? "alert" : "status"}>{detailErrors[row.rem_project_id] || "กำลังโหลดรายการตรวจ…"}</p>}<p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
             <ProjectSourceReview value={row.source_review} />{row.attention.length > 0 && <ul>{row.attention.map((item, index) => <li key={index}><a href={projectHref(row.public_project_id!, href, item.field)}>{item.message}</a></li>)}</ul>}
             <p className="small-text muted">{row.age_days == null ? "ไม่ทราบวันนำเข้า" : `${row.age_basis === "first_import" ? "นำเข้าครั้งแรก" : row.age_basis === "mirror_import" ? "ใช้เวลานำเข้าสำเนาครั้งแรก" : "พบใน REM ครั้งแรก"} · ${date(row.first_seen_at)} · ${row.age_days} วัน`}</p>
             <ProjectGroupSummary value={row} details />

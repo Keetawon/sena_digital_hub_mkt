@@ -110,6 +110,7 @@ class PatchProject(BaseModel):
     ad_disclaimer: LocalizedText | None = None
     meta_title: LocalizedText | None = None
     meta_description: LocalizedText | None = None
+    website_content: dict[Locale, Annotated[str, StringConstraints(max_length=200000)]] | None = None
 
     @model_validator(mode="after")
     def editable_fields(self):

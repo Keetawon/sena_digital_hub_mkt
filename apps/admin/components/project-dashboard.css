@@ -14,12 +14,13 @@
 .project-detail-row > td { background: var(--surface, #fffefa); }
 @media (min-width: 641px) {
   .project-progress-scroll { --project-column-width: 360px; scroll-padding-inline-start: calc(var(--project-column-width) + 16px); }
-  .project-progress-scroll .project-progress-table { table-layout: fixed; width: 1220px; min-width: 100%; }
+  .project-progress-scroll .project-progress-table { table-layout: fixed; width: 1470px; min-width: 100%; }
   .project-progress-table col:first-child { width: var(--project-column-width); }
   .project-progress-table col:nth-child(2) { width: 200px; }
   .project-progress-table col:nth-child(3) { width: 220px; }
   .project-progress-table col:nth-child(4) { width: 140px; }
-  .project-progress-table col:nth-child(5), .project-progress-table col:nth-child(6) { width: 150px; }
+  .project-progress-table col:nth-child(5), .project-progress-table col:nth-child(7) { width: 150px; }
+  .project-progress-table col:nth-child(6) { width: 250px; }
   .project-progress-table th, .project-progress-table td { min-width: 0; overflow-wrap: anywhere; }
   .project-progress-table th:first-child, .project-progress-table .project-summary-row > td:first-child { position: sticky; left: 0; background: var(--canvas); box-shadow: 1px 0 0 var(--line-strong); }
   .project-summary-row > td:first-child { z-index: 1; }

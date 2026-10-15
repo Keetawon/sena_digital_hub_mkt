@@ -268,6 +268,11 @@
       "name": "202610090053_account_permission_management.sql",
       "canonical_sha256": "d7a2e87af035a55a52a09f6ac5efbd5474900873a4fe8f4447605a8b5b2ccdec",
       "executed_sha256": "d7a2e87af035a55a52a09f6ac5efbd5474900873a4fe8f4447605a8b5b2ccdec"
+    },
+    {
+      "name": "202610150054_public_website_drafts.sql",
+      "canonical_sha256": "6c67bebd4df5e7d522d81f3e52f2b7ebe2070eb70e3a5abed45b7bad1527ca5f",
+      "executed_sha256": "6c67bebd4df5e7d522d81f3e52f2b7ebe2070eb70e3a5abed45b7bad1527ca5f"
     }
   ]
 }

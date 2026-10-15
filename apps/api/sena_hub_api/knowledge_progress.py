@@ -17,6 +17,7 @@ def summarize(project_id, candidates, gaps=0, published=False):
         'conflicts': sum(bool(c.get('holds')) and (not c.get('review') or c['review']['decision'] == 'missing') for c in rows),
         'gaps': gaps + sum(c['kind'] == 'gap' for c in rows),
         'has_legacy_km': any(c['kind'] in ('section', 'faq') and c['source_ref'].startswith('legacy:') for c in rows),
+        'has_public_website': any(c['source_ref'].startswith('sena-public:') for c in rows),
         'last_reviewed_at': latest['review']['reviewed_at'] if latest else None,
         'last_reviewed_by': str(latest['review']['reviewed_by']) if latest else None,
     }

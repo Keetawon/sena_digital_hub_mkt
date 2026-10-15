@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 def review_content(value):
     value = value or {}
     localized = lambda field: {key: text for key, text in (value.get(field) or {}).items() if text}
-    result = {field: localized(field) for field in ("public_name", "address", "ad_disclaimer", "meta_title", "meta_description")}
+    result = {field: localized(field) for field in ("public_name", "address", "ad_disclaimer", "meta_title", "meta_description", "website_content")}
     result.update({field: value.get(field) for field in ("latitude", "longitude", "brand_id", "brand_version_id")})
     result["slug"] = value.get("slug") or ""
     models = [model for model in value.get("models", []) if model.get("match_status") != "REJECTED"]
@@ -138,7 +138,7 @@ def build_progress(records, sources, assets, now=None, knowledge=None):
                      "name": project.get("public_name", {}).get("th") or source.get("project_name_rem") or source_id,
                      "brand_name": (project.get("brand_summary") or {}).get("public_name", {}).get("th") or source.get("brand_name_rem"),
                      "new_from_rem": False, "filling": not readiness["ready"], "awaiting_publisher": awaiting,
-                     "published": bool(project.get("publication_available")), "needs_attention": bool(attention), "attention": attention,
+                     "published": bool(project.get("publication_available")), "needs_attention": bool(attention), "attention": attention, "website_sources": project.get("website_sources"),
                      "has_unpublished_changes": has_changes, "withdrawn": not project.get("published_version_id") and bool(record.get("version_count")),
                      "checklist": checklist(readiness), "knowledge": (knowledge or {}).get(source_id, {'reviewed': 0, 'staged': 0}),
                      "thumbnail_asset_id": next((a['id'] for a in project.get('assets', []) if a.get('asset_role') == 'thumbnail' and a.get('is_primary')), None),
@@ -152,7 +152,7 @@ def build_progress(records, sources, assets, now=None, knowledge=None):
             continue
         rows.append({"public_project_id": None, "rem_project_id": source["rem_project_id"], "name": source["project_name_rem"],
                      "brand_name": source.get("brand_name_rem"), "new_from_rem": True, "filling": False, "awaiting_publisher": False,
-                     "published": False, "needs_attention": False, "attention": [], "has_unpublished_changes": False, "withdrawn": False,
+                     "published": False, "needs_attention": False, "attention": [], "website_sources": None, "has_unpublished_changes": False, "withdrawn": False,
                      "checklist": checklist(source.get('readiness', {})), "knowledge": (knowledge or {}).get(source['rem_project_id'], {'reviewed': 0, 'staged': 0}),
                      "thumbnail_asset_id": None,
                      "gaps": {group: [] for group in ("core", "media", "models", "brand")}, "confirmed_models": 0, "total_models": source["model_count"],

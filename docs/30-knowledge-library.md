@@ -771,3 +771,8 @@ Source names below are fully qualified. Each `[]` denotes an array path in the p
 ## Follow-up: readiness, review and evaluation
 
 The local A–F implementation, frozen follow-up package, provisional tuning/held-out results, promotion triage and private-preview workflow are documented in [docs/31](31-readiness-and-review.md). Public publication still requires an explicit publisher action. The runtime FAQ threshold and margin remain 0.88 / 0.05. Draft MKT labels and safe-refusal evaluation scores do not constitute publication approval.
+
+The owner-authorized 15 October public website intake extends the local review library and editable project
+drafts beyond the original pilot. See [public SENA website intake](38-sena-public-website-import.md) for exact
+ID matching, source remarks, shared-phase holds, missing media, preservation checks and the run receipt.
+This intake performs no embedding, human review, media-rights approval, preview release or publication.

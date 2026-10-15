@@ -1,10 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { extractSenaProject } from '../scripts/sena-project-extract.mjs';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { allowedUrl, publicIpv4, cleanText, suggestedRole, normalizeUrl, robotsDisallows, sha256, verifyPackage } from '../scripts/crawl-knowledge.mjs';
 import { extractDocument, embeddedFileUrls, Fetcher } from '../scripts/crawl-knowledge.mjs';
+
+test('project extraction keeps direct-text FAQ answers and excludes navigation, forms and scripts', async () => {
+  const {chromium}=await import('@playwright/test');
+  const browser=await chromium.launch({channel:'msedge',headless:true});
+  try {
+    const context=await browser.newContext({javaScriptEnabled:false,serviceWorkers:'block'});
+    await context.route('**/*',r=>r.abort());
+    const page=await context.newPage();
+    await page.setContent(`<title>โครงการจำลอง</title><header>เมนูไม่ใช่เนื้อหา</header><main id="wrapperProjectDetail">
+      <h1>โครงการจำลอง</h1><div id="tab-project-detail-0">แนวคิดโครงการสำหรับทดสอบ</div>
+      <div class="accordion-item"><h3 class="accordion-header"><button>เดินทางอย่างไร</button></h3>
+        <div class="accordion-collapse"><div class="accordion-body"><strong>เดินทางโดยรถไฟฟ้า</strong> และรถประจำทาง</div></div></div>
+      <div class="location-content"><h4>Call Center 1775</h4><h4>ถนนทดสอบ แขวงทดสอบ</h4></div>
+      <form>ข้อมูลส่วนบุคคลที่ห้ามเก็บ</form><img data-src="/test.webp"><a href="/test.pdf">โบรชัวร์</a>
+      <script>document.body.innerHTML='EXECUTED'</script></main><footer><img src="/unrelated.webp">ส่วนท้าย</footer>`);
+    const result=await page.evaluate(extractSenaProject);
+    assert.equal(result.website.address,'ถนนทดสอบ แขวงทดสอบ');
+    assert.equal(result.website.concept,'แนวคิดโครงการสำหรับทดสอบ');
+    assert.deepEqual(result.website.faqs.map(({question,answer})=>({question,answer})),[{question:'เดินทางอย่างไร',answer:'เดินทางโดยรถไฟฟ้า และรถประจำทาง'}]);
+    const text=result.sections.map(s=>s.text).join('\n');
+    assert.match(text,/เดินทางโดยรถไฟฟ้า/);
+    assert.doesNotMatch(text,/เมนูไม่ใช่เนื้อหา|ข้อมูลส่วนบุคคล|EXECUTED|ส่วนท้าย/);
+    assert.ok(result.refs.some(r=>r.url==='/test.pdf'));
+    assert.ok(!result.refs.some(r=>r.url==='/unrelated.webp'));
+  } finally {await browser.close();}
+});
 
 test('SENA-only HTTPS URLs reject credentials, suffix tricks, ports and external storage', () => {
   for (const url of ['https://sena.co.th/a','https://brands.sena.co.th/a','https://nicheprideekkamai.sena.co.th/','https://livnex.sena.co.th/faq/','https://rentnex.senxgroup.com/']) assert.equal(allowedUrl(url),true,url);

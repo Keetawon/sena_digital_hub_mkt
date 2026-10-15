@@ -12,8 +12,8 @@ const fixture = () => ({
   models: [{ ...model('model-B'), public_name: { th: 'model-B' } }, model('model-A10'), model('model-A'), model('model-A2')], assets: [binding('project-plan', null, 'master_plan'), binding('model-a-plan', 'model-A', 'floor_plan'), binding('model-b-plan', 'model-B', 'floor_plan')],
 });
 
-async function openFixture(page: Page, gold = true) {
-  const project = fixture();
+async function openFixture(page: Page, gold = true, extra: Record<string, unknown> = {}) {
+  const project = { ...fixture(), ...extra };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
@@ -28,6 +28,31 @@ async function openFixture(page: Page, gold = true) {
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true })).toBeVisible();
   return project;
 }
+
+test('website source stays separate from approval and dirty website text survives a stale save', async ({ page }) => {
+  const project = await openFixture(page, true, { website_content: { th: 'เนื้อหาจากเว็บไซต์สำหรับทดสอบ', en: 'Preserved English' },
+    website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] });
+  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await expect(page.getByText('ดึงจากเว็บไซต์สาธารณะ SENA', { exact: true })).toBeVisible();
+  await expect(page.getByText('แหล่งข้อมูล · ยังไม่ใช่การอนุมัติโดยบุคคล')).toBeVisible();
+  const field = page.getByLabel('เนื้อหาจากเว็บไซต์ (ฉบับร่าง)', { exact: true });
+  await expect(field).toHaveValue('เนื้อหาจากเว็บไซต์สำหรับทดสอบ');
+  await field.fill('ข้อความที่เจ้าของกำลังแก้ไข');
+  let stale = true;
+  await page.route('**/api/hub/v1/admin/projects/form-test', async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    if (stale) return route.fulfill({ status: 409, json: { error: { code: 'conflict', message: 'ข้อมูลเปลี่ยนแปลงแล้ว กรุณาตรวจข้อมูลล่าสุด' } } });
+    return route.fallback();
+  });
+  await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
+  await expect(field).toHaveValue('ข้อความที่เจ้าของกำลังแก้ไข');
+  await expect(page.getByText('ข้อมูลเปลี่ยนแปลงแล้ว กรุณาตรวจข้อมูลล่าสุด', { exact: true })).toBeVisible();
+  stale = false;
+  await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
+  await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
+  expect((project as unknown as { website_content: unknown }).website_content).toEqual({ th: 'ข้อความที่เจ้าของกำลังแก้ไข', en: 'Preserved English' });
+  expect(project.public_name.th).toBe('ชื่อที่ทีมงานแก้แล้ว');
+});
 
 test('Thailand coordinates reject zero and outside bounds, accept pasted pairs and open Maps', async ({ page }) => {
   const project = await openFixture(page);

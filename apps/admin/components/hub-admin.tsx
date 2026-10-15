@@ -1,5 +1,6 @@
 "use client";
 import { useHubPermissions } from "./accounts";
+import { PublicWebsiteSource, type WebsiteSource } from "./public-website-source";
 import { canOpenPage } from "@/lib/hub-permissions";
 import { workspaceLanding } from "./hub-navigation-data";
 import { ActorName, accountApi } from "./accounts";
@@ -45,6 +46,7 @@ export type Project = {
   published_version_id: string | null; publication_available: boolean; readiness: Readiness;
   address?: Localized; latitude?: number | null; longitude?: number | null;
   ad_disclaimer?: Localized; meta_title?: Localized; meta_description?: Localized;
+  website_content?: Localized; website_sources?: WebsiteSource[];
   brand_version_id?: string | null; version_count?: number; has_unpublished_changes?: boolean;
   brand_id?: string | null; brand_summary?: BrandSummary | null;
   gold_source?: GoldSource | null;
@@ -53,12 +55,12 @@ export type Project = {
   models?: Model[]; assets?: AssetBinding[]; facilities?: Facilities; commercial_types?: CommercialType[];
 };
 type Version = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload: Project };
-type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; meta_title: string; meta_description: string };
+type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; meta_title: string; meta_description: string; website_content: string };
 type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
 type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
 const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
 const matchLabels = { SUGGESTED: "รอตรวจสอบ", CONFIRMED: "ยืนยันแล้ว", REJECTED: "ปฏิเสธการจับคู่" };
-const labels: Record<string, string> = { public_name: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)", public_name_en: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (English)", slug: "รหัส URL (slug)", address: "ที่อยู่โครงการ (ไทย)", address_en: "Project address (English)", latitude: "ละติจูด", longitude: "ลองจิจูด", ad_disclaimer: "ข้อความกำกับโฆษณา", meta_title: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", meta_description: "คำอธิบายย่อ" };
+const labels: Record<string, string> = { public_name: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)", public_name_en: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (English)", slug: "รหัส URL (slug)", address: "ที่อยู่โครงการ (ไทย)", address_en: "Project address (English)", latitude: "ละติจูด", longitude: "ลองจิจูด", ad_disclaimer: "ข้อความกำกับโฆษณา", meta_title: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", meta_description: "คำอธิบายย่อ", website_content: "เนื้อหาจากเว็บไซต์ (ฉบับร่าง)" };
 
 function Icon({ name, size = 20 }: { name: "grid" | "arrow" | "check" | "clock" | "document" | "image" | "shield" | "chevron" | "alert" | "building" | "save"; size?: number }) {
   const paths = {
@@ -97,7 +99,7 @@ function RawModelEvidence({ source }: { source: SourceEvidence }) {
 }
 
 function draftFrom(project: Project): Draft {
-  return { public_name: project.public_name?.th ?? "", public_name_en: project.public_name?.en ?? "", slug: project.slug ?? "", address: project.address?.th ?? "", address_en: project.address?.en ?? "", latitude: project.latitude?.toString() ?? "", longitude: project.longitude?.toString() ?? "", ad_disclaimer: project.ad_disclaimer?.th ?? "", meta_title: project.meta_title?.th ?? "", meta_description: project.meta_description?.th ?? "" };
+  return { public_name: project.public_name?.th ?? "", public_name_en: project.public_name?.en ?? "", slug: project.slug ?? "", address: project.address?.th ?? "", address_en: project.address?.en ?? "", latitude: project.latitude?.toString() ?? "", longitude: project.longitude?.toString() ?? "", ad_disclaimer: project.ad_disclaimer?.th ?? "", meta_title: project.meta_title?.th ?? "", meta_description: project.meta_description?.th ?? "", website_content: project.website_content?.th ?? "" };
 }
 
 function coordinateError(name: "latitude" | "longitude", value: string) {
@@ -283,7 +285,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     if (Object.keys(errors).length) { revealField(Object.keys(errors)[0]); return; }
     setSaving(true); setError(""); setNotice("");
     try {
-      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer }, meta_title: { ...project.meta_title, th: draft.meta_title }, meta_description: { ...project.meta_description, th: draft.meta_description } };
+      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer }, meta_title: { ...project.meta_title, th: draft.meta_title }, meta_description: { ...project.meta_description, th: draft.meta_description }, website_content: { ...project.website_content, th: draft.website_content } };
       const data = await request<Project>(base, "PATCH", payload);
       setProject(data); setDraft(draftFrom(data)); setNotice("บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม"); setConflict(false);
       if (nextTab) goToTab(nextTab);
@@ -349,7 +351,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
         setNotice("");
       },
       "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
-    return <div className="form-field"><label htmlFor={name}>{labels[name]}</label>{multiline ? <textarea {...common} rows={name === "ad_disclaimer" ? 4 : 3} maxLength={name === "meta_description" ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
+    return <div className="form-field"><label htmlFor={name}>{labels[name]}</label>{multiline ? <textarea {...common} rows={name === "website_content" ? 16 : name === "ad_disclaimer" ? 4 : 3} maxLength={name === "website_content" ? 200000 : name === "meta_description" ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
   }
 
   function sourceField(name: string, label: string) {
@@ -456,7 +458,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
       <div id="extra-panel" role="tabpanel" tabIndex={-1} aria-labelledby="extra-tab" hidden={tab !== "extra"}>
         <p className="read-only-note">ข้อมูลเสริมเป็นทางเลือก ไม่กีดกันการเผยแพร่</p>
         <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
-        <section className="panel"><div className="panel-body">{field("meta_title")}{field("meta_description", true)}</div></section>
+        <section className="panel"><div className="panel-body">{field("meta_title")}{field("meta_description", true)}<PublicWebsiteSource sources={project.website_sources} />{field("website_content", true, "ตรวจข้อความ ราคา และช่วงเวลาจากต้นทางก่อนเผยแพร่ การบันทึกเป็นฉบับร่างเท่านั้น")}</div></section>
       </div>
       <div id="versions-panel" role="tabpanel" tabIndex={-1} aria-labelledby="versions-tab" hidden={tab !== "versions"}>
         <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : `${readiness.missing.length} รายการ`}</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><p className="small-text muted">{canPublish ? "การเผยแพร่จะบันทึกข้อมูลเป็นเวอร์ชันพร้อมเหตุผล" : "ผู้เผยแพร่เป็นผู้ยืนยันก่อนส่งข้อมูลออกผ่าน API"}</p>{canPublish && <div><button className="button primary" disabled={!readiness.ready || anyDirty || saving || Boolean(versionsError) || Boolean(project.published_version_id && !live)} onClick={() => setAction({ type: "publish" })}>เผยแพร่ข้อมูล<Icon name="arrow" size={18} /></button>{project.published_version_id && <button className="button text-button" onClick={() => setAction({ type: "withdraw" })}>ถอนการเผยแพร่</button>}</div>}</div></div></section>
