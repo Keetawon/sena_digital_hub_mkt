@@ -5,7 +5,7 @@ import { getLocalRole, getRoleToken, localApiOrigin } from "./local-session";
 import { hostedConfig, isHostedMode, accountRole } from "./hosted-config";
 import { HubApiUnavailable, readHubAccount } from "./hub-account";
 
-export const getHostedCaller = cache(async () => {
+export const getHostedIdentity = cache(async () => {
   const config = hostedConfig();
   if (!config) return null;
   const jar = await cookies();
@@ -22,9 +22,15 @@ export const getHostedCaller = cache(async () => {
   const { data: { user }, error } = await client.auth.getUser(session.access_token);
   if (error && (!error.status || error.status >= 500)) throw new HubApiUnavailable();
   if (error || !user) return null;
-  const { status, account } = await readHubAccount(config.apiOrigin, session.access_token);
+  return { token: session.access_token };
+});
+
+export const getHostedCaller = cache(async () => {
+  const identity = await getHostedIdentity();
+  if (!identity) return null;
+  const { status, account } = await readHubAccount(hostedConfig()!.apiOrigin, identity.token);
   if (status === 401) return null;
-  return { role: account ? accountRole(account) : null, account, token: session.access_token };
+  return { role: account ? accountRole(account) : null, account, token: identity.token };
 });
 
 export const getHubCaller = cache(async () => {

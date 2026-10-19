@@ -86,6 +86,7 @@ function formatDate(value?: string | null) {
 }
 
 function sourceProvenance(source: SourceEvidence) {
+  if (source.source_record?.source_kind === "sena_public_website") return "ดึงจากเว็บไซต์สาธารณะ SENA · รอตรวจสอบเนื้อหา · ยังไม่ยืนยันสถานะ REM";
   return source.intake_manifest_sha256 != null ? "สำเนา REM ที่ตรวจสอบหลักฐานแล้ว · ต้องตรวจเนื้อหาและการจับคู่ก่อนเผยแพร่ · ยังไม่ใช่ DW สด" : "ข้อมูลจำลองสำหรับเครื่องพัฒนา";
 }
 

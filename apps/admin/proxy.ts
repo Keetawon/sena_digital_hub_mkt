@@ -21,6 +21,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     } catch { const page = unavailablePage(); return new NextResponse(page.body, { status: 503, headers: page.headers }); }
   }
+  // The Hub route handler refreshes the cookie and verifies the exact bearer.
+  // Do not repeat its Supabase user lookup in the page proxy for every API call.
+  if (path.startsWith("/api/hub/")) {
+    const response = NextResponse.next({ request });
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  }
   const config = hostedConfig()!;
   let response = NextResponse.next({ request });
   const client = createServerClient(config.supabaseUrl, config.publishableKey, { cookies: {

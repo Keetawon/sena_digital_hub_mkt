@@ -7,6 +7,32 @@ const evidence = { source_record: null, intake_manifest_sha256: 'a'.repeat(64), 
 const source = { ...evidence, rem_project_id: 'PROVENANCE-TEST', project_name_rem: 'โครงการทดสอบป้ายสำเนา', model_count: 1, public_project_id: null, rem_brand_id: '000003', rem_company_id: null, brand_name_rem: null, company_name_rem: null };
 const brand = { ...evidence, rem_brand_id: '000003', brand_name_rem: 'แบรนด์ทดสอบป้ายสำเนา', brand_name_en_rem: null, is_deleted: false, residential_project_count: 1, public_brand_id: null };
 
+test('public website identity does not claim a REM snapshot or synthetic content', async ({ page }) => {
+  await mockStaffReads(page, { 'sources/projects': [{ ...source, source_record: { source_kind: 'sena_public_website' } }] });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'เลือกโครงการจากต้นทาง', exact: true }).click();
+  const row = page.locator('#source-picker li').filter({ hasText: source.project_name_rem });
+  await expect(row).toContainText('ดึงจากเว็บไซต์สาธารณะ SENA');
+  await expect(row).toContainText('ยังไม่ยืนยันสถานะ REM');
+  await expect(row).not.toContainText(snapshotLabel);
+  await expect(row).not.toContainText(sampleLabel);
+});
+
+test('empty default view offers other source statuses without inventing active status', async ({ page }) => {
+  await mockStaffReads(page, {});
+  await page.route('**/api/hub/v1/admin/projects/progress?**', async route => {
+    const query = new URL(route.request().url()).searchParams;
+    const facets = { counts: { all: 0 }, status_total: 1, statuses: { unknown: { label: 'ไม่ทราบสถานะ', count: 1 } }, brands: [], groups: [] };
+    await route.fulfill({ json: { data: query.get('view') === 'counts'
+      ? facets : { rows: [], total: 0, pages: 1, page: 1, facets } } });
+  });
+  await page.goto('/');
+  await expect(page.getByText('อาจมีโครงการที่ปิด ถูกลบ หรือยังไม่ทราบสถานะต้นทาง')).toBeVisible();
+  await page.getByRole('button', { name: 'รวมโครงการสถานะอื่น', exact: true }).click();
+  await expect(page).toHaveURL(/pother=1/);
+  await expect(page.getByLabel('แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ')).toBeChecked();
+});
+
 async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
   responses['brands/completeness'] = { rows: [], counts: { total: 0, missing_data: 0, ready: 0, published: 0, published_changes: 0, not_created: 0 } };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);

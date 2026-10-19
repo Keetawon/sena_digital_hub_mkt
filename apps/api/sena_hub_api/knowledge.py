@@ -1,12 +1,12 @@
-"""Local-only pre-intake review and private chatbot preview; no consumer publishing endpoints."""
+"""Pre-intake review; hosted TEST allows private files, never chatbot execution."""
 from __future__ import annotations
-import hashlib,json,re
+import asyncio,hashlib,io,json,re
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated,Literal
 from uuid import UUID
 from fastapi import Depends,Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse,Response
 from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
 from . import assets
@@ -65,9 +65,25 @@ def bulk_eligible(row):
         and bool(review.get('applies_to_project_ids')) and all(flags.get(k)=='absent' for k in ('people','third_party_marks','stock_imagery'))
         and not evidence.get('file_validation_error') and evidence.get('validated_metadata') is not None)
 
+def private_thumbnail(content,evidence):
+    metadata=evidence.get('validated_metadata') or {}
+    if metadata.get('mime_type') not in {'image/png','image/jpeg','image/webp'}:
+        raise failure(404,'knowledge_file_not_found','ไฟล์นี้ยังไม่มีภาพย่อที่ตรวจสอบแล้ว')
+    data,checked=assets.prepare_upload(content,metadata['mime_type'],metadata.get('original_filename','candidate'))
+    if checked['checksum']!=metadata.get('checksum'):
+        raise failure(503,'knowledge_integrity','ไฟล์ไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
+    with assets.render_thumbnail(data,checked['mime_type']) as picture:
+        picture.thumbnail((320,320))
+        output=io.BytesIO();picture.save(output,'WEBP',quality=80)
+        return output.getvalue()
+
 def register_knowledge_routes(app,authentication,database,settings):
     async def staff(request:Request,actor:Actor=Depends(authentication)):
-        if settings.environment!='local':raise failure(403,'knowledge_local_only','คลังความรู้ระยะทดลองใช้ได้เฉพาะในเครื่อง')
+        if settings.environment!='local':
+            if settings.environment!='hosted-test' or not settings.r2_credentials_file:
+                raise failure(403,'knowledge_local_only','คลังความรู้ยังไม่พร้อมใช้งานในสภาพแวดล้อมนี้')
+            if request.url.path.endswith(('/preview','/preview-release')):
+                raise failure(503,'knowledge_preview_unavailable','ยังไม่เปิดทดลองคำตอบในพื้นที่ทดสอบนี้')
         require_content(request)
         return actor
 
@@ -128,10 +144,22 @@ def register_knowledge_routes(app,authentication,database,settings):
         return {'data':result}
 
     @app.get('/v1/admin/knowledge/candidates/{candidate_id}/file')
-    async def candidate_file(candidate_id:UUID,request:Request,actor:Actor=Depends(staff)):
+    async def candidate_file(candidate_id:UUID,request:Request,thumbnail:bool=False,actor:Actor=Depends(staff)):
         async with database(request,actor) as db:
             evidence=await db.fetchval("SELECT evidence FROM hub.knowledge_candidate_rows() WHERE id=$1 AND kind='asset'",candidate_id)
         if not evidence:raise failure(404,'knowledge_file_not_found','ไม่พบไฟล์ที่ร้องขอ')
+        if settings.environment=='hosted-test':
+            data=await asyncio.to_thread(request.app.state.hosted_assets.read_knowledge,evidence)
+            if thumbnail:
+                preview=await asyncio.to_thread(private_thumbnail,data,evidence)
+                return Response(preview,media_type='image/webp',headers={'Cache-Control':'no-store',
+                    'Content-Security-Policy':"default-src 'none'",'X-Content-Type-Options':'nosniff'})
+            # Unreviewed originals may contain SVG/HTML/PDF active content. Never
+            # render hosted candidate bytes inline, including misleading MIME data.
+            return Response(data,media_type='application/octet-stream',headers={
+                'Content-Disposition':f'attachment; filename="{evidence["sha256"]}"',
+                'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; sandbox",
+                'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'})
         path=file_path(evidence)
         if not path.is_file():raise failure(404,'knowledge_file_not_found','ไม่พบไฟล์ต้นฉบับในเครื่อง')
         # SVG/HTML/PDF originals are attachments, never executable inline content.
@@ -150,11 +178,21 @@ def register_knowledge_routes(app,authentication,database,settings):
                 record=await db.fetchval('SELECT hub.lock_knowledge_asset($1)',selected.candidate_id)
                 if not record or not bulk_eligible(dict(record)) or record['review']['revision']!=selected.expected_revision:
                     raise failure(409,'knowledge_rights_ineligible','รายการเปลี่ยนแปลงหรือยังไม่ผ่านการยืนยันของ MKT กรุณาโหลดใหม่')
-                evidence=record['evidence'];meta=evidence['validated_metadata'];data=file_path(evidence).read_bytes()
+                evidence=record['evidence'];meta=dict(evidence['validated_metadata'])
+                data=(await asyncio.to_thread(request.app.state.hosted_assets.read_knowledge,evidence)
+                      if settings.environment=='hosted-test' else file_path(evidence).read_bytes())
                 if hashlib.sha256(data).hexdigest()!=evidence['sha256']:raise failure(409,'knowledge_integrity','ไฟล์ไม่ตรงกับหลักฐานที่นำเข้า')
+                if settings.environment=='hosted-test':
+                    data,checked=await asyncio.to_thread(assets.prepare_upload,data,meta['mime_type'],meta['original_filename'])
+                    if checked['checksum']!=meta['checksum']:raise failure(409,'knowledge_integrity','ผลตรวจไฟล์เปลี่ยนแล้ว กรุณาตรวจหลักฐานใหม่')
+                    meta.update(storage_provider=request.app.state.hosted_assets.provider,storage_bucket=request.app.state.hosted_assets.bucket)
                 await db.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',evidence['sha256'])
                 result=await db.fetchval('SELECT hub.register_uploaded_asset($1::jsonb)',meta)
-                asset=result['asset'];assets.install_file(data,meta)
+                asset=result['asset']
+                if settings.environment=='hosted-test':
+                    await asyncio.to_thread(request.app.state.hosted_assets.install,data,{**meta,'source_system':'hub-hosted-test'})
+                    await asyncio.to_thread(assets.install_thumbnail,data,meta)
+                else:assets.install_file(data,meta)
                 await db.fetchval("SELECT hub.review_asset($1,$2,'approved',$3,NULL,NULL,$3)",UUID(asset['id']),datetime.fromisoformat(asset['updated_at']),body.reason)
                 await db.execute('SELECT hub.knowledge_link_approved_asset($1,$2,$3)',selected.candidate_id,UUID(asset['id']),selected.expected_revision)
                 approved.append(str(selected.candidate_id))

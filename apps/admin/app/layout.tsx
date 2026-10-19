@@ -1,4 +1,5 @@
 import { getLocalRole } from "@/lib/local-session";
+import { getHubAccount } from "@/lib/hosted-session";
 import { AccountDirectory } from "@/components/accounts";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
@@ -26,5 +27,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HostedSessionProvider config={hostedConfig()}><AccountDirectory enabled={isHostedMode() || !!(await getLocalRole())}><HubMotion>{children}</HubMotion></AccountDirectory></HostedSessionProvider></body></html>;
+  // Reuse this render's verified account read (also used by getHubRole). Only
+  // the bounded navigation projection reaches the browser, never the bearer.
+  const account = isHostedMode() ? await getHubAccount().catch(() => null) : null;
+  const initialAccount = account ? { id: account.id, status: account.status, role: account.role,
+    capabilities: account.capabilities, pending_count: account.pending_count } : null;
+  return <html lang="th" className={`${googleSans.variable} ${notoSansThai.variable}`}><body><HostedSessionProvider config={hostedConfig()}><AccountDirectory enabled={isHostedMode() || !!(await getLocalRole())} initialAccount={initialAccount}><HubMotion>{children}</HubMotion></AccountDirectory></HostedSessionProvider></body></html>;
 }

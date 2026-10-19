@@ -28,7 +28,8 @@ from .actuals import register_actuals_routes
 from .promotions import register_promotion_routes
 from .archive import register_archive_routes
 from .assistant import register_assistant_routes
-from .hosted_assets import BUCKET, HostedAssets
+from .hosted_assets import HostedAssets
+from .r2_assets import R2Assets
 from .brand_completeness import register_brand_completeness_routes
 from .knowledge import register_knowledge_routes
 from .content_permissions import require_content, route_class
@@ -228,8 +229,8 @@ async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
             await connection.execute("SET LOCAL ROLE hub_app")
-            await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(actor.id))
-            await connection.execute("SELECT set_config('app.agency_code', $1, true)", actor.agency_code or "")
+            await connection.execute("SELECT set_config('app.actor_id', $1, true), "
+                                     "set_config('app.agency_code', $2, true)", str(actor.id), actor.agency_code or "")
             yield connection
 
 
@@ -250,7 +251,7 @@ async def brand_detail(connection, public_id: str):
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
     authentication = Authentication(settings)
-    hosted_assets = HostedAssets(settings) if settings.environment == "hosted-test" else None
+    hosted_assets = (R2Assets(settings) if settings.r2_credentials_file else HostedAssets(settings)) if settings.environment == "hosted-test" else None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -263,6 +264,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise RuntimeError("เชื่อมต่อฐานข้อมูล Hub ไม่สำเร็จ กรุณาตรวจการตั้งค่าฝั่งเซิร์ฟเวอร์") from None
         try:
             if hosted_assets:
+                if isinstance(hosted_assets, R2Assets):
+                    await asyncio.to_thread(hosted_assets.require_private_bucket)
                 async with app.state.pool.acquire() as connection:
                     if await connection.fetchval("SELECT hub.hosted_test_profile()") is not True:
                         raise RuntimeError("ฐานข้อมูลไม่ได้ใช้โปรไฟล์ H1 ที่ได้รับอนุญาต")
@@ -276,6 +279,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="SENA Hub API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.authentication = authentication
+    app.state.hosted_assets = hosted_assets
     if hosted_assets:
         app.add_middleware(CORSMiddleware, allow_origins=[settings.admin_origin],
                            allow_credentials=False, allow_methods=["GET", "POST", "PATCH"],
@@ -391,7 +395,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         content, mime, filename = await asset_files.read_upload(request)
         content, metadata = await asyncio.to_thread(asset_files.prepare_upload, content, mime, filename)
         if hosted_assets:
-            metadata.update(storage_provider="supabase", storage_bucket=BUCKET)
+            metadata.update(storage_provider=hosted_assets.provider, storage_bucket=hosted_assets.bucket)
         created = False
         try:
             async with database(request, actor) as connection:
@@ -459,6 +463,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             metadata = await connection.fetchval("SELECT hub.asset_file($1)", asset_id)
         if metadata is None:
             raise failure(404, 'file_not_found', 'ไม่พบภาพย่อที่มีสิทธิ์เข้าถึง')
+        if hosted_assets and not asset_files.thumbnail_path(metadata).is_file():
+            content = await asyncio.to_thread(hosted_assets.read, metadata)
+            await asyncio.to_thread(asset_files.install_thumbnail, content, metadata)
         path = await asyncio.to_thread(asset_files.readable_thumbnail, metadata)
         return FileResponse(path, media_type='image/webp', headers={'Cache-Control': 'no-store',
                             'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'"})
@@ -501,7 +508,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                rem_status: str = Query('all', max_length=50), other: bool = False,
                                brand: str | None = Query(None, max_length=200), group: str | None = Query(None, max_length=200),
                                group_state: Literal['marketing_reference','conflict','missing'] | None = None,
-                               view: Literal['rows','counts','groups'] = 'rows',
+                               view: Literal['rows','counts','groups','dashboard'] = 'rows',
                                detail: str | None = Query(None, max_length=200)):
         from .project_progress import read_progress, select_progress
         async with database(request, actor) as connection:

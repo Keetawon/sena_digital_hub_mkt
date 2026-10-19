@@ -22,7 +22,8 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   finance?: boolean;
   publisher?: boolean;
 }) {
-  const hosted = Boolean(useHostedSession());
+  const hostedConfig = useHostedSession();
+  const hosted = Boolean(hostedConfig);
   const permissions = useHubPermissions();
   const staff = permissions.account?.status === "ACTIVE" && permissions.capabilities.published_consumer;
   const allowed = section === "accounts" ? permissions.admin : permissions.can(section);
@@ -83,7 +84,7 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
     {staff && !hosted && <HubAssistant key={capabilityKey(permissions.account)} navigationTarget={assistantTarget} onNavigationOpen={openAssistantFromNavigation} />}
     <div className="main-shell">
       <header className="topbar"><div className="hub-topbar-navigation"><button ref={menuButton} className="button secondary hub-menu-toggle" type="button" aria-label="เปิดเมนู" aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId} onClick={() => setMenuOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg><span>เมนู</span></button><div className="breadcrumb">{page?.group && <><span>{hubGroups[page.group]}</span><span aria-hidden="true">/</span></>}<span>{page?.label}</span></div></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
-      {hosted && <div className="hosted-h1-note" role="note"><strong>พื้นที่ TEST H1 · ข้อมูลสมมติ</strong><span> · ปิดการออกชื่อแคมเปญ</span> <SignOut /></div>}
+      {hostedConfig && <div className="hosted-h1-note" role="note"><strong>{hostedConfig.label} · {hostedConfig.simulation ? "ข้อมูลสมมติ" : "ตรวจแหล่งข้อมูลและสถานะก่อนใช้งาน"}</strong><span> · ปิดการออกชื่อแคมเปญ</span> <SignOut /></div>}
       {toolbar}
       <main id="main-content" className={registry ? "registry-shell" : undefined} tabIndex={-1}>{!permissions.ready ? <p role="status">กำลังตรวจสิทธิ์การใช้งาน…</p> : permissions.error && !permissions.account ? <p role="alert">{permissions.error}</p> : permissions.signedOut || permissions.account && !allowed ? <section className="registry-panel"><h1>ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p>เลือกหน้าที่ได้รับสิทธิ์จากเมนู หรือขอให้ผู้ดูแลปรับสิทธิ์ให้บัญชีนี้</p>{permissions.account?.status !== "ACTIVE" && <a href="/account/request">ตรวจสถานะบัญชี</a>}</section> : hosted && deferredH1Sections.has(section) ? <section className="registry-panel hosted-unavailable"><h1>{page?.label}</h1><p role="note">{h1Unavailable}</p><p>พื้นที่นี้ยังไม่เชื่อมข้อมูลหรือเริ่มงานเบื้องหลังใน TEST H1</p><a className="button secondary" href="/ads/registry">กลับไปทะเบียนแคมเปญ</a></section> : <Fragment key={capabilityKey(permissions.account)}>{children}</Fragment>}</main>
       <footer className="page-footer"><span>SENA Digital Hub</span><span>ข้อมูลโครงการ · ทะเบียนแคมเปญ</span></footer>

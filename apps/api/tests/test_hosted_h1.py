@@ -53,7 +53,9 @@ def hosted_configuration(**overrides):
     return h1_settings(hosted_test_simulation=False, **{
         "database_url": "postgresql://hub_runtime:never-used@db.eqlrtevwpyboplljgowo.supabase.co:5432/postgres?sslmode=verify-full",
         "supabase_url": "https://eqlrtevwpyboplljgowo.supabase.co",
-        "admin_origin": "https://hub-test.example.invalid", **overrides,
+        "admin_origin": "https://hub-test.example.invalid",
+        "supabase_storage_key": "", "r2_credentials_file": "/private/synthetic-r2.json", "r2_private_bucket_confirmed": True,
+        **overrides,
     })
 
 
@@ -61,7 +63,7 @@ def test_hosted_configuration_is_validated_without_opening_connection():
     settings = hosted_configuration()
     assert settings.environment == "hosted-test"
     assert "never-used" not in repr(settings)
-    assert settings.supabase_storage_key not in repr(settings)
+    assert settings.r2_credentials_file not in repr(settings)
 
 
 @pytest.mark.parametrize("overrides", [
@@ -83,8 +85,8 @@ def signing_key():
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-def signed_client(signing_key, *, role="admin", agency=None, **changes):
-    app = main.create_app(h1_settings())
+def signed_client(signing_key, *, role="admin", agency=None, settings=None, **changes):
+    app = main.create_app(settings or h1_settings())
     public = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(signing_key.public_key()))
     public.update(kid="h1-only", alg="RS256", use="sig")
     app.state.authentication.jwks.fetch_data = lambda: {"keys": [public]}
@@ -347,7 +349,8 @@ def test_disposable_managed_simulation_end_to_end():
             }, headers={"apikey": "h1-simulation-public-key"})
             assert response.status_code == 200
             sessions[label] = {"Authorization": "Bearer " + response.json()["access_token"]}
-    config = h1_settings(database_url=database_url, supabase_storage_key="h1-simulation-storage-key")
+    config = h1_settings(database_url=database_url, supabase_storage_key="", r2_private_bucket_confirmed=True,
+                         r2_credentials_file=str(metadata_path.parent / 'r2-simulation.json'))
     with TestClient(main.create_app(config), client=("127.0.0.1", 50000)) as client:
         for label, headers in sessions.items():
             assert client.get("/v1/capabilities", headers=headers).status_code == 200

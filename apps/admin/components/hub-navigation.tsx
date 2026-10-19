@@ -28,7 +28,7 @@ export function HubNavigation({ section }: { section: HubSection }) {
   const hosted = Boolean(useHostedSession());
   const items: Item[] = hubPages.flatMap(item => {
     const tab = accounts.capabilities.catalog?.find(tab => tab.tab === item.id);
-    if (!tab || !accounts.can(item.id) || item.id === "knowledge" && hosted) return [];
+    if (!tab || !accounts.can(item.id)) return [];
     return [{ ...item, label: tab.label_th, group: tab.nav_group === "content" || tab.nav_group === "ads" ? tab.nav_group : null }];
   });
   const content = items.filter(item => item.group === "content"), ads = items.filter(item => item.group === "ads");

@@ -33,6 +33,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
   for (const [role, label, residential] of roles) {
     test(`${role}: verified login, role isolation, no demo selector, logout`, async ({ page }) => {
       await login(page, role);
+      await expect(page.locator('.hosted-h1-note')).toContainText('LOCAL H1 · ข้อมูลสมมติ');
       await expect(page.locator('.topbar-right')).toContainText(label);
       await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).toHaveCount(0);
@@ -129,11 +130,15 @@ test.describe('H1 disposable managed-permission simulation', () => {
     expect((await page.request.get('/api/hub/v1/admin/projects', { headers: { 'x-hub-role': 'admin' } })).status()).toBe(403);
     session.expires_at = 1;
     await page.context().addCookies([{ ...cookie!, value: `base64-${Buffer.from(JSON.stringify(session)).toString('base64url')}` }]);
-    await page.reload();
-    await expect(page.locator('.topbar-right')).toContainText('เอเจนซี KIN');
+    // The API route must refresh cookies itself, without a preceding page proxy.
+    const account = await page.request.get('/api/hub/v1/me');
+    expect(account.status()).toBe(200);
+    expect((await account.json()).data.role).toBe('agency');
     const refreshed = (await page.context().cookies()).find(item => item.name === cookie!.name);
     const value = JSON.parse(Buffer.from(refreshed!.value.replace(/^base64-/, ''), 'base64url').toString());
     expect(value.expires_at > Date.now() / 1000).toBe(true);
+    await page.reload();
+    await expect(page.locator('.topbar-right')).toContainText('เอเจนซี KIN');
   });
 
   test('a forged bearer in the browser cookie never authenticates', async ({ page }) => {
@@ -147,6 +152,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
     pieces[1] = Buffer.from(JSON.stringify(claims)).toString('base64url');
     session.access_token = pieces.join('.');
     await page.context().addCookies([{ ...cookie!, value: `base64-${Buffer.from(JSON.stringify(session)).toString('base64url')}` }]);
+    expect((await page.request.get('/api/hub/v1/me')).status()).toBe(401);
     expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(401);
     await page.reload();
     await expect(page.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeVisible();
@@ -156,6 +162,23 @@ test.describe('H1 disposable managed-permission simulation', () => {
     await login(page, 'editor', '/\t/attacker.example');
     expect(new URL(page.url()).origin).toBe(origin);
     await expect(page.getByRole('heading', { name: 'โครงการที่อยู่อาศัย', exact: true })).toBeVisible();
+  });
+
+  test('R2 Knowledge originals are private, thumbnails are checked, and preview processing stays off', async ({page}) => {
+    await login(page,'viewer','/knowledge?project=H1-PROJECT-001&kind=asset');
+    await expect(page.getByText('พื้นที่ทดสอบนี้เปิดให้ตรวจข้อมูลและไฟล์ ยังไม่เปิดทดลองคำตอบ',{exact:true})).toBeVisible();
+    const candidate='72000000-0000-0000-0000-000000000011';
+    const file=`/api/hub/v1/admin/knowledge/candidates/${candidate}/file`;
+    const image=page.locator(`img[src="${file}?thumbnail=1"]`);
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toHaveJSProperty('naturalWidth',320);
+    const original=await page.request.get(file);
+    expect(original.status()).toBe(200);
+    expect(original.headers()['content-disposition']).toMatch(/^attachment;/);
+    expect(original.headers()['cache-control']).toContain('no-store');
+    expect((await page.request.get(`http://127.0.0.1:8001/v1/admin/knowledge/candidates/${candidate}/file`)).status()).toBe(401);
+    expect((await page.request.post('/api/hub/v1/admin/knowledge/preview',{data:{question:'synthetic'}})).status()).toBe(403);
+    await page.screenshot({path:'artifacts/hosted-r2-knowledge-desktop.png',fullPage:true});
   });
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {

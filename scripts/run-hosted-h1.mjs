@@ -1,12 +1,13 @@
 // Runs the H1 profile entirely on loopback. Never loads .env.supabase-test or creates Auth users.
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawn, execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
 import { createMockSupabase } from './hosted-test-mock.mjs';
-import { SIMULATION_PUBLIC_KEY, SIMULATION_STORAGE_KEY } from './hosted-test-fixtures.mjs';
+import { SIMULATION_PUBLIC_KEY } from './hosted-test-fixtures.mjs';
+import { R2_SIMULATION } from './hosted-test-r2.mjs';
 import { simulateHostedTest } from './simulate-hosted-test.mjs';
 import pg from 'pg';
 
@@ -47,10 +48,12 @@ try {
   const dsn=new URL(config.runtimeDatabaseUrl);
   if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||dsn.port!=='55434'||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
   const env={...process.env};
+  const r2File=path.join(root,'.local/hosted-test-simulation/r2-simulation.json');
+  await writeFile(r2File,JSON.stringify(R2_SIMULATION),{mode:0o600});
   for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_')||name==='OPENAI_API_KEY')delete env[name];
   Object.assign(env,{HUB_AUTH_GOOGLE:'1',HUB_AUTH_PASSWORD:'1',HUB_ENV_LABEL:'LOCAL H1',HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
     HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
-    HUB_SUPABASE_STORAGE_KEY:SIMULATION_STORAGE_KEY,HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
+    HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:r2File,HUB_R2_PRIVATE_BUCKET_CONFIRMED:'1',HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY','UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {
@@ -69,7 +72,7 @@ try {
     await ready('http://127.0.0.1:3001/login',adminProcess);
   }
   if(args.includes('--test')) {
-    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
+    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','tests/ui/auth-design-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
     const [code]=await once(tests,'exit');
     if(code!==0) {await stop();process.exit(code??1);}
     // Restart only this runner's owned Next process to exercise configuration-off

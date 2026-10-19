@@ -120,7 +120,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ข้อความส่วนตัวของบัญชีแรกที่ยังไม่บันทึก');
     const switcher=await context.newPage();await login(switcher,second.email,second.password);
     await requester.bringToFront();await requester.evaluate(()=>window.dispatchEvent(new Event('focus')));
-    await expect(requester.getByText(`อีเมล: ${second.email}`,{exact:true})).toBeVisible();
+    await expect(requester.locator('.auth-request-session')).toContainText(second.email);
     await expect(requester.getByLabel('ตำแหน่ง',{exact:true})).toHaveValue(profile.position);
     expect(await requester.locator('input,textarea').evaluateAll(nodes=>nodes.some(node=>(node as HTMLInputElement).value==='ข้อความส่วนตัวของบัญชีแรกที่ยังไม่บันทึก'))).toBe(false);
     await context.close();

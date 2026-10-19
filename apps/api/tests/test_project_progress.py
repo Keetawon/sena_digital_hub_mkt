@@ -140,12 +140,14 @@ def test_latest_intake_conflict_prevents_certifying_accepted_group():
 
 
 @pytest.mark.parametrize("role", ["editor", "publisher", "viewer", "admin"])
-def test_progress_endpoint_uses_caller_and_read_only_queries(monkeypatch, role):
+@pytest.mark.parametrize("view", ["counts", "dashboard"])
+def test_progress_endpoint_uses_caller_and_read_only_queries(monkeypatch, role, view):
     record, source = fixture()
-    actors = []
+    actors, queries = [], []
     class Connection:
         async def fetch(self, sql, detail):
             assert sql == "SELECT summary FROM hub.progress_rows($1)" and detail is None
+            queries.append(sql)
             return [{'summary': build_progress([record], [source], [], NOW)['rows'][0]}]
     @asynccontextmanager
     async def database(request, actor):
@@ -153,9 +155,11 @@ def test_progress_endpoint_uses_caller_and_read_only_queries(monkeypatch, role):
         yield Connection()
     monkeypatch.setattr(main, "database", database)
     client = TestClient(main.create_app(settings()), client=("127.0.0.1", 50000))
-    response = client.get("/v1/admin/projects/progress?view=counts", headers={"Authorization": f"Bearer {TOKENS[role]}"})
+    response = client.get(f"/v1/admin/projects/progress?view={view}", headers={"Authorization": f"Bearer {TOKENS[role]}"})
     assert response.status_code == 200 and actors == [role]
-    assert response.json()["data"]["counts"]["published"] == 1
+    assert len(queries) == 1
+    data = response.json()["data"]
+    assert (data['facets'] if view == 'dashboard' else data)["counts"]["published"] == 1
     assert "rights_notes" not in response.text and "public_url" not in response.text
 
 
@@ -224,6 +228,9 @@ def test_server_pages_keep_facets_and_source_model_counts_without_model_lists():
     assert page['total'] == 11 and len(page['rows']) == 5 and page['pages'] == 3
     assert all('recommended' not in r['checklist'] and 'models' not in r for r in page['rows'])
     counts = select_progress(data, page=2, size=5, view='counts')
+    combined = select_progress(data, page=2, size=5, view='dashboard')
+    assert combined.pop('facets') == counts
+    assert combined == page
     assert counts['counts']['new_from_rem'] == 11 and counts['statuses']['3']['count'] == 1
     assert select_progress(data, other=True)['total'] == 12
     assert select_progress(data, other=True, status='new_from_rem')['total'] == 11

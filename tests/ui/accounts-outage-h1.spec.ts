@@ -4,9 +4,11 @@ import { once } from 'node:events';
 
 // The H1 runner has stopped only its own API. Auth and Next remain real loopback processes.
 let mode: 'ok' | '500' | 'network' | 'timeout' | '401' | '403' | 'pending' = 'ok';
+let meReads=0;
 const questions={tab:'questions',label_th:'คำถามที่รอคำตอบ',nav_group:null,levels:['view'],special_actions:[],special_labels:{},separate_edit_approve:false,agency_visible:false,sensitivity:'internal',rollout_state:'MIGRATED',guards_ready:true};
 const catalog={tabs:[questions],templates:[{code:'admin',version:1,label_th:'ผู้ดูแลระบบ',tabs:{questions:['view']}}],catalog_digest:'0'.repeat(64)};
 const server=createServer((req,res)=>{
+  if(req.url==='/v1/me')meReads++;
   if(mode==='network') return req.socket.destroy();
   if(mode==='timeout') return;
   const status=['500','401','403'].includes(mode)?Number(mode):200;
@@ -35,6 +37,35 @@ test.describe('Upstream availability is distinct from authentication',()=>{
   test.beforeAll(async()=>{server.listen(8001,'127.0.0.1');await once(server,'listening');});
   test.afterAll(async()=>{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));});
   test.beforeEach(async({page})=>{await page.route('**/*',route=>['http:','https:'].includes(new URL(route.request().url()).protocol)&&new URL(route.request().url()).hostname!=='127.0.0.1'?route.abort():route.continue());});
+  test('each account response reads authority once and the next request sees a status change',async({page})=>{
+    await login(page);await page.waitForLoadState('networkidle');
+    await page.goto('about:blank'); // Stop page polling; keep its synthetic session cookie.
+    let before=meReads;
+    const active=await page.request.get('/api/hub/v1/me');
+    expect(active.status()).toBe(200);expect((await active.json()).data.status).toBe('ACTIVE');
+    expect(active.headers()['cache-control']).toContain('no-store');expect(meReads-before).toBe(1);
+    before=meReads;
+    expect((await page.request.get('/api/hub/v1/admin/accounts')).status()).toBe(200);
+    expect(meReads-before).toBe(0); // The actual upstream request owns its account check.
+    mode='pending';before=meReads;
+    const pending=await page.request.get('/api/hub/v1/me');
+    expect(pending.status()).toBe(200);expect((await pending.json()).data.status).toBe('PENDING');
+    expect(meReads-before).toBe(1);mode='ok';
+  });
+  test('verified page projection starts the workspace without a blocking browser account lookup',async({page})=>{
+    await login(page);await page.goto('about:blank');
+    let browserReads=0;
+    await page.route('**/api/hub/v1/me',route=>{browserReads++;return route.abort();});
+    await page.goto('/admin/accounts');
+    await expect(page.getByRole('heading',{name:'ผู้ใช้และสิทธิ์',exact:true})).toBeVisible();
+    await expect(page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม')).toBeVisible();
+    expect(browserReads).toBe(0);
+    await page.unroute('**/api/hub/v1/me');
+    mode='pending';
+    await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await expect(page.getByRole('heading',{name:'ไม่มีสิทธิ์เข้าถึงหน้านี้',exact:true})).toBeVisible();
+    mode='ok';
+  });
   for(const failure of ['500','network','timeout'] as const) test(`${failure}: proxy API returns 503, edits survive, page shows retry without redirect`,async({page})=>{
     test.setTimeout(45000);await login(page);
     await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill('ข้อความยังไม่บันทึก');

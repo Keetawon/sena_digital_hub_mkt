@@ -193,11 +193,13 @@ def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='al
             and (status == 'all' or r[status]) and (status != 'new_from_rem' or r['source_review']['default_scope'])
             and (rem_status == 'all' or (r['source_review']['status_raw'] if r['source_review']['status_raw'] is not None else 'null') == rem_status)
             and text in ' '.join(str(r.get(k) or '') for k in ('name', 'rem_project_id', 'brand_name', 'marketing_project_group_id', 'marketing_group_name_th')).lower()]
-    if view == 'counts':
-        return {'counts': counts, 'statuses': statuses, 'status_total': len(members),
+    if view in ('counts', 'dashboard'):
+        facets = {'counts': counts, 'statuses': statuses, 'status_total': len(members),
                 'brands': list({r['rem_brand_id']: r['brand_name'] or r['rem_brand_id'] for r in data['rows'] if r.get('rem_brand_id')}.items()),
                 'groups': sorted({r['marketing_project_group_id']: r.get('marketing_group_name_th') for r in data['rows'] if r.get('marketing_project_group_id')}.items()),
                 'group_mismatch_count': sum(bool(r.get('group_mismatch')) for r in members)}
+        if view == 'counts':
+            return facets
     if view == 'groups':
         groups = {}
         for r in rows:
@@ -211,7 +213,8 @@ def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='al
         rows = sorted(groups.values(), key=lambda r: (r['state'], r['id'] or ''))
     total = len(rows); pages = max(1, (total + size - 1) // size); page = min(page, pages)
     selected = rows[(page - 1) * size:page * size]
-    if view == 'rows':
+    if view in ('rows', 'dashboard'):
         selected = [{**r, 'checklist': {k: v for k, v in r['checklist'].items() if k not in ('required', 'recommended')},
                      'required_missing': r.get('required_missing', sum(not item['passed'] for item in r['checklist'].get('required', []))), 'gaps': {}} for r in selected]
-    return {'rows': selected, 'total': total, 'page': page, 'size': size, 'pages': pages}
+    return {'rows': selected, 'total': total, 'page': page, 'size': size, 'pages': pages,
+            **({'facets': facets} if view == 'dashboard' else {})}

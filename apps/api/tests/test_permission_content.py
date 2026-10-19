@@ -229,7 +229,7 @@ def test_content_special_removed_does_not_remove_normal_brand_edit(permission_ac
 
 
 def test_content_hidden_brand_and_knowledge_removed_from_details_cache_and_history(permission_accounts):
-    _, ids = permission_accounts
+    client, ids = permission_accounts
     async def check():
         await set_bit(ids['viewer'], 'brands', can_view=False)
         await set_bit(ids['viewer'], 'knowledge', can_view=False)
@@ -265,6 +265,13 @@ def test_content_hidden_brand_and_knowledge_removed_from_details_cache_and_histo
         finally:
             await probe.close()
     asyncio.run(check())
+
+    response = client.get('/v1/admin/projects/progress?view=dashboard', headers=h('viewer'))
+    assert response.status_code == 200
+    assert response.json()['data']['facets']['status_total'] > 0
+    assert all('knowledge' not in row and 'brand_logo' not in row for row in response.json()['data']['rows'])
+    asyncio.run(set_bit(ids['viewer'], 'projects', can_view=False))
+    assert client.get('/v1/admin/projects/progress?view=dashboard', headers=h('viewer')).status_code == 403
 
 
 def test_content_base_role_forced_rls_and_closed_helper_acl(permission_accounts):

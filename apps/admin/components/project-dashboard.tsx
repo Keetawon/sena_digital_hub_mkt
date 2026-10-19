@@ -71,9 +71,8 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
   const load = useCallback(async () => {
     const attempt = ++sequence.current; setLoading(true); setError("");
     try {
-      const [result, counts] = await Promise.all([request<Progress>(`v1/admin/projects/progress?${parameters}`),
-        request<Facets>(`v1/admin/projects/progress?${parameters}&view=counts`)]);
-      if (attempt === sequence.current) { setData(result); setFacets(counts); setDetails({}); setExpanded(new Set()); }
+      const result = await request<Progress & { facets: Facets }>(`v1/admin/projects/progress?${parameters}&view=dashboard`);
+      if (attempt === sequence.current) { setData(result); setFacets(result.facets); setDetails({}); setExpanded(new Set()); }
     } catch (error) { if (attempt === sequence.current) setError(error instanceof Error ? error.message : "โหลดความคืบหน้าไม่สำเร็จ"); }
     finally { if (attempt === sequence.current) setLoading(false); }
   }, [parameters]);
@@ -140,7 +139,7 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
             <ProjectGroupSummary value={row} details />
           </td></tr>}</Fragment>;
         })}</tbody></table></div>{pagination("bottom")}
-        {!rows.length && <p className="empty-state compact">ไม่มีโครงการตรงกับตัวกรอง</p>}
+        {!rows.length && <div className="empty-state compact"><p>ไม่มีโครงการตรงกับตัวกรอง</p>{!includeOther && Boolean(facets?.status_total) && <><p>อาจมีโครงการที่ปิด ถูกลบ หรือยังไม่ทราบสถานะต้นทาง</p><button className="button secondary" onClick={() => filterBy({ pother: "1" })}>รวมโครงการสถานะอื่น</button></>}</div>}
       </>}
     </>}
   </section>;

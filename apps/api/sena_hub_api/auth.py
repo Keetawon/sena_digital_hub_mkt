@@ -42,6 +42,8 @@ class Settings:
     hosted_test_simulation: bool = False
     admin_origin: str = ""
     supabase_storage_key: str = field(default="", repr=False)
+    r2_credentials_file: str = field(default="", repr=False)
+    r2_private_bucket_confirmed: bool = False
 
     def __post_init__(self):
         database = urlparse(self.database_url)
@@ -76,9 +78,15 @@ class Settings:
                         or origin.scheme != "https" or not origin.hostname):
                     raise ValueError("ระบบทดสอบ H1 ต้องใช้โครงการที่อนุญาตและตรวจสอบ TLS เท่านั้น")
             if (origin.path not in {"", "/"} or origin.query or origin.fragment or origin.username
-                    or database.username not in {"hub_runtime", f"hub_runtime.{HOSTED_TEST_REF}"}
-                    or len(self.supabase_storage_key) < 20):
+                    or database.username not in {"hub_runtime", f"hub_runtime.{HOSTED_TEST_REF}"}):
                 raise ValueError("การตั้งค่าบัญชีระบบ พื้นที่ไฟล์ หรือที่มาของหน้าเว็บ H1 ไม่ถูกต้อง")
+            if self.r2_credentials_file:
+                if self.supabase_storage_key or not self.r2_private_bucket_confirmed:
+                    raise ValueError("R2 ต้องใช้ไฟล์ตั้งค่าฝั่งเซิร์ฟเวอร์และยืนยันว่าปิดการเข้าถึงสาธารณะ")
+            elif not self.hosted_test_simulation or len(self.supabase_storage_key) < 20:
+                raise ValueError("H1 ต้องตั้งค่า R2 ส่วนตัว ไม่ใช้ Supabase service key")
+        elif self.r2_credentials_file or self.r2_private_bucket_confirmed:
+            raise ValueError("R2 ชุดนี้ใช้ได้เฉพาะ hosted-test")
         if self.auth_mode == "demo":
             if self.environment != "local" or database.hostname not in {
                 "localhost", "127.0.0.1", "::1"
@@ -117,6 +125,8 @@ class Settings:
             hosted_test_simulation=os.getenv("HUB_HOSTED_TEST_SIMULATION", "") == "1",
             admin_origin=os.getenv("HUB_ADMIN_ORIGIN", "").rstrip("/"),
             supabase_storage_key=os.getenv("HUB_SUPABASE_STORAGE_KEY", ""),
+            r2_credentials_file=os.getenv("HUB_R2_CREDENTIALS_FILE", ""),
+            r2_private_bucket_confirmed=os.getenv("HUB_R2_PRIVATE_BUCKET_CONFIRMED", "") == "1",
         )
 
 

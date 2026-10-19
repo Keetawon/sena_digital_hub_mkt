@@ -37,6 +37,26 @@ do $$ declare v jsonb; begin
   end if;
   if exists(select 1 from jsonb_array_elements(v->'group_issues')) then raise exception 'Unexpected membership issue'; end if;
 end $$;
+-- Count real executions, not elapsed time: expanding a composite function with
+-- .* used to repeat the full permission/redaction work for every output column.
+set local track_functions='all';
+do $$ declare expected jsonb; actual jsonb; before_calls bigint; after_calls bigint; row_count bigint; begin
+  select jsonb_agg(to_jsonb(hub.progress_permission_projection(c)) order by rem_project_id),count(*)
+    into expected,row_count from hub.project_progress_cache c;
+  select coalesce(sum(calls),0) into before_calls from pg_stat_xact_user_functions
+    where funcid='hub.progress_permission_projection(hub.project_progress_cache)'::regprocedure;
+  perform set_config('role','hub_app',true);
+  if (select rolsuper or rolbypassrls from pg_roles where rolname=current_user) then
+    raise exception 'Progress must run under the non-bypass app role'; end if;
+  select jsonb_agg(to_jsonb(c) order by rem_project_id) into actual from hub.progress_inputs() c;
+  perform set_config('role','none',true);
+  select coalesce(sum(calls),0) into after_calls from pg_stat_xact_user_functions
+    where funcid='hub.progress_permission_projection(hub.project_progress_cache)'::regprocedure;
+  if actual is distinct from expected then raise exception 'Progress projection results changed'; end if;
+  if row_count=0 or after_calls-before_calls<>row_count then
+    raise exception 'Expected one permission projection per row: rows %, calls %',row_count,after_calls-before_calls;
+  end if;
+end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin

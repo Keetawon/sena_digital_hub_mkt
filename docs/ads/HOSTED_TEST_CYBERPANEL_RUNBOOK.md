@@ -2,20 +2,34 @@
 
 Date: **2 October 2026 (Asia/Bangkok)**. Decision source: [doc 27](../27-hosted-test-environment.md). Application baseline: H1 commit `6bf9489`.
 
-**Documentation only. No hosted step below has been executed. STOP until the owner says “credentials ready”.** That instruction opens the approved TEST setup, not production, H2 features, purchases or unrelated website changes. Do not paste credentials, invite links, exports or environment files into chat/Git.
+**Historical runbook; use the current execution receipt in [doc 39](../39-hosted-ip-r2-readiness.md). The owner opened the TEST gate on 15 October with “credentials ready”.** That instruction opens the approved TEST setup, not production, H2 features, purchases or unrelated website changes. Do not paste credentials, invite links, exports or environment files into chat/Git.
+
+**15 October 2026 superseding notes:** the temporary origin is
+`https://72.62.253.205`; IT has not configured `hub-test.sena.co.th`. R2 is
+approved for crawled website assets and Knowledge files. The owner has now
+said **“credentials ready”**; the approved TEST gate is open. Start with
+[doc 39](../39-hosted-ip-r2-readiness.md). The domain commands in §§3/6/8 and
+invite-only instructions in §9 are historical and must not be executed as-is.
+Accounts now use [doc 33](../33-login-and-accounts.md)'s self-signup/verified
+email/approval flows. The permissions programme completed after H1: runtime
+uses `hub_app` and Hub-table capabilities, not the legacy role memberships in
+this runbook. **16 October:** R2 privacy and the Hub Auth URLs are confirmed;
+the TEST app is live with trusted IP HTTPS. First sign-in/admin bootstrap and
+selected public-content transfer remain pending. This older runbook is not an executable release checklist for current main.
 
 ## 1. Confirm the inventory and remaining prerequisites
 
 | Item | Fixed decision |
 |---|---|
-| Public origin | `https://hub-test.sena.co.th`; DNS owner supplies its A record to the IT-confirmed VPS IPv4 address. |
-| Database/Auth/assets | Existing Supabase **Free** project `eqlrtevwpyboplljgowo`, **ap-south-1 (Mumbai)**. |
+| Public origin | `https://72.62.253.205`; IP certificate/renewal verified, now serving the TEST app. Hostname deferred. |
+| Database/Auth | Existing Supabase **Free** project `eqlrtevwpyboplljgowo`, **ap-south-1 (Mumbai)**. |
+| Content files | R2 adapter and hosted Knowledge review passed local gates. Owner confirmed private settings; app and synthetic storage smoke passed. Selected-data transfer remains pending. Do not supply a Supabase service key. |
 | Host | Existing **Singapore Hostinger VPS**, CyberPanel + OpenLiteSpeed; other websites share it. Owner observed 4 shared cores, 16 GB RAM and about 59% CPU at one check. |
 | Front door | Existing OpenLiteSpeed listeners on **80/443**. No nginx, Caddy, replacement listener or Vercel project. |
-| App listeners | Next.js `127.0.0.1:3000`; FastAPI `127.0.0.1:8000`. Same public origin; no public application ports. |
-| Processes | Separate systemd admin/API services under dedicated non-root `sena-hub`. Document worker also uses a separate restricted service when H2 is implemented; **disabled for H1**. |
+| App listeners | Next.js `127.0.0.1:13000`; FastAPI `127.0.0.1:18000`. Port 3000 belongs to another app. Historical service/proxy examples below need these overrides before use. |
+| Processes | Separate systemd admin/API services under dedicated non-root `sena-hub-admin` / `sena-hub-api`. Document worker also uses a separate restricted service when H2 is implemented; **disabled for H1**. |
 | Data/recovery | Synthetic only. Hub owner makes a protected manual export before every hosted change; normal demo recovery is re-seeding. |
-| Identities | Seven invite-only Auth users using plus-addresses on one owner mailbox. No public sign-up or anonymous sign-in. |
+| Identities | Google or confirmed email/password self-signup, followed by Hub admin approval; see doc 33. Anonymous sign-in remains off. No real emails during local preparation. |
 | Production | A **new Singapore Supabase project**, separate profile/secrets/data. Revisit Supabase Pro and optional Vercel Pro there only. |
 
 After the gate, IT/operator records OS, CyberPanel/OLS/systemd versions, available
@@ -26,9 +40,11 @@ shared web stack or change its existing website owners, listeners or packages.
 
 Three application prerequisites are **not solved by adding credentials**:
 
-1. **Invite onboarding:** H1 currently has password sign-in only. It has no invite
-   acceptance/password-setup route. Implement and verify that flow before sending
-   invites; do not configure a fictional `/auth/callback` or enable sign-up.
+1. **Current Auth and content acceptance:** local Google PKCE callback,
+   email OTP, account approval and email-bound invitations are implemented
+   (doc 33). The gate is open but real provider acceptance is still untested.
+   R2 and hosted Knowledge passed the local implementation/tests in doc 39;
+   supplying a key alone does not prove bucket privacy or completed deployment.
 2. **Hosted seed/storage wrapper:** `scripts/hosted-test-seed.mjs` exports
    `applyH1Seed(client)`; running the file alone does not seed anything. The local
    simulator preloads generated images into its Storage double. A reviewed hosted
@@ -169,9 +185,13 @@ The API file contains `HUB_ENV=hosted-test`, `HUB_AUTH_MODE=supabase`,
 `HUB_ADMIN_ORIGIN=https://hub-test.sena.co.th`,
 `HUB_SUPABASE_URL=https://eqlrtevwpyboplljgowo.supabase.co`, plus privately supplied
 `HUB_DATABASE_URL` (restricted `hub_runtime`, `/postgres`, 5432,
-`sslmode=verify-full`, optional `sslrootcert`) and `HUB_SUPABASE_STORAGE_KEY`.
+`sslmode=verify-full`, optional `sslrootcert`), `HUB_R2_CREDENTIALS_FILE` and
+`HUB_R2_PRIVATE_BUCKET_CONFIRMED=1` **only after** the dashboard privacy check.
+Do not configure `HUB_SUPABASE_STORAGE_KEY`; real hosted settings now reject it.
 The Session-pooler runtime username is `hub_runtime.eqlrtevwpyboplljgowo`.
-Only the API gets the server-side storage credential; it is never a public key.
+Only the API can read the protected R2 JSON file; Next receives neither its path
+nor its contents. The actual origin is the IP shown above, not the historical
+hostname in the example environment.
 
 The separate operator-only `migrations.env` contains
 `HUB_SUPABASE_TEST_PROJECT_REF=eqlrtevwpyboplljgowo`,

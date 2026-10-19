@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback, localRequestOrigin } from "@/lib/local-session";
-import { getHostedCaller } from "@/lib/hosted-session";
+import { getHostedIdentity } from "@/lib/hosted-session";
 import { HubApiUnavailable, unavailableMessage, readHubAccount } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
 
@@ -29,11 +29,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (!hosted && (!isLocalMode() || !localRequestOrigin(request))) {
     return error("ยังไม่เปิดใช้งานการยืนยันตัวตนสำหรับสภาพแวดล้อมนี้", 503);
   }
-  let caller: Awaited<ReturnType<typeof getHostedCaller>> = null;
-  try { caller = hosted ? await getHostedCaller() : null; }
+  // Verify the forwarded bearer here. FastAPI verifies it independently and
+  // loads current Hub authority for the actual request, including /v1/me.
+  let caller: Awaited<ReturnType<typeof getHostedIdentity>> = null;
+  try { caller = hosted ? await getHostedIdentity() : null; }
   catch (failure) { if (failure instanceof HubApiUnavailable) return error(unavailableMessage, 503); throw failure; }
-  const role = hosted ? (caller ? caller.role || "viewer" : null) : await getLocalRole();
-  if (!role) return error(hosted ? "กรุณาเข้าสู่ระบบ" : "กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
+  const role = hosted ? null : await getLocalRole();
+  if (hosted ? !caller : !role) return error(hosted ? "กรุณาเข้าสู่ระบบ" : "กรุณาเลือกบัญชีทดสอบก่อนใช้งาน", 401);
   const path = (await context.params).path.join("/");
   const method = request.method as keyof typeof allowed;
   if (hosted && !h1AllowsApi(path, method)) return error(h1Unavailable, 403);
@@ -44,7 +46,6 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
   const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review|questions/${id}/review|projects/${id}/preview-release)$`).test(path);
-  if ((knowledgeRead || knowledgeWrite) && hosted) return error("คลังความรู้เปิดให้ทีมงานตรวจข้อมูลเฉพาะในเครื่อง", 403);
   const brandDashboard = method === "GET" && /^v1\/admin\/brands\/completeness(?:\.csv)?$/.test(path);
   const brandBulk = method === "GET" && path === "v1/admin/brands/bulk-preview" || method === "POST" && path === "v1/admin/brands/bulk-create";
   const brandConfirm = method === "POST" && new RegExp(`^v1/admin/brands/${id}/confirm-source-names$`).test(path);
@@ -91,7 +92,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     && (!query.has("version_id") || new RegExp(`^${financeId}$`).test(query.get("version_id")!))
     && (!query.has("page") || /^[1-9]\d{0,2}$/.test(query.get("page")!))
     && (!query.has("download") || /^(?:true|false)$/.test(query.get("download")!));
-  if (request.nextUrl.search && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !(method === "GET" && path === "v1/projects"
+  const validKnowledgeThumbnail = method === "GET" && new RegExp(`^v1/admin/knowledge/candidates/${financeId}/file$`).test(path)
+    && [...query.keys()].length === 1 && query.getAll("thumbnail").length === 1 && query.get("thumbnail") === "1";
+  if (request.nextUrl.search && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !validKnowledgeThumbnail && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);
@@ -99,7 +102,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   if (method !== "GET" && !(hosted ? request.headers.get("origin") === configuration!.adminOrigin : hasSameLocalOrigin(request))) {
     return error("ไม่อนุญาตคำขอจากต้นทางนี้", 403);
   }
-  let token = hosted ? caller?.token : getRoleToken(role);
+  let token = hosted ? caller?.token : getRoleToken(role!);
   if (!token) return error("ยังไม่ได้ตั้งค่าสิทธิ์เชื่อมต่อบนเซิร์ฟเวอร์", 503);
   let base: URL;
   try {
@@ -174,8 +177,12 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     const upstream = await fetch(new URL(`${path}${request.nextUrl.search}`, `${base.origin}/`), {
       method, body, cache: "no-store", redirect: "error",
       headers,
-      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : AbortSignal.timeout(upload ? 30_000 : 15_000),
+      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : AbortSignal.timeout(upload ? 30_000 : path === "v1/me" ? 10_000 : 15_000),
     });
+    if (hosted && (upstream.status === 401 || path === "v1/me" && upstream.status >= 500)) {
+      releaseStream(); await upstream.body?.cancel().catch(() => {});
+      return error(upstream.status === 401 ? "กรุณาเข้าสู่ระบบ" : unavailableMessage, upstream.status === 401 ? 401 : 503);
+    }
     if (assistantRun && upstream.ok) {
       if (!upstream.body || !upstream.headers.get("Content-Type")?.startsWith("text/event-stream")) { releaseStream(); streamAbort?.abort(); return error("ไม่ได้รับข้อมูลผู้ช่วยในรูปแบบที่รองรับ", 502); }
       const reader = upstream.body.getReader();
@@ -206,10 +213,10 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       return new NextResponse(upstream.body, { status: upstream.status, headers: downloadHeaders });
     }
     const data = await upstream.json();
-    return NextResponse.json(data, { status: upstream.status, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(data, { status: upstream.status, headers: { "Cache-Control": hosted ? "private, no-store" : "no-store" } });
   } catch {
     releaseStream(); streamAbort?.abort();
-    return error("เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", 502);
+    return error(hosted ? unavailableMessage : "เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", hosted ? 503 : 502);
   }
 }
 

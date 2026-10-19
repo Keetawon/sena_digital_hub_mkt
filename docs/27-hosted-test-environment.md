@@ -2,6 +2,13 @@
 
 Date: **2 October 2026 (Asia/Bangkok)**. Status: **H1 implemented and verified locally; hosted execution waits for the owner's exact “credentials ready” instruction**.
 H1 repository baseline: `6bf9489`, including migration `0025` and local verification.
+**15 October execution update:** the owner has now said **“credentials ready”**.
+The historical gate below is open for the approved TEST scope; current access,
+backups, 55 applied migrations, trusted IP HTTPS and passing local R2/Knowledge
+gates are recorded in [doc 39](39-hosted-ip-r2-readiness.md). **16 October:** the
+application is live at `https://72.62.253.205/login`; R2 privacy and the Hub Auth
+URLs are owner-confirmed. First sign-in/admin bootstrap and selected content
+transfer remain pending.
 Target: **only** Supabase project `eqlrtevwpyboplljgowo`
 (`https://eqlrtevwpyboplljgowo.supabase.co`), Free, **ap-south-1 (Mumbai)**,
 with synthetic data. Infrastructure details below are owner-reported decisions,
@@ -13,7 +20,16 @@ migration, bucket, Auth user, seed, deployment, purchase or credential change is
 authorized until the owner confirms that IT inputs and credentials are ready.
 Earlier permission to try the P1 test setup does not bypass this new gate.
 The step-by-step [CyberPanel runbook](ads/HOSTED_TEST_CYBERPANEL_RUNBOOK.md)
-records the later operator procedure; none of its hosted commands have run.
+records the historical operator procedure; use doc 39 for commands actually run
+and current ports/storage, rather than executing old examples unchanged.
+
+**Owner update, 15 October 2026:** IT has not configured `hub-test.sena.co.th`.
+Use the owner-supplied Singapore VPS IPv4 **`72.62.253.205`** directly, with
+origin **`https://72.62.253.205`**. R2 may also hold the crawled public SENA
+website assets and Knowledge files. The subsequent **“credentials ready”**
+instruction opened TEST execution. [Doc 39](39-hosted-ip-r2-readiness.md) records
+the implementation and execution receipt against baseline `794d9cd`; the H1
+sections below remain historical. Real document processing and RAG remain deferred.
 
 This plan extends the historical [P1 setup](ads/SUPABASE_TEST_SETUP.md).
 It preserves the [naming contract](19-campaign-naming-registry.md),
@@ -346,10 +362,12 @@ with a separately approved production profile, not a rename/copy of TEST state.
 | Document bytes — H2+ | Private R2 TEST bucket | Deferred beyond H1: scoped storage adapter and reproducible synthetic fixtures; no real upload before Q7. |
 | Assistant | Future approved VPS TEST path | Existing guard is fixed-local. Leave disabled with a Thai remark until reviewed; no key transfer or retrieval/indexing work in this step. |
 
-The DNS owner adds an **A record for `hub-test.sena.co.th`** to the VPS address
-supplied by IT. In CyberPanel create a website for that hostname and issue
-**Let's Encrypt SSL through CyberPanel**. Keep its ACME challenge path intact.
-Use **`https://hub-test.sena.co.th`** as the single admin/Hub-API origin:
+**15 October update:** use **`https://72.62.253.205`** as the single admin/Hub-API
+origin while the IT hostname is unavailable. Obtain an IP-valid certificate
+with automatic renewal and first verify that the shared OpenLiteSpeed listener
+can serve it without disrupting existing sites; see [doc 39](39-hosted-ip-r2-readiness.md).
+Do not assume CyberPanel's domain certificate workflow supports this IP setup.
+The earlier hostname/DNS plan is deferred, not a prerequisite for the IP target.
 
 | Public path | Reverse-proxy destination |
 |---|---|
@@ -418,8 +436,9 @@ authorize real data abroad. IT must provide approved CyberPanel/SSH access with
 MFA where supported, OS/runtime versions, a restricted deployment account,
 firewall rules, outbound Supabase/storage access, domain ownership/DNS/TLS,
 secret custody and the existing VPS billing owner. The **Hub owner** owns manual
-exports and demo recovery. DNS ownership and the VPS A-record address remain
-inputs; `hub-test.sena.co.th` is selected, not registered or configured here.
+exports and demo recovery. The owner supplied VPS IPv4 `72.62.253.205` on
+15 October; listener isolation, IP TLS and access remain unverified.
+`hub-test.sena.co.th` is deferred until IT configures it.
 Confirm capacity for both services without buying an upgrade.
 
 If the selected VPS or credentials are not ready, continue the local presentation.

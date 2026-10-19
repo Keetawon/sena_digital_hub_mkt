@@ -73,7 +73,7 @@ test.describe('Accounts on loopback H1', () => {
     const email=`signup-${Date.now()}@example.test`;
     await page.goto('/signup');
     await page.getByLabel('อีเมล', { exact: true }).fill(email);
-    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)').fill('Synthetic-password-12!');
+    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)', { exact: true }).fill('Synthetic-password-12!');
     await page.getByLabel('ยืนยันรหัสผ่าน', { exact: true }).fill('Synthetic-password-12!');
     await page.getByRole('button', { name: 'ส่งรหัสยืนยัน' }).click();
     await expect(page).toHaveURL(/\/signup\/verify$/);
@@ -115,7 +115,7 @@ test.describe('Accounts on loopback H1', () => {
     await page.getByLabel('อีเมล',{exact:true}).fill(email); await page.getByRole('button',{name:'ส่งรหัสยืนยัน'}).click();
     await expect(page.getByRole('status')).toContainText('หากอีเมลนี้สามารถรับรหัสได้');
     await page.getByLabel('รหัส 6 หลัก').fill(await code('recovery')); await page.getByRole('button',{name:'ยืนยันรหัส',exact:true}).click();
-    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)').fill(password);
+    await page.getByLabel('รหัสผ่านใหม่ (อย่างน้อย 12 ตัวอักษร)', { exact: true }).fill(password);
     await page.getByLabel('ยืนยันรหัสผ่าน',{exact:true}).fill(password);
     await page.getByRole('button',{name:'บันทึกรหัสผ่านใหม่'}).click();
     await expect(page.getByRole('status')).toContainText('ออกจากระบบทุกเซสชันแล้ว');

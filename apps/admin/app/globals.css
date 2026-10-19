@@ -598,10 +598,6 @@ main:focus { outline: none; }
   .role-picker { align-self: stretch; }
 }
 /* H1 uses the existing semantic colors and shared interaction/motion tokens. */
-.hosted-login { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
-.hosted-login > section { width: min(100%, 480px); }
-.hosted-login form { margin-top: 24px; display: grid; gap: 16px; }
-.hosted-login input { min-height: 44px; width: 100%; }
 .hosted-unavailable { margin-block: 20px; }
 .hosted-h1-note { padding: 12px 24px; background: var(--surface-warm); color: var(--ink); }
 

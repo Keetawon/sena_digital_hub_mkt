@@ -5,10 +5,12 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { IDENTITIES, SIMULATION_PASSWORD, SIMULATION_STORAGE_KEY, syntheticAssets } from './hosted-test-fixtures.mjs';
+import { createR2Double } from './hosted-test-r2.mjs';
 
 const ORIGIN = 'http://127.0.0.1:54329';
 const ADMIN_ORIGIN = 'http://127.0.0.1:3001';
 export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted-test-simulation/auth-outbox.json', onIdentity = async () => {} } = {}) {
+  const r2 = createR2Double();
   const users = structuredClone(IDENTITIES).map(u => ({ ...u, email_confirmed_at: u.created_at }));
   const passwords = new Map(users.map(u => [u.id, SIMULATION_PASSWORD]));
   const codes = new Map(), oauth = new Map(), revoked = new Set(), sessions = new Map(), cooldowns = new Map();
@@ -100,6 +102,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
       let size = 0; const chunks = [];
       for await (const data of req) { size += data.length; if (size > 11 * 1024 * 1024) return reply(413, { error: 'too_large' }); chunks.push(data); }
       const bytes = Buffer.concat(chunks);
+      if (path.startsWith('/r2/')) return r2(req,res,url,bytes);
       if (path === '/auth/v1/signup' && req.method === 'POST') {
         const body=JSON.parse(bytes); const email=body.email?.toLowerCase();
         if (!synthetic(email) || typeof body.password !== 'string' || body.password.length<12) return reply(422,{message:'Synthetic email and 12 character password required'});

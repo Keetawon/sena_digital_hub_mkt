@@ -19,9 +19,13 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class HostedAssets:
+    # Retained only for the offline Auth/Storage simulation. Real H1 uses R2.
+    provider = "supabase"
+    bucket = BUCKET
+
     def __init__(self, settings: Settings):
-        if settings.environment != "hosted-test":
-            raise ValueError("Private hosted storage requires the H1 profile")
+        if settings.environment != "hosted-test" or not settings.hosted_test_simulation:
+            raise ValueError("Supabase Storage double requires the offline H1 simulation")
         self.origin = settings.supabase_url
         self.key = settings.supabase_storage_key
         self.opener = build_opener(NoRedirect())

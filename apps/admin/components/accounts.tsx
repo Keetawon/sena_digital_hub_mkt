@@ -2,6 +2,7 @@
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { hubPages, workspaceLanding } from "./hub-navigation-data";
 import { SignOut, useHostedSession } from "./hosted-session";
+import { AuthLayout } from "./auth-layout";
 import { roleLabels, localPersonas, type LocalRole } from "@/lib/roles";
 import { can, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
 
@@ -25,7 +26,7 @@ export async function accountApi(path: string, body?: unknown, method = "POST") 
 
 const emptyDirectory = { names: {} as Record<string, string>, admin: false, pending: null as number | null, account: null as HubAccount | null, capabilities: emptyCapabilities, ready: false, signedOut: false, error: "" };
 const Directory = createContext(emptyDirectory);
-export function AccountDirectory({ children, enabled }: { children: ReactNode; enabled: boolean }) {
+export function AccountDirectory({ children, enabled, initialAccount = null }: { children: ReactNode; enabled: boolean; initialAccount?: HubAccount | null }) {
   const [value, setValue] = useState(emptyDirectory);
   const current = useRef<HubAccount | null>(null);
   const edits = useRef(new Map<string, { label: string; value: string }>());
@@ -34,12 +35,16 @@ export function AccountDirectory({ children, enabled }: { children: ReactNode; e
     // Login/request pages don't query the staff directory or the admin queue.
     if (/^\/(login|signup|auth|account)(\/|$)/.test(location.pathname)) return;
     let alive = true, loading = false, activated = enabled;
+    // The server just verified this projection for this page. Consume it once
+    // after hydration; every later poll/focus/change still reads fresh /me.
+    let firstAccount = initialAccount;
     function preserveTyped() { setRecovery(Array.from(edits.current.values())); }
     async function refresh() {
       if (!activated || loading || document.visibilityState === "hidden") return;
       loading = true;
       try {
-        const me: HubAccount = await accountApi("v1/me");
+        const initial = firstAccount; firstAccount = null;
+        const me: HubAccount = initial ?? await accountApi("v1/me");
         const prior = current.current;
         if (prior?.id && prior.id !== me.id) { edits.current.clear(); setRecovery([]); }
         else if (prior && capabilityKey(prior) !== capabilityKey(me)) preserveTyped();
@@ -158,16 +163,18 @@ export function AccessRequestPage({ localMode = false, initialRole = null }: { l
     return () => { alive = false; clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, []);
   const workspace = workspaceLanding(account?.capabilities);
-  return <main className="account-page"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub</p>{localMode && <LocalPersonaPicker initialRole={initialRole} />}<h1>{editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…"}</h1><SignOut />
+  const title = editing && account?.status === "PENDING" ? account.invite?.id ? "ตอบรับคำเชิญ" : "ขอสิทธิ์ใช้งาน" : account ? statuses[account.status] : "กำลังโหลดคำขอ…";
+  return <AuthLayout title={title} label={config?.label} step={editing && account?.status === "PENDING" ? 3 : undefined} wide description={editing ? "บอกเราเกี่ยวกับคุณและงานที่รับผิดชอบ เพื่อจัดสิทธิ์ให้เหมาะกับการใช้งาน" : "ติดตามสถานะบัญชีและคำขอเข้าใช้งานของคุณได้ที่นี่"}><div className="account-page auth-request">{localMode && <LocalPersonaPicker initialRole={initialRole} />}
+    <div className="auth-request-session"><span>{account?.email}</span><SignOut /></div>
     {error && <p role="alert">{error}</p>}
-    {account && <><p>อีเมล: {account.email}</p>
-      <p role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่คุณกรอกยังอยู่ในหน้านี้"}</p>
+    {account && <>
+      <p className="auth-request-status" role="status">สถานะ: {statuses[account.status]}{editing && account.status !== "PENDING" && " · ข้อความที่คุณกรอกยังอยู่ในหน้านี้"}</p>
       {["REJECTED", "SUSPENDED"].includes(account.status) && account.decision_note && <p>เหตุผลจากผู้ดูแล: {account.decision_note}</p>}
       {account.invite?.message && <p>{account.invite.message}</p>}
       {editing ? <RequestForm key={account.id} account={account} onSaved={savedRequest} /> : <><RequestSummary account={account} />{account.status === "PENDING" && <button className="button secondary" onClick={() => setEditing(true)}>แก้ไขคำขอ</button>}</>}
       {account.status === "ACTIVE" && (account.capabilities ? <a className="button primary" href={workspace}>เข้าสู่พื้นที่ทำงาน</a> : <button type="button" className="button secondary" disabled={checkingAccess} onClick={() => void checkAcceptedAccess()}>{checkingAccess ? "กำลังตรวจสิทธิ์พื้นที่ทำงาน…" : "ตรวจสถานะพื้นที่ทำงานอีกครั้ง"}</button>)}
       {config?.adminContact && <p>ติดต่อผู้ดูแล: {config.adminContact}</p>}
-    </>}</section></main>;
+    </>}</div></AuthLayout>;
 }
 
 function RequestForm({account, onSaved}: {account: Account; onSaved: (a: Account) => void}) {
@@ -188,18 +195,20 @@ function RequestForm({account, onSaved}: {account: Account; onSaved: (a: Account
     catch (e) { const failure = e as AccountApiError; setError(failure.message); setFields(Object.fromEntries((failure.details || []).map(d => [d.field.split(".")[0], d.message]))); }
     finally { setBusy(false); }
   }
-  return <form onSubmit={save} noValidate>
+  return <form className="auth-request-form" onSubmit={save} noValidate>
     {error && <div role="alert" tabIndex={-1} ref={summary}><p>{error}</p><ul>{Object.entries(fields).map(([key,text]) => <li key={key}><a href={`#${key}`}>{text}</a></li>)}</ul></div>}
     {invite && <p>สิทธิ์ที่ได้รับ: {label(invite.hub_role)} {invite.agency_code}</p>}
-    <div className="form-field"><label htmlFor="display_name_th">ชื่อและนามสกุลภาษาไทย</label><input id="display_name_th" name="display_name_th" autoComplete="name" required maxLength={200} {...invalid("display_name_th")} aria-describedby="name-help display_name_th-error" defaultValue={/[ก-๙]/.test(account.display_name_th) ? account.display_name_th : ""} placeholder={/[ก-๙]/.test(account.display_name_th) ? undefined : account.display_name_th} /><p id="name-help">กรอกชื่อและนามสกุลภาษาไทย</p>{fieldError("display_name_th")}</div>
+    <div className="auth-request-fields">
+    <div className="form-field"><label htmlFor="display_name_th">ชื่อและนามสกุลภาษาไทย</label><input id="display_name_th" name="display_name_th" autoComplete="name" required maxLength={200} {...invalid("display_name_th")} aria-describedby="name-help display_name_th-error" defaultValue={/[ก-๙]/.test(account.display_name_th) ? account.display_name_th : ""} placeholder={/[ก-๙]/.test(account.display_name_th) ? undefined : account.display_name_th} /><p className="auth-hint" id="name-help">กรอกชื่อและนามสกุลภาษาไทย</p>{fieldError("display_name_th")}</div>
     <div className="form-field"><label htmlFor="phone">เบอร์โทรศัพท์ที่ทำงาน</label><input id="phone" name="phone" type="tel" autoComplete="tel" required pattern={phonePattern} {...invalid("phone")} defaultValue={account.phone} />{fieldError("phone")}</div>
     <div className="form-field"><label htmlFor="company_type">บริษัท</label><select id="company_type" required value={locked ? "AGENCY" : company} onChange={e => setCompany(e.target.value)} disabled={locked} {...invalid("company_type")}><option value="">เลือกประเภทบริษัท</option>{Object.entries(companyLabels).map(([key,text]) => <option key={key} value={key}>{text}</option>)}</select>{fieldError("company_type")}</div>
     {(company && company !== "SENA" || locked) && <div className="form-field"><label htmlFor="company_name">ชื่อบริษัท</label><input id="company_name" name="company_name" required maxLength={200} readOnly={locked} defaultValue={locked ? invite?.agency_code || "" : invite?.company_name || account.company_name || ""} {...invalid("company_name")} />{locked && <p>บริษัทผูกกับรหัสเอเจนซีในคำเชิญ</p>}{fieldError("company_name")}</div>}
     <div className="form-field"><label htmlFor="team">ทีม / ฝ่าย</label><input id="team" name="team" required maxLength={200} {...invalid("team")} defaultValue={invite?.team || account.team} />{fieldError("team")}</div>
     <div className="form-field"><label htmlFor="position">ตำแหน่ง</label><input id="position" name="position" required maxLength={100} {...invalid("position")} defaultValue={account.position || ""} />{fieldError("position")}</div>
+    </div>
     {!invite && <><fieldset id="requested_tasks" tabIndex={-1} {...invalid("requested_tasks")}><legend>งานที่ต้องการทำ (เลือกอย่างน้อยหนึ่งข้อ)</legend>{Object.entries(taskLabels).map(([key,text]) => <label className="account-choice" key={key}><input type="checkbox" name="tasks" value={key} defaultChecked={account.requested_tasks.includes(key)} />{text}</label>)}{fieldError("requested_tasks")}</fieldset>
       <div className="form-field"><label htmlFor="reason">เหตุผล / โครงการที่รับผิดชอบ</label><textarea id="reason" name="reason" required maxLength={2000} {...invalid("reason")} defaultValue={account.reason} />{fieldError("reason")}</div></>}
-    <p>ข้อมูลนี้ใช้พิจารณาสิทธิ์และติดต่อเรื่องบัญชี ผู้ดูแลระบบเท่านั้นที่อ่านคำขอได้ ชื่อจะแสดงต่อทีมงานในประวัติการทำงาน ไม่ส่งคำขอให้ผู้ช่วยหรือคลัง RAG ลบข้อมูลส่วนบุคคลของคำขอที่ถูกปฏิเสธหลัง 90 วัน</p>
+    <p className="auth-help">ข้อมูลนี้ใช้พิจารณาสิทธิ์และติดต่อเรื่องบัญชี ผู้ดูแลระบบเท่านั้นที่อ่านคำขอได้ ชื่อจะแสดงต่อทีมงานในประวัติการทำงาน ไม่ส่งคำขอให้ผู้ช่วยหรือคลัง RAG ลบข้อมูลส่วนบุคคลของคำขอที่ถูกปฏิเสธหลัง 90 วัน</p>
     <label className="account-choice"><input id="privacy_acknowledged" type="checkbox" name="privacy" required {...invalid("privacy_acknowledged")} defaultChecked={!!account.privacy_acknowledged_at} />รับทราบประกาศความเป็นส่วนตัว</label>{fieldError("privacy_acknowledged")}
     <button className="button primary" disabled={busy || account.status !== "PENDING"}>{busy ? "กำลังบันทึก…" : invite ? "ตอบรับคำเชิญ" : "ส่งคำขอ"}</button>
   </form>;

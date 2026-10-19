@@ -77,4 +77,8 @@
   --shadow-raised: #102d2330;
   --shadow-sticky: #102d2308;
   --scrim: #102d2366;
+  /* Google provider button: official light theme, docs/33 auth design. */
+  --provider-surface: #ffffff;
+  --provider-ink: #1f1f1f;
+  --provider-border: #747775;
 }

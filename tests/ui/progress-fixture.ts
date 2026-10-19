@@ -1,6 +1,12 @@
 // Small fake server for navigation tests. Real cache/filter tests run against PostgreSQL/API.
 export function progressFixture(url: string, input: Record<string, any>[]) {
   const q = new URL(url).searchParams;
+  if (q.get('view') === 'dashboard') {
+    const part = new URL(url); part.searchParams.set('view', 'rows');
+    const page = progressFixture(part.href, input);
+    part.searchParams.set('view', 'counts');
+    return { ...page, facets: progressFixture(part.href, input) };
+  }
   const rows = input.map(r => ({ ...r, group_status: r.group_status ?? (r.marketing_project_group_id ? 'marketing_reference' : 'missing'),
     source_review: r.source_review ?? { default_scope: true, status_raw: '2', status_label: 'พร้อมอยู่' } }));
   if (q.has('detail')) return rows.find(r => r.rem_project_id === q.get('detail'));

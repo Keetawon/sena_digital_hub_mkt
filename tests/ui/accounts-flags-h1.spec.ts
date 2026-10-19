@@ -17,7 +17,7 @@ test.describe('Account flags and public boundary', () => {
     await page.getByLabel('รหัสผ่าน',{exact:true}).fill('H1-synthetic-only!');
     await page.getByRole('button',{name:'เข้าสู่ระบบ',exact:true}).click();
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
-    await expect(page.locator('body')).toContainText('พื้นที่ TEST');
+    await expect(page.locator('.hosted-h1-note')).toContainText('LOCAL H1 · ข้อมูลสมมติ');
   });
   test('shared route list preserves knowledge and blocks open redirect encodings', () => {
     expect(safeNext('/knowledge?project=synthetic#review')).toBe('/knowledge?project=synthetic#review');

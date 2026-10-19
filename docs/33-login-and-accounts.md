@@ -232,6 +232,14 @@ service key is used for account creation, decisions, bootstrap or retention.
 
 ## Owner setup checklist — perform later
 
+**Temporary TEST origin, owner decision 15 October 2026:**
+`https://72.62.253.205`, pending trusted IP TLS on the Singapore VPS. Use this
+for Supabase Site URL and the Hub return callback; Google's authorized redirect
+remains `https://eqlrtevwpyboplljgowo.supabase.co/auth/v1/callback`.
+The two redirects are distinct. See [doc 39](39-hosted-ip-r2-readiness.md) for
+the exact settings, current implementation gaps and hosted acceptance checks.
+Providing the IP does not replace the **“credentials ready”** gate.
+
 The owner configures their Workspace mailbox and Google Cloud project. SMTP
 passwords and OAuth client secrets go **only into the Supabase dashboard**, never
 the repo, chat, Next environment or API environment.
@@ -369,3 +377,50 @@ Sign-in-method question: **DECIDED, owner 7 Oct 2026: Google or email/password,
 self-registration, verified email and Hub admin approval**. Non-blocking IT
 question: when and how should the Workspace sender and Google Cloud project
 move from the owner's account to IT ownership? This does not block local MVP work.
+
+
+## Sign-in and registration visual refresh — 16 October 2026
+
+Owner request: improve the plain sign-in/register experience. The shared auth
+layout follows the existing Emerald & Champagne tokens: a deep-green SENA
+identity panel with decorative architectural linework, a warm white form area,
+and an environment label. At 760px and below the artwork yields to a compact
+brand header and the form. No transition or animation is added.
+
+The same layout covers login, email signup, OTP verification, password recovery,
+access requests/invite acceptance and account status. Signup shows the three
+stages: create account, verify email, request access. Passwords have labelled
+keyboard-operable visibility buttons; password-manager autocomplete and paste
+remain enabled. The single six-digit OTP input accepts a complete pasted code.
+Errors preserve entered text, and a rejected sessionStorage write cannot crash
+the registration form. The existing non-enumerating messages, attempt limits,
+resend cooldown, PKCE, server approval/permission checks and feature flags remain.
+Hosted password signup/reset remain disabled until sender acceptance; redesigning
+those screens does not enable SMTP or send real email.
+
+No application dependency or schema change. Original request fields, privacy
+notice, polling, dirty-edit preservation and invite restrictions remain in place.
+Google's current icon is served locally from `public/auth/google-g.png`, downloaded
+unchanged from the [official Google branding assets](https://developers.google.com/identity/branding-guidelines).
+Its light-theme surface/text/border use dedicated provider tokens; other controls
+reuse the Hub palette. The architecture illustration contains no project data.
+
+Measured auth color pairs (WCAG relative luminance):
+
+| Foreground / background | Contrast | Use |
+|---|---:|---|
+| sidebar-ink / sidebar | 13.10:1 | Brand headline |
+| sidebar-muted / sidebar | 9.02:1 | Brand supporting text |
+| gold-light / sidebar | 8.46:1 | Kicker |
+| gold-strong / surface | 5.77:1 | Small supporting icon |
+| provider-ink / provider-surface | 16.48:1 | Google button label |
+| provider-border / provider-surface | 4.53:1 | Google button boundary |
+| line-strong / surface | 3.88:1 | Input boundaries |
+| action / surface | 9.00:1 | Links, primary buttons and focus |
+
+Visual and interaction coverage: desktop 1440px, tablet 1024px, phones 400/375px,
+200% text, keyboard navigation, password reveal/retention, storage-denied signup,
+normal/reduced-motion modes and the existing synthetic account lifecycle suite.
+Screenshots: `artifacts/auth-{login,signup,verify,recovery}-{1440,400}.png`, plus
+`artifacts/accounts-request.png` and `artifacts/accounts-request-mobile.png`.
+Verification/deployment results are recorded in doc 39 after the gates complete.

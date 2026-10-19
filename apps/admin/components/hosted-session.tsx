@@ -6,6 +6,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { createContext, useContext, useState, useEffect, type FormEvent, type ReactNode } from "react";
 import { type HostedConfig } from "@/lib/hosted-config";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { AuthLayout, AuthApprovalNote, AuthArrow, PasswordField } from "./auth-layout";
 
 const Context = createContext<HostedConfig | null>(null);
 let browser: SupabaseClient | null = null;
@@ -83,12 +84,22 @@ export function HostedLogin({ next }: { next: string }) {
       await afterSignIn(next);
     } catch { setError("เข้าสู่ระบบไม่สำเร็จ ตรวจสอบอีเมลและรหัสผ่าน"); setPending(false); }
   }
-  return <main className="hosted-login"><section className="registry-panel"><p className="eyebrow">SENA Digital Hub · {config?.label}</p><h1>เข้าสู่ระบบ</h1>{config ? <>
-    {config.google && <button className="button secondary" disabled={pending} onClick={async () => {
-      setPending(true); const { error } = await hostedBrowser(config).auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${config.adminOrigin}/auth/callback?next=${encodeURIComponent(next)}`, scopes: "openid email profile" } });
-      if (error) { setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่"); setPending(false); }
-    }}>เข้าสู่ระบบด้วย Google</button>}
-    <form onSubmit={login}><div className="form-field"><label htmlFor="login-email">อีเมล</label><input id="login-email" name="email" type="email" required autoComplete="username" maxLength={254} autoFocus disabled={pending} /></div><div className="form-field"><label htmlFor="login-password">รหัสผ่าน</label><input id="login-password" name="password" type="password" required autoComplete="current-password" disabled={pending} /></div>{error && <p role="alert" className="field-error">{error}</p>}<button type="submit" className="button primary" disabled={pending}>{pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}</button></form>
-    {config.password && <p><a href="/signup">สมัครด้วยอีเมล</a> · <a href="/login/forgot">ลืมรหัสผ่าน</a></p>}
-    <p>บัญชีใหม่ต้องส่งคำขอและรอผู้ดูแลอนุมัติก่อนใช้งาน</p></> : <p>หน้านี้เปิดเมื่อกำหนดการเข้าสู่ระบบแล้ว</p>}</section></main>;
+  return <AuthLayout title="เข้าสู่ระบบ" description="ยินดีต้อนรับกลับมา เริ่มต้นงานของคุณได้ที่นี่" label={config?.label}>{config ? <>
+    {config.google && <><button type="button" className="auth-google" disabled={pending} onClick={async () => {
+      if (pending) return;
+      setPending(true); setError("");
+      try {
+        const { error } = await hostedBrowser(config).auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${config.adminOrigin}/auth/callback?next=${encodeURIComponent(next)}`, scopes: "openid email profile" } });
+        if (error) throw error;
+      } catch { setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่"); setPending(false); }
+    }}><img src="/auth/google-g.png" width={20} height={20} alt="" />เข้าสู่ระบบด้วย Google</button><div className="auth-divider">หรือใช้อีเมลของคุณ</div></>}
+    <form className="auth-form" onSubmit={login} aria-busy={pending}>
+      <div className="form-field auth-field"><label htmlFor="login-email">อีเมล</label><input id="login-email" name="email" type="email" placeholder="name@company.com" required autoComplete="username" maxLength={254} disabled={pending} /></div>
+      <PasswordField id="login-password" name="password" label="รหัสผ่าน" required autoComplete="current-password" disabled={pending} action={config.password && <a className="auth-link" href="/login/forgot">ลืมรหัสผ่าน</a>} />
+      {error && <p role="alert" className="auth-feedback" data-error="true">{error}</p>}
+      <button type="submit" className="button primary auth-submit" disabled={pending}>{pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}{!pending && <AuthArrow />}</button>
+    </form>
+    {config.password && <p className="auth-switch">ยังไม่มีบัญชี? <a className="auth-link" href="/signup">สมัครด้วยอีเมล</a></p>}
+    <AuthApprovalNote />
+  </> : <p className="auth-feedback">หน้านี้เปิดเมื่อกำหนดการเข้าสู่ระบบแล้ว</p>}</AuthLayout>;
 }

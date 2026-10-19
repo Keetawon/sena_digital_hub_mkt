@@ -37,6 +37,8 @@ try {
   console.log('PASS: SVG registry rights, binding history and individual batch-review audit records');
   await connection.query(await readFile(new URL('../supabase/tests/hosted_h1.sql', import.meta.url), 'utf8'));
   console.log('PASS: local H1 compatibility, immutable issuance guard and hosted-storage rejection');
+  await connection.query(await readFile(new URL('../supabase/tests/r2_test_content.sql', import.meta.url), 'utf8'));
+  console.log('PASS: R2 metadata, local/hosted boundary, deduplication, unbound ownership and immediate suspension');
   await connection.query(await readFile(new URL('../supabase/tests/project_prefill.sql', import.meta.url), 'utf8'));
   console.log('PASS: Gold defaults, bilingual fields, source revisions and preservation of edited values');
   await connection.query(await readFile(new URL('../supabase/tests/model_media.sql', import.meta.url), 'utf8'));

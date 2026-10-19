@@ -273,6 +273,16 @@
       "name": "202610150054_public_website_drafts.sql",
       "canonical_sha256": "6c67bebd4df5e7d522d81f3e52f2b7ebe2070eb70e3a5abed45b7bad1527ca5f",
       "executed_sha256": "6c67bebd4df5e7d522d81f3e52f2b7ebe2070eb70e3a5abed45b7bad1527ca5f"
+    },
+    {
+      "name": "202610150055_r2_test_content.sql",
+      "canonical_sha256": "802b3310e3c0da676d0a7c6ff24f626e908acbf8fe4725c1e4ecb616d28be65d",
+      "executed_sha256": "802b3310e3c0da676d0a7c6ff24f626e908acbf8fe4725c1e4ecb616d28be65d"
+    },
+    {
+      "name": "202610190056_project_progress_projection_once.sql",
+      "canonical_sha256": "6f31bb549c4c981db8251e18ef760c1935bf9c49fad0cdaf8fe092d9deace7c2",
+      "executed_sha256": "6f31bb549c4c981db8251e18ef760c1935bf9c49fad0cdaf8fe092d9deace7c2"
     }
   ]
 }

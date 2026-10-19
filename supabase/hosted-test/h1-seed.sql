@@ -27,7 +27,7 @@ values('71000000-0000-0000-0000-000000000003','mdl_71000000000000000000000000000
 
 insert into hub.assets(id,original_filename,mime_type,public_url,rights_status,asset_type,storage_bucket,storage_path,checksum,file_size,width,height,language,owner_id,provenance,source_system)
 select (payload->>'id')::uuid,payload->>'original_filename','image/png','/v1/assets/'||(payload->>'id')||'/file','pending','image',
- 'hub-test-assets',payload->>'storage_path',payload->>'checksum',(payload->>'file_size')::bigint,(payload->>'width')::int,(payload->>'height')::int,
+ 'r2-test-content',payload->>'storage_path',payload->>'checksum',(payload->>'file_size')::bigint,(payload->>'width')::int,(payload->>'height')::int,
  'th','70000000-0000-0000-0000-000000000002','upload','hub-hosted-test' from h1_seed_assets;
 set local role publisher;
 select hub.review_asset(a.id,a.updated_at,'approved','SYNTHETIC-HOSTED-H1-v1: generated test pixels, not real rights evidence',null,null,'ข้อมูลตัวอย่างสำหรับทดสอบเท่านั้น')
@@ -70,3 +70,16 @@ select code, label||'__'||objective||'__C-H1DM-DEMO1__'||agency||'__'||code,
  label||'__'||objective||'__C-H1DM-DEMO1__'||agency||'__'||code,'70000000-0000-0000-0000-000000000005'
 from ads.campaign_registration where scope_id='71000000-0000-0000-0000-000000000021';
 insert into ads.code_sequence(sequence_year,last_value) values(2026,90002);
+
+-- Fictional review evidence for the offline R2/Knowledge acceptance path.
+insert into staging.knowledge_batches(manifest_sha256,manifest)
+values(repeat('c',64),'{"synthetic_only":true,"source":"SYNTHETIC-HOSTED-H1-v1"}');
+insert into rag.project_fact_cards(rem_project_id,batch_sha256,payload)
+values('H1-PROJECT-001',repeat('c',64),'{"name":{"th":"โครงการสวนสมมติ H1"},"status":{"raw":"2","label":"ข้อมูลสมมติ"},"mode":"DRAFT_PREVIEW"}');
+insert into staging.knowledge_candidates(id,batch_sha256,source_key,kind,project_ids,topic,source_ref,evidence)
+select '72000000-0000-0000-0000-000000000011',repeat('c',64),'synthetic-image','asset',array['H1-PROJECT-001'],
+ 'gallery','synthetic-h1:generated-image',jsonb_build_object('sha256',payload->>'checksum','bytes',(payload->>'file_size')::bigint,
+ 'mime','image/png','storage_bucket','r2-test-content','validated_metadata',
+ (payload-'id'-'kind')||jsonb_build_object('asset_type','image','language','th'),
+ 'classification',jsonb_build_object('role','gallery','alt_th','ภาพสมมติสำหรับทดสอบ R2','people','absent','third_party_marks','absent','stock_imagery','absent'))
+from h1_seed_assets where payload->>'kind'='logo';
