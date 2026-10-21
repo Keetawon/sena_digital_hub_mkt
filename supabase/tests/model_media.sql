@@ -78,7 +78,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file('90900000-0000-0000-0000-000000000002'); raise exception 'Draft model file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id('90900000-0000-0000-0000-000000000002')); raise exception 'Draft model file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -86,9 +86,9 @@ select hub.review_asset(id,updated_at,'approved','Synthetic test PDF',null,null,
 select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic project with model media');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-select set_config('test.mm_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.mm_public');
+select set_config('test.mm_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.mm_public');
 do $$ begin
-  perform public_api.asset_file('90900000-0000-0000-0000-000000000002');
+  perform public_api.asset_file(pg_temp.public_asset_id('90900000-0000-0000-0000-000000000002'));
   assert exists(select 1 from jsonb_array_elements(current_setting('test.mm_payload')::jsonb->'assets') a where a->>'public_model_id'=current_setting('test.mm_model')), 'Published model association missing';
 end $$;
 set local role editor;
@@ -97,7 +97,7 @@ select hub.unbind_model_asset(id,current_setting('test.mm_model'),current_settin
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert (select payload=current_setting('test.mm_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.mm_public')), 'Draft removal mutated published model media';
+  assert (select payload=current_setting('test.mm_payload')::jsonb from public_api.read_projects() where public_project_id=current_setting('test.mm_public')), 'Draft removal mutated published model media';
 end $$;
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
@@ -111,7 +111,7 @@ select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic r
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects p,jsonb_array_elements(p.payload->'assets') a where p.public_project_id=current_setting('test.mm_public') and a->>'public_model_id'=current_setting('test.mm_second')), 'Rejected model media entered new release';
+  assert not exists(select 1 from public_api.read_projects() p,jsonb_array_elements(p.payload->'assets') a where p.public_project_id=current_setting('test.mm_public') and a->>'public_model_id'=current_setting('test.mm_second')), 'Rejected model media entered new release';
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -119,7 +119,7 @@ select hub.review_asset(id,updated_at,'revoked','Synthetic withdrawal',null,null
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.mm_public')), 'Revoked model plan remained published';
-  begin perform public_api.asset_file('90900000-0000-0000-0000-000000000002'); raise exception 'Revoked model file leaked'; exception when no_data_found then null; end;
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.mm_public')), 'Revoked model plan remained published';
+  begin perform public_api.asset_file(pg_temp.public_asset_id('90900000-0000-0000-0000-000000000002')); raise exception 'Revoked model file leaked'; exception when no_data_found then null; end;
 end $$;
 rollback;

@@ -128,12 +128,13 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;bad jsonb;
  perform hub.promotion_command('review',p,'{"expected_revision":1,"review_type":"LEGAL","decision":"APPROVED","evidence":"Synthetic legal evidence","change_reason":"Test review"}');
  perform hub.promotion_command('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Initial test publication"}');
  perform set_config('test.residential_first_version',hub.promotion_read(p)->>'published_version_id',true);
+ perform set_config('test.residential_code',hub.promotion_read(p)->>'code',true);
 end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
- assert exists(select 1 from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Start boundary not inclusive';
- assert(select payload->>'benefit_value'='1199.99' and payload->'rag_eligible'='false'::jsonb and nullif(payload#>>'{legal_terms,th}','') is not null and nullif(payload#>>'{disclaimer,th}','') is not null from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Consumer payload lost exact amount/legal context';
+ assert exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Start boundary not inclusive';
+ assert(select payload->>'benefit_value'='1199.99' and payload->'rag_eligible'='false'::jsonb and nullif(payload#>>'{legal_terms,th}','') is not null and nullif(payload#>>'{disclaimer,th}','') is not null from public_api.read_promotions() where code=current_setting('test.residential_code')),'Consumer payload lost exact amount/legal context';
  begin perform 1 from hub.promotion_reviews;assert false,'Consumer accessed review evidence';exception when insufficient_privilege then null;end;
 end $$;
 reset role;
@@ -144,14 +145,14 @@ do $$ declare expired uuid;p uuid:=current_setting('test.residential_promo')::uu
  select p,version_no+1,draft_revision,jsonb_set(payload,'{ends_at}',to_jsonb(now())),'00000000-0000-0000-0000-000000000002','Synthetic exact end boundary'
  from hub.promotion_versions where id=current_setting('test.residential_first_version')::uuid returning id into expired;
  update hub.public_promotions set published_version_id=expired where id=p;
- assert not exists(select 1 from public_api.promotions where promotion_id=p),'End boundary remained eligible';
+ assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'End boundary remained eligible';
  update hub.public_promotions set published_version_id=current_setting('test.residential_first_version')::uuid where id=p;
  begin update hub.promotion_versions set payload='{}' where id=expired;assert false,'Published payload mutable';exception when check_violation then null;end;
  begin delete from hub.promotion_versions where id=expired;assert false,'Published version deletable';exception when check_violation then null;end;
  update staging.source_offers set source_active=false where source_offer_key='SYNTHETIC:SQL:000021';
- assert not exists(select 1 from public_api.promotions where promotion_id=p),'Inactive source remained eligible';
+ assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Inactive source remained eligible';
  update staging.source_offers set source_active=true,source_deleted=true where source_offer_key='SYNTHETIC:SQL:000021';
- assert not exists(select 1 from public_api.promotions where promotion_id=p),'Deleted source remained eligible';
+ assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Deleted source remained eligible';
  update staging.source_offers set source_deleted=false where source_offer_key='SYNTHETIC:SQL:000021';
 end $$;
 
@@ -169,7 +170,7 @@ do $$ begin
 end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-do $$ begin assert(select payload#>>'{title,th}'='โปรโมชั่นสังเคราะห์' from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Draft changed published snapshot';end $$;
+do $$ begin assert(select payload#>>'{title,th}'='โปรโมชั่นสังเคราะห์' from public_api.read_promotions() where code=current_setting('test.residential_code')),'Draft changed published snapshot';end $$;
 
 -- A mixed set fails atomically across brand, project (with model draft), and promotions.
 set local role publisher;
@@ -229,7 +230,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.promotion_command('review',current_setting('test.residential_promo')::uuid,'{"expected_revision":3,"review_revision":2,"review_type":"LEGAL","decision":"REVOKED","evidence":"Synthetic revocation","change_reason":"Revoke published review after draft change"}');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-do $$ begin assert not exists(select 1 from public_api.promotions where promotion_id=current_setting('test.residential_promo')::uuid),'Revoked published review remained visible';end $$;
+do $$ begin assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Revoked published review remained visible';end $$;
 reset role;
 select 'PASS: residential roles, exact money, expiry, source withdrawal, immutable snapshots, atomic release/rollback and synthetic selection guards' as result;
 rollback;

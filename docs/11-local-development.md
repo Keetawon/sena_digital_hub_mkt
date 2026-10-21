@@ -347,3 +347,28 @@ The schema remains a local demo contract, not production acceptance. Atomic
 multi-entity releases are implemented for the demo; real asset rights, content,
 privacy and consumer rollout still need their recorded owner decisions. See
 [the delivery plan](07-delivery-plan.md) for the remaining milestones.
+
+
+## Programme Phase 1 credential-file constraint — 21 October 2026
+
+For this programme the owner approved the existing ignored
+`.local/development.json` and `apps/admin/.env.local` only for random local-only
+values from `dev:db`. Never put hosted, TEST or production secrets in them.
+Run `git check-ignore` on both before each programme commit. Never print, copy
+or quote their contents; create no other credential files.
+
+The disposable test runner and populated-upgrade test initialize PostgreSQL with
+`initdb -W` through a private stdin pipe. This avoids the dependency's temporary
+plaintext password file while retaining SCRAM authentication. PostgreSQL's Windows
+MSYS stdin path is selected only for the initialization child; output is discarded.
+This follows [PostgreSQL 17's prompt implementation](https://github.com/postgres/postgres/blob/REL_17_STABLE/src/common/sprompt.c).
+Working databases and their credentials are not modified. Keep screenshots and
+test reports in ignored `artifacts/`, and never force-add them.
+
+`test:hosted-h1` also uses the stdin initializer. Its owned simulation passes
+connection metadata directly in memory and removes its disposable cluster after
+the run. The loopback API entry point injects the existing fictional R2 fixture
+during app construction, keeping the real client validation and signing checks.
+It creates neither `current.json` nor `r2-simulation.json`. The standalone
+`simulate-hosted-test.mjs --keep-running` persistence mode is outside this
+programme's credential-file approval and must not be used for its gates.

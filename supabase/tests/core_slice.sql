@@ -70,7 +70,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 declare schema_name text;
 begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Draft leaked';
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Draft leaked';
   foreach schema_name in array array['hub','staging','audit','internal','rag'] loop
     assert not has_schema_privilege(current_user,schema_name,'USAGE'), 'Consumer has private schema usage';
   end loop;
@@ -122,13 +122,14 @@ select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":1
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.version_1',hub.publish_project(current_setting('test.project_id')::uuid,'First SQL test publish')::text,true);
+do $$ begin assert (hub.project_versions(current_setting('test.project_id')::uuid)->0->>'publisher')='00000000-0000-0000-0000-000000000002','Staff audit attribution missing'; end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-select set_config('test.payload_1',payload::text,true) from public_api.projects where public_project_id=current_setting('test.public_id');
+select set_config('test.payload_1',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.public_id');
 do $$
 begin
-  assert (select version_no=1 and publisher='00000000-0000-0000-0000-000000000002'::uuid
-    and payload#>>'{models,0,bedrooms}'='2.5' from public_api.projects where public_project_id=current_setting('test.public_id')), 'Published metadata/model snapshot incorrect';
+  assert (select version_no=1 and published_at is not null
+    and payload#>>'{models,0,bedrooms}'='2.5' from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Published metadata/model snapshot incorrect';
 end $$;
 
 set local role editor;
@@ -148,7 +149,7 @@ set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 begin
-  assert (select payload=current_setting('test.payload_1')::jsonb from public_api.projects where public_project_id=current_setting('test.public_id')), 'Draft edit changed public snapshot';
+  assert (select payload=current_setting('test.payload_1')::jsonb from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Draft edit changed public snapshot';
 end $$;
 
 set local role publisher;
@@ -160,7 +161,7 @@ do $$
 begin
   assert (select version_no=2 and payload#>>'{models,0,bedrooms}'='3'
     and payload#>>'{public_name,th}'='ข้อมูลทดสอบ รุ่นสอง'
-    from public_api.projects where public_project_id=current_setting('test.public_id')), 'Publish mixed old/new fields';
+    from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Publish mixed old/new fields';
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -169,7 +170,7 @@ set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
 begin
-  assert (select payload=current_setting('test.payload_1')::jsonb from public_api.projects where public_project_id=current_setting('test.public_id')), 'Rollback did not restore exact payload';
+  assert (select payload=current_setting('test.payload_1')::jsonb from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Rollback did not restore exact payload';
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -177,7 +178,7 @@ select hub.withdraw_project(current_setting('test.project_id')::uuid,'SQL test w
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Withdrawal leaked';
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Withdrawal leaked';
 end $$;
 
 -- Only the migration owner simulates a rights authority revocation. Editor/publisher
@@ -202,7 +203,7 @@ update hub.assets set effective_to=now()-interval '1 second' where id='10000000-
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Expired asset stayed visible';
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Expired asset stayed visible';
 end $$;
 reset role;
 update hub.assets set effective_to=null where id='10000000-0000-0000-0000-000000000001';
@@ -210,7 +211,7 @@ update hub.model_types set match_status='REJECTED' where id=current_setting('tes
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.public_id')), 'Revoked model mapping stayed visible';
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.public_id')), 'Revoked model mapping stayed visible';
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);

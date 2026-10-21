@@ -119,3 +119,21 @@ Validation commands/results:
 - `npm.cmd run test:hosted-h1`: **9 checks passed, 1 failed** at the pinned migration inventory (profile expects 33; repository has 39). The H1 browser simulation never started. The guard/profile was left unchanged; reviewing a future hosted-profile version is a follow-up. No hosted endpoint was contacted.
 
 The three read-only working-data captures are `.local/km-review/dashboards/brands.png`, `projects.png`, and `knowledge.png`; browser error capture is empty. These screenshots and evidence packages remain ignored local artifacts.
+
+
+## Phase 1 correction — 21 October 2026
+
+The gallery recommendation now counts an eligible additional project image in
+the existing hero/thumbnail collections, excluding primary covers. The per-model
+plan recommendation counts the supported `floor_plan` role. Neither `gallery`
+nor `unit_plan` is introduced as an asset binding role. Required publication
+checks remain unchanged; these media targets do not become blockers.
+
+Publication comparisons show every outgoing field from the database's public
+projection, including unchanged values, both locales and nested media/brand/model
+data. Internal website reference edits no longer create public-content differences.
+Existing staff cross-tab and historical-file redactions still apply; a redacted
+comparison explains the missing access and cannot be confirmed in the UI.
+English inputs are available for brand description, advertising disclaimer,
+SEO title/description and facility descriptions. English translation review and
+registry-driven requirements belong to programme Phase 2.

@@ -10,6 +10,7 @@ import { spawn,execFile } from 'node:child_process';
 import { once } from 'node:events';
 import EmbeddedPostgres from 'embedded-postgres';
 import { applyLocalMigrations } from './local-migrations.mjs';
+import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),[mode,...extra]=process.argv.slice(2);
 assert.ok(['api','db','ui','all'].includes(mode),'Use api, db, ui or all');
@@ -58,7 +59,7 @@ async function stop(){
 }
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await stop();process.exit(130);});
 try{
-  await server.initialise();await server.start();started=true;
+  await initialiseDisposableDb(dataDirectory,config.adminPassword);await server.start();started=true;
   const bootstrap=server.getPgClient('postgres','127.0.0.1');await bootstrap.connect();
   assert.equal(await realpath((await bootstrap.query('SHOW data_directory')).rows[0].data_directory),await realpath(dataDirectory));
   await bootstrap.query('CREATE DATABASE sena_hub_local');await bootstrap.end();
@@ -66,7 +67,7 @@ try{
   try{
     await db.query('CREATE TABLE public.disposable_test_run(run_id text PRIMARY KEY)');await db.query('INSERT INTO public.disposable_test_run VALUES ($1)',[runId]);
     await applyLocalMigrations(db);
-    assert.match(config.runtimePassword,/^[a-f0-9]{48}$/);
+    if(!/^[a-f0-9]{48}$/.test(config.runtimePassword))throw new Error('Invalid local runtime credential');
     await db.query(`CREATE ROLE hub_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '${config.runtimePassword}'`);
     await db.query('GRANT hub_app TO hub_runtime WITH ADMIN FALSE,INHERIT FALSE,SET TRUE');
     // Disposable-only stronger principal for explicit historical-role probes.

@@ -36,8 +36,8 @@ class Store:
         self.actors = []
         self.error = None
         self.result = {"id": ID, "draft_revision": 1, "benefit_value": "100000000000.01", "published": None}
-        self.rows = [{"payload": {**DRAFT, "project_id": "prj_000031", "rag_eligible": False},
-                      "version_id": UUID(ID), "published_at": datetime(2026, 10, 1, tzinfo=timezone.utc)}]
+        self.rows = [{"payload": {**{key: value for key, value in DRAFT.items() if key != "project_id"}, "public_project_id": "prj_000031", "rag_eligible": False},
+                      "version_no": 3, "published_at": datetime(2026, 10, 1, tzinfo=timezone.utc)}]
 
     async def fetchval(self, statement, *args):
         self.calls.append((statement, args))
@@ -206,7 +206,7 @@ def test_active_reader_reads_only_snapshot_projection_with_exact_id_and_legal_fa
     item = response.json()["data"][0]
     assert item["benefit_value"] == "100000000000.01" and item["title"] == "Demo offer"
     assert item["legal_terms"] == DRAFT["legal_terms"]["th"] and item["disclaimer"] == DRAFT["disclaimer"]["th"]
-    assert item["meta"]["is_fallback_locale"] and item["meta"]["version_id"] == ID
+    assert item["meta"]["is_fallback_locale"] and item["meta"]["entity_version"] == 3 and "version_id" not in item["meta"]
     assert response.headers["cache-control"] == "no-store"
     assert "FROM public_api.read_promotions()" in store.calls[-1][0]
     assert store.calls[-1][1] == ("prj_000031",)

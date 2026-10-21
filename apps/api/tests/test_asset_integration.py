@@ -109,7 +109,7 @@ def test_local_upload_dedup_rights_private_files_and_cleanup():
                 assert preview.headers["cache-control"] == "no-store"
                 assert preview.headers["x-content-type-options"] == "nosniff"
                 assert "sandbox" in preview.headers["content-security-policy"]
-                assert client.get(f"/v1/assets/{asset['id']}/file", headers=headers["service_consumer"]).status_code == 404
+                assert client.get(f"/v1/assets/ast_{asset['checksum']}/file", headers=headers["service_consumer"]).status_code == 404
                 review_body = {"updated_at": asset["updated_at"], "decision": "approved", "rights_notes": "ไฟล์สร้างขึ้นสำหรับทดสอบเท่านั้น",
                                "effective_from": None, "effective_to": None, "change_reason": "ทดสอบอนุมัติสิทธิ์"}
                 assert client.post(f"{asset_path}/review", json=review_body, headers=headers["editor"]).status_code == 403
@@ -122,7 +122,7 @@ def test_local_upload_dedup_rights_private_files_and_cleanup():
                 duplicate = upload(item)
                 assert duplicate.status_code == 200 and duplicate.json()["meta"]["reused"]
                 assert duplicate.json()["data"] == reviewed.json()["data"]
-                assert client.get(f"/v1/assets/{asset['id']}/file", headers=headers["service_consumer"]).status_code == 404
+                assert client.get(f"/v1/assets/ast_{asset['checksum']}/file", headers=headers["service_consumer"]).status_code == 404
                 revoked = client.post(f"{asset_path}/review", headers=headers["publisher"], json={
                     **review_body, "updated_at": reviewed.json()["data"]["updated_at"], "decision": "revoked", "change_reason": "สิ้นสุดการทดสอบ",
                 })

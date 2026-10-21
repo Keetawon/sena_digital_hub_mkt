@@ -77,7 +77,10 @@ async function publish(page: Page, reason: string, expected: { before?: string; 
   await field.fill('   '); await expect(confirm).toBeDisabled();
   const comparison = dialog.getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์', exact: true });
   await expect(comparison).toContainText(expected.after);
-  await expect(comparison.locator('.brand-comparison-row')).toHaveCount(5);
+  await expect(comparison.locator('.brand-comparison-row')).toHaveCount(7);
+  for (const key of ['public_brand_id', 'public_name', 'description', 'slug', 'status', 'assets', 'synthetic']) {
+    await expect(comparison.locator(`[data-field="${key}"]`)).toHaveCount(1);
+  }
   if (expected.before) {
     await expect(comparison).toContainText(expected.before);
     await expect(comparison.locator('[data-field="public_name"]')).toHaveClass(/changed/);

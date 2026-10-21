@@ -1,5 +1,5 @@
 // Runs the H1 profile entirely on loopback. Never loads .env.supabase-test or creates Auth users.
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawn, execFile } from 'node:child_process';
@@ -42,18 +42,17 @@ try {
     const probe=createServer();probe.once('error',()=>reject(new Error(`Local H1 port ${port} is already in use; stop its prior simulation first.`)));
     probe.listen(port,'127.0.0.1',()=>probe.close(resolve));
   });
-  if(!args.includes('--existing-simulation'))database=await simulateHostedTest({keepRunning:true,seed:true});
-  const config=JSON.parse(await readFile(path.join(root,'.local/hosted-test-simulation/current.json'),'utf8'));
+  if(!args.includes('--existing-simulation'))database=await simulateHostedTest({keepRunning:true,persistMetadata:false,seed:true});
+  const config=database?.metadata??JSON.parse(await readFile(path.join(root,'.local/hosted-test-simulation/current.json'),'utf8'));
   if(config.host!=='127.0.0.1'||config.port!==55434||config.database!=='hub_hosted_test_simulation'||config.environment!=='hosted-test-simulation')throw new Error('Not the fixed local H1 simulation');
   const dsn=new URL(config.runtimeDatabaseUrl);
   if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||dsn.port!=='55434'||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
   const env={...process.env};
-  const r2File=path.join(root,'.local/hosted-test-simulation/r2-simulation.json');
-  await writeFile(r2File,JSON.stringify(R2_SIMULATION),{mode:0o600});
   for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_')||name==='OPENAI_API_KEY')delete env[name];
   Object.assign(env,{HUB_AUTH_GOOGLE:'1',HUB_AUTH_PASSWORD:'1',HUB_ENV_LABEL:'LOCAL H1',HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
     HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
-    HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:r2File,HUB_R2_PRIVATE_BUCKET_CONFIRMED:'1',HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
+    HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:'memory:h1-r2',HUB_H1_R2_CONFIG:JSON.stringify(R2_SIMULATION),
+    HUB_R2_PRIVATE_BUCKET_CONFIRMED:'1',HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY','UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {
@@ -64,7 +63,7 @@ try {
     }});mock.listen(54329,'127.0.0.1');await once(mock,'listening');
   }
   if(component!=='admin') {
-    apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','uvicorn','sena_hub_api.main:create_app','--factory','--host','127.0.0.1','--port','8001','--no-proxy-headers','--no-access-log'],env);
+    apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','python','scripts/run-h1-api.py'],env);
     await ready('http://127.0.0.1:8001/health',apiProcess);
   }
   if(component!=='api') {

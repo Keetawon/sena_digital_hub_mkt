@@ -142,7 +142,7 @@ for (const viewport of viewports) {
       const sanitized = await content.text();
       expect(sanitized).toContain('Synthetic logo');
       expect(sanitized).not.toMatch(/<script|foreignObject|onload|onclick|invalid\.example|alert\(/i);
-      expect((await page.request.get(`/api/hub/v1/assets/${current.id}/file`)).status()).toBe(404);
+      expect((await page.request.get(`/api/hub/v1/assets/ast_${current.checksum}/file`)).status()).toBe(404);
 
       const history = (await data.db.query('SELECT id,asset_id,deleted_at FROM hub.brand_assets WHERE brand_id=$1 AND asset_role=$2 ORDER BY created_at,id', [data.brand.id, 'logo_primary'])).rows;
       expect(history).toHaveLength(2);

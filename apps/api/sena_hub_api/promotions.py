@@ -254,9 +254,9 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
         query(request, ("project_id", "locale"))
         async with connection(request, actor) as db:
             # Eligibility and stacking are resolved by the view before filtering.
-            rows = await db.fetch("SELECT payload,version_id,published_at FROM public_api.read_promotions() "
+            rows = await db.fetch("SELECT payload,version_no,published_at FROM public_api.read_promotions() "
                                   "WHERE ($1::text IS NULL OR public_project_id=$1) "
-                                  "ORDER BY public_project_id,priority,promotion_id", project_id)
+                                  "ORDER BY public_project_id,priority,code", project_id)
         items = []
         for row in rows:
             payload = row["payload"]
@@ -272,7 +272,7 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
             # Contract failures must not emit a promotion without its legal context.
             if not payload["legal_terms"].strip() or not payload["disclaimer"].strip():
                 raise failure(503, "promotion_contract_invalid", "ข้อมูลเงื่อนไขโปรโมชั่นยังไม่ครบถ้วน")
-            items.append({**payload, "meta": {"version_id": row["version_id"], "published_at": row["published_at"],
+            items.append({**payload, "meta": {"entity_version": row["version_no"], "published_at": row["published_at"],
                                               "locale": locale, "is_fallback_locale": bool(fallback),
                                               "fallback_indicator": {"missing": fallback}, "cache_ttl": 0}})
         return {"data": items, "meta": {"timezone": "Asia/Bangkok", "locale": locale, "cache_ttl": 0}}

@@ -35,7 +35,7 @@ test('website source stays separate from approval and dirty website text survive
   await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
   await expect(page.getByText('ดึงจากเว็บไซต์สาธารณะ SENA', { exact: true })).toBeVisible();
   await expect(page.getByText('แหล่งข้อมูล · ยังไม่ใช่การอนุมัติโดยบุคคล')).toBeVisible();
-  const field = page.getByLabel('เนื้อหาจากเว็บไซต์ (ฉบับร่าง)', { exact: true });
+  const field = page.getByLabel('เนื้อหาจากเว็บไซต์ (อ้างอิงภายใน)', { exact: true });
   await expect(field).toHaveValue('เนื้อหาจากเว็บไซต์สำหรับทดสอบ');
   await field.fill('ข้อความที่เจ้าของกำลังแก้ไข');
   let stale = true;
@@ -89,7 +89,7 @@ test('Thailand coordinates reject zero and outside bounds, accept pasted pairs a
 test('ordered source fields, bilingual draft and unsaved edits survive five tabs', async ({ page }) => {
   const project = await openFixture(page);
   const fields = page.locator('.project-fields input, .project-fields textarea, .project-fields .source-field p');
-  expect(await fields.evaluateAll(nodes => nodes.map(node => node.id))).toEqual(['gold-commercial_brand', 'gold-project_id', 'gold-rem_project_group_id', 'gold-project_name', 'public_name', 'gold-project_name_eng', 'public_name_en', 'address', 'address_en', 'latitude', 'longitude', 'slug', 'ad_disclaimer']);
+  expect(await fields.evaluateAll(nodes => nodes.map(node => node.id))).toEqual(['gold-commercial_brand', 'gold-project_id', 'gold-rem_project_group_id', 'gold-project_name', 'public_name', 'gold-project_name_eng', 'public_name_en', 'address', 'address_en', 'latitude', 'longitude', 'slug', 'ad_disclaimer', 'ad_disclaimer_en']);
   await expect(page.locator('#gold-project_name')).toContainText('ชื่อทางการ REM');
   await expect(page.locator('.source-field input')).toHaveCount(0);
   await expect(page.locator('#public_name')).toHaveValue('ชื่อที่ทีมงานแก้แล้ว');

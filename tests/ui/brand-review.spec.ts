@@ -6,6 +6,14 @@ type Row = Record<string, any>;
 const stamp = '2026-10-02T03:00:00Z';
 const logo = { id: '76000000-0000-4000-8000-000000000001', binding_id: '76000000-0000-4000-8000-000000000002', asset_role: 'logo_primary', is_primary: true, alt_text: { th: 'โลโก้แบรนด์สมมติ' }, display_order: 0, public_url: '/demo-assets/brand-logo.svg', original_filename: 'synthetic-brand-review.svg', mime_type: 'image/svg+xml', rights_status: 'approved', effective_from: null, effective_to: null };
 
+// Mock the same public-only RPC contract used by the live review screen.
+function attachPreview(row: Row) {
+  row.publication_preview = { public_brand_id: row.public_brand_id, public_name: row.public_name, description: row.description,
+    slug: row.slug, status: row.status, assets: [...row.assets].sort((a, b) => a.asset_role.localeCompare(b.asset_role) || a.display_order - b.display_order || a.id.localeCompare(b.id))
+      .map(asset => ({ public_asset_id: asset.id.replaceAll('-', '').padEnd(64, '0'), asset_role: asset.asset_role,
+        is_primary: asset.is_primary, alt_text: asset.alt_text, display_order: asset.display_order, public_url: asset.public_url,
+        mime_type: asset.mime_type, effective_from: asset.effective_from, effective_to: asset.effective_to })) };
+}
 function brand(key: string, title: string): Row {
   return {
     id: `synthetic-${key}`, public_brand_id: `brd_${key}`, rem_brand_id: `000-${key}`,
@@ -38,6 +46,8 @@ async function fixture(page: Page, role = 'publisher') {
   let failVersions = false;
   const writes: string[] = [];
   await page.route(`**${api}/brands**`, async route => {
+    rows.forEach(attachPreview);
+    Object.values(versions).flat().forEach(version => attachPreview(version.payload));
     const path = new URL(route.request().url()).pathname;
     if (route.request().method() !== 'GET') { writes.push(path); return route.fulfill({ status: 409, json: { error: { message: 'ชุดทดสอบนี้อ่านข้อมูลเท่านั้น' } } }); }
     if (path === `${api}/brands`) return route.fulfill({ json: { data: rows } });

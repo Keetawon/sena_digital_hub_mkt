@@ -6,21 +6,25 @@ const time = '2026-10-03T08:00:00Z';
 const fixture = (): Project => ({ public_project_id: 'review-test', public_name: { th: 'ชื่อใหม่', en: 'New' },
   slug: 'review-test', updated_at: time, published_version_id: 'version-1', publication_available: true,
   readiness: { ready: true, percent: 100, missing: [] }, address: { th: 'กรุงเทพมหานคร' }, latitude: 13.7563, longitude: 100.5018,
-  models: [], assets: [], ad_disclaimer: { th: 'ข้อความจำลอง' } });
+  models: [], assets: [], ad_disclaimer: { th: 'ข้อความจำลอง' },
+  publication_preview: { public_project_id: 'review-test', public_name: { th: 'ชื่อใหม่', en: 'New' }, slug: 'review-test',
+    address: { th: 'กรุงเทพมหานคร' }, latitude: 13.7563, longitude: 100.5018, models: [], assets: [], ad_disclaimer: { th: 'ข้อความจำลอง' } } });
 
 test('comparison excludes staff metadata and optional modules, detects multilingual and media changes', () => {
   const before = fixture(), after = structuredClone(before);
   after.updated_at = '2026-10-04T08:00:00Z'; after.readiness.ready = false; after.demo_fields = { internal: true };
   expect(projectChanges(after, before)).toEqual([]);
-  after.public_name.en = 'Changed'; after.longitude = 101;
+  after.publication_preview!.public_name = { th: 'ชื่อใหม่', en: 'Changed' }; after.publication_preview!.longitude = 101;
   expect(projectChanges(after, before).map(item => item.key)).toEqual(['public_name', 'longitude']);
   after.assets = [{ id: 'a', binding_id: 'b', asset_role: 'hero', rights_status: 'approved', public_url: null,
     original_filename: 'sample.png', mime_type: 'image/png', alt_text: { th: 'ภาพจำลอง' }, display_order: 0 }];
+  after.publication_preview!.assets = [{ public_asset_id: 'ast_' + 'a'.repeat(64), alt_text: { th: 'ภาพจำลอง', en: 'Synthetic image' } }];
   expect(projectChanges(after, before).map(item => item.key)).toContain('assets');
 });
 
 test('publish preview lists changed fields, role attribution and ready text; opening it writes nothing', async ({ page }) => {
   const project = fixture(), live = { ...fixture(), public_name: { th: 'ชื่อเดิม', en: 'New' } };
+  live.publication_preview!.public_name = { th: 'ชื่อเดิม', en: 'New' };
   project.readiness.excluded_models = [{ rem_model_id: 'REM-PENDING', name: 'แบบรอตรวจ', reason: 'ข้อมูลจำเป็นยังไม่ครบ' }];
   const writes: string[] = [];
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'publisher', url: 'http://127.0.0.1:3000' }]);
@@ -42,7 +46,8 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
   await expect(page.getByRole('region', { name: 'ไม่รวมในการเผยแพร่' })).toContainText('REM-PENDING');
   const diff = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลโครงการ' });
-  await expect(diff.locator('[data-field]')).toHaveCount(1);
+  await expect(diff.locator('[data-field]')).toHaveCount(Object.keys(project.publication_preview!).length);
+  await expect(diff.locator('[data-field].changed')).toHaveCount(1);
   await expect(diff).toContainText('ชื่อเดิม'); await expect(diff).toContainText('ชื่อใหม่');
   await page.getByRole('dialog').getByRole('button', { name: 'ยกเลิก', exact: true }).click();
   expect(writes).toEqual([]);

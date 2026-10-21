@@ -283,6 +283,11 @@
       "name": "202610190056_project_progress_projection_once.sql",
       "canonical_sha256": "6f31bb549c4c981db8251e18ef760c1935bf9c49fad0cdaf8fe092d9deace7c2",
       "executed_sha256": "6f31bb549c4c981db8251e18ef760c1935bf9c49fad0cdaf8fe092d9deace7c2"
+    },
+    {
+      "name": "202610210057_public_content_boundary.sql",
+      "canonical_sha256": "eeb482cff201ef77a619e0f6c98e0d0e749282307d7c6dad6d19a18b1cd1cb5a",
+      "executed_sha256": "eeb482cff201ef77a619e0f6c98e0d0e749282307d7c6dad6d19a18b1cd1cb5a"
     }
   ]
 }

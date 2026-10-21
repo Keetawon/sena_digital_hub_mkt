@@ -78,7 +78,7 @@ def test_internal_publisher_reads_public_asset_through_published_binding(monkeyp
     path.write_bytes(content)
     class DB:
         async def fetchval(self, query, asset_id):
-            assert query == 'SELECT public_api.asset_file($1)' and asset_id == UUID(ASSET_ID)
+            assert query == 'SELECT hub.public_asset_file($1::text)' and asset_id == 'ast_' + 'a' * 64
             return {'mime_type': 'image/png', 'original_filename': path.name}
     @asynccontextmanager
     async def database(request, actor):
@@ -87,7 +87,7 @@ def test_internal_publisher_reads_public_asset_through_published_binding(monkeyp
     monkeypatch.setattr(main, 'database', database)
     monkeypatch.setattr(assets, 'readable_file', lambda metadata: path)
     client = TestClient(create_app(settings()), client=('127.0.0.1', 50000))
-    response = client.get(f'/v1/assets/{ASSET_ID}/file', headers={'Authorization': f"Bearer {TOKENS['publisher']}"})
+    response = client.get(f'/v1/assets/ast_{"a" * 64}/file', headers={'Authorization': f"Bearer {TOKENS['publisher']}"})
     assert response.status_code == 200 and response.content == content
     assert response.headers['cache-control'] == 'no-store'
 

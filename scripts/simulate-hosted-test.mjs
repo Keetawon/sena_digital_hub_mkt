@@ -6,6 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import net from 'node:net';
 import pg from 'pg';
 import EmbeddedPostgres from 'embedded-postgres';
+import {initialiseDisposableDb} from './initialise-disposable-db.mjs';
 import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError} from './supabase-test-migrations.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -16,7 +17,7 @@ const identifier=value=>'"'+value.replaceAll('"','""')+'"';
 const denied=error=>error.code==='42501';
 const owners={ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging'],hub_export_owner:['hub_export']};
 
-export async function simulateHostedTest({keepRunning=false,seed=true,log=console.log}={}) {
+export async function simulateHostedTest({keepRunning=false,persistMetadata=true,seed=true,log=console.log}={}) {
   // No environment profile is read; all endpoints and random credentials are local.
   const probe=net.createServer();
   await new Promise((resolve,reject)=>probe.once('error',reject).listen(connection.port,connection.host,resolve));
@@ -25,9 +26,9 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
   const directory=await mkdtemp(path.join(simulationRoot,'run-'));
   const adminPassword=secret(),migrationPassword=secret(),runtimePassword=secret();
   const server=new EmbeddedPostgres({databaseDir:directory,user:'postgres',password:adminPassword,port:connection.port,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
-  let admin,client,runtime,verified=false,held=false;
+  let admin,client,runtime,metadata,verified=false,held=false;
   try {
-    await server.initialise();await server.start();
+    await initialiseDisposableDb(directory,adminPassword);await server.start();
     admin=new pg.Client({...connection,database:'postgres',user:'postgres',password:adminPassword});await admin.connect();
     const actual=(await admin.query("select current_setting('data_directory') as directory")).rows[0].directory;
     assert.equal(path.resolve(actual).toLowerCase(),path.resolve(directory).toLowerCase());verified=true;
@@ -134,14 +135,20 @@ export async function simulateHostedTest({keepRunning=false,seed=true,log=consol
       log('PASS: synthetic H1 seed and harmless replay; issuance flags remain false.');
     }
     if(keepRunning) {
-      const metadata={...connection,environment:'hosted-test-simulation',projectRef:PROJECT_REF,dataDirectory:directory,migrationUser:'hub_migration_verifier',migrationPassword,runtimeUser:'hub_runtime',runtimePassword,adminUser:'postgres',adminPassword,created_at:new Date().toISOString()};
+      metadata={...connection,environment:'hosted-test-simulation',projectRef:PROJECT_REF,dataDirectory:directory,migrationUser:'hub_migration_verifier',migrationPassword,runtimeUser:'hub_runtime',runtimePassword,adminUser:'postgres',adminPassword,created_at:new Date().toISOString()};
       metadata.runtimeDatabaseUrl=`postgresql://hub_runtime:${runtimePassword}@${connection.host}:${connection.port}/${connection.database}`;
       metadata.migrationDatabaseUrl=`postgresql://hub_migration_verifier:${migrationPassword}@${connection.host}:${connection.port}/${connection.database}`;
-      const file=path.join(simulationRoot,'current.json');await writeFile(file,JSON.stringify(metadata,null,2)+'\n',{mode:0o600});
-      log('Simulation ready at 127.0.0.1:55434; private connection metadata: .local/hosted-test-simulation/current.json');
+      if(persistMetadata) {
+        const file=path.join(simulationRoot,'current.json');await writeFile(file,JSON.stringify(metadata,null,2)+'\n',{mode:0o600});
+        log('Simulation ready at 127.0.0.1:55434; private connection metadata: .local/hosted-test-simulation/current.json');
+      }else log('Simulation ready at 127.0.0.1:55434; connection metadata stays in memory.');
       held=true;
     }
-    return {server,stop:async()=>{await server.stop();},metadataPath:held?path.join(simulationRoot,'current.json'):undefined};
+    return {server,metadata,stop:async()=>{
+      await server.stop();
+      const target=path.resolve(directory),parent=path.resolve(simulationRoot)+path.sep;
+      if(!persistMetadata && verified && target.startsWith(parent) && path.basename(target).startsWith('run-')) await rm(target,{recursive:true,force:true});
+    },metadataPath:held&&persistMetadata?path.join(simulationRoot,'current.json'):undefined};
   } catch(error) {
     // Assertion text is safe; database detail can include SQL/connection secrets.
     if(error.code==='ERR_ASSERTION') throw error;

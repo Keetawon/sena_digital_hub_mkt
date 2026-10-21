@@ -17,13 +17,13 @@ HEADERS = {"Authorization": f"Bearer {TOKENS['service_consumer']}"}
 
 @pytest.fixture
 def fixture(monkeypatch):
-    model = {"public_model_id": "mdl_synthetic", "rem_model_id": "00001-A-L",
+    model = {"public_model_id": "mdl_synthetic",
              "public_name": {"th": "แบบในรุ่นเผยแพร่", "en": "Frozen model"}, "bedrooms": 2.5}
-    assets = [{"id": "project-hero", "asset_role": "hero", "public_model_id": None},
-              {"id": "project-plan", "asset_role": "floor_plan", "public_model_id": None},
-              {"id": "model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_synthetic"},
-              {"id": "other-model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_other"},
-              {"id": "model-image", "asset_role": "model_image", "public_model_id": "mdl_synthetic"}]
+    assets = [{"public_asset_id": "project-hero", "asset_role": "hero", "public_model_id": None},
+              {"public_asset_id": "project-plan", "asset_role": "floor_plan", "public_model_id": None},
+              {"public_asset_id": "model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_synthetic"},
+              {"public_asset_id": "other-model-plan", "asset_role": "floor_plan", "public_model_id": "mdl_other"},
+              {"public_asset_id": "model-image", "asset_role": "model_image", "public_model_id": "mdl_synthetic"}]
     state = {"available": True, "calls": [], "actors": [], "row": {"public_project_id": "prj_synthetic", "version_no": 7,
              "published_at": "2026-10-02T01:00:00Z", "publisher": "synthetic-publisher", "source_updated_at": None,
              "payload": {"models": [model], "assets": assets}, "published_model": model}}
@@ -68,12 +68,12 @@ def test_scope_exact_ids_order_and_containing_project_metadata(fixture):
         return result["data"]
     assert read(PATHS[0]) == state["row"]["payload"]["models"]
     model = read(PATHS[2])
-    assert model["rem_model_id"] == "00001-A-L" and model["bedrooms"] == 2.5
+    assert "rem_model_id" not in model and model["bedrooms"] == 2.5
     assert model["public_project_id"] == "prj_synthetic"
-    assert [a["id"] for a in read(PATHS[1])] == ["project-hero", "project-plan"]
-    assert [a["id"] for a in read(PATHS[3])] == ["model-plan", "model-image"]
-    assert [a["id"] for a in read(PATHS[1] + "?role=floor_plan")] == ["project-plan"]
-    assert [a["id"] for a in read(PATHS[3] + "?role=floor_plan")] == ["model-plan"]
+    assert [a["public_asset_id"] for a in read(PATHS[1])] == ["project-hero", "project-plan"]
+    assert [a["public_asset_id"] for a in read(PATHS[3])] == ["model-plan", "model-image"]
+    assert [a["public_asset_id"] for a in read(PATHS[1] + "?role=floor_plan")] == ["project-plan"]
+    assert [a["public_asset_id"] for a in read(PATHS[3] + "?role=floor_plan")] == ["model-plan"]
     assert read(PATHS[3] + "?role=structural_plan") == []
 
 

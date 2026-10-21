@@ -10,6 +10,13 @@ const config = JSON.parse(await readFile(new URL('../.local/development.json', i
 const connection = new pg.Client({ host: '127.0.0.1', user: 'postgres', password: config.adminPassword, port: 55432, database: 'sena_hub_local' });
 try {
   await connection.connect();
+  // Fixture-only translation for the legacy UUID-based setup. Assertions below
+  // exercise the real consumer text-ID endpoint with its unchanged rights gate.
+  await connection.query(`create function pg_temp.public_asset_id(asset_uuid uuid) returns text
+    language sql stable security definer set search_path=pg_catalog,pg_temp as $$
+    select 'ast_'||coalesce(checksum,encode(sha256(convert_to(id::text,'UTF8')),'hex')) from hub.assets where id=asset_uuid $$;
+    grant execute on function pg_temp.public_asset_id(uuid) to hub_app,service_consumer,editor,publisher,viewer,admin,online_staff,agency`);
+
   await connection.query(await readFile(new URL('../supabase/tests/accounts.sql', import.meta.url), 'utf8'));
   console.log('PASS: account RLS, decisions, append-only audit and retention');
   await connection.query(await readFile(new URL('../supabase/tests/account_invitations.sql', import.meta.url), 'utf8'));
@@ -19,6 +26,8 @@ try {
   console.log('PASS: knowledge immutable evidence, role isolation, phase review, stale writes and rights flags');
   await connection.query(await readFile(new URL('../supabase/tests/knowledge_followup.sql', import.meta.url), 'utf8'));
   console.log('PASS: knowledge question labels, exactly one hero and private immutable preview releases');
+  await connection.query(await readFile(new URL('../supabase/tests/public_content_boundary.sql', import.meta.url), 'utf8'));
+  console.log('PASS: public field allowlists, exact previews, bilingual values, legacy media, readiness roles and private-view denial');
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
   await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));

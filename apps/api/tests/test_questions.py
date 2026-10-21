@@ -51,7 +51,7 @@ def test_each_staff_role_receives_only_pending_thai_policy_fields(client, role):
     assert set(response.json()) == {"data"}
     assert set(response.json()["data"]) == {"questions"}
     entries = response.json()["data"]["questions"]
-    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 74)} - HIDDEN_IDS
+    assert {entry["id"] for entry in entries} == {f"Q{i}" for i in range(1, 76)} - HIDDEN_IDS
     assert {entry["owner_group"] for entry in entries} == OWNER_GROUPS
     for entry in entries:
         assert set(entry) == set(PRESENTATION_FIELDS)

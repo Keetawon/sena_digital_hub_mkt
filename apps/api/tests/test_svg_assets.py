@@ -162,13 +162,17 @@ def test_svg_endpoint_stores_only_clean_bytes_and_serves_csp(monkeypatch, tmp_pa
     assert first.status_code == 201 and first.json()["data"]["rights_status"] == "pending"
     duplicate = client.post("/v1/admin/assets", content=raw, headers=headers)
     assert duplicate.status_code == 200 and duplicate.json()["meta"]["reused"]
-    response = client.get(f"{path}/{ASSET_ID}/file", headers={"Authorization": f"Bearer {TOKENS[actor]}"})
+    file_id = f"ast_{saved['checksum']}" if actor == "service_consumer" else ASSET_ID
+    response = client.get(f"{path}/{file_id}/file", headers={"Authorization": f"Bearer {TOKENS[actor]}"})
     assert response.status_code == 200
     assert response.headers["content-type"] == MIME
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["content-security-policy"] == "sandbox; default-src 'none'; frame-ancestors 'none'"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["cache-control"] == "no-store"
+    if actor == "service_consumer":
+        assert f"{file_id}.svg" in response.headers["content-disposition"]
+        assert "synthetic.svg" not in response.headers["content-disposition"]
     assert b"script" not in response.content and b"onload" not in response.content
     originals = [item for item in tmp_path.iterdir() if item.is_file()]
     assert len(originals) == 1 and response.content == originals[0].read_bytes()

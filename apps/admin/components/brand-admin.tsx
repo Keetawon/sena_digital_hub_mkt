@@ -11,13 +11,15 @@ import { AssetDialog, Preview, ProjectAssets, RightsBadge, type AssetBinding } f
 import { request } from "./hub-request";
 import { DemoFields } from "./demo-fields";
 import { BrandDashboard } from "./brand-dashboard";
-import { brandHasChanges, brandReviewFields, useBrandReviews, type BrandSnapshot, type BrandVersion } from "./brand-review";
+import { brandHasChanges, useBrandReviews, type BrandSnapshot, type BrandVersion } from "./brand-review";
+import { PublicationComparison } from "./publication-comparison";
 import "./brand-admin.css";
 
 type Localized = { th?: string; [locale: string]: string | undefined };
 export type BrandSource = { rem_brand_id: string; brand_name_rem: string | null; brand_name_en_rem: string | null; is_deleted: boolean | null; deletion_status?: "active" | "deleted" | "unknown"; residential_project_count?: number; non_deleted_residential_project_count?: number | null; exception_codes?: string[]; source_updated_at: string | null; source_snapshot_at: string; source_fingerprint: string; source_record: Record<string, unknown> | null; intake_manifest_sha256: string | null; public_brand_id?: string | null };
 export type BrandSummary = { demo_fields?: unknown; id: string; public_brand_id: string; rem_brand_id: string; public_name: Localized; status: "active" | "inactive"; publication_available: boolean };
 export type Brand = BrandSummary & {
+  publication_preview?: Record<string, unknown>; publication_preview_redacted?: boolean;
   description: Localized; slug: string; updated_at: string; published_version_id: string | null;
   unconfirmed_source_names?: string[]; source_name_provenance?: Record<string, unknown>; updated_by?: string | null;
   readiness: { ready: boolean; percent: number; missing: { field: string; message: string }[] };
@@ -150,8 +152,8 @@ function ResolveBrandDialog({ item, brands, onCancel, onSaved, onReload }: { ite
   </AssetDialog>;
 }
 
-type BrandDraft = { name: string; nameEn: string; description: string; slug: string; status: "active" | "inactive" };
-const draftFrom = (brand: Brand): BrandDraft => ({ name: brand.public_name.th ?? "", nameEn: brand.public_name.en ?? "", description: brand.description?.th ?? "", slug: brand.slug ?? "", status: brand.status });
+type BrandDraft = { name: string; nameEn: string; description: string; descriptionEn: string; slug: string; status: "active" | "inactive" };
+const draftFrom = (brand: Brand): BrandDraft => ({ name: brand.public_name.th ?? "", nameEn: brand.public_name.en ?? "", description: brand.description?.th ?? "", descriptionEn: brand.description?.en ?? "", slug: brand.slug ?? "", status: brand.status });
 
 function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
   const permissions = useHubPermissions();
@@ -188,7 +190,7 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
     setError(""); setConflict(false); setNotice("");
     if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) { setError("ชื่ออ้างอิงแบรนด์ใช้ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง"); document.getElementById("brand-slug")?.focus(); return; }
     setSaving(true);
-    try { update(await request<Brand>(base, "PATCH", { updated_at: brand.updated_at, public_name: { ...brand.public_name, th: draft.name, ...(draft.nameEn || brand.public_name.en !== undefined ? { en: draft.nameEn } : {}) }, description: { ...brand.description, th: draft.description }, slug: draft.slug, status: draft.status })); setNotice("บันทึกข้อมูลร่างแบรนด์แล้ว ข้อมูลที่เผยแพร่ยังเป็นเวอร์ชันเดิม"); }
+    try { update(await request<Brand>(base, "PATCH", { updated_at: brand.updated_at, public_name: { ...brand.public_name, th: draft.name, ...(draft.nameEn || brand.public_name.en !== undefined ? { en: draft.nameEn } : {}) }, description: { ...brand.description, th: draft.description, en: draft.descriptionEn }, slug: draft.slug, status: draft.status })); setNotice("บันทึกข้อมูลร่างแบรนด์แล้ว ข้อมูลที่เผยแพร่ยังเป็นเวอร์ชันเดิม"); }
     catch (error) { setError(message(error)); setConflict((error as { status?: number }).status === 409); }
     finally { setSaving(false); }
   }
@@ -214,6 +216,7 @@ function BrandDetail({ brandId, role, onDirtyChange }: { brandId: string; role: 
         <div className="form-field"><label htmlFor="brand-name-en">ชื่อแบรนด์ภาษาอังกฤษ</label><input id="brand-name-en" maxLength={250} disabled={!canEdit || saving} value={draft.nameEn} onChange={event => setDraft({ ...draft, nameEn: event.target.value })} /></div>
         <div className="form-field"><label htmlFor="brand-slug">ชื่ออ้างอิงแบรนด์</label><input id="brand-slug" maxLength={160} disabled={!canEdit || saving} value={draft.slug} onChange={event => setDraft({ ...draft, slug: event.target.value })} /><p className="field-help">ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง เช่น sena-example</p></div>
         <div className="form-field"><label htmlFor="brand-description">คำอธิบายแบรนด์ (ภาษาไทย)</label><textarea id="brand-description" rows={4} maxLength={20000} disabled={!canEdit || saving} value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} /></div>
+        <div className="form-field"><label htmlFor="brand-description-en">คำอธิบายแบรนด์ (ภาษาอังกฤษ)</label><textarea id="brand-description-en" rows={4} maxLength={20000} disabled={!canEdit || saving} value={draft.descriptionEn} onChange={event => setDraft({ ...draft, descriptionEn: event.target.value })} /></div>
         <div className="form-field"><label htmlFor="brand-status">สถานะแบรนด์ในข้อมูลร่าง</label><select id="brand-status" disabled={!canEdit || saving} value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value as BrandDraft["status"] })}><option value="active">เปิดใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select><p className="field-help">การแก้ไขสถานะร่างยังไม่เปลี่ยนเวอร์ชันที่เผยแพร่ ใช้ถอนการเผยแพร่เมื่อต้องการหยุดส่งข้อมูลผ่าน API</p></div>
       </>}{!canEdit && <BrandWebsitePreview brand={brand} />}</div></section>{canEdit && !dirty && <div className="save-bar"><span>ข้อมูลร่างแบรนด์เป็นปัจจุบัน</span><button className="button primary" disabled>บันทึกข้อมูลแบรนด์</button></div>}</form>
       <ProjectAssets project={brand} role={role} disabled={dirty || saving} onProjectChanged={update} />
@@ -232,26 +235,8 @@ function BrandWebsitePreview({ brand }: { brand: BrandSnapshot }) {
   return <section className="brand-website-preview" aria-label="ตัวอย่างแบรนด์บนเว็บไซต์"><p className="eyebrow">ตัวอย่างบนเว็บไซต์ · ฉบับร่าง</p>{logo ? <Preview asset={logo} alt={logo.alt_text?.th} /> : <div className="brand-logo-placeholder">ยังไม่มีโลโก้หลัก</div>}<h3>{brand.public_name.th || "ยังไม่ได้ระบุชื่อแบรนด์"}</h3><p>{brand.description.th || "ยังไม่ได้ระบุคำอธิบายแบรนด์"}</p><p className="field-help">ตัวอย่างสำหรับตรวจเนื้อหา ยังไม่ใช่ข้อมูลที่เผยแพร่</p></section>;
 }
 
-const logoNames: Record<string, string> = { logo_primary: "โลโก้หลัก", logo_white: "โลโก้สีขาว", logo_mono: "โลโก้ขาวดำ", favicon: "ไอคอนเว็บไซต์ (favicon)" };
-function SnapshotValue({ field, value }: { field: keyof ReturnType<typeof brandReviewFields>; value?: BrandSnapshot }) {
-  if (!value) return <p className="muted">ยังไม่มีเวอร์ชันที่เผยแพร่</p>;
-  if (field === "public_name" || field === "description") return <div className="brand-localized-value">{!Object.keys(value[field] ?? {}).length ? <p>ยังไม่ได้ระบุ</p> : Object.entries(value[field] ?? {}).sort(([a], [b]) => a.localeCompare(b)).map(([locale, text]) => <p key={locale}>{locale !== "th" && <span className="small-text muted">{locale}: </span>}{text || "ยังไม่ได้ระบุ"}</p>)}</div>;
-  if (field === "status") return <p>{value.status === "active" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</p>;
-  if (field === "slug") return <p className="source-code">{value.slug || "ยังไม่ได้ระบุ"}</p>;
-  return <div className="brand-comparison-logos">{Object.entries(logoNames).map(([role, label]) => {
-    const assets = (value.assets ?? []).filter(item => item.asset_role === role).sort((a, b) => a.display_order - b.display_order || a.id.localeCompare(b.id));
-    return <div key={role}><strong>{label}</strong>{assets.length ? assets.map((asset, index) => <div className="brand-comparison-logo" key={`${asset.id}-${index}`}><Preview asset={asset} alt={asset.alt_text?.th} /><p>{asset.original_filename}</p><p>{asset.alt_text?.th || "ยังไม่มีคำอธิบายภาพ"}</p><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><details><summary>รายละเอียดไฟล์ในเวอร์ชัน</summary><dl><div><dt>รหัสไฟล์</dt><dd>{asset.id}</dd></div><div><dt>ชนิดไฟล์</dt><dd>{asset.mime_type}</dd></div><div><dt>ลำดับแสดง</dt><dd>{asset.display_order}</dd></div><div><dt>ไฟล์หลัก</dt><dd>{asset.is_primary ? "ใช่" : "ไม่ใช่"}</dd></div><div><dt>เริ่มใช้</dt><dd>{date(asset.effective_from)}</dd></div><div><dt>สิ้นสุด</dt><dd>{date(asset.effective_to)}</dd></div><div><dt>ที่อยู่ภาพ</dt><dd>{asset.public_url || "ไฟล์ในคลังสื่อ"}</dd></div>{Object.entries(asset.alt_text ?? {}).filter(([locale]) => locale !== "th").map(([locale, text]) => <div key={locale}><dt>คำอธิบายภาพ ({locale})</dt><dd>{text}</dd></div>)}</dl></details></div>) : <p className="muted">ไม่มีไฟล์</p>}</div>;
-  })}</div>;
-}
-
-function BrandComparison({ current, target, rollback }: { current?: BrandSnapshot; target: BrandSnapshot; rollback: boolean }) {
-  const before = current ? brandReviewFields(current) : null;
-  const after = brandReviewFields(target);
-  const fields: { field: keyof typeof after; label: string }[] = [{ field: "public_name", label: "ชื่อแบรนด์ที่ใช้เผยแพร่" }, { field: "description", label: "คำอธิบายแบรนด์" }, { field: "slug", label: "ชื่ออ้างอิงแบรนด์" }, { field: "status", label: "สถานะแบรนด์" }, { field: "assets", label: "ชุดโลโก้" }];
-  return <section className="brand-comparison" aria-label="เปรียบเทียบข้อมูลแบรนด์"><h3>{current ? "ตรวจการเปลี่ยนแปลงก่อนยืนยัน" : rollback ? "ตัวอย่างเวอร์ชันที่จะคืนค่า" : "ตัวอย่างข้อมูลที่จะเผยแพร่"}</h3><p className="field-help">{current ? "ข้อมูลที่เปลี่ยนแปลงมีแถบกำกับ พร้อมชื่อและโลโก้ในแต่ละเวอร์ชัน" : "แสดงชื่อ คำอธิบาย สถานะ และโลโก้ครบก่อนเผยแพร่"}</p>{fields.map(({ field, label }) => {
-    const changed = !before || JSON.stringify(before[field]) !== JSON.stringify(after[field]);
-    return <div key={field} data-field={field} className={`brand-comparison-row${changed ? " changed" : ""}`}><h4>{label} {changed && <span className="brand-change-mark">{current ? "เปลี่ยนแปลง" : "เผยแพร่ใหม่"}</span>}</h4><div className="brand-comparison-pair"><div><p className="brand-comparison-caption">ที่เผยแพร่ปัจจุบัน</p><SnapshotValue field={field} value={current} /></div><div><p className="brand-comparison-caption">{rollback ? "เวอร์ชันที่จะคืนค่า" : "ฉบับที่จะเผยแพร่"}</p><SnapshotValue field={field} value={target} /></div></div></div>;
-  })}</section>;
+function ComparisonLogos({ value }: { value?: BrandSnapshot }) {
+  return <div className="brand-comparison-logos">{value?.assets.map((asset, index) => <div key={`${asset.id}-${index}`}><Preview asset={asset} alt={asset.alt_text?.th} /></div>)}</div>;
 }
 
 function BrandPublishDialog({ action, brand, current, onCancel, onSaved }: { action: { type: "publish" | "withdraw" | "rollback"; version?: BrandVersion }; brand: Brand; current?: BrandSnapshot; onCancel: () => void; onSaved: (brand: Brand) => Promise<void> }) {
@@ -265,7 +250,7 @@ function BrandPublishDialog({ action, brand, current, onCancel, onSaved }: { act
     catch (error) { setError(message(error)); setPending(false); }
   }
   const target = action.type === "rollback" ? action.version?.payload : brand;
-  return <AssetDialog title={title} dirty={Boolean(reason)} pending={pending} error={error} onCancel={onCancel} onSubmit={submit} submitLabel={`ยืนยัน${title}`} submitDisabled={!reason.trim() || action.type !== "withdraw" && !target} danger={action.type === "withdraw"}><p>{brand.public_name.th}{action.version ? ` · เวอร์ชัน ${action.version.version_no}` : ""}</p><p className={action.type === "withdraw" ? "inline-warning" : "read-only-note"}>{action.type === "withdraw" ? "การถอนแบรนด์ทำให้โครงการที่อ้างอิงแบรนด์นี้หยุดแสดงผ่าน API ด้วย ต้องตรวจสอบผลกระทบก่อนยืนยัน" : "ข้อมูลแบรนด์ในโครงการที่เผยแพร่แล้วจะคงเวอร์ชันเดิม ต้องเผยแพร่โครงการอีกครั้งเพื่อใช้แบรนด์เวอร์ชันใหม่"}</p>{action.type !== "withdraw" && target && <BrandComparison current={current} target={target} rollback={action.type === "rollback"} />}<div className="form-field"><label htmlFor="brand-publish-reason">เหตุผลในการเผยแพร่แบรนด์ <span className="brand-required" aria-hidden="true">(จำเป็น)</span></label><textarea id="brand-publish-reason" aria-label="เหตุผลในการเผยแพร่แบรนด์" required rows={3} maxLength={1000} value={reason} disabled={pending} onChange={event => setReason(event.target.value)} /></div></AssetDialog>;
+  return <AssetDialog title={title} focusTitle={action.type !== "withdraw"} dirty={Boolean(reason)} pending={pending} error={error} onCancel={onCancel} onSubmit={submit} submitLabel={`ยืนยัน${title}`} submitDisabled={!reason.trim() || action.type !== "withdraw" && (!target?.publication_preview || target.publication_preview_redacted || current?.publication_preview_redacted)} danger={action.type === "withdraw"}><p>{brand.public_name.th}{action.version ? ` · เวอร์ชัน ${action.version.version_no}` : ""}</p><p className={action.type === "withdraw" ? "inline-warning" : "read-only-note"}>{action.type === "withdraw" ? "การถอนแบรนด์ทำให้โครงการที่อ้างอิงแบรนด์นี้หยุดแสดงผ่าน API ด้วย ต้องตรวจสอบผลกระทบก่อนยืนยัน" : "ข้อมูลแบรนด์ในโครงการที่เผยแพร่แล้วจะคงเวอร์ชันเดิม ต้องเผยแพร่โครงการอีกครั้งเพื่อใช้แบรนด์เวอร์ชันใหม่"}</p>{action.type !== "withdraw" && target && <PublicationComparison currentMedia={<ComparisonLogos value={current} />} targetMedia={<ComparisonLogos value={target} />} current={current?.publication_preview} target={target.publication_preview} redacted={target.publication_preview_redacted || current?.publication_preview_redacted} label="เปรียบเทียบข้อมูลแบรนด์" rollback={action.type === "rollback"} />}<div className="form-field"><label htmlFor="brand-publish-reason">เหตุผลในการเผยแพร่แบรนด์ <span className="brand-required" aria-hidden="true">(จำเป็น)</span></label><textarea id="brand-publish-reason" aria-label="เหตุผลในการเผยแพร่แบรนด์" required rows={3} maxLength={1000} value={reason} disabled={pending} onChange={event => setReason(event.target.value)} /></div></AssetDialog>;
 }
 
 export function ProjectBrandCard({ project, role, disabled, onChanged }: { project: Project; role: LocalRole; disabled: boolean; onChanged: (project: Project) => void }) {

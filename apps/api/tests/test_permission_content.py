@@ -239,6 +239,9 @@ def test_content_hidden_brand_and_knowledge_removed_from_details_cache_and_histo
             data = json.loads(raw)
             assert set(data['brand_summary']) == {'public_name'}
             assert not data.get('brand') or set(data['brand']) == {'public_name'}
+            assert data['publication_preview_redacted'] is True
+            assert set(data['publication_preview']['brand']) <= {'public_name', 'assets'}
+            assert data['publication_preview']['brand']['assets'] == []
             assert not await call(db, ids['viewer'], "select hub.can_read_asset('10000000-0000-0000-0000-000000000003')")
             with pytest.raises(asyncpg.NoDataFoundError):
                 await call(db, ids['viewer'], "select hub.asset_file('10000000-0000-0000-0000-000000000003')")

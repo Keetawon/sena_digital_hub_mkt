@@ -1689,6 +1689,48 @@
         "blocks": "Non-blocking follow-up; does not block the local Accounts MVP.",
         "default": "See docs/33-login-and-accounts.md. No secrets in chat, repo, Next or API env; configure sender and OAuth secrets in Supabase dashboard only."
       }
+    },
+    {
+      "id": "Q74",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีม IT ร่วมกับ Marketing และเจ้าของข้อมูลสถานที่",
+      "question_th": "จะใช้แหล่งอ้างอิงใดสำหรับสถานีรถไฟฟ้าและทางขึ้นลงทางด่วน พร้อมพิกัด สิทธิ์การใช้ข้อมูล และผู้รับผิดชอบอัปเดต?",
+      "default_th": "ยังไม่อนุมานหรือเผยแพร่พิกัดจากชื่อสถานที่ รอแหล่งอ้างอิงที่อนุมัติก่อนนำเข้าตารางสถานที่ใน Phase 7 ไม่กีดกัน Phase 1",
+      "links": [
+        {
+          "href": "/questions",
+          "label": "คำถามและการตัดสินใจ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q74",
+        "question": "Approve the rail-station and expressway-access reference source, coordinates, usage rights and maintenance owner.",
+        "owner": "IT + Marketing + reference-data owner",
+        "blocks": "Phase 7 reference-data import only; Phase 1 can proceed.",
+        "default": "Do not infer coordinates from names or publish unapproved reference data. See docs/41-project-content-and-faq.md."
+      }
+    },
+    {
+      "id": "Q75",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "ผู้จัดการแบรนด์และทีม Marketing",
+      "question_th": "ชื่อภาษาอังกฤษอย่างเป็นทางการของ นอนดี ที่ต้องใช้ในเนื้อหาเว็บไซต์และอภิธานศัพท์การแปลคืออะไร?",
+      "default_th": "เก็บชื่อไทยไว้และรอยืนยันคำภาษาอังกฤษจากเจ้าของแบรนด์ ไม่สร้างชื่อภาษาอังกฤษขึ้นเอง ไม่กีดกัน Phase 1",
+      "links": [
+        {
+          "href": "/questions",
+          "label": "คำถามและการตัดสินใจ"
+        }
+      ],
+      "doc": {
+        "id_label": "Q75",
+        "question": "Confirm the official English rendering of the Thai brand/feature name นอนดี for the translation glossary.",
+        "owner": "Brand manager + Marketing",
+        "blocks": "English glossary entry and dependent content; Phase 1 can proceed.",
+        "default": "Keep the original Thai name until the owner confirms its English rendering. See docs/41-project-content-and-faq.md."
+      }
     }
   ]
 }

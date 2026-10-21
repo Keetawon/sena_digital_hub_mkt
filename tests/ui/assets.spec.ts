@@ -131,7 +131,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     expect(asset).toBeTruthy(); data.created.push(asset.id);
     expect(asset.checksum).toBe(createHash('sha256').update(bytes).digest('hex'));
     expect(asset.rights_status).toBe('pending');
-    expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(404);
+    expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     const preview = await page.request.get(`/api/hub/v1/admin/assets/${asset.id}/file`);
     expect(preview.ok()).toBeTruthy(); expect(await preview.body()).toEqual(bytes);
     await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
@@ -158,13 +158,13 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
     await page.getByRole('tab', { name: /รูปภาพ/ }).click();
     await approve(page, asset, 'approved');
-    expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(404);
+    expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
     await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
     await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
     await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    const published = await page.request.get(`/api/hub/v1/assets/${asset.id}/file`);
+    const published = await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`);
     expect(published.status()).toBe(200); expect(await published.body()).toEqual(bytes);
     expect(published.headers()['cache-control']).toBe('no-store');
     expect(published.headers()['x-content-type-options']).toBe('nosniff');
@@ -175,10 +175,10 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     const hero = project.assets.find((item: Asset) => item.asset_role === 'hero' && item.id === asset.id);
     const removed = await page.request.post(`${base}/assets/${hero.binding_id}/remove`, { headers, data: { updated_at: project.updated_at } });
     expect(removed.ok()).toBeTruthy();
-    expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(200);
+    expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(200);
     await page.reload(); await role(page, 'publisher');
     await approve(page, asset, 'revoked');
-    expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(404);
+    expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     await expect(page.getByText('หยุดแสดงผ่าน API', { exact: true })).toBeVisible();
     await page.screenshot({ path: 'artifacts/asset-rights-revoked.png', fullPage: true });
   } finally { await data.cleanup(); }
@@ -214,7 +214,7 @@ test('PDF download, invalid file types, viewer permissions and binding conflicts
     const valid = { asset_id: asset.id, asset_role: 'brochure', alt_text: { th: 'เอกสารทดสอบ' }, updated_at: project.updated_at };
     expect((await page.request.post(`${base}/assets`, { headers, data: valid })).status()).toBe(200);
     expect((await page.request.post(`${base}/assets`, { headers, data: valid })).status()).toBe(409);
-    expect((await page.request.get(`/api/hub/v1/assets/${asset.id}/file`)).status()).toBe(404);
+    expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     for (const [type, name, body] of [['image/svg+xml', 'fake.svg', '<svg/>'], ['image/png', 'fake.png', '<html>not an image</html>']]) {
       const invalid = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': type, 'X-Filename': name }, data: body });
       expect([415, 422]).toContain(invalid.status());

@@ -56,7 +56,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file(current_setting('test.svg_first')::uuid);
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.svg_first')::uuid));
     raise exception 'Consumer received unpublished SVG'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;

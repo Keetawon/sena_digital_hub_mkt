@@ -1,4 +1,5 @@
 import os
+import re
 
 from fastapi.testclient import TestClient
 import pytest
@@ -31,9 +32,10 @@ def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
         public_project_path = f"/v1/projects/{project['public_project_id']}"
         original_public = client.get(public_brand_path, headers=headers["service_consumer"])
         assert original_public.status_code == 200, original_public.text
-        logo = next(item for item in original_public.json()["data"]["assets"] if item["asset_role"] == "logo_primary")
+        logo = next(item for item in original["assets"] if item["asset_role"] == "logo_primary")
         logo_path = f"/v1/admin/assets/{logo['id']}"
         logo_original = get(logo_path)
+        public_logo = next(item for item in original_public.json()["data"]["assets"] if item["asset_role"] == "logo_primary")
 
         def action(path, name, **body):
             response = client.post(f"{path}/{name}", headers=headers["publisher"],
@@ -62,7 +64,30 @@ def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
             frozen_project = client.get(public_project_path, headers=headers["service_consumer"])
             assert frozen_project.status_code == 200, frozen_project.text
             assert frozen_project.json()["data"]["brand"]["public_brand_id"] == original["public_brand_id"]
-            assert frozen_project.json()["data"]["brand"]["brand_version_id"] == original["published_version_id"]
+            assert frozen_project.json()["data"]["brand"]["version_no"] == original_public.json()["meta"]["entity_version"]
+            assert get(project_path)["publication_preview"] == frozen_project.json()["data"]
+            assert get(brand_path)["publication_preview"] == original_public.json()["data"]
+            assert get(project_path)["id"] and get(project_path)["source"]["rem_project_id"]
+
+            def check_public(value):
+                if isinstance(value, dict):
+                    assert not (set(value) & {"id", "binding_id", "version_id", "brand_id", "brand_version_id", "publisher",
+                        "website_content", "website_sources", "source", "source_record", "rem_project_id", "rem_brand_id", "rem_model_id",
+                        "original_filename", "rights_status", "verified_by", "source_updated_at"})
+                    for item in value.values():
+                        check_public(item)
+                elif isinstance(value, list):
+                    for item in value:
+                        check_public(item)
+                elif isinstance(value, str):
+                    assert not re.search(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", value, re.I)
+
+            for path in ("/v1/projects", "/v1/brands", public_project_path, public_brand_path,
+                         f"{public_project_path}/models", f"{public_project_path}/assets"):
+                check_public(get(path, role="service_consumer"))
+            for model in frozen_project.json()["data"]["models"]:
+                check_public(get(f"/v1/models/{model['public_model_id']}", role="service_consumer"))
+                check_public(get(f"/v1/models/{model['public_model_id']}/assets", role="service_consumer"))
 
             edited = patch({"public_name": {**original["public_name"], "th": "ชื่อแบรนด์ฉบับร่างทดสอบ"}})
             assert edited.status_code == 200, edited.text
@@ -95,7 +120,7 @@ def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
             review_logo("revoked")
             assert client.get(public_brand_path, headers=headers["service_consumer"]).status_code == 404
             assert client.get(public_project_path, headers=headers["service_consumer"]).status_code == 404
-            assert client.get(f"/v1/assets/{logo['id']}/file", headers=headers["service_consumer"]).status_code == 404
+            assert client.get(f"/v1/assets/{public_logo['public_asset_id']}/file", headers=headers["service_consumer"]).status_code == 404
             review_logo("approved")
             assert client.get(public_project_path, headers=headers["service_consumer"]).json() == frozen_project.json()
 

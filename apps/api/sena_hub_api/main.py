@@ -432,10 +432,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def asset_file_response(asset_id, request, actor, public):
         require_local_assets()
         async with database(request, actor) as connection:
-            query = "SELECT public_api.asset_file($1)" if public else "SELECT hub.asset_file($1)"
+            query = "SELECT hub.public_asset_file($1::text)" if public else "SELECT hub.asset_file($1)"
             metadata = await connection.fetchval(query, asset_id)
         if metadata is None:
             raise failure(404, "file_not_found", "ไม่พบไฟล์ที่มีสิทธิ์เข้าถึง")
+        if public:
+            # Customer downloads use the public identity, never an internal filename.
+            metadata = {**metadata, "original_filename": asset_id + {
+                "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp",
+                "image/svg+xml": ".svg", "application/pdf": ".pdf",
+            }.get(metadata["mime_type"], "")}
         if hosted_assets:
             content = await asyncio.to_thread(hosted_assets.read, metadata)
             disposition = "attachment" if metadata["mime_type"] == "application/pdf" else "inline"
@@ -471,7 +477,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'"})
 
     @app.get("/v1/assets/{asset_id}/file")
-    async def published_asset_file(asset_id: UUID, request: Request, actor: Actor = Depends(consumer)):
+    async def published_asset_file(asset_id: Annotated[str, StringConstraints(pattern=r"^ast_[a-f0-9]{64}$")], request: Request, actor: Actor = Depends(consumer)):
         return await asset_file_response(asset_id, request, actor, public=True)
 
     @app.get("/health")
@@ -783,8 +789,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def public_meta(row):
         return {
             "version": "v1", "entity_version": row["version_no"],
-            "published_at": row["published_at"], "publisher": row["publisher"],
-            "source_updated_at": row["source_updated_at"], "data_freshness": "unknown",
+            "published_at": row["published_at"], "data_freshness": "unknown",
             "locale": "th", "is_fallback_locale": False,
             "fallback_indicator": {"missing": []}, "cache_ttl": 0,
         }
@@ -793,7 +798,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "data": [{**public_payload(row), "meta": public_meta(row)} for row in rows],
             "meta": {"version": "v1", "entity_version": None, "published_at": None,
-                     "publisher": None, "source_updated_at": None, "data_freshness": "unknown",
+                     "data_freshness": "unknown",
                      "locale": "th", "is_fallback_locale": False,
                      "fallback_indicator": {"missing": []}, "cache_ttl": 0},
         }

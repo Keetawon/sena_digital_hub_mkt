@@ -215,11 +215,11 @@ do $$ begin
 end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-select set_config('test.source_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.source_public');
+select set_config('test.source_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.source_public');
 do $$ begin
-  assert (select jsonb_array_length(payload->'models')=1 and payload#>>'{models,0,rem_model_id}'='A-1'
+  assert (select jsonb_array_length(payload->'models')=1 and payload#>>'{models,0,public_model_id}'=current_setting('test.source_model') and not (payload->'models'->0 ? 'rem_model_id')
     and not (payload->'models'->0 ? 'verified_by') and not (payload->'models'->0 ? 'source_snapshot_at')
-    from public_api.projects where public_project_id=current_setting('test.source_public')), 'New release included rejected model or admin metadata';
+    from public_api.read_projects() where public_project_id=current_setting('test.source_public')), 'New release included rejected model or admin metadata';
 end $$;
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
@@ -228,7 +228,7 @@ select hub.update_model(current_setting('test.source_a')::uuid,current_setting('
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert (select payload=current_setting('test.source_payload')::jsonb from public_api.projects
+  assert (select payload=current_setting('test.source_payload')::jsonb from public_api.read_projects()
     where public_project_id=current_setting('test.source_public')), 'Draft spec edit changed frozen public snapshot';
 end $$;
 set local role editor;
@@ -245,7 +245,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.source_public')), 'Rejected published mapping stayed publicly available';
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.source_public')), 'Rejected published mapping stayed publicly available';
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -267,7 +267,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert (select payload=current_setting('test.source_payload')::jsonb from public_api.projects
+  assert (select payload=current_setting('test.source_payload')::jsonb from public_api.read_projects()
     where public_project_id=current_setting('test.source_public')), 'Reconfirmation changed historical snapshot';
 end $$;
 reset role;

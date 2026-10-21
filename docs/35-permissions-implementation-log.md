@@ -511,3 +511,25 @@ The working API and admin app are restored at **http://127.0.0.1:8000** and **ht
 - Actuals notice is an explicit rehearsal on an existing guarded tab, not a new shipped tab. Original account rows/boxes and all acknowledgments were preserved. The last-manager visual uses a disclosed controlled fixture; the original working admin was never removed to manufacture that state.
 
 No implementation phase remains. Owner manual UAT has **not yet been performed**; use docs/37 for the single approximately 45-minute session. Hosted execution, real Google/email acceptance, strict revision-author four-eyes and per-project/brand scoping remain intentionally outside this local delivery under the owner's decisions. Commit and push this passed UAT checkpoint with the subject above; its final hash is reported in the delivery message and Git history.
+
+## Project-content programme Phase 1 — 21 October 2026
+
+The new programme's [permission card](41-project-content-and-faq.md#phase-1-permission-card)
+uses the existing Projects/Brands levels without changing accounts or templates.
+Migration `202610210057_public_content_boundary.sql` closes direct consumer access
+to the three raw public eligibility views and the UUID file RPC. Guarded readers
+return explicit public fields; file metadata omits storage keys and internal
+identity. Existing staff and DW export boundaries remain in force. Preview
+redactions follow existing source-tab/file permissions and disable confirmation
+when reviewers cannot see all outgoing content.
+
+Disposable upgrade evidence compares content, versions, reviews and permissions
+before/after migration 57 and preserves account/editor evidence. Final DB gate:
+53 SQL/concurrency checks plus 8 Node cases, all passed. Loopback H1: all 57
+migrations replayed under its non-superuser operator, 11 protocol tests and 45
+browser tests passed (35 core, 3 flags, 7 outage), zero skips/failures. H1
+credentials now stay in memory; no new credential file was created. Its profile
+only appends the new checksum; historical migration hashes are unchanged.
+
+No working-database migration or account conversion ran. The programme's full
+gate results, screenshots and commit/push receipt belong in [docs/42](42-project-content-programme-log.md).

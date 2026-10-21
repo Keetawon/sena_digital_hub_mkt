@@ -6,7 +6,7 @@
 
 | แผนเดิม | ปัญหา | ข้อเสนอ |
 |---------|-------|---------|
-| `GET /projects/{project_id}` | กำกวมว่า `project_id` คือ REM ID หรือ public ID | ใช้ `public_project_id` เป็น canonical path, คืน `project_id_rem` เป็น attribute, รองรับ `?by=rem_id` สำหรับ internal |
+| `GET /projects/{project_id}` | กำกวมว่า `project_id` คือ REM ID หรือ public ID | ใช้ `public_project_id` เป็น canonical path; REM ID อยู่เฉพาะ staff API ตาม D4 |
 | ไม่มี versioning ใน path | breaking change จะทำให้เว็บพังทันที | `/v1/...` + นโยบาย deprecation 30 วัน |
 | ไม่มี delta / change feed | consumer ต้อง poll ทั้งชุด | `GET /v1/changes?since=` + webhook |
 | ไม่มี endpoint สำหรับ entity resolution | chatbot map ชื่อที่ลูกค้าพิมพ์ไม่ได้ | `GET /v1/resolve?q=` |
@@ -108,8 +108,7 @@ POST   /v1/admin/import                   # bulk CSV/XLSX
     "version": "v1",
     "entity_version": 14,
     "published_at": "2026-09-20T10:00:00+07:00",
-    "source_updated_at": "2026-09-19T02:00:00+07:00",   // จาก REM
-    "data_freshness": "fresh",         // fresh | stale | unknown
+    "data_freshness": "unknown",       // Public reads omit private REM lineage
     "locale": "th",
     "is_fallback_locale": false,
     "fallback_indicator": {            // บอก consumer ว่าอะไรไม่ครบ
@@ -126,22 +125,21 @@ POST   /v1/admin/import                   # bulk CSV/XLSX
 
 ## 4. การบังคับ "Published เท่านั้น" ที่ระดับ DB
 
-```sql
-create view public_api.projects as
-select p.public_project_id, p.project_id_rem, v.payload, p.updated_at
-from hub.projects p
-join hub.entity_versions v on v.version_id = p.published_version_id
-where p.deleted_at is null
-  and p.status = 'published'
-  and (p.effective_from is null or p.effective_from <= now())
-  and (p.effective_to   is null or p.effective_to   >  now());   -- expired หายเอง
+Consumer reads execute guarded functions that apply the explicit public-field
+allowlist to eligible frozen versions:
 
-revoke all on schema hub from service_consumer;
-grant usage on schema public_api to service_consumer;
-grant select on all tables in schema public_api to service_consumer;
+```sql
+select * from public_api.read_projects();
+select * from public_api.read_brands();
+select * from public_api.read_promotions();
 ```
 
-> ข้อได้เปรียบ: แม้โค้ด application จะมีบั๊ก Draft ก็หลุดออกไม่ได้ เพราะ role ไม่มีสิทธิ์เห็น schema `hub` เลย
+These functions require an ACTIVE authorized reader. Drafts never supply public
+content. Source eligibility, current rights, publication pointers and expiry still
+gate the underlying views. The raw `public_api.projects/brands/promotions` views
+are internal inputs; `service_consumer` and `hub_app` have no direct SELECT grant.
+Do not grant SELECT on all tables in `public_api`. See migration
+`202610210057_public_content_boundary.sql` for the implemented boundary.
 
 ## 5. Change Feed + Webhook (P0-9)
 
@@ -212,3 +210,28 @@ returns group ID/Thai-name options and `group_mismatch_count`. Rows include the
 marketing name, immutable intake/snapshot provenance, dictionary issue flags and
 exact REM/marketing mismatch boolean. `view=groups` includes `name_th`. These are
 staff-only source summaries; no group membership or consumer contract changes.
+
+
+## Public-field boundary — 21 October 2026 (programme Phase 1, D4)
+
+This implemented contract supersedes the older proposal to return REM identities.
+`read_projects()`, `read_brands()` and `read_promotions()` expose explicit
+customer-facing allowlists from eligible immutable versions. All nested brands,
+models and media are projected too. No website reference text, internal UUIDs,
+REM identities/source records, publisher identities, rights evidence or original
+filenames leave these consumer reads. Public version numbers and publication
+timestamps remain. Unknown future payload keys are excluded by default.
+
+Project/model media use `public_asset_id` and `public_url`; stored file URLs are
+`/v1/assets/ast_<64 lowercase hex characters>/file`. The identifier is the immutable
+file checksum, or a digest of the identity for legacy URL-only media. Legacy
+approved URLs without UUIDs remain available. Old UUID file paths are rejected.
+Binary reads retain existing published eligibility, current-rights checks and
+no-store headers, with a public-ID filename.
+
+The raw eligibility views remain internal inputs for staff and the DW exporter;
+consumer/application roles cannot SELECT them. Public HTTP routes use guarded
+read functions. Internal reference data and historical snapshots are preserved.
+Staff publication comparisons use the same projection, with existing permission
+redactions applied first; a partial comparison cannot be confirmed in the UI.
+See [the programme design](41-project-content-and-faq.md).

@@ -32,6 +32,8 @@ CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'require_permission', 'require_special', 'can_upload_asset', 'require_asset_upload', 'remember_asset_binding',
     'can_read_asset', 'require_asset_access', 'project_permission_projection', 'project_versions', 'progress_permission_projection',
     'asset_registered_for_cleanup', 'asset_permission_projection', 'snapshot_assets_visible')}
+CONTENT_FUNCTIONS |= {'hub.public_content_payload', 'hub.project_publication_preview', 'hub.publication_review', 'hub.public_asset_file'}
+PRIVATE_PUBLIC_VIEWS = {'public_api.projects', 'public_api.brands', 'public_api.promotions'}
 PUBLICATION_TABLES = {'hub.' + name for name in (
     'public_promotions', 'promotion_reviews', 'promotion_versions', 'publication_releases', 'publication_release_members',
     'knowledge_reviews', 'content_sections', 'faqs', 'entity_aliases', 'content_gaps', 'knowledge_fact_candidates',
@@ -154,11 +156,19 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 if name == 'policies':
                     expected = [r for r in expected if r['name'] not in REGISTRY_REPLACED_POLICIES | ASSISTANT_POLICIES]
                 if name == 'functions':
+                    public_files = [r for r in actual if r['name'] == 'public_api.asset_file' and r['arguments'] == 'public_id text']
+                    assert len(public_files) == 1
+                    assert public_files[0]['security_definer'] and public_files[0]['execute_roles'] == ['service_consumer']
+                    assert public_files[0]['config'] == ['search_path=pg_catalog, pg_temp']
+                    actual = [r for r in actual if r not in public_files]
                     expected = [{**r, 'security_definer': True} if r['name'] == 'ads.finance_invariant' else r for r in expected]
+                    expected = [{**r, 'execute_roles': []} if r['name'] == 'public_api.asset_file' else r for r in expected]
                     expected = [{**r, 'execute_roles': []} if r['name'] in TECHNICAL_ONLY_FUNCTIONS else r for r in expected]
                     expected = [{**r, 'execute_roles': ['admin', 'editor', 'online_staff', 'publisher', 'viewer']}
                                 if r['name'] in ('internal.assistant_proposal_create', 'internal.assistant_proposal_read', 'internal.assistant_proposal_apply') else r for r in expected]
                 if name == 'relations':
+                    expected = [{**r, 'grants': [g for g in r['grants'] if g != 'service_consumer:SELECT']}
+                                if r['name'] in PRIVATE_PUBLIC_VIEWS else r for r in expected]
                     expected = [{**r, 'rls': True, 'force_rls': True} if r['name'] in CONTENT_TABLES | PUBLICATION_TABLES | SHARED_TABLES else r for r in expected]
                     expected = [{**r, 'grants': [g for g in r['grants'] if g not in ('admin:INSERT', 'admin:UPDATE')]}
                                 if r['name'] in ('ads.vocab', 'ads.scope_code', 'ads.scope_member') else r for r in expected]
@@ -184,7 +194,8 @@ def test_direct_relation_grants_under_disposable_legacy_probe(persona):
                     await db.execute("select set_config('app.actor_id',$1,true),set_config('app.agency_code',$2,true)", str(ALL_DEMO_ACTORS[persona]), DEMO_AGENCIES.get(persona, ''))
                     statement = f"select * from {relation['name']} limit 0"
                     usage = next(s['usage_roles'] for s in BASELINE['schemas'] if s['name'] == relation['name'].split('.')[0])
-                    if role + ':SELECT' in relation['grants'] and role in usage:
+                    if (role + ':SELECT' in relation['grants'] and role in usage
+                            and not (role == 'service_consumer' and relation['name'] in PRIVATE_PUBLIC_VIEWS)):
                         await db.execute(statement)
                     else:
                         with pytest.raises(asyncpg.InsufficientPrivilegeError):

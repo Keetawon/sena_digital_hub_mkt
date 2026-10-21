@@ -382,10 +382,10 @@ function BatchLogoRights({ assets, onChanged, onCancel, noun = "โลโก้"
   </AssetDialog>;
 }
 
-export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, onSubmit, onReload, submitLabel, submitDisabled, cancelLabel = "ยกเลิก", discardMessage = "มีข้อมูลที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?", danger, children }: {
+export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, onSubmit, onReload, submitLabel, submitDisabled, cancelLabel = "ยกเลิก", discardMessage = "มีข้อมูลที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?", danger, focusTitle = false, children }: {
   title: string; dirty: boolean; pending: boolean; error: string; conflict?: boolean;
   onCancel: () => void; onSubmit: (event: FormEvent) => void; onReload?: () => Promise<void>;
-  submitLabel: string; submitDisabled?: boolean; cancelLabel?: string; discardMessage?: string; danger?: boolean; children: ReactNode;
+  submitLabel: string; submitDisabled?: boolean; cancelLabel?: string; discardMessage?: string; danger?: boolean; focusTitle?: boolean; children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const summary = useRef<HTMLDivElement>(null);
@@ -395,11 +395,12 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const element = dialog.current;
     element?.showModal();
+    if (focusTitle) element?.querySelector<HTMLElement>("#asset-dialog-title")?.focus();
     return () => {
       element?.close();
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, []);
+  }, [focusTitle]);
   useEffect(() => { if (error || reloadError) summary.current?.focus(); }, [error, reloadError]);
   useEffect(() => {
     if (!dirty && !pending) return;
@@ -415,7 +416,7 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
     try { await onReload(); } catch (error) { setReloadError(error instanceof Error ? error.message : "โหลดข้อมูลล่าสุดไม่สำเร็จ"); }
     finally { setReloading(false); }
   }
-  return <dialog ref={dialog} className="action-dialog asset-dialog" aria-labelledby="asset-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}><form onSubmit={onSubmit} noValidate><h2 id="asset-dialog-title">{title}</h2>{(error || reloadError) && <div className="notice error model-error-summary" ref={summary} role="alert" tabIndex={-1}><strong>{reloadError || error}</strong>{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" disabled={pending || reloading} onClick={() => void reload()}>{reloading ? "กำลังโหลด…" : "โหลดข้อมูลล่าสุด"}</button></>}</div>}{children}<div className="dialog-actions"><button type="button" className="button secondary" disabled={pending || reloading} onClick={cancel}>{cancelLabel}</button><button type="submit" className={`button ${danger ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || reloading || submitDisabled}>{pending ? "กำลังดำเนินการ…" : submitLabel}</button></div></form></dialog>;
+  return <dialog ref={dialog} className="action-dialog asset-dialog" aria-labelledby="asset-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}><form onSubmit={onSubmit} noValidate><h2 id="asset-dialog-title" tabIndex={focusTitle ? -1 : undefined}>{title}</h2>{(error || reloadError) && <div className="notice error model-error-summary" ref={summary} role="alert" tabIndex={-1}><strong>{reloadError || error}</strong>{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" disabled={pending || reloading} onClick={() => void reload()}>{reloading ? "กำลังโหลด…" : "โหลดข้อมูลล่าสุด"}</button></>}</div>}{children}<div className="dialog-actions"><button type="button" className="button secondary" disabled={pending || reloading} onClick={cancel}>{cancelLabel}</button><button type="submit" className={`button ${danger ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || reloading || submitDisabled}>{pending ? "กำลังดำเนินการ…" : submitLabel}</button></div></form></dialog>;
 }
 
 async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {

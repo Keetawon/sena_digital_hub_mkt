@@ -118,7 +118,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file('91300000-0000-0000-0000-000000000002');
+  begin perform public_api.asset_file(pg_temp.public_asset_id('91300000-0000-0000-0000-000000000002'));
     raise exception 'Secondary draft image leaked'; exception when no_data_found then null;
   end;
 end $$;
@@ -129,11 +129,11 @@ from hub.assets where id='91300000-0000-0000-0000-000000000002';
 select hub.publish_project(current_setting('test.pc_project')::uuid,'Synthetic media collections release');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-select set_config('test.pc_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.pc_public');
+select set_config('test.pc_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.pc_public');
 do $$ begin
   assert jsonb_array_length(current_setting('test.pc_payload')::jsonb->'assets')=12, 'Published snapshot lost secondary attachments';
-  perform public_api.asset_file('91300000-0000-0000-0000-000000000002');
-  perform public_api.asset_file('91300000-0000-0000-0000-000000000004');
+  perform public_api.asset_file(pg_temp.public_asset_id('91300000-0000-0000-0000-000000000002'));
+  perform public_api.asset_file(pg_temp.public_asset_id('91300000-0000-0000-0000-000000000004'));
 end $$;
 
 -- Removing the first image promotes the next image without rewriting a release.
@@ -164,7 +164,7 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert (select payload=current_setting('test.pc_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.pc_public')),
+  assert (select payload=current_setting('test.pc_payload')::jsonb from public_api.read_projects() where public_project_id=current_setting('test.pc_public')),
     'Draft removal changed the selected publication';
 end $$;
 set local role publisher;
@@ -174,9 +174,9 @@ from hub.assets where id='91300000-0000-0000-0000-000000000004';
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert not exists(select 1 from public_api.projects where public_project_id=current_setting('test.pc_public')),
+  assert not exists(select 1 from public_api.read_projects() where public_project_id=current_setting('test.pc_public')),
     'Revoked secondary brochure remained eligible in the publication';
-  begin perform public_api.asset_file('91300000-0000-0000-0000-000000000004');
+  begin perform public_api.asset_file(pg_temp.public_asset_id('91300000-0000-0000-0000-000000000004'));
     raise exception 'Revoked secondary brochure leaked'; exception when no_data_found then null;
   end;
 end $$;

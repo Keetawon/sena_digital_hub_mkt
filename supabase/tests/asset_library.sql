@@ -125,7 +125,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.list_assets(); raise exception 'Consumer listed private library'; exception when insufficient_privilege then null; end;
   begin perform hub.asset_file(current_setting('test.image_id')::uuid); raise exception 'Consumer previewed draft'; exception when insufficient_privilege then null; end;
-  begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Pending draft file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid)); raise exception 'Pending draft file leaked'; exception when no_data_found then null; end;
 end $$;
 
 set local role publisher;
@@ -154,20 +154,23 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Approved unpublished file leaked'; exception when no_data_found then null; end;
-  begin perform public_api.asset_file(current_setting('test.second_id')::uuid); raise exception 'Approved unbound file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid)); raise exception 'Approved unpublished file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.second_id')::uuid)); raise exception 'Approved unbound file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('test.asset_version',hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publish asset test A')::text,true);
+select set_config('test.asset_payload_raw',payload::text,true) from hub.entity_versions where id=current_setting('test.asset_version')::uuid;
 select hub.publish_project(current_setting('test.asset_project_b')::uuid,'Publish reused asset test B');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
-select set_config('test.asset_payload',payload::text,true) from public_api.projects where public_project_id=current_setting('test.asset_public_a');
+select set_config('test.asset_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.asset_public_a');
 do $$ begin
-  assert public_api.asset_file(current_setting('test.image_id')::uuid)->>'checksum'=repeat('a',64), 'Published image inaccessible';
-  assert public_api.asset_file(current_setting('test.pdf_id')::uuid)->>'mime_type'='application/pdf', 'Published brochure inaccessible';
-  assert not exists(select 1 from public_api.projects p,jsonb_array_elements(p.payload->'assets') item
+  assert public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid))->>'checksum'=repeat('a',64), 'Published image inaccessible';
+  assert not (public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid))
+    ?| array['id','storage_path','storage_bucket','original_filename','source_system']), 'Public file metadata leaked transport details';
+  assert public_api.asset_file(pg_temp.public_asset_id(current_setting('test.pdf_id')::uuid))->>'mime_type'='application/pdf', 'Published brochure inaccessible';
+  assert not exists(select 1 from public_api.read_projects() p,jsonb_array_elements(p.payload->'assets') item
     where p.public_project_id=current_setting('test.asset_public_a') and (item ? 'storage_path' or item ? 'rights_notes' or item ? 'reviewed_by')),
     'Private registry metadata entered public snapshot';
 end $$;
@@ -183,10 +186,10 @@ select hub.unbind_project_asset(current_setting('test.asset_project_a')::uuid,
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  assert (select payload=current_setting('test.asset_payload')::jsonb from public_api.projects where public_project_id=current_setting('test.asset_public_a')),
+  assert (select payload=current_setting('test.asset_payload')::jsonb from public_api.read_projects() where public_project_id=current_setting('test.asset_public_a')),
     'Draft binding edit mutated selected publication';
-  perform public_api.asset_file(current_setting('test.pdf_id')::uuid);
-  begin perform public_api.asset_file(current_setting('test.second_id')::uuid); raise exception 'Draft replacement file leaked'; exception when no_data_found then null; end;
+  perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.pdf_id')::uuid));
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.second_id')::uuid)); raise exception 'Draft replacement file leaked'; exception when no_data_found then null; end;
 end $$;
 
 -- One revocation invalidates every current release that references this registry object.
@@ -203,8 +206,8 @@ end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Revoked image file leaked'; exception when no_data_found then null; end;
-  begin perform public_api.asset_file(current_setting('test.pdf_id')::uuid); raise exception 'File leaked through ineligible publication'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid)); raise exception 'Revoked image file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.pdf_id')::uuid)); raise exception 'File leaked through ineligible publication'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -222,9 +225,9 @@ select hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publis
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  perform public_api.asset_file(current_setting('test.second_id')::uuid);
-  perform public_api.asset_file(current_setting('test.image_id')::uuid);
-  begin perform public_api.asset_file(current_setting('test.pdf_id')::uuid); raise exception 'Unreferenced historical file leaked'; exception when no_data_found then null; end;
+  perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.second_id')::uuid));
+  perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid));
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.pdf_id')::uuid)); raise exception 'Unreferenced historical file leaked'; exception when no_data_found then null; end;
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
@@ -232,22 +235,22 @@ select hub.withdraw_project(current_setting('test.asset_project_a')::uuid,'Withd
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file(current_setting('test.second_id')::uuid); raise exception 'Withdrawn publication file leaked'; exception when no_data_found then null; end;
-  perform public_api.asset_file(current_setting('test.image_id')::uuid);
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.second_id')::uuid)); raise exception 'Withdrawn publication file leaked'; exception when no_data_found then null; end;
+  perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid));
 end $$;
 reset role;
 update hub.assets set effective_to=now()-interval '1 second' where id=current_setting('test.image_id')::uuid;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
-  begin perform public_api.asset_file(current_setting('test.image_id')::uuid); raise exception 'Expired registry file leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id(current_setting('test.image_id')::uuid)); raise exception 'Expired registry file leaked'; exception when no_data_found then null; end;
 end $$;
 reset role;
 do $$ begin
   assert exists(select 1 from audit.change_log where table_name='hub.assets' and after_row->>'id'=current_setting('test.image_id')
     and after_row->>'rights_status'='revoked' and after_row->>'review_reason'='Revoke shared published image'
     and actor='00000000-0000-0000-0000-000000000002'::uuid and reason='Revoke shared published image'), 'Rights audit missing';
-  assert (select payload=current_setting('test.asset_payload')::jsonb from hub.entity_versions where id=current_setting('test.asset_version')::uuid),
+  assert (select payload=current_setting('test.asset_payload_raw')::jsonb from hub.entity_versions where id=current_setting('test.asset_version')::uuid),
     'Rights or binding edits changed immutable version';
 end $$;
 rollback;

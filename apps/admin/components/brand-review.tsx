@@ -3,8 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Brand } from "./brand-admin";
 import { request } from "./hub-request";
+import { publicationKey } from "./publication-comparison";
 
-export type BrandSnapshot = Pick<Brand, "public_name" | "description" | "slug" | "status" | "assets">;
+export type BrandSnapshot = Pick<Brand, "public_name" | "description" | "slug" | "status" | "assets" | "publication_preview" | "publication_preview_redacted">;
 export type BrandVersion = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload?: BrandSnapshot };
 export type BrandReview = { brand: Brand; versions: BrandVersion[]; error?: string };
 export type BrandFilter = "all" | "pending" | "notReady" | "published" | "stopped";
@@ -12,23 +13,10 @@ export const brandFilters: { value: BrandFilter; label: string }[] = [
   { value: "all", label: "ทั้งหมด" }, { value: "pending", label: "รอเผยแพร่" },
   { value: "notReady", label: "ยังไม่พร้อม" }, { value: "published", label: "เผยแพร่แล้ว" }, { value: "stopped", label: "หยุดแสดง" },
 ];
-const localized = (value: Record<string, string | undefined> | undefined) => Object.entries(value ?? {}).sort(([a], [b]) => a.localeCompare(b));
-
-// Compare the frozen marketing payload, not live source/audit/asset-library metadata.
-export function brandReviewFields(value: BrandSnapshot) {
-  return {
-    public_name: localized(value.public_name), description: localized(value.description), slug: value.slug ?? "", status: value.status,
-    assets: (value.assets ?? []).map(asset => ({ id: asset.id, asset_role: asset.asset_role, is_primary: Boolean(asset.is_primary),
-      alt_text: localized(asset.alt_text), display_order: asset.display_order, public_url: asset.public_url,
-      original_filename: asset.original_filename, mime_type: asset.mime_type, rights_status: asset.rights_status,
-      effective_from: asset.effective_from ?? null, effective_to: asset.effective_to ?? null,
-    })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
-  };
-}
 export function brandHasChanges(brand: Brand, versions: BrandVersion[]): boolean | null {
   if (!brand.published_version_id) return versions.length === 0;
   const current = versions.find(version => version.version_id === brand.published_version_id)?.payload;
-  return current ? JSON.stringify(brandReviewFields(brand)) !== JSON.stringify(brandReviewFields(current)) : null;
+  return current?.publication_preview && brand.publication_preview ? publicationKey(brand.publication_preview) !== publicationKey(current.publication_preview) : null;
 }
 export function matchesBrandFilter(row: BrandReview, filter: BrandFilter): boolean {
   const { brand, versions } = row;

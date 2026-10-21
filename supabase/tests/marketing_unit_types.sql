@@ -122,8 +122,8 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
   begin perform hub.project_detail(current_setting('test.ct_public')); raise exception 'Consumer read commercial drafts'; exception when insufficient_privilege then null; end;
   begin perform 1 from hub.commercial_types; raise exception 'Consumer read draft table'; exception when insufficient_privilege then null; end;
-  begin perform public_api.asset_file('91000000-0000-0000-0000-000000000002'); raise exception 'Draft PDF leaked'; exception when no_data_found then null; end;
-  begin perform public_api.asset_file('91000000-0000-0000-0000-000000000001'); raise exception 'Approved but unpublished draft image leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id('91000000-0000-0000-0000-000000000002')); raise exception 'Draft PDF leaked'; exception when no_data_found then null; end;
+  begin perform public_api.asset_file(pg_temp.public_asset_id('91000000-0000-0000-0000-000000000001')); raise exception 'Approved but unpublished draft image leaked'; exception when no_data_found then null; end;
 end $$;
 set local role admin;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
