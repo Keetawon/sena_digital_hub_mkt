@@ -25,7 +25,8 @@ MANIFEST = json.loads((ROOT / 'tests/permissions/legacy-routes.json').read_text(
 FOUNDATION = json.loads((ROOT / 'tests/permissions/foundation-routes.json').read_text(encoding='utf-8'))
 SHARED = json.loads((ROOT / 'tests/permissions/shared-routes.json').read_text(encoding='utf-8'))
 ACCOUNTS_UI = json.loads((ROOT / 'tests/permissions/accounts-ui-routes.json').read_text(encoding='utf-8'))
-ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes']
+PROJECT_CONTENT = json.loads((ROOT / 'tests/permissions/project-content-routes.json').read_text(encoding='utf-8'))
+ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes'] + PROJECT_CONTENT['routes']
 ROLES = ('viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency_kin', 'agency_combay', 'service_consumer')
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
@@ -49,9 +50,14 @@ async def disposable_operator():
     return db
 
 
+class PrivateIdentityMap(dict):
+    def __repr__(self):
+        return '<disposable identities; authentication material hidden>'
+
+
 @pytest.fixture(scope='module')
 def baseline_client():
-    identities = {(role, status): {'id': uuid4(), 'token': secrets.token_urlsafe(32)} for role in ROLES for status in STATES}
+    identities = PrivateIdentityMap({(role, status): {'id': uuid4(), 'token': secrets.token_urlsafe(32)} for role in ROLES for status in STATES})
 
     async def seed(remove=False):
         db = await disposable_operator()
@@ -99,7 +105,8 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     client, _ = baseline_client
     actual = {(method, route.path) for route in client.app.routes if isinstance(route, APIRoute) for method in route.methods}
     expected = {(r['method'], r['path']) for r in ROUTES}
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes'])
+    assert len(PROJECT_CONTENT['routes']) == 32
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 

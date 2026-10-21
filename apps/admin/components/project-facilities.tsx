@@ -1,5 +1,6 @@
 "use client";
 import { useHubPermissions } from "./accounts";
+import { ContentLabel, useFieldCatalog } from "./content-common";
 
 import { FormEvent, useEffect, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
@@ -25,6 +26,7 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
   onDirtyChange: (dirty: boolean) => void; onProjectChanged: (project: Project) => void;
 }) {
   const permissions = useHubPermissions();
+  const { catalog } = useFieldCatalog();
   const [editing, setEditing] = useState<Facility | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -84,7 +86,7 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
             <fieldset disabled={disabled || pending}><legend className="sr-only">แก้ไข{item.name_th}</legend>
               {editing.status === "planned" && <div className="form-field"><label htmlFor={`facility-date-${item.code}`}>วันที่คาดว่าจะเปิดใช้ (ถ้าทราบ)</label><input id={`facility-date-${item.code}`} type="date" value={editing.expected_open_date ?? ""} onChange={event => setEditing({ ...editing, expected_open_date: event.target.value || null })} /></div>}
               <details className="facility-detail-fields" open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary>รายละเอียดและแหล่งข้อมูล (ถ้ามี)</summary>
-              <div className="form-field"><label htmlFor={`facility-description-${item.code}`}>รายละเอียด{item.name_th}</label><textarea id={`facility-description-${item.code}`} rows={3} maxLength={4000} value={editing.description.th ?? ""} onChange={event => setEditing({ ...editing, description: { ...editing.description, th: event.target.value } })} /></div>
+              <div className="form-field"><ContentLabel htmlFor={`facility-description-${item.code}`} field={catalog?.items.find(field => field.field_key === "facility.description")}>รายละเอียด{item.name_th}</ContentLabel><textarea id={`facility-description-${item.code}`} rows={3} maxLength={4000} value={editing.description.th ?? ""} onChange={event => setEditing({ ...editing, description: { ...editing.description, th: event.target.value } })} /></div>
               <div className="form-field"><label htmlFor={`facility-description-en-${item.code}`}>รายละเอียด{item.name_th} (ภาษาอังกฤษ)</label><textarea id={`facility-description-en-${item.code}`} rows={3} maxLength={4000} value={editing.description.en ?? ""} onChange={event => setEditing({ ...editing, description: { ...editing.description, en: event.target.value } })} /></div>
               <div className="form-field"><label htmlFor={`facility-location-${item.code}`}>ตำแหน่ง / อาคารที่ใช้ร่วมกัน</label><input id={`facility-location-${item.code}`} maxLength={2000} value={editing.location_note} onChange={event => setEditing({ ...editing, location_note: event.target.value })} /></div>
               <div className="form-field"><label htmlFor={`facility-access-${item.code}`}>เวลาและเงื่อนไขการใช้งาน</label><textarea id={`facility-access-${item.code}`} rows={2} maxLength={2000} value={editing.access_note} onChange={event => setEditing({ ...editing, access_note: event.target.value })} /></div>

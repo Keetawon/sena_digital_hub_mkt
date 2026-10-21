@@ -79,6 +79,33 @@ npm.cmd run dev --prefix apps/admin
 
 Open **http://127.0.0.1:3000**. Choose a labelled test role. Edit as an editor, then switch to the publisher to verify publication and rollback. API health is at **http://127.0.0.1:8000/health**; every data endpoint requires authentication. Demo services must stay bound to loopback; do not expose or tunnel this configuration.
 
+## Local marketing translation worker (project-content Phase 2)
+
+The content editor queues English drafts separately from reviewed English. After
+the approved local migrations are applied, an operator may run
+`npm.cmd run dev:translation-worker` to drain the queue, or append `-- --watch`.
+The connection is fixed to the documented local development database. The worker
+assumes `hub_translation_worker`, whose only executable commands claim and finish
+translation jobs; the API role cannot use it. No credential file is created.
+Provider configuration is read only from the existing approved API environment.
+If a credential is missing, the worker records `provider_unavailable` and exits;
+stop and report under the programme's credential STOP condition.
+The programme's automated gates inject a provider stub and never call OpenAI.
+
+English drafts use only registered marketing text, approved glossary terms and
+protected numbers/placeholders. Customer data, Legal files, contracts, finance
+facts and contact details are excluded. Commercial-terms, buying-process and
+investment FAQ topics require manual English; they never enter the AI queue.
+The field registry keeps the investor section planned until Phase 9. Failed jobs
+can be requested again from the English tab after the cause is resolved. Thai
+changes invalidate old jobs; reviewed English remains available for comparison.
+
+The `/content` and `/faq` screens are private preparation workspaces, with no new
+website publication action. Registry administration needs both an internal admin
+identity and explicit `projects.manage_field_catalog`; migrations assign it to
+no account. Q76 tracks the real company-email domain list. Tests use synthetic
+domains in disposable databases only.
+
 ## Local DW TEST reader
 
 After `dev:db` has applied migrations 0014 and 0015:

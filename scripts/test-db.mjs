@@ -28,6 +28,8 @@ try {
   console.log('PASS: knowledge question labels, exactly one hero and private immutable preview releases');
   await connection.query(await readFile(new URL('../supabase/tests/public_content_boundary.sql', import.meta.url), 'utf8'));
   console.log('PASS: public field allowlists, exact previews, bilingual values, legacy media, readiness roles and private-view denial');
+  await connection.query(await readFile(new URL('../supabase/tests/project_content_core.sql', import.meta.url), 'utf8'));
+  console.log('PASS: project content FORCE RLS/audit, closed workers, REM building prefill, stale facts, private readiness and immediate revocation');
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
   await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));

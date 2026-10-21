@@ -533,3 +533,33 @@ only appends the new checksum; historical migration hashes are unchanged.
 
 No working-database migration or account conversion ran. The programme's full
 gate results, screenshots and commit/push receipt belong in [docs/42](42-project-content-programme-log.md).
+
+## Project-content programme Phase 2 — 21 October 2026
+
+The [Phase 2 permission card](41-project-content-and-faq.md#phase-2-permission-card-and-preservation-design)
+uses Projects E for project drafts, Brands E for brand contacts and translations,
+and Knowledge E/A for FAQ proposals/question approval and glossary review. The
+new `projects.manage_field_catalog` special also requires an ACTIVE internal
+admin; no existing account or template receives it automatically. Manager status
+alone does not authorize registry or content access.
+
+Migrations 58–61 add fifteen tables with FORCE RLS and audit triggers. Bounded
+commands check current source-tab authority and optimistic revisions. Submitted
+FAQ/section content is immutable; English review of a selling point appends a
+revision. The translation worker can only claim/finish allowlisted marketing
+jobs, checks requester authority again at completion and cannot be assumed by
+the API runtime. Contacts, financial FAQ topics and Legal files never enter its
+provider input. Unknown, external and inactive actors retain default denial.
+
+The new exact 32-route inventory is separate from the frozen historical route
+manifest. Registry reads and translation review/retry have explicit shared
+classes with SQL source checks. The database inventory adds reviewed relations
+and functions without erasing historical expectations. Navigation resolves FAQ
+to Knowledge and brand content to Brands; direct URLs and proxy routes check the
+same bounded capability projection.
+
+Populated disposable upgrades preserve original content, reviews, versions,
+accounts and permissions through each new migration. Loopback H1 replayed all 61
+migrations under its non-superuser operator and passed 11 protocol plus 45 browser
+cases. Full phase gates and screenshot evidence are recorded in [docs/42](42-project-content-programme-log.md).
+The working database and existing account assignments remain unchanged.

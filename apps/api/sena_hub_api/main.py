@@ -32,6 +32,7 @@ from .hosted_assets import HostedAssets
 from .r2_assets import R2Assets
 from .brand_completeness import register_brand_completeness_routes
 from .knowledge import register_knowledge_routes
+from .project_content import register_project_content_routes
 from .content_permissions import require_content, route_class
 
 
@@ -224,7 +225,7 @@ async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     # Every app request uses the base role; SQL resolves table-backed authority.
     # Machine integrations outside this API keep their separate fixed principals.
     category = route_class(request.method, getattr(request.scope.get("route"), "path", None))
-    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public"}:
+    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation"}:
         raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
@@ -894,6 +895,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)
+    register_project_content_routes(app, authentication, database)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)
     if hosted_assets:
         @app.api_route("/v1/admin/ads/{deferred_path:path}", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])

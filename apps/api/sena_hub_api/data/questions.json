@@ -1731,6 +1731,22 @@
         "blocks": "English glossary entry and dependent content; Phase 1 can proceed.",
         "default": "Keep the original Thai name until the owner confirms its English rendering. See docs/41-project-content-and-faq.md."
       }
+    },
+    {
+      "id": "Q76",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "ทีม IT และ Marketing",
+      "question_th": "โดเมนอีเมลบริษัทใดอนุญาตให้ใช้เป็นกล่องกลางสำหรับติดต่อโครงการ แบรนด์ และองค์กร?",
+      "default_th": "ยังไม่เพิ่มโดเมนโดยคาดเดา ผู้ดูแลทะเบียนฟิลด์เพิ่มได้หลังยืนยันจาก IT ทุกอีเมลต้องยืนยันว่าเป็นกล่องกลาง ไม่ใช่ที่อยู่ส่วนบุคคล ช่องทางอื่นใช้งานได้ตามปกติ",
+      "links": [{ "href": "/questions", "label": "คำถามและการตัดสินใจ" }],
+      "doc": {
+        "id_label": "Q76",
+        "question": "Confirm approved company email domains for shared project, brand and corporate contact mailboxes.",
+        "owner": "IT + Marketing",
+        "blocks": "Real email contacts only; other contacts and Phase 2 implementation can proceed.",
+        "default": "No guessed domain seed or DW sales_email import. Registry administrators record the approved list; editors confirm each shared mailbox. See docs/41-project-content-and-faq.md."
+      }
     }
   ]
 }

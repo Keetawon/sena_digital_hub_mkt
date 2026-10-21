@@ -5,6 +5,7 @@ export const hubPages = [
   { id: "promotions", href: "/promotions", label: "โปรโมชั่นโครงการ", group: "content", icon: "M3 3h8l10 10-8 8L3 11V3zM7 7h.01M11 15l4-4" },
   { id: "releases", href: "/releases", label: "ชุดเผยแพร่ข้อมูล", group: "content", icon: "M4 10v10h16V10M12 15V3M7 8l5-5 5 5" },
   { id: "knowledge", href: "/knowledge", label: "ตรวจข้อมูลก่อนนำเข้า", group: "content", icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5" },
+  { id: "faq", href: "/faq", permissionTab: "knowledge", label: "คลัง FAQ เว็บไซต์", group: "content", icon: "M4 4h16v13H9l-5 4V4zM8 8h8M8 12h5" },
   { id: "registry", href: "/ads/registry", label: "ทะเบียนแคมเปญ", group: "ads", icon: "M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" },
   { id: "finance", href: "/ads/finance", label: "งบและค่าใช้จ่าย", group: "ads", icon: "M3 6h18v14H3zM3 6V4h15M16 11h5v5h-5zM17 13h.01" },
   { id: "actuals", href: "/ads/actuals", label: "ผลใช้จ่ายรายเดือน", group: "ads", icon: "M4 3v18h17M8 17v-5M13 17V8M18 17V4" },
@@ -17,12 +18,16 @@ export const hubPages = [
 export const hubGroups = { content: "ข้อมูลโครงการและแบรนด์", ads: "งานโฆษณาและงบ" } as const;
 export type HubSection = typeof hubPages[number]["id"];
 
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export function hubPermissionTab(section: HubSection) {
+  const page = hubPages.find(page => page.id === section);
+  return page && "permissionTab" in page ? page.permissionTab : section;
+}
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/content", "/content/fields", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
 export function safeNext(value?: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
   try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
 }
 
 export function workspaceLanding(capabilities?: CapabilityProjection) {
-  return hubPages.find(page => page.id === "accounts" ? capabilities?.can_manage_users : can(capabilities, page.id))?.href ?? "/";
+  return hubPages.find(page => page.id === "accounts" ? capabilities?.can_manage_users : can(capabilities, hubPermissionTab(page.id)))?.href ?? "/";
 }

@@ -35,6 +35,7 @@ async function openFixture(page: Page, failure?: { stage: 'upload' | 'bind'; fil
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   // All uploads, bindings and project edits are synthetic; no real project writes.
   await page.route('**/api/hub/v1/admin/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
     const method = request.method();

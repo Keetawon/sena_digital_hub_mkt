@@ -32,7 +32,10 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
     shared = {key for key, value in SHARED_RULES.items() if value != 'unavailable'}
     assert not CONTENT_RULES.keys() & SHARED_RULES.keys()
     assert actual == CONTENT_RULES.keys() | shared
-    assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable'}
+    assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable', 'content_registry', 'content_translation'}
+    assert {key for key, value in SHARED_RULES.items() if value == 'content_registry'} == {('GET', '/v1/admin/content/fields')}
+    assert {key for key, value in SHARED_RULES.items() if value == 'content_translation'} == {
+        ('POST', '/v1/admin/content/translations/{translation_id}/review'), ('POST', '/v1/admin/content/translations/{translation_id}/retry')}
     for key in actual:
         assert route_class(*key) == ('capability' if key in CONTENT_RULES else SHARED_RULES[key])
     # Prefixes must never silently authorize a newly added endpoint.

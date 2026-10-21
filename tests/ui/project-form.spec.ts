@@ -16,6 +16,7 @@ async function openFixture(page: Page, gold = true, extra: Record<string, unknow
   const project = { ...fixture(), ...extra };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
     if (route.request().method() === 'PATCH') {
       Object.assign(project, route.request().postDataJSON());
@@ -164,6 +165,7 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   let failSave = true;
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if (route.request().method() !== 'GET') {
       writes++;
       if (failSave) return route.fulfill({ status: 409, json: { error: { message: 'ข้อมูลเปลี่ยนแปลง กรุณาตรวจสอบ' } } });

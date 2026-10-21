@@ -1,0 +1,399 @@
+{
+  "phase": "Project content 2",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/fields",
+      "tab": "content_registry",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/content/fields/{field_key}",
+      "tab": "projects.registry",
+      "level": "admin",
+      "entry_roles": [],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/content/email-domains/{domain}",
+      "tab": "projects.registry",
+      "level": "admin",
+      "entry_roles": [],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/content/translations/{translation_id}/review",
+      "tab": "content_translation",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/content/translations/{translation_id}/retry",
+      "tab": "content_translation",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/glossary",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/content/glossary/{term_key}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/content/glossary/{term_key}/approve",
+      "tab": "knowledge",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/content",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/facts/{fact_key}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/buildings/{building_key}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/sections/{section_key}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/sections/{section_key}/submit",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/selling-points",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/selling-points/{point_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/contacts",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/contacts/{contact_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/brands/{public_id}/content",
+      "tab": "brands",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/brands/{public_id}/contacts",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/brands/{public_id}/contacts/{contact_id}",
+      "tab": "brands",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq/corporate-contacts",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq/corporate-contacts",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/faq/corporate-contacts/{contact_id}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq/questions",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/faq/questions/{question_key}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq/questions/{question_key}/approve",
+      "tab": "knowledge",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq/references",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq/{faq_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/faq/{faq_id}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq/{faq_id}/submit",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_content.py"
+    }
+  ]
+}

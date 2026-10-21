@@ -33,6 +33,21 @@ CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'can_read_asset', 'require_asset_access', 'project_permission_projection', 'project_versions', 'progress_permission_projection',
     'asset_registered_for_cleanup', 'asset_permission_projection', 'snapshot_assets_visible')}
 CONTENT_FUNCTIONS |= {'hub.public_content_payload', 'hub.project_publication_preview', 'hub.publication_review', 'hub.public_asset_file'}
+PROJECT_CONTENT_TABLES = {'hub.' + name for name in (
+    'field_catalog', 'project_facts', 'project_buildings', 'project_selling_points', 'contact_domains', 'contacts',
+    'knowledge_topics', 'faq_questions', 'faq_question_versions', 'content_section_versions', 'faq_versions', 'faq_sources',
+    'translation_glossary', 'content_translations', 'translation_jobs')}
+PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
+    'content_scope_tab', 'content_scope_access', 'require_field_admin', 'content_fields', 'save_content_field',
+    'save_contact_domain', 'content_number', 'content_rem_values', 'project_content_facts', 'save_project_fact',
+    'save_project_building', 'content_contacts', 'save_content_contact', 'section_visible', 'content_version_guard',
+    'content_locales', 'content_fact_keys', 'faq_question_list', 'save_faq_question', 'approve_faq_question',
+    'project_content_sections', 'save_content_section', 'save_selling_point', 'faq_read', 'save_faq',
+    'translation_allowed', 'translation_source_allowed', 'sync_content_translation', 'track_content_translation', 'translation_editable',
+    'content_translation_list', 'review_content_translation', 'retry_content_translation', 'glossary_read', 'save_glossary', 'approve_glossary',
+    'translation_requester_allowed', 'claim_translation', 'finish_translation', 'translation_complete',
+    'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
+    'review_knowledge_candidate_before_versions')}
 PRIVATE_PUBLIC_VIEWS = {'public_api.projects', 'public_api.brands', 'public_api.promotions'}
 PUBLICATION_TABLES = {'hub.' + name for name in (
     'public_promotions', 'promotion_reviews', 'promotion_versions', 'publication_releases', 'publication_release_members',
@@ -105,10 +120,19 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    project_content = [r for r in actual if r['schema'] + '.' + r['table'] in PROJECT_CONTENT_TABLES]
+                    assert len(project_content) == 2 * len(PROJECT_CONTENT_TABLES)
+                    assert all(r['name'] in ('content_owner', 'content_read') for r in project_content)
+                    assert all(r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true'
+                               for r in project_content if r['name'] == 'content_owner')
+                    assert all(r['roles'] == ['hub_app'] and r['cmd'] == 'SELECT' and r['with_check'] is None
+                               and ('hub.can(' in r['qual'] or 'hub.section_visible(' in r['qual'])
+                               for r in project_content if r['name'] == 'content_read')
+                    actual = [r for r in actual if r not in project_content]
                     account_ui = [r for r in actual if r['schema'] + '.' + r['table'] in ACCOUNT_UI_TABLES]
                     assert len(account_ui) == 1 and all(r['name'] == 'permission_notice_owner' and r['roles'] == ['postgres']
                         and r['qual'] == r['with_check'] == 'true' for r in account_ui)
@@ -251,7 +275,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -260,9 +284,9 @@ async def assert_reviewed_database_boundary(db):
     policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
-    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES
+    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
-        token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency('))}
+        token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible('))}
     # Registry children inherit the parent's RLS through EXISTS; the
     # issuance counter is entirely denied to application roles.
     for table, parent in {'scope_member': 'ads.scope_code', 'campaign_name': 'ads.campaign_registration',

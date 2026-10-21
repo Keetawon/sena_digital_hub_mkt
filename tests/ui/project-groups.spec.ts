@@ -28,6 +28,7 @@ async function fixture(page: Page, role = 'publisher') {
   const writes: { path: string; body: Record<string, unknown> }[] = [];
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if(new URL(route.request().url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(route.request().url()).pathname.replace(base, '');
     if (route.request().method() !== 'GET') {

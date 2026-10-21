@@ -235,3 +235,46 @@ read functions. Internal reference data and historical snapshots are preserved.
 Staff publication comparisons use the same projection, with existing permission
 redactions applied first; a partial comparison cannot be confirmed in the UI.
 See [the programme design](41-project-content-and-faq.md).
+
+## Private project content and FAQ drafts — Phase 2
+
+All routes below retain staff authentication, no-store responses and the live
+tab-capability checks. Exact method/path coverage is recorded in
+`tests/permissions/project-content-routes.json`; no broad path prefix grants
+authority. `Draft` writes take `{expected_revision, changes}`, reject unknown
+top-level fields and limit the changes object to 40 fields / 64,000 characters.
+SQL validates each command's allowed fields and rechecks the source scope.
+Stale revisions return 409; absent objects 404; denied authority 403; invalid
+content 422. Submitted FAQ/narrative text is immutable; editing creates a new
+draft. These APIs do not publish website content.
+
+| Route family | Methods and authority |
+|---|---|
+| `/v1/admin/content/fields` | GET with Projects, Brands or Knowledge V; PATCH `/{field_key}` needs explicit `projects.manage_field_catalog` and ACTIVE internal admin |
+| `/v1/admin/content/email-domains/{domain}` | PUT with the same registry-admin guard; expected revision + active/retired |
+| `/v1/admin/content/translations/{id}/review` | POST with exact original source E, expected revision, Thai version, English; requires unchanged source and preserved numbers/slots |
+| `/v1/admin/content/translations/{id}/retry` | POST with exact source E; only the failed current draft can return to the queue |
+| `/v1/admin/content/glossary` | GET Knowledge V; PUT `/{term_key}` Knowledge E; POST `/{term_key}/approve` Knowledge A and another version author |
+| `/v1/admin/projects/{public_id}/content` | GET Projects V: facts, local REM observations, derived values, buildings, section/point history, contacts, English and private readiness |
+| Project `/facts/{key}`, `/buildings/{key}`, `/sections/{key}` | PUT Projects E; facts also take an explicit grain. REM/computed fields cannot be typed; overrides need a reason |
+| Project `/sections/{key}/submit` | POST Projects E + current reviewed English; freezes the version for review |
+| Project `/selling-points` | POST Projects E; PUT `/{point_id}` appends a version; maximum six current points |
+| Project and brand `/contacts` | POST scoped E; PUT `/{contact_id}` with expected revision. GET via scoped `/content` |
+| `/v1/admin/faq/corporate-contacts` | GET Knowledge V; POST and PUT `/{contact_id}` Knowledge E |
+| `/v1/admin/faq/questions` | GET Knowledge V; PUT `/{question_key}` proposes with E; POST `/{key}/approve` uses A and editor separation |
+| `/v1/admin/faq/references` | GET Knowledge V; minimal local names/IDs for exact scope/phase pickers, no neighboring draft data |
+| `/v1/admin/faq` | GET list with Knowledge V; POST with E; GET/PUT `/{faq_id}` for detail/history/sources/English and append-only drafts |
+| `/v1/admin/faq/{faq_id}/submit` | POST Knowledge E; approved question, reviewed required English and explicit applicability; no publication |
+
+Corporate scope is `corporate:sena`; project applicability uses exact REM phase
+IDs from local references. Rules remain disabled until Phase 6. The staff FAQ
+preview renders escaped text from the authorized detail payload; fact slots
+remain visible placeholders at this stage. Legacy intake rows are copied into
+new versions without changing their original fields or reviews. A later source
+rejection withdraws its active derived draft and preserves the history.
+
+Email requires an approved company domain and a shared-mailbox confirmation.
+Social channels require matching HTTPS provider hosts. Legal documents, finance
+facts, contacts and source evidence never enter translation requests. Financial
+FAQ topics use manual English. Worker claim/finish RPCs are closed to the API
+role; the worker cannot approve text or publish content.

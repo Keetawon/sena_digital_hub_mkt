@@ -71,7 +71,8 @@ def test_permission_foundation_template_projection_and_real_sql_agree(permission
     account = me(client, role)
     caps = account['capabilities']
     assert len(caps['tabs']) == 12 and caps['locked_tabs'] == []
-    assert len(caps['special_actions']) == 3
+    assert len(caps['special_actions']) == 4
+    assert caps['special_actions']['projects.manage_field_catalog'] is False
     assert caps['can_manage_users'] == (role == 'admin')
     assert caps['published_consumer'] == (role not in ('agency', 'service_consumer', 'pending'))
     assert caps['agency_registry'] == (role == 'agency')

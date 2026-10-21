@@ -4,7 +4,7 @@ import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "re
 import { QuestionProvider } from "./pending-question";
 import { HubAssistant } from "./hub-assistant";
 import { HubNavigation } from "./hub-navigation";
-import { hubGroups, hubPages, type HubSection } from "./hub-navigation-data";
+import { hubGroups, hubPages, hubPermissionTab, type HubSection } from "./hub-navigation-data";
 import { BrandReviewProvider } from "./brand-review";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { deferredH1Sections, h1Unavailable } from "@/lib/hosted-config";
@@ -26,7 +26,7 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const hosted = Boolean(hostedConfig);
   const permissions = useHubPermissions();
   const staff = permissions.account?.status === "ACTIVE" && permissions.capabilities.published_consumer;
-  const allowed = section === "accounts" ? permissions.admin : permissions.can(section);
+  const allowed = section === "accounts" ? permissions.admin : permissions.can(hubPermissionTab(section));
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [medium, setMedium] = useState(false);
@@ -64,8 +64,8 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
     closeMenu(); return menuButton.current;
   }
   const presentation = hubPages.find(item => item.id === section);
-  const catalog = permissions.capabilities.catalog?.find(tab => tab.tab === section);
-  const page = presentation && { ...presentation, label: catalog?.label_th ?? presentation.label };
+  const catalog = permissions.capabilities.catalog?.find(tab => tab.tab === hubPermissionTab(section));
+  const page = presentation && { ...presentation, label: "permissionTab" in presentation ? presentation.label : catalog?.label_th ?? presentation.label };
   const sidebar = <>
     {narrow && <button className="hub-menu-close" type="button" onClick={closeMenu}>ปิดเมนู <span aria-hidden="true">×</span></button>}
     <a className="wordmark" href="/" aria-label="SENA Digital Hub หน้ารวมโครงการ"><span className="sena">S<span className="wordmark-full">ENA</span><span className="brand-dot">.</span></span><span className="wordmark-caption">DIGITAL HUB</span></a>

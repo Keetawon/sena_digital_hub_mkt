@@ -3,6 +3,7 @@ import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback
 import { getHostedIdentity } from "@/lib/hosted-session";
 import { HubApiUnavailable, unavailableMessage, readHubAccount } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
+import { contentAllowsApi } from "@/lib/content-routes";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
@@ -44,6 +45,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const permissionManagement = method === "POST" && (/^v1\/admin\/permissions\/(?:preview|apply)$/.test(path) || /^v1\/admin\/permissions\/notices\/[a-z_]{1,40}\/ack$/.test(path));
   const accountPath = permissionManagement || method === "GET" && ["v1/me", "v1/accounts/display-names", "v1/admin/accounts", "v1/admin/account-invites", "v1/admin/permissions/catalog"].includes(path) || ["POST", "PATCH"].includes(method) && path === "v1/me/access-request" || method === "POST" && ["v1/me/invite-accept", "v1/admin/account-invites"].includes(path) || method === "POST" && /^v1\/admin\/(?:accounts|account-invites)\/[0-9a-f-]{36}\/decision$/.test(path) || method === "POST" && /^v1\/admin\/accounts\/[0-9a-f-]{36}\/permissions$/.test(path);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
+  const projectContent = contentAllowsApi(path, method);
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
   const knowledgeWrite = method === "POST" && new RegExp(`^v1/admin/knowledge/(?:preview|rights/approve|candidates/${financeId}/review|questions/${id}/review|projects/${id}/preview-release)$`).test(path);
   const brandDashboard = method === "GET" && /^v1\/admin\/brands\/completeness(?:\.csv)?$/.test(path);
@@ -65,7 +67,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const adsRead = /^v1\/admin\/ads\/(?:settings|vocab|scopes|registrations(?:\/SN\d{7}[A-Z0-9])?)$/.test(path);
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
-  if (!(accountPath || allowed[method]?.test(path) || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  if (!(accountPath || allowed[method]?.test(path) || projectContent || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const progressQuery = method === "GET" && path === "v1/admin/projects/progress" && [...query.keys()].every(key =>

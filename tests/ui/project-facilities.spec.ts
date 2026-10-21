@@ -41,6 +41,7 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   // Domain requests are intercepted; identity reads retain the real capability projection.
   await page.route('**/api/hub/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     const request = route.request();
     if(new URL(request.url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');

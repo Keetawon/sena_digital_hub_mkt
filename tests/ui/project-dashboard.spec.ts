@@ -27,6 +27,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
   const writes: string[] = [];
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
     if(path==='/api/hub/v1/me')return route.continue();

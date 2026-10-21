@@ -37,6 +37,7 @@ async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
   responses['brands/completeness'] = { rows: [], counts: { total: 0, missing_data: 0, ready: 0, published: 0, published_changes: 0, not_created: 0 } };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     expect(route.request().method()).toBe('GET');
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
     await route.fulfill({ json: { data: responses[path] ?? [] } });

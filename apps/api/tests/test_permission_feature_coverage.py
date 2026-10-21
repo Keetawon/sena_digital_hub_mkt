@@ -18,13 +18,16 @@ def assert_classified_routes(pairs):
     assert pairs == expected, {'unmapped': pairs - expected, 'removed': expected - pairs}
 
 
-def assert_catalog_navigation(catalog, nav):
+def assert_catalog_navigation(catalog, nav, aliases=None):
     # Accounts is deliberately not a data-tab permission; the separate flag
     # controls it. Everything else must exist in the server-owned catalog.
     assert len(nav) == len(set(nav)), 'Duplicate navigation tab'
-    assert set(nav) == set(catalog) | {'accounts'}, {
-        'unmapped': set(nav) - set(catalog) - {'accounts'},
-        'missing': set(catalog) - set(nav),
+    aliases = aliases or {}
+    assert all(key in nav and target in catalog for key, target in aliases.items())
+    mapped = {aliases.get(item, item) for item in nav}
+    assert mapped == set(catalog) | {'accounts'}, {
+        'unmapped': mapped - set(catalog) - {'accounts'},
+        'missing': set(catalog) - mapped,
     }
 
 
@@ -34,7 +37,9 @@ def test_navigation_and_route_actions_match_live_permission_catalog(permission_a
     catalog = {row['tab']: row for row in data['tabs']}
     source = (ROOT / 'apps/admin/components/hub-navigation-data.ts').read_text(encoding='utf-8')
     nav = re.findall(r'\bid:\s*["\']([a-z_]+)["\']\s*,\s*href:', source)
-    assert_catalog_navigation(catalog, nav)
+    aliases = dict(re.findall(r'id:\s*"([a-z_]+)"[^\n]+permissionTab:\s*"([a-z_]+)"', source))
+    assert aliases == {'faq': 'knowledge'}
+    assert_catalog_navigation(catalog, nav, aliases)
     for (_method, _path), (tab, action) in CONTENT_RULES.items():
         if tab == 'assets':
             # Shared bytes/upload predicate is a documented disjunction of

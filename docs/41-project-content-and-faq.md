@@ -202,3 +202,93 @@ cover alone does not complete the gallery recommendation. Per-model plans use
 `floor_plan`. These fixes add no asset role and change no required blocker.
 English inputs preserve all other locale-map entries and use existing API/DB
 validation; Phase 2 owns translation jobs/review requirements.
+
+### Phase 2 permission card and preservation design
+
+| Field | Decision |
+|---|---|
+| Feature / owner | Core project content and website FAQ drafts; Marketing and Managers |
+| Tabs | `projects` for project facts, buildings, project narrative, selling points and contacts; `brands` for brand contacts; `knowledge` for FAQ, question bank, corporate narrative/contacts and glossary |
+| View | Registry metadata, authorized scope drafts, versions, sources, translation status and private preview. Scope/name references are bounded; no hidden-tab draft facts, files or evidence |
+| Edit | Existing E saves drafts with expected revisions; Knowledge E proposes questions and edits FAQ. Translation review requires E for its exact source scope |
+| Approve | Knowledge A approves question-bank versions and glossary entries, with revision-author separation. No website publishing in Phase 2 |
+| Special | The owner-required admin-only registry editor uses new `projects.manage_field_catalog` plus an ACTIVE internal admin identity. Both are required; `can_manage_users` confers no data rights |
+| Separation | Existing tab E/A rules remain. A version's editor cannot approve it. Submitted content is immutable; further edits create another draft |
+| Templates / rollout | Add the registry special to the catalog with no assignments or template changes. Existing accounts remain byte-for-byte unchanged. Administrators assign it explicitly through the existing preview/confirm workflow |
+| Agency | No access, including direct SQL/API, caches, previews and worker requests |
+| Sensitivity | Internal drafts and private source evidence; publication-oriented text alone may enter translation. Legal documents, contacts, financial values, customer data and arbitrary evidence are excluded from AI input |
+| Shared surfaces | No new public endpoint, assistant tool, RAG, export or publication member. Workers have a separate bounded role; `hub_app` cannot claim jobs or forge results |
+| Endpoints | Exact `/v1/admin/content/fields`, `/v1/admin/content/glossary`, `/v1/admin/content/translations/{id}/review`; project `/content`, `/facts/{key}`, `/buildings/{key}`, `/sections/{key}`, `/selling-points/{key}`, `/contacts`; scoped contacts; `/v1/admin/faq/questions`, question approval, FAQ list/detail/save/submit/history/preview. Every resolved method/route is classified before enabling |
+| SQL | New registry/fact/building/selling-point/contact/topic/question/version/source/translation tables; bounded guarded reads and revision-checked commands; FORCE RLS, audit and closed helpers. The exact runtime inventory is tested without changing historical manifests |
+| Verification | Positive/negative neighboring permissions, inactive/external identities, stale/concurrent writes, immutable submission, source rejection, translation staleness and protected placeholders/numbers; 1280/390 px browser flows, all programme gates and loopback H1 |
+
+Existing `hub.content_sections` and `hub.faqs` retain their original columns and
+values as historical intake evidence. New version tables receive additive copies
+of existing drafts, preserving their identity, author and source. No migration
+updates or removes the old content/review rows. New drafts use the identity and
+version path; nullable version pointers on legacy rows resolve to the copied
+version until an authorized subsequent write sets a pointer. Existing intake
+commands will append a version on acceptance and withdraw the current candidate
+draft on rejection, so rejected source material cannot remain an active draft.
+
+Registry readiness is a separate website-draft report until Phase 8. It reads
+registry requirements and translation review state, including 3–6 selling
+points. It does not silently change the existing legacy project publication
+contract or publish any new draft. REM prefill reads only the existing local DW
+snapshot, retains unknowns, dates the source, and requires confirmation of the
+selected unit count. Overrides preserve the observed REM value and require a
+reason. Calculated ratios/counts cannot be typed.
+
+English tracking is stored beside locale maps, so `{th,en}` stays the text
+contract. Saving changed Thai queues a new source-version job, marks a reviewed
+English translation stale, and preserves the reviewed text. Machine output is
+separate until Marketing accepts it against the current source revision. Jobs
+never publish or approve text. The worker receives only allowlisted marketing
+text and approved glossary terms; it protects placeholders and numbers and
+validates the returned structure. The integration follows the official
+[Responses structured-output documentation](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses).
+Tests inject a provider stub and never call OpenAI. No credentials are added by
+this phase; local execution uses only the already approved API environment.
+
+Phase 2 implementation details: the route inventory is
+`tests/permissions/project-content-routes.json` (32 methods/paths). Translation
+retry is an additional exact shared route, checking the original source's E bit
+inside SQL. FAQ history, sources and staff text preview use the same scoped
+detail read; they have no independent authority or public URL. The registry
+editor changes labels, help, owner, cadence and product-form requirements;
+source/AI safety classifications remain reviewed migration metadata.
+
+Existing identities retain raw intake fields. Section and FAQ saves append
+versions, and submitted versions reject content edits. Selling-point English
+review also appends a revision, so an older title/detail form cannot overwrite
+it. Building names join the readiness report when a building exists. Unknown
+product form conservatively applies conditional required fields. Future-phase
+registry entries remain planned; core contact/building/FAQ metadata is active.
+The investor section stays planned until Phase 9.
+
+The translation worker checks current author permission when claiming and
+finishing, validates source hash/lease/revision, preserves the exact number and
+placeholder multiset, and keeps machine output separate from reviewed English.
+Failed jobs have an explicit retry action. Financial FAQ topics
+(`commercial_terms`, `investment_context`, `buying_process`) never enter AI
+drafting; Marketing can enter and review English manually. This applies E1's
+finance-data exclusion to E9, without sending financial facts or references to
+the provider. No live provider call is part of the programme's test gates.
+
+The real mailbox-domain list remains empty pending Q76 (IT + Marketing). This
+does not block the editor implementation or other contact channels. Domains are
+added only by an explicitly authorized registry admin; email saves require an
+allowed domain and an explicit shared-mailbox confirmation. No DW sales email
+is read or imported.
+
+### Owner coordination update — 21 October 2026
+
+The owner assigned Phase 4, Phase 7 and the articles portion of Phase 10 to a
+separate agent, delivered through pull requests merged by the owner. This
+workstream now follows Phases **1 → 2 → 3 → 5 → 6 → 8**. Pull the latest
+`origin/main` before starting each new phase. Never modify or renumber files,
+migrations or tests introduced by the other agent's merged pull requests; stop
+and report if they need changes. Stop on any pull/merge conflict, without force
+pushes or history rewriting. Phase 6 requires Phase 4 already merged; Phase 8
+requires Phase 7 already merged. If either prerequisite is absent, stop and
+report instead of implementing a replacement. The original Phase 8 STOP remains.

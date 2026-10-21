@@ -30,6 +30,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'publisher', url: 'http://127.0.0.1:3000' }]);
   const me=(await (await page.request.get('/api/hub/v1/me')).json()).data;
   await page.route('**/api/hub/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
     const data = path.endsWith('/v1/me') ? me : path.endsWith('/accounts/display-names') ? [{id:'00000000-0000-0000-0000-000000000002',display_name_th:'สมหญิง ผู้จัดการ'}] : path.endsWith('/projects/review-test') ? project : path.endsWith('/projects/review-test/versions') ? [{ version_id: 'version-1', version_no: 1,
@@ -60,7 +61,10 @@ test('five tabs and one-row mobile save bar fit; optional fields stay on the opt
   await page.setViewportSize({ width: 375, height: 900 });
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   const me=(await (await page.request.get('/api/hub/v1/me')).json()).data;
-  await page.route('**/api/hub/**', route => route.fulfill({ json: { data: route.request().url().endsWith('/v1/me') ? me : route.request().url().endsWith('/projects/review-test') ? { ...fixture(), published_version_id: null } : [] } }));
+  await page.route('**/api/hub/**', route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    return route.fulfill({ json: { data: route.request().url().endsWith('/v1/me') ? me : route.request().url().endsWith('/projects/review-test') ? { ...fixture(), published_version_id: null } : [] } });
+  });
   await page.goto('/?project=review-test');
   await expect(page.getByRole('tab')).toHaveCount(5);
   await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();

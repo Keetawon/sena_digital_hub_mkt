@@ -261,6 +261,7 @@ async function retryFixture(page: Page, failure: 'upload' | 'bind', existingMono
   await page.route(`**${api}/**`, async route => {
     const request = route.request(), path = new URL(request.url()).pathname.slice(`${api}/`.length);
     if (request.method() === 'GET') {
+      if (path === 'content/fields') return route.continue();
       if (/^assets\/[^/]+\/file$/.test(path)) return route.fulfill({ contentType: 'image/png', body: png() });
       return route.fulfill({ json: { data: path === `brands/${publicId}` ? brand : path === 'brands' ? [brand] : path === 'assets' ? assets : path.startsWith('assets/') ? assets.find(asset => asset.id === path.slice('assets/'.length)) : [] } });
     }

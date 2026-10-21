@@ -12,6 +12,7 @@ import { request } from "./hub-request";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
 import { ProjectSourceReview, ProjectGroupSummary, SourceStatusFilter, type SourceReview, type ProjectGroupInfo } from "./project-source-review";
+import { ContentLabel, useFieldCatalog } from "./content-common";
 import { ProjectDashboard } from "./project-dashboard";
 import { useListQuery, WorkspaceBack, projectHref } from "./workspace-navigation";
 import { ProjectComparison, projectChanges } from "./project-review";
@@ -211,6 +212,7 @@ function LoadingState() { return <div className="loading-state" role="status"><s
 function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
 
 function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
+  const { catalog: contentCatalog } = useFieldCatalog();
   const permissions = useHubPermissions();
   const [project, setProject] = useState<Project | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -352,7 +354,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
         setNotice("");
       },
       "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
-    return <div className="form-field"><label htmlFor={name}>{labels[name]}</label>{multiline ? <textarea {...common} rows={name === "website_content" ? 16 : name === "ad_disclaimer" ? 4 : 3} maxLength={name === "website_content" ? 200000 : name.startsWith("meta_description") ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
+    return <div className="form-field"><ContentLabel htmlFor={name} field={contentCatalog?.items.find(field => field.field_key === `project.${name.replace(/_en$/, "")}`)}>{labels[name]}</ContentLabel>{multiline ? <textarea {...common} rows={name === "website_content" ? 16 : name === "ad_disclaimer" ? 4 : 3} maxLength={name === "website_content" ? 200000 : name.startsWith("meta_description") ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
   }
 
   function sourceField(name: string, label: string) {
@@ -386,6 +388,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
 
   return <>
     <WorkspaceBack />
+    <p><a className="button secondary" href={`/content?project=${encodeURIComponent(projectId)}`} onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) event.preventDefault(); }}>เนื้อหาเว็บไซต์โครงการ</a></p>
     <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={project.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={{ ...project, version_count: versions.length, has_unpublished_changes: Boolean(live && projectChanges(project, live).length) }} /></div>
     {notice && <div className="notice success" role="status"><Icon name="check" />{notice}</div>}
     {error && <div className="notice error" role="alert"><div><strong>{error}</strong>{conflict && <p>ข้อมูลร่างของคุณยังอยู่ กรุณาคัดลอกข้อความที่ต้องการเก็บ ก่อนโหลดข้อมูลล่าสุด</p>}</div>{conflict && <button className="button secondary" onClick={() => void load()}>โหลดข้อมูลล่าสุด</button>}</div>}

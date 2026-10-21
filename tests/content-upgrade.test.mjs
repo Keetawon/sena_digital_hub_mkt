@@ -46,11 +46,36 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
+    let phase2State,legacyFaq,legacySection;
+    const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
+      union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
+      if(name==='202610210058_project_content_core.sql') {
+        const project=(await db.query('select rem_project_id from staging.rem_projects order by rem_project_id limit 1')).rows[0].rem_project_id;
+        const actor=(await db.query("select id from hub.user_account where hub_role='editor' order by id limit 1")).rows[0].id;
+        await db.query("insert into staging.knowledge_batches(manifest_sha256,manifest) values(repeat('c',64),'{\"purpose\":\"synthetic upgrade preservation\"}')");
+        const candidate=async kind=>(await db.query("insert into staging.knowledge_candidates(batch_sha256,source_key,kind,project_ids,topic,source_ref,evidence) values(repeat('c',64),$1,$1,array[$2],'design','synthetic upgrade','{}') returning id",[kind,project])).rows[0].id;
+        const faqCandidate=await candidate('faq'),sectionCandidate=await candidate('section');
+        legacyFaq=(await db.query(`insert into hub.faqs(candidate_id,scope_type,scope_id,applies_to_project_ids,topic,canonical_question,alt_questions,short_answer,source_ref,reviewed_by)
+          values($1,'project',$2,array[$2],'design','{"th":"คำถามเดิม"}','["อีกคำถามเดิม"]','{"th":"คำตอบเดิม"}','synthetic original FAQ',$3) returning id`,[faqCandidate,project,actor])).rows[0].id;
+        legacySection=(await db.query(`insert into hub.content_sections(candidate_id,scope_type,scope_id,applies_to_project_ids,topic,title,body,source_ref,reviewed_by)
+          values($1,'project',$2,array[$2],'design','{"th":"ชื่อเดิม"}','{"th":"เนื้อหาเดิม"}','synthetic original section',$3) returning id`,[sectionCandidate,project,actor])).rows[0].id;
+        await db.query("insert into hub.knowledge_reviews(candidate_id,decision,applies_to_project_ids,note,reviewed_by) values($1,'accepted',array[$3],'original accepted',$4),($2,'accepted',array[$3],'original accepted',$4)",[faqCandidate,sectionCandidate,project,actor]);
+        phase2State={content:await contentState(),legacy:await legacyState(),accounts:await accounts()};
+      }
       const before=name==='202610210057_public_content_boundary.sql'?await contentState():null;
       await db.query(await readFile(path.join(migrations,name),'utf8'));
       if(before)assert.deepEqual(await contentState(),before,'Phase 1 changed content, reviews or account permissions');
+      if(phase2State) {
+        assert.deepEqual(await contentState(),phase2State.content,`${name} rewrote existing content, reviews or permissions`);
+        assert.deepEqual(await legacyState(),phase2State.legacy,`${name} rewrote legacy FAQ/section fields`);
+        assert.deepEqual(await accounts(),phase2State.accounts,`${name} rewrote accounts`);
+      }
     }
+    assert.equal((await db.query('select question,alt_questions,short_answer from hub.faq_versions where faq_id=$1',[legacyFaq])).rowCount,1);
+    assert.deepEqual((await db.query('select alt_questions from hub.faq_versions where faq_id=$1',[legacyFaq])).rows[0].alt_questions,['อีกคำถามเดิม']);
+    assert.equal((await db.query('select body from hub.content_section_versions where section_id=$1',[legacySection])).rows[0].body.th,'เนื้อหาเดิม');
+    assert.equal((await db.query('select count(*) from hub.faq_sources where faq_id=$1',[legacyFaq])).rows[0].count,'1');
     assert.deepEqual(await accounts(),beforeAccounts);
     assert.deepEqual(await editors(),beforeEditors);
     assert.equal(Number((await db.query('select count(*) from hub.assets where id=any($1::uuid[]) and first_bound_at is not null',[bound])).rows[0].count),bound.length);

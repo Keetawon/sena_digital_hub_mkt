@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import "./hub-navigation.css";
 
-import { hubPages, hubGroups, type HubSection } from "./hub-navigation-data";
+import { hubPages, hubGroups, hubPermissionTab, type HubSection } from "./hub-navigation-data";
 import { useHubPermissions } from "./accounts";
 import { useBrandReviews } from "./brand-review";
 import { useHostedSession } from "./hosted-session";
@@ -27,9 +27,9 @@ export function HubNavigation({ section }: { section: HubSection }) {
   const { pendingCount } = useBrandReviews();
   const hosted = Boolean(useHostedSession());
   const items: Item[] = hubPages.flatMap(item => {
-    const tab = accounts.capabilities.catalog?.find(tab => tab.tab === item.id);
-    if (!tab || !accounts.can(item.id)) return [];
-    return [{ ...item, label: tab.label_th, group: tab.nav_group === "content" || tab.nav_group === "ads" ? tab.nav_group : null }];
+    const tab = accounts.capabilities.catalog?.find(tab => tab.tab === hubPermissionTab(item.id));
+    if (!tab || !accounts.can(hubPermissionTab(item.id))) return [];
+    return [{ ...item, label: "permissionTab" in item ? item.label : tab.label_th, group: tab.nav_group === "content" || tab.nav_group === "ads" ? tab.nav_group : null }];
   });
   const content = items.filter(item => item.group === "content"), ads = items.filter(item => item.group === "ads");
   return <nav className="hub-navigation" aria-label="เมนูหลัก"><Group name="content" items={content} section={section} pendingBrands={accounts.can("brands", "approve") ? pendingCount : undefined} /><Group name="ads" items={ads} section={section} />{items.filter(item => item.group === null).map(item => <div className="hub-nav-standalone" key={item.id}><NavLink item={item} section={section} /></div>)}{accounts.admin && <NavLink item={hubPages.find(item => item.id === "accounts")!} section={section} pendingAccounts={accounts.pending ?? null} />}</nav>;
