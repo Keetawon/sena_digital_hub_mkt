@@ -353,6 +353,11 @@
       "name": "202610220070_real_promotions.sql",
       "canonical_sha256": "3176fa84b820b0fcdad1fd7d1622555330e8a6ba88fe9eb32351de62a35fdc41",
       "executed_sha256": "3176fa84b820b0fcdad1fd7d1622555330e8a6ba88fe9eb32351de62a35fdc41"
+    },
+    {
+      "name": "202610220071_faq_coverage.sql",
+      "canonical_sha256": "0fb54d19c4bb0b854c6afd2c21901202cbd13acb0a69ae0ae33e3b78918b9941",
+      "executed_sha256": "0fb54d19c4bb0b854c6afd2c21901202cbd13acb0a69ae0ae33e3b78918b9941"
     }
   ]
 }

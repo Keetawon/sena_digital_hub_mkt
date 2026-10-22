@@ -1,0 +1,72 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq-coverage",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_coverage.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq-composition/{public_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_coverage.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq-applicability",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_coverage.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq-gaps",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_coverage.py"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/admin/faq-gaps/{gap_id}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_coverage.py"
+    }
+  ]
+}

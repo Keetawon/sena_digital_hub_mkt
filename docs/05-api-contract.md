@@ -416,3 +416,31 @@ payloads add audience, date windows, public scope IDs and rights-filtered banner
 assets; internal UUIDs and editor/source identifiers remain private. Each
 resolved project gets its own eligible promotion response. Legal documents
 never appear in this output.
+
+## K3 FAQ coverage and fact composition (Phase 6)
+
+All five entries require Knowledge V **and** Projects V; gap edits additionally
+require Knowledge E. SQL rechecks both source permissions on each call.
+
+| Method | Route | Contract |
+|---|---|---|
+| GET | `/v1/admin/faq-coverage` | Optional `project` public ID, `offset` 0–100000, `limit` 1–100; core question columns, project rows, eight cell states and bounded pagination |
+| GET | `/v1/admin/faq-composition/{public_id}` | `locale=th\|en`, optional `unit_type` public ID belonging to this project; private draft items, hidden reasons, conflicts, lint and dated fact evidence |
+| POST | `/v1/admin/faq-applicability` | `{scope_type, scope_id, rule}`; closed `brand_ids`, `product_forms`, `group_ids` arrays; resolved explicit REM IDs, digest, named projects and unresolved forms; `frozen: false` |
+| GET | `/v1/admin/faq-gaps` | Optional `project`; latest 100 deduplicated fact tasks with owner, state, self-assignee, occurrences and revision |
+| PATCH | `/v1/admin/faq-gaps/{gap_id}` | `{expected_revision, state, assign_self?}`; self-claim/release only; stale 409, another assignee 403; unresolved facts cannot be manually marked resolved |
+
+Rule values are ORed within each predicate and predicates are ANDed with the
+FAQ scope. Empty rules use the existing manual phase list. FAQ save resolves
+rules and stores the explicit list; submit rejects changed resolution with 409.
+Phase 8 will re-resolve, show and freeze the list at publication. Mixed/unknown
+project forms are not inferred; a selected unit type uses its own known form.
+
+Draft previews choose unit > project > group > programme > brand > corporate;
+duplicate winners block readiness. Corporate answers require the question's
+`show_on_project_pages`. Missing, expired or private fact slots hide the selected
+answer and refresh one task per project/question. Zero and false are values.
+Repaired facts resolve the task and record the FAQ identity. Coverage is a
+private preview, not an approval or a public read. Its reads may refresh derived
+gap metadata. Public projection, immutable publication and dynamic expiry remain
+Phase 8 responsibilities. No new account grants or provider calls are made.

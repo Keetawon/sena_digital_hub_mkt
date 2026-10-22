@@ -49,6 +49,7 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
     'review_knowledge_candidate_before_versions')}
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
+FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
 FAQ_INTAKE_FUNCTIONS = {'hub.faq_intake_text', 'hub.faq_intake_state', 'hub.faq_intake_clusters', 'hub.faq_intake_cluster',
                         'hub.decide_faq_cluster', 'staging.replace_faq_clusters'}
@@ -145,7 +146,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -169,6 +170,10 @@ def test_live_catalog_matches_reviewed_local_baseline():
                                any(token in r['qual'] for token in ('hub.can(', 'hub.can_read_asset(', 'hub.media_target('))
                                for r in media if r['name'] == 'media_read')
                     actual = [r for r in actual if r not in media]
+                    faq_sources = [r for r in actual if r['name'] == 'faq_gap_sources']
+                    assert len(faq_sources) == 1 and faq_sources[0]['table'] == 'content_gaps'
+                    assert faq_sources[0]['permissive'] == 'RESTRICTIVE' and 'projects' in faq_sources[0]['qual'] and faq_sources[0]['with_check'] == 'false'
+                    actual = [r for r in actual if r not in faq_sources]
                     project_content = [r for r in actual if r['schema'] + '.' + r['table'] in PROJECT_CONTENT_TABLES]
                     assert len(project_content) == 2 * len(PROJECT_CONTENT_TABLES)
                     assert all(r['name'] in ('content_owner', 'content_read') for r in project_content)

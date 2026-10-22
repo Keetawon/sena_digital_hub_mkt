@@ -441,3 +441,50 @@ freezes the resolved public project IDs and scope identifiers. Draft changes
 do not rewrite a published version. Booking and transfer dates are paired,
 ordered windows. Banners use `asset_links`, expire no later than the promotion,
 and disappear immediately when rights or live eligibility are withdrawn.
+
+## Phase 6 permission and composition contract — 22 October 2026
+
+Owner's later port turn-taking instruction: after the Phase 6 push, Phase 7 gets
+priority for its full gate cycle. Write Phase 10a articles meanwhile, but run
+article port-binding gates only after the Phase 7 PR is open, or three hours
+after the Phase 6 push if no PR is open and all shared ports are free. Never
+stop another agent's process. Finish articles before Phase 8 and retain its STOP.
+
+Phase 4 is merged. Phase 6 builds on Phase 9 commit `7451cf4` after a fresh
+pull of main. Phase 4's added files, migration and tests remain unchanged.
+
+| Permission card | Decision |
+|---|---|
+| Feature / owner | K3 FAQ coverage, rule applicability, fact-slot previews and missing-fact tasks; Marketing prepares, Managers review |
+| Tab / View | Existing Knowledge V plus Projects V for the new coverage, applicability, composition and gap views; actual project facts never become available through Knowledge alone |
+| Edit | Knowledge E plus Projects V to claim a gap for oneself, clear its assignee or change its task state with an expected revision. Existing Knowledge E saves FAQ drafts, including bounded applicability rules |
+| Approve / specials | No new approval action, special, template or account assignment. Question-bank approval is unchanged. FAQ/page publication and per-version four-eyes stay in Phase 8 |
+| Agency / sensitivity | No agency, inactive or service-consumer access to these private routes. Legal evidence, finance data and account-directory details are excluded |
+| Cross-tab references | Existing minimal project/brand/group/type references remain. Rule evaluation and actual fact resolution additionally require Projects V. Gap assignment offers the current actor only; it does not expose the Accounts directory |
+| Shared surfaces | Private composition helper for Phase 8; no public endpoint, RAG, provider call or website publication is added in this phase |
+| API / SQL | Exact `faq-coverage`, `faq-composition/{public_id}`, `faq-applicability`, and `faq-gaps` routes; additive gap metadata and guarded commands; closed private composition helpers in migration 71 |
+| Verification | Runtime deny/neighbor and revocation, four scope inheritance boundaries, same-level collision, missing/expired/zero facts, price validity, rule membership changes, gap deduplication and optimistic edits; desktop/mobile workflows and all programme gates |
+
+Rules use bounded lists of public brand IDs, product forms and project-group
+IDs. Predicates are combined with AND, values within a predicate with OR.
+An empty rule keeps manual applicability. Product form follows the existing
+single-form commercial-type classification; unknown or mixed forms are shown
+as unresolved, never inferred. The UI shows the resolved REM phase IDs before
+submission. Phase 8 will re-resolve during publication preview and freeze that
+explicit list with the approved page/version, rejecting a stale preview.
+
+The private draft preview composes current FAQ versions and current facts,
+clearly labelled as unpublished. The private published-mode helper selects
+published FAQ versions and approved, current facts only. An expired or missing
+slot hides the selected answer and records one task per project/question,
+preserving assignment and incrementing occurrences. A repaired answer resolves
+its derived task; a later gap reopens it. Zero and false remain real values.
+Prices come from the approved, live price projection and retain their basis,
+conditions and validity. Availability and installment answers hand off to Sales.
+
+Most-specific scope wins: unit type, project, group, programme, brand, corporate.
+Two applicable answers at the winning level are a publication blocker. Corporate
+answers require `show_on_project_pages` to appear on a project. Coverage keeps
+draft, inherited/published, waiting-for-fact, legacy candidate, hold, missing and
+not-applicable states distinct. Lint and source checks report publication
+blockers without deleting or rewriting existing FAQ drafts or intake evidence.

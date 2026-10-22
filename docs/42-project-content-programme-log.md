@@ -541,3 +541,115 @@ All required test gates passed before the Phase 9 commit containing this report.
 Next is Phase 6 after a fresh pull; Phase 4 is already merged. The owner report
 records the delivery hash and push confirmation. The approved credential
 locations and all screenshots remain Git-ignored.
+
+## Phase 6 — FAQ coverage and fact slots (22 October 2026)
+
+Phase 9 was committed and pushed to `origin/main` as
+`7451cf4368760676be21096c109352bab9c1bcb4`. All gates passed, and the clean
+working tree was fast-forward checked with `git pull --ff-only origin main`
+before Phase 6. Phase 4 is present through owner merge `ca67317`; its added
+files are protected. Only the verified Phase 9 recovery stash was removed.
+
+The permission/composition card is recorded in docs/41 before implementation.
+This phase adds private coverage, applicability and fact previews plus derived
+gap tasks. It does not publish website pages. After this phase: Phase 10a
+articles, then Phase 8 after Phase 7 merges, then the required STOP.
+
+### Delivered scope
+
+Migration `202610220071_faq_coverage.sql` adds private FAQ composition, bounded
+applicability rules and audited, revision-checked missing-fact tasks. Existing
+content, reviews and account/permission assignments are preserved. The previous
+70 migrations and Phase 4's added implementation/tests remain unchanged.
+
+The coverage matrix distinguishes all eight requested states. Composition uses
+unit type > project > group > programme > brand > corporate, rejects duplicate
+answers at the winning level and respects the corporate project-page flag.
+Published-mode composition reads the published version's question key; changing
+a draft cannot relabel the published answer. Missing, expired or internal facts
+hide the answer and create one task per project/question. Repair resolves the
+task, recurrence reopens it, and zero/false remain valid values. Price slots keep
+the approved price's basis, conditions, dates and exposure restrictions.
+
+Rule controls show the resolved REM phase IDs and unresolved product forms.
+Saving captures the current membership; submission rejects drift. Phase 8 will
+freeze the reviewed membership at publication. Draft previews can show derived
+facts, while published-mode composition requires an approved fact record; Phase
+8 must capture and review those dependencies before publishing them.
+
+Five exact API routes require Knowledge plus Projects view, with Knowledge edit
+for task changes. Database guards enforce the same source permissions. Revocation
+clears cached browser content. Assignment is limited to oneself and does not
+expose the account directory. Existing FAQ intake and its evidence are retained.
+
+### Verification
+
+| Gate | Result |
+|---|---|
+| Admin typecheck + offline webpack production build | Passed on the final implementation |
+| Focused API regression | 14 passed, 2,017 deselected, 0 skipped/failed; includes the preceding DW intake fixture, 12 new FAQ coverage cases and exact route inventory |
+| Full API suite | 2,020 passed, 11 unchanged opt-in skips, 0 failed; 6 existing deprecation warnings; 803.08 s |
+| Full DB suite | 59 SQL/concurrency checks + 10 Node tests passed, 0 skipped/failed |
+| Relevant browser suite | 54 passed, 0 skipped/failed, 3.9 minutes; six new workflow/source-revocation cases plus Phase 1/2/3/4/5/9 regressions |
+| Disposable migration replay / populated upgrade | Passed through all 71 migrations, preserving content, reviews, accounts and permissions |
+| Loopback H1 | 11 protocol + 45 browser tests passed (35 core, 3 flags, 7 outage), 0 skipped/failed |
+| Credential scan | Passed: 0 configured-credential matches across 25 changed files, 80 browser static files and 23 artifacts; receipt `credential-scan.json` |
+
+Logs are Git-ignored under `artifacts/project-content-phase6/`: `typecheck.log`,
+`build.log`, `api-focused-final.log`, `api-full.log`, `db-full.log`, `ui.log` and
+`h1.log`; `ui-permissions.log` records the two focused revocation cases. No live
+provider call or working-database migration was performed.
+
+The first browser run exposed two new selectors that included select-option
+text in the accessible label; they now select the actual combobox/listbox roles.
+The initial full API run found an omitted addition to the exact route-count
+assertion and a new fixture reading translations from a SQL response that does
+not include them. The assertion now explicitly counts all five routes, and the
+fixture uses the existing translation-list function. The focused regression
+passed after both corrections. The subsequent full run exposed random UUID
+selection of an unnamed project left by the intake test; the answer correctly
+failed name lint. The gap-lifecycle fixture now explicitly uses the named
+synthetic seed, preserving every behavioral assertion and rerunning after that
+intake case. Applicability also has an explicit permission guard on its resolved
+preview. A browser regression covers revoke, restore and fresh preview, including
+the shared shell's existing recovery panel for unsaved text. Initial assertions
+expected the old form to remain and checked a fieldset instead of its controls;
+the test now follows the actual recovery flow and checks the disabled selects.
+Earlier disposable setup correctly refused a
+port collision; no other agent's process was stopped. A synthetic DW fixture
+also needed its required project ID. No test was skipped, quarantined or weakened.
+
+### Screenshots
+
+All captures use synthetic disposable data and remain Git-ignored:
+
+- Missing facts and assigned tasks: [1280 px](../artifacts/project-content-phase6/gap-1280.png), [390 px](../artifacts/project-content-phase6/gap-390.png).
+- Repaired zero-value answer and resolved task: [1280 px](../artifacts/project-content-phase6/preview-1280.png), [390 px](../artifacts/project-content-phase6/preview-390.png).
+- Applicability controls and explicit phase list: [1280 px](../artifacts/project-content-phase6/rule-1280.png), [390 px](../artifacts/project-content-phase6/rule-390.png).
+- Projects source permission revoked: [390 px](../artifacts/project-content-phase6/revoked-390.png).
+
+Desktop/mobile previews, rule controls and the revoked-source screen were
+visually inspected. Browser tests verify no horizontal page overflow at 390 px;
+the wide desktop matrix scrolls inside its own labelled region.
+
+### Coordination, questions and next phase
+
+No new business question. Q74/Q75 remain pending and Q76 remains closed. This
+phase does not add a public endpoint or website publication. `sena_h_approved`
+stays false, with no hosted, DW, REM, R2 or VPS writes.
+
+The Phase 7 agent's unmerged migrations used 71–73. The owner will relay that
+the agent must rebase after this push and renumber its own migrations to 72–74;
+this workstream has not edited that worktree or its files.
+
+After the verified Phase 6 push, Phase 7 receives port priority for its full
+gate cycle. Phase 10a articles comes next after a fresh pull. Article gates wait
+until Phase 7 opens its PR, or until three hours after the Phase 6 push if no PR
+is open and all shared ports are free. Other agents' processes must never be
+stopped. Finish articles before Phase 8, even if Phase 7 merges sooner. Phase 8
+still requires that merge and ends at its original STOP.
+
+All required gates passed before the Phase 6 commit containing this report.
+The owner delivery report records the commit hash and push confirmation. Both
+approved local development credential files are checked with `git check-ignore`
+before committing; screenshots and logs remain ignored and are never force-added.

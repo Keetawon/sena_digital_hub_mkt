@@ -1,0 +1,12 @@
+.faq-coverage-scroll { max-width: 100%; overflow-x: auto; }
+.faq-coverage-table { border-collapse: collapse; width: 100%; font-size: 1rem; }
+.faq-coverage-table caption { text-align: start; margin-bottom: 1rem; }
+.faq-coverage-table th, .faq-coverage-table td { border: 1px solid var(--line); padding: .75rem; vertical-align: top; min-width: 11rem; text-align: start; }
+.faq-coverage-table th { background: var(--canvas); }
+.faq-coverage-table p { margin: .4rem 0; }
+@media (max-width: 720px) {
+  .faq-coverage-table, .faq-coverage-table tbody, .faq-coverage-table tr, .faq-coverage-table th, .faq-coverage-table td { display: block; min-width: 0; }
+  .faq-coverage-table thead { display: none; }
+  .faq-coverage-table tr { margin-bottom: 1.5rem; }
+  .faq-coverage-table td::before { content: attr(data-label); display: block; font-weight: 600; }
+}

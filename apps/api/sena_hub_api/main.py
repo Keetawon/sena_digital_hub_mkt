@@ -23,6 +23,7 @@ from .facilities import register_facility_routes
 from .commercial_types import register_commercial_routes
 from .unit_types import register_unit_type_routes
 from .project_commercial import register_project_commercial_routes
+from .faq_coverage import register_faq_coverage_routes
 from .ads import register_ads_routes
 from .finance import register_finance_routes
 from .questions import register_question_routes
@@ -898,6 +899,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_commercial_routes(app, admin, writer, database, detail, require_local_assets)
     register_unit_type_routes(app, authentication, database)
     register_project_commercial_routes(app, authentication, database)
+    register_faq_coverage_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

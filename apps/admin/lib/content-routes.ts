@@ -11,7 +11,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
-  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method);
+  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method);
 }
 
 const media: Record<string, RegExp> = {
@@ -35,6 +35,12 @@ const intakeFilters: Record<string, RegExp> = {
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (method === "GET") {
+    const filters: Record<string, RegExp> | null = path === "v1/admin/faq-coverage" ? { project: new RegExp(`^${id}$`), offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
+      : new RegExp(`^v1/admin/faq-composition/${id}$`).test(path) ? { locale: /^(?:th|en)$/, unit_type: new RegExp(`^${id}$`) }
+      : path === "v1/admin/faq-gaps" ? { project: new RegExp(`^${id}$`) } : null;
+    if (filters) return [...query.keys()].every(key => filters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
+  }
   return method === "GET" && path === "v1/admin/faq-intake/clusters"
     && [...query.keys()].every(key => intakeFilters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
 }
@@ -46,3 +52,10 @@ const commercial: Record<string, RegExp> = {
   POST: new RegExp(`^v1/admin/projects/${id}/commercial/${commercialKind}(?:/${uuid}/(?:submit|review))?$`),
 };
 export function commercialAllowsApi(path: string, method: string) { return commercial[method]?.test(path) ?? false; }
+
+const faqCoverage: Record<string, RegExp> = {
+  GET: new RegExp(`^v1/admin/(?:faq-coverage|faq-composition/${id}|faq-gaps)$`),
+  POST: /^v1\/admin\/faq-applicability$/,
+  PATCH: new RegExp(`^v1/admin/faq-gaps/${uuid}$`),
+};
+export function faqCoverageAllowsApi(path: string, method: string) { return faqCoverage[method]?.test(path) ?? false; }

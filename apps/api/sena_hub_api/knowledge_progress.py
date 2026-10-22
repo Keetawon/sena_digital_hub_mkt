@@ -30,5 +30,6 @@ async def read_summaries(db, project_ids):
     candidates = [{**c, 'review': c['review'] if (c.get('review') or {}).get('decision') else None} for c in candidates]
     # Candidate-linked gaps already occur in the staged rows; count only additional named gaps here.
     gaps = {r['project_id']: r['count'] for r in await db.fetch('''SELECT project_id,count(*) AS count
-        FROM hub.content_gaps WHERE candidate_id IS NULL AND gap_code<>'NO_ANSWER' GROUP BY project_id''')}
+        FROM hub.content_gaps WHERE candidate_id IS NULL AND gap_code<>'NO_ANSWER'
+        AND (question_key IS NULL OR state<>'resolved') GROUP BY project_id''')}
     return {pid: summarize(pid, candidates, gaps.get(pid, 0)) for pid in project_ids}
