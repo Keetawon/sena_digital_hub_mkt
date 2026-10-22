@@ -16,7 +16,7 @@ from sena_hub_api.questions import load_catalog, OWNER_GROUPS, PRESENTATION_FIEL
 ROOT = Path(__file__).resolve().parents[3]
 PATH = "/v1/admin/questions"
 TOKENS = {role: "synthetic-questions-" + role + "-" + "x" * 40 for role in DEMO_ROLES}
-HIDDEN_IDS = {"Q9", "Q10", "Q11", "Q12", "Q18", "Q20", "Q72"}
+HIDDEN_IDS = {"Q9", "Q10", "Q11", "Q12", "Q18", "Q20", "Q72", "Q76"}
 spec = importlib.util.spec_from_file_location("sync_questions", ROOT / "scripts" / "sync-questions.py")
 sync_questions = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sync_questions)
@@ -82,7 +82,7 @@ def test_questions_require_authentication_and_reject_hidden_or_write_requests(cl
 
 def test_catalog_retains_decisions_but_defers_line_oa_attribution():
     entries = {entry["id"]: entry for entry in load_catalog()["questions"]}
-    assert all(entries[key]["status"] == "RESOLVED" for key in ("Q9", "Q10", "Q11", "Q12"))
+    assert all(entries[key]["status"] == "RESOLVED" for key in ("Q9", "Q10", "Q11", "Q12", "Q76"))
     for key in ("Q18", "Q20"):
         assert entries[key]["status"] == "DEFERRED"
         assert "LINE OA (ยังไม่แยกบัญชี)" in entries[key]["default_th"]

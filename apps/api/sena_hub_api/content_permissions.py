@@ -9,6 +9,19 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('GET', '/v1/admin/media/tags'): ('projects', 'view'),
+    ('PUT', '/v1/admin/media/tags/{tag_code}'): ('projects', 'edit'),
+    ('POST', '/v1/admin/media/tags/{tag_code}/approve'): ('projects', 'approve'),
+    ('GET', '/v1/admin/media/requirements'): ('projects', 'view'),
+    ('PUT', '/v1/admin/media/requirements/{rule_key}'): ('projects', 'approve'),
+    ('GET', '/v1/admin/projects/{public_id}/media'): ('projects', 'view'),
+    ('PUT', '/v1/admin/projects/{public_id}/media/assets/{asset_id}'): ('projects', 'edit'),
+    ('PUT', '/v1/admin/projects/{public_id}/media/links/{link_id}'): ('projects', 'edit'),
+    ('POST', '/v1/admin/projects/{public_id}/media/links/{link_id}/remove'): ('projects', 'edit'),
+    ('PUT', '/v1/admin/projects/{public_id}/media/clips/{clip_id}'): ('projects', 'edit'),
+    ('POST', '/v1/admin/projects/{public_id}/media/clips/{clip_id}/check'): ('projects', 'edit'),
+    ('GET', '/v1/admin/projects/{public_id}/media/jobs'): ('projects', 'view'),
+    ('POST', '/v1/admin/projects/{public_id}/media/jobs'): ('projects', 'edit'),
     ('PATCH', '/v1/admin/content/fields/{field_key}'): ('projects', 'projects.manage_field_catalog'),
     ('PUT', '/v1/admin/content/email-domains/{domain}'): ('projects', 'projects.manage_field_catalog'),
     ('GET', '/v1/admin/content/glossary'): ('knowledge', 'view'),

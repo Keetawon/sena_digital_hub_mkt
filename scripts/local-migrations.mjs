@@ -15,7 +15,11 @@ export async function applyLocalMigrations(client) {
       if (applied.rows[0].checksum !== checksum) throw new Error(`Applied migration changed: ${name}. Add a new migration.`);
       continue;
     }
-    await client.query(sql);
+    try { await client.query(sql); }
+    catch (error) {
+      // Schema diagnostics only: never dump the connection, query parameters or config.
+      throw new Error(`Migration ${name}: ${error.message} (SQL position ${error.position || error.internalPosition || 'unknown'}; ${error.where || 'no context'})`);
+    }
     await client.query('INSERT INTO public.local_migrations VALUES ($1,$2)', [name, checksum]);
     console.log(`Applied ${name}`);
   }

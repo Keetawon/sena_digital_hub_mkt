@@ -1,0 +1,167 @@
+{
+  "phase": "Project content 3",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/media/tags",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/media/tags/{tag_code}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/media/tags/{tag_code}/approve",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/media/requirements",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/media/requirements/{rule_key}",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/media",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/media/assets/{asset_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/media/links/{link_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/media/links/{link_id}/remove",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/media/clips/{clip_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/media/clips/{clip_id}/check",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/media/jobs",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/media/jobs",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    }
+  ]
+}

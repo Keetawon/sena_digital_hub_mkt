@@ -46,7 +46,13 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,legacyFaq,legacySection;
+    let phase2State,phase3State,legacyFaq,legacySection;
+    const mediaState=async()=>(await db.query(`select name,rows from (
+      select 'assets' name,jsonb_agg(to_jsonb(t)-array['media_category','caption','alt_text','image_kind','taken_at','people','third_party_marks','credit','ai_suggestion','metadata_state','media_revision','ai_exposure','marketing_publication'] order by id) rows from hub.assets t union all
+      select 'project_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.entity_assets t union all
+      select 'brand_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.brand_assets t union all
+      select 'type_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.commercial_type_assets t
+    ) evidence order by name`)).rows;
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
@@ -64,7 +70,9 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
         phase2State={content:await contentState(),legacy:await legacyState(),accounts:await accounts()};
       }
       const before=name==='202610210057_public_content_boundary.sql'?await contentState():null;
+      if(name==='202610210062_media_metadata.sql')phase3State=await mediaState();
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(phase3State)assert.deepEqual(await mediaState(),phase3State,`${name} rewrote asset metadata, rights or bindings`);
       if(before)assert.deepEqual(await contentState(),before,'Phase 1 changed content, reviews or account permissions');
       if(phase2State) {
         assert.deepEqual(await contentState(),phase2State.content,`${name} rewrote existing content, reviews or permissions`);

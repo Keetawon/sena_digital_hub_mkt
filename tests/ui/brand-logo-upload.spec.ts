@@ -127,7 +127,11 @@ for (const viewport of viewports) {
 
       const malicious: FilePayload = { name: `${data.prefix}-replacement.svg`, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" onload="alert('unsafe')"><title>${data.prefix}</title><script>alert('unsafe')</script><foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml">unsafe</div></foreignObject><image href="https://invalid.example/private.png"/><rect width="640" height="320" fill="#145c46" onclick="alert('unsafe')"/><text x="20" y="40">Synthetic logo</text></svg>`) };
       await alt.fill('โลโก้หลัก SVG สมมติฉบับแทนที่');
+      const uploaded = page.waitForResponse(response => response.request().method() === 'POST'
+        && new URL(response.url()).pathname === `${api}/assets`
+        && decodeURIComponent(response.request().headers()['x-filename'] ?? '') === malicious.name);
       await drop(page, primary, [malicious]);
+      expect((await uploaded).status()).toBe(201);
       await expect(primary.getByText(malicious.name, { exact: true })).toBeVisible();
       await expect(primary.getByText(first.name, { exact: true })).toHaveCount(0);
       const current = (await data.detail()).assets.find(asset => asset.asset_role === 'logo_primary')!;

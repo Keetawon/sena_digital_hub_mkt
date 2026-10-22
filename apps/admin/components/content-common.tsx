@@ -16,7 +16,7 @@ export type ContentField = {
   validation: { min?: number; integer?: boolean; units?: string[]; max_length?: number };
   status: "active" | "planned" | "retired"; revision: number;
 };
-export type FieldCatalog = { items: ContentField[]; email_domains: string[]; can_manage: boolean };
+export type FieldCatalog = { items: ContentField[]; can_manage: boolean };
 export type Translation = {
   id: string; owner_type: string; owner_key: string; field_key: string; revision: number; th_version: number;
   th_text: string; reviewed_en: string | null; machine_en: string | null; entered_en: string | null;
@@ -76,13 +76,13 @@ export function ContentLabel({ htmlFor, field, children }: { htmlFor?: string; f
 export function ExposureInput({ value, onChange }: { value: Exposure; onChange: (value: Exposure) => void }) {
   return <label className="content-input">ใช้ข้อมูลนี้ในช่องทางใด<select value={value} onChange={event => onChange(event.target.value as Exposure)}>{Object.entries(exposureLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>;
 }
-export function BilingualInput({ id, field, label, value, onChange, rows = 3, maxLength = 12000 }: {
-  id: string; field?: ContentField; label?: string; value: Locales; onChange: (value: Locales) => void; rows?: number; maxLength?: number;
+export function BilingualInput({ id, field, label, value, onChange, rows = 3, maxLength = 12000, translationHint = true }: {
+  id: string; field?: ContentField; label?: string; value: Locales; onChange: (value: Locales) => void; rows?: number; maxLength?: number; translationHint?: boolean;
 }) {
   return <div className="content-bilingual"><div className="content-input"><ContentLabel htmlFor={`${id}-th`} field={field}>{label ?? field?.label.th}</ContentLabel>
     <textarea id={`${id}-th`} rows={rows} maxLength={maxLength} value={value.th ?? ""} onChange={event => onChange({ ...value, th: event.target.value })} /></div>
     <div className="content-input"><label htmlFor={`${id}-en`}>{label ?? field?.label.th} (ภาษาอังกฤษ)</label><textarea id={`${id}-en`} rows={rows} maxLength={maxLength} lang="en" value={value.en ?? ""} onChange={event => onChange({ ...value, en: event.target.value })} />
-      <p className="field-help">บันทึกคำแปลที่มีอยู่ได้ แล้วตรวจยืนยันในแท็บภาษาอังกฤษ</p></div></div>;
+      {translationHint && <p className="field-help">บันทึกคำแปลที่มีอยู่ได้ แล้วตรวจยืนยันในแท็บภาษาอังกฤษ</p>}</div></div>;
 }
 
 export function TranslationReviewPanel({ items, fields, canEdit, onChanged, onEditingChange }: {

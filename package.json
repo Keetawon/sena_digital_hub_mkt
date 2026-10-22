@@ -15,6 +15,7 @@
     "dev:document-demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-document-demo.py",
     "dev:document-worker": "uv run --project apps/api --env-file apps/api/.env python scripts/run-document-worker.py",
     "dev:translation-worker": "uv run --project apps/api --env-file apps/api/.env python scripts/run-translation-worker.py",
+    "dev:media-worker": "uv run --project apps/api --env-file apps/api/.env python scripts/run-media-worker.py",
     "dev:assistant-demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-assistant-demo.py",
     "dev:demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-hub-demo.py",
     "check:questions": "python scripts/sync-questions.py --check",

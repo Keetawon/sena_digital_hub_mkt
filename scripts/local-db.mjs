@@ -6,6 +6,7 @@ import path from 'node:path';
 import EmbeddedPostgres from 'embedded-postgres';
 import { applyLocalMigrations } from './local-migrations.mjs';
 import { ensureLocalAdminToken } from './local-credentials.mjs';
+import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const local = path.join(root, '.local');
@@ -35,7 +36,7 @@ const pg = new EmbeddedPostgres({
 });
 
 try {
-  if (!(await exists(path.join(databaseDir, 'PG_VERSION')))) await pg.initialise();
+  if (!(await exists(path.join(databaseDir, 'PG_VERSION')))) await initialiseDisposableDb(databaseDir, config.adminPassword);
   await pg.start();
   const admin = pg.getPgClient('postgres', '127.0.0.1');
   await admin.connect();

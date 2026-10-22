@@ -36,6 +36,7 @@ export function capabilityKey(account: HubAccount | null) {
 }
 
 export function pagePermission(path: string, query: URLSearchParams): { tab: string; level: PermissionLevel } | null {
+  if (path === "/media") return { tab: "projects", level: "view" };
   if (path === "/faq") return { tab: "knowledge", level: "view" };
   if (path === "/content") return { tab: query.has("brand") ? "brands" : "projects", level: "view" };
   if (path === "/content/fields") return { tab: "projects", level: "view" };

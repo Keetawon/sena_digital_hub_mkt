@@ -61,6 +61,15 @@ npm.cmd run dev:db
 
 This creates a development database on **127.0.0.1:55432**, applies SQL migrations once, and loads the sample project once. It creates random local credentials in ignored `.local/development.json`, `apps/api/.env` and `apps/admin/.env.local`. Existing environment files are preserved. Keep the terminal open. Ctrl+C stops PostgreSQL while retaining the local data directory. Applied migrations are checked by checksum; add a new migration rather than modifying an applied migration.
 
+**22 October 2026 bootstrap correction:** when `PG_VERSION` is absent,
+`scripts/local-db.mjs` uses the existing `initialiseDisposableDb` stdin initializer.
+It supplies both `initdb -W` prompts through the pipe, without embedded-postgres's
+temporary plaintext password file in the OS temp folder. `pg.start()` and the
+remaining setup are unchanged; an existing initialized working database skips
+initialization as before. `node --test tests/local-db-initialisation.test.mjs`
+(also included in `test:db`) checks both branches with in-memory credentials,
+intercepted credential-file writes and service startup, and no credential output.
+
 If this local database is already running after a code update, run `npm.cmd run dev:migrate` in another terminal to apply new migrations and local fixtures, then restart the API and admin. This command is fixed to the generated local development database; it is not a deployment tool.
 
 The brand upgrade adds a generated admin token to the ignored local configuration and environment files when absent, without replacing existing role credentials. Restart both application processes afterwards so they load the new role.
@@ -103,8 +112,49 @@ changes invalidate old jobs; reviewed English remains available for comparison.
 The `/content` and `/faq` screens are private preparation workspaces, with no new
 website publication action. Registry administration needs both an internal admin
 identity and explicit `projects.manage_field_catalog`; migrations assign it to
-no account. Q76 tracks the real company-email domain list. Tests use synthetic
-domains in disposable databases only.
+no account. Q76 is resolved (owner, 22 October 2026): contact emails accept all
+valid domains with required shared/company-mailbox confirmation, advisory free
+webmail warnings and existing four-eyes publication approval. No domain setup is
+needed. Tests use synthetic addresses in disposable databases only.
+
+## Local marketing media worker (project-content Phase 3)
+
+After the approved local migrations are applied, `npm.cmd run dev:media-worker`
+drains the media queue and schedules due link checks. Append `-- --watch` for a
+30-second idle poll. It reuses the existing approved local connection and assumes
+only `hub_media_worker`; the API runtime cannot assume that role or forge
+results. This programme tests disposable databases and does not migrate or run
+the worker against the working database.
+
+Images must be explicitly marked as marketing material for publication, have
+non-internal exposure and an eligible image MIME type. The server reads verified
+local bytes, resizes to at most 768 pixels, strips metadata and sends only that
+image plus active vocabulary and this project's facility/type/building names.
+PDFs, brochures, Legal files, customer records, contracts, finance and bank
+statements are excluded. Suggestions never confirm metadata or rights. Review
+the separate suggestion, copy it explicitly if useful, then confirm the edited
+values. Proposed tags need another Projects approver. Missing provider
+configuration records `provider_unavailable`; follow the programme credential
+STOP instead of creating another credential file. Automated tests use stubs.
+
+YouTube and TikTok metadata calls use their fixed HTTPS oEmbed endpoints only,
+with no redirects, environment proxy, provider HTML or remote thumbnail fetch.
+The endpoint references are the [oEmbed provider registry](https://oembed.com/providers.json)
+and [TikTok embed documentation](https://developers.tiktok.com/docs/en/embed-videos).
+Embed URLs use validated IDs and the documented provider format; see
+[YouTube player parameters](https://developers.google.com/youtube/player_parameters).
+No pasted URL is used as a server network destination. Facebook, Instagram,
+Matterport, Kuula and other URLs use manual metadata and manual link checks;
+this phase introduces no new provider credential or undocumented discovery.
+
+The worker schedules at most 100 due YouTube/TikTok checks per pass after seven
+days, with a one-day retry floor. A removed/private result hides the clip and
+adds a checklist gap. Transient errors preserve the last status. Completion
+rechecks the source revision and the requester's live authority; stale or revoked
+work is discarded. New metadata can be copied into the editor but never replaces
+Marketing text automatically. Inspect the workspace job status and explicitly
+request failed work again after resolving the cause. No live provider is called
+by the programme's tests.
 
 ## Local DW TEST reader
 

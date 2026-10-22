@@ -85,7 +85,7 @@ try{
   }
   if(mode==='api'||mode==='all')await run('uv',[...uv,'pytest','apps/api/tests','-q','--basetemp',path.join(directory,'pytest'),'-o',`cache_dir=${path.join(directory,'pytest-cache')}`,...extra],root,probeEnv);
   if(mode==='db'||mode==='all'){
-    await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs']);
+    await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs','tests/local-db-initialisation.test.mjs']);
     await run(process.execPath,['--test','tests/content-upgrade.test.mjs']);
     await run(process.execPath,['scripts/test-db.mjs']);
     const concurrency=(await readdir(path.join(root,'supabase/tests'))).filter(n=>/^concurrent_.*\.mjs$/.test(n)).sort();

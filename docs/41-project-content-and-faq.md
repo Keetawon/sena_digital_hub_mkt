@@ -56,7 +56,7 @@ The admin forms, the "where does this field appear" tooltip (icon "i" beside eac
 - Seed keys: `land_area_sqwah` (rem_override from `dim_project.area_rai/area_ngan/area_square_wah`, displayed as ไร่-งาน-ตร.ว.), `unit_total` (rem_override; show both REM `total_unit` and counted units and require Marketing to confirm one), `project_status` (rem, read-only), `phase_count` (computed from the group), `building_count` and `floors_max` (computed from buildings), `parking_regular`, `parking_tandem` (mkt), `parking_pct_regular`, `parking_pct_total` (computed = spaces ÷ units, never typed), `common_fee` (money per sqm/month for condominiums, per sq wah/month for houses; review every 180 days), `sinking_fund`, `rental_yield_gross_pct` (with basis text; E4).
 - REM values are pre-filled from the existing DW snapshot (`staging.dw_projects.source_record`) and labelled "จาก REM ณ <date>". Show conflicts between REM and Marketing values.
 - `hub.project_buildings`: `building_key` (REM tower id or Marketing key), `name`, `floors_above`, `has_rooftop`, `skip_floors[]`, `unit_count`, `rem_project_id`. Pre-fill from DW where the snapshot has the data; otherwise Marketing enters it.
-- `hub.contacts` (scope project, brand or corporate): `channel` (phone, call_center_ext, line_oa, facebook, instagram, tiktok, youtube, website, email, messenger), `value`, `url` (validated per channel), `label`, `is_primary` (one per channel), `sort`. Email must be a company shared mailbox on an allowed domain list, with a confirmation that it is not a personal address. Never import `sales_email` from the DW.
+- `hub.contacts` (scope project, brand or corporate): `channel` (phone, call_center_ext, line_oa, facebook, instagram, tiktok, youtube, website, email, messenger), `value`, `url` (validated per channel), `label`, `is_primary` (one per channel), `sort`. Email accepts any valid domain, with required confirmation that it is a shared/company mailbox rather than a personal address. Free webmail domains show an advisory warning without blocking save. Existing four-eyes approval is required before publication. Never import `sales_email` from the DW.
 
 ### 3.4 Media
 - Extend `hub.assets`: `media_category` (exterior, interior, facility, lifestyle, aerial, surrounding, master_plan, floor_plan, unit_plan, map, progress, promotion_ad, brochure, legal_document), `tags[]` (FK `hub.media_tags`), `caption`, `alt_text`, `image_kind` (photo, render, progress, drawing, stock), `taken_at`, `people` and `third_party_marks` (present/absent/unknown), `credit`, `ai_suggestion` jsonb (kept separate from confirmed values), `metadata_state` (needs_review, confirmed).
@@ -275,11 +275,24 @@ drafting; Marketing can enter and review English manually. This applies E1's
 finance-data exclusion to E9, without sending financial facts or references to
 the provider. No live provider call is part of the programme's test gates.
 
-The real mailbox-domain list remains empty pending Q76 (IT + Marketing). This
-does not block the editor implementation or other contact channels. Domains are
-added only by an explicitly authorized registry admin; email saves require an
-allowed domain and an explicit shared-mailbox confirmation. No DW sales email
-is read or imported.
+### Q76 resolved — owner decision, 22 October 2026
+
+Do not restrict contact email domains. Group companies use many domains,
+including Google-hosted custom domains and `@gmail.com` addresses. Replace the
+allowlist with required confirmation that each address is a shared/company
+mailbox rather than a personal address. Show a visible, non-blocking warning
+for free webmail such as `gmail.com`, `hotmail.com`, `outlook.com` and `yahoo.com`
+(also `icloud.com` and `live.com`). Custom domains do not require registration.
+Keep the existing four-eyes approval before anything is published. No DW sales
+email is read or imported.
+
+This decision is folded into Phase 3 by migration
+`202610220065_contact_mailbox_policy.sql`. The shared contact form covers project,
+brand and corporate scopes, displays warnings while editing and on saved cards,
+and requires fresh confirmation if the email address changes. The registry's
+domain controls are removed; its old command rejects writes while historical
+domain rows and applied migration bytes are preserved. Q76 is closed in the
+question catalog; there is no separate decision commit.
 
 ### Owner coordination update — 21 October 2026
 
@@ -292,3 +305,43 @@ and report if they need changes. Stop on any pull/merge conflict, without force
 pushes or history rewriting. Phase 6 requires Phase 4 already merged; Phase 8
 requires Phase 7 already merged. If either prerequisite is absent, stop and
 report instead of implementing a replacement. The original Phase 8 STOP remains.
+
+### Phase 3 permission card and media contract
+
+Baseline: `01d288f5d6830af17de7ca3fec1fd5fb2f62d88e`; `git pull --ff-only
+origin main` completed before Phase 3 and reported already up to date.
+
+| Field | Decision |
+|---|---|
+| Feature / owner | Media metadata, coverage and external clips/tours; Marketing and Managers |
+| Tab / V | Projects V reads project media, controlled vocabulary, rules and real project context; file bytes still require an authorized binding |
+| E | Projects E saves metadata, links and clip drafts, proposes tags, requests suggestions and provider metadata; each write checks its revision and every affected binding's tab |
+| A | Projects A activates/retires tags and edits coverage rules. Existing asset-rights review remains unchanged; metadata confirmation is editorial E, not rights approval |
+| Specials / templates | None; no new tab, account assignment or template changes |
+| Separation | Existing E/A exclusivity; tag proposers cannot activate their own proposal. An AI result never confirms metadata or approves rights |
+| Agency | No access through URLs, SQL, bytes, cache or workers |
+| Sensitivity | Marketing-publication images only for E1. PDFs, Legal documents, contracts, financial/customer data excluded. Legal files require Projects E/A and remain private |
+| Other tabs | Promotion targets require Promotions V/E alongside Projects V/E. Metadata mutation requires E for every existing Projects/Brands/Knowledge binding, so shared files cannot be changed through a weaker tab |
+| Shared surfaces | New bindings participate in file access and monotonic binding history. No new public endpoint, RAG, assistant tool or export. Existing public media cannot be reclassified as Legal |
+| Endpoints / SQL | Exact `/v1/admin/media/{tags,requirements}`, `/v1/admin/projects/{public_id}/media`, project media metadata/link/suggestion routes and clip routes, registered in the API, Next proxy and H1 allowlists. New tables: `media_tags`, `asset_media_tags`, `asset_links`, `media_requirements`, `media_links`, `media_link_targets`, `media_jobs`, with FORCE RLS, audit and bounded revision commands |
+| Workers | Existing operator-only local connection; API role cannot forge AI/provider results. Completion rechecks revision, current authority and source eligibility |
+| Verification | Real runtime denial/neighbor, stale edit, revoked authority, private bytes and Legal exclusions, vocabulary/AI bounds, coverage/expiry, provider destination allowlist, populated replay, 1280/390 px browser checks and all programme gates |
+
+Use the existing byte upload, sanitization, thumbnails and rights workflow.
+`asset_media_tags` supplies actual foreign keys for the asset's returned `tags`
+array. New metadata defaults never rewrite existing metadata or bindings.
+Category/rights review remain independent. Hero and thumbnail retain their
+existing project binding and publication gate; floor coverage is a recommendation.
+Coverage uses eligible rights, effective dates and capture dates, with unknown
+context preserved. Only hero/thumbnail rules may block publication.
+
+The media workspace reuses the current semantic palette, native controls, dirty
+guards and responsive cards. Batch application is explicit; retries preserve
+each uploaded asset identity. Suggestions show separately, with confidence in
+details only. No animations or new dependencies are needed.
+
+Real context initially includes project facilities, commercial types, buildings,
+selling points and authorized promotions. Feature/place/disclosure/article
+target kinds are reserved but reject saves until the owning phase supplies a
+guarded real reference. No placeholder tables or invented records replace that
+work. New targets remain internal drafts until Phase 8 publication integration.

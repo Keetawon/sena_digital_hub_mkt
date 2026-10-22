@@ -563,3 +563,34 @@ accounts and permissions through each new migration. Loopback H1 replayed all 61
 migrations under its non-superuser operator and passed 11 protocol plus 45 browser
 cases. Full phase gates and screenshot evidence are recorded in [docs/42](42-project-content-programme-log.md).
 The working database and existing account assignments remain unchanged.
+
+## Project-content programme Phase 3 — 22 October 2026
+
+The [Phase 3 permission card](41-project-content-and-faq.md#phase-3-permission-card-and-media-contract)
+uses Projects V/E for private media and Projects A for tag activation/retirement
+and coverage rules. Tag authors cannot activate their own proposal. Shared asset
+metadata requires E for every bound source tab; promotion links require both
+Projects and Promotions. Legal bytes require Projects E/A and an authorized
+private source. Neither metadata confirmation nor AI changes asset rights.
+
+Migrations 62–64 add seven audited FORCE-RLS tables, closed worker commands and
+bounded revision writes. The API runtime cannot assume `hub_media_worker` or
+complete suggestions/checks. Leases, source revisions, publication eligibility
+and requester authority are rechecked at completion. Fixed provider endpoints,
+size/shape limits, source exclusions and mock-only tests constrain external work.
+New source bindings preserve monotonic binding history; removing the last source
+does not restore the uploader exception. Legal files cannot enter legacy public
+bindings or be reclassified into marketing media.
+
+The thirteen media routes have a separate exact inventory and matching API,
+proxy and H1 permissions. Historical manifests and migration bytes are preserved.
+No capability, account or template assignment changes. Populated replay compares
+asset metadata, rights and bindings as well as the Phase 1/2 content/account
+evidence. Full gate results and screenshots are recorded in [docs/42](42-project-content-programme-log.md).
+
+Q76's owner decision is folded into Phase 3 by migration 65. Contact saves accept
+all valid email domains while retaining required shared/company-mailbox
+confirmation, exact source Edit permission and revision checks. Free webmail is
+an advisory warning. The historical domain command still checks registry-admin
+authority, then rejects writes; no domain rows or prior migrations are rewritten.
+The publication four-eyes checks and account assignments are unchanged.

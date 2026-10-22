@@ -91,6 +91,13 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
   const subject = model ? "แบบที่อยู่อาศัย" : isBrand ? "แบรนด์" : "โครงการ";
   const bindings = project.assets?.filter(binding => model ? binding.public_model_id === model.public_model_id : !binding.public_model_id) ?? [];
   const sectionId = model ? `model-assets-${model.public_model_id}` : "assets";
+  useEffect(() => {
+    if (!isProject || !canEdit) return;
+    const query = new URLSearchParams(window.location.search), requested = query.get("media_role");
+    if ((requested === "hero" || requested === "thumbnail") && query.get("media_upload") === "1") {
+      setPurpose(requested); setDialog({ type: "upload" });
+    }
+  }, [isProject, canEdit]);
   const base = `v1/admin/${isBrand ? "brands" : "projects"}/${encodeURIComponent(project.public_brand_id || project.public_project_id || "")}${model ? `/models/${encodeURIComponent(model.public_model_id)}` : ""}`;
   const loadLibrary = useCallback(async () => {
     setLoading(true); setError("");
@@ -127,6 +134,7 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
 
   const filtered = assets.filter(asset => (!isBrand || asset.mime_type.startsWith("image/")) && (!isProject || !canEdit || supportsPurpose(asset, purpose)) && asset.original_filename.toLocaleLowerCase("th").includes(search.trim().toLocaleLowerCase("th")));
   return <section className={`panel ${isBrand ? "brand-assets" : ""}`} id={sectionId} tabIndex={-1} aria-labelledby={`${sectionId}-title`}>
+    {isProject && <p><a className="button secondary" href={`/media?project=${encodeURIComponent(project.public_project_id ?? "")}`}>ภาพที่ยังขาด อัปโหลดพร้อมบริบท และคลิป 360</a></p>}
     <div className="panel-heading"><div><h2 id={`${sectionId}-title`}>{model ? `รูปภาพและแปลน · ${model.name}` : isBrand ? "โลโก้แบรนด์" : "รูปภาพและไฟล์ประกอบโครงการ"}</h2><p>{isBrand ? "ใช้ภาพจากคลังสื่อร่วมกัน ต้องมีโลโก้หลักที่ตรวจสิทธิ์แล้วก่อนเผยแพร่" : model ? "ภาพแบบ แปลนห้อง และแบบโครงสร้าง ผูกกับแบบที่เลือกเท่านั้น" : "ภาพหลัก ภาพย่อ ผังโครงการ และผังชั้นหรืออาคาร เก็บไฟล์ต้นฉบับและตรวจสิทธิ์ก่อนเผยแพร่"}</p></div><AssetIcon /></div>
     <div className="panel-body">
       {isProject && <div className="project-media-intro"><ol aria-label="ขั้นตอนเพิ่มไฟล์โครงการ"><li><span>1</span>เลือกประเภทไฟล์</li><li><span>2</span>อัปโหลดหรือใช้ไฟล์เดิม</li><li><span>3</span>ใส่คำอธิบายและบันทึก</li></ol><p>ไฟล์ที่บันทึกจะอยู่ในข้อมูลร่าง ผู้เผยแพร่ต้องตรวจสิทธิ์ก่อนเผยแพร่</p></div>}
@@ -419,7 +427,7 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
   return <dialog ref={dialog} className="action-dialog asset-dialog" aria-labelledby="asset-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}><form onSubmit={onSubmit} noValidate><h2 id="asset-dialog-title" tabIndex={focusTitle ? -1 : undefined}>{title}</h2>{(error || reloadError) && <div className="notice error model-error-summary" ref={summary} role="alert" tabIndex={-1}><strong>{reloadError || error}</strong>{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" disabled={pending || reloading} onClick={() => void reload()}>{reloading ? "กำลังโหลด…" : "โหลดข้อมูลล่าสุด"}</button></>}</div>}{children}<div className="dialog-actions"><button type="button" className="button secondary" disabled={pending || reloading} onClick={cancel}>{cancelLabel}</button><button type="submit" className={`button ${danger ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || reloading || submitDisabled}>{pending ? "กำลังดำเนินการ…" : submitLabel}</button></div></form></dialog>;
 }
 
-async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {
+export async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {
   const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
   const body = await response.json().catch(() => null);
   if (!response.ok || !body?.data?.id) throw new Error(body?.error?.message ?? "อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");

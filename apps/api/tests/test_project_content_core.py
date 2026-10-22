@@ -302,23 +302,32 @@ def test_content_api_no_client_authority_or_invalid_draft_payload(permission_acc
                        json={'expected_revision': 0, 'changes': {}}).status_code == 403
 
 
-def test_contacts_require_shared_mailbox_allowed_domain_and_exact_scope(permission_accounts):
+def test_contacts_allow_any_domain_but_require_shared_mailbox_and_exact_scope(permission_accounts):
     _, ids = permission_accounts
 
     async def check():
         db = await runtime()
         try:
             await set_bit(ids['admin'], 'projects', special_actions=['projects.manage_field_catalog'])
-            await call(db, ids['admin'], "select hub.save_contact_domain('company.example',0,'active')")
+            with pytest.raises(asyncpg.CheckViolationError, match='allowlist retired'):
+                await call(db, ids['admin'], "select hub.save_contact_domain('company.example',0,'active')")
+            assert 'email_domains' not in await call(db, ids['editor'], 'select hub.content_fields()')
             sql = "select hub.save_content_contact('corporate','sena',null,0,$1)"
             body = {'channel': 'email', 'value': 'shared@company.example', 'url': 'mailto:shared@company.example', 'is_primary': True}
             with pytest.raises(asyncpg.CheckViolationError):
                 await call(db, ids['editor'], sql, body)
             body['shared_mailbox_confirmed'] = True
-            for changes in ({'value': 'personal@external.example'}, {'url': 'mailto:someone@company.example'}, {'label': {'unknown_locale': 'x'}}):
+            for changes in ({'value': 'invalid address'}, {'value': 'shared@-invalid.example', 'url': None}, {'url': 'mailto:someone@company.example'}, {'label': {'unknown_locale': 'x'}}):
                 with pytest.raises(asyncpg.CheckViolationError):
                     await call(db, ids['editor'], sql, {**body, **changes})
             contact = await call(db, ids['editor'], sql, body)
+            for domain in ('gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com', 'unlisted-group.example', 'GMAIL.COM'):
+                address = 'synthetic-shared@' + domain
+                draft = {**body, 'value': address, 'url': 'mailto:' + address, 'is_primary': False}
+                with pytest.raises(asyncpg.CheckViolationError):
+                    await call(db, ids['editor'], sql, {**draft, 'shared_mailbox_confirmed': False})
+                saved = await call(db, ids['editor'], sql, draft)
+                assert saved['value'] == address and saved['shared_mailbox_confirmed'] is True
             with pytest.raises(asyncpg.UniqueViolationError):
                 await call(db, ids['editor'], sql, body)
             with pytest.raises(asyncpg.CheckViolationError):

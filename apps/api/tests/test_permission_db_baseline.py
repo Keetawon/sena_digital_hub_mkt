@@ -49,6 +49,14 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
     'review_knowledge_candidate_before_versions')}
 PRIVATE_PUBLIC_VIEWS = {'public_api.projects', 'public_api.brands', 'public_api.promotions'}
+MEDIA_TABLES = {'hub.' + name for name in (
+    'media_tags', 'asset_media_tags', 'asset_links', 'media_requirements', 'media_links', 'media_link_targets', 'media_jobs')}
+MEDIA_FUNCTIONS = {'hub.' + name for name in (
+    'media_categories', 'media_project', 'media_target', 'can_read_asset_before_media', 'media_tag_save',
+    'media_tag_approve', 'media_tags_read', 'media_require_asset_edit', 'media_save_asset', 'media_link_save',
+    'media_link_remove', 'media_legacy_binding_guard', 'media_requirements_read', 'media_requirement_save',
+    'media_clip_save', 'media_checklist', 'project_media', 'media_thumbnail_binding', 'project_content_readiness_before_media',
+    'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check')}
 PUBLICATION_TABLES = {'hub.' + name for name in (
     'public_promotions', 'promotion_reviews', 'promotion_versions', 'publication_releases', 'publication_release_members',
     'knowledge_reviews', 'content_sections', 'faqs', 'entity_aliases', 'content_gaps', 'knowledge_fact_candidates',
@@ -120,10 +128,18 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    media = [r for r in actual if r['schema'] + '.' + r['table'] in MEDIA_TABLES]
+                    assert len(media) == 2 * len(MEDIA_TABLES)
+                    assert all(r['name'] in ('media_owner', 'media_read') for r in media)
+                    assert all(r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in media if r['name'] == 'media_owner')
+                    assert all(r['roles'] == ['hub_app'] and r['cmd'] == 'SELECT' and r['with_check'] is None and
+                               any(token in r['qual'] for token in ('hub.can(', 'hub.can_read_asset(', 'hub.media_target('))
+                               for r in media if r['name'] == 'media_read')
+                    actual = [r for r in actual if r not in media]
                     project_content = [r for r in actual if r['schema'] + '.' + r['table'] in PROJECT_CONTENT_TABLES]
                     assert len(project_content) == 2 * len(PROJECT_CONTENT_TABLES)
                     assert all(r['name'] in ('content_owner', 'content_read') for r in project_content)
@@ -275,7 +291,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -284,9 +300,9 @@ async def assert_reviewed_database_boundary(db):
     policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
-    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES
+    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
-        token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible('))}
+        token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the
     # issuance counter is entirely denied to application roles.
     for table, parent in {'scope_member': 'ads.scope_code', 'campaign_name': 'ads.campaign_registration',

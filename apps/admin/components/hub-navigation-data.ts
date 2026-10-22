@@ -22,7 +22,7 @@ export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);
   return page && "permissionTab" in page ? page.permissionTab : section;
 }
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/content", "/content/fields", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
 export function safeNext(value?: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
   try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }

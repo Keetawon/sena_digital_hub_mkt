@@ -273,8 +273,53 @@ remain visible placeholders at this stage. Legacy intake rows are copied into
 new versions without changing their original fields or reviews. A later source
 rejection withdraws its active derived draft and preserves the history.
 
-Email requires an approved company domain and a shared-mailbox confirmation.
+Email accepts any valid domain and requires a shared/company-mailbox confirmation
+(Q76, owner decision 22 October 2026). Free webmail triggers an advisory UI warning,
+never a save block; existing four-eyes publication approval remains required.
+The legacy email-domain registry command is retired: authorized calls return 422
+without a write, and the field catalog no longer exposes an email-domain allowlist.
 Social channels require matching HTTPS provider hosts. Legal documents, finance
 facts, contacts and source evidence never enter translation requests. Financial
 FAQ topics use manual English. Worker claim/finish RPCs are closed to the API
 role; the worker cannot approve text or publish content.
+
+## Private project media — Phase 3
+
+The exact thirteen routes in `tests/permissions/media-routes.json` use the same
+bounded Draft/revision contract, live permissions and no-store responses. They
+do not publish media. `/media?project=<public_project_id>` opens the project
+workspace; its context pickers contain only actual, authorized records.
+
+| Route | Authority and behavior |
+|---|---|
+| `/v1/admin/media/tags` | GET Projects V; PUT `/{code}` Projects E proposes; POST `/{code}/approve` Projects A with a different author activates/retires |
+| `/v1/admin/media/requirements` | GET Projects V; PUT `/{key}` Projects A; only project hero/thumbnail can block publication |
+| `/v1/admin/projects/{public_id}/media` | GET Projects V returns authorized assets/bindings, clips, context and computed checklist |
+| Project media `/assets/{id}` | PUT Projects E plus E for every shared source tab; controlled tags, bilingual metadata and editorial confirmation; rights unchanged |
+| Project media `/links/{id}` | PUT Projects E, real target and revision; POST `/remove` soft-deletes; promotion targets also need Promotions E |
+| Project media `/clips/{id}` | PUT Projects E saves a draft/withdrawal, real targets and optional private thumbnail; title may be completed after provider fetch |
+| Project media `/clips/{id}/check` | POST Projects E records a manual link result with expected revision |
+| Project media `/jobs` | GET Projects V; POST Projects E with kind, subject ID and expected source revision; only eligible images or current clips can queue |
+
+Asset tags use a foreign-key join, returned as `tags[]`. Batch uploads reuse the
+existing sanitization, size limits and file identity; per-card retries preserve
+successful files. New links never replace legacy hero/thumbnail, brand, model
+or commercial-type bindings. Facilities permit many images with one cover.
+Building/storey targets validate known floors and skipped floors. Promotion
+banner dates are clamped to the promotion window. Coverage respects rights,
+confirmation, effective dates and capture age; missing floor counts remain
+unknown. Only hero and thumbnail are mandatory media; other gaps feed the
+recommended readiness score and contextual upload links.
+
+Legal files are private to Projects E/A, cannot be reclassified or enter legacy
+publication bindings, and never enter AI. Image suggestions are separate from
+confirmed metadata; model/time/source revision are retained. Unknown suggested
+tags remain proposals. Clip provider metadata is separate from editorial text;
+broken/private/removed clips are hidden and reported in the checklist. Worker
+completion rejects stale leases, changed sources and revoked authority. The API
+role cannot claim, complete or schedule worker jobs.
+
+Feature/place/article/disclosure target kinds remain unavailable until their
+owning phases provide real guarded references. No placeholder content or public
+endpoint is introduced here. Provider and local worker details are in
+[doc 11](11-local-development.md#local-marketing-media-worker-project-content-phase-3).

@@ -15,8 +15,7 @@ export function ContentFieldRegistry() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [domain, setDomain] = useState("");
-  useContentLocation(Boolean(editing || domain.trim()));
+  useContentLocation(Boolean(editing));
   const canManage = Boolean(catalog?.can_manage && permissions.special("projects.manage_field_catalog"));
   async function save() {
     if (!editing || !canManage || pending) return;
@@ -27,14 +26,6 @@ export function ContentFieldRegistry() {
           review_every_days: editing.review_every_days, required_for: editing.required_for, sort: editing.sort },
       });
       setEditing(null); reload(); setNotice("บันทึกทะเบียนฟิลด์แล้ว");
-    } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
-  }
-  async function addDomain() {
-    if (!canManage || pending) return;
-    setPending(true); setError(""); setNotice("");
-    try {
-      await request(`v1/admin/content/email-domains/${encodeURIComponent(domain.trim().toLowerCase())}`, "PUT", { expected_revision: 0, status: "active" });
-      setDomain(""); reload(); setNotice("เพิ่มโดเมนบริษัทที่อนุญาตแล้ว");
     } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
   }
   return <div className="content-workspace"><header className="content-header"><a href="/">กลับรายการโครงการ</a><h1>ทะเบียนฟิลด์</h1><p>ชื่อ คำแนะนำ เจ้าของข้อมูล และข้อกำหนดที่ใช้ร่วมกันในแบบฟอร์มและการตรวจความครบ</p></header>
@@ -52,9 +43,7 @@ export function ContentFieldRegistry() {
           </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary" disabled={pending || !canManage}>บันทึกทะเบียนฟิลด์</button></div></form>}
         </article>)}</div>
       </section>
-      <section className="content-section"><h2>โดเมนอีเมลบริษัท</h2><p>อนุญาตเฉพาะกล่องอีเมลส่วนกลางของบริษัท ผู้บันทึกช่องทางติดต่อยังต้องยืนยันว่าไม่ใช่อีเมลส่วนบุคคล</p><p>{catalog.email_domains.join(" · ") || "ยังไม่มีโดเมนที่อนุญาต จึงยังบันทึกช่องทางอีเมลไม่ได้"}</p>
-        {canManage && <form onSubmit={event => { event.preventDefault(); void addDomain(); }}><label className="content-input">โดเมนบริษัทที่ได้รับอนุญาต<input required value={domain} placeholder="company.example" pattern="[A-Za-z0-9.-]+" onChange={event => setDomain(event.target.value)} disabled={pending} /></label><button className="button secondary" disabled={pending || !domain.trim()}>เพิ่มโดเมนบริษัท</button></form>}
-      </section>
+      <section className="content-section"><h2>อีเมลติดต่อบริษัท</h2><p>ใช้ได้ทุกโดเมน ผู้บันทึกต้องยืนยันว่าเป็นกล่องส่วนกลางของบริษัท ไม่ใช่ที่อยู่ส่วนบุคคล บริการอีเมลฟรีจะแสดงคำเตือนโดยไม่กีดกันการบันทึก และยังต้องผ่านผู้อนุมัติอีกคนก่อนเผยแพร่</p></section>
     </>}
   </div>;
 }

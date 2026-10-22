@@ -308,6 +308,26 @@
       "name": "202610210061_content_readiness.sql",
       "canonical_sha256": "7d79b2b9733f15b1270d603557938c4db3bdd225ebc612c15ab892907de991e5",
       "executed_sha256": "7d79b2b9733f15b1270d603557938c4db3bdd225ebc612c15ab892907de991e5"
+    },
+    {
+      "name": "202610210062_media_metadata.sql",
+      "canonical_sha256": "71d2bd0936954cbf7cc5b2b4eb17369b291c47f19d24285ad209e4586c426784",
+      "executed_sha256": "71d2bd0936954cbf7cc5b2b4eb17369b291c47f19d24285ad209e4586c426784"
+    },
+    {
+      "name": "202610210063_media_coverage_links.sql",
+      "canonical_sha256": "c66c6832330fb4ed5adc8ac8dc056689df1952cb66bb1f2dd6ec46211b42530a",
+      "executed_sha256": "c66c6832330fb4ed5adc8ac8dc056689df1952cb66bb1f2dd6ec46211b42530a"
+    },
+    {
+      "name": "202610210064_media_jobs.sql",
+      "canonical_sha256": "b53814e98c5171112c4acead14028285c5da9857646b3706746b5222fafe4957",
+      "executed_sha256": "b53814e98c5171112c4acead14028285c5da9857646b3706746b5222fafe4957"
+    },
+    {
+      "name": "202610220065_contact_mailbox_policy.sql",
+      "canonical_sha256": "4e2216f63e759c2e508ee8ba6719fc27812cf93b1de53914897b03fc7a49d1ca",
+      "executed_sha256": "4e2216f63e759c2e508ee8ba6719fc27812cf93b1de53914897b03fc7a49d1ca"
     }
   ]
 }

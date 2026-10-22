@@ -194,10 +194,10 @@ page overflow.
 
 ### Questions and coordination
 
-Q76 asks IT + Marketing for the allowed company shared-mailbox domains. The
-allowed domain list stays empty until that answer; disposable tests use
-synthetic domains. Q74 (rail/expressway reference source) and Q75 (official English
-name for นอนดี) remain pending. No business-scope deviation or live provider call.
+At Phase 2 completion, Q76 awaited the company shared-mailbox domain policy;
+the owner's 22 October answer closes it in Phase 3 below. Disposable tests use
+synthetic addresses. Q74 (rail/expressway reference source) and Q75 (official
+English name for นอนดี) remain pending. No live provider call.
 
 The owner's revised work allocation is **1 → 2 → 3 → 5 → 6 → 8** for this
 workstream. A separate agent owns Phases 4 and 7 and the articles portion of Phase
@@ -214,3 +214,120 @@ under the revised work allocation. The working database was not migrated or
 reseeded, no hosted/DW/REM/provider write occurred, and `sena_h_approved` remains
 false. The two approved ignored local credential paths are checked before commit;
 screenshots and gate logs remain ignored under `artifacts/`.
+
+## Phase 3 — complete, 22 October 2026
+
+Phase 2 was pushed as `01d288f5d6830af17de7ca3fec1fd5fb2f62d88e`.
+`git pull --ff-only origin main` completed before Phase 3. A later fetch still
+matched that baseline; no parallel-agent pull request was merged or changed.
+
+### Delivered scope
+
+- Migrations `202610210062_media_metadata.sql`,
+  `202610210063_media_coverage_links.sql` and `202610210064_media_jobs.sql` add
+  fourteen media categories, controlled FK-backed tags, contextual image links,
+  coverage rules/checklists, external clips/tours and private leased jobs. All
+  seven new tables have FORCE RLS and audit; existing content, reviews, asset
+  rights/bindings, accounts and migration bytes remain unchanged.
+- `/media` provides checklist deep links, batch upload and explicit batch apply,
+  per-file metadata and retry, real context pickers, facility covers, separate
+  AI suggestions, tag approval, rule editing and clip metadata/manual checks.
+  Registry tooltips explain fields. Thai desktop/390 px layouts use no animation.
+- Coverage counts eligible rights and effective/capture dates, confirmed metadata,
+  room tags and known floors while respecting skipped floors. Unknown floors
+  stay unknown. Promotion banner dates stay within their promotion. Only hero
+  and thumbnail block publication; other images feed recommended readiness.
+- E1 work resizes verified local images and uses only approved marketing context.
+  Legal/PDF/finance/customer content is excluded. Suggestions do not confirm
+  metadata or rights. New tags remain proposals. Fixed YouTube/TikTok endpoints
+  provide separate suggestions and periodic link checks; provider HTML and
+  arbitrary remote thumbnail URLs are discarded. Tests use provider stubs.
+- Revision checks, concurrent clip creation, private bytes, shared promotion
+  authority and worker completion after source/permission changes are covered.
+  The API runtime cannot assume the media worker role or forge its results.
+- Q76 is closed by the owner's 22 October decision and folded into migration
+  `202610220065_contact_mailbox_policy.sql`: valid email domains are unrestricted,
+  shared/company-mailbox confirmation remains required, free webmail shows a
+  visible advisory warning, and existing four-eyes publication approval remains.
+  Domain registry controls are retired without rewriting prior migrations or
+  historical rows. Regression checks cover webmail, custom domains, required
+  confirmation, warning visibility and the closed question.
+- The owner's Phase 7 bootstrap follow-up is included in this Phase 3 commit:
+  `scripts/local-db.mjs` now calls the existing stdin initializer only when
+  `PG_VERSION` is absent. `pg.start()` and subsequent setup are unchanged, and
+  initialized working databases skip this path. No temporary plaintext password
+  file is created. Two isolated regressions intercept credential-file writes,
+  verify the stdin prompts and check that existing databases are not initialized
+  again; they are included in `test:db`.
+
+### Verification
+
+| Gate | Current result |
+|---|---|
+| Admin typecheck + offline webpack build | Passed, including Q76 and the final media UI |
+| Full API suite | Passed: 1,936 tests, 11 unchanged opt-in skips and 6 existing deprecation warnings |
+| Database suite | Passed: 55 SQL/concurrency checks plus 10 Node cases, including known/skipped floors, capture age, room context, revision guards and the two initializer regressions |
+| Populated upgrade | Passed as part of the database suite; preserves original content, reviews, accounts, asset metadata, rights and bindings through all 65 migrations |
+| Loopback H1 | Passed after Q76: 11 protocol + 45 browser cases |
+| Local DB initialization | 2 isolated regressions passed; no real service startup or credential-file writes |
+| Phase 3 browser cases | All 6 passed in the full browser run: mailbox warning/confirmation, batch retry/lost response/AI separation, tag retirement/reactivation and clip/rule flows at 1280/390 px |
+| Existing browser regression | The 269-case full run had 268 passes and one desktop SVG upload timing failure. After the test synchronization correction described below, all 9 affected brand-logo cases passed. All 269 unique cases have passing evidence across these runs |
+| Credential scan | Passed: 49 changed files, 78 browser files, 52 current artifacts; no configured credential matches |
+
+The earlier port conflict with `D:/Personal/workspace/sena_hub_parallel` is
+resolved. The owner coordinated release; its runners were preserved and no port
+guard was bypassed. Tests resumed only after the required ports were free.
+
+Phase 3 implementation and verification are complete. Current logs are
+`db-final.log`, `admin-typecheck.log`, `admin-build.log`,
+`h1-q76-final.log`, `ui-focused-q76.log`, `ui-batch-final.log` and
+`api-final-q76.log`, `ui-final.log`, `ui-logo-final.log` and
+`local-db-initialisation.log`, all ignored under
+`artifacts/project-content-phase3/`.
+
+Initial checks caught mobile wrapping, ambiguous tooltip selectors, a browser
+save-response race, a suggestion fixture relying on newest-first file order,
+the Q76 migration's missing transaction wrapper and an absent synthetic
+construction row. The corrected checks passed without weakening their assertions.
+
+The full browser run's desktop SVG upload succeeded after 5.7 seconds, beyond
+the test's five-second display assertion. Cleanup then removed its fixture before
+the subsequent binding could finish. The test now awaits that exact file's upload
+response and asserts 201 before checking the replacement; SVG sanitization,
+rights, role and immutable-history assertions remain intact. The affected
+nine-case suite passed. The entire browser suite was not repeated after this
+test-only synchronization change.
+
+Checkpoint: the `main` commit containing this completion entry, with subject
+`Add project media workspace and coverage checks`. Its hash and confirmed push
+are reported in the delivery message. Both approved local credential paths and
+`artifacts/` were checked as Git-ignored; no artifacts are staged.
+
+### Screenshots
+
+Synthetic data only, ignored and never force-added:
+
+- Checklist: [1280 px](../artifacts/project-content-phase3/checklist-1280.png), [390 px](../artifacts/project-content-phase3/checklist-390.png).
+- Batch fields and tooltip: [1280 px](../artifacts/project-content-phase3/batch-1280.png), [390 px](../artifacts/project-content-phase3/batch-390.png).
+- Media library: [1280 px](../artifacts/project-content-phase3/library-1280.png), [390 px](../artifacts/project-content-phase3/library-390.png).
+- Separate suggestion and confidence details: [1280 px](../artifacts/project-content-phase3/suggestion-1280.png), [390 px](../artifacts/project-content-phase3/suggestion-390.png).
+- Approver coverage rules: [1280 px](../artifacts/project-content-phase3/rules-1280.png), [390 px](../artifacts/project-content-phase3/rules-390.png).
+- Broken clip handling: [1280 px](../artifacts/project-content-phase3/clips-1280.png), [390 px](../artifacts/project-content-phase3/clips-390.png).
+- Q76 mailbox warning and required confirmation: [1280 px](../artifacts/project-content-phase3/mailbox-warning-1280.png), [390 px](../artifacts/project-content-phase3/mailbox-warning-390.png).
+
+The mobile mailbox warning, checklist, library/suggestion and clip views were
+visually inspected; automated checks reject horizontal page overflow.
+
+### Questions and coordination
+
+No new business question. Q74 and Q75 remain pending; Q76 is resolved above. Automatic metadata
+fetch/checks cover YouTube and TikTok; other providers use manual metadata/checks
+because this phase adds no provider credentials or undocumented endpoint.
+Feature/place/article/disclosure bindings reject saves until their owning phase
+provides a real guarded reference. These limits are explicit in the Phase 3
+design; no replacement tables or content were invented.
+
+Next is Phase 5 after a fresh pull of `origin/main`. Phase 6 still waits for the
+owner-merged Phase 4. No working-database migration, hosted/DW/REM/provider write
+or live AI call ran. `sena_h_approved` remains false; approved credential files
+and all artifacts remain ignored.
