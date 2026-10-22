@@ -48,6 +48,10 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'translation_requester_allowed', 'claim_translation', 'finish_translation', 'translation_complete',
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
     'review_knowledge_candidate_before_versions')}
+# Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
+FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
+FAQ_INTAKE_FUNCTIONS = {'hub.faq_intake_text', 'hub.faq_intake_state', 'hub.faq_intake_clusters', 'hub.faq_intake_cluster',
+                        'hub.decide_faq_cluster', 'staging.replace_faq_clusters'}
 PRIVATE_PUBLIC_VIEWS = {'public_api.projects', 'public_api.brands', 'public_api.promotions'}
 MEDIA_TABLES = {'hub.' + name for name in (
     'media_tags', 'asset_media_tags', 'asset_links', 'media_requirements', 'media_links', 'media_link_targets', 'media_jobs')}
@@ -134,7 +138,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -161,6 +165,10 @@ def test_live_catalog_matches_reviewed_local_baseline():
                                and ('hub.can(' in r['qual'] or 'hub.section_visible(' in r['qual'])
                                for r in project_content if r['name'] == 'content_read')
                     actual = [r for r in actual if r not in project_content]
+                    intake = [r for r in actual if r['schema'] + '.' + r['table'] in FAQ_INTAKE_TABLES]
+                    assert len(intake) == len(FAQ_INTAKE_TABLES) and all(r['name'] == 'intake_owner' and r['roles'] == ['postgres']
+                        and r['qual'] == r['with_check'] == 'true' for r in intake)
+                    actual = [r for r in actual if r not in intake]
                     account_ui = [r for r in actual if r['schema'] + '.' + r['table'] in ACCOUNT_UI_TABLES]
                     assert len(account_ui) == 1 and all(r['name'] == 'permission_notice_owner' and r['roles'] == ['postgres']
                         and r['qual'] == r['with_check'] == 'true' for r in account_ui)
@@ -303,7 +311,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -326,7 +334,7 @@ async def assert_reviewed_database_boundary(db):
         guarded.add('ads.' + table)
     assert domain <= guarded, domain - guarded
     assert all(not r['grants'] for name, r in tables.items()
-               if name in FOUNDATION_TABLES | ACCOUNT_UI_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES)
+               if name in FOUNDATION_TABLES | ACCOUNT_UI_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | FAQ_INTAKE_TABLES)
 
 
 def test_every_base_relation_has_a_reviewed_force_rls_boundary():

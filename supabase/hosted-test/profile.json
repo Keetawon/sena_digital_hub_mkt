@@ -338,6 +338,11 @@
       "name": "202610220067_marketing_prices.sql",
       "canonical_sha256": "6a13f3bae750cf6d2fb686e1ebe7aba0dbf009de33012562ef35ac41d5665a9c",
       "executed_sha256": "6a13f3bae750cf6d2fb686e1ebe7aba0dbf009de33012562ef35ac41d5665a9c"
+    },
+    {
+      "name": "202610220068_faq_intake.sql",
+      "canonical_sha256": "70d7930ac8ae7628f0750085134b5df495391e57724c202dd8b758a99e2bc891",
+      "executed_sha256": "70d7930ac8ae7628f0750085134b5df495391e57724c202dd8b758a99e2bc891"
     }
   ]
 }

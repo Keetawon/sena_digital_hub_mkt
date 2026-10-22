@@ -3,7 +3,7 @@ import { getLocalRole, getRoleToken, hasSameLocalOrigin, isLocalMode, isLoopback
 import { getHostedIdentity } from "@/lib/hosted-session";
 import { HubApiUnavailable, unavailableMessage, readHubAccount } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
-import { contentAllowsApi } from "@/lib/content-routes";
+import { contentAllowsApi, contentAllowsQuery } from "@/lib/content-routes";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
@@ -96,7 +96,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     && (!query.has("download") || /^(?:true|false)$/.test(query.get("download")!));
   const validKnowledgeThumbnail = method === "GET" && new RegExp(`^v1/admin/knowledge/candidates/${financeId}/file$`).test(path)
     && [...query.keys()].length === 1 && query.getAll("thumbnail").length === 1 && query.get("thumbnail") === "1";
-  if (request.nextUrl.search && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !validKnowledgeThumbnail && !(method === "GET" && path === "v1/projects"
+  if (request.nextUrl.search && !contentAllowsQuery(path, method, query) && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !validKnowledgeThumbnail && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);

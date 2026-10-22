@@ -34,6 +34,8 @@ try {
   console.log('PASS: media FORCE RLS/audit, closed workers, unknown floors, facility covers, rights-aware coverage and immediate revocation');
   await connection.query(await readFile(new URL('../supabase/tests/unit_types_and_prices.sql', import.meta.url), 'utf8'));
   console.log('PASS: unit source grain, room plans, four-eyes versions, E2/E3 prices, expiry and hidden-price filtering');
+  await connection.query(await readFile(new URL('../supabase/tests/faq_intake.sql', import.meta.url), 'utf8'));
+  console.log('PASS: FAQ intake FORCE RLS/audit, operator-only regeneration, frozen decisions and Knowledge V/E entry points');
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
   await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));

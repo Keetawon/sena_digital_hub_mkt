@@ -4,10 +4,10 @@ const uuid = "[0-9a-fA-F-]{36}";
 const key = "[a-z][a-z0-9_.-]{0,149}";
 const term = "[a-z0-9_.-]{1,150}";
 const routes: Record<string, RegExp> = {
-  GET: new RegExp(`^v1/admin/(?:content/(?:fields|glossary)|(?:projects|brands)/${id}/content|faq(?:/(?:questions|references|corporate-contacts|${uuid}))?)$`),
+  GET: new RegExp(`^v1/admin/(?:content/(?:fields|glossary)|(?:projects|brands)/${id}/content|faq(?:/(?:questions|references|corporate-contacts|${uuid}))?|faq-intake/clusters(?:/${uuid})?)$`),
   PATCH: new RegExp(`^v1/admin/content/fields/${key}$`),
   PUT: new RegExp(`^v1/admin/(?:content/(?:email-domains/[a-z0-9][a-z0-9_.-]{0,149}|glossary/${term})|projects/${id}/(?:(?:facts|sections)/${key}|buildings/${id}|(?:selling-points|contacts)/${uuid})|brands/${id}/contacts/${uuid}|faq/(?:questions/${key}|corporate-contacts/${uuid}|${uuid}))$`),
-  POST: new RegExp(`^v1/admin/(?:content/(?:translations/${uuid}/(?:review|retry)|glossary/${term}/approve)|projects/${id}/(?:sections/${key}/submit|selling-points|contacts)|brands/${id}/contacts|faq(?:/(?:questions/${key}/approve|corporate-contacts|${uuid}/submit))?)$`),
+  POST: new RegExp(`^v1/admin/(?:content/(?:translations/${uuid}/(?:review|retry)|glossary/${term}/approve)|projects/${id}/(?:sections/${key}/submit|selling-points|contacts)|brands/${id}/contacts|faq(?:/(?:questions/${key}/approve|corporate-contacts|${uuid}/submit))?|faq-intake/clusters/${uuid}/decision)$`),
 };
 
 export function contentAllowsApi(path: string, method: string) {
@@ -27,3 +27,14 @@ const units: Record<string, RegExp> = {
   POST: new RegExp(`^v1/admin/projects/${id}/(?:commercial-types/${id}/(?:submit|review)|prices(?:/${uuid}/(?:submit|review))?)$`),
 };
 export function unitAllowsApi(path: string, method: string) { return units[method]?.test(path) ?? false; }
+// FAQ intake list filters; values are re-validated by the API and SQL.
+const intakeFilters: Record<string, RegExp> = {
+  level: /^(?:corporate|brand|programme|project_group|project|unit_type)$/, kind: /^(?:text|fact|handoff|auto)$/,
+  hold: /^(?:none|numeric|commercial|programme_terms|phase_decision|mapping_conflict|prompt_injection|closed_project)$/,
+  brand: /^[A-Za-z0-9_-]{1,64}$/, state: /^(?:open|held|question_proposed|decided)$/, after: /^\d{1,6}$/, limit: /^(?:[1-9]\d?|100)$/,
+};
+
+export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  return method === "GET" && path === "v1/admin/faq-intake/clusters"
+    && [...query.keys()].every(key => intakeFilters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
+}

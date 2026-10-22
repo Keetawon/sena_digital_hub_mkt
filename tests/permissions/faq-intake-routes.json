@@ -1,0 +1,45 @@
+{
+  "phase": "Project content 4 (FAQ intake)",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq-intake/clusters",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_intake.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/faq-intake/clusters/{cluster_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_intake.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/faq-intake/clusters/{cluster_id}/decision",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/faq_intake.py"
+    }
+  ]
+}
