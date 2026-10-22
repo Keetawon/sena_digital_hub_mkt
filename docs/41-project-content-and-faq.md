@@ -71,6 +71,46 @@ The admin forms, the "where does this field appear" tooltip (icon "i" beside eac
 ### 3.5 Unit types (แบบห้อง/แบบบ้าน)
 Extend `hub.commercial_types` (keep existing fields): `category` (studio, 1br, 1br_plus, 2br, 3br, duplex, single_house, twin_house, townhome, shophouse), `special_rooms[]` (maid_room, multipurpose, family_area, double_living, walk_in_closet), `ceiling_height_m`, `furniture_package` (full, partial, none), `highlights`, `price_mode` (manual, hidden; `rem_auto` exists but is disabled behind a flag per E2), publishable state (remove the draft-only restriction, keep review/approval), `ai_exposure`. Commercial type assets gain the `room_tag` and bilingual captions. Build a six-step wizard under the project: details → concept and highlights → plans (per storey for houses) → room photos and 360 → map to REM models (list REM models from the DW snapshot with REM area and unit counts, suggest matches, never infer bedrooms/bathrooms from REM) → price and pre-submit check. Unit counts and availability for the mapped models come from the DW snapshot and are never typed.
 
+#### Phase 5 implementation and permission card — 22 October 2026
+
+The six steps extend the existing project commercial-type catalogue and its
+revision lock. Existing drafts, source associations and asset bindings retain
+their identities. Submission freezes a version for a different approver; an
+approved version is eligible for Phase 8 composition, without changing existing
+public feeds. Editing approved content starts another draft and preserves the
+approved snapshot. Submitted content is immutable until returned for editing.
+
+| Field | Decision |
+|---|---|
+| Feature / owner | Marketing unit-type wizard and manual project/type prices; Marketing edits, Managers approve |
+| Tab / V | Existing `projects`; view types, history, private media, source comparison and prices for the project |
+| E | Save type details/source references/media, draft prices and submit frozen versions; English review through the existing translation workflow |
+| A | Approve, return or withdraw type/price versions; asset rights remain a separate approval |
+| Specials / separation | No new special. E/A remain exclusive. Every editor of the submitted version is excluded from approving it, including after account permission changes. Website publication still requires the Phase 8 special |
+| Templates / agency | No account, template or default grant changes; agencies and consumers have no access |
+| Sensitivity | REM identities, source areas/counts/prices and revision authors are staff-only; public-ready content uses existing opaque public IDs. Prices default to `web_only` |
+| Other tabs | Promotion references require `promotions` view as well as project edit, and must apply to this project. Existing shared asset access checks remain mandatory |
+| Shared surfaces | Reuse existing private file, media link and translation boundaries. No new assistant/export/RAG projection; no REM/DW writes or new provider integration. Price text is excluded from translation AI |
+| Endpoints | Existing commercial list/create/patch/bind/remove routes; GET `/v1/admin/projects/{public_id}/unit-types`; POST `/commercial-types/{commercial_id}/submit` and `/review`; POST `/prices`, PUT `/prices/{price_id}`, POST `/prices/{price_id}/submit` and `/review` under the same project prefix |
+| SQL | Extend `commercial_types` and `commercial_type_assets`; add `commercial_type_versions`, `project_prices`, `project_price_versions`; guarded workspace/save/submit/review functions, private readiness/source/payload helpers and translation dispatch extensions |
+| Rollout / verification | New tables audit and FORCE RLS; no direct runtime DML or PUBLIC helper execution. Exact API/proxy/H1 inventories; runtime deny/neighbor, inactive, stale, cross-project, author-change and immutable-version tests; populated replay and 1280/390 px UI evidence |
+
+REM comparison reads only the already imported snapshot. A grouped model's
+counts are shown once at their recorded group grain; a shared/partial mapping
+never becomes an allocated total for a Marketing type. Missing snapshot values
+stay unknown. Name/area matches are suggestions requiring explicit selection;
+bedrooms and bathrooms are never inferred. Availability always refers users to
+Sales and never enters the public-ready type payload.
+
+Marketing enters prices with a specific type and size basis, bilingual display,
+basis and conditions, and a validity interval of at most 60 days. Source prices
+are read-only comparison values; a difference warns without blocking. Hidden
+types and expired or withdrawn prices are excluded from public-ready output.
+`rem_auto` is a recognised disabled option, not a client-controlled switch.
+Plans for each storey, room photos and working 360 tours are recommended gaps,
+not publication blockers. Required bilingual type text uses the field registry
+and the existing reviewed/stale translation rules.
+
 ### 3.6 Facilities, features and places
 - `hub.project_facilities` adds `display_name`, `location_label`, `size_sqm`, `opening_hours`, `applies_to_project_ids[]`; photos via `asset_links`. Extend `hub.facility_taxonomy` with groups/icons and codes such as lobby, meeting_room, sky_garden, rooftop, jogging_track, bbq, sauna, theater, kids_zone, basketball, putt_golf, multi_sport, convenience_store, mailroom, juristic_office.
 - `hub.feature_catalog` (corporate-level definition, explanation content, `category` health/sustainability/smart/security/service/partnership, `metric_defs`) + `hub.project_features` (`status`, `detail`, `metrics` validated against `metric_defs`, optional `commercial_type_id`, `source_note`). Seed: vmove, joint_venture (partner), fresh_air, pm25_filter, universal_design, low_carbon (tCO2e/year + method), non_dee (นอนดี; English name via glossary), smart_camera, smart_app, smart_home, smart_parking, bms, solar_rooftop (kW, battery kWh), ev_charger (count, kW, AC/DC), cctv, key_card, guard_24h, easy_pass, lift_lock.

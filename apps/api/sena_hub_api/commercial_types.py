@@ -1,4 +1,4 @@
-"""Private Marketing Unit Type drafts; source references never imply inventory allocation."""
+"""Marketing unit types; source references never imply inventory allocation."""
 from __future__ import annotations
 
 from typing import Annotated, Literal
@@ -33,16 +33,25 @@ class CommercialFields(BaseModel):
     land_area_sqm: PositiveArea | None = None
     source_model_ids: list[ModelId] | None = Field(default=None, max_length=200)
     source_notes: str | None = Field(default=None, max_length=4000)
+    category: Literal["studio", "1br", "1br_plus", "2br", "3br", "duplex", "single_house", "twin_house", "townhome", "shophouse"] | None = None
+    special_rooms: list[Literal["maid_room", "multipurpose", "family_area", "double_living", "walk_in_closet"]] | None = Field(default=None, max_length=5)
+    ceiling_height_m: Annotated[float, Field(gt=0, le=30, strict=True)] | None = None
+    furniture_package: Literal["full", "partial", "none"] | None = None
+    highlights: LocalizedText | None = None
+    price_mode: Literal["manual", "hidden"] | None = None
+    ai_exposure: Literal["open", "web_only", "internal"] | None = None
 
     @model_validator(mode="after")
     def validate_fields(self):
-        for field in {"public_name", "description", "source_model_ids", "source_notes"} & self.model_fields_set:
+        for field in {"public_name", "description", "source_model_ids", "source_notes", "highlights", "special_rooms", "price_mode", "ai_exposure"} & self.model_fields_set:
             if getattr(self, field) is None:
                 raise ValueError(f"{field} cannot be null")
         if self.public_name is not None and not self.public_name.get("th", "").strip():
             raise ValueError("A Thai marketing unit name is required")
         if self.source_model_ids is not None and len(set(self.source_model_ids)) != len(self.source_model_ids):
             raise ValueError("Source references must be unique")
+        if self.special_rooms is not None and len(set(self.special_rooms)) != len(self.special_rooms):
+            raise ValueError("Special rooms must be unique")
         if self.area_min_sqm is not None and self.area_max_sqm is not None and self.area_min_sqm > self.area_max_sqm:
             raise ValueError("Minimum area cannot exceed maximum area")
         return self
@@ -78,6 +87,9 @@ class BindCommercialAsset(BaseModel):
     floor_label: str = Field(default="", max_length=100)
     plan_revision: str = Field(default="", max_length=100)
     applicability_model_ids: list[ModelId] = Field(default_factory=list, max_length=200)
+    room_tag: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{0,79}$")] | None = None
+    caption: LocalizedText = Field(default_factory=dict)
+    floor_number: int | None = Field(default=None, ge=1, le=200, strict=True)
 
     @model_validator(mode="after")
     def require_descriptions(self):

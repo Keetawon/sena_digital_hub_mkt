@@ -46,12 +46,16 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,legacyFaq,legacySection;
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection;
+    const unitState=async()=>(await db.query(`select name,rows from (
+      select 'types' name,jsonb_agg(to_jsonb(t)-array['category','special_rooms','ceiling_height_m','furniture_package','highlights','price_mode','ai_exposure','revision','editors','approved_by','approved_at'] order by id) rows from hub.commercial_types t union all
+      select 'sources',jsonb_agg(to_jsonb(t) order by commercial_type_id,model_id) from hub.commercial_type_sources t
+    ) evidence order by name`)).rows;
     const mediaState=async()=>(await db.query(`select name,rows from (
       select 'assets' name,jsonb_agg(to_jsonb(t)-array['media_category','caption','alt_text','image_kind','taken_at','people','third_party_marks','credit','ai_suggestion','metadata_state','media_revision','ai_exposure','marketing_publication'] order by id) rows from hub.assets t union all
       select 'project_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.entity_assets t union all
       select 'brand_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.brand_assets t union all
-      select 'type_bindings',jsonb_agg(to_jsonb(t) order by id) from hub.commercial_type_assets t
+      select 'type_bindings',jsonb_agg(to_jsonb(t)-array['room_tag','caption','floor_number'] order by id) from hub.commercial_type_assets t
     ) evidence order by name`)).rows;
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id'] from hub.content_sections s order by name`)).rows;
@@ -71,7 +75,21 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       }
       const before=name==='202610210057_public_content_boundary.sql'?await contentState():null;
       if(name==='202610210062_media_metadata.sql')phase3State=await mediaState();
+      if(name==='202610220066_unit_type_workflow.sql') {
+        const p=(await db.query('select id from hub.projects order by id limit 1')).rows[0].id;
+        await db.query("select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',false)");
+        const type=(await db.query(`insert into hub.commercial_types(project_id,public_name,description,source_notes)
+          values($1,'{"th":"Preserved type","en":"Preserved type"}','{"th":"Existing wording"}','Original source notes') returning id`,[p])).rows[0].id;
+        await db.query(`insert into hub.commercial_type_sources(project_id,commercial_type_id,model_id)
+          select $1,$2,id from hub.model_types where project_id=$1 order by id limit 1`,[p,type]);
+        await db.query(`insert into hub.commercial_type_assets(project_id,commercial_type_id,asset_id,asset_role,alt_text,title,display_order)
+          select $1,$2,id,'model_image','{"th":"Original alternative text"}','Original media title',0 from hub.assets
+          where mime_type like 'image/%' and deleted_at is null order by id limit 1`,[p,type]);
+        phase3State=await mediaState();phase5State=await unitState();
+        await db.query("select set_config('app.actor_id','',false)");
+      }
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(phase5State)assert.deepEqual(await unitState(),phase5State,`${name} rewrote commercial content or source references`);
       if(phase3State)assert.deepEqual(await mediaState(),phase3State,`${name} rewrote asset metadata, rights or bindings`);
       if(before)assert.deepEqual(await contentState(),before,'Phase 1 changed content, reviews or account permissions');
       if(phase2State) {

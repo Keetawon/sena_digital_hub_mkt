@@ -251,6 +251,28 @@ This step covers direct uploads and library selection for project and model bind
 
 ## Verification
 
+### Project content Phase 5: unit types and prices
+
+On the local project screen, open **แบบที่อยู่อาศัย** and **สร้างแบบด้วย 6 ขั้นตอน**
+or **เปิด 6 ขั้นตอน** on an existing type. The wizard preserves the existing
+catalogue, media library and REM references. Review English text, submit as a
+Projects editor, then use a different Projects approver. An approved type/price
+is ready for later page composition; this action does not publish a website.
+
+Marketing prices need a named type, basis size, conditions and a validity period
+of at most 60 days. REM prices/counts are staff comparison values from the
+existing local snapshot; missing values remain unknown. `rem_auto` stays disabled.
+Price and condition translations are manual only. Marketing type text uses the
+existing `dev:translation-worker` workflow; automated tests never call a provider.
+
+Plan bindings support house floors, room tags and bilingual captions. Website
+media also needs confirmed marketing metadata and separate rights approval in
+the media workspace. Internal/Legal/structural files stay out of type snapshots.
+All testing remains disposable: `test:api`, `test:db`, the unit-type UI specs and
+the loopback H1 simulation. Screenshots/logs go under ignored
+`artifacts/project-content-phase5/`; no working or hosted database is migrated
+by these checks.
+
 Verification includes TypeScript checks, the Next.js build, API tests with live PostgreSQL integration, SQL role/publication/source-selection/asset/brand checks, concurrent model-edit, brand-edit and duplicate-upload regressions, and Edge browser workflows. Browser checks cover publication, permissions, source/model review, mobile/keyboard use, request origins, unsaved-edit protection, image uploads, PDF downloads, asset reuse, brand requests/assignment and rights revocation.
 
 On 16 September 2026, the build, **220 API tests** (including four live database integration tests), **12 browser tests**, and all **seven SQL/concurrency suites** passed with migrations through 006 applied. A fresh temporary database also passed bootstrap and an idempotent setup rerun, and was removed afterwards. Source selection, model review, the asset library, brand desktop/mobile screens and request/upload/rights dialogs were visually inspected.

@@ -20,6 +20,14 @@ Verified: 288 API tests including four live PostgreSQL integration cases; 11 dat
 
 ## Source models and commercial types
 
+Programme Phase 5 extends the initial private catalogue with the six-step wizard,
+frozen type/price review versions and a different approver for each revision.
+See [docs/41](41-project-content-and-faq.md#35-unit-types-แบบห้องแบบบ้าน) for the
+current permission card and E2/E3 decisions. Existing public snapshots remain
+unchanged until Phase 8. REM group counts and prices remain staff-only comparisons,
+without claiming verified unit partitions. Marketing manually enters its prices
+with a specific type/size basis, conditions and expiry within 60 days.
+
 | Object | Identity and purpose | Ownership |
 |---|---|---|
 | Canonical REM project model | Exact `(ProjectID, ModelID)`; retain suffixes such as `-1`, `-2`, `L` and `R`, source names and current canonical public IDs | REM owns identity and source facts; existing human crosswalk review remains |

@@ -331,3 +331,103 @@ Next is Phase 5 after a fresh pull of `origin/main`. Phase 6 still waits for the
 owner-merged Phase 4. No working-database migration, hosted/DW/REM/provider write
 or live AI call ran. `sena_h_approved` remains false; approved credential files
 and all artifacts remain ignored.
+
+## Phase 5 — complete, 22 October 2026
+
+Pulled `origin/main` with `--ff-only` before starting; it was already at
+`13fcc661460eb96b5179759a2dc786f92107f764` and the working tree was clean.
+No Phase 4/7 parallel-agent PR is present at this base. The Phase 5 permission
+card and source-grain/versioning decisions are recorded in docs/41 before code.
+Scope: the six-step unit-type wizard, retained REM references with staff-only
+snapshot comparison, reviewed unit content/media, and E2/E3 Marketing prices.
+Phase 6 remains dependent on the owner-merged Phase 4.
+
+### Delivered scope
+
+- Migration `202610220066_unit_type_workflow.sql` extends existing commercial
+  types without changing their identities, content or REM mappings. It adds
+  categories, special rooms, ceiling height, furniture, highlights, exposure,
+  price mode and immutable review versions. Submitted versions cannot be edited;
+  edits to approved content start a new draft and preserve the prior approval.
+- The six-step Thai editor covers details, concept/highlights, floor plans,
+  room photos/360, REM mapping, and prices/readiness. It reuses the media library,
+  clip editor and English review panel, preserves unsaved input on errors, and
+  retains the previous basic/bulk editors. Missing recommended plans or room
+  photos do not block submission. Publication still belongs to Phase 8.
+- REM model identity, area and model-group counts/prices come only from the
+  existing local snapshot/evidence. Groups appear once; shared mappings never
+  allocate counts to a Marketing type. Missing values stay unknown, rooms are
+  never inferred, and availability directs staff to Sales. Suggested name/area
+  matches require explicit selection. Automatic REM prices remain disabled.
+- Commercial media bindings gain bilingual captions, a controlled room tag and
+  a floor number checked against the house's storeys. Changing storeys cannot
+  orphan an existing floor binding. Frozen unit payloads include only eligible
+  rights-approved, confirmed, publication-enabled media and public identifiers.
+  Reused tour content authors also count for four-eyes approval; tour saves and
+  unit submission serialize on the project row.
+- Migration `202610220067_marketing_prices.sql` adds draft/review/approval/withdraw
+  workflows for starting and unit prices. Every price states its type, size,
+  conditions and validity of at most 60 days. REM differences warn without
+  blocking. Price English is entered/reviewed manually, with no AI job. A private
+  composition helper omits expired, hidden or internal prices and requires an
+  approved type; existing public endpoints and snapshots are unchanged.
+- Seven private API routes use Projects V/E/A, project revision checks and the
+  existing H1 proxy boundary. Three new tables are audited with FORCE RLS;
+  fifteen new functions are inventoried, private by default, and use fixed
+  search paths. Authors cannot approve their own version after a role change.
+  No account, permission-template or historical-content rewrite is performed.
+
+### Verification
+
+| Gate | Result |
+|---|---|
+| Admin typecheck + offline webpack production build | Passed |
+| Full API suite | 1,954 passed, 11 unchanged opt-in skips, 0 failed; 6 existing deprecation warnings; 722.04 s |
+| Full DB suite | 56 SQL/concurrency checks + 10 Node tests passed; 0 skipped/failed |
+| Relevant browser suite | 45 passed, 0 skipped/failed, including all 4 new cases at 1280/390 px; 4.1 minutes |
+| Disposable migration replay / populated upgrade | Passed; prior content, bindings, REM references, versions, reviews, accounts and permissions preserved |
+| Loopback H1 | 11 protocol + 45 browser tests passed (35 core, 3 flags, 7 outage); 0 skipped/failed; all 67 migrations |
+| Credential scan | Passed: 0 configured-credential matches across 29 changed files, 78 browser static files and 46 artifacts; receipt `credential-scan.json` |
+
+Gate logs are ignored under `artifacts/project-content-phase5/`:
+`admin-typecheck-final.log`, `admin-build-final.log`, `db-final.log`,
+`ui-final.log`, `api-verified.log`, `h1-verified.log`. The focused new browser
+run also passed all 4 cases (`ui-current.log`). The migration-byte inventory
+preserves every prior migration checksum and adds only migrations 66/67.
+The API log names each unchanged opt-in skip; H1 is exercised separately above.
+
+The first browser probe found an exact-label selector that also included native
+select options; it now uses the control's accessible role/name. All four new
+desktop/mobile workflows subsequently passed. The first full API run passed
+1,953 tests with 11 unchanged skips and found one incorrect new inventory
+expectation: default Admin was listed as an approver. The server correctly
+returned 403. The inventory now requires the existing Projects A capability,
+with an explicit default-admin denial assertion; no account or guard changed.
+H1 initially caught a stale count of 65 migrations; its exact inventory now
+requires all 67. No test is skipped, quarantined or weakened for this phase.
+
+### Screenshots
+
+All captures use synthetic disposable data and remain ignored:
+
+- Details and registry hints: [1280 px](../artifacts/project-content-phase5/details-1280.png), [390 px](../artifacts/project-content-phase5/details-390.png).
+- REM mapping and unknown values: [1280 px](../artifacts/project-content-phase5/rem-1280.png), [390 px](../artifacts/project-content-phase5/rem-390.png).
+- Floor plans and media workflow: [1280 px](../artifacts/project-content-phase5/plans-1280.png), [390 px](../artifacts/project-content-phase5/plans-390.png).
+- Separate approval and frozen history: [1280 px](../artifacts/project-content-phase5/approval-1280.png), [390 px](../artifacts/project-content-phase5/approval-390.png).
+- Price validation with retained inputs: [1280 px](../artifacts/project-content-phase5/price-1280.png), [390 px](../artifacts/project-content-phase5/price-390.png).
+
+Desktop details/REM and mobile plans, approval history and prices were visually
+inspected. Every new browser workflow checks horizontal viewport overflow.
+Frozen history renders all payload fields with readable Thai labels, using the
+existing publication-value renderer and retaining both locales and unknowns.
+
+### Questions and coordination
+
+No new business question or change to the accepted scope. Q74 and Q75 remain
+pending, Q76 was closed in Phase 3. Prices use existing snapshot groups as
+comparison evidence, not a newly invented model-level allocation. No live AI
+provider, working-database migration, hosted write, or DW/REM write is needed.
+The next phase remains Phase 6, only after a fresh pull confirms Phase 4 is merged.
+All programme gates passed before commit. No working/hosted database migration,
+live provider call or external-system write ran; `sena_h_approved` stays false.
+The approved credential files and artifacts remain Git-ignored.

@@ -1,0 +1,17 @@
+.unit-wizard { margin-block: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-width: 0; }
+.unit-wizard fieldset { min-width: 0; margin-block: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; }
+.unit-wizard legend { font-weight: 700; padding-inline: .4rem; }
+.unit-wizard label { display: grid; gap: .4rem; margin-block: .6rem; }
+.unit-wizard input:not([type="checkbox"]), .unit-wizard select, .unit-wizard textarea { width: 100%; min-width: 0; max-width: 100%; padding: .65rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+.unit-steps { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: 1rem; }
+.unit-steps [aria-current="step"] { background: var(--action); color: var(--surface); }
+.unit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.unit-wizard .unit-choice, .unit-wizard .unit-source { display: flex; align-items: flex-start; gap: .7rem; padding: .65rem; min-height: 44px; }
+.unit-source span { min-width: 0; overflow-wrap: anywhere; }
+.unit-source-group, .unit-price-card { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; margin-block: .75rem; overflow-wrap: anywhere; }
+.unit-snapshot > div { padding-block: .6rem; border-bottom: 1px solid var(--line); }
+.unit-snapshot dt { font-weight: 700; }
+.unit-snapshot dd { margin: .3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.unit-checks { padding-inline-start: 1.4rem; line-height: 1.7; }
+.unit-prices { margin-block: 1.5rem; }
+@media (max-width: 640px) { .unit-grid { grid-template-columns: minmax(0, 1fr); } .unit-wizard { padding: .75rem; } .unit-wizard fieldset { padding: .65rem; } .unit-steps > button { flex: 1 1 46%; white-space: normal; } }

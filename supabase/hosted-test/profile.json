@@ -328,6 +328,16 @@
       "name": "202610220065_contact_mailbox_policy.sql",
       "canonical_sha256": "4e2216f63e759c2e508ee8ba6719fc27812cf93b1de53914897b03fc7a49d1ca",
       "executed_sha256": "4e2216f63e759c2e508ee8ba6719fc27812cf93b1de53914897b03fc7a49d1ca"
+    },
+    {
+      "name": "202610220066_unit_type_workflow.sql",
+      "canonical_sha256": "5d6cc85dd28c3662b9a402422f3992db0d4e76819ed47969b66804905d2d17aa",
+      "executed_sha256": "5d6cc85dd28c3662b9a402422f3992db0d4e76819ed47969b66804905d2d17aa"
+    },
+    {
+      "name": "202610220067_marketing_prices.sql",
+      "canonical_sha256": "6a13f3bae750cf6d2fb686e1ebe7aba0dbf009de33012562ef35ac41d5665a9c",
+      "executed_sha256": "6a13f3bae750cf6d2fb686e1ebe7aba0dbf009de33012562ef35ac41d5665a9c"
     }
   ]
 }

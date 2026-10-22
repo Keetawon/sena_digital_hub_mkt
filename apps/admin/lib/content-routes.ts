@@ -11,7 +11,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
-  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method);
+  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method);
 }
 
 const media: Record<string, RegExp> = {
@@ -20,3 +20,10 @@ const media: Record<string, RegExp> = {
   POST: new RegExp(`^v1/admin/(?:media/tags/[a-z][a-z0-9_]{0,79}/approve|projects/${id}/media/(?:jobs|links/${uuid}/remove|clips/${uuid}/check))$`),
 };
 export function mediaAllowsApi(path: string, method: string) { return media[method]?.test(path) ?? false; }
+
+const units: Record<string, RegExp> = {
+  GET: new RegExp(`^v1/admin/projects/${id}/unit-types$`),
+  PUT: new RegExp(`^v1/admin/projects/${id}/prices/${uuid}$`),
+  POST: new RegExp(`^v1/admin/projects/${id}/(?:commercial-types/${id}/(?:submit|review)|prices(?:/${uuid}/(?:submit|review))?)$`),
+};
+export function unitAllowsApi(path: string, method: string) { return units[method]?.test(path) ?? false; }

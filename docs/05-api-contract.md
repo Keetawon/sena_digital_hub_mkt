@@ -323,3 +323,41 @@ Feature/place/article/disclosure target kinds remain unavailable until their
 owning phases provide real guarded references. No placeholder content or public
 endpoint is introduced here. Provider and local worker details are in
 [doc 11](11-local-development.md#local-marketing-media-worker-project-content-phase-3).
+
+## Programme Phase 5 — unit review and Marketing prices
+
+The existing commercial-type create/patch and asset-binding routes keep their
+project revision checks. Added draft fields are category, special rooms,
+ceiling height, furniture package, highlights, price mode and AI exposure.
+Asset bindings accept a controlled room tag, bilingual caption and house floor
+number. Counts, availability, source amounts and approval state are never
+client-editable fields. `rem_auto` is disabled.
+
+All paths below start with `/v1/admin/projects/{public_id}`. Each write requires
+`updated_at` from the current project. The API and SQL independently enforce
+Projects V/E/A; unknown fields fail closed.
+
+| Method / suffix | Permission / result |
+|---|---|
+| GET `/unit-types` | V: types, readiness/history, staff-only REM comparison, prices, translations and tours |
+| POST `/commercial-types/{commercial_id}/submit` | E: freeze a complete type version for review |
+| POST `/commercial-types/{commercial_id}/review` | A: `approve`, `return` or `withdraw`; a version editor cannot approve |
+| POST `/prices` | E: create a Marketing price draft |
+| PUT `/prices/{price_id}` | E: save price details within the same project |
+| POST `/prices/{price_id}/submit` | E: freeze complete price text and validity for review |
+| POST `/prices/{price_id}/review` | A: `approve`, `return` or `withdraw`; a version editor cannot approve |
+
+Prices require kind, type, amount, basis size, localized display/basis/conditions,
+and `valid_from`/`valid_to` no more than 60 days apart. English is reviewed through
+the existing translation endpoint; price text never queues an AI job. REM
+comparison values are read from the snapshot and a difference warns without
+blocking submission or approval. Promotion references additionally require
+Promotions V and must cover the same project and price dates.
+
+Submitted type/price payloads are immutable. Changes after approval create a new
+draft and retain prior snapshots. The private composition helper excludes
+expired, withdrawn, hidden and internal prices at read time. No public website
+endpoint changes in this phase. Type snapshots exclude REM identities/counts,
+internal UUIDs, internal/Legal/structural media and unconfirmed or unapproved
+assets. Tour editorial authors join the type's four-eyes check; tour saves and
+type submissions serialize on the project revision lock.

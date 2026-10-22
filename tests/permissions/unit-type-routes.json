@@ -1,0 +1,88 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/unit-types",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/commercial-types/{commercial_id}/submit",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/commercial-types/{commercial_id}/review",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/prices",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/projects/{public_id}/prices/{price_id}",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/prices/{price_id}/submit",
+      "tab": "projects",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/projects/{public_id}/prices/{price_id}/review",
+      "tab": "projects",
+      "level": "approve",
+      "entry_roles": [
+        "publisher"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/unit_types.py"
+    }
+  ]
+}

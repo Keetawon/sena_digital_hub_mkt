@@ -594,3 +594,24 @@ confirmation, exact source Edit permission and revision checks. Free webmail is
 an advisory warning. The historical domain command still checks registry-admin
 authority, then rejects writes; no domain rows or prior migrations are rewritten.
 The publication four-eyes checks and account assignments are unchanged.
+
+## Programme Phase 5: unit types and Marketing prices
+
+The docs/41 permission card extends Projects V/E/A without adding a checkbox or
+changing any account/template. Migrations 66/67 add three audited FORCE-RLS
+tables and fifteen closed-by-default functions. Runtime writes enter only the
+guarded save/review/workspace functions; private source, snapshot and composition
+helpers are not executable by `hub_app`. Seven routes have a dedicated inventory
+and exact API/proxy/H1 mappings.
+
+The default Admin template has Projects E, not A. It cannot approve these types
+or prices unless a separate, explicit account permission grants A; the new
+route inventory and denial tests preserve that distinction.
+
+Type/price snapshots retain every editor of the revision. A subsequent permission
+change cannot let an author approve their own work. Reused tour editorial authors
+are included from the append-only audit trail; a project row lock serializes tour
+saves with type submission. Asset rights approval is separate from editing type
+text and binding captions. Promotion references require Promotions V in addition
+to Projects E. No consumer, agency, assistant or RAG surface gains draft access.
+Upgrade preservation and runtime denial/concurrency evidence are in docs/42.

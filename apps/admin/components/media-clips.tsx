@@ -11,9 +11,9 @@ const providers = { youtube: "YouTube", tiktok: "TikTok", facebook: "Facebook", 
 const kinds = { review: "รีวิว", walkthrough: "พาชม", tour_360: "ทัวร์ 360", drone: "โดรน", ad: "โฆษณา", interview: "สัมภาษณ์", progress: "ความคืบหน้า" };
 const statuses = { ok: "เปิดได้", broken: "เปิดไม่ได้", private: "เป็นส่วนตัว", removed: "ถูกนำออก" };
 const fields = ["provider", "kind", "tour_kind", "url", "title", "description", "published_at", "captured_at", "duration_sec", "aspect", "language", "subtitles", "channel_name", "owner_type", "is_sponsored", "thumbnail_asset_id", "is_featured", "sort", "state", "ai_exposure", "targets"] as const;
-export function MediaClips({ clips, data, base, canEdit, canPromotions, onChanged, onDirty }: { clips: Clip[]; data: { project: { id: string }; context: MediaContext; tags: MediaTag[]; assets: MediaAsset[] }; base: string; canEdit: boolean; canPromotions: boolean; onChanged: () => Promise<void>; onDirty: (value: boolean) => void }) {
+export function MediaClips({ clips, data, base, canEdit, canPromotions, onChanged, onDirty, initialTarget }: { initialTarget?: { target_type: string; target_key: string }; clips: Clip[]; data: { project: { id: string }; context: MediaContext; tags: MediaTag[]; assets: MediaAsset[] }; base: string; canEdit: boolean; canPromotions: boolean; onChanged: () => Promise<void>; onDirty: (value: boolean) => void }) {
   const [draft, setDraft] = useState<Clip | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
-  const [target, setTarget] = useState<LinkContext>(() => newContext(data.project.id));
+  const [target, setTarget] = useState<LinkContext>(() => ({ ...newContext(data.project.id), ...initialTarget }));
   const [check, setCheck] = useState<Record<string, string>>({});
   useEffect(() => { onDirty(Boolean(draft)); return () => onDirty(false); }, [draft, onDirty]);
   const update = <K extends keyof Clip>(key: K, value: Clip[K]) => setDraft(prior => prior ? { ...prior, [key]: value } : null);
@@ -26,7 +26,7 @@ export function MediaClips({ clips, data, base, canEdit, canPromotions, onChange
   return <MediaPanel title="คลิปและทัวร์ 360"><p>วาง URL แล้วขอข้อมูลผู้ให้บริการ ชื่อและคำอธิบายที่ดึงมาเป็นคำแนะนำให้ตรวจเอง ลิงก์ที่เปิดไม่ได้จะถูกซ่อนและขึ้นรายการที่ต้องแก้ไข</p>
     <p className="field-help">ตรวจลิงก์ YouTube และ TikTok อัตโนมัติทุก 7 วัน ผู้ให้บริการอื่นใช้การกรอกข้อมูลและยืนยันผลตรวจด้วยตนเอง</p>
     {error && <p className="notice error" role="alert">{error}</p>}
-    {canEdit && !draft && <button className="button primary" onClick={() => setDraft({ id: crypto.randomUUID(), revision: 0, provider: "youtube", kind: "walkthrough", tour_kind: null, url: "", title: {}, description: {}, published_at: null, captured_at: null, duration_sec: null, aspect: "landscape", language: "th", subtitles: [], channel_name: {}, owner_type: "sena_owned", is_sponsored: false, thumbnail_asset_id: null, is_featured: false, sort: 0, state: "DRAFT", ai_exposure: "open", targets: [] })}>เพิ่มคลิปหรือทัวร์</button>}
+    {canEdit && !draft && <button className="button primary" onClick={() => setDraft({ id: crypto.randomUUID(), revision: 0, provider: "youtube", kind: "walkthrough", tour_kind: null, url: "", title: {}, description: {}, published_at: null, captured_at: null, duration_sec: null, aspect: "landscape", language: "th", subtitles: [], channel_name: {}, owner_type: "sena_owned", is_sponsored: false, thumbnail_asset_id: null, is_featured: false, sort: 0, state: "DRAFT", ai_exposure: "open", targets: initialTarget ? [initialTarget] : [] })}>เพิ่มคลิปหรือทัวร์</button>}
     {draft && <form onSubmit={event => { event.preventDefault(); void action(() => save()); }}><fieldset disabled={busy || !canEdit}><legend>ข้อมูลคลิป</legend>
       <Select fieldKey="media_link.provider" label="ผู้ให้บริการ" value={draft.provider} options={providers} onChange={v => update("provider", v)} />
       <MediaInput fieldKey="media_link.url" label="URL คลิปหรือทัวร์" type="url" required maxLength={2048} value={draft.url} onChange={value => update("url", value)} />
