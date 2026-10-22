@@ -74,6 +74,8 @@ try {
   console.log('PASS: TEST actuals snapshots, staff isolation, finding workflow and document follow-ups');
   await connection.query(await readFile(new URL('../supabase/tests/residential_demo.sql', import.meta.url), 'utf8'));
   console.log('PASS: promotion reviews and expiry, synthetic provenance, atomic releases and guarded rollback');
+  await connection.query(await readFile(new URL('../supabase/tests/project_commercial.sql', import.meta.url), 'utf8'));
+  console.log('PASS: C5 frozen construction reviews, Legal output exclusion, FORCE RLS and AI boundary');
   await connection.query(await readFile(new URL('../supabase/tests/document_archive.sql', import.meta.url), 'utf8'));
   console.log('PASS: private synthetic archive, worker leases, source provenance, confirmation and separate P2 handoff');
   await connection.query(await readFile(new URL('../supabase/tests/assistant.sql', import.meta.url), 'utf8'));

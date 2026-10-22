@@ -4,6 +4,7 @@ PostgreSQL owns publication, expiry and rollback. No campaign naming or external
 source edits are exposed here; request identities are supplied by authentication.
 """
 from contextlib import asynccontextmanager
+from datetime import date
 from decimal import Decimal
 import json
 import re
@@ -39,7 +40,18 @@ class Input(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class PromotionTarget(Input):
+    type: Literal["project", "brand", "commercial_type"]
+    id: UUID
+
+
 class DraftFields(Input):
+    audience: Literal["general", "investor", "livnex"] = "general"
+    targets: list[PromotionTarget] = Field(default_factory=list, max_length=100)
+    booking_from: date | None = None
+    booking_to: date | None = None
+    transfer_from: date | None = None
+    transfer_to: date | None = None
     title: LocalizedText = Field(default_factory=dict)
     summary: LocalizedText = Field(default_factory=dict)
     conditions_public: LocalizedText = Field(default_factory=dict)
@@ -64,12 +76,19 @@ class DraftFields(Input):
 
 
 class CreatePromotion(DraftFields):
+    synthetic: Annotated[bool, Field(strict=True)] = True
     project_id: UUID
     code: Annotated[str, StringConstraints(strict=True, pattern=r"^[A-Z0-9][A-Z0-9_-]{0,79}$")]
 
 
 class PatchPromotion(Input):
     expected_revision: Revision
+    audience: Literal["general", "investor", "livnex"] | None = None
+    targets: list[PromotionTarget] | None = Field(default=None, max_length=100)
+    booking_from: date | None = None
+    booking_to: date | None = None
+    transfer_from: date | None = None
+    transfer_to: date | None = None
     title: LocalizedText | None = None
     summary: LocalizedText | None = None
     conditions_public: LocalizedText | None = None
@@ -87,7 +106,7 @@ class PatchPromotion(Input):
     @model_validator(mode="after")
     def explicit_change(self):
         changed = self.model_fields_set - {"expected_revision"}
-        nullable = {"benefit_value", "benefit_unit", "source_offer_key"}
+        nullable = {"benefit_value", "benefit_unit", "source_offer_key", "booking_from", "booking_to", "transfer_from", "transfer_to"}
         if not changed or any(getattr(self, key) is None for key in changed - nullable):
             raise ValueError("ระบุฟิลด์ที่ต้องการแก้ไข ข้อความว่างให้ใช้แผนที่ภาษาแทน null")
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
@@ -185,6 +204,11 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
         return {"data": result}
 
     prefix = "/v1/admin"
+
+    @app.get(prefix + "/promotions/references")
+    async def promotion_references(request: Request, actor: Actor = Depends(admin)):
+        query(request)
+        return await rpc(request, actor, "SELECT hub.promotion_references()::text")
 
     @app.get(prefix + "/promotions")
     async def promotion_list(request: Request, filters: Annotated[PromotionFilters, Query()], actor: Actor = Depends(admin)):

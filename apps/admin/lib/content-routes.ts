@@ -11,7 +11,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
-  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method);
+  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method);
 }
 
 const media: Record<string, RegExp> = {
@@ -38,3 +38,11 @@ export function contentAllowsQuery(path: string, method: string, query: URLSearc
   return method === "GET" && path === "v1/admin/faq-intake/clusters"
     && [...query.keys()].every(key => intakeFilters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
 }
+
+const commercialKind = "(?:disclosures|sales-terms|programmes|construction)";
+const commercial: Record<string, RegExp> = {
+  GET: new RegExp(`^v1/admin/(?:projects/${id}/commercial|promotions/references)$`),
+  PUT: new RegExp(`^v1/admin/projects/${id}/commercial/${commercialKind}/${uuid}$`),
+  POST: new RegExp(`^v1/admin/projects/${id}/commercial/${commercialKind}(?:/${uuid}/(?:submit|review))?$`),
+};
+export function commercialAllowsApi(path: string, method: string) { return commercial[method]?.test(path) ?? false; }

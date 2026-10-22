@@ -9,8 +9,8 @@ export type SellingPoint = { point_key: string; revision: number; title: Locales
 const features: Record<string, string> = { vmove: "VMOVE", joint_venture: "พันธมิตร", fresh_air: "อากาศบริสุทธิ์", pm25_filter: "กรอง PM2.5", universal_design: "การออกแบบเพื่อทุกคน", low_carbon: "ลดคาร์บอน", non_dee: "นอนดี", smart_camera: "กล้องอัจฉริยะ", smart_app: "แอปอัจฉริยะ", smart_home: "บ้านอัจฉริยะ", smart_parking: "ที่จอดรถอัจฉริยะ", bms: "ระบบจัดการอาคาร", solar_rooftop: "โซลาร์รูฟท็อป", ev_charger: "ชาร์จรถไฟฟ้า", cctv: "กล้องวงจรปิด", key_card: "คีย์การ์ด", guard_24h: "เจ้าหน้าที่รักษาความปลอดภัย", easy_pass: "ทางเข้าอัตโนมัติ", lift_lock: "ลิฟต์ล็อกชั้น" };
 export const stateLabel = (state: string) => ({ DRAFT: "ร่าง", IN_REVIEW: "ส่งตรวจแล้ว", PUBLISHED: "เผยแพร่แล้ว", WITHDRAWN: "ถอนฉบับแล้ว" }[state] ?? "ร่าง");
 
-export function ContentNarrative({ projectId, sections, points, fields, canEdit, onChanged, onEditingChange }: {
-  projectId: string; sections: NarrativeSection[]; points: SellingPoint[]; fields: ContentField[]; canEdit: boolean;
+export function ContentNarrative({ projectId, sections, points, fields, canEdit, onChanged, onEditingChange, showPoints = true }: {
+  showPoints?: boolean; projectId: string; sections: NarrativeSection[]; points: SellingPoint[]; fields: ContentField[]; canEdit: boolean;
   onChanged: () => Promise<void>; onEditingChange: (value: boolean) => void;
 }) {
   const [section, setSection] = useState<{ key: string; revision: number; body: Locales; source: string; exposure: Exposure } | null>(null);
@@ -42,7 +42,7 @@ export function ContentNarrative({ projectId, sections, points, fields, canEdit,
         {current && <details><summary>ประวัติ {item.label.th}</summary>{current.history.map(version => <div className="content-card" key={version.version_no}><strong>ฉบับ {version.version_no} · {stateLabel(version.state)} · {contentDate(version.created_at)}</strong><p className="content-preserve">{version.body.th}</p><p className="content-preserve" lang="en">{version.body.en}</p></div>)}</details>}
       </article>;
     })}</div>
-    <div className="content-toolbar"><h2>จุดขาย {points.length}/6 ข้อ</h2>{canEdit && !editing && <button className="button secondary" disabled={points.length >= 6} onClick={() => { setPoint({ point_key: "", revision: 0, title: {}, detail: {}, icon_code: "check", linked_feature_code: null, linked_fact_keys: [], sort: points.length + 1, state: "DRAFT", ai_exposure: "open" }); setError(""); }}>เพิ่มจุดขาย</button>}</div><p className="field-help">ต้องมี 3–6 ข้อ ชื่อจุดขายไม่เกิน 60 ตัวอักษร เชื่อมข้อเท็จจริงแทนการพิมพ์ตัวเลขในข้อความ</p>
+    {showPoints && <><div className="content-toolbar"><h2>จุดขาย {points.length}/6 ข้อ</h2>{canEdit && !editing && <button className="button secondary" disabled={points.length >= 6} onClick={() => { setPoint({ point_key: "", revision: 0, title: {}, detail: {}, icon_code: "check", linked_feature_code: null, linked_fact_keys: [], sort: points.length + 1, state: "DRAFT", ai_exposure: "open" }); setError(""); }}>เพิ่มจุดขาย</button>}</div><p className="field-help">ต้องมี 3–6 ข้อ ชื่อจุดขายไม่เกิน 60 ตัวอักษร เชื่อมข้อเท็จจริงแทนการพิมพ์ตัวเลขในข้อความ</p>
     {point && <form onSubmit={event => { event.preventDefault(); void mutate(point.point_key ? `${base}/selling-points/${point.point_key}` : `${base}/selling-points`, point.point_key ? "PUT" : "POST", { expected_revision: point.revision, changes: { title: point.title, detail: point.detail, icon_code: point.icon_code, linked_feature_code: point.linked_feature_code, linked_fact_keys: point.linked_fact_keys, sort: point.sort, state: point.state, ai_exposure: point.ai_exposure } }); }}><fieldset disabled={pending || !canEdit}>
       <BilingualInput id="point-title" field={field("selling_point.title")} value={point.title} onChange={title => setPoint({ ...point, title })} maxLength={60} rows={2} />
       <BilingualInput id="point-detail" field={field("selling_point.detail")} value={point.detail} onChange={detail => setPoint({ ...point, detail })} maxLength={4000} />
@@ -53,5 +53,6 @@ export function ContentNarrative({ projectId, sections, points, fields, canEdit,
     </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => setPoint(null)}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || !point.title.th?.trim()}>บันทึกจุดขาย</button></div></form>}
     <div className="content-card-list">{points.map(item => <article className="content-card" key={item.point_key}><h3>{item.title.th}</h3><p className="content-preserve">{item.detail.th}</p><p lang="en">{item.title.en}</p>{canEdit && <button className="button secondary" disabled={editing || pending} onClick={() => { setPoint({ ...item, title: { ...item.title }, detail: { ...item.detail } }); setError(""); }}>แก้ไขจุดขาย {item.title.th}</button>}
       <details><summary>ประวัติจุดขาย</summary>{item.history?.map(version => <div className="content-card" key={version.revision}><strong>ฉบับ {version.revision} · {contentDate(version.created_at)}</strong><p>{version.title.th}</p><p>{version.detail.th}</p><p lang="en">{version.title.en}</p><p lang="en">{version.detail.en}</p></div>)}</details></article>)}</div>
+    </>}
   </section>;
 }

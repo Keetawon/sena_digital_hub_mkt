@@ -61,6 +61,13 @@ MEDIA_FUNCTIONS = {'hub.' + name for name in (
     'media_link_remove', 'media_legacy_binding_guard', 'media_requirements_read', 'media_requirement_save',
     'media_clip_save', 'media_checklist', 'project_media', 'media_thumbnail_binding', 'project_content_readiness_before_media',
     'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check')}
+COMMERCIAL_TABLES = {'hub.' + name for name in ('project_disclosures', 'project_sales_terms', 'project_programmes', 'project_progress', 'project_commercial_versions')}
+COMMERCIAL_FUNCTIONS = {'hub.' + name for name in (
+    'project_commercial_table', 'project_commercial_entity', 'project_commercial_fields', 'project_commercial_public',
+    'project_commercial_snapshot', 'project_disclosure_comparison', 'project_commercial_readiness', 'save_project_commercial',
+    'review_project_commercial', 'project_current_commercial', 'project_commercial_workspace', 'track_project_commercial_translation',
+    'promotion_references', 'validate_promotion_targets', 'promotion_target_projects', 'promotion_banners',
+    'promotion_banner_changed', 'track_promotion_translation')}
 UNIT_TABLES = {'hub.' + name for name in ('commercial_type_versions', 'project_prices', 'project_price_versions')}
 UNIT_FUNCTIONS = {'hub.' + name for name in (
     'unit_version_guard', 'unit_type_changed', 'unit_type_content_guard', 'unit_type_asset_guard',
@@ -138,10 +145,16 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    commercial = [r for r in actual if r['schema'] + '.' + r['table'] in COMMERCIAL_TABLES]
+                    assert len(commercial) == 2 * len(COMMERCIAL_TABLES)
+                    assert all(r['name'] in ('commercial_owner', 'commercial_read') for r in commercial)
+                    assert all(r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in commercial if r['name'] == 'commercial_owner')
+                    assert all(r['roles'] == ['hub_app'] and r['cmd'] == 'SELECT' and r['with_check'] is None and 'hub.can(' in r['qual'] for r in commercial if r['name'] == 'commercial_read')
+                    actual = [r for r in actual if r not in commercial]
                     units = [r for r in actual if r['schema'] + '.' + r['table'] in UNIT_TABLES]
                     assert len(units) == 2 * len(UNIT_TABLES)
                     assert all(r['name'] in ('unit_owner', 'unit_read') for r in units)
@@ -311,7 +324,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -320,7 +333,7 @@ async def assert_reviewed_database_boundary(db):
     policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
-    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES
+    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

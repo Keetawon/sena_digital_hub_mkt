@@ -343,6 +343,16 @@
       "name": "202610220068_faq_intake.sql",
       "canonical_sha256": "70d7930ac8ae7628f0750085134b5df495391e57724c202dd8b758a99e2bc891",
       "executed_sha256": "70d7930ac8ae7628f0750085134b5df495391e57724c202dd8b758a99e2bc891"
+    },
+    {
+      "name": "202610220069_project_commercial.sql",
+      "canonical_sha256": "74b1a0ad1557ef50b1003dab1a7eb49dca9a79ec0d6229c6d2429d6256cc7c71",
+      "executed_sha256": "74b1a0ad1557ef50b1003dab1a7eb49dca9a79ec0d6229c6d2429d6256cc7c71"
+    },
+    {
+      "name": "202610220070_real_promotions.sql",
+      "canonical_sha256": "3176fa84b820b0fcdad1fd7d1622555330e8a6ba88fe9eb32351de62a35fdc41",
+      "executed_sha256": "3176fa84b820b0fcdad1fd7d1622555330e8a6ba88fe9eb32351de62a35fdc41"
     }
   ]
 }

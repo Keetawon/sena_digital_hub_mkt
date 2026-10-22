@@ -60,7 +60,8 @@ def test_publication_routes_have_complete_mapping(permission_accounts):
     actual = {(method, route.path) for route in client.app.routes if isinstance(route, APIRoute)
               and route.path.startswith(prefixes) for method in route.methods}
     assert actual == {key for key in CONTENT_RULES if key[1].startswith(prefixes)}
-    assert len(actual) == 20
+    assert ('GET', '/v1/admin/promotions/references') in actual
+    assert len(actual) == 21
 
 
 @pytest.mark.parametrize('tab,table,rpc', [

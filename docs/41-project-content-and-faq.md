@@ -159,7 +159,7 @@ Each phase lists what to build. Every phase also: adds DB/API/UI tests for new f
 6. **FAQ coverage and fact slots (K3).** Coverage matrix, composition rules, read-time fact resolution, rule-based applicability (D1), hide-and-gap behaviour (D2).
 7. **Facilities, features, places (C4).** Facility details/photos, feature catalog and project features, solar estimates, places and reference tables with import template.
 8. **Website publication (K4).** Web page registry, page snapshots, withdraw/rollback, public endpoints, JSON-LD, change feed, four-eyes and the publish special, staff HTML preview. Pilot data: BNA7 and the FLEXI brand page in the local database. STOP after this phase and report, because the owner must arrange the web-team integration (D5) before the remaining phases are prioritised.
-9. **Legal, sales, investor, programmes, progress (C5)** — continue only after I reply to the Phase 8 report. Disclosures with Legal document upload, real promotions with targets/audience/banners, sales terms, investor section, programmes (REM fields pending IT), construction progress.
+9. **Legal, sales, investor, programmes, progress (C5)** — the owner lifted the Phase 8 report gate for this phase only on 22 October 2026. Implement now. The rebased Phase 4 push released the test gate; the owner's later instruction gives this workstream port priority before the Phase 7 agent. Always require ports 55432/8000/3000 to be free; never stop another agent's process. After pushing Phase 9, continue Phase 6 after Phase 4 merges, then Phase 10a articles (section 3.9), then Phase 8 after Phase 7 merges; finish articles first even if Phase 7 merges sooner, and retain Phase 8's STOP. Disclosures with Legal document upload, real promotions with targets/audience/banners, sales terms, investor section, programmes (REM fields pending IT), construction progress.
 10. **Expansion (C6 + K5).** Articles with the block editor, corporate content and FAQ (LivNex/RentNex, SEN X, SENA 360 app, after-sales), `ai_policy` handling, generated `llms.txt` and robots rule list, location pages generated from published data, English pages, and the chatbot reading published content only. Finish with a Thai UAT pack (`docs/43-uat-project-content-th.md`) in the style of `docs/37`.
 
 ## 5. Gates for every phase
@@ -385,3 +385,59 @@ selling points and authorized promotions. Feature/place/disclosure/article
 target kinds are reserved but reject saves until the owning phase supplies a
 guarded real reference. No placeholder tables or invented records replace that
 work. New targets remain internal drafts until Phase 8 publication integration.
+
+## Phase 9 permission and record contract — 22 October 2026
+
+Owner update: Claude Code's assignment ended after Phase 4. Articles return to
+this workstream as Phase 10a, directly on main and logged in docs/42. Phase 7
+continues separately on `parallel/c4-facilities-places`. The revised sequence
+above supersedes the earlier parallel assignment; the remaining Phase 10 work
+is still outside this authorization.
+
+| Permission card | Decision |
+|---|---|
+| Feature / owner | C5 project disclosures, sales terms, programmes, construction progress and investor content; Marketing enters, an independent project approver checks |
+| Tab / View | Existing `projects` V reads structured records, readiness and redacted history. Existing `promotions` V reads promotion drafts and reviews. Legal evidence IDs, references, reviewer names, dates and downloads require Projects E or A |
+| Edit | Projects E saves drafts, attaches private Legal files, manually reviews English and submits a frozen revision. Promotions E changes real/synthetic draft content, audience, scopes and windows; changing banners also requires Projects E |
+| Approve | Projects A approves, returns or withdraws the exact submitted revision. Every editor of that revision is excluded even after a permission change. Promotions A retains DATA + LEGAL reviews and publication; real-row authors cannot review or publish their own revision |
+| Specials / templates | No new tab, special, template or account assignment. Existing E/A separation remains. Website page publication still requires Phase 8's own approval/special |
+| Agency | No access; inactive/pending and service-consumer identities cannot use internal routes |
+| Sensitivity | Legal evidence is restricted and never public/AI. Financial and investor text is manually translated; existing immutable history and audit apply |
+| Other tabs | Promotion target pickers return only project/type or brand references permitted by Projects V / Brands V. Promotion banners use existing asset rights and project binding guards |
+| Shared surfaces | Private C5 composition helper only, pending Phase 8. Existing published promotions gain public scope IDs, audience, windows and rights-filtered banners; no internal UUIDs, Legal evidence or RAG inclusion |
+| API / SQL | Five exact `/v1/admin/projects/{public_id}/commercial` routes, existing promotion commands plus GET `/v1/admin/promotions/references`; migration 69 C5 records and migration 70 promotion extensions; inventories in `tests/permissions/project-commercial-routes.json` and the DB permission baseline |
+| Verification | Real runtime deny/neighbor and revocation, optimistic project locks, immutable submissions, same-author denial, private Legal bytes, manual English, expiry, source mismatch, public IDs, rights revocation, populated replay and 1280/390 px UI |
+
+`hub.project_disclosures`, `project_sales_terms`, `project_programmes` and
+`project_progress` have explicit typed fields, FORCE RLS, audit and no runtime
+direct writes. Each has a stable public content ID and revision. There is one
+disclosure and one sales-terms identity per REM project, one programme identity
+per programme key, and one construction identity per component. Submitted
+payloads are frozen in `project_commercial_versions`; edits and returned drafts
+advance the revision. A shared project lock makes concurrent edits stale.
+
+Disclosures compare the explicitly entered land area, building count and unit
+count against project facts and the building register. The approver sees the
+building description alongside those facts; prose is never parsed into facts.
+Missing source comparisons and mismatches need a recorded override reason;
+the disclosure still needs its own values. Approval and later composition both
+recheck the comparison. Legal approval provenance is entered from the evidence
+(reviewer name and date), separate from the Hub approver's recorded account.
+
+English is reviewed through the existing translation workflow with provider
+dispatch disabled for Legal, sales, programme, promotion and investor text.
+Programme `units_offered` must be NULL until IT supplies the REM contract.
+Unknown money/participation values remain NULL; zero and “not participating”
+are explicit values. Sales validity is mandatory. Construction progress does
+not alter the existing readiness cache. Investor narrative and validated yield
+reuse the existing section/fact workflow, default to `web_only`, and show
+“ประมาณการ ไม่รับประกัน” with expected annual rent, price and as-of date.
+
+Real promotions are explicitly created with `synthetic=false`; older clients
+and existing synthetic records retain their provenance. Creation from the UI
+defaults to a real record. Primary project identity stays fixed. Additional
+project, brand and commercial-type scopes are validated references; a release
+freezes the resolved public project IDs and scope identifiers. Draft changes
+do not rewrite a published version. Booking and transfer dates are paired,
+ordered windows. Banners use `asset_links`, expire no later than the promotion,
+and disappear immediately when rights or live eligibility are withdrawn.

@@ -383,3 +383,36 @@ Knowledge A approval activates it (D6). A 422 `intake_rule` carries a Thai reaso
 commercial/numeric source text accepted unchanged, selling content for a closed
 REM phase, unresolved Q70 programme or unsafe-text holds, missing explicit phases,
 a duplicate answer identity, or a cluster that is already decided.
+
+## C5 project commercial records and real promotions (Phase 9)
+
+Existing Projects V/E/A applies to these exact routes:
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/v1/admin/projects/{public_id}/commercial` | Structured records, comparisons, readiness, translations and frozen history; Legal evidence only for E/A |
+| POST | `/v1/admin/projects/{public_id}/commercial/{kind}` | New identity, `{updated_at, record}` |
+| PUT | `/v1/admin/projects/{public_id}/commercial/{kind}/{record_id}` | Edit draft with current project timestamp |
+| POST | `/v1/admin/projects/{public_id}/commercial/{kind}/{record_id}/submit` | Freeze current revision, `{updated_at}` |
+| POST | `/v1/admin/projects/{public_id}/commercial/{kind}/{record_id}/review` | Independent A decision, `{updated_at, decision: approve\|return\|withdraw}` |
+
+`kind` is `disclosures`, `sales-terms`, `programmes` or `construction`, also
+specified as the discriminator inside `record`. Unknown/source/approval fields
+are rejected. Programme units cannot be entered. Mismatched project timestamps
+fail with 409. No public C5 endpoint is introduced before Phase 8.
+
+`GET /v1/admin/promotions/references` requires Promotions V and supplies bounded
+project/type and brand picker references with their corresponding source V.
+Existing create/patch promotion routes add `audience`, `targets: [{type,id}]`,
+and paired `booking_from/to`, `transfer_from/to` dates. Create also accepts
+`synthetic` (default true for existing clients; the admin UI sends false for a
+real row). Targets accept only project, brand or commercial_type UUIDs from
+authorized pickers. Draft reads include manual English-review records.
+
+Existing promotion publication keeps the environment guard, DATA + LEGAL
+reviews, source-offer eligibility, expiry and stacking. Real rows require
+reviewed English and a different author/reviewer/publisher. Public promotion
+payloads add audience, date windows, public scope IDs and rights-filtered banner
+assets; internal UUIDs and editor/source identifiers remain private. Each
+resolved project gets its own eligible promotion response. Legal documents
+never appear in this output.

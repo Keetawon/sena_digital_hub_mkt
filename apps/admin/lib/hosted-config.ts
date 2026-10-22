@@ -1,5 +1,5 @@
 import type { LocalRole } from "./local-session";
-import { mediaAllowsApi, unitAllowsApi } from "./content-routes";
+import { mediaAllowsApi, unitAllowsApi, commercialAllowsApi } from "./content-routes";
 
 export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean; google: boolean; password: boolean; label: string; adminContact: string };
 
@@ -34,7 +34,7 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
-  if (unitAllowsApi(path, method)) return true;
+  if (unitAllowsApi(path, method) || commercialAllowsApi(path, method)) return true;
   if (/^v1\/admin\/(?:media(?:\/|$)|projects\/[^/]+\/media(?:\/|$))/.test(path)) return mediaAllowsApi(path, method);
   if (path === "v1/admin/knowledge/preview" || /^v1\/admin\/knowledge\/projects\/[^/]+\/preview-release$/.test(path)) return false;
   if (path === "v1/admin/permissions/catalog") return method === "GET";

@@ -282,6 +282,10 @@ def test_content_api_registry_readiness_and_immediate_revocation(permission_acco
     assert client.get('/v1/admin/content/fields', headers=h('viewer')).status_code == 200
     run(set_bit(ids['viewer'], 'brands', can_view=False))
     run(set_bit(ids['viewer'], 'knowledge', can_view=False))
+    promotion_registry = client.get('/v1/admin/content/fields', headers=h('viewer'))
+    assert promotion_registry.status_code == 200
+    assert {field['entity'] for field in promotion_registry.json()['data']['items']} == {'promotion'}
+    run(set_bit(ids['viewer'], 'promotions', can_view=False))
     assert client.get('/v1/admin/content/fields', headers=h('viewer')).status_code == 403
 
 

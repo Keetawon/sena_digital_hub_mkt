@@ -62,7 +62,7 @@ def register_project_content_routes(app, authentication, database):
         boundary = route_class(request.method, getattr(route, 'path', None))
         level = 'view' if boundary == 'content_registry' else 'edit' if boundary == 'content_translation' else None
         capabilities = getattr(request.state, 'account', {}).get('capabilities', {})
-        if level and any(capabilities.get('tabs', {}).get(tab, {}).get(level) is True for tab in ('projects', 'brands', 'knowledge')):
+        if level and any(capabilities.get('tabs', {}).get(tab, {}).get(level) is True for tab in ('projects', 'brands', 'knowledge', 'promotions')):
             return actor
         raise failure(403, 'content_permission', 'ไม่มีสิทธิ์เข้าถึงข้อมูลส่วนนี้')
 

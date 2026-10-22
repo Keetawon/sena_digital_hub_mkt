@@ -5,6 +5,8 @@ for Phase 4 (FAQ intake, K2), Phase 7 (facilities, features and places, C4) and 
 part of Phase 10. Each phase is an owner-merged pull request from its own `claude/*` branch.
 Codex's main-line phases are logged in [42](42-project-content-programme-log.md).
 
+Owner update (22 October 2026): Claude Code's assignment ended after Phase 4; articles moved to Codex as Phase 10a on main, while the Phase 7 agent continues on `parallel/c4-facilities-places`.
+
 ## Phase 4 — FAQ intake (K2)
 
 Branch `claude/k2-faq-intake`, built on Phase 2 (`01d288f`) and rebased onto Phase 5 (`d9837de`). Design: doc 41 §3.8.
