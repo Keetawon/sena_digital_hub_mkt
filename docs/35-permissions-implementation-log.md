@@ -615,3 +615,15 @@ saves with type submission. Asset rights approval is separate from editing type
 text and binding captions. Promotion references require Promotions V in addition
 to Projects E. No consumer, agency, assistant or RAG surface gains draft access.
 Upgrade preservation and runtime denial/concurrency evidence are in docs/42.
+## Project-content programme Phase 4 (FAQ intake) — parallel branch
+
+FAQ intake uses the existing Knowledge tab: V reads clusters, E records decisions
+and proposes questions, and the existing A approval activates a proposed question.
+There is no new tab, special or account change. `staging.faq_clusters` and
+`hub.faq_intake_decisions` have FORCE RLS, audit triggers and only an owner policy;
+`hub_app` has no direct table grant. Reads and decisions go through
+`hub.faq_intake_clusters`, `hub.faq_intake_cluster` and `hub.decide_faq_cluster`,
+which check Knowledge V/E themselves; creating an answer additionally passes
+through Phase 2's `hub.save_faq`. Decisions are append-only. Regeneration
+(`staging.replace_faq_clusters`) is operator-only. Agencies, service consumers and
+pending accounts are denied. Details: [44](44-parallel-phases-log.md).

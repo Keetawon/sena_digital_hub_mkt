@@ -5,6 +5,7 @@ import { request } from "./hub-request";
 import { useContentLocation } from "./content-operations-shared";
 import { ContentContacts, type Contact } from "./content-contacts";
 import { FaqBank, FaqGlossary, kindLabels, scopeLabels, type QuestionBank } from "./faq-bank";
+import { FaqIntake } from "./faq-intake";
 import { stateLabel } from "./content-narrative";
 import { BilingualInput, ExposureInput, TranslationReviewPanel, useFieldCatalog, contentDate, errorMessage, type Exposure, type Locales, type Translation } from "./content-common";
 
@@ -14,7 +15,7 @@ type FaqVersion = { version_no: number; question: Locales; alt_questions: Locale
 type Faq = { id: string; question_key: string | null; scope_type: string; scope_id: string; revision: number; state: string; question?: Locales; short_answer?: Locales; version: FaqVersion; history: FaqVersion[]; sources: { id: string; source_ref: string; source_url: string | null; decided_at: string }[]; translations: Translation[] };
 type Draft = { question_key: string; scope_type: string; scope_id: string; question: Locales; alt_questions: Locales; short_answer: Locales; detail: Locales; answer_kind: string; fact_keys: string[]; applies_to_project_ids: string[]; review_due: string; effective_to: string; ai_exposure: Exposure; source_ref: string; source_url: string };
 const emptyDraft: Draft = { question_key: "", scope_type: "corporate", scope_id: "sena", question: {}, alt_questions: {}, short_answer: {}, detail: {}, answer_kind: "text", fact_keys: [], applies_to_project_ids: [], review_due: "", effective_to: "", ai_exposure: "open", source_ref: "", source_url: "" };
-const tabs = { drafts: "คำตอบ FAQ", bank: "คำถามมาตรฐาน", glossary: "คำแปลมาตรฐาน", contacts: "ติดต่อองค์กร" };
+const tabs = { drafts: "คำตอบ FAQ", intake: "คัดจากของเดิม", bank: "คำถามมาตรฐาน", glossary: "คำแปลมาตรฐาน", contacts: "ติดต่อองค์กร" };
 const editTabs = { answer: "คำตอบและขอบเขต", english: "ภาษาอังกฤษ", sources: "แหล่งข้อมูล", preview: "ตัวอย่างบนเว็บไซต์", history: "ประวัติ" };
 function locales(value: Locales | unknown): Locales {
   if (Array.isArray(value)) return { th: value.map(item => typeof item === "string" ? item : item.th ?? "").join("\n") };
@@ -76,6 +77,7 @@ export function FaqWorkspace() {
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}{draft ? " ข้อความที่กรอกยังอยู่" : ""}</p>}{notice && <p className="notice success" role="status">{notice}</p>}
     {loading || !catalog || !bank || !references ? !error && !catalogError && <p role="status">กำลังโหลดคลัง FAQ…</p> : <>
       <nav className="content-tabs" aria-label="ส่วนคลัง FAQ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={(editing || dirty) && tab !== key} onClick={() => location.navigate({ tab: key, faq: null })}>{label}</button>)}</nav>
+      {tab === "intake" && <FaqIntake bank={bank} references={references} onChanged={reload} onEditingChange={setEditing} onOpenFaq={id => location.navigate({ tab: "drafts", faq: id })} />}
       {tab === "bank" && <FaqBank bank={bank} fields={catalog.items} onChanged={reload} onEditingChange={setEditing} />}
       {tab === "glossary" && <FaqGlossary onEditingChange={setEditing} />}
       {tab === "contacts" && <ContentContacts items={contacts} catalog={catalog} apiBase="v1/admin/faq/corporate-contacts" canEdit={canEdit} onChanged={reload} onEditingChange={setEditing} />}

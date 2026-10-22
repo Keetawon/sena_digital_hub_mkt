@@ -471,3 +471,21 @@ during app construction, keeping the real client validation and signing checks.
 It creates neither `current.json` nor `r2-simulation.json`. The standalone
 `simulate-hosted-test.mjs --keep-running` persistence mode is outside this
 programme's credential-file approval and must not be used for its gates.
+
+## FAQ intake clusters (project-content Phase 4)
+
+`/faq?tab=intake` (คัดจากของเดิม) shows clusters of existing FAQ candidates. An
+operator regenerates them on the working local database with:
+
+```powershell
+uv run --project apps/api python scripts/generate-faq-clusters.py           # read-only plan
+uv run --project apps/api python scripts/generate-faq-clusters.py --apply   # replace undecided clusters
+```
+
+The script is offline and deterministic: Unicode NFC, whitespace collapse and case
+folding, project/brand names as `{project}`/`{brand}` slots, character-trigram and
+Thai token similarity, and question-bank template matching. It makes no network or
+AI call. Candidates that already have a Knowledge review, and the members of any
+cluster with a decision, are excluded and never regrouped. `--apply` replaces only
+undecided clusters in one locked transaction; it accepts only the working loopback
+cluster (`.local/postgres`). It never writes candidates, reviews, FAQs or accounts.

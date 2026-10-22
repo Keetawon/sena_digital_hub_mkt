@@ -361,3 +361,25 @@ endpoint changes in this phase. Type snapshots exclude REM identities/counts,
 internal UUIDs, internal/Legal/structural media and unconfirmed or unapproved
 assets. Tour editorial authors join the type's four-eyes check; tour saves and
 type submissions serialize on the project revision lock.
+## FAQ intake from existing candidates — Phase 4
+
+Staff-only, no-store routes with live Knowledge checks. Exact coverage is recorded
+in `tests/permissions/faq-intake-routes.json`. Nothing here publishes content.
+
+| Route | Methods and authority |
+|---|---|
+| `/v1/admin/faq-intake/clusters` | GET Knowledge V. Optional single-value filters `state` (open, held, question_proposed, decided), `level`, `kind`, `hold` (a hold code or `none`), `brand` (REM brand ID), keyset `after` (sort key) and `limit` 1–100. Returns cards, `next_after`, `filtered_total`, progress `counts`, brand facets and the latest generation |
+| `/v1/admin/faq-intake/clusters/{cluster_id}` | GET Knowledge V: question variants with source URL/reference, answer groups with exact REM phases and closed-status flags, suggestion, existing FAQ identities for the suggested key, decision history |
+| `/v1/admin/faq-intake/clusters/{cluster_id}/decision` | POST Knowledge E with `{expected_revision, decision, changes}`; `decision` is `create`, `reject`, `hold` or `propose_question`. Stale revisions return 409 |
+
+`create` takes `changes.answer` (Phase 2 FAQ fields: approved `question_key`,
+scope, Thai question/short answer/detail, explicit `applies_to_project_ids`) and
+optional `candidate_ids` and `faq_id` (to append a version to an existing answer
+for the same question and scope). It calls `hub.save_faq`, records every chosen
+candidate in `hub.faq_sources` with the cluster ID and leaves the answer as a
+draft. Rejection and hold need a note; holds take a hold code. `propose_question`
+creates a proposed question through `hub.save_faq_question`; the existing
+Knowledge A approval activates it (D6). A 422 `intake_rule` carries a Thai reason:
+commercial/numeric source text accepted unchanged, selling content for a closed
+REM phase, unresolved Q70 programme or unsafe-text holds, missing explicit phases,
+a duplicate answer identity, or a cluster that is already decided.
