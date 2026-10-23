@@ -37,6 +37,8 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/faq_intake.sql', import.meta.url), 'utf8'));
   await connection.query(await readFile(new URL('../supabase/tests/faq_coverage.sql', import.meta.url), 'utf8'));
   console.log('PASS: FAQ precedence, applicability drift, unknown/false/zero facts and private composition ACLs');
+  await connection.query(await readFile(new URL('../supabase/tests/articles.sql', import.meta.url), 'utf8'));
+  console.log('PASS: article FORCE RLS, closed blocks, frozen translations and links, separate content approval and withdrawal');
   console.log('PASS: FAQ intake FORCE RLS/audit, operator-only regeneration, frozen decisions and Knowledge V/E entry points');
   await connection.query(await readFile(new URL('../supabase/tests/project_amenities.sql', import.meta.url), 'utf8'));
   console.log('PASS: facilities/features/places FORCE RLS and audit, atomic covers, shared media coverage and real target references');

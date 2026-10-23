@@ -653,3 +653,107 @@ All required gates passed before the Phase 6 commit containing this report.
 The owner delivery report records the commit hash and push confirmation. Both
 approved local development credential files are checked with `git check-ignore`
 before committing; screenshots and logs remain ignored and are never force-added.
+
+## Phase 10a — articles delivered (23 October 2026)
+
+Articles started after Phase 6 was pushed as `f3f8625` and main was pulled again.
+The owner reassigned articles from the departing Phase 4 agent; docs/44 already
+records that handoff. The owner merged Phase 7 PR #2 as
+`bf8781031a5e5e6bf5411f4c032433d7a41e1ff1` on 23 October and released the shared
+ports. Main was fast-forwarded to that merge before final integration.
+
+Restoring the article checkpoint produced four conflicts in preexisting shared
+route/inventory files. Work stopped, then continued on the owner's instruction.
+Both sets of registrations and permission inventories were retained. A further
+`git pull --ff-only origin main` confirmed main current. All 29 files added by
+Phase 4/7 remain unchanged; migration 75 follows 72-74 without renumbering the
+other agent's migrations. The recovery stash remains available locally.
+
+### Built
+
+Migration `202610220075_articles.sql` adds three audited FORCE-RLS tables for
+article identities, locale versions and version-owned source links. Its SHA-256
+is `688fe5d80ec0b771ce8fe5828f66645c7abe4e629af68b908a114a269e67fcdb`.
+The hosted-test profile contains all 75 verified canonical hashes, preserving
+its single existing reviewed variant.
+
+The MIT Tiptap editor supports headings, paragraphs, lists, quotes, library
+images, media-link videos, tables, callouts, FAQ embeds and project cards. The
+server validates a bounded closed document grammar and renders escaped HTML.
+Images require current approved rights and authorized bindings; clips and FAQ
+fact previews retain current Projects access. References store IDs, with a
+neutral notice when a referenced source becomes unavailable. Video blocks open
+the reviewed media-library link without executing an external embed.
+
+The workspace provides Thai/English titles, excerpts, SEO, bylines, tags, cover
+selection, project/brand/programme links, locale preview and version history.
+Existing translation jobs handle marketing text leaves only; excluded commercial
+and financial topics require manual English. Submission freezes text, links,
+metadata, translation evidence and every editor, including English reviewers.
+An editor cannot approve the same version after a permission change. A newer
+draft preserves the previously approved version. Content approval remains private;
+Phase 8 owns website publication.
+
+Eight exact API routes use Knowledge V/E/A with matching SQL, proxy and H1
+boundaries. Seven guarded SQL entry points serve those routes; helpers stay
+closed. No account, template or special grant changed. Unsaved rich text survives
+failed saves and revocation in the existing recovery panel; identity changes
+clear it. History shows the latest 30 versions and media pickers the latest 200
+eligible items; all versions remain stored.
+
+### Final verification on integrated main
+
+| Gate | Result |
+|---|---|
+| Admin typecheck / offline webpack build | Both passed |
+| Full API | 2,079 passed, 11 unchanged opt-in skips, 0 failed; 6 existing deprecation warnings; 1,165.33 seconds |
+| Focused article/Phase 7/permission integration | 129 passed, 1,961 deselected, 0 skipped/failed |
+| Full DB | 61 SQL/concurrency checks plus 10 Node tests passed; 0 skipped/failed |
+| Replay / populated upgrade | Passed through migration 75, preserving existing content, reviews, accounts and permissions |
+| Relevant browser suite | 65 passed at 1280/390 px; 0 skipped/failed; includes Phase 7, articles and existing permission/content regressions |
+| Loopback H1 | 11 protocol checks and 45 browser checks passed; 0 skipped/failed |
+| Credential scan | 29 changed files, 86 browser static files and 150 artifacts; 0 configured-value matches. Receipt: `artifacts/project-content-articles/credential-scan.json`, counts and paths only |
+
+Logs are under `artifacts/project-content-articles/`: `typecheck-integrated.log`,
+`build-integrated.log`, `api-integrated-focused.log`, `api-integrated-full.log`,
+`db-integrated.log`, `ui-integrated.log` and `h1-integrated.log`.
+`integration-preservation.json` records the protected-file and migration checks.
+All final disposable runners exited successfully and completed cleanup.
+
+Pre-integration tests exposed a SQL parser ambiguity, missing synthetic image
+fixture attribution/bindings and a variable/column naming collision; these were
+corrected in article code/tests. Tiptap's default null table alignment is accepted,
+while arbitrary styles remain invalid. Browser tests now wait for the list control
+before typing and select the actual failed-save error. The broader regression
+suite exposed a dropped identity/focus event while account refresh awaited display
+names: the shared refresh now queues one follow-up. Both article revocation tests
+hold that response across an identity switch and prove recovered text is cleared.
+The final full API also verifies the exact Articles navigation alias to Knowledge.
+No existing test was skipped, quarantined or weakened.
+
+An earlier browser run passed all assertions but Windows briefly locked its
+owned disposable database directory during removal. After resolved-path and
+process checks, that directory was removed. The runner now uses bounded Node
+removal retries with its existing path guard and stop sequence; the final API,
+DB and browser runs all completed cleanup normally. No other agent's process
+was stopped.
+
+### Screenshots
+
+All captures use synthetic disposable data and remain Git-ignored:
+
+- Block editor: [1280 px](../artifacts/project-content-articles/editor-1280.png), [390 px](../artifacts/project-content-articles/editor-390.png).
+- Reviewed English preview: [1280 px](../artifacts/project-content-articles/preview-1280.png), [390 px](../artifacts/project-content-articles/preview-390.png).
+- Independent content approval: [1280 px](../artifacts/project-content-articles/approved-1280.png), [390 px](../artifacts/project-content-articles/approved-390.png).
+- Permission revocation and unsaved text recovery: [edit](../artifacts/project-content-articles/revoked-edit-390.png), [view](../artifacts/project-content-articles/revoked-view-390.png).
+
+Desktop/mobile editor, preview, approval and recovery captures were visually
+inspected. Browser assertions check no horizontal page overflow. Screenshots and
+logs are never force-added. Both approved local development credential files are
+checked with `git check-ignore` immediately before the delivery commit.
+
+No live provider call, working-database migration, hosted write or DW/REM write
+occurred. `sena_h_approved` remains false. No new business question; Q74/Q75 remain
+pending and Q76 remains closed. The delivery report records the commit hash and
+push confirmation. Next: pull latest main, implement Phase 8 using merged Phase 7,
+then STOP after the Phase 8 report as the owner instructed.

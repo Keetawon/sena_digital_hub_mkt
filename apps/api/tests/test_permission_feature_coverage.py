@@ -38,7 +38,7 @@ def test_navigation_and_route_actions_match_live_permission_catalog(permission_a
     source = (ROOT / 'apps/admin/components/hub-navigation-data.ts').read_text(encoding='utf-8')
     nav = re.findall(r'\bid:\s*["\']([a-z_]+)["\']\s*,\s*href:', source)
     aliases = dict(re.findall(r'id:\s*"([a-z_]+)"[^\n]+permissionTab:\s*"([a-z_]+)"', source))
-    assert aliases == {'faq': 'knowledge'}
+    assert aliases == {'faq': 'knowledge', 'articles': 'knowledge'}
     assert_catalog_navigation(catalog, nav, aliases)
     for (_method, _path), (tab, action) in CONTENT_RULES.items():
         if tab == 'assets':

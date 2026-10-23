@@ -627,3 +627,32 @@ which check Knowledge V/E themselves; creating an answer additionally passes
 through Phase 2's `hub.save_faq`. Decisions are append-only. Regeneration
 (`staging.replace_faq_clusters`) is operator-only. Agencies, service consumers and
 pending accounts are denied. Details: [44](44-parallel-phases-log.md).
+
+## Project-content programme Phase 10a — articles (23 October 2026)
+
+The article permission card in [docs/41](41-project-content-and-faq.md) uses the
+existing Knowledge V/E/A levels without changing accounts, templates or specials.
+Migration 75 adds three audited FORCE-RLS tables and twenty reviewed functions.
+Seven guarded SQL entry points serve eight exact API routes; all other article
+helpers remain closed to the application role. The API, Next proxy, H1 allowlist
+and navigation use the same existing Knowledge boundary.
+
+Draft saves, English review and submission record every version editor. A later
+permission change cannot allow an editor to approve that version. Submitted body,
+metadata, links and translation evidence are immutable; approval is separate from
+Phase 8 page publication. The approved version remains intact while a newer draft
+is edited. Article references do not grant access to source content or bytes:
+images require current approved rights and authorized source bindings, while
+project cards, media links and FAQ fact previews require Projects V. The browser
+clears cached content on capability changes and preserves only authored rich text
+in the existing recovery panel.
+
+Runtime denial, stale-write, four-eyes, translation, unsafe-block and source
+revocation checks are recorded in [docs/42](42-project-content-programme-log.md).
+The working database and its account assignments remain unchanged. Integration
+onto the owner's Phase 7 merge `bf87810` preserves both permission inventories and
+all files added by the parallel PRs. All 75 migration hashes match the profile.
+Focused integration (129), full API (2,079 passed, 11 existing opt-in skips), DB
+(61 SQL/concurrency and 10 Node), browser (65) and loopback H1 (11 protocol,
+45 browser) all passed, with no failures. Typecheck, offline build and populated
+upgrade also passed. Final evidence and screenshot paths are in docs/42.

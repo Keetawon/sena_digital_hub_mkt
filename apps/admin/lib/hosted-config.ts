@@ -1,6 +1,6 @@
 import type { LocalRole } from "./local-session";
 import { amenityAllowsApi } from './amenity-routes';
-import { mediaAllowsApi, unitAllowsApi, commercialAllowsApi, faqCoverageAllowsApi } from "./content-routes";
+import { mediaAllowsApi, unitAllowsApi, commercialAllowsApi, faqCoverageAllowsApi, articleAllowsApi } from "./content-routes";
 
 export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean; google: boolean; password: boolean; label: string; adminContact: string };
 
@@ -35,6 +35,7 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/articles(?:\/|$)/.test(path)) return articleAllowsApi(path, method);
   if (/^v1\/admin\/faq-(?:coverage|composition|applicability|gaps)(?:\/|$)/.test(path)) return faqCoverageAllowsApi(path, method);
   if (/^v1\/admin\/(?:place-references(?:\/|$)|projects\/[^/]+\/amenities(?:\/|$))/.test(path)) return amenityAllowsApi(path, method);
   if (unitAllowsApi(path, method) || commercialAllowsApi(path, method)) return true;

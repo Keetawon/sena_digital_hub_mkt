@@ -13,7 +13,7 @@ const routes: Record<string, RegExp> = {
 
 export function contentAllowsApi(path: string, method: string) {
   if (amenityAllowsApi(path, method)) return true;
-  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method);
+  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method) || articleAllowsApi(path, method);
 }
 
 const media: Record<string, RegExp> = {
@@ -38,7 +38,9 @@ const intakeFilters: Record<string, RegExp> = {
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
   if (method === "GET") {
-    const filters: Record<string, RegExp> | null = path === "v1/admin/faq-coverage" ? { project: new RegExp(`^${id}$`), offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
+    const filters: Record<string, RegExp> | null = path === "v1/admin/articles" ? { q: /^[^\u0000-\u001f]{0,120}$/, offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
+      : new RegExp(`^v1/admin/articles/${uuid}/preview$`).test(path) ? { locale: /^(?:th|en)$/ }
+      : path === "v1/admin/faq-coverage" ? { project: new RegExp(`^${id}$`), offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
       : new RegExp(`^v1/admin/faq-composition/${id}$`).test(path) ? { locale: /^(?:th|en)$/, unit_type: new RegExp(`^${id}$`) }
       : path === "v1/admin/faq-gaps" ? { project: new RegExp(`^${id}$`) } : null;
     if (filters) return [...query.keys()].every(key => filters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
@@ -61,3 +63,10 @@ const faqCoverage: Record<string, RegExp> = {
   PATCH: new RegExp(`^v1/admin/faq-gaps/${uuid}$`),
 };
 export function faqCoverageAllowsApi(path: string, method: string) { return faqCoverage[method]?.test(path) ?? false; }
+
+const articles: Record<string, RegExp> = {
+  GET: new RegExp(`^v1/admin/articles(?:/(?:references|${uuid}(?:/preview)?))?$`),
+  POST: new RegExp(`^v1/admin/articles(?:/${uuid}/(?:submit|review))?$`),
+  PUT: new RegExp(`^v1/admin/articles/${uuid}$`),
+};
+export function articleAllowsApi(path: string, method: string) { return articles[method]?.test(path) ?? false; }

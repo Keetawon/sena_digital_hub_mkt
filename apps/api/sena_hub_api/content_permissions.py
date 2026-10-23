@@ -9,6 +9,14 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('GET', '/v1/admin/articles'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/articles/references'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/articles/{article_id}'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/articles/{article_id}/preview'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/articles'): ('knowledge', 'edit'),
+    ('PUT', '/v1/admin/articles/{article_id}'): ('knowledge', 'edit'),
+    ('POST', '/v1/admin/articles/{article_id}/submit'): ('knowledge', 'edit'),
+    ('POST', '/v1/admin/articles/{article_id}/review'): ('knowledge', 'approve'),
     ('GET', '/v1/admin/faq-coverage'): ('knowledge', 'view'),
     ('GET', '/v1/admin/faq-composition/{public_id}'): ('knowledge', 'view'),
     ('POST', '/v1/admin/faq-applicability'): ('knowledge', 'view'),

@@ -55,7 +55,7 @@ async function stop(){
   // Verify the resolved path before recursive removal. Only this new run is owned.
   const actual=await realpath(directory),allowed=await realpath(base);
   assert.ok(actual.startsWith(allowed+path.sep)&&path.basename(actual).startsWith('run-'));
-  await rm(actual,{recursive:true,force:true});
+  await rm(actual,{recursive:true,force:true,maxRetries:5,retryDelay:200});
 }
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await stop();process.exit(130);});
 try{

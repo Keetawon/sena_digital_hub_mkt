@@ -488,3 +488,55 @@ answers require `show_on_project_pages` to appear on a project. Coverage keeps
 draft, inherited/published, waiting-for-fact, legacy candidate, hold, missing and
 not-applicable states distinct. Lint and source checks report publication
 blockers without deleting or rewriting existing FAQ drafts or intake evidence.
+
+## Phase 10a permission and article contract — 22 October 2026
+
+Phase 6 is pushed as `f3f8625`. Main was pulled again before this phase. This
+implements section 3.9 only; the remaining Phase 10 expansion stays behind the
+Phase 8 STOP. Phase 7 retains migration slots 72–74; articles use the next slot,
+75, without editing the other worktree. The port fallback deadline is 13:07:12 UTC
+(20:07:12 Bangkok) on 22 October. After that deadline, disposable article checks
+may run on the available main migrations while the ports are free. On 23 October,
+the owner merged Phase 7 as `bf87810`, released the shared ports and instructed
+completion of articles followed by Phase 8. Migration 75 follows the merged
+72–74 history; the other agent's added files remain unchanged.
+
+| Permission card | Decision |
+|---|---|
+| Feature / owner | Articles written in Hub; Marketing drafts and Managers review |
+| Tab / V | Existing Knowledge V; article list, own content, version history and private rendered preview. Referenced source content is separately filtered by its current source permissions |
+| E | Knowledge E creates and saves drafts, edits links, reviews English and submits an immutable version; attaching source references also requires authority to read those sources |
+| A / separation | Knowledge A approves, returns or withdraws content. Every editor of that version, including its English reviewers, is excluded from approval. Existing E/A exclusivity remains |
+| Specials / templates | No new special, template or account grant. Article approval prepares content; Phase 8 owns page publication and its publish special |
+| Agency / sensitivity | No agency, inactive or service-consumer access. Only editorial content and existing authorized media references; no Legal document, account directory, finance document or bank statement ingestion |
+| Other tabs | Minimal public project/brand IDs and names for links. Actual project cards, FAQ fact previews and clips require Projects V; image choices and bytes retain existing binding/source permissions and current rights checks |
+| Shared surfaces | Reuse the marketing translation worker and review flow; excluded topics require manual English. No new public API, RAG, provider invocation in tests or hosted write |
+| API / SQL | Exact article list, references, detail, preview, create, save, submit and review routes. Three audited FORCE-RLS tables: articles, article_versions and article_links; closed helpers and revision-checked commands |
+| Verification | Runtime deny/neighbor and revocation; immutable versions and four-eyes after permission changes; stale edits; translation source changes; unauthorized/expired media; malicious and oversized block documents; desktop/mobile keyboard workflows; all programme gates |
+
+The editor uses the [MIT-licensed Tiptap core](https://github.com/ueberdosis/tiptap/blob/main/LICENSE.md),
+following its [Next.js integration](https://tiptap.dev/docs/editor/getting-started/install/nextjs).
+It permits headings, paragraphs, lists, quotes, library images, media-link videos,
+tables, callouts, FAQ embeds and project cards. Server validation accepts a bounded
+node schema and generates escaped HTML from allowed nodes; raw HTML, scripts,
+arbitrary embeds and arbitrary image URLs are not accepted. Asset rights and
+source visibility are rechecked when resolving a preview.
+
+Thai and English content, SEO and bylines remain versioned. Marketing text uses
+the existing queued translation mechanism with review and stale-source tracking;
+only text leaves are sent, never reference IDs, file bytes or block JSON. Numbers
+and placeholders retain the existing validation. Submission freezes the content,
+links, metadata and translation evidence. An approved content version is not a
+published website page. Existing Hub tokens, Thai labels, visible keyboard focus
+and static transitions apply; mobile controls wrap and tables scroll within the
+editor/preview, without horizontal page overflow.
+
+The article block stores reference IDs, never a copy of source payloads. The
+private preview resolves current sources; unavailable sources become a neutral
+notice. Video blocks open the reviewed media-library link without executing an
+external embed. Phase 8 must use `approved_version_id` and that version's frozen
+metadata/links, and resolve FAQ/fact dependencies through its approved publication
+path. A newer draft never changes the previously approved article snapshot.
+The workspace bounds its history view to the latest 30 versions and its image
+and clip pickers to the latest 200 currently eligible items; all versions remain
+in the audited database.

@@ -34,13 +34,14 @@ export function AccountDirectory({ children, enabled, initialAccount = null }: {
   useEffect(() => {
     // Login/request pages don't query the staff directory or the admin queue.
     if (/^\/(login|signup|auth|account)(\/|$)/.test(location.pathname)) return;
-    let alive = true, loading = false, activated = enabled;
+    let alive = true, loading = false, activated = enabled, refreshQueued = false;
     // The server just verified this projection for this page. Consume it once
     // after hydration; every later poll/focus/change still reads fresh /me.
     let firstAccount = initialAccount;
     function preserveTyped() { setRecovery(Array.from(edits.current.values())); }
     async function refresh() {
-      if (!activated || loading || document.visibilityState === "hidden") return;
+      if (!activated || !alive || document.visibilityState === "hidden") return;
+      if (loading) { refreshQueued = true; return; }
       loading = true;
       try {
         const initial = firstAccount; firstAccount = null;
@@ -58,10 +59,20 @@ export function AccountDirectory({ children, enabled, initialAccount = null }: {
       } catch (error) {
         if ([401, 403].includes((error as AccountApiError).status ?? 0)) { preserveTyped(); if (alive) setValue({ ...emptyDirectory, ready: true, signedOut: true }); }
         else if (alive) setValue(previous => ({ ...previous, ready: true, error: "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" }));
-      } finally { loading = false; }
+      } finally {
+        loading = false;
+        // A focus/identity event during the names request must not be dropped.
+        if (refreshQueued && alive) { refreshQueued = false; void refresh(); }
+      }
     }
     const capture = (event: Event) => {
       const input = event.target;
+      // Authored rich text opts in explicitly. Source previews never opt in.
+      if (input instanceof HTMLElement && input.matches('[contenteditable="true"][data-permission-recovery]')) {
+        const label = input.getAttribute("aria-label") || "ข้อความที่กรอก";
+        edits.current.set(input.id || label, { label, value: input.innerText });
+        return;
+      }
       if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement || input instanceof HTMLSelectElement)) return;
       if (/^\/(account|login|signup|auth)(\/|$)/.test(location.pathname)) return;
       // Account source/search/invite fields never enter recovery. Only authored

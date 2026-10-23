@@ -373,6 +373,11 @@
       "name": "202610220074_facility_media_translation.sql",
       "canonical_sha256": "82016e1115fc6cd21bf36cbcf33b857bb6dc20e925e9f1bdc0183f5df27333b9",
       "executed_sha256": "82016e1115fc6cd21bf36cbcf33b857bb6dc20e925e9f1bdc0183f5df27333b9"
+    },
+    {
+      "name": "202610220075_articles.sql",
+      "canonical_sha256": "688fe5d80ec0b771ce8fe5828f66645c7abe4e629af68b908a114a269e67fcdb",
+      "executed_sha256": "688fe5d80ec0b771ce8fe5828f66645c7abe4e629af68b908a114a269e67fcdb"
     }
   ]
 }
