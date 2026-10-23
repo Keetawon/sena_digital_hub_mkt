@@ -1,4 +1,5 @@
 // Exact private draft routes; source-specific authority is rechecked in SQL.
+import { amenityAllowsApi } from './amenity-routes';
 const id = "[a-zA-Z0-9_-]{1,128}";
 const uuid = "[0-9a-fA-F-]{36}";
 const key = "[a-z][a-z0-9_.-]{0,149}";
@@ -11,6 +12,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (amenityAllowsApi(path, method)) return true;
   return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method);
 }
 

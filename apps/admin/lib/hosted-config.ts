@@ -1,4 +1,5 @@
 import type { LocalRole } from "./local-session";
+import { amenityAllowsApi } from './amenity-routes';
 import { mediaAllowsApi, unitAllowsApi, commercialAllowsApi, faqCoverageAllowsApi } from "./content-routes";
 
 export type HostedConfig = { supabaseUrl: string; publishableKey: string; apiOrigin: string; adminOrigin: string; simulation: boolean; google: boolean; password: boolean; label: string; adminContact: string };
@@ -35,6 +36,7 @@ export const h1Unavailable = "ยังไม่เปิดใช้งาน�
 
 export function h1AllowsApi(path: string, method: string) {
   if (/^v1\/admin\/faq-(?:coverage|composition|applicability|gaps)(?:\/|$)/.test(path)) return faqCoverageAllowsApi(path, method);
+  if (/^v1\/admin\/(?:place-references(?:\/|$)|projects\/[^/]+\/amenities(?:\/|$))/.test(path)) return amenityAllowsApi(path, method);
   if (unitAllowsApi(path, method) || commercialAllowsApi(path, method)) return true;
   if (/^v1\/admin\/(?:media(?:\/|$)|projects\/[^/]+\/media(?:\/|$))/.test(path)) return mediaAllowsApi(path, method);
   if (path === "v1/admin/knowledge/preview" || /^v1\/admin\/knowledge\/projects\/[^/]+\/preview-release$/.test(path)) return false;

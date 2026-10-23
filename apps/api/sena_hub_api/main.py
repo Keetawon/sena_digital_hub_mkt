@@ -36,6 +36,7 @@ from .r2_assets import R2Assets
 from .brand_completeness import register_brand_completeness_routes
 from .knowledge import register_knowledge_routes
 from .project_content import register_project_content_routes
+from .project_amenities import register_project_amenity_routes
 from .project_media import register_project_media_routes
 from .faq_intake import register_faq_intake_routes
 from .content_permissions import require_content, route_class
@@ -904,6 +905,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)
     register_project_content_routes(app, authentication, database)
+    register_project_amenity_routes(app, authentication, database)
     register_project_media_routes(app, authentication, database)
     register_faq_intake_routes(app, authentication, database)
     register_promotion_routes(app, admin, brand_writer, publisher, consumer, database, settings)

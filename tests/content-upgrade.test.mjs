@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {createServer} from 'node:net';
 import EmbeddedPostgres from 'embedded-postgres';
+import { beforePhase7, afterPhase7 } from './phase7-upgrade-fixture.mjs';
 
 test('populated content upgrade preserves accounts and asset editors, audits backfill and drains deferred cache work',async()=>{
   const root=fileURLToPath(new URL('../',import.meta.url));
@@ -46,7 +47,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,phase5State,legacyFaq,legacySection;
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State;
     const unitState=async()=>(await db.query(`select name,rows from (
       select 'types' name,jsonb_agg(to_jsonb(t)-array['category','special_rooms','ceiling_height_m','furniture_package','highlights','price_mode','ai_exposure','revision','editors','approved_by','approved_at'] order by id) rows from hub.commercial_types t union all
       select 'sources',jsonb_agg(to_jsonb(t) order by commercial_type_id,model_id) from hub.commercial_type_sources t
@@ -88,7 +89,9 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
         phase3State=await mediaState();phase5State=await unitState();
         await db.query("select set_config('app.actor_id','',false)");
       }
+      phase7State=await beforePhase7(db,name,phase7State);
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      await afterPhase7(db,name,phase7State);
       if(phase5State)assert.deepEqual(await unitState(),phase5State,`${name} rewrote commercial content or source references`);
       if(phase3State)assert.deepEqual(await mediaState(),phase3State,`${name} rewrote asset metadata, rights or bindings`);
       if(before)assert.deepEqual(await contentState(),before,'Phase 1 changed content, reviews or account permissions');

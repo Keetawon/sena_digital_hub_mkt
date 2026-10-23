@@ -1,0 +1,15 @@
+{
+  "routes": [
+    {"method":"GET","path":"/v1/admin/projects/{public_id}/amenities","tab":"projects","level":"view","entry_roles":["viewer","editor","publisher","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"PUT","path":"/v1/admin/projects/{public_id}/amenities/facilities/{code}","tab":"projects","level":"edit","entry_roles":["editor","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"PUT","path":"/v1/admin/projects/{public_id}/amenities/features/{item_id}","tab":"projects","level":"edit","entry_roles":["editor","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"PUT","path":"/v1/admin/projects/{public_id}/amenities/solar/{item_id}","tab":"projects","level":"edit","entry_roles":["editor","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"PUT","path":"/v1/admin/projects/{public_id}/amenities/places/{item_id}","tab":"projects","level":"edit","entry_roles":["editor","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"POST","path":"/v1/admin/projects/{public_id}/amenities/solar/{item_id}/review","tab":"projects","level":"approve","entry_roles":["publisher"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"POST","path":"/v1/admin/projects/{public_id}/amenities/facilities/{code}/cover","tab":"projects","level":"edit","entry_roles":["editor","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"GET","path":"/v1/admin/place-references","tab":"projects","level":"view","entry_roles":["viewer","editor","publisher","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"GET","path":"/v1/admin/place-references/template","tab":"projects","level":"view","entry_roles":["viewer","editor","publisher","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"PUT","path":"/v1/admin/place-references/{kind}/{code}","tab":"projects","level":"approve","entry_roles":["publisher"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"},
+    {"method":"POST","path":"/v1/admin/place-references/import","tab":"projects","level":"approve","entry_roles":["publisher"],"conditional_h1":false,"source":"apps/api/sena_hub_api/project_amenities.py"}
+  ]
+}

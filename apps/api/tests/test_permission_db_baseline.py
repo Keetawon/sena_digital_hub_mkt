@@ -75,6 +75,13 @@ UNIT_FUNCTIONS = {'hub.' + name for name in (
     'unit_source_comparison', 'unit_type_readiness', 'unit_type_snapshot', 'unit_type_review',
     'unit_price_comparison', 'project_price_readiness', 'project_price_snapshot', 'save_project_price',
     'project_price_review', 'project_current_prices', 'unit_type_workspace')}
+AMENITY_TABLES = {'hub.' + name for name in (
+    'feature_catalog', 'project_features', 'solar_estimates', 'project_places',
+    'ref_rail_lines', 'ref_rail_stations', 'ref_expressways', 'ref_expressway_ramps')}
+AMENITY_FUNCTIONS = {'hub.' + name for name in (
+    'c4_metric_defs_valid', 'c4_metrics_valid', 'c4_check_changes', 'c4_project_guard',
+    'c4_facility_save', 'c4_item_save', 'c4_solar_review', 'c4_reference_save',
+    'c4_references', 'c4_nearest_stations', 'c4_workspace', 'c4_facility_cover')}
 PUBLICATION_TABLES = {'hub.' + name for name in (
     'public_promotions', 'promotion_reviews', 'promotion_versions', 'publication_releases', 'publication_release_members',
     'knowledge_reviews', 'content_sections', 'faqs', 'entity_aliases', 'content_gaps', 'knowledge_fact_candidates',
@@ -146,7 +153,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -156,6 +163,12 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     assert all(r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in commercial if r['name'] == 'commercial_owner')
                     assert all(r['roles'] == ['hub_app'] and r['cmd'] == 'SELECT' and r['with_check'] is None and 'hub.can(' in r['qual'] for r in commercial if r['name'] == 'commercial_read')
                     actual = [r for r in actual if r not in commercial]
+                    amenities = [r for r in actual if r['schema'] + '.' + r['table'] in AMENITY_TABLES]
+                    assert len(amenities) == 2 * len(AMENITY_TABLES)
+                    assert all(r['name'] in ('c4_owner', 'c4_read') for r in amenities)
+                    assert all(r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in amenities if r['name'] == 'c4_owner')
+                    assert all(r['roles'] == ['hub_app'] and r['cmd'] == 'SELECT' and r['with_check'] is None and "hub.can('projects'" in r['qual'] for r in amenities if r['name'] == 'c4_read')
+                    actual = [r for r in actual if r not in amenities]
                     units = [r for r in actual if r['schema'] + '.' + r['table'] in UNIT_TABLES]
                     assert len(units) == 2 * len(UNIT_TABLES)
                     assert all(r['name'] in ('unit_owner', 'unit_read') for r in units)
@@ -329,7 +342,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -338,7 +351,7 @@ async def assert_reviewed_database_boundary(db):
     policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
-    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES
+    domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

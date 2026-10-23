@@ -38,6 +38,8 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/faq_coverage.sql', import.meta.url), 'utf8'));
   console.log('PASS: FAQ precedence, applicability drift, unknown/false/zero facts and private composition ACLs');
   console.log('PASS: FAQ intake FORCE RLS/audit, operator-only regeneration, frozen decisions and Knowledge V/E entry points');
+  await connection.query(await readFile(new URL('../supabase/tests/project_amenities.sql', import.meta.url), 'utf8'));
+  console.log('PASS: facilities/features/places FORCE RLS and audit, atomic covers, shared media coverage and real target references');
   await connection.query(await readFile(new URL('../supabase/tests/core_slice.sql', import.meta.url), 'utf8'));
   console.log('PASS: PostgreSQL role isolation, publication, rollback and validity checks');
   await connection.query(await readFile(new URL('../supabase/tests/thailand_coordinates.sql', import.meta.url), 'utf8'));
