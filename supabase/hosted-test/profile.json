@@ -358,6 +358,21 @@
       "name": "202610220071_faq_coverage.sql",
       "canonical_sha256": "0fb54d19c4bb0b854c6afd2c21901202cbd13acb0a69ae0ae33e3b78918b9941",
       "executed_sha256": "0fb54d19c4bb0b854c6afd2c21901202cbd13acb0a69ae0ae33e3b78918b9941"
+    },
+    {
+      "name": "202610220072_facilities_features_places.sql",
+      "canonical_sha256": "6f2a291d7f47c083e69963a4db7dda7ddd3ad4c9bfa6b012f374722449b64c5c",
+      "executed_sha256": "6f2a291d7f47c083e69963a4db7dda7ddd3ad4c9bfa6b012f374722449b64c5c"
+    },
+    {
+      "name": "202610220073_facilities_places_commands.sql",
+      "canonical_sha256": "5722b56046e1b7cdf081c556f5cb413b54641193307a3d1d3144619009847061",
+      "executed_sha256": "5722b56046e1b7cdf081c556f5cb413b54641193307a3d1d3144619009847061"
+    },
+    {
+      "name": "202610220074_facility_media_translation.sql",
+      "canonical_sha256": "82016e1115fc6cd21bf36cbcf33b857bb6dc20e925e9f1bdc0183f5df27333b9",
+      "executed_sha256": "82016e1115fc6cd21bf36cbcf33b857bb6dc20e925e9f1bdc0183f5df27333b9"
     }
   ]
 }

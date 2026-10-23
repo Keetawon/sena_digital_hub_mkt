@@ -12,7 +12,7 @@ export function MediaInput({ fieldKey, label, onChange, ...props }: Omit<InputHT
 
 export const categoryLabels: Record<string, string> = { exterior: "ภายนอก", interior: "ภายใน", facility: "ส่วนกลาง", lifestyle: "ไลฟ์สไตล์", aerial: "มุมสูง", surrounding: "รอบโครงการ", master_plan: "ผังโครงการ", floor_plan: "ผังชั้น", unit_plan: "แปลนแบบที่อยู่อาศัย", map: "แผนที่", progress: "ความคืบหน้าก่อสร้าง", promotion_ad: "แบนเนอร์โปรโมชัน", brochure: "โบรชัวร์", legal_document: "เอกสาร Legal (ส่วนตัว)" };
 export const imageLabels = { photo: "ภาพถ่าย", render: "ภาพจำลอง", progress: "ภาพความคืบหน้า", drawing: "ภาพวาด / แบบ", stock: "ภาพสต็อก" };
-export const targetLabels: Record<string, string> = { project: "โครงการ", facility: "ส่วนกลาง", commercial_type: "แบบที่อยู่อาศัย", building_floor: "อาคารและชั้น", promotion: "โปรโมชัน", selling_point: "จุดขาย" };
+export const targetLabels: Record<string, string> = { project: "โครงการ", facility: "ส่วนกลาง", commercial_type: "แบบที่อยู่อาศัย", building_floor: "อาคารและชั้น", promotion: "โปรโมชัน", selling_point: "จุดขาย", feature: "คุณสมบัติ", place: "สถานที่ใกล้เคียง" };
 export const usageLabels = { gallery: "แกลเลอรี", card: "การ์ด", banner: "แบนเนอร์", evidence: "หลักฐาน" };
 export type MediaTag = { code: string; label: Locales; tag_group: string; allowed_categories: string[]; status: string; revision: number };
 export type Metadata = { media_category: string; caption: Locales; alt_text: Locales; image_kind: string | null; taken_at: string | null; people: string; third_party_marks: string; credit: Locales; tags: string[]; metadata_state: string; ai_exposure: Exposure; marketing_publication: boolean };
@@ -21,10 +21,10 @@ export type MediaAsset = Asset & Metadata & { media_revision: number; ai_suggest
 export type LinkContext = { target_type: string; target_key: string; usage: string; building_key: string | null; floor_from: number | null; floor_to: number | null; room_tag: string | null; is_primary: boolean; sort: number; effective_from?: string | null; effective_to?: string | null; ai_exposure?: Exposure };
 export type MediaLink = LinkContext & { id: string; asset_id: string; revision: number };
 export type ContextOption = { key: string; label: Locales; status?: string; floors_above?: number; storeys?: number; skip_floors?: number[] };
-export type MediaContext = Record<"facilities" | "commercial_types" | "buildings" | "promotions" | "selling_points", ContextOption[]>;
+export type MediaContext = Record<"facilities" | "commercial_types" | "buildings" | "promotions" | "selling_points" | "features" | "places", ContextOption[]>;
 export function targetName(target: { target_type: string; target_key: string }, context: MediaContext) {
   if (target.target_type === "project") return "โครงการนี้";
-  const groups: Record<string, keyof MediaContext> = { facility: "facilities", commercial_type: "commercial_types", building_floor: "buildings", promotion: "promotions", selling_point: "selling_points" };
+  const groups: Record<string, keyof MediaContext> = { facility: "facilities", commercial_type: "commercial_types", building_floor: "buildings", promotion: "promotions", selling_point: "selling_points", feature: "features", place: "places" };
   return context[groups[target.target_type]]?.find(item => item.key === target.target_key)?.label.th ?? targetLabels[target.target_type] ?? "รายการที่เกี่ยวข้อง";
 }
 export type Rule = { rule_key: string; label: Locales; per: string; media_category: string | null; usage: string | null; tags: string[]; min_count: number; target_count: number; blocks_publish: boolean; max_age_days: number | null; status: string; revision: number };
@@ -59,7 +59,7 @@ export function MetadataFields({ value, onChange, tags, id }: { value: Metadata;
   </div>;
 }
 export function TargetFields({ value, onChange, context, project, tags, canPromotions }: { value: LinkContext; onChange: (value: LinkContext) => void; context: MediaContext; project: string; tags: MediaTag[]; canPromotions: boolean }) {
-  const source: Record<string, ContextOption[]> = { project: [{ key: project, label: { th: "โครงการนี้" } }], facility: context.facilities, commercial_type: context.commercial_types, building_floor: context.buildings, promotion: context.promotions, selling_point: context.selling_points };
+  const source: Record<string, ContextOption[]> = { project: [{ key: project, label: { th: "โครงการนี้" } }], facility: context.facilities, commercial_type: context.commercial_types, building_floor: context.buildings, promotion: context.promotions, selling_point: context.selling_points, feature: context.features, place: context.places };
   const options = source[value.target_type] ?? [];
   const chosen = options.find(option => option.key === value.target_key);
   const floors = value.target_type === "building_floor" ? chosen?.floors_above : value.target_type === "commercial_type" ? chosen?.storeys : undefined;
