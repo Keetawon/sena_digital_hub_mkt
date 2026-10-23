@@ -502,3 +502,11 @@ sign-in is still pending. No new credential file was created. The prepared PR
 body is in ignored `artifacts/phase7/pr-body.md`, targeting `main` with the title
 `Phase 7  facilities, features and places`. This documentation-only handoff does
 not change the implementation covered by the final gates above.
+
+The connection block was resolved using the existing Git Credential Manager
+login already used for this branch's push. A non-interactive check authenticated
+as Keetawon and confirmed repository access. Credentials stayed only in process
+memory, with no values printed or written to a file. No new account connection
+was required. The earlier request to reconnect was unnecessary. Main remains
+`f3f8625`, and the final rebase is current. The prepared PR is submitted through
+the GitHub API; its URL and final branch head are recorded in the owner report.
