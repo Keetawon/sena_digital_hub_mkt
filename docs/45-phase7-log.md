@@ -486,3 +486,19 @@ Credential receipt: `artifacts/phase7/credential-scan.json`. The final scan
 covers changed files, browser static files and artifacts, including archive
 members, without printing values. All five approved credential paths remain
 Git-ignored; no credential or artifact is staged. Only this branch is pushed.
+
+### Branch delivery — 23 October 2026
+
+Implementation commit `c3816c5e168eacac3275648be6150838411ed37e` was pushed to
+`origin/parallel/c4-facilities-places`. A fresh fetch and final rebase found
+main unchanged at `f3f8625`; all three LF checksums were verified again and all
+71 upstream migration entries remain unchanged. Phase 3's stdin fix is present.
+The working tree was clean after that push, and all eight shared ports were free.
+
+PR creation is awaiting the owner's GitHub connection. Both currently connected
+accounts return 404 for this private repository, and browser control is absent
+from this session. The owner selected connecting Keetawon; completion of that
+sign-in is still pending. No new credential file was created. The prepared PR
+body is in ignored `artifacts/phase7/pr-body.md`, targeting `main` with the title
+`Phase 7  facilities, features and places`. This documentation-only handoff does
+not change the implementation covered by the final gates above.
