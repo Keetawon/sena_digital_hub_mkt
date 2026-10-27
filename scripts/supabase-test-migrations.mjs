@@ -138,7 +138,11 @@ async function inspect(client, migrations, config) {
         || count === 52 && migrations.some(m => m.name === '202610090053_account_permission_management.sql')
         || count === 53 && migrations.some(m => m.name === '202610150054_public_website_drafts.sql')
         || count === 54 && migrations.some(m => m.name === '202610150055_r2_test_content.sql')
-        || count === 55 && migrations.some(m => m.name === '202610190056_project_progress_projection_once.sql');
+        || count === 55 && migrations.some(m => m.name === '202610190056_project_progress_projection_once.sql')
+        // Owner H1, 27 October: exact 56->76 rollout and recovery after a committed
+        // intermediate migration. verifyHistory above still pins every prior byte.
+        || count >= 56 && count < 76 && migrations.length === 76
+          && migrations.at(-1).name === '202610230076_web_publication.sql';
       if ((rows.length !== migrations.length && !knownUpgrade) || !history.hub) fail('Unexpected existing runtime login.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
     if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');

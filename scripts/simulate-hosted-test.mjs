@@ -56,7 +56,27 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     // Exercise the published Phase 6 checkpoint before applying Accounts C.
     // Both upgrades retain the already-provisioned runtime credential.
     await runMigrations(client,config,{log,migrations:migrations.slice(0,52)});
+    // Rehearse the owner's deployed 19 October checkpoint before the content
+    // rollout. A failed first migration leaves history, accounts and grants intact.
+    await runMigrations(client,config,{log,migrations:migrations.slice(0,56)});
+    const contentUpgradeState=async()=>(await client.query(`select
+      (select jsonb_agg(to_jsonb(a) order by id) from hub.user_account a) accounts,
+      (select jsonb_agg(to_jsonb(p) order by account_id,tab) from hub.account_permission p) permissions,
+      (select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text) from hub.permission_template t) templates`)).rows[0];
+    const contentUpgradeBefore=await contentUpgradeState();
+    const failedUpgrade=migrations.map(m=>({...m,body:[...m.body]}));
+    failedUpgrade[56].body.push('select missing_content_rollout_rollback_probe();');
+    await assert.rejects(runMigrations(client,config,{log:()=>{},migrations:failedUpgrade}),error=>error.code==='42883');
+    assert.equal((await client.query('select count(*)::int count from hub_deployment.schema_migrations')).rows[0].count,56);
+    assert.deepEqual(await contentUpgradeState(),contentUpgradeBefore);
+    // One committed migration models a lost operator connection. Recovery must
+    // accept this exact canonical prefix without reapplying it or rotating roles.
+    await applyMigration(client,migrations[56],config,'hub_migration_verifier');
     await runMigrations(client,config,{log,migrations});
+    assert.deepEqual(await contentUpgradeState(),contentUpgradeBefore);
+    assert.equal((await client.query('select count(*)::int count from hub.web_pages')).rows[0].count,0);
+    assert.equal((await client.query("select count(*)::int count from hub.account_permission where 'knowledge.publish_web'=any(special_actions)")).rows[0].count,0);
+    log('PASS: hosted 56->76 failure/recovery preserves accounts, permissions and templates; no page or publisher grant created.');
     assert.equal((await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword,upgradePassword);
     assert.deepEqual((await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row,upgradeAccount);
     assert.equal((await client.query("select count(*)::int count from staging.rem_projects where rem_project_id='SYNTHETIC-UPGRADE'")).rows[0].count,1);

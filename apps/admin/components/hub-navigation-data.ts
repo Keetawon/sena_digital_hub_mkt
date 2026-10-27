@@ -6,7 +6,7 @@ export const hubPages = [
   { id: "releases", href: "/releases", label: "ชุดเผยแพร่ข้อมูล", group: "content", icon: "M4 10v10h16V10M12 15V3M7 8l5-5 5 5" },
   { id: "knowledge", href: "/knowledge", label: "ตรวจข้อมูลก่อนนำเข้า", group: "content", icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5" },
   { id: "faq", href: "/faq", permissionTab: "knowledge", label: "คลัง FAQ เว็บไซต์", group: "content", icon: "M4 4h16v13H9l-5 4V4zM8 8h8M8 12h5" },
-  { id: "articles", href: "/articles", permissionTab: "knowledge", label: "บทความ", group: "content", icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5" },
+  { id: "articles", href: "/articles", permissionTab: "knowledge", label: "บทความ", group: "content", icon: "M12 5v16M12 5C9 3 5 3 2 4v16c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1zM5 8h4M15 8h4M5 12h4M15 12h4" },
   { id: "registry", href: "/ads/registry", label: "ทะเบียนแคมเปญ", group: "ads", icon: "M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" },
   { id: "finance", href: "/ads/finance", label: "งบและค่าใช้จ่าย", group: "ads", icon: "M3 6h18v14H3zM3 6V4h15M16 11h5v5h-5zM17 13h.01" },
   { id: "actuals", href: "/ads/actuals", label: "ผลใช้จ่ายรายเดือน", group: "ads", icon: "M4 3v18h17M8 17v-5M13 17V8M18 17V4" },
