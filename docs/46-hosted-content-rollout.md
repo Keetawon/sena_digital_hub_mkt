@@ -486,8 +486,8 @@ from accepted REM/DW identities and nonempty human content.
 
 There are **79 distinct allowed website URLs**, with explicit project scopes.
 FR189, SK1SD and K9BK5 have `N/A` URLs and remain recorded gaps. No robots or
-allowlist exception is inferred. The snapshot has not yet been applied; dry-run
-diffs and transactional receipts follow after implementation and verification.
+allowlist exception is inferred. The reviewed snapshot was applied locally and
+to TEST after the verification below; dry-run and transaction receipts follow.
 
 ## C–E implementation boundaries
 
@@ -548,6 +548,83 @@ names remain review evidence, without rebinding a project. Both databases use
 the same verified package. Transaction locks, immutable receipts and exact
 package replay checks prevent duplicate intake.
 
+### C execution receipts
+
+Code checkpoint **`f9c0a57`** is in `origin/main`. Local migration 77 and intake
+passed, followed by an exact no-op replay. TEST then applied migration 77 and
+the same pinned package in separate write batches, each with a new protected
+backup whose inventory and complete archive contents were verified.
+
+| Target / batch | Protected backup | Bytes | SHA-256 |
+|---|---|---:|---|
+| Working local | `.local/backups/business-sheet-local-20261027T090448Z/sena_hub_local.dump` | 10,116,951 | `64f46bd9c1b6139cf88645f288349a7f876c9fded5975d090e71d697016b81db` |
+| TEST migration 77 | `.local/backups/business-sheet-migration-20261027T090537Z/supabase-before-batch.dump` | 9,374,152 | `68bb000065308fced66992c5bc7135ccb05dd8b5690eb38cf2eb68db43d6c640` |
+| TEST snapshot | `.local/backups/business-sheet-apply-20261027T090811Z/supabase-before-batch.dump` | 9,374,617 | `a673f1e271993b2a9a6c58b8a1508f8430ad10fbfb4046f90a8652dbd9a714be` |
+
+Both targets appended **86 project evidence rows and 118 group evidence rows**
+with the same 66/20 project and 80/38 group changed/conflict split. Accepted
+group references remain **118**: no group, REM identity, draft, review, candidate
+or R2 binding was overwritten. The TEST transaction checked all 30 protected
+tables before and after its writes; an independent post-commit comparison also
+passed, including strict `auth.users.updated_at`. No browser session was opened.
+Published pages and publication versions remain zero; `sena_h_approved` remains
+false. Local pilot pages remain `no_ai` and unpublished.
+
+Receipts under `.local/hosted-content-rollout/`:
+`business-local-1793091899395.json`,
+`business-migration-1793092059446.json`, and
+`business-apply-1793092267754.json`. Each exact package replay returned
+`already_staged`. The original H1a baseline and failed comparison are unchanged.
+
+### D capture receipt
+
+The reviewed crawler input contains 79 distinct URLs and has SHA-256
+`03ff5d8184527a994fd8b9b222ce806a5a9899a3222be6aacbcead935d446b6d`.
+It derives directly from the imported sheet package; its three missing-URL
+exceptions are retained separately. The capture log is
+`artifacts/hosted-content-rollout/website-recrawl.log`. Same-scope aliases and
+linked files use the existing crawler rules. Robots failures remain gaps;
+they are not overridden.
+
+The finished capture is
+`.local/knowledge-intake/2026-10-27T09-11-29-292Z-03ff5d81`, manifest SHA-256
+`162b56c1abe36557354117ab2a3e20dd14975885757b6810d6677b6ea3fef123`.
+The 79 input URLs and same-scope aliases produced 81 page requests: **77 fetched,
+4 gaps**. There are **3,550 downloaded file URLs, 3,457 distinct files and
+1,159,647,361 original bytes**, plus 82 link-only video/tour references.
+
+The two unavailable robots files belong to `nicheprideekkamai.sena.co.th` and
+`pitisukhumvit101.sena.co.th`. Two page redirects leave the allowlist:
+`/en/project/senakith-sukhumvit-bangpu-beachfront` and
+`/project/sena-park-ville2-ramindra-wongwaenn`. Of 486 file gaps, **484** are on
+`content.sena.co.th` with unavailable robots rules; two LINE chrome files are
+off the allowlist. These remain gaps. No refusal was overridden.
+
+### E pinned preparation
+
+The prepared package is
+`.local/website-content-intake/20261027T103018256707Z-162b56c1abe3`, manifest
+SHA-256 `57affeeb0f33bddba6d6d257abf27c952b8220b2b211ed50cb5284a802cb6226`.
+It pins the same business snapshot, capture and read-only TEST reference export
+(278 exact IDs, 45 media tags). The unresolved exact ID `BPEF2` remains an
+exception. No REM identity was invented.
+
+Preparation retained **3,128 assets / 660,672,586 bytes**, including **3,084
+images**, and **5,573 base Knowledge candidates + 3,714 structured items** across
+78 known project scopes. Cleanup excluded 222 pixel-verified resolution variants,
+61 chrome/icons and 46 files that failed the existing asset validation limits.
+All original capture bytes and exclusions remain in the pinned evidence.
+YouTube metadata was fetched for 202 extracted references with no provider gaps;
+Matterport/Kuula links remain manual. No AI call ran.
+
+The initial preparation `fd770b39b2269dc66ba38634285b53d9b3baf3d63795e89ce4fc9937d1d2faee`
+is retained and superseded: explicit master-plan labels now take precedence over
+a broad Floor Plan gallery tab; a `masterplan` directory alone does not establish
+that category. Conflicting positions remain unresolved. The final preparation
+has **1,879 images eligible under the existing E1 rules** and **1,205 images with
+unresolved categories**. These are preparation counts; H5 still requires the
+configured model, final registered eligibility and an owner-approved budget.
+
 Website extraction must retain section, tab, floor/type labels, page URL and
 fetch time, including failed and refused requests. A fetch timestamp never
 becomes a construction date, a contact confirmation, an image capture date or a
@@ -578,3 +655,83 @@ eligible images, use the configured model and current documented pricing, and
 state the estimate before any live batch. No translation or image worker may
 accidentally drain queued jobs before that approval. Missing expected
 credentials require a STOP without creating another credential location.
+
+### E implementation and verification
+
+Migration **78** adds website provenance, unconfirmed asset bindings and an
+audited review queue without modifying any previous migration. Website-only
+drafts may retain unknown construction dates, place classifications and media
+ownership; ordinary saves and publication checks keep their existing rules.
+Marketing confirms category, tags and context in batches of at most 40, with
+per-asset audit and stale-version checks. Rights and overall metadata review
+remain separate. A repeated committed confirmation is a no-op.
+
+The importer uses the existing content tables and FAQ cluster generator.
+It appends source candidates, creates only missing draft records, preserves
+existing human rows and REM mappings, and records unresolved shared-phase
+scope as review evidence. Source prices never create price rows. Package
+replay is guarded by an immutable receipt and a transaction lock. Existing
+R2 objects are read and checksum-verified before reuse; only missing hashes
+are eligible for conditional upload.
+
+E1 supports an explicitly approved list of job IDs and records provider token
+usage. An ambiguous expired attempt is not automatically retried. Private R2
+bytes must match their authorized metadata before resize. These capabilities
+do not authorize a live batch: **H5 remains pending**.
+
+The full API run passed **2,109 tests**, with 11 existing opt-in skips. The
+initial run exposed seven missing entries in the explicit permission test
+inventories; those entries now cover the four new routes and two new FORCE RLS
+tables. The complete suite was rerun successfully. Focused runs passed 55 API
+and 28 permission checks. No existing permission assertion was removed.
+
+The database gate passed **62 SQL/concurrency checks and 10 Node tests**,
+including populated upgrade replay. Its first attempt correctly noticed the
+new nullable `website_source` key in a whole-row snapshot. The test now asserts
+that this field is NULL on every existing row and compares all original fields;
+existing bindings must remain confirmed. No preservation check was weakened.
+Hosted simulation passed **11 protocol and 45 browser tests**. Typecheck and
+the documented offline webpack build passed. The full browser suite passed
+**302/302 in one complete run (10.8 minutes)**, with no skips or retries.
+Logs are under `artifacts/hosted-content-rollout/`:
+`website-api-full-final.log`, `website-db-final.log`, `website-h1.log`,
+`website-typecheck.log`, `website-build-final.log` and `website-ui-full.log`.
+The credential scan checked **296 files and 356 archive members, zero matches**.
+The tested 667 source-file hashes are sealed in ignored
+`.local/hosted-content-rollout/website-gates.json`.
+
+Screenshots were visually inspected at both required widths; the browser tests
+also checked for horizontal overflow. They remain Git-ignored:
+`artifacts/hosted-content-rollout/website-review-1280.png`,
+`artifacts/hosted-content-rollout/website-review-390.png`,
+`artifacts/hosted-content-rollout/website-sources-1280.png`, and
+`artifacts/hosted-content-rollout/website-sources-390.png`.
+
+### E local execution
+
+Working-local migration 78, rolled-back rehearsal, committed import and exact
+replay all passed. Receipts are
+`.local/hosted-content-rollout/website-local-migration-1793112761369.json` and
+`.local/hosted-content-rollout/website-local-apply-1793113199207.json`.
+The fully verified, ACL-protected backups are:
+
+| Batch | Backup under `.local/backups/` | Bytes | SHA-256 |
+|---|---|---:|---|
+| Migration 78 | `website-local-migration-20261027T145238Z/database-before-batch.dump` | 10,201,404 | `f03f6bcc8be237f0722212bf796091af73f19d9e52ba311cd76f071a51b610c3` |
+| Website import | `website-local-apply-20261027T145305Z/database-before-batch.dump` | 10,231,619 | `a12655e1a14b4ec3816280f5e18d2d765b175617c3b7729f7c6cbee2888fada3` |
+
+The local import created **3,128 assets, 3,573 unconfirmed asset links, 9,287
+source candidates and 1,752 draft records**: 183 narrative sections and draft
+versions, 30 facilities, 594 places, 374 contacts, 140 media links, 273 commercial
+types, 106 construction records and 52 disclosures. It recorded 229 conflicting
+source values and 2,018 unresolved wiring outcomes without overwriting existing
+content. The existing FAQ generator inserted 333 clusters locally; no decision
+or review was changed. No project, group or brand identity was created.
+
+Every prior content row was preserved. Account/permission tables, approved
+versions, reviews, source identities, settings and pilot pages passed strict
+checks inside the transaction and again after commit. New narrative draft
+versions are append-only; existing version bytes remain protected. The replay
+returned `already_applied`, with no new rows. Published pages remain zero,
+both local pilot pages remain `no_ai`, and `sena_h_approved` remains false.
+No AI job was run.

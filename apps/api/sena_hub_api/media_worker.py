@@ -49,14 +49,16 @@ class ImageSuggestion(BaseModel):
     confidence: float = Field(ge=0, le=1)
 
 
-def resized_image(metadata: dict) -> str:
+def resized_image(metadata: dict, *, authorized_reader=None) -> str:
     if metadata.get('mime_type') not in ('image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'):
         raise MediaError('file_unavailable')
-    if metadata.get('storage_provider') not in (None, 'local'):
-        # Hosted access is separately authorized; this worker never reads R2.
+    if metadata.get('storage_provider') not in (None, 'local', 'r2') or metadata.get('storage_provider') == 'r2' and authorized_reader is None:
+        # Hosted bytes require an explicitly injected DB-authorized private reader.
         raise MediaError('file_unavailable')
     try:
-        content = assets.readable_file(metadata).read_bytes()
+        content = authorized_reader(metadata) if metadata.get('storage_provider') == 'r2' else assets.readable_file(metadata).read_bytes()
+        if len(content) != metadata.get('file_size') or __import__('hashlib').sha256(content).hexdigest() != metadata.get('checksum'):
+            raise MediaError('file_unavailable')
         with assets.render_thumbnail(content, metadata['mime_type']) as image:
             image.thumbnail((768, 768), Image.Resampling.LANCZOS)
             flattened = Image.new('RGB', image.size, 'white')
@@ -89,7 +91,10 @@ def validate_suggestion(value: dict, context: dict) -> dict:
 
 
 class OpenAIImageSuggester(OpenAITranslator):
+    last_usage = None
+
     async def suggest(self, image_url: str, context: dict) -> dict:
+        self.last_usage = None
         try:
             result = await self.client.responses.parse(
                 model=self.model, store=False, max_output_tokens=3500,
@@ -108,6 +113,9 @@ class OpenAIImageSuggester(OpenAITranslator):
                     ]}], text_format=ImageSuggestion)
         except Exception:
             raise MediaError('provider_error') from None
+        if result.usage is not None:
+            self.last_usage = {'input_tokens': result.usage.input_tokens, 'output_tokens': result.usage.output_tokens,
+                               'cached_input_tokens': getattr(result.usage.input_tokens_details, 'cached_tokens', 0)}
         if result.status != 'completed' or result.output_parsed is None:
             raise MediaError('invalid_result')
         return validate_suggestion(result.output_parsed.model_dump(), context)
@@ -170,27 +178,31 @@ async def fetch_clip_metadata(provider: str, url: str, *, transport=None) -> dic
         raise MediaError('provider_error') from None
 
 
-async def work_once(db, provider=None, *, transport=None, schedule=False) -> dict:
+async def work_once(db, provider=None, *, transport=None, schedule=False, approved_job_ids=None, authorized_reader=None) -> dict:
     async def rpc(sql, *args):
         async with db.transaction():
             await db.execute('SET LOCAL ROLE hub_media_worker')
             return await db.fetchval(sql, *args)
 
+    if schedule and approved_job_ids is not None:
+        raise MediaError('invalid_result')
     if schedule:
         await rpc('select hub.media_schedule_checks()')
-    job = await rpc('select hub.media_claim()')
+    job = await rpc('select hub.media_claim()') if approved_job_ids is None else await rpc('select hub.website_media_claim($1)', approved_job_ids)
     if job is None:
         return {'status': 'idle'}
     result = None
     model = None
     error = None
+    provider_attempted = False
     owned = provider is None
     try:
         if job['kind'] == 'image_suggestion':
-            image_url = await asyncio.to_thread(resized_image, job['file'])
+            image_url = await asyncio.to_thread(resized_image, job['file']) if authorized_reader is None else await asyncio.to_thread(resized_image, job['file'], authorized_reader=authorized_reader)
             if provider is None:
                 provider = OpenAIImageSuggester()
             model = provider.model
+            provider_attempted = True
             result = validate_suggestion(await provider.suggest(image_url, job['context']), job['context'])
         else:
             result = await fetch_clip_metadata(job['provider'], job['url'], transport=transport)
@@ -201,5 +213,9 @@ async def work_once(db, provider=None, *, transport=None, schedule=False) -> dic
     finally:
         if owned and isinstance(provider, OpenAIImageSuggester):
             await provider.close()
-    status = await rpc('select hub.media_finish($1,$2,$3,$4,$5)', UUID(job['id']), UUID(job['lease_token']), result, model, error)
-    return {'status': status, 'error_code': error}
+    usage = getattr(provider, 'last_usage', None) if provider_attempted else None
+    if approved_job_ids is None:
+        status = await rpc('select hub.media_finish($1,$2,$3,$4,$5)', UUID(job['id']), UUID(job['lease_token']), result, model, error)
+        return {'status': status, 'error_code': error}
+    status = await rpc('select hub.website_media_finish($1,$2,$3,$4,$5,$6)', UUID(job['id']), UUID(job['lease_token']), result, model, error, usage)
+    return {'status': status, 'error_code': error, 'job_id': job['id'], 'model': model, 'usage': usage}

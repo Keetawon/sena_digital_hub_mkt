@@ -22,3 +22,8 @@
   .media-workspace .content-grid, .media-workspace .content-bilingual { grid-template-columns: minmax(0, 1fr); }
   .media-workspace fieldset { padding: 10px; }
 }
+.website-batch { display: grid; gap: 1rem; margin-block: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+.website-media .media-card { min-width: 0; overflow-wrap: anywhere; }
+.website-media fieldset { min-width: 0; }
+.website-media .media-card fieldset { display: grid; gap: .75rem; }
+.website-pagination { display: flex; gap: .75rem; margin-top: 1rem; }

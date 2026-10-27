@@ -21,7 +21,7 @@ const groups: Record<Kind, { title: string; entity: string; fields: FieldSpec[] 
     { key: "building_description", type: "locale" }, { key: "building_count", type: "integer" }, { key: "unit_total", type: "integer" },
     { key: "eia_status", type: "text", options: { not_required: "ไม่ต้องจัดทำ EIA", pending: "อยู่ระหว่างพิจารณา", approved: "ได้รับอนุมัติ" } },
     { key: "eia_approval_date", type: "date" }, { key: "construction_start_year", type: "integer" }, { key: "construction_completion_year", type: "integer" },
-    { key: "notes", type: "locale" }, { key: "basis", type: "text", options: { mkt_entered: "Marketing กรอก", legal_document: "อ้างอิงเอกสาร Legal", legal_approved: "Legal ตรวจแล้ว มีหลักฐาน" } },
+    { key: "notes", type: "locale" }, { key: "basis", type: "text", options: { mkt_entered: "Marketing กรอก", legal_document: "อ้างอิงเอกสาร Legal", legal_approved: "Legal ตรวจแล้ว มีหลักฐาน", website_import: "ดึงจากเว็บไซต์สาธารณะ SENA · รอตรวจ" } },
     { key: "legal_document_asset_id", type: "asset" }, { key: "legal_doc_ref", type: "text" }, { key: "legal_doc_date", type: "date" },
     { key: "legal_reviewed_by", type: "text" }, { key: "legal_reviewed_at", type: "date" }, { key: "override_reason", type: "text" },
   ] },
@@ -36,7 +36,7 @@ const groups: Record<Kind, { title: string; entity: string; fields: FieldSpec[] 
   ] },
   construction: { title: "ความคืบหน้าก่อสร้าง", entity: "construction_progress", fields: [
     { key: "component", type: "text", options: { overall: "ภาพรวม", structure: "โครงสร้าง", architecture: "สถาปัตยกรรม", systems: "ระบบประกอบอาคาร", landscape: "ภูมิทัศน์", other: "อื่น ๆ" } },
-    { key: "percent", type: "number" }, { key: "as_of", type: "date" }, { key: "source", type: "text", options: { construction: "ฝ่ายก่อสร้าง", mkt: "Marketing" } },
+    { key: "percent", type: "number" }, { key: "as_of", type: "date" }, { key: "source", type: "text", options: { construction: "ฝ่ายก่อสร้าง", mkt: "Marketing", website_import: "ดึงจากเว็บไซต์สาธารณะ SENA · รอตรวจ" } },
   ] },
 };
 const stateLabels: Record<string, string> = { draft: "ร่าง", in_review: "ส่งตรวจแล้ว", approved: "อนุมัติแล้ว", returned: "ส่งกลับแก้ไข", withdrawn: "ถอนแล้ว" };

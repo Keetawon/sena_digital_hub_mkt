@@ -68,6 +68,29 @@ def test_r2_private_config_and_replay(configured):
     assert metadata['storage_path'] not in client.objects  # Prefix separates originals from held candidates.
 
 
+def test_reviewed_website_asset_reuses_only_its_exact_private_knowledge_hash(configured):
+    settings, client, _, _ = configured
+    store = R2Assets(settings)
+    content = image_bytes()
+    metadata = {**metadata_for(content), 'storage_bucket': BUCKET}
+    evidence = {'sha256': metadata['checksum'], 'bytes': len(content), 'storage_bucket': BUCKET}
+    store.install_knowledge(content, evidence)
+    metadata['storage_path'] = 'knowledge/' + metadata['checksum']
+    before = len(client.objects)
+    assert store.read(metadata) == content
+    assert store.install(content, metadata) is False
+    assert len(client.objects) == before == 1
+    for changes in [{'storage_path': 'knowledge/../other'}, {'storage_path': 'knowledge/' + '0' * 64},
+                    {'storage_bucket': 'other'}, {'source_system': 'hub-local'}, {'mime_type': 'text/html'}]:
+        with pytest.raises(HTTPException) as caught:
+            store.read({**metadata, **changes})
+        assert caught.value.status_code == 404
+    client.objects[metadata['storage_path']] = b'changed'
+    with pytest.raises(HTTPException) as caught:
+        store.read(metadata)
+    assert caught.value.status_code == 503
+
+
 @pytest.mark.parametrize('field,value', [
     ('endpoint_url','https://attacker.invalid'), ('endpoint_url','http://169.254.169.254'),
     ('endpoint_url','http://127.0.0.1:54329/r2?token=not-valid'), ('bucket','../other'),

@@ -926,3 +926,27 @@ documented offline build passed; focused intake and extractor runs each passed
 successful rerun are recorded in docs/46, alongside the credential scan and
 actual import/crawl receipts. No test was weakened.
 No live AI batch is authorized by these changes; H5 remains an explicit STOP.
+
+Package C has now applied the same reviewed business-sheet snapshot locally
+and on TEST through migration 77, with verified backups, strict protected-state
+comparisons and no-op replays. Package D captured 77 pages and retained four
+page gaps without overriding robots or allowlists. The pinned E package has
+3,128 assets and 3,714 structured source items; actual application and final
+counts are recorded in docs/46.
+
+Package E adds migration **78**, private website provenance, unconfirmed asset
+bindings, the Marketing batch-confirmation queue and source-evidence panels.
+The importer creates drafts and review suggestions in existing tables, keeps
+unknown dates and ownership explicit, preserves human content, and regenerates
+the existing FAQ clusters. It neither creates source-derived prices nor
+approves rights or publication. Existing Phase 4/7 files and migrations remain
+untouched. The E1 worker can process an approved job list and record token usage;
+no live AI call has been made or approved.
+
+Verification: **2,109 API passed / 11 existing opt-in skips**, **62 DB checks +
+10 Node tests**, **11 H1 protocol + 45 H1 browser tests**, and **302/302 browser
+tests in one complete run**. Typecheck and offline build passed; the credential
+scan found zero matches in 296 files and 356 archive members. Desktop and mobile
+screenshots were visually inspected. The permission-inventory additions and
+populated-upgrade test adjustment are explained in docs/46, together with
+the source seal and actual execution receipts.

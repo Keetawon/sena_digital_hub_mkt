@@ -2,7 +2,7 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from pydantic import Field
 
 from .auth import Actor
@@ -24,6 +24,10 @@ class MediaJob(Input):
     expected_revision: int = Field(ge=0)
 
 
+class WebsiteConfirmation(Input):
+    items: list[dict] = Field(min_length=1, max_length=40)
+
+
 def register_project_media_routes(app, authentication, database):
     async def staff(request: Request, actor: Actor = Depends(authentication)):
         require_content(request)
@@ -32,6 +36,22 @@ def register_project_media_routes(app, authentication, database):
     async def read(request, actor, sql, *args):
         async with database(request, actor) as db:
             return {'data': await db.fetchval(sql, *args)}
+
+    @app.get('/v1/admin/media/website')
+    async def website_projects(request: Request, actor: Actor = Depends(staff)):
+        return await read(request, actor, 'select hub.website_media_projects()')
+
+    @app.get('/v1/admin/projects/{public_id}/media/website')
+    async def website_queue(public_id: str, request: Request, offset: int = Query(0, ge=0, le=100000), actor: Actor = Depends(staff)):
+        return await read(request, actor, 'select hub.website_media_queue($1,$2)', public_id, offset)
+
+    @app.post('/v1/admin/projects/{public_id}/media/website/confirm')
+    async def website_confirm(public_id: str, body: WebsiteConfirmation, request: Request, actor: Actor = Depends(staff)):
+        return await read(request, actor, 'select hub.website_media_confirm($1,$2)', public_id, body.items)
+
+    @app.get('/v1/admin/projects/{public_id}/content/website')
+    async def website_sources(public_id: str, request: Request, actor: Actor = Depends(staff)):
+        return await read(request, actor, 'select hub.website_content_sources($1)', public_id)
 
     @app.get('/v1/admin/media/tags')
     async def tags(request: Request, actor: Actor = Depends(staff)):

@@ -120,9 +120,18 @@ class R2Assets:
 
     @staticmethod
     def _asset_key(metadata):
-        name = HostedAssets.key_for(metadata)
         if metadata.get("storage_bucket") != BUCKET or metadata.get("source_system") != "hub-hosted-test":
             raise failure(404, "file_not_found", "ไม่พบไฟล์ในพื้นที่ทดสอบที่ได้รับอนุญาต")
+        # Reviewed website imports can register an existing Knowledge original.
+        # The DB-authorized row still has to prove this exact checksum and MIME;
+        # there is no arbitrary object-key access or public URL fallback.
+        if metadata.get("storage_path") == "knowledge/" + str(metadata.get("checksum")):
+            from .assets import FORMATS
+            mime = metadata.get("mime_type")
+            extension = FORMATS.get(mime, (None, None))[1]
+            HostedAssets.key_for({**metadata, "storage_path": f"{metadata.get('checksum')}.{extension}"})
+            return metadata["storage_path"]
+        name = HostedAssets.key_for(metadata)
         return "originals/" + name
 
     def read(self, metadata):

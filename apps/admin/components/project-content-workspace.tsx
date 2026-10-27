@@ -9,11 +9,12 @@ import { ContentContacts, type Contact } from "./content-contacts";
 import { ProjectAmenities } from "./project-amenities";
 import { ContentNarrative, type NarrativeSection, type SellingPoint } from "./content-narrative";
 import { ProjectCommercialWorkspace } from "./project-commercial-workspace";
+import { WebsiteContentSources } from "./website-content-sources";
 import { FieldInfo, TranslationReviewPanel, useFieldCatalog, errorMessage, type Locales, type Translation } from "./content-common";
 
 type Content = { facts: ProjectFact[]; rem: RemFacts & { buildings?: Building[] }; computed: Record<string, number | null>; buildings: Building[]; sections: NarrativeSection[]; selling_points: SellingPoint[]; contacts: Contact[]; translations: Translation[];
   readiness: { required_missing: number; ready: boolean; items: { field_key: string; point_key?: string; label: Locales; required: boolean; complete: boolean }[] } };
-const tabs = { facts: "ข้อเท็จจริง", buildings: "อาคาร", narrative: "เนื้อหาและจุดขาย", facilities: "ส่วนกลาง", features: "คุณสมบัติ", places: "ทำเล", contacts: "ช่องทางติดต่อ", commercial: "กฎหมายและการขาย", investor: "ผู้ลงทุน", english: "ภาษาอังกฤษ", readiness: "ความพร้อม" };
+const tabs = { facts: "ข้อเท็จจริง", buildings: "อาคาร", narrative: "เนื้อหาและจุดขาย", facilities: "ส่วนกลาง", features: "คุณสมบัติ", places: "ทำเล", contacts: "ช่องทางติดต่อ", commercial: "กฎหมายและการขาย", investor: "ผู้ลงทุน", website: "หลักฐานจากเว็บไซต์", english: "ภาษาอังกฤษ", readiness: "ความพร้อม" };
 type Tab = keyof typeof tabs;
 export function ProjectContentWorkspace({ projectId = "", brandId = "" }: { projectId?: string; brandId?: string }) {
   const permissions = useHubPermissions(), { catalog, error: catalogError } = useFieldCatalog();
@@ -45,6 +46,7 @@ export function ProjectContentWorkspace({ projectId = "", brandId = "" }: { proj
         {editing && <p className="read-only-note" role="status">กำลังแก้ไขข้อมูล กรุณาบันทึกหรือยกเลิกก่อนเปลี่ยนแท็บ</p>}
         <nav className="content-tabs" aria-label="ส่วนเนื้อหา">{choices.map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={editing && tab !== key} onClick={() => location.navigate({ tab: key })}>{label}</button>)}</nav>
         <div key={tab}>
+          {tab === "website" && <WebsiteContentSources projectId={id} />}
           {(tab === "facilities" || tab === "features" || tab === "places") && <ProjectAmenities key={`${id}:${tab}`} projectId={id} tab={tab} fields={catalog.items} onChanged={reload} onEditingChange={setEditing} />}
           {tab === "facts" && <ContentFacts projectId={id} facts={data.facts} rem={data.rem} computed={data.computed} fields={catalog.items} canEdit={canEdit} onChanged={reload} onEditingChange={setEditing} />}
           {tab === "buildings" && <ContentBuildings projectId={id} items={data.buildings} remBuildings={data.rem.buildings ?? []} remAsOf={data.rem.as_of} fields={catalog.items} canEdit={canEdit} onChanged={reload} onEditingChange={setEditing} />}

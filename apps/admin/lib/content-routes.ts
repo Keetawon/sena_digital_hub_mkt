@@ -17,9 +17,9 @@ export function contentAllowsApi(path: string, method: string) {
 }
 
 const media: Record<string, RegExp> = {
-  GET: new RegExp(`^v1/admin/(?:media/(?:tags|requirements)|projects/${id}/media(?:/jobs)?)$`),
+  GET: new RegExp(`^v1/admin/(?:media/(?:tags|requirements|website)|projects/${id}/(?:media(?:/(?:jobs|website))?|content/website))$`),
   PUT: new RegExp(`^v1/admin/(?:media/(?:tags|requirements)/[a-z][a-z0-9_]{0,79}|projects/${id}/media/(?:assets|links|clips)/${uuid})$`),
-  POST: new RegExp(`^v1/admin/(?:media/tags/[a-z][a-z0-9_]{0,79}/approve|projects/${id}/media/(?:jobs|links/${uuid}/remove|clips/${uuid}/check))$`),
+  POST: new RegExp(`^v1/admin/(?:media/tags/[a-z][a-z0-9_]{0,79}/approve|projects/${id}/media/(?:jobs|website/confirm|links/${uuid}/remove|clips/${uuid}/check))$`),
 };
 export function mediaAllowsApi(path: string, method: string) { return media[method]?.test(path) ?? false; }
 
@@ -39,7 +39,8 @@ const intakeFilters: Record<string, RegExp> = {
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
   if (method === "GET") {
     if (webAllowsApi(path, method)) return [...query.keys()].every(key => key === "locale" && query.getAll(key).length === 1 && /^(?:th|en)$/.test(query.get(key) ?? ""));
-    const filters: Record<string, RegExp> | null = path === "v1/admin/articles" ? { q: /^[^\u0000-\u001f]{0,120}$/, offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
+    const filters: Record<string, RegExp> | null = new RegExp(`^v1/admin/projects/${id}/media/website$`).test(path) ? { offset: /^(?:0|[1-9]\d{0,5})$/ }
+      : path === "v1/admin/articles" ? { q: /^[^\u0000-\u001f]{0,120}$/, offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
       : new RegExp(`^v1/admin/articles/${uuid}/preview$`).test(path) ? { locale: /^(?:th|en)$/ }
       : path === "v1/admin/faq-coverage" ? { project: new RegExp(`^${id}$`), offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
       : new RegExp(`^v1/admin/faq-composition/${id}$`).test(path) ? { locale: /^(?:th|en)$/, unit_type: new RegExp(`^${id}$`) }

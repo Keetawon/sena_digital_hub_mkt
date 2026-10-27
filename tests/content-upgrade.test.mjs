@@ -49,7 +49,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     ) evidence order by name`)).rows;
     let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State;
     const unitState=async()=>(await db.query(`select name,rows from (
-      select 'types' name,jsonb_agg(to_jsonb(t)-array['category','special_rooms','ceiling_height_m','furniture_package','highlights','price_mode','ai_exposure','revision','editors','approved_by','approved_at'] order by id) rows from hub.commercial_types t union all
+      select 'types' name,jsonb_agg(to_jsonb(t)-array['category','special_rooms','ceiling_height_m','furniture_package','highlights','price_mode','ai_exposure','revision','editors','approved_by','approved_at','website_source'] order by id) rows from hub.commercial_types t union all
       select 'sources',jsonb_agg(to_jsonb(t) order by commercial_type_id,model_id) from hub.commercial_type_sources t
     ) evidence order by name`)).rows;
     const mediaState=async()=>(await db.query(`select name,rows from (
@@ -59,7 +59,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'type_bindings',jsonb_agg(to_jsonb(t)-array['room_tag','caption','floor_number'] order by id) from hub.commercial_type_assets t
     ) evidence order by name`)).rows;
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
-      union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id'] from hub.content_sections s order by name`)).rows;
+      union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id','website_source'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
       if(name==='202610210058_project_content_core.sql') {
         const project=(await db.query('select rem_project_id from staging.rem_projects order by rem_project_id limit 1')).rows[0].rem_project_id;
@@ -91,6 +91,12 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       }
       phase7State=await beforePhase7(db,name,phase7State);
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(name==='202610270078_website_content_suggestions.sql') {
+        for(const table of ['contacts','project_facilities','project_places','commercial_types','project_progress','project_disclosures','media_links','content_sections','asset_links']) {
+          assert.equal(Number((await db.query(`select count(*) from hub.${table} where website_source is not null`)).rows[0].count),0,`${name} assigned website provenance to existing ${table}`);
+        }
+        assert.equal(Number((await db.query('select count(*) from hub.asset_links where not binding_confirmed')).rows[0].count),0,'Existing bindings retain their confirmation');
+      }
       await afterPhase7(db,name,phase7State);
       if(phase5State)assert.deepEqual(await unitState(),phase5State,`${name} rewrote commercial content or source references`);
       if(phase3State)assert.deepEqual(await mediaState(),phase3State,`${name} rewrote asset metadata, rights or bindings`);

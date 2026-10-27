@@ -9,6 +9,7 @@ import { categoryLabels, targetName, newContext, newMetadata, metadataOf, contex
   type MediaAsset, type MediaLink, type MediaTag, type MediaContext, type Rule, type Coverage, type Metadata, type LinkContext } from "./media-common";
 import { MediaClips, type Clip } from "./media-clips";
 import { MediaRules } from "./media-rules";
+import { WebsiteMediaProjects, WebsiteMediaQueue } from "./website-media-queue";
 import "./project-content.css";
 import "./project-media.css";
 
@@ -16,7 +17,7 @@ type Workspace = { project: { id: string; public_project_id: string; name: { th?
   checklist: { items: Coverage[]; recommended_score: number; required_missing: number; broken_links: Clip[]; unknown_coverage: { key: string; label: { th?: string } }[] } };
 type Job = { id: string; kind: string; subject_id: string; status: string; error_code: string | null };
 type Card = { id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string };
-const tabs = { checklist: "ภาพที่ยังขาด", upload: "อัปโหลดหลายไฟล์", library: "ภาพและเอกสาร", clips: "คลิปและทัวร์ 360", rules: "แท็กและเกณฑ์ภาพ" };
+const tabs = { checklist: "ภาพที่ยังขาด", website: "รูปจากเว็บไซต์ (รอยืนยัน)", upload: "อัปโหลดหลายไฟล์", library: "ภาพและเอกสาร", clips: "คลิปและทัวร์ 360", rules: "แท็กและเกณฑ์ภาพ" };
 const jobLabels: Record<string, string> = { queued: "รอประมวลผล", running: "กำลังประมวลผล", done: "เสร็จแล้ว", failed: "ไม่สำเร็จ", superseded: "ข้อมูลหรือสิทธิ์เปลี่ยน กรุณาสั่งใหม่" };
 const jobErrors: Record<string, string> = { provider_unavailable: "ยังไม่ได้เปิดบริการคำแนะนำ", provider_error: "บริการตอบกลับไม่สำเร็จ", invalid_result: "ผลไม่ผ่านการตรวจ", manual_required: "ผู้ให้บริการนี้ต้องกรอกและตรวจเอง", file_unavailable: "อ่านไฟล์ภาพไม่ได้", source_changed: "ข้อมูลหรือสิทธิ์เปลี่ยน", permission_revoked: "สิทธิ์ถูกเปลี่ยน" };
 
@@ -50,7 +51,7 @@ export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
   };
   return <MediaCatalog.Provider value={catalog?.items ?? []}><div className="content-workspace media-workspace"><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}</p>}
-    {!projectId ? <p>เลือกโครงการจากหน้ารวมก่อนจัดการสื่อ</p> : !canView ? <p>บัญชีนี้ไม่มีสิทธิ์ดูสื่อโครงการ</p> : !data ? <p role="status">กำลังโหลดสื่อ…</p> : <>
+    {!projectId ? <><p>เลือกโครงการจากหน้ารวมก่อนจัดการสื่อ</p>{canView && <WebsiteMediaProjects />}</> : !canView ? <p>บัญชีนี้ไม่มีสิทธิ์ดูสื่อโครงการ</p> : !data ? <p role="status">กำลังโหลดสื่อ…</p> : <>
       <nav className="content-tabs" aria-label="ส่วนสื่อ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={dirty && tab !== key} onClick={() => { if (location.navigate({ tab: key })) setEditingAsset(null); }}>{label}</button>)}</nav>
       {tab === "checklist" && <MediaPanel title="รายการภาพที่ยังขาด"><p>ความครบตามเป้าหมายแนะนำ {data.checklist.recommended_score}% · ยังขาดภาพจำเป็น {data.checklist.required_missing} รายการ</p><p>ภาพหลักและภาพย่อเท่านั้นที่เป็นเงื่อนไขเผยแพร่ ภาพอื่นเป็นเป้าหมายเก็บข้อมูล</p>
         {data.checklist.unknown_coverage.map(item => <p className="inline-warning" key={item.key}>ยังนับชั้นของ {item.label.th ?? item.key} ไม่ได้ กรุณาตรวจข้อมูลอาคารหรือแบบที่อยู่อาศัย</p>)}
@@ -58,6 +59,7 @@ export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
         {data.checklist.broken_links.length > 0 && <div role="status"><h3>ลิงก์ที่ถูกซ่อน</h3><p>{data.checklist.broken_links.length} ลิงก์เปิดไม่ได้ เป็นส่วนตัว หรือถูกนำออก</p><button className="button secondary" onClick={() => location.navigate({ tab: "clips" })}>แก้ไขคลิปและทัวร์</button></div>}
       </MediaPanel>}
       {tab === "upload" && <MediaUpload key={`${projectId}-${editingAsset?.id ?? "new"}`} data={data} base={base} initialAsset={editingAsset} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} query={location.params} onChanged={reload} onDirty={setDirty} />}
+      {tab === "website" && <WebsiteMediaQueue base={base} project={data.project.id} assets={data.assets} context={data.context} tags={data.tags} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} onChanged={reload} onDirty={setDirty} />}
       {tab === "library" && <MediaPanel title="ภาพและเอกสารในโครงการ"><p>ไฟล์ที่อัปโหลดโดยคุณและยังไม่ผูกจะแสดงเพื่อให้ทำงานต่อได้</p><div className="media-grid">{data.assets.map(asset => {
         const links = data.links.filter(link => link.asset_id === asset.id), suggestion = asset.ai_suggestion;
         const mismatch = suggestion && (suggestion.media_category !== asset.media_category || links.some(link => link.target_type === "facility" && suggestion.tags.some(code => data.tags.some(tag => tag.code === code && tag.tag_group === "facility")) && !suggestion.tags.includes(link.target_key)));

@@ -20,6 +20,10 @@ FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', '
     'hub.copy_account_template', 'hub.can', 'hub.can_special', 'hub.can_agency_registry',
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
 ACCOUNT_UI_TABLES = {'hub.permission_notice_ack'}
+WEBSITE_TABLES = {'hub.website_asset_suggestions', 'staging.website_content_receipts'}
+WEBSITE_FUNCTIONS = {'hub.' + name for name in ('website_source_valid', 'website_media_agreement',
+    'website_media_projects', 'website_media_queue', 'website_media_confirm', 'website_content_sources',
+    'website_media_claim', 'website_media_finish')}
 ACCOUNT_UI_FUNCTIONS = {'hub.' + name for name in (
     'normalise_permission_tabs', 'account_access', 'permission_catalog_digest', 'resolve_account_access',
     'write_account_access', 'configure_account_access', 'approve_account_access', 'permission_batch_preview',
@@ -160,9 +164,20 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
+                    additions |= WEBSITE_TABLES if name == 'relations' else WEBSITE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    website = [r for r in actual if r['schema'] + '.' + r['table'] in WEBSITE_TABLES]
+                    assert len(website) == 3
+                    owners = [r for r in website if r['name'] in ('website_owner', 'website_operator')]
+                    assert len(owners) == 2 and all(r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
+                        and r['qual'] == r['with_check'] == 'true' for r in owners)
+                    readers = [r for r in website if r['name'] == 'website_read']
+                    assert len(readers) == 1 and readers[0]['table'] == 'website_asset_suggestions'
+                    assert readers[0]['roles'] == ['hub_app'] and readers[0]['cmd'] == 'SELECT' and readers[0]['with_check'] is None
+                    assert "hub.can('projects'" in readers[0]['qual'] and 'hub.can_read_asset(asset_id)' in readers[0]['qual']
+                    actual = [r for r in actual if r not in website]
                     web = [r for r in actual if r['schema'] + '.' + r['table'] in WEB_TABLES]
                     assert len(web) == 3 and all(r['name'] == 'web_owner' and r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in web)
                     restrictive = [r for r in actual if r['name'] == 'web_snapshot_private']
@@ -361,6 +376,7 @@ async def assert_reviewed_database_boundary(db):
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
+    classified |= WEBSITE_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -370,6 +386,9 @@ async def assert_reviewed_database_boundary(db):
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
     domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES
+    domain |= {'hub.website_asset_suggestions'}
+    assert tables['hub.website_asset_suggestions']['grants'] == ['hub_app:SELECT']
+    assert tables['staging.website_content_receipts']['grants'] == []
     assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}

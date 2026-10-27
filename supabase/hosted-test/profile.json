@@ -388,6 +388,11 @@
       "name": "202610270077_business_sheet_snapshot.sql",
       "canonical_sha256": "da31bb22e2818abb0b86b51930790ea3fc0e4ccae2a71710f094df68d2beb5a2",
       "executed_sha256": "da31bb22e2818abb0b86b51930790ea3fc0e4ccae2a71710f094df68d2beb5a2"
+    },
+    {
+      "name": "202610270078_website_content_suggestions.sql",
+      "canonical_sha256": "999bf82638752cb2c36e79917eda4c8a21f176778c0eaf8ed9afa777c9b58bec",
+      "executed_sha256": "999bf82638752cb2c36e79917eda4c8a21f176778c0eaf8ed9afa777c9b58bec"
     }
   ]
 }
