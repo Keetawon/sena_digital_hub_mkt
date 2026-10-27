@@ -14,7 +14,7 @@ from PIL import Image, PngImagePlugin
 from sena_hub_api.assets import prepare_upload
 from test_assets import image_bytes
 from test_permission_baseline import disposable_operator
-from test_permission_foundations import permission_accounts
+from test_permission_foundations import permission_accounts, h
 from test_permission_content import call
 from test_permission_db_baseline import runtime
 
@@ -178,6 +178,45 @@ def test_website_drafts_unknowns_human_preservation_and_exact_replay(permission_
         finally:
             await db.close()
     asyncio.run(check())
+
+
+@pytest.mark.parametrize('kind', ['disclosures', 'construction'])
+def test_imported_commercial_drafts_remain_editable_with_unconfirmed_source(permission_accounts, kind):
+    client, ids = permission_accounts
+
+    async def prepare():
+        db = await operator()
+        try:
+            project = await project_fixture(db, ids['editor'])
+            value = {'text': 'หลักฐานเว็บไซต์จำลอง'} if kind == 'disclosures' else {'component_label': 'overall', 'percent_text': '42'}
+            item = {'kind': kind, 'value': value, 'source': source(project['rem_project_id']), 'source_key': uuid4().hex}
+            result = await website.wire_text(db, project, item, [])
+            return project['public_project_id'], result['id'], {**item['source'], 'source_value': value}
+        finally:
+            await db.close()
+
+    public_id, record_id, evidence = asyncio.run(prepare())
+    base = f'/v1/admin/projects/{public_id}/commercial'
+    record = {'kind': kind, 'ai_exposure': 'internal'}
+    record.update({'basis': 'website_import', 'notes': {'th': 'ตรวจร่างต่อโดย Marketing'}} if kind == 'disclosures'
+                  else {'component': 'overall', 'percent': 43, 'source': 'website_import', 'as_of': None})
+    stamp = client.get(base, headers=h('editor')).json()['data']['project']['updated_at']
+    payload = {'updated_at': stamp, 'record': record}
+    assert client.post(f'{base}/{kind}', headers=h('editor'), json=payload).status_code == 422
+    assert client.put(f'{base}/{kind}/{uuid4()}', headers=h('editor'), json=payload).status_code == 422
+    assert client.put(f'{base}/{kind}/{record_id}', headers=h('viewer'), json=payload).status_code == 403
+    response = client.put(f'{base}/{kind}/{record_id}', headers=h('editor'), json=payload)
+    assert response.status_code == 200, response.text
+    saved = client.get(base, headers=h('editor')).json()['data']['records'][kind][0]
+    assert saved['website_source'] == evidence and saved['state'] == 'draft'
+    assert saved['ai_exposure'] == 'internal' and saved['readiness']['ready'] is False
+    assert saved['as_of'] is None if kind == 'construction' else saved['basis'] == 'website_import'
+    stamp = response.json()['data']['updated_at']
+    assert client.post(f'{base}/{kind}/{record_id}/submit', headers=h('editor'), json={'updated_at': stamp}).status_code == 422
+    if kind == 'construction':
+        for changes in ({'source': 'mkt'}, {'source': 'construction'}, {'ai_exposure': 'open'}):
+            assert client.put(f'{base}/{kind}/{record_id}', headers=h('editor'),
+                json={'updated_at': stamp, 'record': {**record, **changes}}).status_code == 422
 
 
 def test_website_confirmation_permissions_stale_atomicity_and_audit(permission_accounts):

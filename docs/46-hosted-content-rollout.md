@@ -735,3 +735,178 @@ versions are append-only; existing version bytes remain protected. The replay
 returned `already_applied`, with no new rows. Published pages remain zero,
 both local pilot pages remain `no_ai`, and `sena_h_approved` remains false.
 No AI job was run.
+
+### E hosted execution
+
+Implementation **`a47ee22`** is in `origin/main`. Both approved local credential
+files were checked with `git check-ignore` immediately before the commit; the
+final delivery scan covered 299 files and 356 archive members with zero matches.
+Canonical migration 78 retains SHA-256
+`999bf82638752cb2c36e79917eda4c8a21f176778c0eaf8ed9afa777c9b58bec`, matching
+the tested working bytes, Git index and local applied history.
+
+TEST migration 78 passed with exact prefix/checksum and verified TLS checks.
+All **57 protected/preserved tables** matched before and after; the complete
+Auth row, including `updated_at`, stayed strict and unchanged. No hosted browser
+was opened. Receipt:
+`.local/hosted-content-rollout/website-test-migration-1793113574287.json`.
+The fresh verified backup is
+`.local/backups/website-test-migration-20261027T150238Z/database-before-batch.dump`
+(9,472,313 bytes, SHA-256
+`1002e0660e7536034746dec458cc132afaf7ed558e3daf760b814450571cce99`).
+
+The private R2 batch then passed: **2,929 objects / 634,978,713 bytes reused**
+after checksum reads, and **199 objects / 25,693,873 bytes newly uploaded** with
+conditional writes and checksum verification. No prior object was replaced.
+The exact inventory changed from **4,022 / 1,190,851,866 bytes** to
+**4,221 / 1,216,545,739 bytes**; its new SHA-256 is
+`9d4f64941aa97ecd7e3868e3c1e451e640110ad47df537b3626a88cb97b2335a`.
+Protected database tables, including full Auth, remained unchanged.
+
+R2 receipts: `.local/hosted-content-rollout/website-object-plan-20261027T151302Z.json`,
+`website-storage-test.json`, and `website-test-objects-1793114025193.json`.
+Its fresh verified backup is
+`.local/backups/website-test-objects-20261027T150716Z/database-before-batch.dump`
+(9,502,762 bytes, SHA-256
+`461df743243ec9282f27be200cc433c2c225e3505ccc5c6a4948f9e7b1c6b51b`).
+The public-byte transfer remains ignored locally; the private VPS staging copy
+is `/srv/sena-hub-test/intake/website-57affeeb0f33bddba6d6d257abf27c952b8220b2b211ed50cb5284a802cb6226`.
+
+The first hosted import attempt stopped in connection validation, before its
+rehearsal or any content transaction. The historical transfer helper rejects a
+DSN query suffix, while the approved deployment configuration accepts only
+`sslmode=verify-full` and normalizes it before supplying an explicit verified
+TLS context. A read-only diagnostic proved the original helper rejection and
+acceptance of that validated normalized form; all **57 tables were unchanged**
+and no package receipt existed. No credential was printed, changed or moved.
+The ignored operator now passes the deployment's validated DSN in memory to
+the child, which retains certificate and exact-target checks. This does not
+change application code, the tested source seal or the TLS requirement.
+
+The retained stop receipt is `website-test-apply-1793114307037.json`; the
+read-only comparison is `website-stop-check-1793114495352.json`, both under
+`.local/hosted-content-rollout/`. Its unused protected backup is
+`.local/backups/website-test-apply-20261027T151513Z/database-before-batch.dump`
+(9,502,762 bytes, SHA-256
+`c0daf6a6b64d6ac1ec411ef993f6de0d9da3ab00f11438a94f5cce63a99e56d5`).
+The retry takes a new verified backup; it does not reuse this dump.
+
+The corrected TEST rehearsal reached text and asset insertion successfully,
+but measured database round trips were 90–97 ms. Its projected duration was
+close to the optional rehearsal runner's one-hour limit. Only this task's
+verified rehearsal Python child was stopped; its transaction rolled back.
+The operator exited and released its advisory lock. Read-only comparison
+`website-stop-check-1793115714401.json` then proved all 57 tables, including
+every Auth and project timestamp column, unchanged against the completed R2
+batch baseline, with no import receipt.
+
+That deliberate stop is retained as `website-test-apply-1793115617841.json`.
+Its unused backup is
+`.local/backups/website-test-apply-20261027T152258Z/database-before-batch.dump`
+(9,502,762 bytes, SHA-256
+`2131b40cefe4f0f6102117563505ea8621c8e2fbc7f041a25ecd070e93382fe3`).
+The final TEST attempt uses the already completed local rehearsal of the same
+pinned package, a new verified backup, one guarded import transaction and exact
+no-op replay, with a two-hour runner limit. All before-commit, post-commit,
+existing-row, Auth and permission checks remain in place. No required code,
+browser or migration gate was skipped or weakened, and no other agent's
+process or service was stopped.
+
+### Pending display follow-up in protected Phase 7 code
+
+The existing place card in `apps/admin/components/project-amenities.tsx:122`
+renders `String(item.as_of)`. Newly imported website places deliberately have
+an unknown date, so this older card displays `ข้อมูล ณ null`. The new website
+evidence panel explicitly identifies the unknown date/distance; the stored
+value remains NULL, with no invented effective date or confirmed distance.
+The Phase 7 file remains untouched under the owner's earlier instruction to
+stop and report before changing another agent's merged files. A display-only
+follow-up would use the existing `stringValue` helper and a Thai unknown-date
+label; it requires the owner's release of that file restriction. This is
+recorded as a remaining UI limitation, not as a completed fix.
+
+### Imported disclosure and construction edit compatibility
+
+The final edit-path check found that the commercial API's input models still
+rejected `website_import` and an unknown construction `as_of`, despite migration
+78 and the importer deliberately retaining those values. The API now accepts
+them only for existing imported records with stored website evidence. A missing
+effective date remains private, and ordinary construction reports still require
+a date. The original evidence is preserved; submission/readiness and four-eyes
+approval remain unchanged. This correction touches our Phase 9 API and the new
+website tests only; no historical migration or protected Phase 4/7 file changes.
+
+Two disposable API regressions passed, including edit success, preserved source,
+denied viewers, rejected forged sources and refused incomplete submission.
+The full API rerun passed **2,111 tests / 11 existing opt-in skips / zero failures**
+in 576.82 seconds. Typecheck and the documented offline build also passed.
+Receipts are `website-edit-focused.log`, `website-edit-api-full.log`,
+`website-edit-typecheck.log` and `website-edit-build.log` under
+`artifacts/hosted-content-rollout/`. The database rerun passed **62 SQL/concurrency
+checks + 10 Node tests**; H1 passed **11 protocol + 45 browser tests**. The complete
+browser rerun passed **302/302 in one run (10.9 minutes)** with no failures or
+skips, including the new queue at 1280 px and 390 px. These final receipts are
+`website-edit-db.log`, `website-edit-h1.log` and `website-edit-ui-full.log`.
+The final credential scan found zero matches in 302 files and 356 archive
+members. `.local/hosted-content-rollout/website-edit-gates.json` seals 667 final
+source-file hashes; the original pre-import `website-gates.json` is retained.
+
+### TEST website import — completed
+
+The guarded import completed at 16:45:56 UTC on 27 October (23:45:56 Bangkok).
+Receipt `.local/hosted-content-rollout/website-test-apply-1793119556071.json`
+records a successful transaction, preservation of all old content and full Auth
+columns, strict protected-table comparisons and an exact `already_applied`
+replay. The new verified protected backup was
+`.local/backups/website-test-apply-20261027T154310Z/database-before-batch.dump`
+(9,502,763 bytes, SHA-256
+`5a34770a2896901862c568603ced6c9bba3a5a56bb658006d09d8ac55d601f09`).
+No previous dump was reused.
+
+| TEST item | Before E | After E |
+|---|---:|---:|
+| Project drafts | 82 | 82 |
+| Brand drafts | 33 | 33 |
+| REM project identities | 278 | 278 |
+| Marketing-group references | 118 | 118 |
+| Knowledge candidates | 11,102 | 20,389 |
+| Asset registry rows | 3 | 3,131 |
+| Asset links | 0 | 3,573 |
+| Facilities | 0 | 30 |
+| Places | 0 | 594 |
+| Contacts | 0 | 374 |
+| Media links | 0 | 140 |
+| Commercial/unit-type drafts | 0 | 273 |
+| Disclosure drafts | 0 | 52 |
+| Construction progress drafts | 0 | 106 |
+| Narrative sections | 0 | 183 |
+| FAQ clusters | 0 | 426 |
+| Website asset suggestions (asset/project scope) | 0 | 3,421 |
+| Media jobs / human Knowledge reviews / publication versions | 0 / 0 / 0 | 0 / 0 / 0 |
+
+The package added 9,287 candidates, 3,128 asset registry rows and 1,752 typed
+drafts. All 229 conflicting text outcomes remain review evidence; 2,018 outcomes
+still need review, including shared-phase and unresolved taxonomy/format cases.
+No existing human content was overwritten, no new project was created, and no
+page-derived price row was inserted. FAQ regeneration inserted 426 TEST clusters
+without replacing a human decision; the local total was 333 because its prior
+candidate population differs. Registry-row creation is separate from the R2
+byte reuse recorded above.
+
+Read-only postflight `website-database-postflight-1793119655406.json` verifies
+the exact 78-migration history and all post-import fingerprints, including every
+Auth column. The existing one account, 12 permission rows and six templates are
+unchanged. BNA7, the website queue and source evidence are readable through
+`hub_runtime` → `hub_app` without RLS bypass; a missing actor is denied.
+All 3,421 suggestions remain pending, all website bindings are unconfirmed and
+internal, and imported assets retain pending rights and `needs_review` metadata.
+Published pages, publication versions, media jobs and publisher assignments
+remain zero; `sena_h_approved` remains false. TEST has no web-page rows; the
+existing local pilot pages retain `no_ai`.
+
+The first separate read-only postflight probe stopped before producing its
+migration/count checks (`website-database-postflight-1793119601738.json`). Its
+cause was not established. The retry added safe error-class diagnostics only;
+the same checks then passed with no database or credential change and no relaxed
+assertion. Both receipts are retained. No hosted browser session was opened
+during the import or these fingerprint checks.

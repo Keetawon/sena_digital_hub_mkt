@@ -950,3 +950,22 @@ scan found zero matches in 296 files and 356 archive members. Desktop and mobile
 screenshots were visually inspected. The permission-inventory additions and
 populated-upgrade test adjustment are explained in docs/46, together with
 the source seal and actual execution receipts.
+
+The same pinned E package has now applied locally and on TEST through migration
+78, with new verified protected backups and exact no-op replay. TEST gained
+9,287 candidates, 3,128 assets, 3,573 unconfirmed links, 1,752 typed drafts and
+426 FAQ clusters. R2 reused 2,929 objects and added 199 objects (25,693,873 bytes).
+Every original content row and all Auth/account/permission columns were
+preserved. Nothing was published or sent to a live AI provider. The detailed
+counts, retained conflicts, backup hashes and read-only runtime proof are in
+docs/46.
+
+A final edit-path check corrected our commercial API to accept existing
+website-import disclosure and construction drafts, keeping unknown dates
+private and source evidence intact. Forged source labels and incomplete
+submission remain rejected. No Phase 4/7 file or historical migration changed.
+The correction passed **2,111 API tests / 11 existing opt-in skips**, **62 DB
+checks + 10 Node tests**, **11 H1 protocol + 45 H1 browser tests**, typecheck,
+offline build and **302/302 browser tests in one complete 10.9-minute run**.
+The remaining protected Phase 7 unknown-date display follow-up is recorded in
+docs/46; its file remains untouched.

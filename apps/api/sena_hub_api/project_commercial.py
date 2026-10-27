@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Depends, Request
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from .auth import Actor, failure
 from .commercial_types import LocalizedText
@@ -49,7 +49,7 @@ class Disclosure(CommercialRecord):
     construction_start_year: Annotated[int, Field(strict=True, ge=1900, le=2200)] | None = None
     construction_completion_year: Annotated[int, Field(strict=True, ge=1900, le=2200)] | None = None
     notes: LocalizedText = Field(default_factory=dict)
-    basis: Literal["mkt_entered", "legal_document", "legal_approved"] = "mkt_entered"
+    basis: Literal["mkt_entered", "legal_document", "legal_approved", "website_import"] = "mkt_entered"
     legal_document_asset_id: UUID | None = None
     legal_doc_ref: Text | None = None
     legal_doc_date: date | None = None
@@ -87,8 +87,14 @@ class Construction(CommercialRecord):
     kind: Literal["construction"]
     component: Literal["overall", "structure", "architecture", "systems", "landscape", "other"]
     percent: Percent
-    as_of: date
-    source: Literal["construction", "mkt"]
+    as_of: date | None = None
+    source: Literal["construction", "mkt", "website_import"]
+
+    @model_validator(mode="after")
+    def require_effective_date(self):
+        if self.as_of is None and (self.source != "website_import" or self.ai_exposure != "internal"):
+            raise ValueError("ระบุวันที่ของความคืบหน้า หรือเก็บข้อมูลเว็บไซต์ที่ยังไม่ทราบวันที่ไว้ภายใน")
+        return self
 
 
 class SaveCommercial(UnitRevision):
@@ -109,8 +115,19 @@ def register_project_commercial_routes(app, authentication, database):
     async def save(public_id, kind, record_id, body, request, actor):
         if kind != body.record.kind:
             raise failure(422, "commercial_kind", "ประเภทข้อมูลไม่ตรงกับรายการ")
-        return await call(request, actor, "select hub.save_project_commercial($1,$2,$3,$4,$5)",
-                          public_id, kind, record_id, body.updated_at, body.record.model_dump(mode="json", exclude={"kind"}))
+        imported = (isinstance(body.record, Disclosure) and body.record.basis == "website_import"
+                    or isinstance(body.record, Construction) and body.record.source == "website_import")
+        async with database(request, actor) as connection:
+            if imported:
+                await connection.fetchval("select hub.require_permission('projects','edit')")
+                table = "project_disclosures" if kind == "disclosures" else "project_progress"
+                exists = await connection.fetchval(
+                    f"select exists(select 1 from hub.{table} r join hub.projects p on p.id=r.project_id "
+                    "where r.id=$1 and p.public_project_id=$2 and r.website_source is not null)", record_id, public_id)
+                if not exists:
+                    raise failure(422, "website_source", "แหล่งข้อมูลเว็บไซต์ใช้ได้เฉพาะรายการที่นำเข้าพร้อมหลักฐานแล้ว")
+            return {"data": await connection.fetchval("select hub.save_project_commercial($1,$2,$3,$4,$5)",
+                public_id, kind, record_id, body.updated_at, body.record.model_dump(mode="json", exclude={"kind"}))}
 
     @app.get(prefix)
     async def workspace(public_id: str, request: Request, actor: Actor = Depends(staff)):
