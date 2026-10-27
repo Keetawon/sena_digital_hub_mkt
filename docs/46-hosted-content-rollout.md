@@ -142,10 +142,11 @@ webpack build passed (`typecheck-02.log`, `build-02.log`). All API/SQL sources a
 unchanged from their passing gates. The icon was visually checked in
 `artifacts/permissions/sidebar-1280.png`. An immediate read-only deployment
 recheck found all **30 pre-existing protected tables unchanged** at migration 56;
-receipt: `.local/hosted-content-rollout/predeploy-recheck.json`.
+receipt: `.local/hosted-content-rollout/attempt-4adfe8e/predeploy-recheck.json`.
 The final credential scan found **zero matches in 875 files**, including changed
 source, the browser bundle, operator receipts and test artifacts. The passed gates
-are sealed against 611 source-file hashes in the ignored `deployment-gates.json`.
+are sealed against 611 source-file hashes in the ignored
+`attempt-4adfe8e/deployment-gates.json`.
 
 Ignored operator helpers under `.local/hosted-content-rollout/` prepare these
 steps without creating credential files:
@@ -169,3 +170,45 @@ Database recovery remains an operator-reviewed forward fix or protected restore,
 never an automatic whole-database restore. Application promotion restores the
 previous service configuration if its readiness checks fail. The IP vhost,
 certificate renewal, shared web server and other applications remain unchanged.
+
+### B execution receipts
+
+Preparation commit **`4adfe8e`** is pushed to `origin/main`. The candidate
+`4adfe8e-content-8ef94dd153e4` contains 209 verified tracked application files.
+Its source-manifest SHA-256 is
+`8ef94dd153e41ff4838dd1e15efa55724600ac9aaed84446e5adf96c9f87c3d9`.
+The previous `794d9cd-perf2-e78be5d8bee9` release remains available and active
+until promotion. The protected staging backup is
+`.local/backups/hosted-content-vps-stage-20261027T053527Z/units-web-before.tar.gz`.
+
+The first build invocation stopped on an unresolved placeholder in the ignored
+operator helper, before creating its script or installing dependencies. A
+read-only probe confirmed that no build environment or running service changed.
+The helper's string replacement was corrected and syntax/target resolution
+verified before retrying with a new protected configuration backup. Application
+source, migration bytes and the sealed gates were unchanged.
+
+The Linux dependency install, typecheck and webpack build completed, but the
+production-dependency audit then blocked promotion: pinned Next.js **16.3.8**
+falls in the affected ranges for
+[SVG optimization RCE](https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw),
+[typed-array cache RCE](https://github.com/vercel/next.js/security/advisories/GHSA-673q-mjm6-r5xr)
+and [Server Action denial of service](https://github.com/vercel/next.js/security/advisories/GHSA-p3m5-59mp-jv5r).
+The upstream fixes start at 16.4.1; pin the current stable bug-fix release
+[16.4.3](https://github.com/vercel/next.js/releases/tag/v16.4.3), regenerate the
+lockfile and repeat affected gates before staging a fresh candidate. No hosted
+migration or active-service switch occurred. The audit receipt is
+`.local/hosted-content-rollout/attempt-4adfe8e/vps-dependency-audit.json`.
+The candidate's eight receipts were preserved under `attempt-4adfe8e/`; the
+unused release directory is retained. The patched dependency audit reports zero
+findings. React and unrelated dependencies remain at their existing versions.
+The patched typecheck and offline build passed, as did the repeated H1 gates
+(11 protocol tests + 45 browser checks). A hash comparison confirms the other
+609 previously tested source files, including all API/SQL sources and migrations,
+are unchanged. The patched full browser suite passed **300/300 in one run
+(12.1 minutes)**, with zero skips/failures (`ui-next-patched.log`). The final
+credential scan passed with zero matches in 140 remaining source/bundle/receipt
+files after test cleanup. An earlier scan encountered a temporary screenshot lock
+during the run; it was repeated successfully after the runner finished. The fresh
+06:00 UTC pre-deployment comparison still matches all 30 protected tables at
+migration 56.
