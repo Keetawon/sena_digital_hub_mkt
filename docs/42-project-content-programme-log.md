@@ -969,3 +969,19 @@ checks + 10 Node tests**, **11 H1 protocol + 45 H1 browser tests**, typecheck,
 offline build and **302/302 browser tests in one complete 10.9-minute run**.
 The remaining protected Phase 7 unknown-date display follow-up is recorded in
 docs/46; its file remains untouched.
+
+Commit **07dda14** is pushed and deployed on TEST as
+`07dda14-content-82bd4feeade5`. Linux build/audit, candidate readiness, trusted
+HTTPS, consumer denial, R2 inventory, protected fingerprints and BNA7 runtime
+smokes passed. Both preceding rollback releases remain available. No hosted
+browser was available after the final fingerprint checks, so this deployment
+does not claim a new hosted visual inspection; automated desktop/mobile
+screenshots remain under ignored `artifacts/`.
+
+**STOP before live AI:** 1,879 of 3,084 images are eligible; 1,205 remain held.
+Model `gpt-5.4-mini-2026-03-17` yields a conservative US$47.3012 estimate and a
+proposed **US$60 cap**. The expected key is absent from the existing hosted API
+configuration. Owner budget approval and configuration through the existing
+protected procedure are required. No AI job was queued, no image processed,
+and actual AI cost is **US$0**. Docs/46 contains the exact budget receipt,
+assumptions, backups, rollback paths, conflicts and remaining review items.

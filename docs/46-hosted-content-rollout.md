@@ -910,3 +910,99 @@ cause was not established. The retry added safe error-class diagnostics only;
 the same checks then passed with no database or credential change and no relaxed
 assertion. Both receipts are retained. No hosted browser session was opened
 during the import or these fingerprint checks.
+
+### Final TEST application deployment and smoke
+
+The API correction and execution receipts were pushed to `main` as **07dda14**.
+Exact source release **`07dda14-content-82bd4feeade5`** is now live on TEST.
+The restricted Linux build passed frozen dependency installation, typecheck,
+the offline webpack build and the dependency audit. Candidate health/login and
+anonymous-consumer denial passed before promotion. The API cache is a real,
+writable `0700` directory; its existing cached file was preserved and verified.
+The protected hosted configuration stayed unchanged, and the Linux browser
+bundle scan found zero credential matches in 84 files.
+
+Deployment receipts are under
+`.local/hosted-content-rollout/website-deployment/`: `vps-source-manifest.json`,
+`vps-candidate.json`, `vps-build.json` and `vps-promotion.json`.
+The 211-file source-manifest SHA-256 is
+`82bd4feeade5d9f91451f79ab2518fcd3ab58db40f473110afbbd8f86df4893c`.
+Fresh verified service/web configuration backups preceded stage, build and
+promotion, under `.local/backups/hosted-content-vps-stage-20261027T165124Z/`,
+`hosted-content-vps-build-20261027T165207Z/` and
+`hosted-content-vps-promote-20261027T165512Z/`. Each `units-web-before.tar.gz`
+is 3,799 bytes, SHA-256
+`4f78ac413b78d67bb5fd0378fc27e95acd7dc5ba60fd46f628a3f6acdd001885`.
+
+Post-promotion database receipt `website-database-postflight-1793120179814.json`
+again passed all 57 fingerprints, the exact migration prefix, counts and BNA7
+non-bypass runtime access. `website-vps-postflight-1793120162.json` passed trusted
+IP TLS, health/login 200, all probed consumer/admin endpoints 401 with `no-store`,
+the exact R2 object/byte/checksum inventory, service hardening, writable cache,
+certificate-renewal timer and unchanged other-site configuration. Next still
+cannot read the R2 configuration. No page, account, permission or AI job changed.
+
+Rollback application paths remain
+`/srv/sena-hub-test/releases/953a152-content-4eb69b56f5b2` and
+`/srv/sena-hub-test/releases/794d9cd-perf2-e78be5d8bee9`.
+The previous service units are also preserved under
+`/srv/sena-hub-test/backups/07dda14-content-82bd4feeade5-units`.
+Database recovery uses the protected per-batch dumps listed above and the
+documented restore procedure; no restore or R2 deletion was performed.
+
+Only after the post-promotion fingerprints were recorded was browser inventory
+requested for visual inspection. The tool reported **no browser available**;
+no hosted tab or signed-in session was opened or refreshed. This final release
+therefore has automated browser and hosted HTTP/SQL smoke evidence, but no new
+hosted visual inspection. The earlier B/H1a screen inspection remains separately
+recorded above. The following ignored synthetic-data screenshots were refreshed
+by the passing browser suite and visually inspected:
+
+- `artifacts/hosted-content-rollout/website-review-1280.png`
+- `artifacts/hosted-content-rollout/website-review-390.png`
+- `artifacts/hosted-content-rollout/website-sources-1280.png`
+- `artifacts/hosted-content-rollout/website-sources-390.png`
+
+The unavailable-browser result is retained in
+`.local/hosted-content-rollout/website-browser-inspection.json`. The closing
+credential scan found zero matches in 310 files and 356 archive members.
+
+### H5 STOP — budget approval and missing hosted credential
+
+Read-only receipt
+`.local/hosted-content-rollout/website-h5-budget-1793120297292.json` pins the
+package, selected asset revisions and approved contexts. It found **3,084 images:
+1,879 eligible and 1,205 held**. The remaining 44 registered assets are non-image
+files. The configured/default model resolves to **`gpt-5.4-mini-2026-03-17`**.
+The expected `OPENAI_API_KEY` is **not configured** in the existing hosted
+`/etc/sena-hub-test/api.env`. Only its presence flag was read; no credential was
+printed, copied or relocated, and no new credential file was created.
+
+The conservative estimate for the 1,879-image batch is **US$47.3012**. Proposed
+owner-approved spending cap: **US$60**, including 25% headroom rounded upward.
+This uses standard uncached input at US$0.75/million tokens and output at
+US$4.50/million, with no assumed cache or Batch API discount, as verified against
+the [official model pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini).
+Inputs are resized to a maximum 768-pixel edge; 32-pixel patches and the model's
+1.2 multiplier bound a square image at 692 input tokens. The rest of the
+estimate includes the full UTF-8 context/schema/prompt size, 2,048 extra framing
+tokens and up to 3,500 output tokens per image. The
+[official vision token rules](https://developers.openai.com/api/docs/guides/images-vision)
+were rechecked on 27 October. Requests would be sequential, with zero automatic
+retries; extra attempts or a changed image/context/model scope require renewed
+budget review.
+
+**AI images processed: 0. Actual AI cost: US$0.** No jobs were queued and no
+provider request occurred. STOP before AI remains in force under both H5 and
+the owner's missing-credential rule. Resume only after the owner approves the
+US$60 cap and the expected key is configured through the existing protected
+hosted procedure. Do not supply the key in chat or add another credential file.
+
+Remaining review items are the sheet membership/brand/name conflicts and
+source-character exceptions recorded in C; the preserved 229 text conflicts,
+2,018 unresolved outcomes and shared-phase scope; the 1,205 held images;
+the robots/allowlist gaps recorded in D; and the protected Phase 7 unknown-date
+display follow-up above. A connected browser is also needed for a fresh hosted
+visual inspection. Marketing confirmations, publisher rights approval and any
+publication remain separate human actions. Packages A–D and the non-AI E import
+and deployment are complete; E's live AI suggestions remain deliberately pending.
