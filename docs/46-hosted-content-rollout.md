@@ -291,7 +291,8 @@ tables are not installed yet because migration 76 is pending.
 | Active assets / withdrawn test assets | 1 / 2 | 1 / 2 |
 | Human Knowledge reviews / publication versions | 0 / 0 | 0 / 0 |
 | R2 objects / bytes | 4,022 / 1,190,851,866 | 4,022 / 1,190,851,866 |
-| New asset links, facilities, places, contacts, media links, commercial-type drafts, disclosures, FAQ clusters | Tables absent | 0 each |
+| Facilities / commercial-type drafts | 0 / 0 | 0 / 0 |
+| New asset links, places, contacts, media links, disclosures, FAQ clusters | Tables absent | 0 each |
 
 R2 added objects/bytes: **0 / 0**. No new ingestion has reused objects yet. The
 inventory checksum is unchanged. No live business-sheet fetch, sheet import,
@@ -368,6 +369,125 @@ after application. No browser inspection is permitted until the post-upgrade
 fingerprints have been recorded. A browser tab-inventory request was rejected by
 automatic approval review under H1a; no browser information was returned. The
 owner was asked to close hosted tabs, and browser controls remain untouched.
+
+Owner confirmation, 27 October 2026 — verbatim:
+
+> I have closed every signed-in hosted TEST Hub tab and window on all my browsers and devices, including incognito windows and any app-integrated browser pane. I did not sign out, so no Auth write was triggered.
+>
+> Proceed with migrations 7376 under H1a. Do not open, reuse or refresh a signed-in hosted browser session until the post-upgrade fingerprints are recorded. Condition 5 remains the safety net: if auth.users.updated_at or anything else protected changes during 7376, STOP and report.
+
+The confirmation is retained in ignored `h1a-browser-window.json`. No browser
+controls are used during the migration window. The operator must revalidate the
+applied prefix and H1a comparisons before creating its fresh migration-73 backup;
+the 06:44 backup is not reused.
+
+### B resumed database result
+
+Migrations **73–76 completed successfully under H1a** at 07:44 UTC (14:44
+Bangkok). The original baseline remains unchanged and its full Auth comparison
+remains failed only on the previously accepted `updated_at`. Every accepted
+comparison passed; the full Auth drift guard detected **no further drift**, and
+all 29 other protected tables retained their original counts and fingerprints.
+No Auth rows were written. No browser controls were used during this interval.
+
+Fresh owner/SYSTEM-protected backups were verified by checksum, archive
+inventory and full archive read before each migration. Paths below are relative
+to `.local/backups/`, each containing `supabase-before-migration.dump`:
+
+| Migration | Fresh backup directory | Bytes | SHA-256 |
+|---|---|---:|---|
+| 73 | `hosted-content-202610220073-20261027T073450Z` | 9,168,760 | `bea5d747300785b3be6694cc2efde3aff7a6283ccdc69c4a8e976cff76efc69e` |
+| 74 | `hosted-content-202610220074-20261027T073654Z` | 9,195,176 | `95bba3d5a112839bcd3006a95745ff710f2d9c5a554abb45d1355aa79eec0ca8` |
+| 75 | `hosted-content-202610220075-20261027T073857Z` | 9,209,748 | `f7bf73a2352d3c9e4f3e0c08718e97c01bba496b7b9ac50158002541772bf11a` |
+| 76 | `hosted-content-202610230076-20261027T074128Z` | 9,268,940 | `e8ea4e450a925bb43fbacdfba0f2586bdcd9da3a72f4fc2e2e404ecb47c47d30` |
+
+Receipts `migration-0073.json` through `migration-0076.json` retain checksums
+and each comparison before backup, after backup and after migration. The final
+`database-deployment.json` records all post-upgrade fingerprints. An independent
+read-only `database-h1a-postflight-*.json` then passed before promotion or hosted
+screen inspection: exact migration 76, unchanged protected content, BNA7 visible
+and content readable under the non-bypass runtime role, website workspace
+readable, and missing-actor denial.
+
+Counts remain 82 project drafts, 33 brand drafts, 278 REM project identities,
+118 groups, 11,102 Knowledge candidates, three asset rows (one active and two
+withdrawn tests), one Hub account, 12 permission rows and six templates. New
+asset links, facilities, places, contacts, media links, commercial-type drafts,
+disclosures and FAQ clusters are all zero. Website pages, publication batches,
+publication versions and publisher-capability assignments are zero. There are
+no hosted pilot pages to change from `no_ai`; local pilots remain untouched.
+`sena_h_approved` is false. This completes the database part of B; application
+promotion and post-promotion smoke receipts follow separately.
+
+### B application promotion and smoke results
+
+Candidate **`953a152-content-4eb69b56f5b2`** is promoted. Its isolated preview
+passed health/login and anonymous consumer denial before switching the two Hub
+service units and `current` pointer. The previous
+`794d9cd-perf2-e78be5d8bee9` release remains intact for rollback; the previous
+units are protected at
+`/srv/sena-hub-test/backups/953a152-content-4eb69b56f5b2-units`.
+The fresh pre-promotion service/web configuration archive is
+`.local/backups/hosted-content-vps-promote-20261027T074605Z/units-web-before.tar.gz`
+(3,799 bytes; SHA-256
+`7a24ec761532e115d5c294f5fdf12b1349f9a6455d9a0930f11fc6c730f32aaa`).
+
+The candidate has a real private `0700` API cache, writable by the API user and
+explicitly permitted in `ReadWritePaths`; its one retained file passed checksum
+verification. The admin service cannot read R2 credentials. Both services retain
+`ProtectSystem=strict` and `NoNewPrivileges`. Existing hosted credential/config
+files are unchanged, and scanning 84 browser bundle files found zero credential
+matches. No new credential location was created.
+
+The 07:47 UTC post-promotion smoke passed trusted IP HTTPS, health/login 200,
+and 401 with `no-store` for anonymous project, brand, admin project, web changes,
+`llms.txt`, robots-AI and admin-web endpoints. Certificate renewal remains active;
+unrelated site configuration is unchanged. R2 remains **4,022 objects /
+1,190,851,866 bytes**, with the same complete inventory checksum. Added/reused
+objects for this package: **0 / 0**.
+
+`database-h1a-postflight-1793087257101.json` records a second independent
+post-promotion pass, including every H1a fingerprint, no additional Auth drift,
+unchanged counts, BNA7 content/runtime access, missing-actor denial, zero
+publication and false `sena_h_approved`. The first independent pass was
+`database-h1a-postflight-1793087133191.json`. Both precede the first hosted browser
+inspection, which began after these receipts existed. Browser inspection after
+that point uses the owner's permitted post-upgrade window and is recorded below.
+
+Hosted screen inspection passed after those fingerprints were recorded: the
+project list resolves BNA7 and its 334 candidates; its existing draft and the new
+content workspace load under the existing account. The draft remains visibly
+unpublished. Desktop and 390 px mobile captures are under ignored `artifacts/`:
+
+- `artifacts/hosted-content-rollout/hosted-bna7-list-1280.jpg`
+- `artifacts/hosted-content-rollout/hosted-content-bna7-1280.jpg`
+- `artifacts/hosted-content-rollout/hosted-content-bna7-390.jpg`
+
+No save, approval, publication or account action was used. The viewport was
+restored and the inspection tab closed without signing out. Package B is
+complete; the original release and all protected recovery material are retained.
+
+## C. Business-sheet snapshot
+
+The two authorized public CSV exports were fetched at 07:51 UTC, 27 October,
+and saved as an immutable verified package:
+`.local/business-sheet-intake/2026-10-27T07-51-20.247659_00-00-95932f6b9cf7`.
+Manifest SHA-256:
+`95932f6b9cf7523194b581491deafec2ad06b26989801ffe6e9cf8546d1ebb1f`.
+The Bangkok source snapshot date is 2026-10-27. AgencyFee was not accessed.
+
+The Project export yields **87 rows / 86 distinct exact Project IDs**, plus
+**one missing-ID exception**. LADKB occurs on two source rows; both are retained
+without guessing a second identity. All 16 ProjectGroupMaster columns are kept
+for its **118 rows**. English-name Thai characters and whitespace within group
+member lists are flagged while preserving source spelling. The source package
+and normalized records are checksum-pinned; source references remain separate
+from accepted REM/DW identities and nonempty human content.
+
+There are **79 distinct allowed website URLs**, with explicit project scopes.
+FR189, SK1SD and K9BK5 have `N/A` URLs and remain recorded gaps. No robots or
+allowlist exception is inferred. The snapshot has not yet been applied; dry-run
+diffs and transactional receipts follow after implementation and verification.
 
 ## C–E implementation boundaries
 
