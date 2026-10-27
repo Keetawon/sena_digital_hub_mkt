@@ -212,3 +212,154 @@ files after test cleanup. An earlier scan encountered a temporary screenshot loc
 during the run; it was repeated successfully after the runner finished. The fresh
 06:00 UTC pre-deployment comparison still matches all 30 protected tables at
 migration 56.
+
+Commit **`953a152`** is pushed. The replacement candidate is
+`953a152-content-4eb69b56f5b2`, with source-manifest SHA-256
+`4eb69b56f5b29e6f0b4a3cfb1f25de2004f4bde44c16274817412b1f095bc537`.
+Its isolated Linux install, typecheck, webpack build and production dependency
+audit passed. The protected staging configuration backup is
+`.local/backups/hosted-content-vps-stage-20261027T060444Z/units-web-before.tar.gz`.
+The database operator started the reviewed sequential upgrade at 06:10 UTC;
+individual results and verified backup paths are recorded in
+`.local/hosted-content-rollout/migration-0057.json` through `migration-0076.json`
+as each migration completes. A missing receipt does not imply that step passed.
+
+### B STOP — Auth timestamp drift, 27 October
+
+At 06:46 UTC (13:46 Bangkok), the preservation assertion stopped the operator
+**before migration 73**. Migrations **57–72** applied successfully, each with
+a fresh verified protected backup and unchanged post-migration fingerprints.
+The hosted history ends at `202610220072_facilities_features_places.sql`;
+migrations 73–76 remain pending. The backup prepared for migration 73 passed
+verification, but that migration was not executed. No application promotion or
+automatic database restore occurred.
+
+The only changed protected table is `auth.users` (still one row). Read-only
+comparison against both the first rollout backup and the pre-72 backup finds
+**only `updated_at` changed; the other 33 Auth columns match exactly**. Values
+were compared in memory and never exported into diagnostic receipts. All other
+29 protected tables, including Hub accounts, permissions, templates, existing
+drafts, candidate evidence, reviews and media bindings, retain their original
+counts and fingerprints. The Auth timestamp's cause is not established. A
+browser inspection reused an existing signed-in session during this interval;
+no login, logout, account edit or publication was requested, and that temporal
+overlap does not establish causation.
+
+The full Auth-row fingerprint therefore no longer meets the owner's unchanged
+fingerprint requirement. Keep the STOP in place. **Owner decision needed:** may
+this observed timestamp-only difference be accepted for resumption from 72,
+while continuing to require exact equality for all other Auth fields and every
+other protected table? Do not reset `updated_at`, rewrite account data, replace
+the original baseline or silently weaken its check. A permitted continuation
+must record the original and accepted comparison separately, revalidate the
+exact applied migration prefix, and take another fresh verified backup before
+migration 73. No acceptance has been given yet.
+
+Read-only recovery checks at 06:58 UTC confirm that the active release remains
+`794d9cd-perf2-e78be5d8bee9`, both services and their configuration are unchanged,
+the private cache remains real and writable, trusted HTTPS health/login return
+200, and anonymous consumer/admin requests return 401 with `no-store`. BNA7
+remains readable through the non-bypass runtime role with missing-actor denial.
+Its draft/identity fingerprints, 334 candidates and 71 asset candidates match
+preflight. Accounts, permissions and both issuance flags match preflight;
+`sena_h_approved` is false. Publication versions remain zero. Website page
+tables are not installed yet because migration 76 is pending.
+
+| Preserved item | Before | At STOP |
+|---|---:|---:|
+| Project drafts / Brand drafts | 82 / 33 | 82 / 33 |
+| REM project identities / marketing groups | 278 / 118 | 278 / 118 |
+| Knowledge candidates | 11,102 | 11,102 |
+| Active assets / withdrawn test assets | 1 / 2 | 1 / 2 |
+| Human Knowledge reviews / publication versions | 0 / 0 | 0 / 0 |
+| R2 objects / bytes | 4,022 / 1,190,851,866 | 4,022 / 1,190,851,866 |
+| New asset links, facilities, places, contacts, media links, commercial-type drafts, disclosures, FAQ clusters | Tables absent | 0 each |
+
+R2 added objects/bytes: **0 / 0**. No new ingestion has reused objects yet. The
+inventory checksum is unchanged. No live business-sheet fetch, sheet import,
+new website crawl, website content wiring or live AI batch has run; AI images
+processed and incurred API cost are **0 / 0**. Sheet diffs, crawl outcomes,
+agreement scores and an H5 budget are not available yet. Ignored importer and
+extractor drafts have synthetic checks only and are not shipped functionality.
+
+STOP evidence is retained under `.local/hosted-content-rollout/`:
+
+- `migration-0057.json` through `migration-0072.json`: successful batches.
+- `database-deployment-stop-1793083593567.json`: stop before migration 73.
+- `migration-stop-diagnostic-1793083664221.json`: all 30 protected comparisons.
+- `auth-column-diagnostic-1793083782281.json` and
+  `auth-column-diagnostic-1793084216315.json`: changed column names only,
+  compared against the pre-72 and first rollout backups respectively.
+- `stop-safety-1793084274409/database.json` and `vps-stop-safety-1793084280.json`:
+  migration history, counts, BNA7 runtime checks, active release, HTTPS and R2.
+
+Recovery material remains protected and ignored:
+
+- Before the whole upgrade:
+  `.local/backups/hosted-content-202610210057-20261027T061014Z/supabase-before-migration.dump`
+  (8,473,370 bytes; SHA-256
+  `cce3ea468adbb374d958c0b64b8b60ef2a19f04b4b245b80e0afa639f5cc4785`).
+- Latest verified migration-72 state, prepared before the unapplied migration 73:
+  `.local/backups/hosted-content-202610220073-20261027T064457Z/supabase-before-migration.dump`
+  (9,168,727 bytes; SHA-256
+  `66b43a1d8302e0c5eec41c094952abbd6a65928ae8fcfe596cd7f19c70b142fd`).
+- Previous application release:
+  `/srv/sena-hub-test/releases/794d9cd-perf2-e78be5d8bee9` (still active).
+- Service/web configuration backup:
+  `.local/backups/hosted-content-vps-stage-20261027T060444Z/units-web-before.tar.gz`.
+
+The ready candidate `953a152-content-4eb69b56f5b2` remains unpromoted. Gates
+passed for its source: API **2,095** (11 existing opt-in skips), database **62**
+plus **10** Node checks, H1 **11** protocol plus **45** browser checks, and the
+full browser suite **300/300 in one run**. Typecheck, local/Linux builds and
+production dependency audit passed. This report does not mark package B or the
+overall rollout complete.
+
+## C–E implementation boundaries
+
+Business-sheet snapshots use the existing immutable intake batch, project
+reference evidence and marketing-group evidence structures. The sheet is a
+separate source from REM/DW: it cannot replace REM identities, erase DW exception
+flags or become the latest DW status snapshot. Source spelling and IDs remain
+exact text. A missing ID is an exception, duplicate IDs retain their distinct
+source rows, and shared URLs retain explicit phase applicability. Excluded
+columns stay out of normalized records, database intake, crawler input and AI
+context. Raw CSV evidence stays in the ignored checksum-pinned package.
+
+The intake diff distinguishes unchanged, new, changed and conflicting evidence.
+Existing accepted mirrors and human edits are preserved; changed sheet values
+are append-only source suggestions. Conflicts in group membership, brand text or
+names remain review evidence, without rebinding a project. Both databases use
+the same verified package. Transaction locks, immutable receipts and exact
+package replay checks prevent duplicate intake.
+
+Website extraction must retain section, tab, floor/type labels, page URL and
+fetch time, including failed and refused requests. A fetch timestamp never
+becomes a construction date, a contact confirmation, an image capture date or a
+business effective date. The extractor runs on inert HTML with synthetic
+fixtures for both website templates; the existing crawler retains its robots,
+host, DNS, redirect, rate and size restrictions. Chrome, icons and unrelated
+page furniture are excluded under the existing intake rules.
+
+Reuse existing content and media tables. Website text becomes a draft or review
+suggestion; nonempty human values remain unchanged. Prices remain evidence and
+never populate `project_prices`. Unresolved entity/type/floor mappings stay
+unconfirmed. Media metadata and bindings from page position are explicitly
+unconfirmed, rights remain pending, and originals remain private. Existing
+content hashes are reused only after byte/checksum verification; new object
+writes are conditional and cannot replace an existing object.
+
+The media review queue uses existing Projects view/edit permissions. Marketing
+can select assets and confirm category, tags and actual target context, with
+revision checks and an audit record for each asset. Shared assets retain all
+existing cross-tab permission checks. Rights approval remains separate and uses
+the existing approver rules. No account, template or capability assignment is
+part of this work. Website origin appears as **ดึงจากเว็บไซต์สาธารณะ SENA**;
+the queue is **รูปจากเว็บไซต์ (รอยืนยัน)**.
+
+Page-position and E1 AI suggestions remain separate. Agreement can affect queue
+ordering but cannot confirm metadata or bindings. The H5 report must count the
+eligible images, use the configured model and current documented pricing, and
+state the estimate before any live batch. No translation or image worker may
+accidentally drain queued jobs before that approval. Missing expected
+credentials require a STOP without creating another credential location.
