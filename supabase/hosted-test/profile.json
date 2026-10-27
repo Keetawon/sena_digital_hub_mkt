@@ -383,6 +383,11 @@
       "name": "202610230076_web_publication.sql",
       "canonical_sha256": "10d5220b604dec217a0e2ce1bb7269f274978c350508c9428bfa8b1e74a1cf3f",
       "executed_sha256": "10d5220b604dec217a0e2ce1bb7269f274978c350508c9428bfa8b1e74a1cf3f"
+    },
+    {
+      "name": "202610270077_business_sheet_snapshot.sql",
+      "canonical_sha256": "da31bb22e2818abb0b86b51930790ea3fc0e4ccae2a71710f094df68d2beb5a2",
+      "executed_sha256": "da31bb22e2818abb0b86b51930790ea3fc0e4ccae2a71710f094df68d2beb5a2"
     }
   ]
 }

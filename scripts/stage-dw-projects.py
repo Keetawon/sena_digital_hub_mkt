@@ -70,8 +70,11 @@ async def plan(connection, package, discard_deleted):
         require(receipt is not None, 'Batch exists without a project intake receipt')
         return {'status': 'already_staged', 'new_evidence': 0, 'mirror_inserts': 0, 'mirror_deletes': 0, 'replayed_receipt': receipt}, None
     latest_batch = await connection.fetchval('''SELECT b.manifest FROM staging.project_intake_receipts r
-        JOIN staging.intake_batches b USING(manifest_sha256) ORDER BY r.imported_at DESC LIMIT 1''')
-    first_receipt = await connection.fetchval('SELECT outcomes FROM staging.project_intake_receipts ORDER BY imported_at,manifest_sha256 LIMIT 1')
+        JOIN staging.intake_batches b USING(manifest_sha256)
+        WHERE b.manifest->>'source_system' IS DISTINCT FROM 'business_sheet' ORDER BY r.imported_at DESC LIMIT 1''')
+    first_receipt = await connection.fetchval('''SELECT r.outcomes FROM staging.project_intake_receipts r
+        JOIN staging.intake_batches b USING(manifest_sha256)
+        WHERE b.manifest->>'source_system' IS DISTINCT FROM 'business_sheet' ORDER BY r.imported_at,r.manifest_sha256 LIMIT 1''')
     # Only identities explicitly discarded at the first intake retain that policy.
     # A later newly deleted model stays as flagged evidence, never auto-deleted.
     discard_keys = {tuple(key) for key in first_receipt['discarded_model_keys']} if first_receipt else None
@@ -87,6 +90,7 @@ async def plan(connection, package, discard_deleted):
     gold = {r['rem_project_id']: r for r in tables['staging.dw_projects']}
     prior = {(r['kind'], r['rem_project_id'], r['source_id']): dict(r) for r in await connection.fetch('''
         SELECT DISTINCT ON(kind,rem_project_id,source_id) * FROM staging.project_intake_evidence
+        WHERE kind IN ('projects','models','gold_projects','gold_models')
         ORDER BY kind,rem_project_id,source_id,id DESC''')}
     legacy = {('projects', p, ''): r['source_record'] for p, r in projects.items()}
     legacy.update({('models', p, m): r['source_record'] for (p, m), r in models.items()})
@@ -138,7 +142,10 @@ async def plan(connection, package, discard_deleted):
     if 'project_groups' in package['datasets']:
         incoming_groups = {r['project_group_id']: r for r in package['datasets']['project_groups']}
         previous_groups = {r['project_group_id']: dict(r) for r in await connection.fetch('''
-            SELECT DISTINCT ON(project_group_id) * FROM staging.project_group_evidence ORDER BY project_group_id,id DESC''')}
+            SELECT DISTINCT ON(e.project_group_id) e.* FROM staging.project_group_evidence e
+            JOIN staging.intake_batches b USING(manifest_sha256)
+            WHERE b.manifest->>'source_system' IS DISTINCT FROM 'business_sheet'
+            ORDER BY e.project_group_id,e.id DESC''')}
         for gid, row in incoming_groups.items():
             previous = previous_groups.get(gid)
             if previous and previous['record'] == row and previous['outcome'] != 'missing':

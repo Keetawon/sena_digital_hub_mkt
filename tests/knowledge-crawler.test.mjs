@@ -52,6 +52,8 @@ test('roles are suggestions and unknown filenames remain unclassified', () => {
   assert.equal(suggestedRole('https://sena.co.th/file.webp','promotion_banners[0]'),'promotion_banner');
   assert.equal(suggestedRole('https://sena.co.th/a.pdf'),'brochure');
   assert.equal(suggestedRole('https://youtube.com/watch?v=x'),'video_link');
+  assert.equal(suggestedRole('https://my.matterport.com/show/?m=synthetic'),'video_link');
+  assert.equal(suggestedRole('https://kuula.co/share/synthetic'),'video_link');
   assert.equal(suggestedRole('https://sena.co.th/unknown.jpg'),'unclassified');
   assert.equal(suggestedRole('https://sena.co.th/youtube-thumb/one.webp','videos'),'unclassified');
   assert.equal(suggestedRole('https://sena.co.th/icon/videogame.svg'),'unclassified');

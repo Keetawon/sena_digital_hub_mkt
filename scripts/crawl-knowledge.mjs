@@ -37,7 +37,7 @@ export function cleanText(text) {
 export function suggestedRole(url, section = '') {
   const text = `${url} ${section}`.trim().toLowerCase();
   const image = /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)(?:[?#]|$)/i.test(url);
-  if (!image && /youtube|youtu\.be|vimeo|\.mp4(?:[?#\s]|$)|video/.test(text)) return 'video_link';
+  if (!image && /youtube|youtu\.be|vimeo|matterport\.com|kuula\.co|\.mp4(?:[?#\s]|$)|video/.test(text)) return 'video_link';
   if (/master.?plan|ผังโครงการ/.test(text)) return 'master_plan';
   if (/floor.?plan|แปลนชั้น/.test(text)) return 'floor_plan';
   if (/unit.?plan|room.?plan|unit_types|แบบห้อง/.test(text)) return 'unit_plan';
@@ -282,7 +282,11 @@ export async function crawl(inputPath, inputHash, channel = 'msedge') {
         finally { await context.close(); await Promise.allSettled([...pending]); }
       } else row.render_status = 'not_needed_static_content';
       row.title = extracted.title; row.coverage = row.render_status === 'failed' ? 'partial_render_failed' : 'fetched';
-      if (extracted.website) row.website = extracted.website;
+      if (extracted.website) {
+        row.website = extracted.website;
+        for (const gap of extracted.website.extraction_gaps ?? [])
+          failure('extraction', {url:source.url,page_url:source.url,field:gap.field}, {...result,reason:gap.reason});
+      }
       row.sections = extracted.sections.map(section => ({ ...section, ...cleanText(section.text), applicability_status: 'needs_scope_review' }));
       if (!row.sections.length) { row.coverage = 'empty_extraction'; failure('page', source, { ...result, reason: 'empty_extraction_not_missing_content' }); }
       for (const ref of extracted.refs) addRef(ref, row);

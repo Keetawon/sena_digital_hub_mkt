@@ -500,6 +500,47 @@ source rows, and shared URLs retain explicit phase applicability. Excluded
 columns stay out of normalized records, database intake, crawler input and AI
 context. Raw CSV evidence stays in the ignored checksum-pinned package.
 
+The first successful hosted read-only diff is
+`.local/hosted-content-rollout/business-plan-1793089265701.json`: **86 project
+identities (66 changed, 20 conflicts)** and **118 groups (80 changed, 38
+conflicts)**; zero new accepted group references. The additional business-sheet
+columns are new evidence relative to the narrower DW group projection. Group
+member whitespace stays literal and unresolved, rather than becoming a guessed
+ID match. All source rows remain in the snapshot, including LADKB's two rows.
+The full conflict list is in that receipt; none authorizes overwriting a value.
+
+The planner's initial two attempts made no writes: its first TLS assertion
+incorrectly inspected the pooler's backend connection instead of the client's
+verified TLS transport. The corrected check verifies the client TLS connection
+and exact TEST identity. All original protected content and every Auth column
+except the already scoped `updated_at` match the original accepted baseline.
+`updated_at` differs from the H1a end after the explicitly permitted Package B
+browser inspection. Package C captures a fresh full Auth fingerprint and compares
+**every column, including `updated_at`, strictly before/after each write batch**;
+the H1a migration window and original failed comparison remain unchanged.
+
+### C–D code verification
+
+The full API gate passed **2,102 tests / 11 existing opt-in skips / 0 failures**
+in 1,029.41 seconds. DB passed **62 SQL/concurrency checks + 10 Node tests**,
+including populated migration replay. H1 passed **11 protocol + 45 browser
+tests**, including the interrupted 56→77 upgrade and exact replay. Admin
+typecheck and the documented offline webpack build passed. Focused intake and
+extractor runs each passed 16 cases. Logs use the `business-sheet-` prefix under
+`artifacts/hosted-content-rollout/`.
+
+The first full browser run hit `ECONNRESET` in the 390 px Phase 2 case while
+switching the local persona after its content edits and layout checks. No content
+assertion failed in that case. Its evidence is retained at
+`artifacts/hosted-content-rollout/business-sheet-ui-first-failure/`. The unchanged
+complete suite then passed **300/300 in one run (12.2 minutes)**, recorded in
+`business-sheet-full-ui-02.log`. No test was skipped, retried within a run or
+weakened. The tested source hashes are sealed in the ignored
+`.local/hosted-content-rollout/business-sheet-gates.json` before import.
+The credential scan covered 236 changed, receipt and browser-bundle files plus
+356 archive members, with **zero matches**. Both approved local development
+credential files remained ignored immediately before the delivery commit.
+
 The intake diff distinguishes unchanged, new, changed and conflicting evidence.
 Existing accepted mirrors and human edits are preserved; changed sheet values
 are append-only source suggestions. Conflicts in group membership, brand text or

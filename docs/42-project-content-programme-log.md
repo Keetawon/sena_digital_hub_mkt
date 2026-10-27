@@ -894,3 +894,35 @@ integration occurred. Articles were already pushed as `1c19e3a`; this phase's
 commit hash and push confirmation are in the delivery response. **STOP here**
 for the owner's website integration decision. Do not start the remaining
 Phase 10 expansion.
+
+## Hosted content rollout — 27 October 2026
+
+The owner's new H1–H5 programme supersedes the earlier local-only STOP for this
+specific TEST rollout. [46 — hosted content rollout](46-hosted-content-rollout.md)
+contains the verbatim decisions, preflight comparisons, backup/rollback paths,
+H1a Auth timestamp exception and actual hosted receipts. Migrations 57–76 and
+candidate `953a152-content-4eb69b56f5b2` are live on TEST; no page was published.
+The original baseline still reports its `auth.users.updated_at` difference;
+the separate scoped comparison and strict drift guard passed through 73–76.
+
+Package C adds migration **77**, which allows business-sheet project evidence
+in the existing intake structures and keeps DW status/refresh policy separate.
+The importer pins the two authorized CSV exports, retains exact IDs and every
+source exception, appends conflicting values as evidence, preserves accepted
+mirrors and human edits, and makes package replay a no-op. No new master,
+account, permission assignment or source-system write is introduced.
+
+Package D extends the existing inert extractor for both SENA templates, including
+hidden WordPress unit tabs and explicit JSON plan labels. The crawler retains
+robots/allowlist/rate/redirect guards and records extraction gaps. Synthetic
+checks cover plan labels, unit/room text, facilities, nearby headings, contacts,
+gallery labels, brochures, 360/video links, progress, disclosures and FAQs.
+
+Verification: **2,102 API passed / 11 existing opt-in skips**, **62 DB checks +
+10 Node tests**, **11 H1 protocol + 45 H1 browser tests**, and **300/300 browser
+tests in one complete run**. Typecheck, populated migration replay and the
+documented offline build passed; focused intake and extractor runs each passed
+16 cases. The first browser run's local persona `ECONNRESET` and its unchanged
+successful rerun are recorded in docs/46, alongside the credential scan and
+actual import/crawl receipts. No test was weakened.
+No live AI batch is authorized by these changes; H5 remains an explicit STOP.

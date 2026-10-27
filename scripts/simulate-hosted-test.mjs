@@ -76,7 +76,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     assert.deepEqual(await contentUpgradeState(),contentUpgradeBefore);
     assert.equal((await client.query('select count(*)::int count from hub.web_pages')).rows[0].count,0);
     assert.equal((await client.query("select count(*)::int count from hub.account_permission where 'knowledge.publish_web'=any(special_actions)")).rows[0].count,0);
-    log('PASS: hosted 56->76 failure/recovery preserves accounts, permissions and templates; no page or publisher grant created.');
+    log(`PASS: hosted 56->${migrations.length} failure/recovery preserves accounts, permissions and templates; no page or publisher grant created.`);
     assert.equal((await admin.query("select rolpassword from pg_authid where rolname='hub_runtime'")).rows[0].rolpassword,upgradePassword);
     assert.deepEqual((await client.query("select to_jsonb(a) row from hub.user_account a where id='00000000-0000-0000-0000-000000000090'")).rows[0].row,upgradeAccount);
     assert.equal((await client.query("select count(*)::int count from staging.rem_projects where rem_project_id='SYNTHETIC-UPGRADE'")).rows[0].count,1);

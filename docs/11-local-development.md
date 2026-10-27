@@ -489,3 +489,43 @@ AI call. Candidates that already have a Knowledge review, and the members of any
 cluster with a decision, are excluded and never regrouped. `--apply` replaces only
 undecided clusters in one locked transaction; it accepts only the working loopback
 cluster (`.local/postgres`). It never writes candidates, reviews, FAQs or accounts.
+
+## Business-sheet snapshots and website extraction — hosted rollout C–D
+
+`scripts/business-sheet.py` reads only the owner's two public CSV exports and
+stores an immutable package under `.local/business-sheet-intake/`. The Project
+projection contains the 17 approved columns; ProjectGroupMaster keeps all 16.
+It does not access AgencyFee. IDs remain exact text, including leading zeroes
+and whitespace. Missing IDs, duplicate rows, suspect English spelling and group
+member whitespace remain explicit review evidence. Excluded Project columns
+remain only in the private raw CSV evidence, never normalized intake or AI input.
+
+```powershell
+python scripts/business-sheet.py fetch
+python scripts/business-sheet.py verify --package <ignored-package> --manifest-sha256 <hash>
+uv run --project apps/api python scripts/business-sheet.py plan --package <ignored-package> --manifest-sha256 <hash>
+uv run --project apps/api python scripts/business-sheet.py apply --package <ignored-package> --manifest-sha256 <hash>
+python scripts/business-sheet.py crawl-input --package <ignored-package> --manifest-sha256 <hash>
+```
+
+The CLI's database operations are confined to the existing `.local/postgres`
+working cluster. Apply migration 77 first and preserve a fresh verified backup.
+The importer appends source evidence and a receipt in one locked transaction;
+identical packages are no-ops. Existing REM/DW mirrors, human edits and accepted
+memberships are preserved. Conflicts stay evidence. New group references are
+created only when their exact IDs and memberships have no conflict. Business
+snapshots cannot change the latest DW status, deleted/missing flags or its
+first-import policy. This adds no role, account or permission assignment.
+
+`crawl-input` emits a checksum and the distinct authorized URLs, retaining every
+exact project scope and URL gap. Pass that input and checksum to the existing
+`scripts/crawl-knowledge.mjs`. Both SENA templates now retain gallery tabs, floor
+and type labels, explicit room/size text, facilities, nearby headings, contact
+links, progress, disclosures, promotions and FAQ evidence. Malformed inert plan
+JSON becomes a recorded gap; scripts are never evaluated by the extractor.
+Robots, host, redirect, rate and size restrictions remain enforced.
+
+Hosted operation is separately guarded by the owner-approved procedure and
+receipts in [46 — hosted content rollout](46-hosted-content-rollout.md). A fresh
+protected verified backup and full before/after fingerprints precede each write
+batch. These tools never confirm metadata, approve rights, publish or call AI.
