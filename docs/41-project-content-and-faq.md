@@ -540,3 +540,67 @@ path. A newer draft never changes the previously approved article snapshot.
 The workspace bounds its history view to the latest 30 versions and its image
 and clip pickers to the latest 200 currently eligible items; all versions remain
 in the audited database.
+
+## Phase 8 permission and publication contract — 23 October 2026
+
+Articles were pushed as `1c19e3a`; a fresh pull confirmed main current before
+this phase. Phase 7 is merged. Migration 76 follows the existing 75 migrations;
+the files added by the parallel PRs remain untouched.
+
+| Permission card | Decision |
+|---|---|
+| Feature / owner | Marketing prepares website pages; an independent Manager publishes an exact reviewed batch |
+| Tab / V | Existing Knowledge V for page registry, publication history and previews; each source tab must also be visible before its private content is returned |
+| E | Knowledge E saves page configuration and prepares an immutable server-composed batch, with all affected pages, resolved applicability and source changes shown |
+| A / special | Knowledge A plus the new `knowledge.publish_web` special, labelled «เผยแพร่ขึ้นเว็บ», publishes, withdraws or rolls back. Approval for every included source tab is also required |
+| Separation | Every source-version editor, English reviewer and batch preparer is excluded from publishing that version, including after a permission change. E/A separation remains unchanged |
+| Templates / rollout | Add the special to the existing catalog only. No account grants, template propagation or implicit approvers. Warn account managers when fewer than two ACTIVE accounts hold the usable special |
+| Agency / sensitivity | No private access for agencies, consumers or inactive accounts. Published consumers retain their existing authentication boundary. Private evidence and internal identifiers stay in Hub storage |
+| Other tabs | Projects for project facts/media/types/facilities/features/places and Brands for brand content; article references retain their source permissions. Minimal public IDs/names do not grant source access |
+| Shared surfaces | Public page/FAQ/change-feed/llms/robots endpoints and current authorized asset bytes only. No assistant or RAG draft access; no provider, hosted, REM or DW writes |
+| SQL / API | Audited FORCE-RLS registry, prepared batches and change events; web-page snapshots extend entity_versions additively. Exact guarded commands and reviewed route inventories; private helpers have no runtime EXECUTE |
+| Verification | Stale preview and rule drift, atomic affected-page publication, four-eyes after role changes, source revocation and expiry, zero/false facts, public identifier filtering, locale fallback, ETags, withdrawal/rollback, direct runtime denial and desktop/mobile workflows |
+
+Each published page retains its exact source versions, resolved phase list and
+approved fact evidence. Public output is an explicit projection with public IDs
+and slugs. Read-time validity checks may hide expired, withdrawn or newly private
+content, but never substitute an unreviewed draft. FAQ slots resolve current
+values only when they still match the page's reviewed fact evidence; missing or
+expired slots hide the answer and maintain the existing owner gap task. Derived
+REM/computed facts receive page-specific approval evidence without rewriting the
+original fact or source rows.
+
+Preparation previews every changed registered page, including pages affected by
+shared sources. Publication recomputes the reviewed digest and checks source and
+account permissions in the same transaction before changing any pointer. A stale
+source or missing permission rejects the entire batch. Immutable snapshots remain
+available for reviewed rollback. The public change feed also reports read-time
+visibility changes so caches cannot retain expired facts or revoked media.
+
+Open content alone can enter JSON-LD and the AI text projection. `web_only`
+content remains in website output, `internal` content never leaves Hub, and page
+AI policy further limits these projections. Locale fallback is explicit. The
+staff preview uses escaped, plain HTML and never executes source embed code.
+
+The local pilot registers BNA7 and FLEXI using existing data. Back up the working
+database before applying passed migrations; do not invent missing content or
+silently grant publication rights. Record readiness and any account conflicts.
+After the Phase 8 gates, commit, push and report, then STOP for the owner's web-team
+integration decision. The remaining Phase 10 expansion stays outside this phase.
+
+Implementation bounds: the registry holds at most 100 pages, each project page
+lists at most 30 public project IDs, and the FAQ budget is 0–100 items across the
+whole page. Preparation reviews all changed registered pages together. One
+publication lock protects the batch; there is no background publication queue.
+The private review lists the frozen REM applicability IDs separately from the
+public phase IDs. Public output contains neither those REM IDs nor source UUIDs.
+Required brand fields use the same reviewed-English check as project content.
+Thai-only pages remain reviewable in a mixed-locale batch; their preview identifies
+its actual locale and the public endpoint rejects an unconfigured locale.
+
+The staff preview renders article blocks through the existing escaped renderer,
+uses permission-checked private image bytes, and exposes no external embed code.
+Page and FAQ responses carry a hash-based ETag and revalidate current validity
+before returning 304. The change feed reports publication, withdrawal, rollback
+and read-time visibility changes. Poll it from the website server; public browser
+credential distribution and website hosting remain outside this programme.

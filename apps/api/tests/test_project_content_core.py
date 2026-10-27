@@ -267,7 +267,7 @@ def test_content_api_registry_readiness_and_immediate_revocation(permission_acco
     assert len(fields) > 200
     assert fields['project.common_fee']['review_every_days'] == 180
     assert fields['disclosure.legal_document_asset_id']['default_ai_exposure'] == 'internal'
-    assert fields['web_page.content_sha256']['status'] == 'planned'
+    assert fields['web_page.content_sha256']['status'] == 'active'
     project = client.get('/v1/admin/projects', headers=h('viewer')).json()['data'][0]
     public_id = project['public_project_id']
     content = client.get(f'/v1/admin/projects/{public_id}/content', headers=h('viewer'))

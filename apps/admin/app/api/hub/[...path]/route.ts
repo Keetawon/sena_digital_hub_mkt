@@ -198,6 +198,10 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       return new NextResponse(stream, { status: upstream.status, headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "private, no-store, no-transform", "X-Accel-Buffering": "no", "X-Content-Type-Options": "nosniff" } });
     }
     releaseStream();
+    if (upstream.ok && method === "GET" && /^v1\/admin\/web\/publications\/[0-9a-f-]{36}\/preview$/.test(path)) {
+      if (!upstream.headers.get("Content-Type")?.startsWith("text/html")) return error("รูปแบบตัวอย่างไม่ถูกต้อง", 502);
+      return new NextResponse(upstream.body, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox; frame-ancestors 'self'" } });
+    }
     if (upstream.ok && brandDashboard && path.endsWith(".csv")) {
       if (!upstream.headers.get("Content-Type")?.startsWith("text/csv")) return error("รูปแบบ CSV ไม่ถูกต้อง", 502);
       return new NextResponse(upstream.body, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="brand-completeness.csv"', "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });

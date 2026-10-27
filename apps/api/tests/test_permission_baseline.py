@@ -30,10 +30,11 @@ MEDIA = json.loads((ROOT / 'tests/permissions/media-routes.json').read_text(enco
 UNITS = json.loads((ROOT / 'tests/permissions/unit-type-routes.json').read_text(encoding='utf-8'))
 FAQ_INTAKE = json.loads((ROOT / 'tests/permissions/faq-intake-routes.json').read_text(encoding='utf-8'))
 FAQ_COVERAGE = json.loads((ROOT / 'tests/permissions/faq-coverage-routes.json').read_text(encoding='utf-8'))
+WEB = json.loads((ROOT / 'tests/permissions/web-publication-routes.json').read_text(encoding='utf-8'))
 ARTICLES = json.loads((ROOT / 'tests/permissions/article-routes.json').read_text(encoding='utf-8'))
 COMMERCIAL = json.loads((ROOT / 'tests/permissions/project-commercial-routes.json').read_text(encoding='utf-8'))
 AMENITIES = json.loads((ROOT / 'tests/permissions/project-amenities-routes.json').read_text(encoding='utf-8'))
-ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes'] + PROJECT_CONTENT['routes'] + MEDIA['routes'] + UNITS['routes'] + FAQ_INTAKE['routes'] + COMMERCIAL['routes'] + FAQ_COVERAGE['routes'] + AMENITIES['routes'] + ARTICLES['routes']
+ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes'] + PROJECT_CONTENT['routes'] + MEDIA['routes'] + UNITS['routes'] + FAQ_INTAKE['routes'] + COMMERCIAL['routes'] + FAQ_COVERAGE['routes'] + AMENITIES['routes'] + ARTICLES['routes'] + WEB['routes']
 ROLES = ('viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency_kin', 'agency_combay', 'service_consumer')
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
@@ -119,8 +120,9 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     assert len(FAQ_INTAKE['routes']) == 3
     assert len(FAQ_COVERAGE['routes']) == 5
     assert len(ARTICLES['routes']) == 8
+    assert len(WEB['routes']) == 14
     assert len(AMENITIES['routes']) == 11
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes'])
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 

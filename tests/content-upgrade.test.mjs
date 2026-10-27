@@ -41,7 +41,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     await db.query("select set_config('app.actor_id','',false),set_config('app.change_reason','',false)");
     const contentState=async()=>(await db.query(`select name,rows from (
       select 'projects' name,jsonb_agg(to_jsonb(t) order by id) rows from hub.projects t union all
-      select 'project_versions',jsonb_agg(to_jsonb(t) order by id) from hub.entity_versions t union all
+      select 'project_versions',jsonb_agg(to_jsonb(t)-array['entity_type','web_page_id','content_sha256'] order by id) from hub.entity_versions t union all
       select 'brands',jsonb_agg(to_jsonb(t) order by id) from hub.brands t union all
       select 'brand_versions',jsonb_agg(to_jsonb(t) order by id) from hub.brand_versions t union all
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
@@ -105,6 +105,9 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     assert.deepEqual((await db.query('select alt_questions from hub.faq_versions where faq_id=$1',[legacyFaq])).rows[0].alt_questions,['อีกคำถามเดิม']);
     assert.equal((await db.query('select body from hub.content_section_versions where section_id=$1',[legacySection])).rows[0].body.th,'เนื้อหาเดิม');
     assert.equal((await db.query('select count(*) from hub.faq_sources where faq_id=$1',[legacyFaq])).rows[0].count,'1');
+    assert.equal(Number((await db.query("select count(*) from hub.entity_versions where entity_type<>'project' or web_page_id is not null or content_sha256 is not null")).rows[0].count),0,'Legacy project versions retain their identity');
+    assert.equal(Number((await db.query('select count(*) from hub.web_pages')).rows[0].count),0,'Upgrade must not register or publish pages');
+    assert.equal(Number((await db.query("select count(*) from hub.account_permission where 'knowledge.publish_web'=any(special_actions)")).rows[0].count),0,'Upgrade must not grant publication');
     assert.deepEqual(await accounts(),beforeAccounts);
     assert.deepEqual(await editors(),beforeEditors);
     assert.equal(Number((await db.query('select count(*) from hub.assets where id=any($1::uuid[]) and first_bound_at is not null',[bound])).rows[0].count),bound.length);

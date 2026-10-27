@@ -757,3 +757,140 @@ occurred. `sena_h_approved` remains false. No new business question; Q74/Q75 rem
 pending and Q76 remains closed. The delivery report records the commit hash and
 push confirmation. Next: pull latest main, implement Phase 8 using merged Phase 7,
 then STOP after the Phase 8 report as the owner instructed.
+
+## Phase 8 — website publication delivered (27 October 2026)
+
+Articles were committed and pushed to main as
+`1c19e3a897ccca51f6a75c291c0dd523162b542a`. The working tree was clean and a fresh
+`git pull --ff-only origin main` completed before this phase. Phase 7 is present
+through migration 74; articles add 75. The Phase 8 permission and publication
+contract is recorded in docs/41 before implementation. All parallel-PR added files
+remain protected. The owner has released the shared ports. This phase ends at
+the original STOP after its delivery report.
+
+### Implemented publication boundary
+
+Migration `202610230076_web_publication.sql` adds the page registry, immutable
+prepared batches and change events, plus additive website snapshots in
+`hub.entity_versions`. The restrictive snapshot policy keeps private source
+evidence out of legacy project readers. All 29 files added by the parallel PRs
+are unchanged, and all 76 canonical migration hashes match the hosted-test
+profile. The populated upgrade preserves existing content, reviews and account
+assignments. `artifacts/project-content-phase8/integration-preservation.json`
+records the check.
+
+Knowledge editors register pages and prepare every changed registered page as
+one review batch. Staff see rendered Thai/English HTML, a before/after diff,
+readiness issues and the frozen REM applicability list. The composer includes
+reviewed project facts, narrative, contacts, approved media/types/prices,
+facilities/features/places, commercial records, FAQs and approved article
+versions. Required brand fields also require reviewed English. Private image
+previews use the existing authorized file route; text is escaped and external
+embed code is never executed.
+
+Knowledge A plus `knowledge.publish_web` and approval for every source tab are
+required to publish. The database excludes source editors, English reviewers and
+the batch preparer, including after account changes. It recomputes the complete
+review digest under locks and atomically updates all pointers. Stale or concurrent
+publication rejects without partial output. Withdraw/rollback require a reason
+and the expected pointer; rollback preserves the version-author check. No account
+or template receives the special automatically. Account managers see the warning
+when fewer than two ACTIVE internal accounts hold it.
+
+Authenticated website consumers receive public page/FAQ projections, JSON-LD,
+ETags, an ordered change feed, robots guidance and an open-content `llms.txt`
+projection. New drafts never replace reviewed output. Current expiry, rights,
+withdrawal and AI-exposure checks can hide previously published content. Changed
+or missing FAQ facts hide the answer and maintain a deduplicated owner gap; zero
+and false remain valid values. Visibility changes enter the feed. Legal evidence,
+internal UUIDs, REM identifiers and the private review proof remain excluded.
+
+### Verification and corrections
+
+Typecheck and the offline webpack build passed. The full API run passed **2,094**
+tests with **11 unchanged opt-in skips**, no failures and six existing deprecation
+warnings (`api-full-01.log`). Follow-up verification of the final readiness and
+source-permission refinements passed **118** checks (`api-final-focused.log`),
+followed by **16** publication checks including corporate FAQ and narrative
+publication (`api-publication-final-02.log`). Final gate and pilot results follow.
+
+The extra corporate publication test caught question approval status being
+mistaken for text authorship. Approval metadata is now excluded from the author
+comparison while question text editors remain excluded. Other focused checks
+corrected SQL alias/JSON-null handling, inventory classification and a facility
+fixture that tried to attach a photo to an unknown facility. The first wider
+browser run passed 73 of 74 checks: an existing media test asserted an error
+before a 5.36-second upload finished. It now waits for the injected failed link
+response before making the same UI assertions; no timeout was enlarged and no
+assertion was removed. No existing test
+was skipped, quarantined or weakened. The full authentication simulation passed
+11 protocol and 45 browser checks; the final migration profile passed the 11
+protocol checks again. All provider/network integrations were local mocks.
+
+Evidence lives under `artifacts/project-content-phase8/`, which remains ignored.
+The desktop/mobile workflow captures are `review-1280.png`, `review-390.png`,
+`published-1280.png`, `published-390.png`, `rollback-1280.png` and
+`rollback-390.png`. Screenshots are visually reviewed and browser assertions
+check for horizontal page overflow at 390 px. Nothing in `artifacts/` is
+force-added. Credential scans emit counts and paths only.
+
+| Final gate | Passed / skipped / failed |
+|---|---|
+| Admin typecheck / offline webpack build | Both passed; `typecheck-03.log`, `build-02.log` |
+| Full API | 2,094 / 11 existing opt-in / 0; follow-up checks above cover subsequent refinements |
+| Full DB | 62 SQL/concurrency checks + 10 Node tests / 0 / 0; `db-final-03.log` |
+| Migration replay / populated upgrade | Passed through 76; existing content, reviews, accounts and permissions preserved |
+| Relevant browsers, including 1280/390 px | 74 / 0 / 0; `ui-final-02.log` |
+| Local H1 authentication simulation | 11 protocol + 45 browser / 0 / 0; `h1-01.log`, `h1-protocol-final.log` |
+| Credential scan | Zero configured-value matches in changed files, browser static output and evidence; `credential-scan.json` |
+
+The last SQL-only check also verifies that inline article FAQs share the same
+page budget. Its first assertion assumed JSON object iteration order; the final
+assertion counts all visible FAQ items regardless of object order. The final
+database replay passed with that assertion. All owned runners completed cleanup;
+the shared ports were released. No other agent's process was stopped.
+
+### Local pilot and remaining owner work
+
+The working database was at migration 54. A verified custom-format backup was
+taken before applying the 22 already-reviewed migrations 55–76 locally:
+`.local/backups/web-publication-2026-10-27T03-40-47-455Z/sena_hub_local.dump`
+(9,190,108 bytes). Its SHA-256 and readable table-of-contents check are in
+`artifacts/project-content-phase8/backup-before-migrations.json`. No migration
+was changed after application. Existing account assignments and the BNA7
+identity were verified unchanged; `sena_h_approved` remains false.
+
+BNA7 and the FLEXI brand are registered using their existing public IDs and
+existing content. BNA7 has an empty source slug, so its draft website URL uses
+the public project ID without changing the source slug. Both pages use `no_ai`
+until a separately reviewed publication decision. The private review found:
+
+- **BNA7: 9 blockers** — reviewed bilingual name/address/advertising disclaimer;
+  the 3–6 selling-point requirement; project introduction, selling summary and
+  concept name; hero and thumbnail readiness.
+- **FLEXI: 2 blockers** — reviewed bilingual brand name and story. Existing
+  placeholder content was left intact for Marketing to replace/review.
+- **0 ACTIVE website publishers**, so no real pilot page was published and no
+  account or template was silently changed. An account manager must explicitly
+  assign the special to independent approvers with the necessary source-tab
+  approval rights; the UI warns that at least two usable holders are needed.
+
+The pilot therefore exercises registration, composition, readiness denial and
+staff review with real local identities; successful publication/withdrawal/
+rollback are proven using synthetic disposable data. Completing the real
+content and assigning approvers are the remaining pilot prerequisites. Nothing
+was invented to turn those checks green.
+
+Pilot receipts: `local-pilot-initial.json`, `local-pilot.json` and
+`local-pilot.log`. Final screenshots: [desktop](../artifacts/project-content-phase8/pilot-1280.png)
+and [390 px](../artifacts/project-content-phase8/pilot-390.png). Both were visually
+inspected; no horizontal overflow was detected. Screenshots and receipts remain
+Git-ignored. Both approved local development credential paths were checked with
+`git check-ignore` immediately before the delivery commit.
+
+No new business question was opened. Q74/Q75 remain pending and Q76 remains
+closed. No live provider, hosted deployment, R2 write, REM/DW write or web-team
+integration occurred. Articles were already pushed as `1c19e3a`; this phase's
+commit hash and push confirmation are in the delivery response. **STOP here**
+for the owner's website integration decision. Do not start the remaining
+Phase 10 expansion.

@@ -656,3 +656,34 @@ Focused integration (129), full API (2,079 passed, 11 existing opt-in skips), DB
 (61 SQL/concurrency and 10 Node), browser (65) and loopback H1 (11 protocol,
 45 browser) all passed, with no failures. Typecheck, offline build and populated
 upgrade also passed. Final evidence and screenshot paths are in docs/42.
+
+## Project-content programme Phase 8 — website publication (27 October 2026)
+
+The permission card in [docs/41](41-project-content-and-faq.md) precedes the code.
+Migration 76 adds the Knowledge approve-level special `knowledge.publish_web`
+without granting it to accounts or templates. Both permission input validation
+and a table constraint require Knowledge V+A. Account managers see a warning
+when fewer than two ACTIVE internal accounts hold the usable special.
+
+Three audited FORCE-RLS tables hold page configuration, immutable review batches
+and change events. They have no application table grants. Forty-one new reviewed
+functions expose eleven guarded commands; private composition helpers remain
+closed. An additive discriminator on `entity_versions` and a restrictive policy
+keep website source evidence out of legacy project readers. Fourteen exact HTTP
+routes comprise nine private commands and five authenticated consumer reads.
+The Next proxy and H1 allowlist use the same exact private paths.
+
+Preparation and preview require Knowledge access and visibility of every source
+tab. Publishing also requires source-tab approval, excludes every source editor,
+English reviewer and batch preparer, and rechecks the complete digest under
+publication/source/account locks. Permission changes cannot make an author an
+independent approver. Concurrent publication or a stale source rejects the whole
+batch. Withdrawal and rollback check the expected pointer, authority and reason;
+rollback retains version-author separation. Staff image previews use the existing
+authorized private file route. Consumers see filtered immutable content and
+public identifiers, never its private source evidence.
+
+The populated upgrade checks existing content, account assignments and the
+default identity of legacy project versions. Full gate results, the BNA7/FLEXI
+local pilot and account conflicts are recorded in [docs/42](42-project-content-programme-log.md).
+No hosted rollout or website integration is part of this delivery.

@@ -1,0 +1,171 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/web",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/web/pages/{page_key}",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/web/pages/{page_key}/history",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/web/pages/{page_key}/versions/{version_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/web/pages/{page_key}/pointer",
+      "tab": "knowledge",
+      "level": "other",
+      "entry_roles": [],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/web/publications",
+      "tab": "knowledge",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/web/publications/{publication_id}",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/web/publications/{publication_id}/preview",
+      "tab": "knowledge",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/web/publications/{publication_id}/publish",
+      "tab": "knowledge",
+      "level": "other",
+      "entry_roles": [],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web/pages/{page_key}",
+      "tab": "published website",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web/pages/{page_key}/faq",
+      "tab": "published website",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web/changes",
+      "tab": "published website",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web/llms.txt",
+      "tab": "published website",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/web/robots-ai",
+      "tab": "published website",
+      "level": "other",
+      "entry_roles": [
+        "service_consumer"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/web_publication.py"
+    }
+  ]
+}

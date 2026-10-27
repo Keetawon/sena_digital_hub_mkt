@@ -62,6 +62,9 @@ MEDIA_FUNCTIONS = {'hub.' + name for name in (
     'media_link_remove', 'media_legacy_binding_guard', 'media_requirements_read', 'media_requirement_save',
     'media_clip_save', 'media_checklist', 'project_media', 'media_thumbnail_binding', 'project_content_readiness_before_media',
     'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check')}
+WEB_TABLES = {'hub.web_pages', 'hub.web_publications', 'hub.web_changes'}
+WEB_FUNCTIONS = {'hub.' + name for name in (
+    'web_publication_guard', 'web_hash', 'web_localized', 'web_fallback', 'web_source', 'web_source_content', 'web_authored_content', 'web_dependency', 'web_source_available', 'web_item', 'web_asset', 'web_registry_fields', 'web_sections', 'web_contacts', 'web_faqs', 'web_project', 'web_article_node', 'web_article', 'web_compose', 'web_scope_faq', 'web_nodes', 'web_dependencies', 'web_issues', 'web_assert_sources', 'web_resolve', 'web_output', 'web_limit_faq', 'web_changed_pages', 'web_workspace', 'web_page_save', 'web_prepare', 'web_preview_assets', 'web_publication_read', 'web_record_change', 'web_publish', 'web_history', 'web_pointer', 'web_version_preview', 'web_public_page', 'web_public_changes', 'web_public_ai')}
 ARTICLE_TABLES = {'hub.articles', 'hub.article_versions', 'hub.article_links'}
 ARTICLE_FUNCTIONS = {'hub.' + name for name in (
     'article_node_valid', 'article_nodes', 'article_doc_valid', 'article_tags_valid', 'article_link_guard', 'article_image_allowed', 'article_reference_allowed', 'article_reference_issues', 'article_english_doc', 'article_texts', 'track_article_translation', 'article_translation_write', 'article_readiness', 'article_save', 'article_submit', 'article_review', 'article_list', 'article_references', 'article_read', 'article_preview')}
@@ -156,10 +159,16 @@ def test_live_catalog_matches_reviewed_local_baseline():
             for name, sql, args in [('schemas', SCHEMAS_SQL, [SCHEMAS, ROLES]), ('functions', FUNCTIONS_SQL, [SCHEMAS, ROLES]), ('relations', RELATIONS_SQL, [SCHEMAS, ROLES]), ('policies', POLICIES_SQL, [SCHEMAS])]:
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
-                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS
+                    additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    web = [r for r in actual if r['schema'] + '.' + r['table'] in WEB_TABLES]
+                    assert len(web) == 3 and all(r['name'] == 'web_owner' and r['roles'] == ['postgres'] and r['qual'] == r['with_check'] == 'true' for r in web)
+                    restrictive = [r for r in actual if r['name'] == 'web_snapshot_private']
+                    assert len(restrictive) == 1 and restrictive[0]['table'] == 'entity_versions' and restrictive[0]['permissive'] == 'RESTRICTIVE'
+                    assert restrictive[0]['qual'] == "(entity_type = 'project'::text)" and restrictive[0]['with_check'] == 'false'
+                    actual = [r for r in actual if r not in web and r not in restrictive]
                     articles = [r for r in actual if r['schema'] + '.' + r['table'] in ARTICLE_TABLES]
                     assert len(articles) == 2 * len(ARTICLE_TABLES)
                     assert all(r['name'] in ('article_owner', 'article_read') for r in articles)
@@ -351,7 +360,7 @@ async def assert_reviewed_database_boundary(db):
     rows = await db.fetch(RELATIONS_SQL, SCHEMAS, ['hub_app'])
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
-                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES)
+                  OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -361,6 +370,7 @@ async def assert_reviewed_database_boundary(db):
     assert set(tables) - policy_tables == TECHNICAL_TABLES
     # Domain tables need an actual permission predicate, not just RLS on.
     domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES
+    assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

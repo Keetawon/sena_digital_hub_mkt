@@ -95,7 +95,9 @@ for (const width of [1280, 390]) {
       await expect(first.locator('details[open]').getByText(/ผู้รับผิดชอบ: การตลาด/)).toBeVisible();
       await first.locator('details[open] > div').scrollIntoViewIfNeeded();
       await fits(page); await page.screenshot({ path: `artifacts/project-content-phase3/batch-${width}.png`, fullPage: false });
+      const failedLink = page.waitForResponse(response => response.request().method() === 'PUT' && response.url().includes(`${media}/links/`) && response.status() === 503);
       await page.getByRole('button', { name: 'อัปโหลดและบันทึกข้อมูล', exact: true }).click();
+      await failedLink;
       await expect(first.getByRole('alert')).toContainText('ทดสอบข้อผิดพลาดการผูกไฟล์');
       await expect(page.getByRole('article', { name: 'ไฟล์ 2', exact: true }).getByRole('status')).toHaveText('บันทึกแล้ว');
       await expect(page.getByRole('article', { name: 'ไฟล์ 3', exact: true }).getByRole('alert')).toContainText('คำตอบหลังบันทึกข้อมูลสูญหาย');

@@ -1,0 +1,13 @@
+.web-publication { min-width: 0; }
+.web-publication .content-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+.web-publication label { line-height: 1.7; }
+.web-publication input[type="checkbox"] { margin-inline-end: .5rem; }
+.web-reviewed-page { border-top: 1px solid var(--line); padding-block: 1rem; }
+.web-html-preview { padding: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; overflow-wrap: anywhere; }
+.web-html-preview img { max-width: 100%; height: auto; }
+.web-html-preview table { border-collapse: collapse; }
+.web-html-preview th, .web-html-preview td { border: 1px solid var(--line); padding: .5rem; }
+.web-html-preview .article-table { overflow-x: auto; }
+.web-diff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.web-diff pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 28rem; overflow: auto; font-size: var(--text-small); }
+@media (max-width: 700px) { .web-diff { grid-template-columns: minmax(0, 1fr); } }

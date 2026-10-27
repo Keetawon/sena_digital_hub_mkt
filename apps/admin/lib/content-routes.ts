@@ -13,7 +13,7 @@ const routes: Record<string, RegExp> = {
 
 export function contentAllowsApi(path: string, method: string) {
   if (amenityAllowsApi(path, method)) return true;
-  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method) || articleAllowsApi(path, method);
+  return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method) || articleAllowsApi(path, method) || webAllowsApi(path, method);
 }
 
 const media: Record<string, RegExp> = {
@@ -38,6 +38,7 @@ const intakeFilters: Record<string, RegExp> = {
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
   if (method === "GET") {
+    if (webAllowsApi(path, method)) return [...query.keys()].every(key => key === "locale" && query.getAll(key).length === 1 && /^(?:th|en)$/.test(query.get(key) ?? ""));
     const filters: Record<string, RegExp> | null = path === "v1/admin/articles" ? { q: /^[^\u0000-\u001f]{0,120}$/, offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
       : new RegExp(`^v1/admin/articles/${uuid}/preview$`).test(path) ? { locale: /^(?:th|en)$/ }
       : path === "v1/admin/faq-coverage" ? { project: new RegExp(`^${id}$`), offset: /^(?:0|[1-9]\d{0,5})$/, limit: /^(?:[1-9]\d?|100)$/ }
@@ -70,3 +71,11 @@ const articles: Record<string, RegExp> = {
   PUT: new RegExp(`^v1/admin/articles/${uuid}$`),
 };
 export function articleAllowsApi(path: string, method: string) { return articles[method]?.test(path) ?? false; }
+
+const pageKey = "(?:project|brand|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}";
+const web: Record<string, RegExp> = {
+  GET: new RegExp(`^v1/admin/web(?:/(?:pages/${pageKey}/(?:history|versions/${uuid})|publications/${uuid}(?:/preview)?))?$`),
+  PUT: new RegExp(`^v1/admin/web/pages/${pageKey}$`),
+  POST: new RegExp(`^v1/admin/web/(?:pages/${pageKey}/pointer|publications(?:/${uuid}/publish)?)$`),
+};
+export function webAllowsApi(path: string, method: string) { return web[method]?.test(path) ?? false; }

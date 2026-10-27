@@ -9,6 +9,15 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('GET', '/v1/admin/web'): ('knowledge', 'view'),
+    ('PUT', '/v1/admin/web/pages/{page_key}'): ('knowledge', 'edit'),
+    ('GET', '/v1/admin/web/pages/{page_key}/history'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/web/pages/{page_key}/versions/{version_id}'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/web/pages/{page_key}/pointer'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/web/publications'): ('knowledge', 'edit'),
+    ('GET', '/v1/admin/web/publications/{publication_id}'): ('knowledge', 'view'),
+    ('GET', '/v1/admin/web/publications/{publication_id}/preview'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/web/publications/{publication_id}/publish'): ('knowledge', 'knowledge.publish_web'),
     ('GET', '/v1/admin/articles'): ('knowledge', 'view'),
     ('GET', '/v1/admin/articles/references'): ('knowledge', 'view'),
     ('GET', '/v1/admin/articles/{article_id}'): ('knowledge', 'view'),
@@ -267,6 +276,11 @@ CONTENT_RULES = {
 # These surfaces have SQL identity/ownership or fixed technical boundaries rather
 # than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
 SHARED_RULES = {
+    ('GET', '/v1/web/pages/{page_key}'): 'public',
+    ('GET', '/v1/web/pages/{page_key}/faq'): 'public',
+    ('GET', '/v1/web/changes'): 'public',
+    ('GET', '/v1/web/llms.txt'): 'public',
+    ('GET', '/v1/web/robots-ai'): 'public',
     ('GET', '/v1/admin/content/fields'): 'content_registry',
     ('POST', '/v1/admin/content/translations/{translation_id}/review'): 'content_translation',
     ('POST', '/v1/admin/content/translations/{translation_id}/retry'): 'content_translation',

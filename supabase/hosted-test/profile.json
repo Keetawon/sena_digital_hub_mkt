@@ -378,6 +378,11 @@
       "name": "202610220075_articles.sql",
       "canonical_sha256": "688fe5d80ec0b771ce8fe5828f66645c7abe4e629af68b908a114a269e67fcdb",
       "executed_sha256": "688fe5d80ec0b771ce8fe5828f66645c7abe4e629af68b908a114a269e67fcdb"
+    },
+    {
+      "name": "202610230076_web_publication.sql",
+      "canonical_sha256": "10d5220b604dec217a0e2ce1bb7269f274978c350508c9428bfa8b1e74a1cf3f",
+      "executed_sha256": "10d5220b604dec217a0e2ce1bb7269f274978c350508c9428bfa8b1e74a1cf3f"
     }
   ]
 }
