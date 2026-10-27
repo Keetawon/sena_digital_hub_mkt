@@ -224,7 +224,25 @@ individual results and verified backup paths are recorded in
 `.local/hosted-content-rollout/migration-0057.json` through `migration-0076.json`
 as each migration completes. A missing receipt does not imply that step passed.
 
-### B STOP — Auth timestamp drift, 27 October
+### B STOP  Auth timestamp drift
+
+Owner decision, 27 October 2026 — verbatim:
+
+H1a  Accepted: the observed change to auth.users.updated_at only (one row) may be accepted for resuming the hosted upgrade from migration 72. This is a scoped exception, not a weaker baseline.
+
+Basis: none of migrations 5776 reference the auth schema except auth.uid(), and no migration in the repository updates or triggers on auth.users. So the migrations did not cause the change.
+
+Conditions:
+1. Correlate first, read-only. For that user, compare auth.users.updated_at in memory with auth.sessions.refreshed_at/updated_at and auth.refresh_tokens.created_at/updated_at, and with auth.audit_log_entries if it is populated. Record only the result, never the values: "matches a session/token refresh within N seconds: yes/no". Record the cause as established or unknown. Either result allows resumption. Do not modify any Auth row.
+2. Keep the original baseline comparison unchanged and record it as failed on updated_at. Add a separate "accepted comparison" that excludes only auth.users.updated_at. Every other Auth column, including last_sign_in_at, stays strict, as do all 29 other protected tables. The exclusion covers this rollout only; it does not change the default check.
+3. Before migration 73, revalidate the exact applied prefix 172 (names and checksums) and take a new verified protected backup. Do not reuse the 06:44 dump.
+4. Do not open, reuse or refresh any signed-in hosted browser session while migrations 7376 run, and until the post-upgrade fingerprints are recorded. Do hosted screen inspection only after that, and record that it happened.
+5. STOP again on any other change: a different Auth column, a new Auth row, or any change in another protected table. Do the same if updated_at drifts again during 7376 while no session is open.
+
+Then resume package B as planned: migrations 7376 with a backup and fingerprints before each one. Promote candidate 953a152-content-4eb69b56f5b2 only after its readiness checks pass, keeping 794d9cd-perf2-e78be5d8bee9 for rollback, then run the smoke tests. Continue to packages C, D and E. Keep the STOP before any live AI batch (H5) with the image count and cost estimate, and every other STOP point unchanged.
+
+The original stop record follows. H1a supersedes its pending-decision paragraph;
+the failed comparison, original baseline and receipts remain unchanged.
 
 At 06:46 UTC (13:46 Bangkok), the preservation assertion stopped the operator
 **before migration 73**. Migrations **57–72** applied successfully, each with
@@ -314,6 +332,42 @@ plus **10** Node checks, H1 **11** protocol plus **45** browser checks, and the
 full browser suite **300/300 in one run**. Typecheck, local/Linux builds and
 production dependency audit passed. This report does not mark package B or the
 overall rollout complete.
+
+### H1a preparation and read-only correlation
+
+The read-only correlation reports **"matches a session/token refresh within 5
+seconds: yes"**. `auth.sessions.updated_at` and both requested refresh-token
+timestamps match within that window; `auth.sessions.refreshed_at` does not.
+`auth.audit_log_entries` exists but is empty. The cause remains **unknown**:
+timestamp proximity supports a refresh correlation but does not prove causation.
+No timestamp, user identifier, session/token value or audit payload was recorded.
+No Auth row was modified.
+
+The separate H1a comparison is derived from the verified first rollout backup.
+It reconstructs the generated `confirmed_at` value and verifies the full original
+row against the original baseline before excluding only `updated_at`. All other
+34 columns, including `last_sign_in_at` and generated `confirmed_at`, remain
+strict. (The earlier 34-column archive comparison covered 33 unchanged stored
+columns; PostgreSQL's dump omits the generated column.) All 29 other protected
+tables remain strict. The original baseline and failed comparison are preserved.
+
+`h1a-accepted-comparison.json` records the separate accepted fingerprint and a
+full-row drift guard. The current full Auth fingerprint still equals the original
+STOP diagnostic, so no further timestamp drift has occurred. Every comparison
+during 73–76 checks that full fingerprint as well: another `updated_at` change
+stops the run. Eight focused operator checks pass, covering the scoped exception,
+new Auth rows, further timestamp drift, other Auth changes, account permissions,
+project edits, widened exclusions and replacement of the original baseline.
+The normal deployment runner and default checks remain unchanged.
+
+Before resumption, the exact applied prefix 1–72 was verified by names, canonical
+checksums, executed checksums and TEST provenance. The resume operator will
+verify it again and create a new protected backup before 73. Each remaining
+migration has a fresh backup and comparisons before backup, after backup and
+after application. No browser inspection is permitted until the post-upgrade
+fingerprints have been recorded. A browser tab-inventory request was rejected by
+automatic approval review under H1a; no browser information was returned. The
+owner was asked to close hosted tabs, and browser controls remain untouched.
 
 ## C–E implementation boundaries
 
