@@ -969,6 +969,12 @@ credential scan found zero matches in 310 files and 356 archive members.
 
 ### H5 STOP — budget approval and missing hosted credential
 
+**Superseded by H5a on 28 October 2026.** The US$60 / 1,879-image proposal below
+was declined. Its receipt is retained and marked declined/superseded; it grants
+no authority to queue jobs. H5a replaces it with individual requests and the
+separately bounded two-project pilot. The original estimate remains historical
+evidence only.
+
 Read-only receipt
 `.local/hosted-content-rollout/website-h5-budget-1793120297292.json` pins the
 package, selected asset revisions and approved contexts. It found **3,084 images:
@@ -1006,3 +1012,149 @@ display follow-up above. A connected browser is also needed for a fresh hosted
 visual inspection. Marketing confirmations, publisher rights approval and any
 publication remain separate human actions. Packages A–D and the non-AI E import
 and deployment are complete; E's live AI suggestions remain deliberately pending.
+
+#### Owner decision H5a — verbatim, 28 October 2026
+
+```text
+H5a  No bulk batch; AI image suggestions only on request.
+- I do not approve the US$60 cap or the 1,879-image bulk batch. Mark the H5 budget receipt as declined and superseded, without deleting it. Queue no jobs from it.
+- No per-project or batch AI request in this release. Staff request AI suggestions one image at a time, using the button below, or through the existing automatic request after a Marketing upload. Batch confirmation of category, tags and context stays as it is; it is not AI.
+- Results remain suggestions under H4. Marketing confirms them, and rights stay with publishers.
+- Credential: IT will configure OPENAI_API_KEY in the existing protected location (/etc/sena-hub-test/api.env). The key will belong to a dedicated OpenAI project with a US$10 monthly limit, shared by image suggestions and translation, configured through the existing protected hosted procedure. Never ask for the key in chat, print it, or create another credential location. Build and deploy everything below without the key; while it is absent, the AI controls must show as disabled.
+- Pilot: two sample projects only (section 4). Then STOP for my decision.
+
+## 1. "ขอคำแนะนำจาก AI": per-image button, low-key
+- Add the button at the very bottom of every per-image tag editor. Known places:
+  - the editor panel "แกไขหมวด แทก และบรบท" on each card in the website queue "รปจากเวบไซต (รอยนยน)" (website-media-queue.tsx);
+  - the library card in the project media workspace, where the existing "ขอคำแนะนำ AI" button moves down and takes the new label and style (project-media-workspace.tsx:69);
+  - the single-image edit form opened by "แกไขขอมลภาพ", and any other per-image category/tag editor you find.
+  Build it as one shared component.
+- Style: small, subdued, text/link style, using the existing secondary tokens. It is never the primary action and never sits above the confirm or save actions. Under it, one muted hint line: "ใชงบ AI  ผลเปนคำแนะนำ ยงไมบนทกเปนขอมลจรง". Keep it at the bottom at 1280 px and 390 px, with no horizontal scroll and no animation.
+- Behaviour:
+  - It queues one image_suggestion job for the image's current revision, using the existing hub.media_job_request and the existing projects edit permission. No new capability or template change.
+  - Requests are idempotent: an image with a queued or running job, or a suggestion for the same revision, shows its status instead.
+  - States:
+    - "กำลงขอคำแนะนำ" while waiting;
+    - the existing suggestion display when done; it never auto-applies values;
+    - "ยงไมไดเปดใช AI บนระบบน" when the provider is not configured;
+    - "งบ AI เดอนนหมดแลว" when the cap is reached;
+    - hidden for ineligible images (legal documents, brochures, internal-only, non-images).
+  - Write an audit record per request.
+
+## 2. Hosted media worker
+Hosted TEST has no media worker today, so requested jobs would never be processed.
+- Add a hardened hosted worker following the docs/39 service pattern (ProtectSystem=strict, NoNewPrivileges, a private writable cache). It runs as the existing hub_media_worker database role, and the API runtime still cannot assume that role.
+- It may read the key only from the existing protected env file.
+- If it needs a database login or any other credential that is not already configured, STOP and report exactly what is missing. Do not create it.
+- Process jobs sequentially. After a provider attempt that may have been billed, never retry automatically.
+- The worker must not drain translation jobs or any other queue.
+
+## 3. Monthly cap enforced in the Hub (on top of the OpenAI project limit)
+- Add a non-secret config value for the monthly image-suggestion cap:
+  - US$5 on hosted TEST;
+  - US$0 (disabled) in every other environment;
+  - raising it requires an owner decision recorded in docs/46.
+- Also record the price table used: model, input price and output price per million tokens, with an effective date.
+- Before claiming each job, the worker compares month-to-date spend (from recorded provider_usage) plus the next job's worst-case ceiling with the cap. If that would exceed the cap, it stops claiming and marks waiting jobs "budget_exhausted". Do not mark them failed.
+- Show staff the month-to-date spend and the remaining budget in a small muted line near the button.
+- When the budget is used up:
+  - an upload still saves and shows "ไมไดขอคำแนะนำ AI เพราะงบเดอนนหมด";
+  - the button shows its budget state.
+- Report how translation (E9) spend is currently controlled. Do not change translation in this task.
+
+## 4. Pilot: one condominium and one house
+- Projects (exact Project IDs from the business-sheet snapshot):
+  - B_PO, นช โมโน บางโพ: condominium, www.sena.co.th/project template.
+  - B1/5, เสนา แกรนด โฮม รงสต-ตวานนท: detached house, brands.sena.co.th template.
+- Run this only after the key is configured.
+- Count each project's eligible website images, excluding held ones, and compute the worst-case total. If it exceeds the remaining US$5 cap, STOP and report the counts before queueing anything.
+- Otherwise, run them through the existing budgeted operator path (exact approved job IDs, hub.website_media_claim): sequentially, with no automatic retry, counted against the same monthly cap.
+- Report for each project:
+  - images processed, actual cost, average per image and errors;
+  - the share where AI agrees with the page-position suggestion;
+  - 5 examples comparing the page-position suggestion with the AI suggestion (category, tags, image kind, Thai caption and alt text), with no personal data.
+  Save screenshots of the website queue for each project under ignored artifacts/. Hosted browser inspection is allowed now that the post-deploy fingerprints are recorded.
+- STOP for my decision before any other project.
+
+## 5. Gates and deployment
+- Next migration number: 79. Run every gate in docs/41 5. The full browser suite must pass in one run, including the button's states at 1280 px and 390 px.
+- Add tests for:
+  - cap refusal and the "budget_exhausted" state;
+  - idempotent re-requests;
+  - permission denial;
+  - provider not configured;
+  - hidden button for ineligible images;
+  - the worker never draining another queue.
+  Provider calls must be mocked in tests.
+- Deploy to hosted TEST using the docs/46 procedure: a verified backup before each write batch, protected fingerprints before and after, the previous release kept for rollback, and smoke checks. Record everything in docs/46.
+
+STOP and report on any condition in docs/41 6, on a missing credential, or on any change to protected accounts, permissions or Auth.
+```
+
+#### H5a prerequisite STOP — missing worker database connection
+
+Read-only preflight completed at 02:45 UTC on 28 October (09:45 Bangkok),
+receipt `.local/hosted-content-rollout/h5a-worker-preflight-1793155504592.json`.
+The exact TEST target and TLS passed, and the applied migration prefix remains
+78. All 30 protected-table fingerprints were unchanged during the check,
+including every Auth column; no account, permission, role or data was changed.
+
+The existing `hub_media_worker` is a nonprivileged **NOLOGIN** role. There are
+**zero nonprivileged LOGIN roles authorized to assume it**. The existing API
+runtime correctly cannot assume it. The protected hosted API environment has
+one configured database connection (the API connection), no worker connection,
+and no OpenAI key. Neither a media-worker nor a translation-worker service is
+installed. These are presence/privilege results only; no configuration value or
+credential was copied into the receipt or report.
+
+**Required from IT:** a dedicated, nonprivileged PostgreSQL LOGIN/connection
+authorized to `SET ROLE hub_media_worker`, configured in the existing protected
+`/etc/sena-hub-test/api.env` (proposed setting: `HUB_MEDIA_WORKER_DATABASE_URL`).
+It must not grant the API runtime worker authority or reuse an administrator
+connection. Existing verified TEST TLS configuration can be reused. No new
+credential location is needed or permitted. This agent has not created a login,
+password, grant, connection setting or service.
+
+H5a section 2 explicitly says, “If it needs a database login or any other
+credential that is not already configured, STOP and report exactly what is
+missing. Do not create it.” That STOP applies here. The known absence of the
+OpenAI key alone is allowed during implementation by H5a; the missing worker
+database connection is the current blocker. Migration **79 has not been
+created or applied**, and the per-image controls, monthly cap and worker have
+not been built or deployed. The live application remains
+`07dda14-content-82bd4feeade5`.
+
+The original H5 budget receipt remains at
+`.local/hosted-content-rollout/website-h5-budget-1793120297292.json`, with status
+`declined_superseded`, its previous status/hash retained, and an H5a decision
+record setting both bulk-budget approval and queue authorization to false.
+Its image inventory and estimate were not deleted. The historical execution
+plan is also marked superseded. **No media jobs exist and no jobs were queued
+from the declined receipt. No provider call, pilot run or AI charge occurred.**
+
+#### E9 translation spending controls — read-only finding
+
+The current implementation limits an individual translation response to 8,000
+output tokens, uses the reviewed model and fixed provider endpoint, and disables
+SDK automatic retries. Its worker is a separate local-only runner assuming
+`hub_translation_worker`. The queue rechecks source eligibility, revision and
+the requester's permission; failed jobs require an explicit retry, while an
+expired running lease may be reclaimed up to three attempts. These are request
+and workflow bounds, **not a monthly monetary cap**.
+
+E9 currently has **no Hub monthly spend ledger/cap and no `provider_usage`
+column**. TEST has 1,090 translation-job rows and zero completed translations;
+no hosted translation-worker service is present. The dedicated OpenAI project's
+US$10 monthly limit shared with images is the owner's planned IT configuration,
+not something verified or configured by this preflight. Translation code,
+queue state, settings and services remain unchanged, as required by H5a.
+
+Resume after IT has provisioned the worker connection through the approved
+procedure. Then implement and gate H5a, deploy with controls disabled while the
+key is absent, and run only the B_PO/B1/5 pilot after the key and budget checks
+permit it. The declined 1,879-image bulk proposal must never be used to queue
+work. Stop again after the pilot for the owner's decision.
+
+This stopped slice changes documentation only. The credential scan passed with
+zero matches in 312 files and 356 archive members; whitespace validation passed.
+No application gates were rerun and no new test or deployment result is claimed.

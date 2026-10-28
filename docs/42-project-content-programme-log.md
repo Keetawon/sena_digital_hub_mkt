@@ -985,3 +985,23 @@ configuration. Owner budget approval and configuration through the existing
 protected procedure are required. No AI job was queued, no image processed,
 and actual AI cost is **US$0**. Docs/46 contains the exact budget receipt,
 assumptions, backups, rollback paths, conflicts and remaining review items.
+
+Owner decision **H5a, 28 October 2026**, is recorded verbatim under H5 STOP in
+docs/46. The US$60 / 1,879-image proposal is declined and superseded; its ignored
+receipt and inventory are retained with explicit `queue_authorized: false`.
+
+The read-only worker prerequisite check reached H5a's explicit credential STOP:
+`hub_media_worker` is NOLOGIN, no nonprivileged LOGIN can assume it, and the
+existing protected hosted environment has no worker database connection.
+`hub_runtime` correctly remains unable to assume the worker role. IT must
+provision the dedicated connection in the existing protected hosted API env;
+no credential, role or grant was created by this task. All 30 protected
+fingerprints, including full Auth, remained unchanged. Migration 79 and all
+H5a runtime/UI changes remain unstarted; no new deployment or pilot ran.
+
+E9 currently has request/output and retry bounds, but no Hub monthly monetary
+cap or provider-usage ledger. TEST has 1,090 translation-job rows, zero completed
+translations and no hosted translation-worker service. Translation was not
+changed. Docs/46 records the exact missing prerequisite, receipt and resume
+sequence; the already-known absent OpenAI key is allowed during the future
+implementation and is not the reason for this STOP.
