@@ -1299,6 +1299,12 @@ capability, template, login or grants to new roles; apply 79 locally only and ho
 TEST application/deployment for the combined H5a release. This does not release
 the worker-connection STOP.
 
+Subsequent owner amendment **H5e, 28 October 2026**: the media key and dedicated
+worker database URL belong only in `/etc/sena-hub-test/media-worker.env`, loaded
+only by the media worker. `api.env` must contain neither variable. The earlier
+H5c record above is retained as history; H5e replaces its media-key location and
+authorizes the exact dedicated login described below.
+
 #### H5b read-only inventory and offline QA
 
 Receipt: `.local/hosted-content-rollout/h5b-inventory-1793158007922.json`. All 30 protected fingerprints, including full Auth, match the 09:45 Bangkok H5a baseline. No hosted write or provider call was made by the inventory.
@@ -1687,3 +1693,174 @@ opening no credential file. Receipt:
 `artifacts/hosted-content-rollout/h5bc-provider-scan-final.json`.
 Whitespace validation passed. The approved local credential files and all
 receipt/screenshot paths remain ignored; they are not part of this commit.
+
+#### Owner decision H5d — 28 October 2026
+
+**H5d  Clean offline name drafts; freeze migration 79; explain missing-English rows.**
+
+Clean only untouched H5b imports: state `machine`, exact pinned package-v2
+English, no entered/reviewed English and unchanged Thai source version. Scope:
+`place.name`, `facility.display_name`, `commercial_type.public_name`; include
+`section.concept_name` only for a single short name/tagline, never paragraphs
+or multi-sentence text. Remove one trailing period and trailing/doubled spaces;
+retain real abbreviation endings such as `Co.`, `Ltd.` and `St.`; change `km.`
+to `km`. Change no wording, case or name. Preserve machine state, source version
+and `offline_batch`. Keep the original drafts plus per-row before/after values
+in a new checksum-pinned ignored package and receipt. Use local rehearsal, a
+fresh verified protected backup per write batch, strict protected comparisons,
+one guarded transaction and exact no-op replay. Add helper QA rejection and
+tests for cleanup, abbreviations, edited/reviewed skips and replay. Report counts
+per field, every skip reason and ten examples. STOP if more than 5% are skipped
+or item 1 requires schema changes.
+
+Migration `202610280079_media_provider_budget.sql` is frozen at its committed,
+locally applied checksum. Remaining H5a schema uses **80**, replacing H5a's old
+next-number instruction. TEST receives 79 and 80 only with the combined H5a
+release. Confirm the deployment guard enforces this and explain its mechanism.
+
+Read-only inventory must explain the 1,128 missing-English rows versus 86 queued
+jobs by owner, field, project, English registry requirement and reason for no
+job. List every remaining BNA7/FLEXI must-have field with and without a job.
+Propose gap filling and await an owner decision; do not enqueue or fill it.
+List the five concept-name rows whose Thai source exceeds 120 characters for
+Marketing review, including project and row reference. Do not move or rewrite
+their content. Earlier safety rules and the no-provider-call rule remain.
+
+#### Owner decision H5e — 28 October 2026
+
+**H5e  Dedicated media-worker login through the migration runner, and a separate worker env file.**
+
+The owner resolves the missing worker-connection STOP: the owner operates TEST,
+so no IT request is required. Exactly one new credential location is approved:
+`/etc/sena-hub-test/media-worker.env`, regular, nonsymlink, `0600 root:root`,
+loaded only by the worker systemd unit. API/admin must not load it. It contains
+only `HUB_MEDIA_WORKER_DATABASE_URL` (release operator writes without printing)
+and `HUB_MEDIA_OPENAI_API_KEY` (owner later supplies through a hidden prompt).
+Non-secret settings may be in the unit or file. Check API-file absence of both
+variables using presence flags only. List all worker settings; STOP before
+granting any other required secret, including R2 image access, and report the
+narrowest option. No other new credential location is approved.
+
+Provision `hub_media_worker_login` only through
+`scripts/supabase-test-migrations.mjs`: LOGIN, NOINHERIT, NOSUPERUSER,
+NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOBYPASSRLS, CONNECTION LIMIT 2.
+Grant only CONNECT and membership of `hub_media_worker` with admin false,
+inherit false and set true. Generate at least 32 base64url characters into the
+existing ignored `.env.supabase-test` as
+`HUB_SUPABASE_TEST_MEDIA_WORKER_PASSWORD`; only its SCRAM verifier enters SQL.
+Runner guards must allow exactly the two approved login roles and their exact
+memberships. API runtime cannot assume the worker role; worker login cannot
+assume any other Hub role. Use direct or Session pooler port 5432 with
+verify-full TLS and existing CA; never the transaction pooler.
+
+Continue H5a with frozen 79 and new 80: shared per-image button using the UTF-8
+owner strings, monthly cap/price table and hardened sequential image-only
+worker. Deploy 79, 80, login, worker unit/file and H5c together using verified
+backups per write batch, strict protected fingerprints, retained rollback and
+smokes. Back up the new file with the existing protected configuration procedure.
+Keep AI controls disabled without the media key. **Do not run the pilot. STOP
+after deployment for the owner to configure that key.**
+
+Mock-provider checks must prove API environment isolation, exact role boundaries,
+image-only claims and no queue draining, secret-free logs/audits/receipts/browser
+bundle, and scanning coverage of the new variable names. Add a short docs/27
+Hosted env files table: path, loading unit, variable names only, maintainer and
+rotation (edit that one file, restart only that unit, read-only postflight).
+STOP on any other missing credential, protected account/permission/Auth change
+beyond the approved worker login, other process access to the worker env file,
+or a docs/41 section-6 condition. Commit to main when complete.
+
+#### H5e prerequisite STOP — private image access
+
+Read-only source inspection found that `media_worker.resized_image` refuses an
+R2 original unless an explicitly authorized reader is injected. `R2Assets`
+requires an access key and secret from the existing protected storage config;
+its interface supports both reading and uploading. The approved two-setting
+worker env and database login do not supply an image reader. No R2 credential
+has been read, copied or granted, and no login, password, service or env file has
+been provisioned by this slice.
+
+Narrowest proposed option: a private Unix-socket image broker in the existing
+API process, using its existing R2 reader. The worker would submit only its
+already-issued image-job ID and lease; the broker would also require the
+dedicated worker OS identity, revalidate the live image lease/current revision
+and eligibility, and return only checksum-verified, resized image bytes. No
+object-key input, public route, general file API, persistent broker credential,
+R2 grant or worker access to API secrets is proposed. Broker calls would not
+call a provider or claim/finish jobs. Database roles remain separate. This
+option awaits the owner's access-boundary decision before implementation or
+grants. H5d cleanup and its read-only inventories can proceed independently.
+
+The current generic migration runner is **not yet a combined-release guard**:
+its recorded-79 checksum/inventory checks alone still permit `--apply` at 78.
+This is a guard gap, not a confirmation of protection. H5d will add a fail-closed
+hold before any hosted operation; no migration is being applied now. The
+existing `.local/` batch operators separately assert TEST is exactly at 78.
+
+The owner subsequently **approved the private broker**, with these conditions:
+Unix socket only, never TCP or a proxied HTTP route; a systemd RuntimeDirectory,
+socket `0660`, group containing only the worker user, and `SO_PEERCRED` peer UID
+verification. Runtime may validate a lease read-only but must never claim,
+finish or assume the worker role. Enforce input, decompression-pixel and timeout
+limits; return resized JPEG only. Audit every fetch without image content.
+Fetch before any provider attempt: broker failure leaves the job waiting with
+zero provider attempts and no charge. Test wrong UID, expired/foreign lease,
+stale revision, ineligible asset and absence of an HTTP route. This approval
+resolves the private-image access STOP above without a new secret or R2 grant.
+
+#### H5d/H5e STOP — new protected Auth timestamp drift
+
+The first H5d read-only preflight stopped before the translation inventory:
+`.local/hosted-content-rollout/h5d-inventory-1793170151910.json`. The 35 protected
+tables checked before `auth.users` still match the final H5b receipt. The Auth
+fingerprint does not. The remainder of the inventory was not executed, and no
+broader claim of unchanged protected state is made.
+
+Two read-only diagnostic receipts are retained:
+`.local/hosted-content-rollout/h5de-auth-stop-1793170247262.json` and
+`.local/hosted-content-rollout/h5de-auth-stop-1793170343455.json`. The verified
+last H5b backup was compared in memory; no Auth value or timestamp was logged.
+Results: user count **1 to 1**, schema unchanged, generated column unchanged,
+and **only `auth.users.updated_at` changed**. Every other Auth column matches.
+**Matches a session/token refresh within 5 seconds: yes.** The Auth audit log
+is empty. **Cause: unknown**; correlation alone is not proof of the cause.
+
+The original baseline comparison is retained unchanged and failed. H1a's
+earlier scoped exception does not authorize accepting this new drift. An owner
+decision is pending to accept only the observed timestamp change as a fresh
+H5d/H5e checkpoint, after signed-in hosted Hub tabs are closed without signing
+out. The proposed resumed check remains strict on every Auth column, including
+`updated_at`, and on every other protected table; no default exclusion is
+proposed.
+
+No name cleanup, translation write, migration, database login, password, grant,
+worker env file, service or deployment has run in this slice. No provider call
+was made. Migration 79 still matches both committed and locally applied
+SHA-256 `a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91`.
+Its new combined-release guard has not yet been implemented: the gap described
+above remains explicitly open, and no hosted apply is allowed while stopped.
+H5d cleanup, helper tests, gap inventory and Marketing placement list, together
+with H5e implementation/gates/deployment and docs/27's maintenance table, remain
+pending this protected-state STOP.
+
+#### Owner decision H5f — scoped acceptance, 28 October 2026
+
+The owner confirms that a signed-in hosted Hub tab was open after the H5b
+postflight, all signed-in hosted tabs are now closed, and no sign-out occurred.
+For **H5d and H5e only**, the owner accepts the single `auth.users.updated_at`
+difference against the H5b backup, on the verified basis of the unchanged user
+count and every other Auth column and its session-refresh correlation. Take
+a fresh read-only capture of all protected fingerprints as the new baseline.
+Keep every Auth column strict from that baseline; any further Auth difference
+is a new STOP. Resume H5d first, including the fail-closed combined-release
+guard preventing 79 alone, then H5e with the approved broker conditions.
+Commit the pending docs/46 records on resumption.
+
+Fresh read-only capture **passed**:
+`.local/hosted-content-rollout/h5f-protected-baseline.json`. All **58 protected
+tables** and the original **30-table projection** were captured and checked
+again in a fresh snapshot. Compared with the H5b checkpoint, the accepted Auth
+timestamp is the only difference; all non-Auth tables match. The new baseline
+includes **every Auth column, including `updated_at`**, with no exclusions.
+The prior failed comparison and both STOP diagnostics remain unchanged.
+This capture made no hosted write. Migration 79 remains frozen; TEST is at 78.

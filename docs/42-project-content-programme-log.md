@@ -1050,3 +1050,29 @@ No entered or reviewed English was overwritten. There was no provider API call
 or provider-cost record. The post-import BNA7 non-bypass runtime and publication
 boundary smoke passed; nothing was published. Docs/46 records all batch,
 verified-backup and final reconciliation paths. TEST remains at migration 78.
+
+Owner decisions **H5d/H5e, 28 October 2026**, are recorded in docs/46 after the
+H5b execution receipt. H5d requests untouched name punctuation cleanup,
+missing-English inventory and a Marketing placement list; migration 79 is
+frozen and remaining H5a schema belongs in 80. H5e approves the dedicated
+worker login and worker-only protected env file. The owner also approved a
+Unix-socket image broker with peer-UID/lease validation and bounded JPEG-only
+responses, avoiding any worker R2 credential.
+
+**STOP before implementation:** the read-only preflight found a new protected
+Auth drift. Compared in memory with the verified H5b backup, only
+`auth.users.updated_at` changed; user count remains one and all other Auth
+columns match. It matches a session/token refresh within five seconds; the
+audit log is empty and the cause remains unknown. The 35 protected tables
+checked before Auth match; the inventory stopped there. The baseline remains
+unchanged and failed, with a scoped owner decision pending before resumption.
+No content, migration, role, credential or service write ran. No provider was
+called. The migration-runner combined-release hold gap is recorded honestly in
+docs/46; its guard is still pending and no hosted apply has run.
+
+Owner **H5f** accepts only the observed Auth `updated_at` drift for H5d/H5e,
+after closing signed-in hosted tabs without signing out. Fresh read-only
+baseline `.local/hosted-content-rollout/h5f-protected-baseline.json` passed all
+58 protected tables and the original 30-table projection, including every Auth
+column. The original failed comparison remains intact; future checks are
+strict from the new baseline with no exclusion. H5d resumes first, then H5e.
