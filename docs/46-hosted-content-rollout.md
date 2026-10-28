@@ -2169,3 +2169,58 @@ The owner also supplied the two budget-label strings and ledger-only two-decimal
 format in the existing UTF-8 file. It has 108 combining marks and no replacement
 characters; the A-C correction above is synchronized exactly, while H5a's
 verbatim block remains unchanged. H5e will use those strings on resumption.
+
+#### Owner decision H5g — 28 October 2026
+
+Owner decision H5g, 28 October 2026. The second auth.users.updated_at drift (between the passing H5d postflight and the failing H5f smoke) is attributed to a still-live session of the only Auth user refreshing itself; the browser client auto-refreshes tokens. I have now signed out from the hosted Hub with a global sign-out, which revokes every refresh token for that account, and closed the tab. I will not sign in to hosted TEST again until you STOP after the H5e deployment.
+For H5e only, accept against the fresh H5d backup: (a) the observed auth.users.updated_at change, and (b) the changes caused by this sign-out, limited to session and refresh-token rows of that one user being removed or revoked and that user's updated_at. Verify read-only that the user count is unchanged, every other auth.users column matches, no new Auth row exists and all non-Auth protected tables match. If anything else differs, STOP.
+Then take a fresh read-only baseline of all 58 protected tables, strict on every Auth column with no exclusions. After a global sign-out nothing should be able to refresh, so any further Auth difference is a real STOP: report it with its time window and do not ask for another timestamp acceptance.
+Resume H5e as decided, with the approved broker conditions and the 79/80 bundle admission that keeps the standalone hold. Commit the docs/46 records.
+
+#### H5g read-only verification — STOP on session-claim cascade
+
+Receipt: `.local/hosted-content-rollout/h5g-stop-1793183201011.json`.
+Inspection window: **28 October 2026, 10:26:11–10:26:41 UTC
+(17:26:11–17:26:41 Bangkok)**. The comparison used the verified fresh H5d
+backup at `.local/backups/h5d-test-apply-20261028T081708Z/database-before-batch.dump`,
+whose SHA-256 still matches the H5d receipt. Auth rows were reconstructed and
+compared in memory; no Auth values, token values or Auth timestamps were
+printed or saved. No hosted write or provider call was made.
+
+| Check against verified H5d backup | Result |
+|---|---|
+| Auth users / identity | One before and after; same identity |
+| `auth.users` columns | Only `updated_at` differs; every other column matches, including generated `confirmed_at` |
+| `auth.sessions` | Three before, zero after; three removed, no new or edited rows |
+| `auth.refresh_tokens` | 25 before, zero after; 25 removed, no new or edited rows |
+| Live sessions / unrevoked refresh tokens | None remain |
+| Additional Auth change | **Three `auth.mfa_amr_claims` rows removed; zero new or edited rows** |
+| Session-claim relationship | All three prior claim rows belonged to the sole user's prior sessions; FK is `FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE` |
+| All other Auth tables | Match; 27 Auth tables compared in total, no new Auth row found |
+| Protected content / permissions | All 57 non-Auth protected tables match; all 58 protected tables inspected |
+| Completed H5d translations | Match the successful cleanup receipt |
+
+The removed session claims are consistent with the global sign-out's session
+deletions and the inspected cascade constraint. They are nevertheless outside
+H5g's explicit acceptance, which is limited to session/refresh-token rows and
+the user's `updated_at`. H5g says to STOP if anything else differs. **H5e
+therefore remains stopped.** No new H5g baseline was accepted or written;
+the H5f baseline, fresh H5d backup and previous failed comparisons are retained.
+The owner must decide the treatment of these three cascade-deleted claim rows
+before a strict H5e baseline can be established. This finding does not request
+another timestamp exception or weaken any future strict Auth check.
+
+Earlier read-only diagnostic receipts are retained:
+`h5g-stop-1793183019951.json`, `h5g-stop-1793183042043.json` and
+`h5g-stop-1793183084228.json` stopped on the diagnostic's handling of generated
+Auth columns, before any state comparison; the helper was corrected to
+reconstruct populated generated columns and compare empty tables as empty.
+`h5g-stop-1793183128665.json` first identified the claim-table difference;
+the final receipt above completes the remaining comparisons. These diagnostic
+failures made no hosted changes and did not create a baseline.
+
+Migration 79 remains frozen and blocked from standalone hosted application;
+TEST remains at the previously recorded migration 78 (not revalidated by this
+Auth-only diagnostic). No schema 80, worker login, grant, password, worker env
+file, broker, service or deployment was created. No code changed, so no new
+code gate run was needed for this documentation-only checkpoint.

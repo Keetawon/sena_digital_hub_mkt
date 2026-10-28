@@ -1109,3 +1109,21 @@ with a refresh within five seconds; audit log empty, cause unknown. The earlier
 accepted difference does not cover this one. Both baselines and failed receipts
 remain unchanged. H5e is stopped before implementation, roles, credentials,
 schema 80 or deployment. No provider call or pilot ran.
+
+Owner H5g (28 October 2026) records global sign-out and scoped acceptance of
+session/refresh-token removals or revocations and the sole user's `updated_at`,
+then requires a new strict H5e baseline. The read-only comparison with the
+verified H5d backup inspected all 58 protected tables and 27 Auth tables during
+10:26:11–10:26:41 UTC. User count/identity and every other user column match;
+three sessions and 25 refresh tokens were removed, with no live session,
+unrevoked token or new Auth row remaining. All 57 non-Auth protected tables and
+completed H5d translations match.
+
+**H5g STOP:** three `auth.mfa_amr_claims` rows were also removed. All belonged
+to that user's sessions and the inspected FK has `ON DELETE CASCADE`, but H5g's
+explicit scope does not include this table. Receipt:
+`.local/hosted-content-rollout/h5g-stop-1793183201011.json`. Docs/46 records the
+decision, full findings and retained diagnostic attempts. No new baseline or
+H5e implementation/deployment was made; migration 79's standalone hold remains.
+No code changed or provider call ran. The owner decision on those three claim
+rows is required before establishing the strict H5e baseline.
