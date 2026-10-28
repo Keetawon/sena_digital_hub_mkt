@@ -1094,7 +1094,9 @@ STOP and report on any condition in docs/41 6, on a missing credential, or on an
 #### H5a Thai text correction
 
 Source: `.local/owner-input/h5a-h5b-thai-text.md`, decoded explicitly as UTF-8.
-The following A-C content is copied exactly; these strings govern future UI work.
+The owner added the two budget labels and exact ledger-only format on 28 October;
+the current source has 108 Thai combining marks and no replacement characters.
+Tables A-C below are copied exactly. The original H5a verbatim block is unchanged.
 
 ## A. H5a UI strings (use exactly)
 
@@ -1106,6 +1108,13 @@ The following A-C content is copied exactly; these strings govern future UI work
 | state_not_configured | ยังไม่ได้เปิดใช้ AI บนระบบนี้ | provider not configured |
 | state_budget | งบ AI เดือนนี้หมดแล้ว | monthly cap reached |
 | upload_budget_notice | ไม่ได้ขอคำแนะนำ AI เพราะงบเดือนนี้หมด | upload saved, no AI request |
+| budget_spent_label | ใช้งบ AI เดือนนี้แล้ว | month-to-date spend, followed by the amount |
+| budget_remaining_label | งบ AI คงเหลือ | remaining monthly budget, followed by the amount |
+
+Budget line format: label, a space, then the amount as "US$" with two
+decimals; the two parts are joined by " · ". Example:
+ใช้งบ AI เดือนนี้แล้ว US$1.20 · งบ AI คงเหลือ US$3.80
+Amounts come from the Hub cap ledger (cap US$5), never from the provider.
 
 Existing labels named in H5a (already correct in code; do not change):
 
@@ -1132,7 +1141,6 @@ Project IDs are authoritative; names are for reports only.
 
 - "docs/41 5" means docs/41 section 5 (gates).
 - "docs/41 6" means docs/41 section 6 (STOP conditions).
-
 
 #### H5a prerequisite STOP — missing worker database connection
 
@@ -1864,3 +1872,300 @@ timestamp is the only difference; all non-Auth tables match. The new baseline
 includes **every Auth column, including `updated_at`**, with no exclusions.
 The prior failed comparison and both STOP diagnostics remain unchanged.
 This capture made no hosted write. Migration 79 remains frozen; TEST is at 78.
+
+#### H5d read-only gap inventory and Marketing review list
+
+Read-only receipt: `.local/hosted-content-rollout/h5d-inventory-1793171749566.json`. All 58 protected fingerprints match
+the strict H5f baseline before and after this inventory. No jobs, sources or
+translations were created or changed by the inventory.
+
+Of 1,128 metadata rows in `missing`, 86 have current queued jobs and **1,042
+have no current job**. Every one of the 1,042 has English in `locales_required`.
+That locale requirement differs from whether a field is required, recommended
+or optional for a particular publication.
+
+| Owner | No-job rows | Explanation |
+|---|---:|---|
+| commercial_type | 536 | 263 descriptions and 273 highlights have empty Thai sources. |
+| facility | 90 | Description, location label and opening hours are empty on 30 facilities. |
+| disclosure | 416 | 364 fields have empty Thai; 52 nonempty notes are excluded by the Legal translation policy. All 416 disclosure fields are outside E1 offline translation. |
+
+The primary reason is empty Thai for **990** rows and policy exclusion for
+**52** nonempty notes. The 364 empty disclosure fields have both blockers.
+`hub.sync_content_translation` records empty localized metadata, but enqueues
+only nonempty Thai with an authorized actor and allowed field/source. This
+explains these groups without treating an absent job as lost provider work.
+
+| Field | Rows without a job | Publication registry | Source / translation policy |
+|---|---:|---|---|
+| `commercial_type.description` | 263 | required | Empty Thai; E1 marketing field |
+| `commercial_type.highlights` | 273 | recommended | Empty Thai; E1 marketing field |
+| `disclosure.bank` | 52 | optional | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.building_description` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.legal_project_name` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.location_text` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.managing_director` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.notes` | 52 | optional | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.owner_address` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `disclosure.owner_company` | 52 | required | Legal; no E1 translation (empty Thai except notes) |
+| `facility.description` | 30 | recommended | Empty Thai; E1 marketing field |
+| `facility.location_label` | 30 | recommended | Empty Thai; E1 marketing field |
+| `facility.opening_hours` | 30 | recommended | Empty Thai; E1 marketing field |
+
+All project/reference IDs below remain exact text. Full row references and
+reason flags are in the ignored receipt.
+
+| Project/reference | No-job rows |
+|---|---:|
+| `00101` | 8 |
+| `00300` | 10 |
+| `00401` | 10 |
+| `00500` | 2 |
+| `00601` | 10 |
+| `00602` | 10 |
+| `01301` | 14 |
+| `01501` | 10 |
+| `01800` | 6 |
+| `10301` | 14 |
+| `20100` | 4 |
+| `20202` | 2 |
+| `70101` | 12 |
+| `70103` | 4 |
+| `70401` | 16 |
+| `70502` | 4 |
+| `70503` | 12 |
+| `70504` | 12 |
+| `80201` | 16 |
+| `AQ` | 18 |
+| `B1/5` | 7 |
+| `B1/7` | 6 |
+| `BGTHT` | 18 |
+| `BNA6` | 42 |
+| `BNA7` | 33 |
+| `BPHF3` | 12 |
+| `BPHGH` | 6 |
+| `BPSK1` | 12 |
+| `BPSK2` | 12 |
+| `BPSN` | 6 |
+| `BPU` | 12 |
+| `B_PO` | 42 |
+| `CBDC1` | 8 |
+| `CHA14` | 34 |
+| `CHOMT` | 28 |
+| `F9SV5` | 4 |
+| `FGL70` | 27 |
+| `FISUK` | 20 |
+| `K1AB` | 16 |
+| `K1P48` | 31 |
+| `K2KH2` | 8 |
+| `K4LPT` | 14 |
+| `K9BK3` | 14 |
+| `K9BK4` | 3 |
+| `K9PG` | 14 |
+| `KBDF4` | 14 |
+| `KUBON` | 27 |
+| `LADK2` | 14 |
+| `LADKB` | 12 |
+| `LIFIS` | 20 |
+| `LP107` | 30 |
+| `NUSA` | 41 |
+| `ONUT1` | 18 |
+| `PCHAO` | 46 |
+| `PH7/1` | 4 |
+| `RAM9A` | 20 |
+| `RAMK` | 28 |
+| `RTF6` | 18 |
+| `SAMRG` | 18 |
+| `SKHPT` | 16 |
+| `SLYA` | 4 |
+| `SNHP2` | 39 |
+| `SRKIT` | 16 |
+| `TRAK1` | 12 |
+| `VELA` | 10 |
+| `VELAP` | 2 |
+| `VIVA` | 10 |
+
+**Pilot publication blockers, including absent metadata.** FLEXI is existing
+brand reference `25`, public ID `brd_64325839308d4e479d7f5b7d0bf4ca71`.
+Legacy project/brand rows predate the translation trigger and were not
+backfilled; unlike the website-created child drafts, their required fields can
+have neither translation metadata nor a job. Raw English alone is not the E9
+review record. These additional absent rows are not part of the 1,042 count.
+
+| Pilot | Must-have field | English/job state |
+|---|---|---|
+| BNA7 | `project.public_name` | Thai/raw English present; no metadata or job; E9 review missing. |
+| BNA7 | `project.address` | Thai present; English absent; no metadata or job. |
+| BNA7 | `project.ad_disclaimer` | Thai/English absent; no metadata or job; Legal-owned completion needed. |
+| BNA7 | `section.project_intro` | Machine English/job done; Marketing review still required. |
+| BNA7 | `section.selling_summary` | Section/source absent; no metadata or job. |
+| BNA7 | `section.concept_name` | Section/source absent; no metadata or job. |
+| BNA7 | `commercial_type.public_name` (11) | Machine drafts/jobs done; Marketing review still required. |
+| BNA7 | `commercial_type.description` (11) | Empty Thai; English missing; no jobs. Exact unit references below. |
+| BNA7 | `disclosure.building_description`, `legal_project_name`, `location_text`, `managing_director`, `owner_address`, `owner_company` | Six required fields on disclosure `10edab79-d4e2-565a-9a0a-d72830c1d21d`; empty Thai/English, no jobs; outside E1. |
+| FLEXI | `brand.public_name` | Thai/raw English present; no metadata or job; E9 review missing. |
+| FLEXI | `brand.description` | Thai/English absent; no metadata or job. |
+
+The effective BNA7 project-readiness result explicitly flags the six direct
+project/section fields listed above. The required child-field rows are also
+listed rather than being hidden by the missing-metadata distinction.
+
+| BNA7 unit row: `commercial_type.description` | Job |
+|---|---|
+| `c4d54b12-5e96-5b0b-bae8-221b39e30545` | none; Thai empty |
+| `d3a38e87-5878-50bd-a9f8-da4421b2a78d` | none; Thai empty |
+| `d88a27b1-5298-5786-9c07-e4707542a1e2` | none; Thai empty |
+| `caf2c36f-2362-5174-8b32-9a09f7796920` | none; Thai empty |
+| `4e3debd1-20b2-579d-a6b1-b72537fc9895` | none; Thai empty |
+| `211fad64-5685-5555-a905-55606ac281b3` | none; Thai empty |
+| `52669bf0-2c6c-53f1-a4cf-0a30005d8cbb` | none; Thai empty |
+| `11458454-167e-51be-b55f-a141e67228b8` | none; Thai empty |
+| `35d5b257-fc22-5ee1-a72e-81aeb03f86aa` | none; Thai empty |
+| `4d0b8106-c698-5db9-891f-0b1a03e682dc` | none; Thai empty |
+| `840bc44f-b89e-54c4-87cc-e2f346ce0db0` | none; Thai empty |
+
+BNA7 also has 34 `missing` metadata rows: 11 descriptions, 11 recommended
+highlights, eight disclosure fields, three recommended facility fields and one
+recommended place name. The place name has a queued held job; the other 33
+have none. Recommended project meta title/description have Thai but no English
+or metadata/job. Eighteen place names, one facility name and one concept detail
+have machine drafts pending Marketing review. FLEXI has no translation metadata
+or queued job; this is not evidence that its required English is complete.
+
+**Proposed follow-up — awaiting owner decision, not executed.** Marketing first
+supplies missing Thai/evidence or reviews field applicability; no empty source
+can be translated. Inventory and backfill only eligible current nonempty
+project/brand/section sources through the existing translation structures, with
+the same protected backups and replay guards, then use an approved further
+offline batch. Preserve existing entered/raw English and route it to Marketing
+review instead of replacing it. Legal completes disclosure/advertising English
+outside E1; do not enqueue those fields. Review the 86 existing holds before
+any further completion. This task does not change the queue or review state.
+
+**Marketing placement review only.** The five concept-name Thai paragraphs are
+listed below. No text, placement or source row was moved or rewritten.
+
+| Exact project ID | Section owner key | Version row reference | Thai characters |
+|---|---|---|---:|
+| `00101` | `793806da-c914-456e-840f-7935e69dc156` | `164012cd-f0da-4068-b0d2-111e35b7c25b` | 192 |
+| `BPSN` | `15461dad-3b2f-44e9-99cd-1f1b40360530` | `cf9fc2a9-3251-4d67-8850-ba73913a499b` | 233 |
+| `70502` | `a4da547a-2865-45af-a46f-70ab8169c610` | `29f5d4f4-48f9-4946-875e-e3f4ca3f5dcd` | 248 |
+| `AQ` | `87f3a12a-6472-41ed-996d-e151d50b70ff` | `398c4bb6-16da-43e6-b5fb-218e27fa307c` | 223 |
+| `K9PG` | `36784830-3234-4307-bfbf-2e5047ffd226` | `a4bbbd57-6bb7-4496-a6c1-5703b22595e9` | 361 |
+
+The name-cleanup package separately excludes those five long concepts, one
+multi-sentence concept and one intentional ellipsis tagline; it does not turn
+an ellipsis into two periods. Only the 200 reviewed punctuation-only deltas
+are selected for the guarded cleanup.
+
+Manual review additionally retained `25 SQ.M.` as a genuine unit abbreviation.
+The preliminary 201-row package remains retained and superseded; no writes used
+it. The current 200-row package is
+`.local/offline-translation/h5d-20261028T073713Z/package.json`, SHA-256
+`2fb552ab1df7510efb9422a9a133a19e762fccfa8c5cdd9d7dfa7ca63b446d14`.
+
+#### H5d guarded cleanup result and new H5f STOP
+
+The pinned 200-row cleanup passed local rehearsal, including exact replay and
+rollback, then committed on TEST in one guarded transaction. **Changed: 181
+`place.name`, nine `commercial_type.public_name`, ten short
+`section.concept_name`, zero `facility.display_name`; skipped: zero (0%).**
+All original 1,004 job drafts and `offline_batch` markers are retained. Only
+the selected machine English, metadata revision and normal audit-touch columns
+changed; state remains `machine`, source versions and `en_from_th_version` are
+unchanged, and no entered/reviewed English was overwritten. Replay returned
+`already_applied` with no row change. No schema or provider call was needed.
+
+Receipts: `.local/hosted-content-rollout/h5d-local-rehearsal.json`,
+`.local/hosted-content-rollout/h5d-test-1793175754150.json`, and
+`.local/hosted-content-rollout/h5d-postflight-1793175821872.json`. The postflight
+snapshot verified all 1,004 originals, all cleaned values and 58 strict H5f
+fingerprints; jobs remain 1,004 done and 86 queued. Every missing-English gap
+and Marketing placement item in the read-only report above is unchanged.
+
+| Protected verified backup | Bytes | SHA-256 |
+|---|---:|---|
+| `.local/backups/h5d-local-rehearse-20261028T081144Z/database-before-batch.dump` | 17,157,443 | `440f1714112add8a0084a66469487556bb900de6e642606898e3e5f3d97a6b68` |
+| `.local/backups/h5d-test-apply-20261028T081708Z/database-before-batch.dump` | 16,972,178 | `04b7e509718094c80cc6ff59ecea24e7349afcc9946d7c2e7dd5eac90e9f7383` |
+
+Each backup passed inventory and a complete archive read; its directory ACL
+allows only the operator and SYSTEM. The local rehearsal reconstructed the
+pinned prior H5b state only inside its rolled-back transaction. All local
+translation fingerprints matched after rollback. All 58 protected tables
+matched H5f before/after the TEST write and its exact replay.
+
+| Field / project | Original draft | Cleaned machine draft |
+|---|---|---|
+| `place.name` / `BNA7` | Concordian School. | Concordian School |
+| `place.name` / `BNA7` | Bangna1 Hospital. | Bangna1 Hospital |
+| `place.name` / `BNA7` | Sikarin Hospital. | Sikarin Hospital |
+| `place.name` / `B1/5` | Near Thammasat University Rangsit, 17 km. | Near Thammasat University Rangsit, 17 km |
+| `place.name` / `B1/5` | Near Rangsit University, 3.0 km. | Near Rangsit University, 3.0 km |
+| `place.name` / `B1/5` | Near Don Mueang Airport, 11.8 km. | Near Don Mueang Airport, 11.8 km |
+| `place.name` / `B_PO` | Bang Pho Hospital. | Bang Pho Hospital |
+| `place.name` / `B_PO` | Saint Gabriel's College. | Saint Gabriel's College |
+| `place.name` / `B1/5` | Near the Red Line's Rangsit station, 3.0 km. | Near the Red Line's Rangsit station, 3.0 km |
+| `place.name` / `B_PO` | Pracha Rat Sai 2 Road. | Pracha Rat Sai 2 Road |
+
+`25 SQ.M.` remains unchanged as a real abbreviation. The 15 held place rows
+outside H5b imports remain untouched. The seven concept exclusions described
+above are outside the selected cleanup scope, not edited-row skips.
+
+**Fail-closed migration hold implemented.** The current documented runner
+rejects canonical migrations 79 and later at both `runMigrations` and exported
+`applyMigration`, before any SQL is issued. There is no CLI/environment bypass.
+Only the existing real disposable H1 connection on loopback port 55434 with
+database `hub_hosted_test_simulation` and a loopback peer is exempt. Unit checks
+cover both entry points, the remote target and a loopback connection with the
+wrong database, proving zero SQL calls. H5e must add admission for the complete
+79/80 bundle while preserving the standalone hold. Frozen migration 79 and its
+registered checksum are unchanged. TEST is still at 78.
+
+| Gate | Final result | Evidence under `artifacts/hosted-content-rollout/` |
+|---|---|---|
+| API | 2,132 passed; 11 existing opt-in skips; zero failed | `h5d-api-final.log` |
+| DB/concurrency and Node | 62 checks plus 11 Node tests passed | `h5d-db-full.log` |
+| H1 | 12 protocol plus 45 browser tests passed | `h5d-h1-full.log` |
+| Full browser suite, one run | 302/302 passed in 12.3 minutes | `h5d-ui-full.log` |
+| Typecheck / offline build | passed | `h5d-typecheck.log`, `h5d-build.log` |
+| Focused helper / runner | five helper tests and ten runner checks passed | `h5d-focused.log`; runner test output |
+| Credential-pattern scan | final scan: zero matches in 92 source/browser/report files; no credential file read | `h5d-provider-scan-final.json` (prior scan retained as `h5d-provider-scan.json`) |
+
+Source seal: `.local/hosted-content-rollout/h5d-gates.json`, 676 files. The
+initial full API pass preceded the final abbreviation refinement; it is
+retained as `h5d-api-full.log`. The full API gate was rerun on the corrected
+rule and passed. No existing test was weakened or skipped. Existing synthetic
+website queue screenshots remain ignored at
+`artifacts/hosted-content-rollout/website-review-1280.png` and
+`artifacts/hosted-content-rollout/website-review-390.png`.
+
+**New STOP after H5f.** A subsequent fresh read-only smoke found Auth no longer
+matching the fresh H5f baseline. The first legacy smoke still used the old
+checkpoint (`website-database-postflight-1793175815872.json`); its failure was
+initially attributed to the accepted old drift. That attribution was premature.
+A separate H5f-scoped smoke also failed
+(`h5f-website-database-postflight-1793175882693.json`), and direct check
+`h5f-auth-check-1793176013228.json` established a **new** difference. All failed
+receipts and both original baselines are retained without modification.
+
+Read-only diagnostic
+`.local/hosted-content-rollout/h5f-new-auth-stop-1793176135392.json` compared
+Auth in memory with the verified fresh H5d backup, which matched H5f. User
+count remains **one**, schema/generated columns match, and **only
+`auth.users.updated_at` differs**. All other 57 protected tables match H5f;
+the complete translation state still matches the successful cleanup.
+**Matches a session/token refresh within five seconds: yes. Cause: unknown.**
+The Auth audit log is empty. No Auth value or timestamp was logged.
+
+H5f authorized only the earlier difference and explicitly makes any further
+Auth drift a new STOP. No new baseline has been accepted or captured. No
+further hosted write or H5e implementation/deployment is permitted pending
+the owner decision. The broader runtime/publication smoke is not claimed
+complete under the new baseline. No login, grant, password or worker env file
+has been created; migration 80 has not been written or applied. No provider
+call, image job, pilot, rights approval or publication ran.
+
+The owner also supplied the two budget-label strings and ledger-only two-decimal
+format in the existing UTF-8 file. It has 108 combining marks and no replacement
+characters; the A-C correction above is synchronized exactly, while H5a's
+verbatim block remains unchanged. H5e will use those strings on resumption.

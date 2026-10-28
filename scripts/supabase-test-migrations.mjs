@@ -15,10 +15,21 @@ const OWNER_SCHEMAS = {ads_registry_writer:['ads'],ads_export_owner:['ads_export
 const ROLES = [...ACTORS, ...OWNERS, 'hub_runtime'];
 const HISTORY = 'hub_deployment.schema_migrations';
 const LOCK = 1936027233;
+const CONTENT_RELEASE_HOLD = 79;
 class GuardError extends Error {}
 const fail = message => { throw new GuardError(message); };
 const identifier = value => `"${value.replaceAll('"', '""')}"`;
 const literal = value => `'${value.replaceAll("'", "''")}'`;
+
+function requireCombinedContentRelease(client, migrations) {
+  if (!migrations.some(m => Number(/^\d{8}(\d{4})_/.exec(m.name)?.[1] ?? 0) >= CONTENT_RELEASE_HOLD)) return;
+  // H5d: hard hold until the complete H5a 79/80 release admission is implemented.
+  // The existing disposable H1 simulation remains local; no env flag bypasses it.
+  const c = client.connectionParameters, socket = client.connection?.stream;
+  if (c?.host === '127.0.0.1' && Number(c.port) === 55434 && c.database === 'hub_hosted_test_simulation'
+      && socket?.remoteAddress === '127.0.0.1') return;
+  fail('Migrations 79 and later are held for the complete combined H5a release; no standalone hosted apply is allowed.');
+}
 
 export function configuration(env, args = []) {
   if (args.some((arg, i) => arg !== '--apply' && arg !== '--project-ref' && args[i - 1] !== '--project-ref')) fail('Unknown argument. Use --project-ref <ref> and optional --apply.');
@@ -161,6 +172,7 @@ async function inspect(client, migrations, config) {
 }
 
 export async function applyMigration(client,migration,config,actor) {
+  requireCombinedContentRelease(client,[migration]);
   await client.query('begin');
   const temporaryMemberships=new Map(), temporarySchemaGrants=[];
   try {
@@ -207,6 +219,7 @@ function scramVerifier(password) {
 export async function runMigrations(client, config, { log = console.log, migrations } = {}) {
   if(config.projectRef!==PROJECT_REF) fail('Only the approved dedicated TEST project is accepted.');
   migrations ??= await loadMigrations();
+  if(config.apply) requireCombinedContentRelease(client,migrations);
   let locked = false;
   try {
     if (config.apply) {

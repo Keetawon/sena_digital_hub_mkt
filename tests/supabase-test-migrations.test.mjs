@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {readFile} from 'node:fs/promises';
-import { configuration, loadMigrations, migrationBody, requireVerifiedTls, safeError, statements, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
+import { applyMigration, configuration, loadMigrations, migrationBody, requireVerifiedTls, runMigrations, safeError, statements, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
 
 const ref = 'eqlrtevwpyboplljgowo';
 const env = {
@@ -70,6 +70,17 @@ test('connection and SQL errors never expose supplied secrets or SQL', () => {
   assert.doesNotMatch(safeError(Object.assign(new Error(secret), { code: '28P01', detail: secret })), /secret|postgresql/);
   assert.doesNotMatch(safeError(new Error(secret)), /secret|postgresql/);
   assert.match(safeError(Object.assign(new Error(secret), { code: 'ECONNREFUSED' })), /ECONNREFUSED/);
+});
+
+test('H5d refuses canonical 79 through both hosted apply entry points before any SQL', async () => {
+  const migrations=await loadMigrations(),queries=[];
+  for(const connectionParameters of [undefined,{host:`db.${ref}.supabase.co`,port:5432,database:'postgres'},
+    {host:'127.0.0.1',port:55434,database:'postgres'}]) {
+    const client={connectionParameters,connection:{stream:{remoteAddress:'127.0.0.1'}},query:async sql=>queries.push(sql)};
+    await assert.rejects(runMigrations(client,{...configuration(env,args),apply:true},{migrations,log:()=>{}}),/combined H5a release/);
+    await assert.rejects(applyMigration(client,migrations[78],configuration(env,args),'unused'),/combined H5a release/);
+  }
+  assert.deepEqual(queries,[]);
 });
 
 test('TLS guard checks the verified client socket when using a pooler', () => {

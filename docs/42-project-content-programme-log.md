@@ -1076,3 +1076,36 @@ baseline `.local/hosted-content-rollout/h5f-protected-baseline.json` passed all
 58 protected tables and the original 30-table projection, including every Auth
 column. The original failed comparison remains intact; future checks are
 strict from the new baseline with no exclusion. H5d resumes first, then H5e.
+
+H5d's read-only report now explains all 1,042 missing-English rows without a
+job: 990 empty Thai sources and 52 nonempty Legal notes excluded by policy;
+all 416 disclosure fields are outside E1. It lists BNA7/FLEXI required fields
+with absent metadata/jobs, the remaining review blockers, every project count
+and the five long concept-name paragraph references. No gap was filled or job
+created. The proposed follow-up awaits an owner decision.
+
+The guarded punctuation cleanup completed **200 changes / zero skips**:
+181 place names, nine commercial names and ten short concept names. `25 SQ.M.`
+was preserved as a genuine abbreviation. Seven long/ambiguous concepts were
+excluded. Local rehearsal rolled back, TEST committed one guarded transaction,
+and exact replay changed nothing. All 1,004 original job drafts, source versions,
+machine state and human English were preserved. Docs/46 contains the pinned
+package, ten examples, verified backups and receipts.
+
+The runner now hard-refuses standalone hosted migration 79 at both apply entry
+points before SQL, with only the existing real loopback H1 simulation exempt.
+Migration 79 is frozen and TEST remains at 78. Gates passed: **2,132 API / 11
+existing opt-in skips**, **62 DB checks + 11 Node tests**, **12 H1 protocol +
+45 browser tests**, typecheck, offline build and **302 browser tests in one
+12.3-minute run**. The corrected abbreviation rule received the final full
+API rerun. Source and credential-pattern checks passed.
+
+**New H5f STOP:** the post-cleanup snapshot passed all 58 protected fingerprints,
+but a subsequent fresh smoke found a further Auth change. In-memory comparison
+with the verified H5d backup confirms only `auth.users.updated_at` changed;
+count remains one, every other Auth column and all 57 other protected tables
+match, and translation state still matches the successful cleanup. It correlates
+with a refresh within five seconds; audit log empty, cause unknown. The earlier
+accepted difference does not cover this one. Both baselines and failed receipts
+remain unchanged. H5e is stopped before implementation, roles, credentials,
+schema 80 or deployment. No provider call or pilot ran.
