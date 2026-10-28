@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib, math, os, re, unicodedata
 from pythainlp.tokenize import word_tokenize
+from .provider_budget import ProviderBudgetExceeded, spend_limit_code
 
 EMBED_MODEL='text-embedding-3-large'
 DIMENSIONS=1536
@@ -44,8 +45,13 @@ def rank(rows,query_embedding,query):
 async def embed(texts):
     from openai import AsyncOpenAI
     if not os.environ.get('OPENAI_API_KEY','').strip():raise RuntimeError('embedding_provider_not_configured')
-    async with AsyncOpenAI(base_url='https://api.openai.com/v1',timeout=45,max_retries=1) as client:
-        response=await client.embeddings.create(model=EMBED_MODEL,dimensions=DIMENSIONS,input=texts)
+    async with AsyncOpenAI(base_url='https://api.openai.com/v1',timeout=45,max_retries=0) as client:
+        try:
+            response=await client.embeddings.create(model=EMBED_MODEL,dimensions=DIMENSIONS,input=texts)
+        except Exception as error:
+            if code := spend_limit_code(error):
+                raise ProviderBudgetExceeded(code) from None
+            raise
         return [x.embedding for x in sorted(response.data,key=lambda x:x.index)]
 
 def route_question(question,card):

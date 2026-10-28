@@ -11,6 +11,7 @@ import { once } from 'node:events';
 import EmbeddedPostgres from 'embedded-postgres';
 import { applyLocalMigrations } from './local-migrations.mjs';
 import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
+import { scrubProviderKeys } from './provider-keys.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),[mode,...extra]=process.argv.slice(2);
 assert.ok(['api','db','ui','all'].includes(mode),'Use api, db, ui or all');
@@ -26,7 +27,7 @@ const config=JSON.parse(await readFile(path.join(root,'.local/development.json')
 const base=path.join(root,'.local/test-runs');await mkdir(base,{recursive:true});
 const directory=await mkdtemp(path.join(base,'run-')),dataDirectory=path.join(directory,'postgres'),runId=randomUUID();
 await writeFile(path.join(directory,'run.json'),JSON.stringify({run_id:runId,database_directory:dataDirectory,created_at:new Date().toISOString()}));
-const env={...process.env};for(const key of Object.keys(env))if(key.startsWith('HUB_')||key.startsWith('NEXT_PUBLIC_SUPABASE_')||key==='OPENAI_API_KEY')delete env[key];
+const env=scrubProviderKeys({...process.env});for(const key of Object.keys(env))if(key.startsWith('HUB_')||key.startsWith('NEXT_PUBLIC_SUPABASE_'))delete env[key];
 const dsn=`postgresql://hub_runtime:${config.runtimePassword}@127.0.0.1:55432/sena_hub_local`;
 Object.assign(env,{HUB_ENV:'local',HUB_AUTH_MODE:'demo',HUB_DATABASE_URL:dsn,HUB_TEST_DATABASE_URL:dsn,
   HUB_API_URL:'http://127.0.0.1:8000',HUB_DISPOSABLE_TEST_RUN:directory,HUB_COORDINATE_TEST:'1',HUB_PROGRESS_TEST:'1'});

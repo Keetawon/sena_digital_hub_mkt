@@ -10,6 +10,7 @@ import { SIMULATION_PUBLIC_KEY } from './hosted-test-fixtures.mjs';
 import { R2_SIMULATION } from './hosted-test-r2.mjs';
 import { simulateHostedTest } from './simulate-hosted-test.mjs';
 import pg from 'pg';
+import { scrubProviderKeys } from './provider-keys.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
@@ -48,7 +49,8 @@ try {
   const dsn=new URL(config.runtimeDatabaseUrl);
   if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||dsn.port!=='55434'||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
   const env={...process.env};
-  for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_')||name==='OPENAI_API_KEY')delete env[name];
+  scrubProviderKeys(env);
+  for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_'))delete env[name];
   Object.assign(env,{HUB_AUTH_GOOGLE:'1',HUB_AUTH_PASSWORD:'1',HUB_ENV_LABEL:'LOCAL H1',HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
     HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
     HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:'memory:h1-r2',HUB_H1_R2_CONFIG:JSON.stringify(R2_SIMULATION),

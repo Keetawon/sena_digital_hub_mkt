@@ -97,6 +97,15 @@ The connection is fixed to the documented local development database. The worker
 assumes `hub_translation_worker`, whose only executable commands claim and finish
 translation jobs; the API role cannot use it. No credential file is created.
 Provider configuration is read only from the existing approved API environment.
+Owner H5c (28 October): local developers set only the variables needed for their
+caller in the existing ignored `apps/api/.env`: `HUB_TRANSLATION_OPENAI_API_KEY`
+for the E9 worker, `HUB_MEDIA_OPENAI_API_KEY` for image suggestions, and
+`OPENAI_API_KEY` for local operator scripts, the staff assistant and knowledge
+embeddings. Neither worker falls back to the API key. This documentation adds
+no values and does not authorize creating another credential file. Both
+disposable test runners scrub all three names, including future prefixed variants.
+`python scripts/scan-provider-credentials.py` scans changed source and the browser
+bundle for the three names and token literals without reading credential files.
 If a credential is missing, the worker records `provider_unavailable` and exits;
 stop and report under the programme's credential STOP condition.
 The programme's automated gates inject a provider stub and never call OpenAI.

@@ -65,7 +65,8 @@ MEDIA_FUNCTIONS = {'hub.' + name for name in (
     'media_tag_approve', 'media_tags_read', 'media_require_asset_edit', 'media_save_asset', 'media_link_save',
     'media_link_remove', 'media_legacy_binding_guard', 'media_requirements_read', 'media_requirement_save',
     'media_clip_save', 'media_checklist', 'project_media', 'media_thumbnail_binding', 'project_content_readiness_before_media',
-    'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check')}
+    'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check',
+    'media_budget_blocked', 'provider_budget_event', 'media_budget_exhausted')}
 WEB_TABLES = {'hub.web_pages', 'hub.web_publications', 'hub.web_changes'}
 WEB_FUNCTIONS = {'hub.' + name for name in (
     'web_publication_guard', 'web_hash', 'web_localized', 'web_fallback', 'web_source', 'web_source_content', 'web_authored_content', 'web_dependency', 'web_source_available', 'web_item', 'web_asset', 'web_registry_fields', 'web_sections', 'web_contacts', 'web_faqs', 'web_project', 'web_article_node', 'web_article', 'web_compose', 'web_scope_faq', 'web_nodes', 'web_dependencies', 'web_issues', 'web_assert_sources', 'web_resolve', 'web_output', 'web_limit_faq', 'web_changed_pages', 'web_workspace', 'web_page_save', 'web_prepare', 'web_preview_assets', 'web_publication_read', 'web_record_change', 'web_publish', 'web_history', 'web_pointer', 'web_version_preview', 'web_public_page', 'web_public_changes', 'web_public_ai')}

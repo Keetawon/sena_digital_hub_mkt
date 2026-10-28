@@ -81,6 +81,27 @@ def test_preview_release_scope_checked_before_embedding(client,monkeypatch):
 def test_pii_not_sent_to_embedding(client):
     response=client[0].post('/v1/admin/knowledge/preview',headers=headers('editor'),json={'question':'โทร 0812345678 ให้ที','project_id':'BNA7'})
     assert response.status_code==422 and not client[1]
+
+@pytest.mark.parametrize('code',['project_spend_limit_exceeded','organization_spend_limit_exceeded','insufficient_quota'])
+def test_embedding_budget_response_is_audited_without_query_or_retry(client,monkeypatch,code):
+    from sena_hub_api.provider_budget import ProviderBudgetExceeded
+    from sena_hub_api.provider_messages import MESSAGES
+    audit=[];attempts=[]
+    class DB:
+        async def fetch(self,*args):return [{'rem_project_id':'BNA7','payload':{'status':{'raw':2}}}]
+        async def fetchval(self,sql,*args):
+            assert "hub.provider_budget_event('knowledge',$1)" in sql
+            audit.append(args)
+    @asynccontextmanager
+    async def database(request,actor):yield DB()
+    async def embed(texts):
+        attempts.append(True);raise ProviderBudgetExceeded(code)
+    monkeypatch.setattr(main,'database',database);monkeypatch.setattr(knowledge,'embed',embed)
+    current_client=TestClient(main.create_app(settings(demo_tokens=TOKENS)),client=('127.0.0.1',50000))
+    response=current_client.post('/v1/admin/knowledge/preview',headers=headers('viewer'),json={'question':'synthetic garden query','project_id':'BNA7'})
+    assert response.status_code==503
+    assert response.json()['error']=={'code':'knowledge_budget','message':MESSAGES['knowledge_budget']}
+    assert attempts==[True] and audit==[(code,)]
 def test_closed_precedes_selling_and_retrieval():
     route,answer=route_question('TPRAK มีห้องว่างราคาเท่าไหร่',{'status':{'raw':3}})
     assert route=='closed' and 'ปิดโครงการแล้ว' in answer and 'กำลังขาย' in answer

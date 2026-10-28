@@ -90,9 +90,9 @@ def test_provider_request_uses_structured_output_and_never_logs_error(monkeypatc
         async def close(self):
             pass
 
-    monkeypatch.setenv('OPENAI_API_KEY', 'synthetic-unit-test-placeholder')
+    monkeypatch.setenv('HUB_TRANSLATION_OPENAI_API_KEY', 'synthetic-unit-test-placeholder')
     monkeypatch.setattr('openai.AsyncOpenAI', FakeClient)
-    provider = translation.OpenAITranslator()
+    provider = translation.OpenAITranslator(key_variable='HUB_TRANSLATION_OPENAI_API_KEY')
     assert asyncio.run(provider.translate('Marketing text only', 100)) == 'English draft'
     request = requests[0]
     assert request['store'] is False and request['text_format'] is translation.EnglishDraft

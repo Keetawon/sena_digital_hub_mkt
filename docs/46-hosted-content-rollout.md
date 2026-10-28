@@ -1091,6 +1091,49 @@ Hosted TEST has no media worker today, so requested jobs would never be processe
 STOP and report on any condition in docs/41 6, on a missing credential, or on any change to protected accounts, permissions or Auth.
 ```
 
+#### H5a Thai text correction
+
+Source: `.local/owner-input/h5a-h5b-thai-text.md`, decoded explicitly as UTF-8.
+The following A-C content is copied exactly; these strings govern future UI work.
+
+## A. H5a UI strings (use exactly)
+
+| Key | Thai (correct) | Where |
+|---|---|---|
+| button_label | ขอคำแนะนำจาก AI | per-image button (shared component) |
+| hint | ใช้งบ AI · ผลเป็นคำแนะนำ ยังไม่บันทึกเป็นข้อมูลจริง | muted line under the button |
+| state_waiting | กำลังขอคำแนะนำ | queued/running |
+| state_not_configured | ยังไม่ได้เปิดใช้ AI บนระบบนี้ | provider not configured |
+| state_budget | งบ AI เดือนนี้หมดแล้ว | monthly cap reached |
+| upload_budget_notice | ไม่ได้ขอคำแนะนำ AI เพราะงบเดือนนี้หมด | upload saved, no AI request |
+
+Existing labels named in H5a (already correct in code; do not change):
+
+| H5a verbatim (corrupted) | Correct, as in code |
+|---|---|
+| แกไขหมวด แทก และบรบท | แก้ไขหมวด แท็ก และบริบท (website-media-queue.tsx) |
+| รปจากเวบไซต (รอยนยน) | รูปจากเว็บไซต์ (รอยืนยัน) |
+| แกไขขอมลภาพ | แก้ไขข้อมูลภาพ (project-media-workspace.tsx) |
+| ขอคำแนะนำ AI | ขอคำแนะนำ AI (existing button, replaced by button_label) |
+
+The hint separator is the middle dot " · ", matching existing UI copy such as
+media-common.tsx.
+
+## B. H5a pilot project names
+
+| Project ID | Thai name |
+|---|---|
+| B_PO | นิช โมโน บางโพ |
+| B1/5 | เสนา แกรนด์ โฮม รังสิต-ติวานนท์ |
+
+Project IDs are authoritative; names are for reports only.
+
+## C. Other corrupted references in the H5a block
+
+- "docs/41 5" means docs/41 section 5 (gates).
+- "docs/41 6" means docs/41 section 6 (STOP conditions).
+
+
 #### H5a prerequisite STOP — missing worker database connection
 
 Read-only preflight completed at 02:45 UTC on 28 October (09:45 Bangkok),
@@ -1158,3 +1201,489 @@ work. Stop again after the pilot for the owner's decision.
 This stopped slice changes documentation only. The credential scan passed with
 zero matches in 312 files and 356 archive members; whitespace validation passed.
 No application gates were rerun and no new test or deployment result is claimed.
+
+#### Owner decision H5b — 28 October 2026
+
+**H5b  Thai text by file; offline E9 translation; owner-configured OpenAI key.**
+
+The UTF-8 source of truth is `.local/owner-input/h5a-h5b-thai-text.md`. Decode it
+explicitly as UTF-8 and verify Thai combining marks before use. Keep the H5a
+verbatim block unchanged and copy A–C exactly as the H5a Thai text correction
+above. UI strings use the correction. If future pasted Thai looks stripped,
+stop and request the file instead of guessing. The first source check found
+67 combining marks and no replacement characters; the later section-E update
+contains 96 combining marks and no replacement characters.
+
+Complete the existing TEST E9 backlog offline using the neutral method
+`offline_batch`, with no provider call, key access, provider charge, model name
+or drafting-product provenance. Inventory jobs read-only by state, owner type,
+project, field and current source revision. Exclude price text, material outside
+E1 (including customer, contract, legal and finance data), and fields not
+requiring English. Export eligible job/owner/field IDs, Thai text/hash/version
+and applicable glossary entries under ignored `.local/`.
+
+English must be plain, accurate public-website copy, with no invented facts,
+claims or superlatives. Apply glossary renderings exactly and preserve every
+placeholder, number, unit and date. Project/brand names use the glossary first,
+then the reviewed English business-sheet name; otherwise retain a romanised
+draft flagged `needs_review`. Flag every `non_dee` occurrence under Q75.
+Automated QA checks placeholder/number/glossary preservation, no Thai in English
+and nonempty output. Read 30 random results and record corrections; STOP if more
+than 10% require meaning corrections.
+
+Import BNA7/FLEXI first, then B_PO/B1/5, then other projects. Complete existing
+jobs and write `machine_en`, `translation_state='machine'` and the translated
+`en_from_th_version`; recheck Thai and skip stale rows. Preserve `reviewed_en`
+and `entered_en`, and never mark reviewed. Rehearse locally, take a fresh verified
+protected backup for every write batch, compare protected fingerprints, use one
+guarded transaction per batch and require exact `already_applied` replay. STOP
+before any required schema change or new credential. Migration 79 remains for
+H5a. Do not install a translation worker or change queue behavior; new Thai saves
+continue to wait. Any importer must test number/placeholder guards, stale skips,
+human-English preservation, replay and permission denial, with touched docs/41
+section-5 gates. Report counts, flags, QA, five examples per pilot and receipts.
+
+The owner configures the API key personally in the existing protected hosted
+API env and restarts the API service. Do not ask for, print or relocate it.
+**After the owner reports completion**, perform only the authorized presence,
+file owner/mode, 30 protected fingerprint (all Auth columns), health and smoke
+postflight against the 09:45 Bangkok H5a baseline. Inventory the API features
+enabled by the key and existing spend bounds; propose controls without changing
+them. The H5a worker-connection STOP and all earlier protection/QA STOPs remain.
+
+#### Owner decision H5c — 28 October 2026
+
+**H5c  One OpenAI project and key per Hub agent, each with its own hard spend limit.**
+This replaces H5a's shared project. The owner creates projects and service-account
+keys and configures them personally through existing protected files. Never ask
+for, print, copy or move a key; labels end with the creation month.
+
+| Project | Caller | Key label | Existing file / variable | Owner monthly limit |
+|---|---|---|---|---:|
+| senaidea-digitalhub-test-assistant | staff assistant and knowledge embeddings | senaidea-digitalhub-test-assistant-202610 (configured by owner) | `/etc/sena-hub-test/api.env`: `OPENAI_API_KEY` | US$4 |
+| senaidea-digitalhub-test-media | image-suggestion worker | svc-hub-test-media-2026-10 | same file: `HUB_MEDIA_OPENAI_API_KEY` | US$6 |
+| senaidea-digitalhub-test-translation | E9 worker | not created | `HUB_TRANSLATION_OPENAI_API_KEY`, absent | US$0 |
+| senaidea-digitalhub-local-ops | local operator scripts | svc-hub-local-ops-2026-10, when needed | existing `apps/api/.env`: `OPENAI_API_KEY` | US$5 |
+
+The Hub image cap remains US$5, below the media project's US$6; provider-side
+overshoot is possible. TEST allocations total US$10. Production projects wait
+for go/no-go. Configuration and hard-limit enforcement are owner-managed and
+are not asserted as verified by this code change.
+
+Media reads only `HUB_MEDIA_OPENAI_API_KEY`; E9 reads only
+`HUB_TRANSLATION_OPENAI_API_KEY`, without fallback. Make the constructor key
+variable explicit per caller; this key selection is the only E9 behavioral
+change authorized by H5c. Assistant, embeddings and local operator scripts retain
+`OPENAI_API_KEY`. Missing media configuration uses section-A `state_not_configured`.
+Section E of the UTF-8 file supplies `assistant_budget` and `knowledge_budget`.
+
+Recognize HTTP 429 codes `project_spend_limit_exceeded`,
+`organization_spend_limit_exceeded` and `insufficient_quota`. Media stops claiming
+and marks waiting image jobs `budget_exhausted`, never failed, with no retry.
+Assistant and knowledge return their exact budget messages with no retry.
+Record bounded audit events without request content or secrets. Both test runners
+must scrub all provider key variables and credential scanning must cover the new
+names. Do not edit credential files; document developer variable names only.
+Mock providers for key isolation, each error code, zero retries and no key leaks.
+
+Implement and gate H5c now, commit to main, and hold deployment for the combined
+H5a release. The missing media-worker connection STOP remains. For the future
+owner-confirmed postflight expect only API-key presence, with media key absent
+until the owner reports otherwise. Keep new documentation/commits free of model
+or drafting-product names beyond historical configuration.
+
+The owner additionally approved including the required budget state and audit
+RPCs in **migration 79**, with these limits: only `image_suggestion` jobs may use
+`budget_exhausted`; translation stays unchanged apart from key selection; no new
+capability, template, login or grants to new roles; apply 79 locally only and hold
+TEST application/deployment for the combined H5a release. This does not release
+the worker-connection STOP.
+
+#### H5b read-only inventory and offline QA
+
+Receipt: `.local/hosted-content-rollout/h5b-inventory-1793158007922.json`. All 30 protected fingerprints, including full Auth, match the 09:45 Bangkok H5a baseline. No hosted write or provider call was made by the inventory.
+
+All **1,090 jobs are queued and current**. The initial E1/registry filter excludes 28; 1,062 rows contain 860 distinct texts. The source/glossary export is `.local/offline-translation/20261028T032647707Z/source.json`.
+
+| Owner type | Jobs |
+|---|---:|
+| commercial_type | 283 |
+| facility | 30 |
+| place | 594 |
+| section | 183 |
+
+| Field | Jobs |
+|---|---:|
+| `commercial_type.description` | 10 |
+| `commercial_type.public_name` | 273 |
+| `facility.display_name` | 30 |
+| `place.name` | 594 |
+| `section.concept_detail` | 69 |
+| `section.concept_name` | 46 |
+| `section.project_intro` | 68 |
+
+| Exact source project/reference ID | Jobs |
+|---|---:|
+| `00101` | 3 |
+| `00300` | 8 |
+| `00401` | 3 |
+| `00500` | 15 |
+| `00601` | 13 |
+| `00602` | 4 |
+| `01301` | 18 |
+| `01401` | 3 |
+| `01501` | 17 |
+| `01800` | 18 |
+| `10301` | 30 |
+| `20100` | 9 |
+| `20202` | 15 |
+| `70101` | 18 |
+| `70103` | 19 |
+| `70401` | 16 |
+| `70502` | 5 |
+| `70503` | 22 |
+| `70504` | 17 |
+| `80201` | 6 |
+| `AQ` | 27 |
+| `B1/5` | 21 |
+| `B1/7` | 6 |
+| `BGTHT` | 8 |
+| `BNA6` | 34 |
+| `BNA7` | 33 |
+| `BPHF3` | 17 |
+| `BPHGH` | 17 |
+| `BPSK1` | 18 |
+| `BPSK2` | 19 |
+| `BPSN` | 6 |
+| `BPU` | 20 |
+| `B_PO` | 45 |
+| `CBDC1` | 3 |
+| `CHA14` | 28 |
+| `CHOMT` | 11 |
+| `F9SV5` | 12 |
+| `FGL70` | 30 |
+| `FISUK` | 9 |
+| `K1AB` | 7 |
+| `K1P48` | 11 |
+| `K2KH2` | 3 |
+| `K4LPT` | 5 |
+| `K9BK3` | 23 |
+| `K9BK4` | 27 |
+| `K9PG` | 6 |
+| `KBDF4` | 6 |
+| `KUBON` | 25 |
+| `LADK2` | 6 |
+| `LADKB` | 5 |
+| `LIFIS` | 28 |
+| `LIFK6` | 22 |
+| `LP107` | 11 |
+| `NUSA` | 17 |
+| `ONUT1` | 14 |
+| `PCHAO` | 32 |
+| `PH7/1` | 13 |
+| `RAM9A` | 22 |
+| `RAMK` | 25 |
+| `RTF6` | 12 |
+| `SAMRG` | 8 |
+| `SKHPT` | 25 |
+| `SLYA` | 23 |
+| `SNHP2` | 35 |
+| `SRKIT` | 6 |
+| `TRAK1` | 15 |
+| `VELA` | 17 |
+| `VELAP` | 3 |
+| `VIVA` | 15 |
+
+The later offline/manual scope review holds 58 additional rows (financial abbreviations, contact text, incomplete sources and uncertain names), leaving **1,004 drafts**. All numbers/placeholders, applicable glossary terms, equivalent units, nonempty output and no-Thai output pass. No `non_dee` occurrence was found in this backlog. Romanised or uncertain source-name drafts are held for review rather than imported.
+
+The operator read the stored random sample of **30 distinct results**: **zero meaning corrections (0%)** and one grammar/casing cleanup, recorded in the pinned package QA. This is below the owner's 10% STOP threshold. The sample and original drafts remain ignored locally.
+
+The sole wording correction was `BPSK2`, `section.concept_detail`: “a
+MinimalJapanese Style, incorporating Element and colours with positive meanings”
+became “a minimal Japanese style, with elements and colours associated with
+positive meanings”. It corrected spacing, case and grammar without changing
+facts, numbers or project claims. No other sampled result needed correction.
+
+Final pinned package: `.local/offline-translation/20261028T032647707Z/package-v2.json`, SHA-256 `2410419432769da074ea49e8c974840b58ff05793c9ff2c159a29e471295eb03`. The first package and receipt remain retained; the second version holds two further energy-saving claims for source/financial interpretation. The random QA sample is unchanged. It contains nine ordered batches: BNA7 (32; FLEXI has zero backlog jobs), B_PO/B1/5 (43/18), then the remaining projects. FLEXI has no eligible translation jobs or five-result example set to report; no jobs were invented. All nine local rehearsals and guarded TEST batches completed successfully as recorded below.
+
+#### H5b API caller/spend inspection
+
+The owner subsequently reported completion and the read-only postflight below
+passed. The offline work does not read a provider key. Source inspection finds
+two API-process provider callers:
+
+| Caller | Existing TEST access boundary | Existing request bounds | Hub monthly spend bound |
+|---|---|---|---|
+| Staff assistant | Returns `assistant_local_only` before a provider call on hosted TEST. Live mode is restricted to a closed synthetic case on the local development target. | 2,000-character user input; 60 seconds; six turns; eight tool calls; 2,048 output tokens per model call; client retries zero. | None; owner project allocation is external configuration. |
+| Knowledge search embeddings | Hosted `preview`/`preview-release` return `knowledge_preview_unavailable` before embedding. Local preview embeds one question of at most 1,500 characters after input/scope checks. | One embedding request per eligible query; existing deployed client permits one SDK retry. H5c changes that to zero. | None; owner project allocation is external configuration. |
+
+Adding the API key alone therefore does **not** open either blocked TEST
+endpoint. This is a code-inspection finding, not a claim of a hosted authenticated
+smoke or provider request. Image suggestions and E9 run in separate workers;
+neither hosted worker is installed, and API saves only enqueue their jobs.
+Local operator scripts remain explicitly invoked workflows using their local
+project key; no operator provider invocation occurred here.
+
+Proposed future controls, not applied by this inspection: monetary reservations
+and usage accounting for each API caller, per-account request and concurrency
+limits, bounded embedding batches with caching, and explicit approval before
+opening either hosted route. H5c's project split and quota-error handling do not
+turn these proposals into implemented Hub monthly caps. No access boundary,
+account, permission, template or provider limit is changed by this report.
+
+
+#### H5b pilot examples - offline drafts, not Marketing-reviewed
+
+These examples are taken from the pinned package. Completion counts and receipts are recorded separately after guarded import. Thai source spelling is preserved.
+
+**BNA7**
+
+| Thai source | English draft |
+|---|---|
+| รร.คอนคอร์เดียน | Concordian School. |
+| MRT ศรีเอี่ยม | MRT Si Iam |
+| รร.นานาชาติไทย-สิงคโปร์ | Thai-Singapore International School |
+| รพ.ไทยนครินทร์ | Thainakarin Hospital |
+| BTS บางนา | BTS Bang Na |
+
+**B_PO**
+
+| Thai source | English draft |
+|---|---|
+| ตลาดสดเตาปูน | Tao Poon Fresh Market |
+| ถนน ทหาร ถนน สามเสน | Thahan Road, Samsen Road |
+| โรงเรียนราชินีบน | Rajinibon School |
+| Gateway บางซื่อ | Gateway Bang Sue |
+| โรงเรียนโยธินบูรณะ | Yothinburana School |
+
+**B1/5**
+
+| Thai source | English draft |
+|---|---|
+| มาร่วมค้นหานวัตกรรมใหม่ล่าสุด Green Tech for Life ที่เพิ่มความสะดวกสบายให้การใช้ชีวิตเป็นมิตรกับสิ่งแวดล้อมที่ เสนา แกรนด์ โฮม...บ้านที่สร้างพลังงานความสุขให้ทุกคนในครอบครัว พร้อม 3-Gen Facility | Discover Green Tech for Life, innovations that make environmentally friendly living more convenient at SENA GRAND HOME. Homes designed for family happiness, with 3-Gen Facility. |
+| ใกล้มหาวิทยาลัยธรรมศาสตร์รังสิต 17 ก.ม. | Near Thammasat University Rangsit, 17 km. |
+| ใกล้มหาวิทยาลัยรังสิต 3.0 ก.ม. | Near Rangsit University, 3.0 km. |
+| ใกล้สนามบินดอนเมือง 11.8 ก.ม. | Near Don Mueang Airport, 11.8 km. |
+| ใกล้รถไฟฟ้าสายสีแดง สถานีรังสิต 3.0 ก.ม. | Near the Red Line's Rangsit station, 3.0 km. |
+
+FLEXI has no existing job in the inventoried backlog; no example or completion is invented.
+
+#### H5b/H5c owner-confirmed key postflight — passed
+
+The owner reports configuring the API key through a hidden prompt and restarting
+`sena-hub-test-api.service` at **04:19:37 UTC / 11:19 Bangkok**, 28 October.
+The configured project is **`senaidea-digitalhub-test-assistant`**, service-account
+key label **`senaidea-digitalhub-test-assistant-202610`**, with an owner-reported
+US$4 monthly limit and restrictions to `gpt-5.4-mini-2026-03-17` and
+`text-embedding-3-large`. Project limits and model restrictions are owner
+attestations; this postflight made no provider request or dashboard inspection.
+All provider project names above use the corrected `senaidea-digitalhub` prefix;
+infrastructure service/path names remain their actual existing names.
+
+Receipt `.local/hosted-content-rollout/h5bc-key-postflight-1793161600871.json`
+passed the exact TEST migration/target/TLS checks and all **30 protected
+fingerprints against the 09:45 H5a baseline**, including every Auth column.
+The protected env file is a regular, nonsymlink **`600 root:root`** file.
+Presence-only results: **`OPENAI_API_KEY=true` (one setting),
+`HUB_MEDIA_OPENAI_API_KEY=false`, `HUB_TRANSLATION_OPENAI_API_KEY=false`**.
+No key value was printed, copied, moved or stored in the receipt.
+
+| Non-secret setting | Explicit TEST value | Effective value |
+|---|---|---|
+| `HUB_ASSISTANT_MODEL` | unset | `gpt-5.4-mini-2026-03-17` (existing code default) |
+| `HUB_TRANSLATION_MODEL` | unset | `gpt-5.4-mini-2026-03-17` (existing code default) |
+| Knowledge embedding configuration | fixed in existing code | `text-embedding-3-large` |
+
+These effective model choices match the owner's reported restrictions. The API
+service is active/running as `sena-hub-api`, with `ProtectSystem=strict` and
+`NoNewPrivileges=yes`. Trusted HTTPS health/login returned 200; project, brand,
+web changes, llms and website-media endpoints returned 401 with `no-store`.
+No signed-in browser was opened, no provider was called, and a second fingerprint
+pass found no protected change during the inspection.
+
+The first postflight probe stopped on the **local** checksum-profile inventory
+because newly approved migration 79 had not yet been registered there. It is
+retained as `h5bc-key-postflight-1793161525756.json`. Adding the canonical 79 entry
+to the local profile corrected that metadata prerequisite; the unchanged
+read-only checks then passed. **TEST remains at migration 78**; no migration or
+service change was executed by either probe. Migration 79 is held for the
+combined H5a release as instructed.
+
+#### H5c implementation and gates
+
+The two workers select their key variable explicitly. Image suggestions accept
+only `HUB_MEDIA_OPENAI_API_KEY`; E9 accepts only `HUB_TRANSLATION_OPENAI_API_KEY`.
+Neither falls back to the API process key. Assistant and embeddings retain
+`OPENAI_API_KEY`. Both disposable test launchers scrub every provider-key
+variable, including both new names. Developer setup documents variable names
+only; no credential file was edited.
+
+The three approved provider spend-limit codes stop image claiming and mark only
+image-suggestion jobs `budget_exhausted`, without retry or failed-job completion.
+The assistant and knowledge routes return the exact section-E budget messages;
+embedding retries are zero. Audits retain bounded caller/state/code information,
+without provider payloads or request content. Translation queue behavior is
+unchanged apart from key selection. Provider calls in all tests are mocked.
+
+Migration **202610280079_media_provider_budget.sql**, SHA-256
+`a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91`,
+adds the image-only state, monthly provider-refusal latch and bounded audit RPCs
+using existing roles. It adds no account, capability, template or login.
+**Applied locally only**; TEST remains at 78. Local application receipt:
+`.local/hosted-content-rollout/h5b-local-migration-1793162958380.json`.
+Its verified protected backup is
+`.local/backups/h5b-local-migration-79-20261028T044910Z/database-before-batch.dump`,
+17,152,742 bytes, SHA-256
+`a0518b7348643531ad24a7567561215897dfe930b3dfab8978cfc247a6a9b576`.
+All 57 locally present protected tables remained unchanged.
+
+The H5b helper uses the existing operator connection inside the caller's guarded
+transaction. It validates source identity/hash/version, glossary, placeholders,
+numbers, units, English scope and permission before completion. It preserves
+entered/reviewed English and skips stale or conflicting drafts. Existing job
+completion is the replay marker; provenance is `offline_batch`. It adds no route,
+credential, grant or schema change, and records no provider cost.
+
+| Gate | Exact final result | Ignored evidence under `artifacts/hosted-content-rollout/` |
+|---|---|---|
+| Full API | 2,129 passed; 11 existing opt-in skips; zero failed | `h5bc-api-final.log` |
+| Database and concurrency | 62 checks and 11 Node tests passed | `h5bc-db-full.log` |
+| Populated migration upgrade/replay | passed | `h5bc-db-full.log` |
+| H1 | 11 protocol and 45 browser tests passed | `h5bc-h1-final.log` |
+| Full browser suite, one run | 302/302 passed in 12.0 minutes, including 1280/390 px cases | `h5bc-ui-full.log` |
+| Admin typecheck | passed | `h5bc-typecheck.log` |
+| Documented offline build | passed | `h5bc-build.log` |
+| Focused guards and fixture isolation | 19 and 34 passed | `h5bc-focused-04.log`, `h5bc-isolation.log` |
+| Provider-key scrubber | passed | `h5c-scrubber.log` |
+| Credential scan of changes and browser bundle | zero matches; no credential files read | `h5bc-provider-scan.json` |
+
+The source seal is `.local/hosted-content-rollout/h5bc-gates.json` (676 source
+files). Initial failures remain retained: the first H1 check expected the old
+migration inventory; it now checks the exact approved 79 entry. A new offline
+test initially leaked its synthetic section fixture into two existing API tests;
+the new fixture now rolls back its outer transaction. The original tests and
+assertions remain unchanged, and the full API rerun passed. An earlier focused
+HTTP test fixture was corrected to use its own client lifetime. No existing test
+was skipped, weakened or quarantined.
+
+The full run regenerated `artifacts/hosted-content-rollout/website-review-1280.png`
+and `artifacts/hosted-content-rollout/website-review-390.png`; both were visually
+inspected. They show the existing synthetic batch-confirmation queue, not an
+H5a button or hosted pilot. Screenshots remain Git-ignored.
+
+This is code delivery held for the combined H5a release. It does not implement
+or claim the H5a monetary reservation cap, shared image button, hosted worker or
+pilot. The missing dedicated worker connection STOP remains in force. There
+has been no live image request, provider charge, hosted migration 79 or new
+application deployment.
+
+#### H5b guarded execution — completed
+
+All nine local rehearsals passed, including exact replay, and rolled back their
+translation writes. Their receipts are
+`.local/hosted-content-rollout/h5b-local-rehearsal-<batch>.json`, using the batch
+names below. Every rehearsal used its own new protected, verified backup and
+preserved all 57 locally present protected tables.
+
+TEST batches then ran sequentially in the approved pilot order, each with a
+new protected backup verified by archive inventory and a complete archive read.
+Each batch used one guarded transaction, source/permission rechecks, strict
+protected comparisons before and after, and a second exact `already_applied`
+replay that changed no translation row. No stale or human-English conflict was
+encountered. No schema change or new credential was needed for this import.
+
+Receipt paths below are under `.local/hosted-content-rollout/`. Backup directory
+paths are under `.local/backups/`; every directory contains
+`database-before-batch.dump` and its checksum receipt.
+
+| Batch | Completed | TEST receipt | Protected backup directory |
+|---|---:|---|---|
+| `pilot-1-01` — BNA7 | 32 | `h5b-test-apply-1793163573740.json` | `h5b-test-apply-pilot-1-01-20261028T045343Z/` |
+| `pilot-2-01` — B_PO / B1/5 | 61 | `h5b-test-apply-1793164082443.json` | `h5b-test-apply-pilot-2-01-20261028T050136Z/` |
+| `remaining-01` | 150 | `h5b-test-apply-1793164444542.json` | `h5b-test-apply-remaining-01-20261028T050823Z/` |
+| `remaining-02` | 150 | `h5b-test-apply-1793164811393.json` | `h5b-test-apply-remaining-02-20261028T051426Z/` |
+| `remaining-03` | 150 | `h5b-test-apply-1793165183323.json` | `h5b-test-apply-remaining-03-20261028T052035Z/` |
+| `remaining-04` | 150 | `h5b-test-apply-1793165534997.json` | `h5b-test-apply-remaining-04-20261028T052645Z/` |
+| `remaining-05` | 150 | `h5b-test-apply-1793165881701.json` | `h5b-test-apply-remaining-05-20261028T053237Z/` |
+| `remaining-06` | 150 | `h5b-test-apply-1793166235240.json` | `h5b-test-apply-remaining-06-20261028T053824Z/` |
+| `remaining-07` | 11 | `h5b-test-apply-1793166461323.json` | `h5b-test-apply-remaining-07-20261028T054415Z/` |
+
+Final read-only reconciliation:
+`.local/hosted-content-rollout/h5b-final-postflight-1793166543038.json`.
+It records and revalidates all 18 local/TEST backup paths, byte counts and
+SHA-256 checksums, all nine TEST completions/replays, and all source revisions.
+It also contains the full per-project and per-field completion counts. The
+package, exports, QA samples, receipts and backups remain Git-ignored.
+
+| Measure | Before | After |
+|---|---:|---:|
+| Translation jobs, total | 1,090 | 1,090 |
+| Completed jobs | 0 | 1,004 |
+| Queued jobs | 1,090 | 86 |
+| `content_translations`, total | 2,132 | 2,132 |
+| Machine drafts | 0 | 1,004 |
+| Missing English | 2,132 | 1,128 |
+| Newly reviewed English | 0 | 0 |
+| Media jobs / media usage records | 0 / 0 | 0 / 0 |
+
+Every imported row has `machine_en` equal to the pinned draft,
+`translation_state='machine'`, and `en_from_th_version` equal to the still-current
+Thai source version. Existing `entered_en` and `reviewed_en` were preserved;
+none of these imports is reviewed. The completed jobs use only the neutral
+`offline_batch` method marker and have zero provider attempts. No provider API
+was called and no provider-cost record was created.
+
+Skipped/held reconciliation: **zero stale skips**, **64 out of scope** (28 in
+the initial inventory and 36 in subsequent source review), and **22 flagged
+for source/name review**. Those 86 jobs remain untouched and queued. Flags
+include uncertain spelling, incomplete source, missing units and the two held
+energy-saving claims. Q75 remains unresolved; no `non_dee` occurrence was found.
+
+| Field | Completed drafts |
+|---|---:|
+| `commercial_type.description` | 8 |
+| `commercial_type.public_name` | 271 |
+| `facility.display_name` | 30 |
+| `place.name` | 579 |
+| `section.concept_detail` | 35 |
+| `section.concept_name` | 44 |
+| `section.project_intro` | 37 |
+
+All **58 protected tables** are unchanged through the complete TEST operation.
+The original **30-table H5a baseline**, including every Auth column, also
+matches strictly: no exclusion or accepted drift was used. All existing content
+and human edits, account/permission state, glossary, candidates, reviews, assets
+and bindings remain intact.
+
+Read-only smoke receipt
+`.local/hosted-content-rollout/website-database-postflight-1793166543514.json`
+passed the exact migration prefix **78**, BNA7/content/workspace/website-source
+reads as the non-bypass runtime role, and missing-actor denial. Counts remain
+82 projects, 33 brands, 278 REM identities, 118 groups, 20,389 candidates,
+3,131 assets, 3,573 links, 30 facilities, 594 places, 374 contacts, 140 media
+links, 273 commercial drafts, 52 disclosures and 426 FAQ clusters. All 3,421
+website suggestions remain pending; website assets retain pending rights and
+`needs_review`. There are zero published pages, zero page-policy exceptions,
+and `sena_h_approved=false`.
+
+No hosted browser session was opened during this work. The earlier key/VPS
+postflight receipts remain valid and separately recorded above; there was no
+application deployment. Application rollback paths remain
+`/srv/sena-hub-test/releases/953a152-content-4eb69b56f5b2` and
+`/srv/sena-hub-test/releases/794d9cd-perf2-e78be5d8bee9`; database rollback
+evidence is the protected per-batch dumps above. No restore or R2 change ran.
+
+New Thai saves continue to create waiting E9 jobs. No hosted translation worker
+was installed. E9 still has request/output bounds and zero client retries, with
+no Hub monthly monetary ledger; its dedicated key is absent and its approved
+project allocation is US$0. H5c deployment and the remaining H5a implementation
+are held. **STOP remains: IT must provision the dedicated nonprivileged worker
+database connection in the existing protected location.** No login, grant or
+connection was created here, and no image pilot or other live image batch ran.
+
+Closing credential-pattern scan passed with **zero matches across 114 changed
+source/browser files**, covering all three provider-key variable names and
+opening no credential file. Receipt:
+`artifacts/hosted-content-rollout/h5bc-provider-scan-final.json`.
+Whitespace validation passed. The approved local credential files and all
+receipt/screenshot paths remain ignored; they are not part of this commit.

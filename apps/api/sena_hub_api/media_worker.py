@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from . import assets
 from .content_translation import OpenAITranslator, TranslationError
+from .provider_budget import ProviderBudgetExceeded, spend_limit_code
 
 
 class MediaError(Exception):
@@ -93,6 +94,9 @@ def validate_suggestion(value: dict, context: dict) -> dict:
 class OpenAIImageSuggester(OpenAITranslator):
     last_usage = None
 
+    def __init__(self):
+        super().__init__(key_variable='HUB_MEDIA_OPENAI_API_KEY')
+
     async def suggest(self, image_url: str, context: dict) -> dict:
         self.last_usage = None
         try:
@@ -111,7 +115,9 @@ class OpenAIImageSuggester(OpenAITranslator):
                         {'type': 'input_text', 'text': json.dumps(context, ensure_ascii=False)},
                         {'type': 'input_image', 'image_url': image_url, 'detail': 'low'},
                     ]}], text_format=ImageSuggestion)
-        except Exception:
+        except Exception as error:
+            if code := spend_limit_code(error):
+                raise ProviderBudgetExceeded(code) from None
             raise MediaError('provider_error') from None
         if result.usage is not None:
             self.last_usage = {'input_tokens': result.usage.input_tokens, 'output_tokens': result.usage.output_tokens,
@@ -186,6 +192,8 @@ async def work_once(db, provider=None, *, transport=None, schedule=False, approv
 
     if schedule and approved_job_ids is not None:
         raise MediaError('invalid_result')
+    if await rpc('select hub.media_budget_blocked()'):
+        return {'status': 'budget_exhausted', 'error_code': 'budget_exhausted'}
     if schedule:
         await rpc('select hub.media_schedule_checks()')
     job = await rpc('select hub.media_claim()') if approved_job_ids is None else await rpc('select hub.website_media_claim($1)', approved_job_ids)
@@ -206,6 +214,9 @@ async def work_once(db, provider=None, *, transport=None, schedule=False, approv
             result = validate_suggestion(await provider.suggest(image_url, job['context']), job['context'])
         else:
             result = await fetch_clip_metadata(job['provider'], job['url'], transport=transport)
+    except ProviderBudgetExceeded as failure:
+        status = await rpc('select hub.media_budget_exhausted($1,$2,$3)', UUID(job['id']), UUID(job['lease_token']), failure.code)
+        return {'status': status, 'error_code': 'budget_exhausted'}
     except (MediaError, TranslationError) as failure:
         error = str(failure)
     except Exception:

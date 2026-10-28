@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import test from 'node:test';
+import {PROVIDER_KEY_NAMES,scrubProviderKeys} from '../scripts/provider-keys.mjs';
+
+test('every per-agent provider key is removed from test child environments',()=>{
+  const env=Object.fromEntries(PROVIDER_KEY_NAMES.map(name=>[name,'synthetic-private-test-value']));
+  env.FUTURE_OPENAI_API_KEY='synthetic-future-value';env.UNRELATED='keep';
+  assert.deepEqual(scrubProviderKeys(env),{UNRELATED:'keep'});
+});
 
 test('direct test execution refuses a missing disposable marker before connecting',()=>{
   const env={...process.env};delete env.HUB_DISPOSABLE_TEST_RUN;

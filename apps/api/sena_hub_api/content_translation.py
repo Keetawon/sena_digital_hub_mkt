@@ -69,8 +69,10 @@ def restore_text(source: str, output: str, replacements: dict[str, str], max_len
 
 
 class OpenAITranslator:
-    def __init__(self):
-        key = os.environ.get('OPENAI_API_KEY', '').strip()
+    def __init__(self, *, key_variable: str):
+        if key_variable not in {'HUB_TRANSLATION_OPENAI_API_KEY', 'HUB_MEDIA_OPENAI_API_KEY'}:
+            raise ValueError('Unknown provider key variable')
+        key = os.environ.get(key_variable, '').strip()
         if not key:
             raise TranslationError('provider_unavailable')
         from openai import AsyncOpenAI
@@ -122,7 +124,7 @@ async def work_once(db, provider: Provider | None = None) -> dict:
     model = None
     try:
         if provider is None:
-            provider = OpenAITranslator()
+            provider = OpenAITranslator(key_variable='HUB_TRANSLATION_OPENAI_API_KEY')
         model = provider.model
         masked, replacements = protect_text(job['text'], job['glossary'])
         drafted = await provider.translate(masked, job['max_length'])

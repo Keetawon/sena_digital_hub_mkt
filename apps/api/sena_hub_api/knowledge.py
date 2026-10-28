@@ -9,6 +9,8 @@ from fastapi import Depends,Request
 from fastapi.responses import FileResponse,Response
 from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
+from .provider_budget import ProviderBudgetExceeded
+from .provider_messages import MESSAGES
 from . import assets
 from .knowledge_retrieval import embed,rank,route_question,answer_from_ranked,normalize
 from .knowledge_progress import read_summaries
@@ -235,6 +237,10 @@ def register_knowledge_routes(app,authentication,database,settings):
             routed=route_question(body.question,card)
             if routed:return {'data':{'route':routed[0],'answer':routed[1],'project_id':project,'fact_card':card,'citations':[{'source_ref':card['status']['source_ref'],'source_url':None}] if routed[0]=='closed' else [],'release_id':str(body.release_id) if release else None,'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW'}}
         try:query_vector=(await embed([body.question]))[0]
+        except ProviderBudgetExceeded as error:
+            async with database(request,actor) as db:
+                await db.fetchval("SELECT hub.provider_budget_event('knowledge',$1)",error.code)
+            raise failure(503,'knowledge_budget',MESSAGES['knowledge_budget']) from None
         except Exception:raise failure(503,'knowledge_embedding_unavailable','บริการค้นหาความหมายยังไม่พร้อม กรุณาลองใหม่') from None
         if release:
             rows=release['chunks']

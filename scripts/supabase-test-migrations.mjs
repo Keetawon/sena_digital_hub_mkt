@@ -144,7 +144,8 @@ async function inspect(client, migrations, config) {
         || count >= 56 && count < migrations.length && (
           migrations.length === 76 && migrations.at(-1).name === '202610230076_web_publication.sql'
           || migrations.length === 77 && migrations.at(-1).name === '202610270077_business_sheet_snapshot.sql'
-          || migrations.length === 78 && migrations.at(-1).name === '202610270078_website_content_suggestions.sql');
+          || migrations.length === 78 && migrations.at(-1).name === '202610270078_website_content_suggestions.sql'
+          || migrations.length === 79 && migrations.at(-1).name === '202610280079_media_provider_budget.sql');
       if ((rows.length !== migrations.length && !knownUpgrade) || !history.hub) fail('Unexpected existing runtime login.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
     if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');

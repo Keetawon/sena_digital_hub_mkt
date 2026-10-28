@@ -1005,3 +1005,48 @@ translations and no hosted translation-worker service. Translation was not
 changed. Docs/46 records the exact missing prerequisite, receipt and resume
 sequence; the already-known absent OpenAI key is allowed during the future
 implementation and is not the reason for this STOP.
+
+Owner decisions **H5b and H5c, 28 October 2026**, are recorded after H5a in
+docs/46. The UTF-8 owner file supplied the corrected Thai strings; tables A–C
+were copied exactly, all 96 combining marks survived, and H5a's original
+verbatim block is unchanged. The API key postflight passed against all 30
+original protected fingerprints, including every Auth column. Presence flags
+and effective non-secret model settings are in docs/46; no key value was
+printed, copied or stored. The owner corrected provider project names to the
+`senaidea-digitalhub` prefix.
+
+H5c isolates media and translation credentials from the API process key and
+handles the three provider spend-limit errors with zero retries and bounded
+audit data. Migration **79** adds image-only `budget_exhausted` and existing-role
+audit RPCs; it is applied locally only and held for the combined H5a release.
+TEST remains at 78, with no new service deployment. Translation queue behavior
+is unchanged apart from its explicit key selection. No credential file,
+account, capability, template, login or permission assignment changed.
+
+The provider-free `offline_batch` helper validates text/source/permission and
+preserves human English, with stale-source skips and exact no-op replay. The
+pinned backlog package contains 1,004 drafts; 86 rows remain held or out of
+scope. All nine local rehearsals passed and rolled back, preserving the local
+working data. Guarded TEST receipts and final counts are recorded in docs/46.
+
+Verification: **2,129 API passed / 11 existing opt-in skips**, **62 DB checks +
+11 Node tests**, **11 H1 protocol + 45 H1 browser tests**, typecheck, offline
+build, populated upgrade/replay and **302/302 browser tests in one 12.0-minute
+run**. The provider-key scan found zero matches without opening credential
+files. Initial failures in new test fixtures and the migration inventory check
+were corrected; existing assertions were not weakened. Providers were mocked.
+The existing synthetic website queue screenshots at 1280/390 px were inspected
+and remain ignored under `artifacts/hosted-content-rollout/`.
+
+The H5a missing-worker-connection STOP still applies. No live image batch,
+hosted translation worker, H5a button, monetary reservation cap or pilot is
+claimed by this delivery. H5c deployment waits for the combined H5a release.
+
+All nine guarded TEST batches then passed: **1,004 machine drafts completed,
+zero stale skips, 64 out-of-scope and 22 flagged jobs left queued**. Exact
+replays were no-ops, all source versions still match, and all 58 protected
+tables plus the original 30-table/full-Auth comparison remained unchanged.
+No entered or reviewed English was overwritten. There was no provider API call
+or provider-cost record. The post-import BNA7 non-bypass runtime and publication
+boundary smoke passed; nothing was published. Docs/46 records all batch,
+verified-backup and final reconciliation paths. TEST remains at migration 78.

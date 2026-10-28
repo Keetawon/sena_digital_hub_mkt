@@ -17,7 +17,7 @@ async def run(watch):
             result = await work_once(db, schedule=True)
             if result['status'] != 'idle':
                 print(json.dumps(result), flush=True)
-            if not watch and result['status'] == 'idle' or result.get('error_code') == 'provider_unavailable':
+            if not watch and result['status'] == 'idle' or result.get('error_code') in ('provider_unavailable', 'budget_exhausted'):
                 return
             if result['status'] == 'idle':
                 await asyncio.sleep(30)

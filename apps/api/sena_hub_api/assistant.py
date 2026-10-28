@@ -18,6 +18,8 @@ from pydantic import AwareDatetime, Field, StringConstraints, ValidationError, m
 from starlette.exceptions import HTTPException
 
 from .auth import Actor, failure
+from .provider_budget import spend_limit_code
+from .provider_messages import MESSAGES
 from .assistant_tools import Input, Identifier, Month, STAFF_ROLES, TOOL_SCHEMAS, TOOL_LABELS, TOOL_INPUTS, ToolReader, campaign_version, decode, finance_filters
 
 BANGKOK = timezone(timedelta(hours=7), "Asia/Bangkok")
@@ -350,9 +352,11 @@ def register_assistant_routes(app, authentication, database, settings):
             except asyncio.CancelledError:
                 status, error_code = "CANCELLED", "CANCELLED"
                 raise
-            except Exception:
-                error_code = "UNVERIFIED_ANSWER"
-                await emit("error", {"code": error_code, "message_th": "ยังยืนยันคำตอบไม่ได้ กรุณาตรวจบริบทและลองใหม่"})
+            except Exception as error:
+                budget = spend_limit_code(error)
+                error_code = "ASSISTANT_BUDGET" if budget else "UNVERIFIED_ANSWER"
+                await emit("error", {"code": "assistant_budget" if budget else error_code,
+                    "message_th": MESSAGES['assistant_budget'] if budget else "ยังยืนยันคำตอบไม่ได้ กรุณาตรวจบริบทและลองใหม่"})
             finally:
                 try:
                     with anyio.CancelScope(shield=True):

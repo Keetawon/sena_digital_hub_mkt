@@ -151,6 +151,24 @@ def test_unverified_answer_or_failed_finish_never_claims_done(boundary, monkeypa
     assert "private audit failure" not in str(output)
 
 
+@pytest.mark.parametrize('code',['project_spend_limit_exceeded','organization_spend_limit_exceeded','insufficient_quota'])
+def test_provider_budget_message_and_bounded_audit_without_retry(boundary,monkeypatch,code):
+    from test_provider_budget import quota
+    from sena_hub_api.provider_messages import MESSAGES
+    client,store=boundary
+    calls=[]
+    async def run(**kwargs):
+        calls.append(True);raise quota(code)
+    monkeypatch.setattr(assistant_model,'run_model',run)
+    output=events(client.post(PREFIX+'/runs',headers=headers(),json={'message':'synthetic-private-request'}))
+    assert calls==[True]
+    error=next(data for name,data in output if name=='error')
+    assert error=={'code':'assistant_budget','message_th':MESSAGES['assistant_budget'],'run_id':next(iter(store.runs))}
+    audit=[args[1] for sql,args,_ in store.calls if 'assistant_run_finish' in sql]
+    assert audit[0]['error_code']=='ASSISTANT_BUDGET'
+    assert 'synthetic-private' not in json.dumps(audit)+str(output)
+
+
 def test_synthetic_suggestion_is_separate_from_explicit_save(boundary):
     client, store = boundary
     body = {"entity_type": "project", "entity_id": store.project["id"], "field_path": "meta_title.th", "expected_updated_at": STAMP}
