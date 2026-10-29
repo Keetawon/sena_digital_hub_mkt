@@ -2,7 +2,7 @@
 // working DB/app causes a fail-closed refusal, never a fallback to shared data.
 import assert from 'node:assert/strict';
 import { readFile,writeFile,mkdir,mkdtemp,readdir,realpath,rm } from 'node:fs/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { randomUUID,randomBytes } from 'node:crypto';
 import { createServer } from 'node:net';
@@ -13,27 +13,7 @@ import { applyLocalMigrations } from './local-migrations.mjs';
 import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
 import { scrubProviderKeys } from './provider-keys.mjs';
 import {authWriteInventory} from './auth-write-check.mjs';
-
-export function apiTestArguments(extra,root=fileURLToPath(new URL('../',import.meta.url))) {
-  const tests=path.resolve(root,'apps/api/tests'),args=[];
-  // Separate option operands (especially -k expressions) are not test selectors.
-  const valueOptions=new Set(['-k','-m','-o','--override-ini','-p','-c','--config-file','-W','--pythonwarnings',
-    '--maxfail','--durations','--durations-min','--tb','--capture','--color','--code-highlight','--verbosity',
-    '--rootdir','--basetemp','--confcutdir','--ignore','--ignore-glob','--deselect','--import-mode','--assert',
-    '--junitxml','--junit-xml','--junitprefix','--junit-prefix','--log-level','--log-format','--log-date-format',
-    '--log-cli-level','--log-cli-format','--log-cli-date-format','--log-file','--log-file-level','--log-file-format','--log-file-date-format']);
-  let selected=false,operand=false,positionalOnly=false;
-  for(const arg of extra){
-    if(operand){args.push(arg);operand=false;continue;}
-    if(!positionalOnly&&arg.startsWith('-')){args.push(arg);operand=valueOptions.has(arg);if(arg==='--')positionalOnly=true;continue;}
-    const split=arg.indexOf('::'),file=split<0?arg:arg.slice(0,split),node=split<0?'':arg.slice(split);
-    const resolved=path.resolve(root,file),relative=path.relative(tests,resolved);
-    if(!file||relative==='..'||relative.startsWith('..'+path.sep)||path.isAbsolute(relative))
-      throw new Error('API test path is outside apps/api/tests; refused before database setup.');
-    args.push(resolved+node);selected=true;
-  }
-  return selected?args:[tests,...args];
-}
+import {apiTestArguments} from './api-test-selection.mjs';
 
 async function runDisposableTests(){
 const root=fileURLToPath(new URL('../',import.meta.url)),[mode,...extra]=process.argv.slice(2);
@@ -132,4 +112,4 @@ try{
 finally{await stop();process.exit(exitCode);}
 }
 
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)await runDisposableTests();
+await runDisposableTests();
