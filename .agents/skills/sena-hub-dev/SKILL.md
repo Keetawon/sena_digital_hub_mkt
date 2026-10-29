@@ -51,10 +51,13 @@ uv run --project apps/api --env-file apps/api/.env python -m sena_hub_api
 npm.cmd run dev --prefix apps/admin
 # verification
 npm.cmd run typecheck --prefix apps/admin
-npm.cmd run build --prefix apps/admin
+$env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES = (Resolve-Path scripts/offline-fonts.cjs).Path
+try { npm.cmd run build --prefix apps/admin -- --webpack }
+finally { Remove-Item Env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES }
 npm.cmd run test:api
 npm.cmd run test:db
 npm.cmd run test:ui                     # รันชุดทดสอบตามลำดับ ไม่รันพร้อมกัน
+npm.cmd run test:hosted-h1              # where the slice touches hosted paths
 ```
 
 คำสั่ง `test:api`, `test:db` และ `test:ui` ใช้ฐานข้อมูลทดสอบแบบใช้แล้วทิ้ง
@@ -64,8 +67,42 @@ npm.cmd run test:ui                     # รันชุดทดสอบต�
 On restricted workstations add `--cache .cache/npm` (npm) and `--cache-dir .cache/uv` (uv). See
 `docs/11-local-development.md`.
 
+## Test gates
+
+**Quick gate:** run after every change while iterating. Aim for 1–3 minutes;
+shared-area changes require the wider selection below.
+
+- Admin code changed: `npm run typecheck --prefix apps/admin`.
+- API: `npm run test:api -- <affected test files or -k expression>`.
+- Browser: `npm run test:ui -- <affected spec files>`.
+
+| Changed | Quick gate must also include |
+|---|---|
+| `supabase/migrations` or SQL functions/policies | `npm run test:db`, plus API tests matching `-k permission` |
+| `apps/api/sena_hub_api/auth.py`, `main.py`, or shared API helpers | The full API suite (no browser run needed) |
+| Shared admin components, layout, navigation, proxy route | The affected specs plus `hub-navigation.spec.ts` |
+| A single screen or endpoint | That endpoint's API tests and that screen's spec(s) |
+
+**Full gate:** run once, at the end of the slice. Run every verification command
+in the Definition of done: typecheck, the documented offline build, `test:api`,
+`test:db`, `test:ui`, and the H1 suite where the slice touches hosted paths.
+Run it before reporting the slice done, before any commit the owner asks for,
+and before any hosted TEST rollout step. Hosted rollout documents, including
+`docs/46-hosted-content-rollout.md`, continue to require full-gate evidence.
+
+**Failure loop:** fix the failure, then rerun only the failing tests and their
+quick-gate set until they pass. Then run the full gate once more. Never rerun
+the full gate for each fix attempt.
+
+**Reporting:** always name the tier and give real output. For example:
+"Quick gate: 41 passed (test_finance.py, ads-finance.spec.ts). Full gate: not yet
+run." Never write "all tests passed" unless the full gate ran on the final code.
+
 ## Definition of done for a slice
 
 Migration + SQL/RLS test · API endpoint + pytest (validation, permission, happy path) · admin screen
-+ Playwright spec · docs updated (the numbered doc that owns the design) · all commands above green
-and reported with real output. If something can't be run, say so. Don't claim it passed.
++ Playwright spec · docs updated (the numbered doc that owns the design). Use quick gates while
+iterating. The verification commands listed above are the full gate, run once at the end: typecheck,
+the offline build, test:api, test:db, test:ui and H1 where hosted paths are touched. Report real output
+before calling the slice done, an owner-requested commit or a hosted TEST rollout step. If a command
+cannot be run, say so; do not claim it passed.

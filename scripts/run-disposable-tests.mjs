@@ -2,7 +2,7 @@
 // working DB/app causes a fail-closed refusal, never a fallback to shared data.
 import assert from 'node:assert/strict';
 import { readFile,writeFile,mkdir,mkdtemp,readdir,realpath,rm } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { randomUUID,randomBytes } from 'node:crypto';
 import { createServer } from 'node:net';
@@ -14,12 +14,35 @@ import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
 import { scrubProviderKeys } from './provider-keys.mjs';
 import {authWriteInventory} from './auth-write-check.mjs';
 
+export function apiTestArguments(extra,root=fileURLToPath(new URL('../',import.meta.url))) {
+  const tests=path.resolve(root,'apps/api/tests'),args=[];
+  // Separate option operands (especially -k expressions) are not test selectors.
+  const valueOptions=new Set(['-k','-m','-o','--override-ini','-p','-c','--config-file','-W','--pythonwarnings',
+    '--maxfail','--durations','--durations-min','--tb','--capture','--color','--code-highlight','--verbosity',
+    '--rootdir','--basetemp','--confcutdir','--ignore','--ignore-glob','--deselect','--import-mode','--assert',
+    '--junitxml','--junit-xml','--junitprefix','--junit-prefix','--log-level','--log-format','--log-date-format',
+    '--log-cli-level','--log-cli-format','--log-cli-date-format','--log-file','--log-file-level','--log-file-format','--log-file-date-format']);
+  let selected=false,operand=false,positionalOnly=false;
+  for(const arg of extra){
+    if(operand){args.push(arg);operand=false;continue;}
+    if(!positionalOnly&&arg.startsWith('-')){args.push(arg);operand=valueOptions.has(arg);if(arg==='--')positionalOnly=true;continue;}
+    const split=arg.indexOf('::'),file=split<0?arg:arg.slice(0,split),node=split<0?'':arg.slice(split);
+    const resolved=path.resolve(root,file),relative=path.relative(tests,resolved);
+    if(!file||relative==='..'||relative.startsWith('..'+path.sep)||path.isAbsolute(relative))
+      throw new Error('API test path is outside apps/api/tests; refused before database setup.');
+    args.push(resolved+node);selected=true;
+  }
+  return selected?args:[tests,...args];
+}
+
+async function runDisposableTests(){
 const root=fileURLToPath(new URL('../',import.meta.url)),[mode,...extra]=process.argv.slice(2);
 if((await authWriteInventory()).status!=='passed')throw new Error('H5h Auth-write release gate failed');
 assert.ok(['api','db','ui','all'].includes(mode),'Use api, db, ui or all');
 const assistantFixtures=extra.includes('--assistant-fixtures');
 if(assistantFixtures){assert.equal(mode,'api','Assistant fixtures require the disposable API suite');extra.splice(extra.indexOf('--assistant-fixtures'),1);}
 assert.ok(!['db','all'].includes(mode)||extra.length===0,'Extra arguments are supported for api and ui only');
+const apiArgs=apiTestArguments(mode==='api'?extra:[],root);
 const ports=[55432,8000,3000];
 for(const port of ports)await new Promise((resolve,reject)=>{
   const server=createServer();server.once('error',()=>reject(new Error(`Port ${port} is in use. Stop the local working DB/API/admin first; tests never use an existing server.`)));
@@ -86,7 +109,7 @@ try{
     await run('uv',[...uv,'python','scripts/seed-document-demo.py']);
     await run('uv',[...uv,'python','scripts/run-document-worker.py','--drain']);
   }
-  if(mode==='api'||mode==='all')await run('uv',[...uv,'pytest','apps/api/tests','-q','--basetemp',path.join(directory,'pytest'),'-o',`cache_dir=${path.join(directory,'pytest-cache')}`,...extra],root,probeEnv);
+  if(mode==='api'||mode==='all')await run('uv',[...uv,'pytest','-q','--basetemp',path.join(directory,'pytest'),'-o',`cache_dir=${path.join(directory,'pytest-cache')}`,...apiArgs],root,probeEnv);
   if(mode==='db'||mode==='all'){
     await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs','tests/local-db-initialisation.test.mjs','tests/auth-protection.test.mjs','tests/credential-scan.test.mjs']);
     await run(process.execPath,['--test','tests/content-upgrade.test.mjs']);
@@ -107,3 +130,6 @@ try{
 // embedded-postgres installs a beforeExit hook that defaults to zero. Exit only
 // after our awaited cleanup, with the actual test result preserved.
 finally{await stop();process.exit(exitCode);}
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)await runDisposableTests();

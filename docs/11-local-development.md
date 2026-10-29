@@ -319,17 +319,53 @@ Remove-Item Env:HUB_INTAKE_TEST_DB
 
 ```powershell
 npm.cmd run typecheck --prefix apps/admin
-npm.cmd run build --prefix apps/admin
+$env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES = (Resolve-Path scripts/offline-fonts.cjs).Path
+try { npm.cmd run build --prefix apps/admin -- --webpack }
+finally { Remove-Item Env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES }
 npm.cmd run test:api
 npm.cmd run test:db
 npm.cmd run test:ui
+npm.cmd run test:hosted-h1              # where the slice touches hosted paths
 ```
 
 Stop the working local database, API and admin before these test commands. Each command creates a fresh disposable PostgreSQL cluster under `.local/test-runs/`, applies migrations and synthetic seeds, and removes that cluster on completion or failure. Browser tests also start and stop their own API/admin. Occupied ports 55432, 8000 or 3000 cause a refusal; tests never reuse a running working database or app. `npm run test:local` runs the full API, database and UI suites sequentially in one disposable run. The default browser is Microsoft Edge; set `PLAYWRIGHT_CHANNEL=chrome` if needed. Browser traces remain in ignored `artifacts/playwright/`.
 
-The runner supplies the test connection and a unique run marker. Before API tests, browser tests or direct database test entry points execute, a shared guard checks PostgreSQL's actual data directory and its matching database marker. Direct `pytest`, Playwright and database test invocations against the working DB fail closed. Focused commands remain available: `npm run test:api -- -k coordinates` and `npm run test:ui -- tests/ui/brands.spec.ts`. Use `npm` instead of `npm.cmd` on macOS/Linux.
+The runner supplies the test connection and a unique run marker. Before API tests, browser tests or direct database test entry points execute, a shared guard checks PostgreSQL's actual data directory and its matching database marker. Direct `pytest`, Playwright and database test invocations against the working DB fail closed. Focused commands accept explicit files or node IDs, for example `npm run test:api -- apps/api/tests/test_naming.py`, or `-k` expressions such as `npm run test:api -- -k coordinates`. Explicit test paths are resolved and must remain inside `apps/api/tests`; outside paths are refused before database setup. Browser selection stays `npm run test:ui -- tests/ui/brands.spec.ts`. Use `npm` instead of `npm.cmd` on macOS/Linux.
 
 `npm run test:db` runs the SQL/RLS checks, every two-connection regression and the frozen DW/content contract checks in the disposable cluster. Uploaded assets and synthetic archive files use directories inside that same disposable run. Existing test teardown may retain immutable test versions within the run; the entire cluster and test file stores are removed afterward, so no test brand, project, history or upload reaches the working DB or its file stores. H1 continues using its separate loopback simulation and its own synthetic seed; it never imports the working database.
+
+## Test gates
+
+**Quick gate:** run after every change while iterating. Aim for 1–3 minutes;
+shared-area changes require the wider selection below.
+
+- Admin code changed: `npm run typecheck --prefix apps/admin`.
+- API: `npm run test:api -- <affected test files or -k expression>`.
+- Browser: `npm run test:ui -- <affected spec files>`.
+
+| Changed | Quick gate must also include |
+|---|---|
+| `supabase/migrations` or SQL functions/policies | `npm run test:db`, plus API tests matching `-k permission` |
+| `apps/api/sena_hub_api/auth.py`, `main.py`, or shared API helpers | The full API suite (no browser run needed) |
+| Shared admin components, layout, navigation, proxy route | The affected specs plus `hub-navigation.spec.ts` |
+| A single screen or endpoint | That endpoint's API tests and that screen's spec(s) |
+
+**Full gate:** run once, at the end of the slice. Run every verification command
+in the Definition of done: typecheck, the documented offline build, `test:api`,
+`test:db`, `test:ui`, and the H1 suite where the slice touches hosted paths.
+Run it before reporting the slice done, before any commit the owner asks for,
+and before any hosted TEST rollout step. Hosted rollout documents, including
+`docs/46-hosted-content-rollout.md`, continue to require full-gate evidence.
+
+**Failure loop:** fix the failure, then rerun only the failing tests and their
+quick-gate set until they pass. Then run the full gate once more. Never rerun
+the full gate for each fix attempt.
+
+**Reporting:** always name the tier and give real output. For example:
+"Quick gate: 41 passed (test_finance.py, ads-finance.spec.ts). Full gate: not yet
+run." Never write "all tests passed" unless the full gate ran on the final code.
+
+The verification commands above form the full gate, run once at the end of a slice; use quick gates while iterating. Report any command that could not be run instead of claiming it passed.
 
 ## Deployment boundary
 
