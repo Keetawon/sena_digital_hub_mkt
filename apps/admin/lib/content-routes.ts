@@ -17,7 +17,7 @@ export function contentAllowsApi(path: string, method: string) {
 }
 
 const media: Record<string, RegExp> = {
-  GET: new RegExp(`^v1/admin/(?:media/(?:tags|requirements|website)|projects/${id}/(?:media(?:/(?:jobs|website))?|content/website))$`),
+  GET: new RegExp(`^v1/admin/(?:media/(?:tags|requirements|website)|projects/${id}/(?:media(?:/(?:jobs|website|ai-state))?|content/website))$`),
   PUT: new RegExp(`^v1/admin/(?:media/(?:tags|requirements)/[a-z][a-z0-9_]{0,79}|projects/${id}/media/(?:assets|links|clips)/${uuid})$`),
   POST: new RegExp(`^v1/admin/(?:media/tags/[a-z][a-z0-9_]{0,79}/approve|projects/${id}/media/(?:jobs|website/confirm|links/${uuid}/remove|clips/${uuid}/check))$`),
 };

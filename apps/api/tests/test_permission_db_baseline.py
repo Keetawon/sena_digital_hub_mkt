@@ -21,6 +21,7 @@ FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', '
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
 ACCOUNT_UI_TABLES = {'hub.permission_notice_ack'}
 WEBSITE_TABLES = {'hub.website_asset_suggestions', 'staging.website_content_receipts'}
+MEDIA_WORKER_TABLES = {'hub.media_ai_settings'}
 WEBSITE_FUNCTIONS = {'hub.' + name for name in ('website_source_valid', 'website_media_agreement',
     'website_media_projects', 'website_media_queue', 'website_media_confirm', 'website_content_sources',
     'website_media_claim', 'website_media_finish')}
@@ -66,7 +67,10 @@ MEDIA_FUNCTIONS = {'hub.' + name for name in (
     'media_link_remove', 'media_legacy_binding_guard', 'media_requirements_read', 'media_requirement_save',
     'media_clip_save', 'media_checklist', 'project_media', 'media_thumbnail_binding', 'project_content_readiness_before_media',
     'media_job_allowed', 'media_job_request', 'media_jobs_read', 'media_claim', 'media_finish', 'media_schedule_checks', 'media_clip_check',
-    'media_budget_blocked', 'provider_budget_event', 'media_budget_exhausted')}
+    'media_budget_blocked', 'provider_budget_event', 'media_budget_exhausted',
+    'media_budget_totals', 'media_worker_heartbeat', 'media_ai_state', 'media_job_audit', 'media_image_claim',
+    'media_image_lease', 'media_image_fetch_audit', 'media_image_begin', 'media_image_wait', 'media_image_finish',
+    'media_clip_claim_legacy', 'media_finish_legacy')}
 WEB_TABLES = {'hub.web_pages', 'hub.web_publications', 'hub.web_changes'}
 WEB_FUNCTIONS = {'hub.' + name for name in (
     'web_publication_guard', 'web_hash', 'web_localized', 'web_fallback', 'web_source', 'web_source_content', 'web_authored_content', 'web_dependency', 'web_source_available', 'web_item', 'web_asset', 'web_registry_fields', 'web_sections', 'web_contacts', 'web_faqs', 'web_project', 'web_article_node', 'web_article', 'web_compose', 'web_scope_faq', 'web_nodes', 'web_dependencies', 'web_issues', 'web_assert_sources', 'web_resolve', 'web_output', 'web_limit_faq', 'web_changed_pages', 'web_workspace', 'web_page_save', 'web_prepare', 'web_preview_assets', 'web_publication_read', 'web_record_change', 'web_publish', 'web_history', 'web_pointer', 'web_version_preview', 'web_public_page', 'web_public_changes', 'web_public_ai')}
@@ -165,10 +169,14 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
-                    additions |= WEBSITE_TABLES if name == 'relations' else WEBSITE_FUNCTIONS
+                    additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES if name == 'relations' else WEBSITE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    media_worker = [r for r in actual if r['schema'] + '.' + r['table'] in MEDIA_WORKER_TABLES]
+                    assert len(media_worker) == 1 and all(r['name'] == 'media_ai_owner' and r['roles'] == ['postgres']
+                        and r['qual'] == r['with_check'] == 'true' for r in media_worker)
+                    actual = [r for r in actual if r not in media_worker]
                     website = [r for r in actual if r['schema'] + '.' + r['table'] in WEBSITE_TABLES]
                     assert len(website) == 3
                     owners = [r for r in website if r['name'] in ('website_owner', 'website_operator')]
@@ -377,7 +385,7 @@ async def assert_reviewed_database_boundary(db):
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
-    classified |= WEBSITE_TABLES
+    classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -390,6 +398,7 @@ async def assert_reviewed_database_boundary(db):
     domain |= {'hub.website_asset_suggestions'}
     assert tables['hub.website_asset_suggestions']['grants'] == ['hub_app:SELECT']
     assert tables['staging.website_content_receipts']['grants'] == []
+    assert all(tables[name]['grants'] == [] for name in MEDIA_WORKER_TABLES)
     assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}

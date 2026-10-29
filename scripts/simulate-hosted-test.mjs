@@ -7,7 +7,8 @@ import net from 'node:net';
 import pg from 'pg';
 import EmbeddedPostgres from 'embedded-postgres';
 import {initialiseDisposableDb} from './initialise-disposable-db.mjs';
-import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError} from './supabase-test-migrations.mjs';
+import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,mediaWorkerLoginStatements} from './supabase-test-migrations.mjs';
+import {createH1AuthFixture,saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const simulationRoot=path.join(root,'.local','hosted-test-simulation');
@@ -26,7 +27,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
   const directory=await mkdtemp(path.join(simulationRoot,'run-'));
   const adminPassword=secret(),migrationPassword=secret(),runtimePassword=secret();
   const server=new EmbeddedPostgres({databaseDir:directory,user:'postgres',password:adminPassword,port:connection.port,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
-  let admin,client,runtime,metadata,verified=false,held=false;
+  let admin,client,runtime,mediaLogin,metadata,verified=false,held=false;
   try {
     await initialiseDisposableDb(directory,adminPassword);await server.start();
     admin=new pg.Client({...connection,database:'postgres',user:'postgres',password:adminPassword});await admin.connect();
@@ -37,7 +38,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     client=new pg.Client({...connection,user:'hub_migration_verifier',password:migrationPassword});await client.connect();
     // Protected, synthetic Auth source for invite confirmation tests only. App roles
     // have no grants; the mock's operator callback writes these rows on verification.
-    await client.query('create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz not null)');
+    await createH1AuthFixture(client);
     await assert.rejects(client.query('grant set on parameter app.ads_test_issuing to hub_migration_verifier'),denied);
     await assert.rejects(client.query("create function public.denied_parameter_probe() returns void language sql set app.ads_test_issuing='off' as 'select'"),denied);
     assert.equal((await client.query("select has_parameter_privilege(current_user,'app.ads_test_issuing','SET') allowed")).rows[0].allowed,false);
@@ -145,9 +146,24 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     assert.equal((await client.query("select count(*)::int count from ads.setting where value<>'false'::jsonb")).rows[0].count,0);
     assert.equal((await client.query('select count(*)::int count from hub.projects')).rows[0].count,0);
     log('PASS: caller-forged GUC ignored; runtime/agency cannot enable flags or assume owners; H1 residential allowed while original deferred guard stays closed.');
+    const mediaPassword=secret();
+    for(const statement of mediaWorkerLoginStatements(mediaPassword,connection.database))await client.query(statement);
+    await runMigrations(client,config,{log:()=>{},migrations});
+    mediaLogin=new pg.Client({...connection,user:'hub_media_worker_login',password:mediaPassword});await mediaLogin.connect();
+    assert.equal((await mediaLogin.query('select current_user name')).rows[0].name,'hub_media_worker_login');
+    await mediaLogin.query('set role hub_media_worker');
+    assert.equal((await mediaLogin.query('select current_user name')).rows[0].name,'hub_media_worker');
+    await assert.rejects(mediaLogin.query('select * from auth.users'),denied);
+    await mediaLogin.query('reset role');
+    for(const role of ['hub_app','admin','editor','publisher','viewer','online_staff','agency','service_consumer','hub_translation_worker',...Object.keys(owners)])
+      await assert.rejects(mediaLogin.query('set role '+identifier(role)),denied);
+    assert.equal((await client.query("select pg_has_role('hub_runtime','hub_media_worker','SET') allowed")).rows[0].allowed,false);
+    const mediaFlags=(await client.query("select rolcanlogin,rolinherit,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls,rolconnlimit from pg_roles where rolname='hub_media_worker_login'")).rows[0];
+    assert.deepEqual(mediaFlags,{rolcanlogin:true,rolinherit:false,rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,rolconnlimit:2});
+    log('PASS: dedicated media LOGIN uses the runner SCRAM bootstrap, assumes only its worker role, and cannot read Auth; API cannot assume the worker.');
     if(seed) {
       const {IDENTITIES}=await import('./hosted-test-fixtures.mjs');
-      for (const u of IDENTITIES) await client.query('insert into auth.users values($1,$2,$3,$3)',[u.id,u.email,u.created_at]);
+      for (const u of IDENTITIES) await saveH1AuthFixture(client,{...u,email_confirmed_at:u.created_at});
       for (const [i,u] of IDENTITIES.entries()) await client.query("insert into hub.user_account(id,email,display_name_th,status,hub_role,agency_code) values($1,$2,$3,'ACTIVE',$4,$5) on conflict(id) do nothing",[u.id,u.email,`ผู้ทดสอบ สมมติ ${i+1}`,u.app_metadata.hub_role,u.app_metadata.hub_agency??null]);
       const {applyH1Seed}=await import('./hosted-test-seed.mjs');
       await applyH1Seed(client);await applyH1Seed(client);
@@ -175,7 +191,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     const permission=/^permission denied (?:for (?:schema|table|function|relation|sequence|parameter) [a-zA-Z0-9_.]+|to set role \"[a-zA-Z0-9_]+\")$/.test(error.message??'')?` ${error.message}`:'';
     throw new Error(safeError(error)+permission,{cause:error});
   } finally {
-    await runtime?.end().catch(()=>{});await client?.end().catch(()=>{});await admin?.end().catch(()=>{});
+    await mediaLogin?.end().catch(()=>{});await runtime?.end().catch(()=>{});await client?.end().catch(()=>{});await admin?.end().catch(()=>{});
     if(!held) {
       await server.stop().catch(()=>{});
       const target=path.resolve(directory),parent=path.resolve(simulationRoot)+path.sep;

@@ -1,0 +1,20 @@
+[Unit]
+Description=SENA Hub TEST private resized-image socket
+Before=sena-hub-test-api.service
+
+[Socket]
+ListenStream=/run/sena-hub-test-media/image.sock
+Service=sena-hub-test-api.service
+FileDescriptorName=image-broker
+SocketUser=sena-hub-api
+SocketGroup=sena-hub-media
+SocketMode=0660
+User=sena-hub-api
+Group=sena-hub-api
+RuntimeDirectory=sena-hub-test-media
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+ExecStartPre=/usr/bin/true
+RemoveOnStop=yes
+Accept=no
+Backlog=8

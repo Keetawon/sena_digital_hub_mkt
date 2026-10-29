@@ -59,7 +59,7 @@ def test_each_spend_code_is_bounded_and_has_no_retry(monkeypatch,caplog,code):
 @pytest.mark.parametrize('code',sorted(SPEND_CODES))
 def test_worker_stops_claiming_without_finishing_failed_or_draining_another_queue(monkeypatch,code):
     monkeypatch.setattr(media_worker,'resized_image',lambda _: 'data:image/jpeg;base64,c3ludGhldGlj')
-    job={'id':str(uuid4()),'lease_token':str(uuid4()),'kind':'image_suggestion','file':{},'context':{}}
+    job={'id':str(uuid4()),'lease_token':str(uuid4()),'kind':'image_suggestion','file':{},'context':{},'model':'synthetic-configured-provider'}
     class Database:
         blocked=False
         calls=[]
@@ -70,6 +70,7 @@ def test_worker_stops_claiming_without_finishing_failed_or_draining_another_queu
             self.calls.append((sql,args))
             if 'media_budget_blocked' in sql:return self.blocked
             if 'media_claim()' in sql:return job
+            if 'media_image_begin' in sql:return True
             assert 'media_budget_exhausted' in sql and args==(UUID(job['id']),UUID(job['lease_token']),code)
             self.blocked=True;return 'budget_exhausted'
     class Provider:

@@ -75,6 +75,7 @@ def test_worker_result_never_confirms_metadata_and_stale_source_is_discarded(per
         transaction = operator.transaction()
         await transaction.start()
         try:
+            await operator.execute('update hub.media_ai_settings set monthly_cap_usd=5,provider_configured=true,worker_seen_at=clock_timestamp()')
             project = await call(operator, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
             asset = await upload(operator, ids['editor'])
             asset_id = UUID(asset['id'])
@@ -83,7 +84,7 @@ def test_worker_result_never_confirms_metadata_and_stale_source_is_discarded(per
             await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,1)", project, asset_id)
 
             class Provider:
-                model = 'synthetic-provider'
+                from sena_hub_api.content_translation import DEFAULT_MODEL as model
 
                 async def suggest(self, image, context):
                     assert image.startswith('data:image/jpeg;base64,')
@@ -95,16 +96,18 @@ def test_worker_result_never_confirms_metadata_and_stale_source_is_discarded(per
             row = await call(operator, ids['editor'], 'select hub.asset_detail($1)', asset_id)
             assert row['ai_suggestion']['media_category'] == 'exterior' and row['metadata_state'] == 'needs_review'
             assert row['caption'] == {} and row['rights_status'] == 'pending'
-            await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,1)", project, asset_id)
+            assert (await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,1)", project, asset_id))['status'] == 'done'
+            await call(operator, ids['editor'], 'select hub.media_save_asset($1,$2,1,$3)', project, asset_id, {'credit': {'en': 'Synthetic revision'}})
+            await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,2)", project, asset_id)
 
             class Stale(Provider):
                 async def suggest(self, image, context):
-                    await call(operator, ids['editor'], 'select hub.media_save_asset($1,$2,1,$3)', project, asset_id, {'media_category': 'map'})
+                    await call(operator, ids['editor'], 'select hub.media_save_asset($1,$2,2,$3)', project, asset_id, {'media_category': 'map'})
                     return suggestion()
 
             assert (await work_once(operator, Stale()))['status'] == 'superseded'
             assert (await call(operator, ids['editor'], 'select hub.asset_detail($1)', asset_id))['media_category'] == 'map'
-            await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,2)", project, asset_id)
+            await call(operator, ids['editor'], "select hub.media_job_request($1,'image_suggestion',$2,3)", project, asset_id)
 
             class Revoked(Provider):
                 async def suggest(self, image, context):

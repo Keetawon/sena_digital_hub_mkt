@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { request } from "./hub-request";
 import { errorMessage, type Locales } from "./content-common";
 import { Preview, RightsBadge } from "./project-assets";
+import { MediaAiButton } from "./media-ai-button";
 import { categoryLabels, imageLabels, Select, TargetFields, contextOf, newContext,
   type MediaAsset, type MediaContext, type MediaLink, type MediaTag, type LinkContext } from "./media-common";
 
@@ -109,7 +110,8 @@ export function WebsiteMediaQueue({ base, project, assets, context, tags, canEdi
           </label>)}</fieldset>
           {card.links.map(link => <details key={link.id}><summary>บริบทที่ต้องตรวจ · {link.target_type === "project" ? "โครงการ" : "รายการในโครงการ"}</summary>
             <TargetFields value={card.contexts[link.id]} onChange={value => change(card.id, { selected: true, contexts: { ...card.contexts, [link.id]: value } })} context={context} project={project} tags={tags} canPromotions={canPromotions} />
-          </details>)}</details>
+          </details>)}
+          {asset && <MediaAiButton asset={asset} canEdit={canEdit} />}</details>
         </fieldset> : <p>{categoryLabels[card.metadata.media_category] || "ยังไม่จัดหมวด"} · ดูข้อมูลเท่านั้น</p>}
       </article>;
     })}</div>

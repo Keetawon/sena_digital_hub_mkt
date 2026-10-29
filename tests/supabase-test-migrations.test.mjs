@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {readFile} from 'node:fs/promises';
-import { applyMigration, configuration, loadMigrations, migrationBody, requireVerifiedTls, runMigrations, safeError, statements, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
+import { applyMigration, applyCombinedContentRelease, COMBINED_COMPONENTS, configuration, loadMigrations, mediaWorkerLoginStatements, migrationBody, requireVerifiedTls, runMigrations, safeError, statements, validateCombinedManifest, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
 
 const ref = 'eqlrtevwpyboplljgowo';
 const env = {
@@ -53,10 +53,10 @@ test('SQL scanner preserves quoted bodies and strips only the outer transaction'
   for (const bad of ['begin; create table a(x int);', 'begin; commit; commit;', 'begin; rollback; commit;', 'create table a(x int);', "begin; select 'unterminated; commit;"]) assert.throws(() => migrationBody(bad));
 });
 
-test('all 79 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
+test('all 80 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
   const migrations = await loadMigrations();
-  assert.equal(migrations.length,79);
-  assert.equal(migrations.at(-1).name,'202610280079_media_provider_budget.sql');
+  assert.equal(migrations.length,80);
+  assert.equal(migrations.at(-1).name,'202610280080_media_image_worker.sql');
   assert.notEqual(migrations[13].checksum,migrations[13].executedChecksum);
   assert.equal(migrations.filter(m=>m.checksum!==m.executedChecksum).length,1);
   const rows = migrations.map(m => ({ name: m.name, checksum:m.checksum,executed_checksum:m.executedChecksum,project_ref:ref,source:'sena-hub-supabase-test-v2',profile:'hosted-test-settings-v1',environment:'hosted-test' }));
@@ -81,6 +81,40 @@ test('H5d refuses canonical 79 through both hosted apply entry points before any
     await assert.rejects(applyMigration(client,migrations[78],configuration(env,args),'unused'),/combined H5a release/);
   }
   assert.deepEqual(queries,[]);
+});
+
+test('combined admission requires all components, matching gates and key-absent Linux readiness',()=>{
+  const sources=Object.fromEntries(COMBINED_COMPONENTS.map(file=>[file,'a'.repeat(64)]));
+  sources[COMBINED_COMPONENTS[0]]='a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91';
+  const manifest={project_ref:ref,release_kind:'H5a_H5c_H5e_79_80',release:'aaaaaaa-media-aaaaaaaaaaaa',gates_sha256:'b'.repeat(64)};
+  const gates={status:'passed',provider_calls:0,api:2132,ui:302,db:62,h1_browser:45,typecheck:true,offline_build:true,populated_upgrade:true,credential_matches:0,sources};
+  const candidate={status:'passed',project_ref:ref,release:manifest.release,gates_sha256:manifest.gates_sha256,
+    linux_build:true,private_socket_only:true,native_broker_checks_passed:true,api_worker_variables_absent:true,media_key_present:false,components:{...sources}};
+  assert.doesNotThrow(()=>validateCombinedManifest(manifest,gates,candidate));
+  for(const key of ['api','ui','db','status','typecheck','provider_calls']){
+    const bad=structuredClone(gates);delete bad[key];assert.throws(()=>validateCombinedManifest(manifest,bad,candidate));
+  }
+  for(const file of COMBINED_COMPONENTS){const bad=structuredClone(candidate);delete bad.components[file];assert.throws(()=>validateCombinedManifest(manifest,gates,bad));}
+  for(const key of ['linux_build','private_socket_only','native_broker_checks_passed','api_worker_variables_absent'])assert.throws(()=>validateCombinedManifest(manifest,gates,{...candidate,[key]:false}));
+  assert.throws(()=>validateCombinedManifest({...manifest,release_kind:'79_only'},gates,candidate));
+  assert.throws(()=>validateCombinedManifest(manifest,gates,{...candidate,media_key_present:true}));
+});
+
+test('missing combined proof and Auth-writing migration 80 issue no SQL',async()=>{
+  const queries=[],client={connection:{stream:{encrypted:true,authorized:true}},query:async sql=>queries.push(sql)};
+  await assert.rejects(applyCombinedContentRelease(client,{...configuration(env,args),apply:true}),/Receipt/);
+  await assert.rejects(applyMigration(client,{name:'202610280080_media_image_worker.sql',body:['UPDATE auth.users SET role=1;']},configuration(env,args),'unused'),/Auth write rejected/);
+  assert.deepEqual(queries,[]);
+});
+
+test('worker bootstrap has exact bounded grants and only a SCRAM verifier enters SQL',()=>{
+  const password='x'.repeat(43),sql=mediaWorkerLoginStatements(password,'postgres');
+  assert.equal(sql.length,6);assert.ok(sql.every(s=>!s.includes(password)));
+  assert.match(sql[0],/login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls connection limit 2 password 'SCRAM-SHA-256\$/);
+  assert.equal(sql[1],'grant hub_media_worker to hub_media_worker_login with admin false,inherit false,set true');
+  assert.equal(sql[2],'grant connect on database "postgres" to hub_media_worker_login');
+  assert.ok(!sql.some(s=>/grant (?:hub_app|admin|editor|publisher|viewer|hub_translation_worker)\b/.test(s)));
+  assert.throws(()=>mediaWorkerLoginStatements('short','postgres'));
 });
 
 test('TLS guard checks the verified client socket when using a pooler', () => {

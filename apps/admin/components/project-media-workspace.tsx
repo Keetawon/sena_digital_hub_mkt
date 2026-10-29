@@ -12,14 +12,16 @@ import { MediaRules } from "./media-rules";
 import { WebsiteMediaProjects, WebsiteMediaQueue } from "./website-media-queue";
 import "./project-content.css";
 import "./project-media.css";
+import { MediaAiButton, MediaAiContext, type MediaAiBudget, type MediaAiJob } from "./media-ai-button";
+import { mediaAiText } from "./media-ai-text";
 
 type Workspace = { project: { id: string; public_project_id: string; name: { th?: string }; updated_at: string }; assets: MediaAsset[]; links: MediaLink[]; clips: Clip[]; context: MediaContext; tags: MediaTag[]; requirements: Rule[];
   checklist: { items: Coverage[]; recommended_score: number; required_missing: number; broken_links: Clip[]; unknown_coverage: { key: string; label: { th?: string } }[] } };
-type Job = { id: string; kind: string; subject_id: string; status: string; error_code: string | null };
-type Card = { id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string };
+type Job = MediaAiJob;
+type Card = { id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string; aiNotice?: string };
 const tabs = { checklist: "ภาพที่ยังขาด", website: "รูปจากเว็บไซต์ (รอยืนยัน)", upload: "อัปโหลดหลายไฟล์", library: "ภาพและเอกสาร", clips: "คลิปและทัวร์ 360", rules: "แท็กและเกณฑ์ภาพ" };
-const jobLabels: Record<string, string> = { queued: "รอประมวลผล", running: "กำลังประมวลผล", done: "เสร็จแล้ว", failed: "ไม่สำเร็จ", superseded: "ข้อมูลหรือสิทธิ์เปลี่ยน กรุณาสั่งใหม่" };
-const jobErrors: Record<string, string> = { provider_unavailable: "ยังไม่ได้เปิดบริการคำแนะนำ", provider_error: "บริการตอบกลับไม่สำเร็จ", invalid_result: "ผลไม่ผ่านการตรวจ", manual_required: "ผู้ให้บริการนี้ต้องกรอกและตรวจเอง", file_unavailable: "อ่านไฟล์ภาพไม่ได้", source_changed: "ข้อมูลหรือสิทธิ์เปลี่ยน", permission_revoked: "สิทธิ์ถูกเปลี่ยน" };
+const jobLabels: Record<string, string> = { queued: "รอประมวลผล", running: "กำลังประมวลผล", done: "เสร็จแล้ว", failed: "ไม่สำเร็จ", superseded: "ข้อมูลหรือสิทธิ์เปลี่ยน กรุณาสั่งใหม่", budget_exhausted: mediaAiText.state_budget };
+const jobErrors: Record<string, string> = { provider_unavailable: "ยังไม่ได้เปิดบริการคำแนะนำ", provider_error: "บริการตอบกลับไม่สำเร็จ", invalid_result: "ผลไม่ผ่านการตรวจ", manual_required: "ผู้ให้บริการนี้ต้องกรอกและตรวจเอง", file_unavailable: "อ่านไฟล์ภาพไม่ได้", source_changed: "ข้อมูลหรือสิทธิ์เปลี่ยน", permission_revoked: "สิทธิ์ถูกเปลี่ยน", budget_exhausted: mediaAiText.state_budget };
 
 function LocalPreview({ file }: { file: File }) {
   const [url, setUrl] = useState("");
@@ -32,24 +34,26 @@ export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
   const { catalog, error: catalogError } = useFieldCatalog();
   const permissions = useHubPermissions(), canView = permissions.can("projects"), canEdit = permissions.can("projects", "edit");
   const [data, setData] = useState<Workspace | null>(null), [jobs, setJobs] = useState<Job[]>([]), [error, setError] = useState("");
+  const [budget, setBudget] = useState<MediaAiBudget | null>(null);
   const [dirty, setDirty] = useState(false), [editingAsset, setEditingAsset] = useState<MediaAsset | null>(null);
   const location = useContentLocation(dirty), current = location.params.get("tab") ?? "checklist";
   const tab = current in tabs ? current as keyof typeof tabs : "checklist";
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/media`;
   const permissionKey = JSON.stringify(permissions.capabilities.tabs);
-  const reload = useCallback(async () => { const [value, queued] = await Promise.all([request<Workspace>(base), request<Job[]>(`${base}/jobs`)]); setData(value); setJobs(queued); }, [base]);
+  const reload = useCallback(async () => { const [value, queued, ledger] = await Promise.all([request<Workspace>(base), request<Job[]>(`${base}/jobs`), request<MediaAiBudget>(`${base}/ai-state`)]); setData(value); setJobs(queued); setBudget(ledger); }, [base]);
   useEffect(() => { let live = true;
     if (!canView) { setData(null); setJobs([]); return; }
-    if (projectId) Promise.all([request<Workspace>(base), request<Job[]>(`${base}/jobs`)]).then(([value, queued]) => { if (live) { setData(value); setJobs(queued); setError(""); } }).catch(error => { if (live) setError(errorMessage(error)); });
+    if (projectId) Promise.all([request<Workspace>(base), request<Job[]>(`${base}/jobs`), request<MediaAiBudget>(`${base}/ai-state`)]).then(([value, queued, ledger]) => { if (live) { setData(value); setJobs(queued); setBudget(ledger); setError(""); } }).catch(error => { if (live) setError(errorMessage(error)); });
     return () => { live = false; };
   }, [base, projectId, canView, permissionKey]);
+  useEffect(() => { if (!jobs.some(job => job.kind === "image_suggestion" && (job.status === "queued" || job.status === "running"))) return; const timer = window.setInterval(() => { void reload().catch(error => setError(errorMessage(error))); }, 3000); return () => clearInterval(timer); }, [jobs, reload]);
   const act = async (work: () => Promise<unknown>) => { setError(""); try { await work(); await reload(); } catch (error) { setError(errorMessage(error)); } };
   const edit = (asset: MediaAsset) => { if (location.navigate({ tab: "upload" })) setEditingAsset(asset); };
   const deepLink = (item: Coverage) => {
     if (item.blocks_publish) return `/?project=${encodeURIComponent(projectId)}&media_role=${item.rule_key}&media_upload=1#assets`;
     return `/media?${new URLSearchParams({ project: projectId, tab: "upload", category: item.context.media_category ?? "exterior", target_type: item.kind, target_key: item.key, floor: String(item.floor ?? ""), tags: item.context.tags.join(","), usage: item.context.usage })}`;
   };
-  return <MediaCatalog.Provider value={catalog?.items ?? []}><div className="content-workspace media-workspace"><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
+  return <MediaCatalog.Provider value={catalog?.items ?? []}><MediaAiContext.Provider value={{ base, budget, jobs, refresh: reload }}><div className="content-workspace media-workspace"><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}</p>}
     {!projectId ? <><p>เลือกโครงการจากหน้ารวมก่อนจัดการสื่อ</p>{canView && <WebsiteMediaProjects />}</> : !canView ? <p>บัญชีนี้ไม่มีสิทธิ์ดูสื่อโครงการ</p> : !data ? <p role="status">กำลังโหลดสื่อ…</p> : <>
       <nav className="content-tabs" aria-label="ส่วนสื่อ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={dirty && tab !== key} onClick={() => { if (location.navigate({ tab: key })) setEditingAsset(null); }}>{label}</button>)}</nav>
@@ -66,15 +70,15 @@ export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
         return <article className="media-card" key={asset.id}><Preview asset={asset} /><h3>{asset.original_filename}</h3><p>{categoryLabels[asset.media_category] ?? "ยังไม่จัดหมวด"} · {asset.metadata_state === "confirmed" ? "ยืนยันข้อมูลแล้ว" : "รอตรวจข้อมูล"}</p><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><p>{asset.caption.th || "ยังไม่มีคำบรรยาย"}</p>
           {canEdit && <button className="button secondary" onClick={() => edit(asset)}>แก้ไขข้อมูลภาพ</button>}
           {suggestion && <div className="media-suggestion"><h4>คำแนะนำ AI · ยังไม่ยืนยัน</h4>{mismatch && <p role="alert" className="inline-warning">คำแนะนำต่างจากหมวดหรือส่วนกลางที่เลือก กรุณาตรวจภาพ</p>}<p>{categoryLabels[suggestion.media_category]} · {suggestion.caption.th}</p><p>คำอธิบายภาพ: {suggestion.alt_text.th}</p><p>แท็ก: {suggestion.tags.map(code => data.tags.find(tag => tag.code === code)?.label.th ?? code).join(" · ")}</p><details><summary>รายละเอียดคำแนะนำ</summary><p>ความมั่นใจ {Math.round(suggestion.confidence * 100)}% · {suggestion.model} · {suggestion.suggested_at}</p><p>แท็กเสนอใหม่: {suggestion.proposed_tags.map(tag => tag.label.th).join(" · ") || "ไม่มี"}</p><p>{suggestion.source_revision === asset.media_revision ? "ตรงกับข้อมูลล่าสุด" : "ข้อมูลภาพเปลี่ยนหลังให้คำแนะนำ"}</p></details></div>}
-          {canEdit && asset.marketing_publication && asset.ai_exposure !== "internal" && asset.mime_type.startsWith("image/") && !["legal_document", "brochure"].includes(asset.media_category) && <button className="button secondary" onClick={() => void act(() => request(`${base}/jobs`, "POST", { kind: "image_suggestion", subject_id: asset.id, expected_revision: asset.media_revision }))}>ขอคำแนะนำ AI</button>}
           {links.map(link => <div className="media-binding" key={link.id}><p>{targetName(link, data.context)} · {link.is_primary ? "ภาพปก" : "ภาพประกอบ"}</p>{canEdit && <>{link.target_type === "facility" && <button className="button secondary" onClick={() => void act(() => request(`${base}/links/${link.id}`, "PUT", { expected_revision: link.revision, changes: { is_primary: !link.is_primary } }))}>{link.is_primary ? "ยกเลิกภาพปก" : "ตั้งเป็นภาพปก"}</button>}<button className="button danger" onClick={() => void act(() => request(`${base}/links/${link.id}/remove`, "POST", { expected_revision: link.revision }))}>นำการผูกนี้ออก</button></>}</div>)}
+          <MediaAiButton asset={asset} canEdit={canEdit} />
         </article>;
       })}</div>{!data.assets.length && <p>ยังไม่มีไฟล์ในโครงการ</p>}</MediaPanel>}
       {tab === "clips" && <MediaClips clips={data.clips} data={data} base={base} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} onChanged={reload} onDirty={setDirty} />}
       {tab === "rules" && <MediaRules tags={data.tags} rules={data.requirements} canEdit={canEdit} canApprove={permissions.can("projects", "approve")} onChanged={reload} onDirty={setDirty} />}
       {jobs.length > 0 && <details className="content-section"><summary>สถานะคำแนะนำและการตรวจลิงก์</summary><button className="button secondary" disabled={dirty} onClick={() => void act(async () => {})}>โหลดสถานะล่าสุด</button><ul>{jobs.slice(0, 15).map(job => <li key={job.id}>{job.kind === "image_suggestion" ? "คำแนะนำภาพ" : "ข้อมูลและสถานะคลิป"} · {jobLabels[job.status] ?? job.status}{job.error_code ? ` · ${jobErrors[job.error_code] ?? "ตรวจข้อมูลแล้วลองใหม่"}` : ""}</li>)}</ul></details>}
     </>}
-  </div></MediaCatalog.Provider>;
+  </div></MediaAiContext.Provider></MediaCatalog.Provider>;
 }
 
 function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, onChanged, onDirty }: { data: Workspace; base: string; initialAsset: MediaAsset | null; canEdit: boolean; canPromotions: boolean; query: URLSearchParams; onChanged: () => Promise<void>; onDirty: (value: boolean) => void }) {
@@ -124,7 +128,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
         }
         change(card.id, { saved: true, link: card.link, error: "" });
         if (card.file && card.metadata.marketing_publication && card.metadata.ai_exposure !== "internal" && card.asset.mime_type.startsWith("image/") && !["legal_document", "brochure"].includes(card.metadata.media_category)) {
-          try { await request(`${base}/jobs`, "POST", { kind: "image_suggestion", subject_id: card.asset.id, expected_revision: card.asset.media_revision }); }
+          try { const result = await request<{ status: string }>(`${base}/jobs`, "POST", { kind: "image_suggestion", subject_id: card.asset.id, expected_revision: card.asset.media_revision }); if (result.status === "budget_exhausted") change(card.id, { aiNotice: mediaAiText.upload_budget_notice }); else if (result.status === "not_configured") change(card.id, { aiNotice: mediaAiText.state_not_configured }); }
           catch (error) { change(card.id, { error: `บันทึกไฟล์แล้ว แต่ขอคำแนะนำไม่สำเร็จ: ${errorMessage(error)}` }); }
         }
       } catch (error) { change(card.id, { error: errorMessage(error) }); }
@@ -147,7 +151,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     <div className="media-grid">{cards.map((card, index) => <article className="media-card" key={card.id} aria-label={`ไฟล์ ${index + 1}`}>
       <h3>{card.asset?.original_filename ?? card.file?.name}</h3>{card.asset ? <Preview asset={card.asset} /> : card.file && <LocalPreview file={card.file} />}
       <p role="status">{card.saved ? "บันทึกแล้ว" : card.asset ? "อัปโหลดไฟล์แล้ว รอบันทึกข้อมูลหรือการผูก" : "ยังไม่อัปโหลด"}</p>
-      {card.error && <p className="notice error" role="alert">{card.error}</p>}
+      {card.error && <p className="notice error" role="alert">{card.error}</p>}{card.aiNotice && <p className="field-help" role="status">{card.aiNotice}</p>}
       {!card.saved && <fieldset disabled={busy || !canEdit}><legend>ข้อมูลไฟล์ {index + 1}</legend><label className="media-check"><input type="checkbox" checked={card.selected} onChange={event => change(card.id, { selected: event.target.checked })} />เลือกเพื่อใช้ข้อมูลชุดเดียวกัน</label>
         <MetadataFields id={`card-${card.id}`} value={card.metadata} onChange={metadata => change(card.id, { metadata, metadataSaved: false })} tags={data.tags} />
         {card.metadata.media_category !== "legal_document" && <TargetFields value={card.context} onChange={context => change(card.id, { context })} context={data.context} project={data.project.id} tags={data.tags} canPromotions={canPromotions} />}
@@ -157,5 +161,6 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     </article>)}</div>
     {cards.length > 0 && <div className="content-actions"><button className="button primary" disabled={busy || !canEdit || !dirty} onClick={() => void save()}>{busy ? "กำลังบันทึก…" : cards.some(card => card.error) ? "ลองบันทึกไฟล์ที่ยังไม่สำเร็จอีกครั้ง" : "อัปโหลดและบันทึกข้อมูล"}</button>{!dirty && <button className="button secondary" onClick={() => setCards([])}>เสร็จแล้ว ล้างรายการชุดนี้</button>}</div>}
     <p className="field-help">ไฟล์ที่อัปโหลดแล้วคงอยู่เมื่อเกิดข้อผิดพลาด สิทธิ์ภาพต้องผ่านการตรวจในหน้าโครงการก่อนใช้เผยแพร่</p>
+    {cards.filter(card => card.asset).map(card => <MediaAiButton key={card.id} asset={data.assets.find(asset => asset.id === card.asset!.id) ?? card.asset!} canEdit={canEdit} showSuggestion />)}
   </MediaPanel>;
 }

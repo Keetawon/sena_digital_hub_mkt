@@ -6,7 +6,12 @@
       "path": "/v1/admin/media/website",
       "tab": "projects",
       "level": "view",
-      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
       "conditional_h1": false,
       "source": "apps/api/sena_hub_api/project_media.py"
     },
@@ -15,7 +20,12 @@
       "path": "/v1/admin/projects/{public_id}/media/website",
       "tab": "projects",
       "level": "view",
-      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
       "conditional_h1": false,
       "source": "apps/api/sena_hub_api/project_media.py"
     },
@@ -24,7 +34,10 @@
       "path": "/v1/admin/projects/{public_id}/media/website/confirm",
       "tab": "projects",
       "level": "edit",
-      "entry_roles": ["editor", "admin"],
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
       "conditional_h1": false,
       "source": "apps/api/sena_hub_api/project_media.py"
     },
@@ -33,7 +46,12 @@
       "path": "/v1/admin/projects/{public_id}/content/website",
       "tab": "projects",
       "level": "view",
-      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
       "conditional_h1": false,
       "source": "apps/api/sena_hub_api/project_media.py"
     },
@@ -194,6 +212,20 @@
       "level": "edit",
       "entry_roles": [
         "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/project_media.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/projects/{public_id}/media/ai-state",
+      "tab": "projects",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
         "admin"
       ],
       "conditional_h1": false,

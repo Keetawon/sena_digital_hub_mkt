@@ -1,5 +1,18 @@
 # 11 — Local development and implemented workflows
 
+### H5c/H5e provider variables — 28 October 2026
+
+Disposable gates mock providers and scrub every provider key, including
+`HUB_MEDIA_OPENAI_API_KEY` and `HUB_TRANSLATION_OPENAI_API_KEY`, plus the worker
+connection/password variables. They need no live provider credential. Local
+operator scripts, assistant and knowledge use `OPENAI_API_KEY` only, in the
+existing `apps/api/.env` when authorized. Image suggestions use only
+`HUB_MEDIA_OPENAI_API_KEY`; translation uses only
+`HUB_TRANSLATION_OPENAI_API_KEY`. Neither falls back to the operator/API key.
+Leave both unset for ordinary local development; the local image cap is US$0.
+Never place hosted values in the random local development files. Hosted worker
+configuration belongs exclusively to the H5e file in [doc 27](27-hosted-test-environment.md).
+
 Started 16 September 2026. This is a runnable foundation for the Thai back office, not completion of the Phase 1 acceptance criteria in [REQUIREMENTS.md](../REQUIREMENTS.md).
 
 Validation of the initial 20 September commercial-types/amenities slice: Next production build (including TypeScript), 288 API tests with live PostgreSQL integration, all 11 SQL/concurrency suites and all 32 UI/proxy scenarios passed. The initial inspection found 13 HYABC source models, an unpublished project, no commercial types and unknown amenity answers; this is a historical observation, not a statement about later user edits.

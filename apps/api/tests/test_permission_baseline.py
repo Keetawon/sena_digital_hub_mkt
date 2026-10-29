@@ -114,7 +114,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     actual = {(method, route.path) for route in client.app.routes if isinstance(route, APIRoute) for method in route.methods}
     expected = {(r['method'], r['path']) for r in ROUTES}
     assert len(PROJECT_CONTENT['routes']) == 32
-    assert len(MEDIA['routes']) == 17
+    assert len(MEDIA['routes']) == 18  # H5e adds the projects/view AI-state read.
     assert len(COMMERCIAL['routes']) == 6
     assert len(UNITS['routes']) == 7
     assert len(FAQ_INTAKE['routes']) == 3

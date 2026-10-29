@@ -101,6 +101,10 @@ def register_project_media_routes(app, authentication, database):
     async def jobs(public_id: str, request: Request, actor: Actor = Depends(staff)):
         return await read(request, actor, 'select hub.media_jobs_read($1)', public_id)
 
+    @app.get('/v1/admin/projects/{public_id}/media/ai-state')
+    async def ai_state(public_id: str, request: Request, actor: Actor = Depends(staff)):
+        return await read(request, actor, 'select hub.media_ai_state($1)', public_id)
+
     @app.post('/v1/admin/projects/{public_id}/media/jobs')
     async def job_request(public_id: str, body: MediaJob, request: Request, actor: Actor = Depends(staff)):
         return await read(request, actor, 'select hub.media_job_request($1,$2,$3,$4)', public_id, body.kind, body.subject_id, body.expected_revision)

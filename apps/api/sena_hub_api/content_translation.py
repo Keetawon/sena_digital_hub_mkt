@@ -69,7 +69,7 @@ def restore_text(source: str, output: str, replacements: dict[str, str], max_len
 
 
 class OpenAITranslator:
-    def __init__(self, *, key_variable: str):
+    def __init__(self, *, key_variable: str, model_variable: str = 'HUB_TRANSLATION_MODEL'):
         if key_variable not in {'HUB_TRANSLATION_OPENAI_API_KEY', 'HUB_MEDIA_OPENAI_API_KEY'}:
             raise ValueError('Unknown provider key variable')
         key = os.environ.get(key_variable, '').strip()
@@ -78,7 +78,7 @@ class OpenAITranslator:
         from openai import AsyncOpenAI
         for name in ('openai', 'httpx', 'httpcore'):
             logging.getLogger(name).setLevel(logging.CRITICAL)
-        self.model = os.environ.get('HUB_TRANSLATION_MODEL', DEFAULT_MODEL)
+        self.model = os.environ.get(model_variable, DEFAULT_MODEL)
         self.client = AsyncOpenAI(api_key=key, base_url='https://api.openai.com/v1',
                                   max_retries=0, timeout=45)
 

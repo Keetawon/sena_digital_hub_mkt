@@ -91,14 +91,26 @@ def validate_suggestion(value: dict, context: dict) -> dict:
         raise MediaError('invalid_result') from None
 
 
+def bounded_image_context(context: dict) -> str:
+    payload = json.dumps(context, ensure_ascii=False)
+    text_bytes = len(payload.encode('utf8'))
+    schema_bytes = len(json.dumps(ImageSuggestion.model_json_schema()).encode('utf8'))
+    # Include 8,192 bytes for the fixed prompt/wire envelope and 692 image
+    # tokens at 768px. The byte count bounds tokens for all supplied text.
+    if text_bytes > 32768 or text_bytes + schema_bytes + 8192 + 692 > 48000:
+        raise MediaError('invalid_result')
+    return payload
+
+
 class OpenAIImageSuggester(OpenAITranslator):
     last_usage = None
 
     def __init__(self):
-        super().__init__(key_variable='HUB_MEDIA_OPENAI_API_KEY')
+        super().__init__(key_variable='HUB_MEDIA_OPENAI_API_KEY', model_variable='HUB_MEDIA_MODEL')
 
     async def suggest(self, image_url: str, context: dict) -> dict:
         self.last_usage = None
+        payload = bounded_image_context(context)
         try:
             result = await self.client.responses.parse(
                 model=self.model, store=False, max_output_tokens=3500,
@@ -112,7 +124,7 @@ class OpenAIImageSuggester(OpenAITranslator):
                     'set sensitive_content true and leave text empty. Use concise Thai and English captions '
                     'and alt text describing only visible content; confidence never approves anything.')},
                     {'role': 'user', 'content': [
-                        {'type': 'input_text', 'text': json.dumps(context, ensure_ascii=False)},
+                        {'type': 'input_text', 'text': payload},
                         {'type': 'input_image', 'image_url': image_url, 'detail': 'low'},
                     ]}], text_format=ImageSuggestion)
         except Exception as error:
@@ -209,7 +221,11 @@ async def work_once(db, provider=None, *, transport=None, schedule=False, approv
             image_url = await asyncio.to_thread(resized_image, job['file']) if authorized_reader is None else await asyncio.to_thread(resized_image, job['file'], authorized_reader=authorized_reader)
             if provider is None:
                 provider = OpenAIImageSuggester()
-            model = provider.model
+            model = job['model']
+            if provider.model != model:
+                raise MediaError('invalid_result')
+            if not await rpc('select hub.media_image_begin($1,$2)', UUID(job['id']), UUID(job['lease_token'])):
+                return {'status': 'superseded'}
             provider_attempted = True
             result = validate_suggestion(await provider.suggest(image_url, job['context']), job['context'])
         else:
@@ -225,8 +241,14 @@ async def work_once(db, provider=None, *, transport=None, schedule=False, approv
         if owned and isinstance(provider, OpenAIImageSuggester):
             await provider.close()
     usage = getattr(provider, 'last_usage', None) if provider_attempted else None
+    if job['kind'] == 'image_suggestion' and not provider_attempted:
+        status = await rpc('select hub.media_image_wait($1,$2)', UUID(job['id']), UUID(job['lease_token']))
+        return {'status': status, 'error_code': error}
     if approved_job_ids is None:
-        status = await rpc('select hub.media_finish($1,$2,$3,$4,$5)', UUID(job['id']), UUID(job['lease_token']), result, model, error)
+        if job['kind'] == 'image_suggestion':
+            status = await rpc('select hub.media_image_finish($1,$2,$3,$4,$5,$6)', UUID(job['id']), UUID(job['lease_token']), result, model, error, usage)
+        else:
+            status = await rpc('select hub.media_finish($1,$2,$3,$4,$5)', UUID(job['id']), UUID(job['lease_token']), result, model, error)
         return {'status': status, 'error_code': error}
     status = await rpc('select hub.website_media_finish($1,$2,$3,$4,$5,$6)', UUID(job['id']), UUID(job['lease_token']), result, model, error, usage)
     return {'status': status, 'error_code': error, 'job_id': job['id'], 'model': model, 'usage': usage}

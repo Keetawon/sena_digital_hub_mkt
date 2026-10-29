@@ -1127,3 +1127,37 @@ decision, full findings and retained diagnostic attempts. No new baseline or
 H5e implementation/deployment was made; migration 79's standalone hold remains.
 No code changed or provider call ran. The owner decision on those three claim
 rows is required before establishing the strict H5e baseline.
+
+
+H5h standing Auth protection (28 October 2026) replaces incident-specific
+activity acceptances for hosted TEST/UAT while retaining all historical evidence.
+The verified H5d comparison passed: only updated_at and the 3/25/3 session,
+refresh-token and claim removals differ; all strict Auth data/schema and all 57
+non-Auth protected tables match, with no orphans. A separate immutable H5h
+baseline covers all 58 protected tables plus the full 27-table Auth inventory.
+The 18-role Auth write/ownership postflight passed. A later read-only recheck
+also passed. Docs/46 contains table classes, receipts and read-only attribution
+options; no project setting changed. Docs/41 section 6 points to H5h.
+
+The release gate rejects Auth writes in scripts and migrations 80 onward;
+frozen migrations 1-79 have no write match and retain registered checksums.
+H1's synthetic Auth fixtures now live in a test-only helper that rejects every
+target except its verified fixed loopback database. H5e's broker, image-only
+worker, budget ledger, shared footer and atomic 79/80 admission are being gated;
+TEST deployment remains pending. No live provider call or pilot ran.
+
+29 October 2026: H5h/H5e final code gates passed: 2,151 API tests (11 existing
+opt-in skips), 62 SQL/concurrency checks, 65 Node DB/guard/fixture checks,
+304 normal browser cases in one uninterrupted run, 67 H1 protocol/admission
+checks and all 45 H1 browser cases. Typecheck/offline build passed; 702 source
+and 64 browser files scanned with zero credential matches. All 80 migrations
+and 76 scripts passed the Auth-write inventory. The 1–79 checksums are unchanged.
+
+The fresh overnight read-only H5h comparison passed with no strict difference,
+no new Auth activity and no orphan. The prior incomplete H1 session was
+preserved and the full H1 gate restarted successfully. Docs/46 contains the
+source seal, logs, screenshots, guard semantics and receipts; docs/27 now lists
+the protected env files and per-unit rotation procedure. At this checkpoint
+TEST is still at 78; combined 79/80 deployment, the approved worker login and
+isolated worker/broker follow only after candidate readiness and verified
+backups. No media key, live provider call or pilot was used.

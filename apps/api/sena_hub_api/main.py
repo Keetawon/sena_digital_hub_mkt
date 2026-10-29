@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 from uuid import UUID
@@ -259,11 +260,14 @@ async def brand_detail(connection, public_id: str):
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
+    if settings.environment == 'hosted-test' and any(k in os.environ for k in ('HUB_MEDIA_WORKER_DATABASE_URL', 'HUB_MEDIA_OPENAI_API_KEY')):
+        raise RuntimeError('API environment contains worker-only configuration')
     authentication = Authentication(settings)
     hosted_assets = (R2Assets(settings) if settings.r2_credentials_file else HostedAssets(settings)) if settings.environment == "hosted-test" else None
 
     @asynccontextmanager
     async def lifespan(app):
+        broker = None
         try:
             app.state.pool = await asyncpg.create_pool(
                 settings.database_url, min_size=1, max_size=5,
@@ -282,8 +286,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         await connection.execute("SET LOCAL ROLE hub_app")
                         if await connection.fetchval("SELECT hub.registry_startup_ready()") is not True:
                             raise RuntimeError("H1 ต้องปิดการออกชื่อและคงสถานะรออนุมัติ")
+            from .image_broker import start_broker
+            broker = await start_broker(app.state.pool, hosted_assets)
             yield
         finally:
+            if broker:
+                broker[0].close()
+                await broker[0].wait_closed()
+                broker[1].close()
             await app.state.pool.close()
 
     app = FastAPI(title="SENA Hub API", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)

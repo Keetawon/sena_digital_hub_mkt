@@ -27,3 +27,8 @@
 .website-media fieldset { min-width: 0; }
 .website-media .media-card fieldset { display: grid; gap: .75rem; }
 .website-pagination { display: flex; gap: .75rem; margin-top: 1rem; }
+.media-ai-footer { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--line); min-width: 0; }
+.media-ai-footer .media-ai-action { display: inline-block; min-height: 44px; max-width: 100%; padding: .25rem 0; border: 0; background: transparent; color: var(--secondary); font: inherit; font-size: var(--text-small); text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; transition: none; animation: none; }
+.media-ai-footer .media-ai-action:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+.media-ai-footer .media-ai-action:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+.media-ai-footer .field-help { margin: .25rem 0; overflow-wrap: anywhere; }

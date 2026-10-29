@@ -64,6 +64,7 @@ CONTENT_RULES = {
     ('PUT', '/v1/admin/projects/{public_id}/media/clips/{clip_id}'): ('projects', 'edit'),
     ('POST', '/v1/admin/projects/{public_id}/media/clips/{clip_id}/check'): ('projects', 'edit'),
     ('GET', '/v1/admin/projects/{public_id}/media/jobs'): ('projects', 'view'),
+    ('GET', '/v1/admin/projects/{public_id}/media/ai-state'): ('projects', 'view'),
     ('POST', '/v1/admin/projects/{public_id}/media/jobs'): ('projects', 'edit'),
     ('PATCH', '/v1/admin/content/fields/{field_key}'): ('projects', 'projects.manage_field_catalog'),
     ('PUT', '/v1/admin/content/email-domains/{domain}'): ('projects', 'projects.manage_field_catalog'),

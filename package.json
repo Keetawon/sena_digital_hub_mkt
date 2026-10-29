@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev:hosted-h1": "node scripts/run-hosted-h1.mjs",
-    "test:hosted-h1": "node --test tests/supabase-test-migrations.test.mjs tests/hosted-test-mock.test.mjs tests/accounts-mock.test.mjs && node scripts/run-hosted-h1.mjs --test",
+    "test:hosted-h1": "node --test tests/auth-protection.test.mjs tests/supabase-test-migrations.test.mjs tests/hosted-test-mock.test.mjs tests/accounts-mock.test.mjs && node scripts/run-hosted-h1.mjs --test",
     "dev:db": "node scripts/local-db.mjs",
     "dev:migrate": "node scripts/local-migrations.mjs",
     "dev:dw-reader": "node scripts/provision-dw-reader.mjs",
@@ -19,6 +19,8 @@
     "dev:assistant-demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-assistant-demo.py",
     "dev:demo": "uv run --project apps/api --env-file apps/api/.env python scripts/seed-hub-demo.py",
     "check:questions": "python scripts/sync-questions.py --check",
+    "check:auth-writes": "node scripts/auth-write-check.mjs",
+    "test:auth-protection": "node --test tests/auth-protection.test.mjs",
     "sync:questions": "python scripts/sync-questions.py --write",
     "test:api": "node scripts/run-disposable-tests.mjs api",
     "test:ui": "node scripts/run-disposable-tests.mjs ui",

@@ -11,6 +11,8 @@ import { R2_SIMULATION } from './hosted-test-r2.mjs';
 import { simulateHostedTest } from './simulate-hosted-test.mjs';
 import pg from 'pg';
 import { scrubProviderKeys } from './provider-keys.mjs';
+import {saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
+import {authWriteInventory} from './auth-write-check.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
@@ -38,6 +40,7 @@ async function ready(url,process_) {
   throw new Error('Local H1 readiness timed out');
 }
 try {
+  if((await authWriteInventory()).status!=='passed')throw new Error('H5h Auth-write release gate failed');
   const ports=component==='api'?[8001]:component==='admin'?[3001]:[54329,8001,3001,...(args.includes('--existing-simulation')?[]:[55434])];
   for(const port of ports)await new Promise((resolve,reject)=>{
     const probe=createServer();probe.once('error',()=>reject(new Error(`Local H1 port ${port} is already in use; stop its prior simulation first.`)));
@@ -61,7 +64,7 @@ try {
     identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.migrationUser,password:config.migrationPassword});
     mock=createMockSupabase({onIdentity: async user => {
       if(!user.email.endsWith('@example.test'))throw new Error('Synthetic identities only');
-      await identityDb.query('insert into auth.users(id,email,email_confirmed_at,created_at) values($1,$2,$3,$4) on conflict(id) do update set email=excluded.email,email_confirmed_at=excluded.email_confirmed_at', [user.id,user.email,user.email_confirmed_at??null,user.created_at]);
+      await saveH1AuthFixture(identityDb,user);
     }});mock.listen(54329,'127.0.0.1');await once(mock,'listening');
   }
   if(component!=='admin') {

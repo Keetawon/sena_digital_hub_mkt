@@ -2224,3 +2224,277 @@ TEST remains at the previously recorded migration 78 (not revalidated by this
 Auth-only diagnostic). No schema 80, worker login, grant, password, worker env
 file, broker, service or deployment was created. No code changed, so no new
 code gate run was needed for this documentation-only checkpoint.
+
+#### Owner decision H5h — 28 October 2026
+
+Owner decision H5h, 28 October 2026. Record it in docs/46 directly after the H5g session-claim cascade STOP, then carry it out. It resolves that STOP and replaces per-incident Auth acceptances from now on. H1a, H5f and H5g stay as historical records.
+
+H5h  Protect Auth identity strictly; record Auth activity instead of stopping on it.
+
+0. Why
+Session refreshes rewrite auth.users.updated_at, and a sign-out deletes session, refresh-token and session-claim rows by cascade. A whole-row Auth fingerprint stops work on each of these, although none of them changes who a user is or what they may do. Any real identity change also changes an identity column. UAT will add more sign-ins and sign-outs, so this needs a standing rule.
+
+1. Prevention (the real guarantee)
+- Add a static check to the release gates: reject any migration numbered 80 or later, and any script under scripts/ that issues SQL, if it writes to the auth schema: INSERT, UPDATE, DELETE, TRUNCATE, COPY, or CREATE/ALTER/DROP/GRANT/REVOKE on auth objects, including triggers on auth tables. Reads such as auth.uid() and auth.jwt() stay allowed.
+- Inventory migrations 1-79 with the same check. Do not edit them. Report every match with its number and statement kind; frozen migrations stay as they are, matched by their registered checksums.
+- Add a read-only postflight check: hub_runtime, hub_media_worker, hub_media_worker_login and every Hub actor role have no INSERT, UPDATE, DELETE or TRUNCATE on any auth table and no ownership of auth objects. Existing read access stays as already approved.
+
+2. Split Auth comparison
+Activity (record, do not STOP):
+- auth.users.updated_at and auth.users.last_sign_in_at;
+- rows added, changed or removed in auth.sessions, auth.refresh_tokens, auth.mfa_amr_claims, auth.flow_state and auth.audit_log_entries.
+Strict (any difference is a STOP, as today):
+- auth.users row count and ids, and every other auth.users column, including email, phone, encrypted_password, role, aud, raw_app_meta_data, raw_user_meta_data, is_super_admin, is_sso_user, is_anonymous, banned_until, deleted_at, all confirmation/recovery/email-change/phone-change/reauthentication tokens and their sent_at columns, and generated columns;
+- every other Auth table (of the 27 compared in H5g), including auth.identities, auth.mfa_factors, auth.one_time_tokens and any SSO/SAML tables;
+- the Auth schema shape (tables, columns, generated columns, constraints). A new Auth table is strict until I classify it.
+Rules:
+- An activity row whose user id or session id does not resolve to an existing user or session (an orphan), or a new auth.users row, is a STOP.
+- Each receipt lists all Auth tables with their class, and for activity records only which columns or tables changed, row-count deltas and the orphan check result. Never record values, tokens, timestamps, IP addresses or user agents.
+- Every non-Auth protected table stays fully strict.
+
+3. Attribution (read-only investigation only)
+Find out whether Auth events (for example token refresh, login, logout) can be attributed automatically, for example a Supabase setting that writes Auth audit events to the database, or Auth log access. Report the options, what each exposes, and any retention or privacy concern. Do not change any project setting; that is my decision.
+
+4. Applying it now
+- Keep every original baseline, failed comparison and STOP receipt unchanged.
+- Re-run the H5g comparison against the verified fresh H5d backup under this rule and record the result. Expected: activity only (users.updated_at, three sessions, 25 refresh tokens and three session claims removed by the global sign-out), no orphans, all strict Auth columns and tables and all 57 non-Auth protected tables match. If anything strict differs, STOP.
+- Then take a fresh read-only baseline of all 58 protected tables with the new split, and resume H5e as decided, including the approved broker conditions and the 79/80 bundle admission that keeps the standalone hold.
+- The H5g promise not to sign in is lifted: sign-ins, refreshes and sign-outs on hosted TEST no longer stop work.
+
+5. Tests
+Unit tests for the comparator with synthetic data: updated_at only, last_sign_in_at only, and session, refresh-token or session-claim rows added or removed each pass and are recorded. Each of these STOPs: an email, encrypted_password, role, metadata, banned_until or deleted_at change; a new user row; a new identity or MFA factor; an orphan activity row; a new Auth table. Tests for the static auth-write check: a write statement is rejected, auth.uid() and auth.jwt() pass, a trigger on an auth table is rejected. The privilege postflight fails on a synthetic grant.
+
+6. Records
+Add the rule to docs/46 and amend the Auth wording in docs/41 section 6 with a short note pointing to H5h; do not rewrite earlier decisions. This rule covers hosted TEST, including UAT. Production keeps its own decision at go/no-go.
+
+STOP and report on any docs/41 section 6 condition, any strict Auth difference, any Hub role with write access to the auth schema, any existing migration that writes to auth in a way not already recorded, or any other missing credential. No provider calls. Commit to main when done.
+
+
+#### H5h verification and standing release checks
+
+H5h resolves the prior session-claim STOP. The new immutable baseline is
+`.local/hosted-content-rollout/h5h-protected-baseline.json`, SHA-256
+`aa6da4d61f0c23d8acc514e54ce1229c1c006ae1c8b9c5a6d044af744cb4b73c`. The verified fresh H5d backup, original baselines, failed
+comparisons and all STOP receipts remain unchanged. The capture passed from
+10:46:42 to 10:47:34 UTC on 28 October 2026. Only the two classified user
+activity columns are excluded from the identity hash; no identity column or
+non-Auth protected row is excluded. All 57 non-Auth protected tables match.
+The 27-table Auth inventory, generated columns and constraints match the
+verified backup, including all strict data. There are no orphan references.
+
+| Auth table | H5h class | Delta vs verified H5d backup | Result |
+|---|---|---:|---|
+| `auth.audit_log_entries` | activity | 0 | unchanged |
+| `auth.custom_oauth_providers` | strict | 0 | strict match |
+| `auth.flow_state` | activity | 0 | unchanged |
+| `auth.identities` | strict | 0 | strict match |
+| `auth.instances` | strict | 0 | strict match |
+| `auth.mfa_amr_claims` | activity | -3 | activity changed |
+| `auth.mfa_challenges` | strict | 0 | strict match |
+| `auth.mfa_factors` | strict | 0 | strict match |
+| `auth.mfa_recovery_code_sets` | strict | 0 | strict match |
+| `auth.mfa_recovery_codes` | strict | 0 | strict match |
+| `auth.oauth_authorizations` | strict | 0 | strict match |
+| `auth.oauth_client_states` | strict | 0 | strict match |
+| `auth.oauth_clients` | strict | 0 | strict match |
+| `auth.oauth_consents` | strict | 0 | strict match |
+| `auth.one_time_tokens` | strict | 0 | strict match |
+| `auth.refresh_tokens` | activity | -25 | activity changed |
+| `auth.saml_providers` | strict | 0 | strict match |
+| `auth.saml_relay_states` | strict | 0 | strict match |
+| `auth.schema_migrations` | strict | 0 | strict match |
+| `auth.scim_tokens` | strict | 0 | strict match |
+| `auth.scim_users` | strict | 0 | strict match |
+| `auth.sessions` | activity | -3 | activity changed |
+| `auth.sso_domains` | strict | 0 | strict match |
+| `auth.sso_providers` | strict | 0 | strict match |
+| `auth.users` | strict identity activity columns | 0 | strict match; activity column updated_at only |
+| `auth.webauthn_challenges` | strict | 0 | strict match |
+| `auth.webauthn_credentials` | strict | 0 | strict match |
+
+The read-only privilege postflight passed for 18 existing Hub roles and 486
+table/role checks, including column-level INSERT/UPDATE privileges and direct
+or inherited ownership of Auth schemas, relations, functions and types.
+`hub_media_worker_login` is absent as expected before approved H5e provisioning;
+it will be included in the same postflight after creation. No permission,
+account, template or Auth row was modified by verification.
+
+Follow-up receipt `.local/hosted-content-rollout/h5h-postflight-1793193789011.json`
+passed again during 13:22:34-13:23:09 UTC: every strict comparison still matches,
+no additional activity difference and no orphan. The earlier schema diagnostic
+`h5h-stop-1793184286932.json` is retained: a complete statement comparison now
+proves its only transport difference was an extra `CREATE SCHEMA auth` wrapper
+in the fresh dump, not an object-shape change. Original failed output was not
+rewritten to passing.
+
+`check:auth-writes` inventories registered checksums as well as SQL. The frozen
+1-79 inventory has **zero Auth-write matches**; migration 45's dynamic SELECT
+from `auth.users` is a read and remains unchanged. There are no historical
+write exceptions to list. New migration 80 and every SQL-capable script under
+`scripts/` must pass the gate, invoked by both disposable and H1 runners and
+before hosted migration application. Qualified/dynamic literal writes, Auth
+search-path writes, Auth triggers/policies, object moves and foreign keys that
+would create Auth-side triggers are rejected. `auth.uid()`/`auth.jwt()` pass.
+No generic CLI flag or environment switch bypasses the standalone 79 hold.
+
+The old H1 scripts' synthetic Auth writes were moved to
+`tests/fixtures/h1-auth.mjs`. It verifies the actual server address, port 55434
+and database `hub_hosted_test_simulation` before creating or saving mock rows;
+remote targets and a wrong loopback database fail before any write. This is
+local test evidence only and grants no hosted Auth-writing route. Runtime
+application code still has no Auth-write capability.
+
+Current H5h/runner unit output: 64 passed, zero skipped/failed at
+`artifacts/hosted-content-rollout/h5e-runner-unit.log` (including subsequent
+H5e admission/SCRAM checks). The earlier H1 run passed 35+3+7 browser cases in
+`h5h-h1-verified.log`; its earlier failed attempts are retained. The final
+combined H5e gates, deployment and receipts are recorded separately below.
+
+#### Auth event attribution options - read-only investigation
+
+Supabase records sign-in, sign-out and refresh audit actions externally and
+can optionally write them to `auth.audit_log_entries`. The dashboard's
+Authentication / Audit Logs configuration has a database-write toggle; enabling
+it would make future events SQL-correlatable. It consumes database storage and
+may expose user identifiers, event times, IP addresses, user agents and metadata.
+No automatic database cleanup/retention guarantee was established by this
+inspection. The currently empty table does not prove the toggle's setting.
+The owner must decide enablement, access and retention; nothing was changed.
+[Official Auth audit logging](https://supabase.com/docs/guides/auth/audit-logs).
+
+The existing dashboard Logs interface can filter Auth events and users. Auth
+server logs and Auth audit events are distinct sources; either can assist
+attribution, subject to recorded events and availability. SQL log queries or
+privileged API access are alternatives if an approved credential is already
+configured. This task neither obtained a new access token nor downloaded raw
+logs. Raw results can contain personal data; retain only action/count and
+correlation results in rollout receipts, with no source values.
+[Logs interface](https://supabase.com/docs/guides/observability/logs),
+[log sources](https://supabase.com/docs/guides/observability/log-field-reference).
+
+Current published Free limits distinguish **one hour for Auth audit logs**
+from **one day for API/database logs**. Historical events may already be gone;
+external absence cannot establish absence of activity. Database audit storage
+needs its own reviewed retention policy. Log drains and longer plan retention
+would require a separate owner decision; no plan, setting or export was changed.
+[Official plan comparison](https://supabase.com/pricing).
+
+#### H5e implementation contract and held release
+
+| Field | Existing authority and boundary |
+|---|---|
+| Feature / owner | Per-image marketing suggestions; Marketing requests/confirms, publisher approves rights |
+| Tab / V | Existing projects view reads media/job state and the non-secret Hub cap ledger |
+| E | Existing projects edit requests one eligible current image revision; one request audit; queued/running/completed same-revision requests are idempotent |
+| A / separation | Existing rights and four-eyes publication rules; suggestions never auto-apply or publish |
+| Templates / specials / agency | No new capability, template, account grant or agency access |
+| Storage | New owner-only FORCE-RLS `hub.media_ai_settings`; no direct application DML; audited bounded RPCs |
+| Runtime | API assumes only hub_app; validates broker leases read-only and writes bounded fetch audits, never claims/finishes jobs |
+| Worker | Dedicated approved login may assume only hub_media_worker; only image jobs, sequential attempts, no automatic retry after a possibly billed attempt |
+| Broker | Systemd Unix socket only, 0660 worker-only group, SO_PEERCRED UID check; bounded original/pixels/time, checksum and revision rechecks, resized JPEG only, one audit per fetch |
+| Endpoints | Existing POST media/jobs and GET media/jobs; new GET `/v1/admin/projects/{public_id}/media/ai-state`; no broker HTTP endpoint |
+| Shared surfaces | Website queue, library and single-image metadata editor reuse one subdued footer; no RAG, translation or consumer/publication change |
+| Release | Frozen 79 plus new 80, complete source/gate/readiness attestation, atomic schema transaction and fresh verified backup, then separately backed-up approved login provisioning |
+
+Price configuration uses the already reviewed snapshot
+`gpt-5.4-mini-2026-03-17`: input US$0.75, cached input US$0.075 and output
+US$4.50 per million tokens, effective 28 October 2026. A request is bounded
+by 48,000 input tokens and 3,500 output tokens: **US$0.051750 maximum reservation**.
+The text/schema/wire bound and 768px image bound are checked before attempting
+the provider. Month-to-date cost is calculated from stored provider_usage;
+unknown billed usage conservatively retains its ceiling. Active reservations
+also reduce the available balance. TEST's Hub cap is US$5; other environments
+start at US$0. Raising it requires a new owner decision in this document.
+The provider project cap remains a separate owner-controlled setting.
+
+Fresh worker leases have zero attempts. Broker/read failure releases the job
+back to waiting with zero charge; only after fetch does the worker durably mark
+one provider attempt. Expired attempted leases never retry. Lease tokens are
+redacted from new media-job audit rows. Translation rows and all other queues
+are untouched. The key is intentionally absent; no pilot or live provider call
+is authorized in this deployment. The previous release must remain available.
+
+The read-only VPS receipt
+`.local/hosted-content-rollout/h5e-vps-readiness-20261028T124701Z.json` confirms
+systemd 252, the existing CA, no worker variables in API/admin process envs,
+and the retained live release `07dda14-content-82bd4feeade5`. The new worker
+user/env/service had not yet been provisioned at that inspection.
+
+#### H5e bundle admission and request semantics
+
+The generic migration CLI and direct single-migration entry point retain the
+standalone hold from 79 onward. The separately attested combined entry requires
+the exact TEST target/TLS, immutable H5h baseline hash, complete source hashes,
+passing gate receipt, Linux build/native broker/unit readiness, absent media
+key, and a fully read-verified protected backup no older than 15 minutes.
+Only the exact applied prefix 1–78 is upgraded: 79 and 80 commit in one guarded
+transaction. A separate fresh post-schema backup precedes worker-login
+provisioning through the same runner. Missing or incomplete admission evidence
+fails before schema writes. The fixed disposable H1 exception admits no hosted
+CLI flag or environment bypass.
+
+An explicit staff request reuses a queued/running job or an existing suggestion
+for the same revision. A prior failure or previous-month budget refusal does
+not permanently disable that image. A fresh staff action is still subject to
+the current Hub ledger, permission, eligibility and revision checks, with a new
+request audit. The previous attempt and its recorded cost remain intact. No
+worker path requeues a possibly billed attempt automatically; a failed broker
+fetch remains waiting with zero attempts and zero charge.
+
+The full API inventory test was updated from 17 to 18 media routes while
+retaining exact route-set and permission equality. Earlier partial browser runs
+were deliberately interrupted to include the translated budget-history label
+and month-reset case in the final build; their logs remain under `artifacts/`.
+No test was skipped, quarantined or weakened. Final gate counts and execution
+receipts follow after the complete final-source runs.
+
+#### 29 October resumption — read-only protected check
+
+Receipt `.local/hosted-content-rollout/h5h-postflight-1793239048200.json`
+passes against the unchanged H5h baseline: all strict Auth identity, table and
+schema comparisons, all 57 non-Auth protected tables, and the orphan check
+match. No new classified Auth activity was observed. No hosted write occurred.
+The prior H1 execution ended between turns without a complete result; its log
+is preserved as `artifacts/hosted-content-rollout/h5e-h1-interrupted-session.log`.
+Its ports/processes were clear before restarting the entire H1 gate. The
+completed full API, DB/replay and 304-case browser runs use unchanged source.
+Read-only deployment checks use a repeatable-read transaction so a concurrent
+session cascade cannot produce an inconsistent orphan check across tables.
+
+#### H5h/H5e final code gates — 29 October 2026
+
+| Gate | Result |
+|---|---|
+| Full API | 2,151 passed; 11 existing opt-in skips; 0 failed |
+| SQL/concurrency | 62 passed; 0 skipped/failed |
+| Node DB/guard/fixture checks | 65 passed, including populated upgrade and replay; 0 skipped/failed |
+| H1 protocol/admission | 67 passed; all 80 canonical/executed checksums, non-superuser migration, replay/rollback, SCRAM login and role boundaries verified |
+| Full normal browser suite | 304 passed in one uninterrupted run; 0 skipped/failed |
+| H1 browser suite | 35 + 3 + 7 = 45 passed in one complete H1 run; 0 skipped/failed |
+| Focused per-image controls | 2 passed at 1280/390 px, including month reset, request idempotency, budget/history text and saved-upload refusal notice |
+| Admin typecheck / offline webpack build | Passed |
+| Credential scan | 702 source files and 64 browser files; 0 matches; ignored credential files not read |
+| Auth-write inventory | 80 migrations and 76 scripts; 0 matches; frozen 1–79 checksums unchanged |
+
+The immutable source seal is `.local/hosted-content-rollout/h5e-gates.json`
+(695 files); the complete frozen/Auth-write inventory is
+`.local/hosted-content-rollout/h5h-auth-write-inventory.json`.
+Final logs are `artifacts/hosted-content-rollout/h5e-api-final.log`,
+`h5e-db-final.log`, `h5e-ui-full.log`, `h5e-h1-final.log`,
+`h5e-typecheck-final.log`, `h5e-build-final.log` and
+`h5e-credential-scan-final.json` in the same directory. Earlier failures and
+interrupted runs remain preserved. No existing assertion was removed and no
+test was quarantined. New test navigation reopens the image from the library,
+and waits for the actual request/commit before checking the unchanged job count.
+
+Screenshots remain ignored:
+`artifacts/hosted-content-rollout/h5e-ai-editor-1280.png`,
+`h5e-ai-editor-390.png`, `h5e-ai-website-1280.png` and
+`h5e-ai-website-390.png`. These are local synthetic browser checks, not a hosted
+pilot. Native Linux Unix-peer/resized-JPEG checks also passed read-only in
+memory with no remote file write, database connection or provider call.
+
+At this checkpoint TEST remains at 78 and no hosted write has occurred.
+Migration 79 remains unchanged. The combined release still requires Linux
+candidate readiness and fresh verified backups before admission; the media key
+is absent and no pilot or live provider call has run.

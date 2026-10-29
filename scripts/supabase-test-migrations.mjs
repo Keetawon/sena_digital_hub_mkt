@@ -1,7 +1,10 @@
 import { createHash, createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, realpath } from 'node:fs/promises';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import pg from 'pg';
+import {assertNoAuthWrites} from './auth-write-check.mjs';
+import {protectedPostflight,protectedReadOnlySnapshot} from './auth-protection.mjs';
 
 export const SOURCE = 'sena-hub-supabase-test-v2';
 export const PROFILE = 'hosted-test-settings-v1';
@@ -12,7 +15,7 @@ const RUNTIME_ROLES = ['hub_app'];
 const MEMBERSHIP_CUTOFF = 52;
 const OWNERS = ['ads_registry_writer', 'ads_export_owner', 'ads_export_reader', 'ads_finance_writer', 'ads_actuals_writer', 'ads_document_worker', 'hub_export_owner'];
 const OWNER_SCHEMAS = {ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_finance_writer:['ads'],ads_actuals_writer:['ads','staging'],hub_export_owner:['hub_export']};
-const ROLES = [...ACTORS, ...OWNERS, 'hub_runtime'];
+const ROLES = [...ACTORS, ...OWNERS, 'hub_translation_worker','hub_media_worker','hub_runtime','hub_media_worker_login'];
 const HISTORY = 'hub_deployment.schema_migrations';
 const LOCK = 1936027233;
 const CONTENT_RELEASE_HOLD = 79;
@@ -50,7 +53,9 @@ export function configuration(env, args = []) {
   const runtimePassword = env.HUB_SUPABASE_TEST_RUNTIME_PASSWORD;
   if (!/^[A-Za-z0-9_-]{32,}$/.test(runtimePassword) || runtimePassword === decodeURIComponent(url.password)) fail('Use a separate random base64url runtime password of at least 32 characters.');
   url.search = ''; // pg connection-string SSL flags must never override verified TLS.
-  return { projectRef, apply: args.includes('--apply'), runtimePassword, connectionString: url.href, caFile: env.HUB_SUPABASE_TEST_SSL_CA_FILE };
+  const mediaWorkerPassword=env.HUB_SUPABASE_TEST_MEDIA_WORKER_PASSWORD;
+  if(mediaWorkerPassword&&(!/^[A-Za-z0-9_-]{32,}$/.test(mediaWorkerPassword)||[runtimePassword,decodeURIComponent(url.password)].includes(mediaWorkerPassword)))fail('Invalid dedicated media worker password.');
+  return { projectRef, apply: args.includes('--apply'), runtimePassword, mediaWorkerPassword, connectionString: url.href, caFile: env.HUB_SUPABASE_TEST_SSL_CA_FILE };
 }
 
 // Split only top-level SQL: bodies/comments/quoted text can contain semicolons.
@@ -133,16 +138,22 @@ async function inspect(client, migrations, config) {
   verifyHistory(rows, migrations, config.projectRef);
   if (history.hub && !(await client.query('select 1 from hub_deployment.target where project_ref=$1 and source=$2 and profile=$3 and environment=$4',[config.projectRef,SOURCE,PROFILE,'hosted-test'])).rowCount) fail('Deployment target provenance does not match this TEST profile.');
   const count=rows.length;
+  const localSimulation=client.connectionParameters?.host==='127.0.0.1'&&Number(client.connectionParameters?.port)===55434&&client.connectionParameters?.database==='hub_hosted_test_simulation'&&client.connection?.stream?.remoteAddress==='127.0.0.1';
+  if(count===79&&!localSimulation)fail('Standalone hosted migration 79 detected; the combined release is required.');
   const expectedSchemas=count?SCHEMAS.slice(0,count>=27?9:count>=14?8:6):[];
   const actualSchemas=namespaces.map(row=>row.nspname).filter(name=>name!=='hub_deployment').sort();
   if(JSON.stringify(actualSchemas)!==JSON.stringify([...expectedSchemas].sort())) fail('Hub schemas do not match recorded migrations.');
   const expectedRoles=[...(count?ACTORS.slice(0,count>=6?5:4):[]),...(count>=14?['online_staff','agency','ads_registry_writer','ads_export_owner','ads_export_reader']:[]),...(count>=15?['ads_finance_writer']:[]),...(count>=16?['ads_actuals_writer']:[]),...(count>=22?['ads_document_worker']:[]),...(count>=27?['hub_export_owner']:[])];
   if(count>=47) expectedRoles.push('hub_app');
+  if(count>=60) expectedRoles.push('hub_translation_worker');
+  if(count>=64) expectedRoles.push('hub_media_worker');
   if(count>=14) {
     const flags=(await client.query("select key,value from ads.setting where key in ('sena_h_approved','hosted_test_issuing_enabled') order by key")).rows;
     if(flags.length!==2 || flags.some(row=>row.value!==false)) fail('H1 requires both issuance flags false; runner never enables or resets flags.');
   }
-  const { rows: roles } = await client.query('select rolname,rolsuper,rolcreaterole,rolcreatedb,rolreplication,rolbypassrls,rolinherit,rolcanlogin from pg_roles where rolname=any($1)', [ROLES]);
+  const { rows: roles } = await client.query('select rolname,rolsuper,rolcreaterole,rolcreatedb,rolreplication,rolbypassrls,rolinherit,rolcanlogin,rolconnlimit from pg_roles where rolname=any($1)', [ROLES]);
+  const unapprovedLogins=(await client.query("select rolname from pg_roles where rolcanlogin and rolname like 'hub\\_%' escape '\\' and rolname<>current_user and rolname not in ('hub_runtime','hub_media_worker_login')")).rows;
+  if(unapprovedLogins.length)fail('Unapproved Hub login role.');
   for (const role of roles) {
     if (role.rolname === 'hub_runtime') {
       const knownUpgrade = [50,51].includes(count) && migrations.some(m => m.name === '202610090052_shared_permissions.sql')
@@ -156,10 +167,14 @@ async function inspect(client, migrations, config) {
           migrations.length === 76 && migrations.at(-1).name === '202610230076_web_publication.sql'
           || migrations.length === 77 && migrations.at(-1).name === '202610270077_business_sheet_snapshot.sql'
           || migrations.length === 78 && migrations.at(-1).name === '202610270078_website_content_suggestions.sql'
-          || migrations.length === 79 && migrations.at(-1).name === '202610280079_media_provider_budget.sql');
+          || migrations.length === 79 && migrations.at(-1).name === '202610280079_media_provider_budget.sql'
+          || migrations.length === 80 && migrations.at(-1).name === '202610280080_media_image_worker.sql');
       if ((rows.length !== migrations.length && !knownUpgrade) || !history.hub) fail('Unexpected existing runtime login.');
+    } else if(role.rolname==='hub_media_worker_login') {
+      if(count!==80||role.rolconnlimit!==2||!(await client.query("select to_regclass('hub_deployment.media_worker_provision') is not null present")).rows[0].present)fail('Unrecorded media worker login.');
+      if(!(await client.query("select 1 from hub_deployment.media_worker_provision where role_name='hub_media_worker_login' and project_ref=$1 and source='h5e_combined_release'",[PROJECT_REF])).rowCount)fail('Worker login lacks approved provenance.');
     } else if (!expectedRoles.includes(role.rolname)) fail('Existing Hub role is not recorded by this deployment.');
-    if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== (role.rolname === 'hub_runtime')) fail('Existing Hub role has unexpected privileges.');
+    if (role.rolsuper || role.rolcreaterole || role.rolcreatedb || role.rolreplication || role.rolbypassrls || role.rolinherit || role.rolcanlogin !== ['hub_runtime','hub_media_worker_login'].includes(role.rolname)) fail('Existing Hub role has unexpected privileges.');
   }
   if (expectedRoles.some(name => !roles.some(role => role.rolname === name))) fail('A recorded Hub role is missing.');
   if (roles.some(role => role.rolname === 'hub_runtime')) {
@@ -168,14 +183,25 @@ async function inspect(client, migrations, config) {
     if (memberships.length !== allowedRuntime.length || memberships.some(row => !allowedRuntime.includes(row.rolname) || row.admin_option || row.inherit_option || !row.set_option)) fail('Runtime role memberships differ from the approved actor roles.');
     if (!(await client.query(`select 1 from hub_deployment.target where project_ref=$1 and source=$2 and runtime_ready`, [config.projectRef, SOURCE])).rowCount) fail('Existing runtime login lacks deployment provenance.');
   }
+  if(count>=64&&(await client.query("select pg_has_role('hub_runtime','hub_media_worker','SET') allowed")).rows[0].allowed)fail('API runtime can assume media worker.');
+  if(roles.some(role=>role.rolname==='hub_media_worker_login')){
+    const memberships=(await client.query("select r.rolname,m.admin_option,m.inherit_option,m.set_option from pg_auth_members m join pg_roles r on r.oid=m.roleid where m.member='hub_media_worker_login'::regrole")).rows;
+    if(memberships.length!==1||memberships[0].rolname!=='hub_media_worker'||memberships[0].admin_option||memberships[0].inherit_option||!memberships[0].set_option)fail('Worker login membership changed.');
+    if((await client.query("select 1 from pg_roles where rolname=any($1) and rolname not in ('hub_media_worker','hub_media_worker_login') and pg_has_role('hub_media_worker_login',oid,'SET')",[ROLES])).rowCount)fail('Worker login can assume another Hub role.');
+  }
   return { rows, actor: actor.name, runtimeExists: roles.some(role => role.rolname === 'hub_runtime') };
 }
 
-export async function applyMigration(client,migration,config,actor) {
-  requireCombinedContentRelease(client,[migration]);
-  await client.query('begin');
+async function applyMigrationStatements(client,migration,config,actor) {
+  if(Number(migration.name.slice(8,12))>=80)assertNoAuthWrites(migration.body.join('\n'));
+  if([79,80].includes(Number(migration.name.slice(8,12)))){
+    // These two Hub-only migrations transfer no object ownership; borrow no role.
+    await client.query("set local lock_timeout='15s'; set local statement_timeout='120s'; set local standard_conforming_strings=on");
+    for(const statement of migration.body)await client.query(statement);
+    await client.query(`insert into ${HISTORY}(name,checksum,executed_checksum,project_ref,source,profile,environment) values($1,$2,$3,$4,$5,$6,$7)`,[migration.name,migration.checksum,migration.executedChecksum,config.projectRef,SOURCE,PROFILE,'hosted-test']);
+    return;
+  }
   const temporaryMemberships=new Map(), temporarySchemaGrants=[];
-  try {
     await client.query("set local lock_timeout='15s'; set local statement_timeout='120s'; set local standard_conforming_strings=on");
     // New owner roles/schemas appear at different points in 0014/15/16/27. Apply the
     // reviewed statements in order and borrow only ownership-transfer privileges.
@@ -203,6 +229,14 @@ export async function applyMigration(client,migration,config,actor) {
       else await client.query(`revoke ${identifier(role)} from ${identifier(actor)} granted by ${identifier(actor)}`);
     }
     await client.query(`insert into ${HISTORY}(name,checksum,executed_checksum,project_ref,source,profile,environment) values($1,$2,$3,$4,$5,$6,$7)`,[migration.name,migration.checksum,migration.executedChecksum,config.projectRef,SOURCE,PROFILE,'hosted-test']);
+}
+
+export async function applyMigration(client,migration,config,actor) {
+  if(Number(migration.name.slice(8,12))>=80)assertNoAuthWrites(migration.body.join('\n'));
+  requireCombinedContentRelease(client,[migration]);
+  await client.query('begin');
+  try {
+    await applyMigrationStatements(client,migration,config,actor);
     await client.query('commit');
   } catch(error) {await client.query('rollback');throw error;}
 }
@@ -214,6 +248,106 @@ function scramVerifier(password) {
   const stored = createHash('sha256').update(clientKey).digest('base64');
   const server = createHmac('sha256', salted).update('Server Key').digest('base64');
   return `SCRAM-SHA-256$${iterations}:${salt.toString('base64')}$${stored}:${server}`;
+}
+
+export function mediaWorkerLoginStatements(password,database) {
+ if(!/^[A-Za-z0-9_-]{32,}$/.test(password??''))fail('Dedicated random worker password required.');
+ return [
+  `create role hub_media_worker_login login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls connection limit 2 password ${literal(scramVerifier(password))}`,
+  'grant hub_media_worker to hub_media_worker_login with admin false,inherit false,set true',
+  `grant connect on database ${identifier(database)} to hub_media_worker_login`,
+  'create table hub_deployment.media_worker_provision(role_name text primary key,project_ref text not null,source text not null)',
+  'revoke all on hub_deployment.media_worker_provision from public',
+  `insert into hub_deployment.media_worker_provision values('hub_media_worker_login',${literal(PROJECT_REF)},'h5e_combined_release')`,
+ ];
+}
+
+export const COMBINED_COMPONENTS=Object.freeze([
+ 'supabase/migrations/202610280079_media_provider_budget.sql','supabase/migrations/202610280080_media_image_worker.sql',
+ 'apps/api/sena_hub_api/image_broker.py','apps/api/sena_hub_api/hosted_media_worker.py','apps/api/sena_hub_api/media_worker.py',
+ 'apps/admin/components/media-ai-button.tsx','apps/admin/components/media-ai-text.ts',
+ 'scripts/hosted-test/sena-hub-test-media-worker.service','scripts/hosted-test/sena-hub-test-image-broker.socket','scripts/hosted-test/60-image-broker.conf',
+]);
+
+export function validateCombinedManifest(manifest,gates,candidate) {
+ if(manifest?.project_ref!==PROJECT_REF||manifest.release_kind!=='H5a_H5c_H5e_79_80'||!/^[a-f0-9]{7}-media-[a-f0-9]{12}$/.test(manifest.release??'')||candidate?.project_ref!==PROJECT_REF
+  ||candidate.status!=='passed'||candidate.release!==manifest.release||candidate.linux_build!==true||candidate.private_socket_only!==true||candidate.native_broker_checks_passed!==true
+  ||candidate.api_worker_variables_absent!==true||candidate.media_key_present!==false)fail('Complete combined-release readiness required.');
+ if(gates?.status!=='passed'||gates.provider_calls!==0||![gates.api,gates.ui,gates.db].every(Number.isInteger)||gates.api<2132||gates.ui<302||gates.db<62||gates.h1_browser!==45
+  ||gates.typecheck!==true||gates.offline_build!==true||gates.populated_upgrade!==true||gates.credential_matches!==0)fail('Complete passing release gates required.');
+ if(!/^[a-f0-9]{64}$/.test(manifest.gates_sha256??'')||candidate.gates_sha256!==manifest.gates_sha256)fail('Candidate and gates must have one source seal.');
+ for(const file of COMBINED_COMPONENTS)if(!/^[a-f0-9]{64}$/.test(gates.sources?.[file]??'')||candidate.components?.[file]!==gates.sources[file])fail('Combined-release component missing or changed.');
+ if(gates.sources[COMBINED_COMPONENTS[0]]!=='a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91')fail('Frozen migration 79 changed.');
+}
+
+async function protectedReceipt(file,parent) {
+ const absolute=path.resolve(file??''),allowed=path.resolve(parent)+path.sep;
+ if(!absolute.startsWith(allowed)||await realpath(absolute)!==absolute)fail('Receipt must be a real file in its approved ignored directory.');
+ const raw=await readFile(absolute);return {raw,value:JSON.parse(raw)};
+}
+async function combinedReadiness(manifestFile,backupFile) {
+ const {value:manifest}=await protectedReceipt(manifestFile,'.local/hosted-content-rollout');
+ const gate=await protectedReceipt(manifest.gates_receipt,'.local/hosted-content-rollout');
+ const {value:candidate}=await protectedReceipt(manifest.candidate_receipt,'.local/hosted-content-rollout');
+ if(createHash('sha256').update(gate.raw).digest('hex')!==manifest.gates_sha256)fail('Release gate receipt changed.');
+ validateCombinedManifest(manifest,gate.value,candidate);
+ for(const [file,hash] of Object.entries(gate.value.sources)){
+  if(path.isAbsolute(file)||file.split(/[\\/]/).includes('..')||file.startsWith('.local')||/(^|\/)\.env/.test(file))fail('Invalid release source path.');
+  if(createHash('sha256').update(await readFile(file)).digest('hex')!==hash)fail('Tested source changed before hosted release.');
+ }
+ const {value:backup}=await protectedReceipt(backupFile,'.local/backups');
+ const dump=path.resolve(backup.path??'');
+ if(!dump.startsWith(path.resolve('.local/backups')+path.sep)||await realpath(dump)!==dump||backup.target!==PROJECT_REF
+  ||backup.status!=='verified'||!backup.full_archive_read_verified||!backup.inventory_verified
+  ||!Number.isFinite(Date.parse(backup.verified_at))||Date.now()-Date.parse(backup.verified_at)>15*60*1000||Date.parse(backup.verified_at)>Date.now())fail('Fresh verified TEST backup required.');
+ if(createHash('sha256').update(await readFile(dump)).digest('hex')!==backup.sha256)fail('Verified backup changed.');
+ const {raw:baselineRaw,value:baseline}=await protectedReceipt('.local/hosted-content-rollout/h5h-protected-baseline.json','.local/hosted-content-rollout');
+ if(manifest.h5h_baseline_sha256!==createHash('sha256').update(baselineRaw).digest('hex'))fail('H5h baseline changed.');
+ return {manifest,baseline,backup};
+}
+
+// Generic --apply and applyMigration still hard-refuse 79. Only this complete,
+// separately attested bundle can commit 79 and 80, in one database transaction.
+export async function applyCombinedContentRelease(client,config,{manifestFile,backupFile}={}) {
+ if(config.projectRef!==PROJECT_REF||config.apply!==true)fail('Explicit approved TEST write required.');
+ requireVerifiedTls(client);
+ const {manifest,baseline,backup}=await combinedReadiness(manifestFile,backupFile),migrations=await loadMigrations();
+ if(migrations.length!==80)fail('Only the exact 79/80 combined release is admitted.');
+ const locked=(await client.query('select pg_try_advisory_lock($1) acquired',[LOCK])).rows[0].acquired;
+ if(!locked)fail('Another Hub deployment holds the migration lock.');
+ try{
+  const state=await inspect(client,migrations,config);
+  if(backup.applied_migrations!==state.rows.length||backup.operation!=='combined_schema')fail('Backup must precede this exact schema batch.');
+  const before=await protectedReadOnlySnapshot(client,baseline);if(before.status!=='passed')fail('Strict protected preflight failed.');
+  if(state.rows.length===80)return {status:'already_applied',release:manifest.release,before};
+  if(state.rows.length!==78)fail('Combined release requires the exact applied prefix 1-78.');
+  await client.query('begin isolation level serializable');
+  try{
+   for(const migration of migrations.slice(78))await applyMigrationStatements(client,migration,config,state.actor);
+   const after=await protectedPostflight(client,baseline);if(after.status!=='passed')fail('Strict protected state changed during the combined release.');
+   await client.query('commit');return {status:'applied',release:manifest.release,migrations:migrations.slice(78).map(m=>m.name),before,after};
+  }catch(error){await client.query('rollback');throw error;}
+ }finally{await client.query('select pg_advisory_unlock($1)',[LOCK]);}
+}
+
+export async function provisionMediaWorkerLogin(client,config,{manifestFile,backupFile}={}) {
+ if(config.projectRef!==PROJECT_REF||config.apply!==true||!config.mediaWorkerPassword)fail('Dedicated worker password must be in the existing approved configuration.');
+ requireVerifiedTls(client);
+ const {baseline,backup}=await combinedReadiness(manifestFile,backupFile),migrations=await loadMigrations();
+ const state=await inspect(client,migrations,config);
+ if(state.rows.length!==80)fail('Worker login requires the complete recorded 79/80 release.');
+ if(backup.applied_migrations!==80||backup.operation!=='media_worker_login')fail('A separate verified post-schema backup is required for worker provisioning.');
+ const before=await protectedReadOnlySnapshot(client,baseline);if(before.status!=='passed')fail('Strict protected preflight failed.');
+ if((await client.query("select 1 from pg_roles where rolname='hub_media_worker_login'")).rowCount)return {status:'already_applied',before};
+ await client.query('begin isolation level serializable');
+ try{
+  if(!(await client.query('select pg_try_advisory_xact_lock($1) acquired',[LOCK])).rows[0].acquired)fail('Another Hub deployment holds the migration lock.');
+  const database=(await client.query('select current_database() name')).rows[0].name;
+  for(const statement of mediaWorkerLoginStatements(config.mediaWorkerPassword,database))await client.query(statement);
+  await inspect(client,migrations,config);
+  const after=await protectedPostflight(client,baseline);if(after.status!=='passed')fail('Strict protected state changed during worker provisioning.');
+  await client.query('commit');return {status:'applied',before,after};
+ }catch(error){await client.query('rollback');throw error;}
 }
 
 export async function runMigrations(client, config, { log = console.log, migrations } = {}) {

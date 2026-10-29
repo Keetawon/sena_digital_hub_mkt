@@ -1,5 +1,29 @@
 # 27. Hosted TEST environment — Step 1 plan
 
+## Hosted env files — H5e maintenance, 28 October 2026
+
+The current deployment and receipts are in [doc 46](46-hosted-content-rollout.md).
+The paths below are protected configuration; entries list variable names only.
+
+| File | Loaded by | Variables and maintainer | Rotation |
+|---|---|---|---|
+| `/etc/sena-hub-test/api.env` | `sena-hub-test-api.service` only | Operator: `HUB_ADMIN_ORIGIN`, `HUB_AUTH_MODE`, `HUB_DATABASE_URL`, `HUB_ENV`, `HUB_R2_CREDENTIALS_FILE`, `HUB_R2_PRIVATE_BUCKET_CONFIRMED`, `HUB_SUPABASE_URL`, `PYTHAINLP_DATA`, `PYTHAINLP_OFFLINE`, `PYTHAINLP_READ_ONLY`, `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`. Owner: `OPENAI_API_KEY`, assistant and knowledge project only. Neither worker variable is allowed. | Edit this file through the protected procedure; restart only the API unit; run the read-only postflight. |
+| `/etc/sena-hub-test/admin.env` | `sena-hub-test-admin.service`; unprivileged release build | Operator: `HUB_ADMIN_CONTACT`, `HUB_ADMIN_ORIGIN`, `HUB_API_URL`, `HUB_AUTH_GOOGLE`, `HUB_AUTH_MODE`, `HUB_AUTH_PASSWORD`, `HUB_ENV`, `HUB_ENV_LABEL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_TELEMETRY_DISABLED`, `NODE_ENV`. Neither worker variable is allowed. | Edit this file; rebuild when a build-time setting changes; restart only the admin unit; run the read-only postflight. |
+| `/etc/sena-hub-test/media-worker.env` | `sena-hub-test-media-worker.service` only | `HUB_MEDIA_WORKER_DATABASE_URL`: migration/release operator. `HUB_MEDIA_OPENAI_API_KEY`: owner. These are the only permitted variables in this file. | Edit this one file through the protected procedure; restart only the worker unit; run the read-only postflight. A database password rotation also requires the approved migration-runner procedure. |
+
+All three files must be regular non-symlink files owned by `root:root`, mode
+`0600`. The media file is the single new location approved in H5e. Never copy
+its variables into another unit or env file. Non-secret worker settings are in
+the unit: `HUB_MEDIA_DATABASE_CA_FILE`, `HUB_MEDIA_MODEL`,
+`PYTHONDONTWRITEBYTECODE` and `PYTHONUNBUFFERED`. The CA already exists. The
+worker uses its own OS identity, private cache and Unix image broker; it receives
+no R2 credential. Protect configuration backups exactly like the existing ones.
+Postflight checks file ownership/mode, variable presence flags, unit/process
+isolation, health, smoke checks and the H5h protected fingerprints. Never report
+values. The owner adds the media key after the combined deployment STOP.
+
+## Historical H1 plan
+
 Date: **2 October 2026 (Asia/Bangkok)**. Status: **H1 implemented and verified locally; hosted execution waits for the owner's exact “credentials ready” instruction**.
 H1 repository baseline: `6bf9489`, including migration `0025` and local verification.
 **15 October execution update:** the owner has now said **“credentials ready”**.

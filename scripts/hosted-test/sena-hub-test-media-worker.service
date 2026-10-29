@@ -1,0 +1,43 @@
+[Unit]
+Description=SENA Hub TEST private image suggestions
+Wants=network-online.target sena-hub-test-api.service
+After=network-online.target sena-hub-test-api.service
+
+[Service]
+Type=simple
+User=sena-hub-media
+Group=sena-hub-media
+WorkingDirectory=/var/cache/sena-hub-test-media
+EnvironmentFile=/etc/sena-hub-test/media-worker.env
+Environment=HUB_MEDIA_DATABASE_CA_FILE=/etc/sena-hub-test/supabase-ca.crt
+Environment=HUB_MEDIA_MODEL=gpt-5.4-mini-2026-03-17
+Environment=PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+UnsetEnvironment=OPENAI_API_KEY HUB_TRANSLATION_OPENAI_API_KEY HUB_DATABASE_URL
+ExecStart=/srv/sena-hub-test/current/apps/api/.venv/bin/python /srv/sena-hub-test/current/scripts/run-hosted-media-worker.py
+Restart=on-failure
+RestartSec=30s
+TimeoutStopSec=45s
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+CacheDirectory=sena-hub-test-media
+CacheDirectoryMode=0700
+ReadWritePaths=/var/cache/sena-hub-test-media
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

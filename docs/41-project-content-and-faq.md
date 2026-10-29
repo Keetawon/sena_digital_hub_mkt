@@ -168,6 +168,14 @@ Admin typecheck; the documented offline webpack build; full `test:api`; full `te
 
 ## 6. STOP and report instead of proceeding when
 
+Hosted TEST Auth comparisons, including UAT, follow owner decision **H5h
+(28 October 2026)** in `docs/46-hosted-content-rollout.md`: identity, schema,
+all unclassified Auth tables and every non-Auth protected table stay strict;
+the explicitly classified Auth activity is recorded with orphan checks rather
+than treated as a STOP. Auth writes by Hub migrations/scripts and Auth write
+privileges or ownership by Hub roles remain prohibited. Production requires
+its own go/no-go decision. Earlier decisions remain historical records.
+
 - a credential, hosted resource, DW change, REM access or web-team action is needed;
 - a requirement here conflicts with an existing accepted decision or a safety rule;
 - a migration would delete or rewrite existing content, reviews or account/permission state;

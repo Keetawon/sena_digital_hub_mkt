@@ -398,6 +398,11 @@
       "name": "202610280079_media_provider_budget.sql",
       "canonical_sha256": "a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91",
       "executed_sha256": "a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91"
+    },
+    {
+      "name": "202610280080_media_image_worker.sql",
+      "canonical_sha256": "5d2992b87b2e2ca64af39f874704248b90322cef507ef569e4dc8e9a26fdab0d",
+      "executed_sha256": "5d2992b87b2e2ca64af39f874704248b90322cef507ef569e4dc8e9a26fdab0d"
     }
   ]
 }

@@ -12,8 +12,10 @@ import EmbeddedPostgres from 'embedded-postgres';
 import { applyLocalMigrations } from './local-migrations.mjs';
 import { initialiseDisposableDb } from './initialise-disposable-db.mjs';
 import { scrubProviderKeys } from './provider-keys.mjs';
+import {authWriteInventory} from './auth-write-check.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),[mode,...extra]=process.argv.slice(2);
+if((await authWriteInventory()).status!=='passed')throw new Error('H5h Auth-write release gate failed');
 assert.ok(['api','db','ui','all'].includes(mode),'Use api, db, ui or all');
 const assistantFixtures=extra.includes('--assistant-fixtures');
 if(assistantFixtures){assert.equal(mode,'api','Assistant fixtures require the disposable API suite');extra.splice(extra.indexOf('--assistant-fixtures'),1);}
@@ -86,7 +88,7 @@ try{
   }
   if(mode==='api'||mode==='all')await run('uv',[...uv,'pytest','apps/api/tests','-q','--basetemp',path.join(directory,'pytest'),'-o',`cache_dir=${path.join(directory,'pytest-cache')}`,...extra],root,probeEnv);
   if(mode==='db'||mode==='all'){
-    await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs','tests/local-db-initialisation.test.mjs']);
+    await run(process.execPath,['--test','tests/disposable-test-guard.test.mjs','tests/local-db-initialisation.test.mjs','tests/auth-protection.test.mjs','tests/credential-scan.test.mjs']);
     await run(process.execPath,['--test','tests/content-upgrade.test.mjs']);
     await run(process.execPath,['scripts/test-db.mjs']);
     const concurrency=(await readdir(path.join(root,'supabase/tests'))).filter(n=>/^concurrent_.*\.mjs$/.test(n)).sort();
