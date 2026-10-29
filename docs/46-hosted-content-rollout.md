@@ -2498,3 +2498,93 @@ At this checkpoint TEST remains at 78 and no hosted write has occurred.
 Migration 79 remains unchanged. The combined release still requires Linux
 candidate readiness and fresh verified backups before admission; the media key
 is absent and no pilot or live provider call has run.
+
+#### H5e deployment resumption — 29 October 2026, strict identity STOP
+
+The owner authorised execution of the held 79/80 combined TEST release from
+`3b945cf2002115dbb3d8d575731b362acbc36a5a`, with the dedicated worker login,
+DSN-only worker env file, broker, worker unit and H5c. The media key, pilot,
+provider calls, cap increases and other changes remain outside this execution.
+
+Read-only preflight receipt
+`.local/hosted-content-rollout/h5e-release-preflight-1793259115813.json`
+verified the exact applied prefix 1–78, verified TLS, all strict protected
+comparisons and the frozen migration 79 SHA-256
+`a439a8af79b26280ace573c084bac71433513b8474fc1b059c1b71f2c0fa2a91`.
+The separate Auth schema check passed in
+`.local/hosted-content-rollout/h5h-postflight-1793259174168.json`.
+The original baseline and receipts remain unchanged.
+
+The combined-readiness source-seal precheck refused admission: the old
+`h5e-gates.json` seal differs at `scripts/run-disposable-tests.mjs` and
+`tests/disposable-test-guard.test.mjs`, and does not include the newly added
+`scripts/api-test-selection.mjs`. No Linux candidate or migration admission was
+attempted. A full current-source gate was started to replace the stale seal
+through the existing sealing tooling, without editing any receipt by hand.
+
+Verified HTTPS preflight passed all seven anonymous health/login/authentication
+checks in `h5e-https-preflight-20261029T073230Z.json`; VPS metadata checks passed
+in `h5e-vps-readiness-20261029T073231Z.json`, both under
+`.local/hosted-content-rollout/`. The live release remains
+`07dda14-content-82bd4feeade5`. Both worker variables are absent from API/admin
+configuration and processes; the worker OS user and worker env file are absent.
+
+Read-only queue baseline
+`.local/hosted-content-rollout/h5e-queue-baseline-3b945cf.json` pins all existing
+translation-job/content rows and both other job queues: 1,090 translation jobs,
+2,132 content translations, zero media jobs and zero archive jobs. Only counts
+and fingerprints are recorded. Private operator tooling now checks these
+queues before/after each batch, backs up worker configuration before installing
+units and provides application-only rollback. None of those hosted steps ran.
+
+After the owner opened a signed-in hosted Hub tab for the required visual
+checks, the read-only H5h check stopped during 08:02:40–08:03:00 UTC. Receipt:
+`.local/hosted-content-rollout/h5h-postflight-1793260980084.json`.
+The last passing full check completed at 07:32:54 UTC; this bounds the observed
+strict difference. These are operation times, not Auth field values.
+
+- **Strict STOP:** `auth.identities` fingerprint differs, with row-count delta
+  zero. The cause and changed columns are not established; no activity exception
+  is inferred for this table.
+- Every strict `auth.users` identity column and the user count match, every
+  other classified strict Auth table matches, all 57 non-Auth protected tables
+  match, and the orphan check passes.
+- Recorded activity only: `auth.users.updated_at` and `last_sign_in_at` changed;
+  sessions, refresh tokens and session claims each have row-count delta +1.
+  No Auth values, tokens, field timestamps, IP addresses or user agents are
+  recorded. All 27 Auth table classifications are listed in the receipt.
+- Auth privilege checks pass for all 18 existing Hub roles. The approved worker
+  login has not been provisioned. The separate dump-based Auth schema check was
+  not reached in this failing execution.
+
+Deployment is **STOPPED under H5h**. No baseline, Auth row, Auth classification
+or protected state was changed. No VPS candidate was staged; no migration,
+worker login, env file, unit, socket or promotion was applied. There is no new
+release to roll back. No new hosted backup was taken, and the earlier expired
+backup will not be reused. No media key, pilot or provider call was used.
+
+Completed current-source gate output is under ignored
+`artifacts/hosted-content-rollout/h5e-3b945cf-*`: typecheck and offline webpack
+build passed; full API 2,151 passed / 11 existing opt-in skips; full DB 62
+SQL/concurrency plus 72 Node checks passed, including populated upgrade and
+replay; full browser suite 304 passed in one uninterrupted 12.2-minute run.
+Credential scan: 703 source files, 64 browser files, zero matches, no ignored
+credential files read. H1 was already running when the STOP was detected; its
+completion and any replacement gate seal are recorded below, without resuming
+hosted operations.
+
+The already-running H1 gate completed successfully: 67 protocol/admission
+checks and 35 + 3 + 7 = 45 browser checks passed. Thus the **full local gate
+passed on the unchanged final source**; the hosted H5h preflight remains a
+separate STOP. The sealing tooling produced a new immutable 696-file receipt,
+`.local/hosted-content-rollout/h5e-gates-3b945cf.json`, SHA-256
+`92c930af0cf9afdd12e8acef8be48afd348399936ad009e9b81d80ad142ea379`.
+Its hashes pin the seven current-source logs/scan outputs. The new Auth-write
+inventory is
+`.local/hosted-content-rollout/h5h-auth-write-inventory-3b945cf.json`, SHA-256
+`0d7857d2e3795fcdd927e42c92138ffbfa0e0da20854676025d80ae74428726c`;
+all 80 migrations passed with zero Auth-write matches. The old seal and
+inventory were preserved. No candidate receipt or combined-release admission
+was produced, and these passing local gates do not override the strict STOP.
+Only this documentation record is committed; the existing hosted-env table
+requires no change because no hosted configuration was installed.
