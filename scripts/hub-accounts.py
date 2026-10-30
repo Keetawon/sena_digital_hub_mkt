@@ -45,9 +45,11 @@ async def promote_admin(db, email):
 
 
 async def run(args):
+    from hosted_write_attestation import OperatorTransaction, load_manifest
     db = await asyncpg.connect(**connection(args))
     try:
-        async with db.transaction():
+        manifest = load_manifest(args.attestation_manifest) if args.hosted else None
+        async with OperatorTransaction(db, manifest):
             await db.execute("select pg_advisory_xact_lock(hashtextextended('hub-account-decisions',0))")
             if args.command == 'purge-rejected':
                 count = await db.fetchval('select hub.purge_rejected_accounts()')
@@ -65,8 +67,10 @@ if __name__ == '__main__':
     promote = sub.add_parser('promote-admin')
     promote.add_argument('--email', required=True)
     promote.add_argument('--hosted', action='store_true')
+    promote.add_argument('--attestation-manifest', type=Path)
     purge = sub.add_parser('purge-rejected')
     purge.add_argument('--hosted', action='store_true')
+    purge.add_argument('--attestation-manifest', type=Path)
     try:
         asyncio.run(run(parser.parse_args()))
     except Exception as error:

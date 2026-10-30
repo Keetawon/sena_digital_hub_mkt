@@ -41,7 +41,7 @@ def test_image_budget_requests_lease_fetch_wait_and_charge(permission_accounts):
             assert (await call(db, ids['editor'], request, public, key))['status'] == 'not_configured'
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], request, public, key)
-            await db.execute('update hub.media_ai_settings set monthly_cap_usd=5,provider_configured=true,worker_seen_at=clock_timestamp()')
+            await db.execute('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()')
             assert (await call(db, ids['editor'], request, public, key))['status'] == 'queued'
             assert (await call(db, ids['editor'], request, public, key))['status'] == 'queued'
             assert await db.fetchval('select count(*) from hub.media_jobs where subject_id=$1', key) == 1
@@ -103,7 +103,7 @@ def test_budget_refusal_only_changes_waiting_images_and_runtime_cannot_claim(per
             for kind in ['image_suggestion', 'clip_metadata']:
                 keys.append(await db.fetchval('insert into hub.media_jobs(project_id,kind,subject_id,source_revision,requested_by) values($1,$2,$3,0,$4) returning id',
                                               project['id'], kind, uuid4(), ids['editor']))
-            await db.execute('update hub.media_ai_settings set monthly_cap_usd=0.01,provider_configured=true,worker_seen_at=clock_timestamp()')
+            await db.execute('update hub.media_ai_settings set monthly_cap_usd=0.01; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()')
             assert await worker(db, 'select hub.media_image_claim(null)') is None
             assert await db.fetchval('select status from hub.media_jobs where id=$1', keys[0]) == 'budget_exhausted'
             assert await db.fetchval('select status from hub.media_jobs where id=$1', keys[1]) == 'queued'

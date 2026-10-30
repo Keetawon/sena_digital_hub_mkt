@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { FIXTURE_SOURCE, syntheticAssets } from './hosted-test-fixtures.mjs';
+import {operatorTransaction} from './hosted-write-attestation.mjs';
 
 // Caller supplies an already-verified connection. This module never opens a connection,
 // reads cloud credentials, provisions users, or enables issuance.
-export async function applyH1Seed(client) {
+export async function applyH1Seed(client,attestation) {
   const sql = await readFile(new URL('../supabase/hosted-test/h1-seed.sql', import.meta.url), 'utf8');
   const assets = syntheticAssets().map(({ bytes, ...metadata }) => metadata);
   const checksum = createHash('sha256').update(sql).update(JSON.stringify(assets)).digest('hex');
   const quote = text => `"${text.replaceAll('"', '""')}"`;
-  await client.query('begin');
-  try {
+  const proof=await operatorTransaction(client,attestation,async client=>{
     await client.query("select pg_advisory_xact_lock(hashtextextended('hosted-h1-seed-v1',0))");
     const { rows: [target] } = await client.query("select hub.hosted_test_profile() as allowed,current_user as operator,current_setting('role') as role");
     if (!target.allowed || target.role !== 'none') throw new Error('H1 seed requires the verified TEST deployment operator.');
@@ -39,7 +39,6 @@ export async function applyH1Seed(client) {
     if (previous) {
       if (previous.checksum !== checksum) throw new Error('H1 seed checksum changed; explicit reconciliation required.');
       await restoreMemberships();
-      await client.query('commit');
       return { status: 'REPLAY_NO_OP', ...previous.manifest };
     }
     if ((await client.query('select 1 from hub.brands union all select 1 from hub.projects limit 1')).rowCount) throw new Error('H1 first seed requires empty residential data.');
@@ -58,7 +57,6 @@ export async function applyH1Seed(client) {
     if (counts.brands !== 1 || counts.projects !== 1 || counts.promotions !== 1 || counts.releases !== 1 || counts.assets !== 3) throw new Error('H1 seed counts do not match its contract.');
     await client.query('insert into hub_deployment.h1_seed(source,checksum,manifest) values($1,$2,$3)', [FIXTURE_SOURCE,checksum,manifest]);
     await restoreMemberships();
-    await client.query('commit');
     return { status: 'APPLIED', ...manifest };
-  } catch (error) { await client.query('rollback'); throw error; }
+  });return proof.result;
 }

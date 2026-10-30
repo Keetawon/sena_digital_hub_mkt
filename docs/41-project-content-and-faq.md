@@ -168,6 +168,15 @@ Admin typecheck; the documented offline webpack build; full `test:api`; full `te
 
 ## 6. STOP and report instead of proceeding when
 
+**H5i (29 October 2026), including its addendum, supersedes the H5h shared-data
+comparison as a TEST release gate; see docs/46.** Every future deployment or
+release gate must attribute changes to our transaction or process, or compare
+catalog changes within that batch. Never use an old snapshot of live shared
+data as a STOP condition. Hosted write transactions require the shared
+REPEATABLE READ write-set/catalog attestation and same-snapshot Auth invariance.
+Static Auth-write prevention and the privilege postflight remain required.
+Earlier baselines, failed receipts and the H5h wording below are historical.
+
 Hosted TEST Auth comparisons, including UAT, follow owner decision **H5h
 (28 October 2026)** in `docs/46-hosted-content-rollout.md`: identity, schema,
 all unclassified Auth tables and every non-Auth protected table stay strict;

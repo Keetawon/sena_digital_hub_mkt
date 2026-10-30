@@ -23,10 +23,10 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
   page.on('dialog',dialog=>dialog.accept());
   const project=(await read(page,`${api}/projects`)).find((p:{source:{rem_project_id:string}})=>p.source.rem_project_id==='DEMO-001');
   const base=`${api}/projects/${project.public_project_id}/media`,stamp=randomUUID(),ids:string[]=[];
-  const db=await operator(),original=(await db.query('select monthly_cap_usd,provider_configured,worker_seen_at from hub.media_ai_settings')).rows[0];
+  const db=await operator(),original=(await db.query('select monthly_cap_usd,provider_configured,worker_seen_at from hub.media_ai_settings join hub.media_worker_status using(singleton)')).rows[0];
   const name=`ai-footer-${width}-${stamp}.svg`;
   try{
-    await db.query('update hub.media_ai_settings set provider_configured=false,monthly_cap_usd=0');
+    await db.query('update hub.media_ai_settings set monthly_cap_usd=0; update hub.media_worker_status set provider_configured=false');
     for(const [index,category,exposure] of [[0,'exterior','web_only'],[1,'legal_document','internal'],[2,'brochure','web_only'],[3,'exterior','internal'],[4,'exterior','web_only']] as const){
       const upload=await page.request.post(`${api}/assets`,{headers:{...headers,'Content-Type':'image/svg+xml','X-Filename':index?`held-${index}-${name}`:name},
         data:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#18523d"/><text x="1" y="15">${stamp}-${index}</text></svg>`)});
@@ -43,7 +43,7 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
     const card=()=>page.locator('.media-card').filter({has:page.getByRole('heading',{name,exact:true})});
     await expect(card().getByRole('button',{name:text.state_not_configured,exact:true})).toBeDisabled();
     for(const index of [1,2,3,4])await expect(page.locator('.media-card').filter({hasText:`held-${index}-${name}`}).locator('.media-ai-footer')).toHaveCount(0);
-    await db.query('update hub.media_ai_settings set monthly_cap_usd=5,provider_configured=true,worker_seen_at=clock_timestamp()');
+    await db.query('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()');
     await page.reload();const ready=card().getByRole('button',{name:text.button_label,exact:true});await expect(ready).toBeEnabled();
     const buttons=card().getByRole('button');expect(await buttons.last().textContent()).toBe(text.button_label);
     await expect(card()).toContainText(`${text.budget_spent_label} US$0.00 · ${text.budget_remaining_label} US$5.00`);
@@ -122,7 +122,8 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
     await db.query('delete from hub.website_asset_suggestions where asset_id=any($1::uuid[])',[ids]);
     await db.query('delete from hub.asset_links where asset_id=any($1::uuid[])',[ids]);
     await db.query('update hub.assets set deleted_at=clock_timestamp() where id=any($1::uuid[])',[ids]);
-    await db.query('update hub.media_ai_settings set monthly_cap_usd=$1,provider_configured=$2,worker_seen_at=$3',[original.monthly_cap_usd,original.provider_configured,original.worker_seen_at]);
+    await db.query('update hub.media_ai_settings set monthly_cap_usd=$1',[original.monthly_cap_usd]);
+    await db.query('update hub.media_worker_status set provider_configured=$1,worker_seen_at=$2',[original.provider_configured,original.worker_seen_at]);
     await db.end();
   }
 });

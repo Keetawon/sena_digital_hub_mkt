@@ -2588,3 +2588,389 @@ inventory were preserved. No candidate receipt or combined-release admission
 was produced, and these passing local gates do not override the strict STOP.
 Only this documentation record is committed; the existing hosted-env table
 requires no change because no hosted configuration was installed.
+
+#### Owner decision H5i — 29 October 2026
+
+Owner decision H5i  29 October 2026. Record it verbatim in docs/46 directly
+after "H5e deployment resumption  strict identity STOP", then carry it out.
+It replaces the H5h Auth/protected-data comparison as a STOP gate.
+H1a, H5f, H5g and H5h stay as historical records.
+
+H5i  Attest our own writes. Stop fingerprinting live shared state.
+
+0. Why
+Every STOP since H1a came from comparing live tables against a baseline taken
+days earlier, while Supabase Auth and Hub users legitimately change those tables:
+- refresh;
+- sign-out cascade;
+- now auth.identities on sign-in.
+Enumerating exceptions will not converge. UAT invitations, password resets,
+Google profile refreshes and access approvals would each STOP next. The
+question a deployment gate must answer is narrower: did OUR write change
+anything outside its declared scope? PostgreSQL can answer that exactly, per
+transaction, before commit.
+
+1. The rule
+A. Prevention (keep as is):
+   - the static Auth-write gate;
+   - the read-only privilege postflight: no Hub, runtime, worker or deployment
+     role may write to, or own, Auth objects.
+B. Write-set attestation (new; this is now the release gate):
+   - Every hosted DB write transaction must go through one shared helper. This
+     covers migration batches, worker-login provisioning, content/translation
+     batch operators, and the private operator tooling under .local/.
+   - Each batch declares an explicit allowlist of schema-qualified relations it
+     may write.
+   - Before COMMIT, the helper reads pg_stat_xact_all_tables for the current
+     transaction:
+     - Sum n_tup_ins, n_tup_upd, n_tup_del and n_tup_hot_upd, plus
+       n_tup_newpage_upd where that column exists.
+     - Exclude pg_catalog, pg_toast, information_schema and temporary schemas.
+       Catalog changes are covered by C.
+   - It requires:
+     - zero writes to any relation in schema auth. Auth can never appear in an
+       allowlist; reject such a manifest;
+     - zero writes to any relation outside the allowlist.
+   - On violation: ROLLBACK, write a receipt (relation names and counts only),
+     STOP.
+   - On success: record the observed write set in the batch receipt.
+   - Derive each allowlist from a disposable rehearsal of the exact batch,
+     built to the same prefix with populated fixtures. The hosted write set must
+     be a subset of the rehearsal's.
+   - TRUNCATE and DDL are not tuple counts. A, C and the static gate cover them.
+C. Catalog check (short window):
+   - Take one snapshot immediately before and one immediately after each write
+     batch, in the same operator run. Cover:
+     - Hub roles, memberships, grants, RLS policies;
+     - function owners, SECURITY DEFINER settings and search_path;
+     - the Auth schema shape (tables, columns, constraints, triggers).
+   - The after-snapshot must equal the before-snapshot plus that batch's
+     expected catalog changes. Anything else is a STOP.
+   - Differences between batches, for example a Supabase platform upgrade, are
+     recorded, not STOPs.
+D. Retired as STOP gates:
+   - Auth data fingerprints for all Auth tables, including the users/identities
+     activity split and the orphan check;
+   - strict comparison of protected Hub tables against multi-day baselines;
+   - fingerprint-based queue baselines.
+   Receipts may keep row counts (no values) for information. Keep every earlier
+   baseline and receipt unchanged as history.
+   Sign-ins, refreshes, sign-outs, password resets, invitations, new UAT users
+   and Google profile refreshes never stop work, including during deployments
+   and visual checks.
+E. Standing principle: add it to docs/41 6. Any future deployment or release
+   gate must be attribution-based (our transaction or process) or
+   catalog-based. Never compare live shared data against an old snapshot as a
+   STOP condition.
+
+2. Close the current STOP (record only, not blocking)
+- Read-only: compare auth.identities between the verified H5d backup and live,
+  per column. Do it in memory or in a disposable local restore.
+- Record only:
+  - the names of columns with any difference;
+  - the changed-row count;
+  - whether the same user ids also changed auth.users.last_sign_in_at (a boolean).
+- Never print or store values.
+- Report the result. Under H5i it is informational, not a STOP.
+
+3. Review fix before deployment: heartbeat audit flood
+hub.media_worker_heartbeat updates hub.media_ai_settings on every worker loop.
+The audit trigger on that table writes a full before/after audit row each time:
+about 2,880 rows per day while idle.
+Fix it in new migration 81. 79 is frozen, and 80 is sealed and applied locally.
+- Add a singleton worker status table, holding provider_configured and
+  worker_seen_at:
+  - owner-only and FORCE RLS;
+  - not audited, no touch trigger;
+  - written only by the heartbeat.
+- Write one audit record only when provider_configured changes value.
+- Point hub.media_budget_totals at the new table.
+- Drop the two status columns from hub.media_ai_settings.
+- Keep every other 80 behaviour and grant identical.
+- Admit 79+80+81 as one combined transaction. Update the combined-release
+  admission (exact migration count/components) accordingly.
+- Test: 100 heartbeats add zero audit rows, and a configured-state flip adds
+  exactly one.
+
+4. Implementation and tests (offline, disposable DB and H1 simulation; no
+   provider calls)
+- A shared helper module that every hosted write path uses. Add a static test
+  that fails if any hosted write path opens a transaction without the helper.
+- Release admission no longer requires the H5h baseline hash. Instead it
+  requires:
+  - the write-set manifest;
+  - the catalog before/after receipts.
+- Replace the post-deploy queue smoke with an attribution check. During the
+  deploy window, audit.change_log rows with database_role hub_media_worker may
+  touch only image-job tables. Translation and other jobs must show no worker
+  change.
+- Tests:
+  - an allowed write passes and records counts;
+  - a write to a non-allowed Hub table rolls back with nothing committed;
+  - a write into auth rolls back, including one made through a SECURITY
+    DEFINER function or a trigger;
+  - an allowlist containing auth is refused;
+  - a concurrent second session writing auth rows during the batch (simulated
+    sign-in, new user, identities timestamp, recovery token) does NOT fail the
+    batch;
+  - an unexpected role, grant or policy change fails the catalog check; the
+    expected changes pass;
+  - Auth activity between batches never STOPs.
+
+5. Gates
+- Use quick gates while iterating.
+- Then run the full gate once on the final source and produce a new seal
+  through the existing tooling.
+
+6. Resume H5e deployment
+Continue from step 1 of the H5e deployment prompt with H5i in place of the H5h
+comparisons:
+- Linux candidate;
+- a fresh verified backup;
+- the attested combined 79+80+81 batch;
+- a fresh verified backup;
+- attested worker-login provisioning;
+- the DSN-only media-worker.env (the key stays absent), backed up;
+- units/socket and the new release, with the previous release kept;
+- smoke checks and the privilege postflight.
+Signed-in visual checks are allowed at any time.
+Then STOP for the owner to add HUB_MEDIA_OPENAI_API_KEY. Report:
+- the exact owner steps;
+- all receipts;
+- the observed write sets;
+- confirmation that no pilot or provider call ran.
+
+STOP and report on any of these:
+- a write-set or catalog violation (after the automatic rollback);
+- a privilege-postflight or static-gate failure;
+- any docs/41 6 condition;
+- a missing credential other than the media key;
+- a failed smoke check. In that case, roll the application back to the previous
+  release before touching the schema again.
+Commit to main when done. H5i addendum (same decision; record with H5i).
+
+B2. Same-snapshot Auth invariance:
+- Run every attested write transaction at REPEATABLE READ.
+- At its first statement and again immediately before COMMIT, hash every Auth
+  table (rows, in memory only; never store values).
+- Any difference means our transaction changed Auth. Then ROLLBACK and STOP.
+- This covers TRUNCATE, dynamic SQL and anything pg_stat_xact does not count.
+  Concurrent sign-ins are invisible to this snapshot, so they cannot trigger it.
+- Test it with:
+  - a dynamic TRUNCATE of an Auth table;
+  - a concurrent committed sign-in and new user during the batch, which must
+    pass.
+
+C2. After each batch, run the Auth-write gate on the final definitions of all
+functions in Hub-owned schemas (pg_get_functiondef). Migration text alone is
+not enough; for example, migration 80 rewrites a function dynamically.
+- The catalog check also fails on any new extension, foreign server, user
+  mapping, or use of dblink, postgres_fdw, pg_net or pg_cron not declared in the
+  batch manifest.
+
+F. Security watch, a report and not a STOP: in each deploy receipt and in a
+read-only command the owner can run any time, report:
+- new Auth users and identities by provider (counts);
+- changes to Hub admin/publisher assignments and account status, with the
+  acting user from audit.change_log (ids only);
+- whether the Supabase postgres role can write Auth tables.
+
+#### H5i implementation and read-only preflight — 29 October 2026
+
+H5i and its addendum above are the current TEST release rule. The historical
+H5h comparisons and failed receipts remain unchanged; they are not admission
+requirements for this release. `scripts/hosted-write-attestation.mjs` owns the
+hosted operator transaction boundary, with a thin asyncpg pipe adapter for the
+existing Python operators. Hosted use requires a pinned disposable rehearsal;
+local-only operators retain their existing transaction semantics. Historical
+content operators cannot perform a hosted write without a new H5i manifest.
+
+The helper uses REPEATABLE READ, checks the exact migration-history digest,
+compares Auth row hashes only in memory at the first and last statements,
+records relation counters, and checks the catalog and final function definitions
+before commit. PostgreSQL retains backend-local pending statistics across
+transactions until a flush; the helper requests that flush before BEGIN and
+requires zero write counters on entry. It never resets shared statistics.
+Catalog comparison normalizes deployment-owner names and generated internal
+constraint-trigger OIDs, retaining the constraint identity, enabled state and
+definition. Database grants are compared separately so unrelated platform grants
+do not become a rehearsal prerequisite.
+
+The informational H5d-backup comparison found **one changed identity row**, in
+column **`updated_at` only**; the same user's `last_sign_in_at` changed: **yes**.
+No values were recorded. Receipt:
+`.local/hosted-content-rollout/h5i-informational-1793264101323.json`.
+
+Read-only TEST readiness passed with exact prefix **1–78**, frozen 79 and sealed
+80 unchanged, all checked Hub roles free of Auth writes/ownership, and all final
+Hub function definitions passing the static Auth-write check. Catalog
+preconditions match the disposable combined rehearsal. Receipt:
+`.local/hosted-content-rollout/h5i-readiness-1793267812576.json`.
+The earlier read-only precondition receipt
+`h5i-readiness-1793267620948.json` remains unchanged; its trigger-OID mismatch
+was resolved in the comparator, before any hosted write.
+
+The security watch reported no new Auth users, identities or account-assignment
+changes in its observation window. **Supabase `postgres` can write Auth: true**;
+this is the report-only platform-role item explicitly required by H5i F. Hub
+actors, runtime, worker and dedicated deployment roles remain subject to the
+strict privilege check. The owner can run the read-only watch using the existing
+approved configuration:
+
+```powershell
+node --env-file=.env.supabase-test scripts/hosted-security-watch.mjs --since 2026-10-29T00:00:00Z
+```
+
+Migration 81 moves heartbeat status into owner-only FORCE RLS storage with no
+touch/audit triggers. The budget RPC reads that storage; a configuration flip
+adds one explicit audit row. Migration 79 and 80 bytes were not edited. Admission
+now requires the exact **79+80+81** bundle and both rehearsal receipts (schema
+and worker login), including their write sets and catalog before/after evidence.
+It no longer requires the H5h baseline hash. Generic standalone 79/80/81 apply
+remains refused on hosted TEST.
+
+Quick gates so far: DB tier passed, including populated upgrade/replay and the
+100-heartbeat/one-flip regression; 19 attestation tests passed; affected
+business/media API tests 26 passed; AI-footer browser tests 2 passed at 1280 and
+390 px. The permission quick gate initially reported 391 passed and 6 failures
+because the new owner-only table was unclassified; the corrected focused
+permission/media set passed its 45 tests (the separate business-sheet isolation
+failure was fixed and covered by the subsequent 26-test run). Full gate: not yet
+run on final H5i source. Logs are under ignored
+`artifacts/hosted-content-rollout/h5i-*`; no hosted write, pilot or provider call
+has run at this point.
+
+#### Owner deployment inspection adjustment — 30 October 2026
+
+The owner directs the full browser and H1 gates to use their normal Playwright
+runners while the computer remains available for other work. Computer Use is
+not required and must not be used for hosted pages in this task. Hosted visual
+inspection is no longer a deployment blocker: use the automated API smoke
+(`ai-state`: cap 5, spent 0, provider not configured) and the local Playwright
+per-image footer evidence at 1280 and 390 px. The owner will inspect the hosted
+page after deployment. After the full gate, produce the new seal, commit H5i
+code/tests/docs by explicit path and push main before any hosted write step.
+Then complete the approved deployment and STOP for the media key; the pilot
+and provider calls remain excluded.
+
+#### H5i gate recovery — 30 October 2026
+
+The first full attempt was interrupted for a catalog-comparison correction
+before release admission; its API output was retained but not used as a final
+gate. The next attempt passed typecheck, build, API (2,151 passed, 11 skipped)
+and DB, then Windows interrupted the browser process. A resumed browser run was
+also interrupted when the Computer Use turn ended. Original receipts and logs
+remain unchanged, with separate interruption records under
+`.local/hosted-content-rollout/h5i-full-{1,2,3}-interruption.json`.
+
+The subsequent browser run completed with **303 passed, 1 failed** in
+`artifacts/hosted-content-rollout/h5i-full-4-ui.log`. Its workflow setup clicked
+a URL-controlled dashboard checkbox before the final state was ready. The
+test-only helper now waits for the role-change document and asserts the eventual
+checked state after a single click. Application behavior and test expectations
+are unchanged. The affected quick gate passed **5 tests** in
+`artifacts/hosted-content-rollout/h5i-workflow-quick-2.log`; the earlier failing
+quick log is retained. A fresh full gate on the corrected source is required
+before sealing or committing.
+
+The read-only preflight also checked the exact rehearsal history digest, not
+only migration names: `.local/hosted-content-rollout/h5i-readiness-1793326374721.json`
+passed at prefix 78, with no catalog mismatch, Auth privilege violation or final
+function-definition violation. Anonymous HTTPS preflight passed seven checks
+with verified TLS in `h5e-https-preflight-20261030T015909Z.json`.
+
+#### Owner media-key steps — only after the successful deployment STOP
+
+Use the dedicated TEST media-project key. First, from the repository PowerShell
+terminal, take fresh verified database and protected configuration backups using
+the existing operator (these modes only back up; they do not promote a release):
+
+```powershell
+node --env-file=.env.supabase-test .local/hosted-content-rollout/h5e-operations.mjs backup_promote
+python -X utf8 .local/hosted-content-rollout/h5e-vps.py backup_worker_config
+```
+
+Require both receipts to pass. In an interactive SSH terminal on the TEST VPS,
+run the following as root. It appends through a hidden prompt to the
+one approved file, refuses a duplicate key or unexpected file, and prints no
+credential. Do not paste the key into chat or a shell command.
+
+```bash
+python3 - <<'PY'
+import getpass, os, re, stat
+path = '/etc/sena-hub-test/media-worker.env'
+fd = os.open(path, os.O_RDWR | os.O_NOFOLLOW)
+with os.fdopen(fd, 'r+b') as file:
+    info = os.fstat(file.fileno())
+    assert stat.S_ISREG(info.st_mode)
+    assert (info.st_uid, info.st_gid, stat.S_IMODE(info.st_mode)) == (0, 0, 0o600)
+    existing = file.read()
+    assert existing.endswith(b'\n')
+    assert [line.split(b'=', 1)[0] for line in existing.splitlines()] == [b'HUB_MEDIA_WORKER_DATABASE_URL']
+    key = getpass.getpass('Media API key (hidden): ')
+    assert re.fullmatch(r'[A-Za-z0-9_-]{20,}', key), 'Unexpected key format; nothing written'
+    file.write(('HUB_MEDIA_OPENAI_API_KEY=' + key + '\n').encode('ascii'))
+    file.flush()
+    os.fsync(file.fileno())
+print('Media key configured; value withheld.')
+PY
+systemctl restart sena-hub-test-media-worker.service
+systemctl is-active sena-hub-test-media-worker.service
+```
+
+Restart only that worker unit. Report completion without the key. The next
+read-only postflight checks presence flags, root ownership/mode and unit
+isolation, Auth privileges, the security watch, API health, the worker heartbeat,
+the Hub budget and worker-attributed queue changes. Pilot execution still waits
+for the separate authorized pilot step; these instructions do not queue jobs.
+
+#### H5i final full gate and source seal — 30 October 2026
+
+The complete final gate passed on unchanged source in
+`.local/hosted-content-rollout/h5i-full-5.json` (SHA-256
+`e4c8ac9ca1d210df67afb2b92253c130fdb7dca91112ed23a3ec305d8f27ec25`).
+
+| Full-gate tier | Result |
+|---|---|
+| Admin typecheck | Passed |
+| Offline admin build | Passed |
+| API | 2,151 passed, 11 opt-in skipped; 6 existing deprecation warnings |
+| DB | 63 SQL/concurrency checks and 94 Node tests passed; populated upgrade included |
+| Browser | 304 passed in one run, including the corrected workflow test and both AI-footer widths |
+| H1 | 67 Node/protocol checks and 45 browser tests passed; exact populated prefix 78 rehearsed and attested through 79+80+81 and worker-login provisioning |
+| Credential scan | 713 source files and 64 browser files; zero matches; credential files not read |
+| Static Auth-write inventory | 81 migrations and 82 scripts; zero matches, including migrations 1–79 |
+| Hosted transaction-path scan | 102 operator paths; passed |
+
+Command logs and their exact hashes/durations are in the full-gate receipt,
+under `artifacts/hosted-content-rollout/h5i-full-5-*.log`. The seal tooling
+produced `.local/hosted-content-rollout/h5i-gates.json`, SHA-256
+`460f4965a2b5d0b6b066806aea3ec3aa3540fa4a38bdbda269c74a14be9a4b7e`,
+covering **706 source files**. It records the pre-commit base separately from
+the exact tested working-tree hashes; deployment verifies those bytes again.
+No receipt was edited by hand.
+
+The seal pins these disposable rehearsal receipts:
+
+- Combined schema: `h5i-attestation-1793328503451-78577d21-1e7f-4ee1-b826-d8cb0903a515.json`,
+  SHA-256 `d66126206c6ebd43e77909f37a500923843fc0a2fed751a5ff260b23ee2af564`.
+  Relations: `audit.change_log`, `hub.media_ai_settings`,
+  `hub.media_worker_status`, `hub_deployment.schema_migrations`.
+- Worker login: `h5i-attestation-1793328504414-421b836c-95f3-4bdf-a8f3-6cd298693aac.json`,
+  SHA-256 `11cfa0190115bb67ec4293761f785596581de4e0f96ab5a70157740ea3583e44`.
+  Relation: `hub_deployment.media_worker_provision`.
+
+Both are under `.local/hosted-content-rollout/`, include catalog before/after
+hashes and exact expected changes, and passed the same-snapshot Auth check,
+privilege postflight and final-function scan. These are rehearsal observations;
+hosted observations will be recorded separately.
+
+Local Playwright evidence, regenerated by this final run and checksum-pinned in
+the seal: `artifacts/hosted-content-rollout/h5e-ai-editor-1280.png`,
+`h5e-ai-editor-390.png`, `h5e-ai-website-1280.png`, and
+`h5e-ai-website-390.png` in the same directory. All remain Git-ignored. These
+replace hosted screenshots under the owner's 30 October instruction.
+
+At this checkpoint no hosted write, pilot or provider call has run. The next
+step is the explicit-path H5i commit and push, followed by the approved TEST
+deployment with fresh verified backups and the sealed attestations.

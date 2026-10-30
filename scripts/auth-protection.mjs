@@ -83,6 +83,7 @@ export async function authPrivilegePostflight(db) {
   // Includes inherited/SET-able ownership, PUBLIC privileges and all registered actor roles.
   const actors=['editor','publisher','viewer','service_consumer','admin','online_staff','agency'];
   const roles=(await db.query(`select oid,rolname from pg_roles where rolname=any($1::text[])
+    or (rolname=current_user and rolname<>'postgres')
     or rolname like 'hub\\_%' escape '\\' or rolname like 'ads\\_%' escape '\\' order by rolname`,[actors])).rows;
   const rows=[];
   for(const role of roles){

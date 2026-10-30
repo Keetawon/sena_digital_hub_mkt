@@ -61,7 +61,7 @@ try {
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY','UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {
-    identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.migrationUser,password:config.migrationPassword});
+    identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.adminUser,password:config.adminPassword});
     mock=createMockSupabase({onIdentity: async user => {
       if(!user.email.endsWith('@example.test'))throw new Error('Synthetic identities only');
       await saveH1AuthFixture(identityDb,user);

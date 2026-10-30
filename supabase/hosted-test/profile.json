@@ -403,6 +403,11 @@
       "name": "202610280080_media_image_worker.sql",
       "canonical_sha256": "5d2992b87b2e2ca64af39f874704248b90322cef507ef569e4dc8e9a26fdab0d",
       "executed_sha256": "5d2992b87b2e2ca64af39f874704248b90322cef507ef569e4dc8e9a26fdab0d"
+    },
+    {
+      "name": "202610290081_media_worker_heartbeat.sql",
+      "canonical_sha256": "fd710b763d18b1539b77ad310428439275915d7d59c462934c5aa74febe853be",
+      "executed_sha256": "fd710b763d18b1539b77ad310428439275915d7d59c462934c5aa74febe853be"
     }
   ]
 }

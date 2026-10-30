@@ -10,6 +10,7 @@ async function requireDisposable(db) {
 export async function createH1AuthFixture(db) {
   await requireDisposable(db);
   await db.query('create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz not null)');
+  await db.query('grant usage on schema auth to hub_migration_verifier; grant select on auth.users to hub_migration_verifier');
 }
 export async function saveH1AuthFixture(db,user) {
   assert.ok(user.email.endsWith('@example.test'));await requireDisposable(db);

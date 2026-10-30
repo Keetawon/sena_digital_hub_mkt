@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {randomBytes} from 'node:crypto';
+import {createHash,randomBytes} from 'node:crypto';
 import {mkdir,mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -7,7 +7,7 @@ import net from 'node:net';
 import pg from 'pg';
 import EmbeddedPostgres from 'embedded-postgres';
 import {initialiseDisposableDb} from './initialise-disposable-db.mjs';
-import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,mediaWorkerLoginStatements} from './supabase-test-migrations.mjs';
+import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,rehearseCombinedContentRelease,rehearseMediaWorkerLogin} from './supabase-test-migrations.mjs';
 import {createH1AuthFixture,saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -35,10 +35,11 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     assert.equal(path.resolve(actual).toLowerCase(),path.resolve(directory).toLowerCase());verified=true;
     await admin.query(`create role hub_migration_verifier login createrole noinherit nosuperuser nocreatedb noreplication nobypassrls password '${migrationPassword}'`);
     await admin.query(`create database ${identifier(connection.database)} owner hub_migration_verifier`);
+    await admin.end();admin=new pg.Client({...connection,user:'postgres',password:adminPassword});await admin.connect();
     client=new pg.Client({...connection,user:'hub_migration_verifier',password:migrationPassword});await client.connect();
     // Protected, synthetic Auth source for invite confirmation tests only. App roles
     // have no grants; the mock's operator callback writes these rows on verification.
-    await createH1AuthFixture(client);
+    await createH1AuthFixture(admin);
     await assert.rejects(client.query('grant set on parameter app.ads_test_issuing to hub_migration_verifier'),denied);
     await assert.rejects(client.query("create function public.denied_parameter_probe() returns void language sql set app.ads_test_issuing='off' as 'select'"),denied);
     assert.equal((await client.query("select has_parameter_privilege(current_user,'app.ads_test_issuing','SET') allowed")).rows[0].allowed,false);
@@ -73,7 +74,12 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     // One committed migration models a lost operator connection. Recovery must
     // accept this exact canonical prefix without reapplying it or rotating roles.
     await applyMigration(client,migrations[56],config,'hub_migration_verifier');
-    await runMigrations(client,config,{log,migrations});
+    await runMigrations(client,config,{log,migrations:migrations.slice(0,78)});
+    const sourceFiles=['scripts/supabase-test-migrations.mjs','scripts/hosted-write-attestation.mjs','scripts/auth-write-check.mjs','scripts/auth-protection.mjs',
+      'scripts/simulate-hosted-test.mjs','tests/fixtures/h1-auth.mjs','supabase/hosted-test/profile.json',...migrations.slice(78).map(m=>'supabase/migrations/'+m.name)];
+    const attestedSources=Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
+    const combinedProof=await rehearseCombinedContentRelease(client,config,attestedSources);
+    log('PASS: populated prefix 78 rehearses and attests combined 79/80/81; own Auth snapshot unchanged.');
     assert.deepEqual(await contentUpgradeState(),contentUpgradeBefore);
     assert.equal((await client.query('select count(*)::int count from hub.web_pages')).rows[0].count,0);
     assert.equal((await client.query("select count(*)::int count from hub.account_permission where 'knowledge.publish_web'=any(special_actions)")).rows[0].count,0);
@@ -147,7 +153,10 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     assert.equal((await client.query('select count(*)::int count from hub.projects')).rows[0].count,0);
     log('PASS: caller-forged GUC ignored; runtime/agency cannot enable flags or assume owners; H1 residential allowed while original deferred guard stays closed.');
     const mediaPassword=secret();
-    for(const statement of mediaWorkerLoginStatements(mediaPassword,connection.database))await client.query(statement);
+    const workerProof=await rehearseMediaWorkerLogin(client,{...config,mediaWorkerPassword:mediaPassword},attestedSources);
+    const proofs={};for(const [key,proof] of Object.entries({combined_schema:combinedProof,media_worker_login:workerProof}))
+      proofs[key]={receipt:proof.receipt_file,sha256:createHash('sha256').update(await readFile(proof.receipt_file)).digest('hex')};
+    await writeFile(path.join(root,'.local/hosted-content-rollout/h5i-latest-rehearsals.json'),JSON.stringify(proofs,null,2)+'\n');
     await runMigrations(client,config,{log:()=>{},migrations});
     mediaLogin=new pg.Client({...connection,user:'hub_media_worker_login',password:mediaPassword});await mediaLogin.connect();
     assert.equal((await mediaLogin.query('select current_user name')).rows[0].name,'hub_media_worker_login');
@@ -163,7 +172,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     log('PASS: dedicated media LOGIN uses the runner SCRAM bootstrap, assumes only its worker role, and cannot read Auth; API cannot assume the worker.');
     if(seed) {
       const {IDENTITIES}=await import('./hosted-test-fixtures.mjs');
-      for (const u of IDENTITIES) await saveH1AuthFixture(client,{...u,email_confirmed_at:u.created_at});
+      for (const u of IDENTITIES) await saveH1AuthFixture(admin,{...u,email_confirmed_at:u.created_at});
       for (const [i,u] of IDENTITIES.entries()) await client.query("insert into hub.user_account(id,email,display_name_th,status,hub_role,agency_code) values($1,$2,$3,'ACTIVE',$4,$5) on conflict(id) do nothing",[u.id,u.email,`ผู้ทดสอบ สมมติ ${i+1}`,u.app_metadata.hub_role,u.app_metadata.hub_agency??null]);
       const {applyH1Seed}=await import('./hosted-test-seed.mjs');
       await applyH1Seed(client);await applyH1Seed(client);

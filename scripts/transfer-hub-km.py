@@ -271,22 +271,19 @@ async def hosted(args):
         require(backup['status']=='backed_up' and backup['target_project_ref']==HOSTED_TEST_REF and backup['manifest_sha256']==args.manifest_sha256,'backup_required')
         require(0<=(datetime.now(timezone.utc)-datetime.fromisoformat(backup['at'].replace('Z','+00:00'))).total_seconds()<86400,'backup_expired')
         require(sha((args.backup_receipt.parent/'supabase-before-content.dump').read_bytes())==backup['dump_sha256'],'backup_changed')
-        print(json.dumps({'stage':'transaction_rehearsal_after_backup'}),flush=True)
-        tx=db.transaction();await tx.start()
-        try:rehearsal=await import_rows(db,actor,args.manifest_sha256,manifest,data)
-        finally:await tx.rollback()
-        print(json.dumps({'stage':'rehearsal_passed',**rehearsal}),flush=True)
+        from hosted_write_attestation import AttestedTransaction, load_manifest
+        attestation_manifest=load_manifest(args.attestation_manifest)
         await db.close()
         storage=R2Assets(Settings(database_url=os.environ['HUB_TRANSFER_RUNTIME_DSN']+'?sslmode=verify-full',auth_mode='supabase',environment='hosted-test',supabase_url=f'https://{HOSTED_TEST_REF}.supabase.co',admin_origin='https://72.62.253.205',r2_credentials_file=os.environ['HUB_TRANSFER_R2_FILE'],r2_private_bucket_confirmed=True))
         storage.require_private_bucket();files=await asyncio.to_thread(upload,args.package,data,storage)
         db=await public.connect(public.checked_dsn(os.environ['HUB_TRANSFER_OPERATOR_DSN']))
         actor=await public.preflight(db)
-        async with db.transaction():result=await import_rows(db,actor,args.manifest_sha256,manifest,data)
-        receipt={'status':'committed','at':datetime.now(timezone.utc).isoformat(),'manifest_sha256':args.manifest_sha256,'files':files,**result}
+        async with AttestedTransaction(db,attestation_manifest) as attestation:result=await import_rows(db,actor,args.manifest_sha256,manifest,data)
+        receipt={'status':'committed','at':datetime.now(timezone.utc).isoformat(),'manifest_sha256':args.manifest_sha256,'attestation':attestation.receipt,'files':files,**result}
         write(args.package/'transfer-receipt.json',receipt);print(json.dumps(receipt))
     finally:await db.close()
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('command',choices=['finalize','check','apply']);p.add_argument('--package',type=Path,required=True);p.add_argument('--manifest-sha256');p.add_argument('--hosted',action='store_true');p.add_argument('--confirm');p.add_argument('--backup-receipt',type=Path);a=p.parse_args();a.package=a.package.resolve()
+    p=argparse.ArgumentParser();p.add_argument('command',choices=['finalize','check','apply']);p.add_argument('--package',type=Path,required=True);p.add_argument('--manifest-sha256');p.add_argument('--hosted',action='store_true');p.add_argument('--confirm');p.add_argument('--backup-receipt',type=Path);p.add_argument('--attestation-manifest',type=Path);a=p.parse_args();a.package=a.package.resolve()
     try:finalize(a.package) if a.command=='finalize' else asyncio.run(hosted(a))
     except Exception as e:print(json.dumps({'error':str(e) if isinstance(e,ValueError) and re.fullmatch('[a-z_]+',str(e)) else type(e).__name__,'sqlstate':getattr(e,'sqlstate',None)}));raise SystemExit(1)

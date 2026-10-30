@@ -75,7 +75,7 @@ def test_worker_result_never_confirms_metadata_and_stale_source_is_discarded(per
         transaction = operator.transaction()
         await transaction.start()
         try:
-            await operator.execute('update hub.media_ai_settings set monthly_cap_usd=5,provider_configured=true,worker_seen_at=clock_timestamp()')
+            await operator.execute('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()')
             project = await call(operator, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
             asset = await upload(operator, ids['editor'])
             asset_id = UUID(asset['id'])

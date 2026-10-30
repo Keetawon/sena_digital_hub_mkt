@@ -351,8 +351,11 @@ async def plan(db, package):
     return result, (project_actions, group_actions)
 
 
-async def stage_package(db, package, *, apply=False):
-    async with db.transaction(isolation='serializable', readonly=not apply):
+async def stage_package(db, package, *, apply=False, attestation=None):
+    if str(ROOT / 'scripts') not in sys.path:
+        sys.path.insert(0, str(ROOT / 'scripts'))
+    from hosted_write_attestation import OperatorTransaction
+    async with (OperatorTransaction(db, attestation, local_isolation='serializable') if apply else db.transaction(readonly=True)):
         if apply:
             await db.execute("SELECT pg_advisory_xact_lock(hashtext('sena_hub_reviewed_pilot_intake'))")
             await db.execute('LOCK TABLE staging.rem_projects,staging.dw_projects,staging.dw_project_groups IN SHARE ROW EXCLUSIVE MODE')

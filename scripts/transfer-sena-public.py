@@ -261,7 +261,7 @@ async def preflight(db):
         AND lower(a.email)=lower(u.email)''')
     require(len(actors) == 1, 'expected_one_verified_operator_admin')
     actor = actors[0]['id']
-    async with db.transaction():
+    async with db.transaction(readonly=True):
         await db.execute("SELECT set_config('app.actor_id',$1,true)", str(actor))
         require(await db.fetchval("SELECT hub.can('projects','edit') AND hub.can('knowledge','view')"), 'operator_permission_missing')
     return actor
@@ -300,7 +300,7 @@ async def hosted(args):
         actor = await preflight(db)
         runtime = await connect(runtime_dsn)
         try:
-            async with runtime.transaction():
+            async with runtime.transaction(readonly=True):
                 await runtime.execute('SET LOCAL ROLE hub_app')
                 await runtime.execute("SELECT set_config('app.actor_id',$1,true)", str(actor))
                 require(await runtime.fetchval("SELECT hub.can('projects','edit') AND hub.can('knowledge','view')"), 'runtime_permission_missing')
@@ -324,10 +324,11 @@ async def hosted(args):
         uploaded = await asyncio.to_thread(upload_files, args.package, rows, storage)
         db = await connect(dsn)
         actor = await preflight(db)
-        async with db.transaction():
+        from hosted_write_attestation import AttestedTransaction, load_manifest
+        async with AttestedTransaction(db, load_manifest(args.attestation_manifest)) as attestation:
             result = await import_rows(db, actor, args.manifest_sha256, manifest, rows, drafts, identities)
         receipt = {'status': 'committed', 'at': datetime.now(timezone.utc).isoformat(),
-                   'manifest_sha256': args.manifest_sha256, 'counts': manifest['counts'], 'r2': uploaded, **result}
+                   'manifest_sha256': args.manifest_sha256, 'attestation': attestation.receipt, 'counts': manifest['counts'], 'r2': uploaded, **result}
         source.write(args.package / 'transfer-receipt.json', receipt)
         print(json.dumps(receipt), flush=True)
     finally:
@@ -342,6 +343,7 @@ def main():
     parser.add_argument('--hosted', action='store_true')
     parser.add_argument('--confirm')
     parser.add_argument('--backup-receipt', type=Path)
+    parser.add_argument('--attestation-manifest', type=Path)
     args = parser.parse_args()
     try:
         if args.command == 'prepare':

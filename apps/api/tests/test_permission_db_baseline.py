@@ -21,7 +21,7 @@ FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', '
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
 ACCOUNT_UI_TABLES = {'hub.permission_notice_ack'}
 WEBSITE_TABLES = {'hub.website_asset_suggestions', 'staging.website_content_receipts'}
-MEDIA_WORKER_TABLES = {'hub.media_ai_settings'}
+MEDIA_WORKER_TABLES = {'hub.media_ai_settings', 'hub.media_worker_status'}
 WEBSITE_FUNCTIONS = {'hub.' + name for name in ('website_source_valid', 'website_media_agreement',
     'website_media_projects', 'website_media_queue', 'website_media_confirm', 'website_content_sources',
     'website_media_claim', 'website_media_finish')}
@@ -174,7 +174,9 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
                     media_worker = [r for r in actual if r['schema'] + '.' + r['table'] in MEDIA_WORKER_TABLES]
-                    assert len(media_worker) == 1 and all(r['name'] == 'media_ai_owner' and r['roles'] == ['postgres']
+                    assert {(r['table'], r['name']) for r in media_worker} == {
+                        ('media_ai_settings', 'media_ai_owner'), ('media_worker_status', 'media_worker_status_owner')}
+                    assert len(media_worker) == 2 and all(r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
                         and r['qual'] == r['with_check'] == 'true' for r in media_worker)
                     actual = [r for r in actual if r not in media_worker]
                     website = [r for r in actual if r['schema'] + '.' + r['table'] in WEBSITE_TABLES]

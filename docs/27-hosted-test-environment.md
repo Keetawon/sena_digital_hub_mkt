@@ -19,8 +19,10 @@ the unit: `HUB_MEDIA_DATABASE_CA_FILE`, `HUB_MEDIA_MODEL`,
 worker uses its own OS identity, private cache and Unix image broker; it receives
 no R2 credential. Protect configuration backups exactly like the existing ones.
 Postflight checks file ownership/mode, variable presence flags, unit/process
-isolation, health, smoke checks and the H5h protected fingerprints. Never report
-values. The owner adds the media key after the combined deployment STOP.
+isolation, health, smoke checks and the H5i Auth-privilege/security-watch reports.
+Hosted write batches use the H5i transaction attestation and catalog checks in
+doc 46; historical live-data fingerprints are no longer STOP gates. Never report
+secret values. The owner adds the media key after the combined deployment STOP.
 
 ## Historical H1 plan
 

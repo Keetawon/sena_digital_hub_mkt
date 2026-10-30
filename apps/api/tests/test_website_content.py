@@ -291,7 +291,7 @@ def test_website_worker_approved_scope_usage_and_no_ambiguous_retry(permission_a
         db = await operator()
         transaction = db.transaction(); await transaction.start()
         try:
-            await db.execute('update hub.media_ai_settings set monthly_cap_usd=5,provider_configured=true,worker_seen_at=clock_timestamp()')
+            await db.execute('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()')
             project = await project_fixture(db, ids['editor'])
             batch = uuid4().hex * 2
             await db.execute('INSERT INTO staging.knowledge_batches(manifest_sha256,manifest) VALUES($1,$2)', batch, {})

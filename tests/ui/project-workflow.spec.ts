@@ -2,10 +2,19 @@ import { expect, test, type Page } from '@playwright/test';
 
 const origin = 'http://127.0.0.1:3000';
 
+async function selectLoadedRole(page: Page, role: string) {
+  // The selector updates before its full-page navigation. Wait for the new
+  // document so a dashboard click cannot land on the page being replaced.
+  const navigation = page.waitForEvent('framenavigated', frame => frame === page.mainFrame());
+  await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(role);
+  await navigation;
+  await page.waitForLoadState('domcontentloaded');
+}
+
 async function enter(page: Page, role: 'editor' | 'publisher' | 'viewer') {
   await page.goto('/');
   await expect(page.getByText('พื้นที่ทดสอบในเครื่อง', { exact: true })).toBeVisible();
-  await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(role);
+  await selectLoadedRole(page, role);
   await expect(page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM')).toBeVisible();
   const response = await page.request.get('/api/hub/v1/admin/projects');
   expect(response.ok()).toBeTruthy();
@@ -13,7 +22,10 @@ async function enter(page: Page, role: 'editor' | 'publisher' | 'viewer') {
   expect(project).toBeDefined();
   expect(project.source.rem_project_id).toBe('DEMO-001');
   // This original synthetic seed has no REM ProjectStatus, so opt into unknowns.
-  await page.getByRole('checkbox', { name: 'แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ' }).check();
+  // Its controlled value follows the URL update, so assert the eventual state.
+  const includeOther = page.getByRole('checkbox', { name: 'แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ' });
+  await includeOther.click();
+  await expect(includeOther).toBeChecked();
   await page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM').fill('DEMO-001');
   await page.locator(`.project-dashboard a.project-row-action[href^="/?project=${project.public_project_id}&"]`).click();
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeVisible();
@@ -21,7 +33,7 @@ async function enter(page: Page, role: 'editor' | 'publisher' | 'viewer') {
 }
 
 async function switchRole(page: Page, role: string) {
-  await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(role);
+  await selectLoadedRole(page, role);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toBeEnabled();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue(role);
   await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
