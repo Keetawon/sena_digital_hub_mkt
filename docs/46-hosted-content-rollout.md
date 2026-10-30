@@ -3297,7 +3297,7 @@ or env-file creation is part of this retry. A fresh verified backup precedes
 promotion; its outcome is recorded below.
 
 
-#### Promotion-only retry ? worker import STOP, 30 October 2026
+#### Promotion-only retry - worker import STOP, 30 October 2026
 
 The harness fix and diagnosis were committed and pushed as
 `cd453c13f6f8126a2fd696f5d8b4a9ef67bdccd8` before hosted execution. Admission
@@ -3306,7 +3306,7 @@ readiness proof. Seven trusted-HTTPS preflight checks passed. A fresh protected
 backup passed inventory and full-archive read verification; a protected
 configuration backup included the existing DSN-only worker env file.
 
-The retry ran **04:49:07?04:49:56 UTC**. The corrected ai-state smoke passed its
+The retry ran **04:49:07 to 04:49:56 UTC**. The corrected ai-state smoke passed its
 HTTP 200, envelope, cap 5/spent 0/provider-not-configured, real lifespan and
 read-only assertions. Execution reached `promotion/environment_isolation`,
 then raised **`FileNotFoundError`** while inspecting process environments.
@@ -3341,7 +3341,7 @@ remains `7781704-media-5b9714604a03`.
 
 Read-only safety postflight passed:
 
-- Exact migration prefix **81** and checksums; migrations 79?81, worker login
+- Exact migration prefix **81** and checksums; migrations 79 through 81, worker login
   provisioning and env-file creation were **not repeated**.
 - Auth privilege postflight: **513 table/role checks** passed; **504 final
   function definitions** passed the static Auth-write check. The runtime still
