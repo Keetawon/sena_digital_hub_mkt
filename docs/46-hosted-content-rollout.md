@@ -3164,3 +3164,134 @@ Receipt: `artifacts/hosted-content-rollout/h5i-stop-record-checks.json`, SHA-256
 `f45008655eaea4fbcc515620b27002751981a5cbec35dcddf176f786e348306d`.
 The final full-gate results above remain valid for the unchanged code. They do
 not override the hosted smoke STOP.
+
+#### Owner follow-up — ai-state diagnosis and promotion-only resumption
+
+Owner instruction, 30 October 2026:
+
+> Agreed: no media key. Diagnose the ai-state smoke read-only. Do not promote and
+> do not change the schema.
+>
+> 1. Rerun the exact smoke harness against the existing candidate directory
+>    7781704-media-5b9714604a03, without switching the live symlink. Record only
+>    non-secret diagnostics:
+>    - the step reached (import / app creation / lifespan / request / response
+>      check);
+>    - the exception class;
+>    - SQLSTATE;
+>    - the HTTP status;
+>    - the API error code;
+>    - the names of any missing response keys.
+>    Never record values, DSNs, tokens or headers.
+> 2. Check these hypotheses explicitly:
+>    a. The harness inherited HUB_MEDIA_BROKER_ENABLED=1 without systemd socket
+>       activation, so start_broker raised in lifespan.
+>    b. The harness read cap_usd and other keys from the top level instead of the
+>       API's {"data": ...} envelope.
+>    c. The injected actor lacks projects view on the chosen project, or the
+>       actor role lacks EXECUTE on hub.media_ai_state on hosted.
+>    d. Hosted-only lifespan checks (R2 private bucket, hosted profile, registry
+>       readiness) fail for the harness's OS user.
+> 3. Fix where the cause lies:
+>    - If it is the harness: move it into the repo, with tests against the local
+>      H1 simulation.
+>    - If it is app code: quick gate, then one full gate and a new seal.
+>    Then re-run only the promotion step. Migrations 7981, the worker login and
+>    the env file are already done; never repeat them.
+> 4. Standing rule for all operator tooling: redaction removes secret values
+>    only. Always keep the step, exception class, SQLSTATE and HTTP status, so
+>    that a STOP always names its cause.
+> 5. STOP after a successful promotion for the media key, as planned. Commit the
+>    diagnosis and fix to main.
+
+**Read-only diagnosis: established.** The original harness failed at
+`import/httpx`, with `ModuleNotFoundError`; SQLSTATE, HTTP status and API error
+code were null, and no response-key check was reached. `httpx` belongs to the
+development dependency group; the Linux candidate correctly uses `--no-dev`.
+The original harness SHA-256 is
+`e526268a2bf5043f9b2c6f921f2b274411b63d562a637514b24a7d181ef3d75c`.
+Diagnostic instrumentation changed only observations/error handling; original
+request and assertion behavior was retained. Receipts:
+`h5e-smoke-diagnosis-1793332301372.json` and
+`h5e-smoke-diagnosis-1793332393506.json` under
+`.local/hosted-content-rollout/`. The live symlink stayed on the previous release.
+
+| Hypothesis | Observed result |
+|---|---|
+| Broker flag without activation | Excluded: the flag and activation presence flags were false; the original harness never entered lifespan. |
+| Wrong response envelope | Excluded: the original code reads `response.json()['data']`. The regression tests also reject a top-level budget object and name missing nested keys. |
+| Actor/object permission or EXECUTE denial | Excluded: selected actor has projects view; the actual runtime connection with `SET LOCAL ROLE hub_app` successfully calls the selected project's RPC. EXECUTE is true for `hub_app`, false for the login and actor roles, as intended by the API's base-role design. No grant was changed. |
+| Hosted lifespan/OS-user checks | Excluded by the corrected read-only run: actual R2 private-bucket, hosted-profile and registry-readiness checks passed as `sena-hub-api`. |
+
+The corrected harness is `scripts/hosted-ai-state-smoke.py`, with shared metadata
+redaction in `scripts/operator_diagnostics.py`. It uses the existing locked
+production `httpx2` dependency; no application dependency, app code, credential,
+schema or permission change is required. It now exercises the real lifespan
+under a read-only pool, preserves the API envelope and injects an existing actor
+only inside the non-listening smoke process. Provider keys are removed before
+application imports; worker-only configuration is refused.
+
+The first corrected run passed lifespan but stopped at the read-only assertion:
+the hosted pool connection did not retain the requested startup read-only GUC.
+Receipts `h5e-smoke-diagnosis-1793333164435.json` and
+`h5e-smoke-diagnosis-1793333230416.json` preserve that failure. The harness now
+sets and verifies `default_transaction_read_only` on **every pool checkout**,
+including after connection resets. Its regression test simulates the ignored
+startup setting. These diagnostic runs issued only reads and connection-local
+settings; no migration, login, env-file operation or promotion was repeated.
+
+The final read-only candidate check passed in
+`h5e-smoke-diagnosis-1793333352626.json`: step `response_check`, HTTP **200**, no
+exception/SQLSTATE/API error or missing response key; real lifespan, database
+read-only mode, anonymous denial and expected cap/spend/disabled-provider state
+all passed. Fixed harness SHA-256:
+`46b80c12fc986870349ac741f1f220630db0ab241b62b99431152d99483bf0c3`.
+No provider call or signed-in hosted session was used.
+
+Quick gate: **14 Node runner tests passed**, and **10 H1 smoke tests passed** in
+`artifacts/hosted-content-rollout/h5e-smoke-quick-2.log`. The first eight-test
+quick run remains in `h5e-smoke-quick-1.log`. Tests cover production-only imports,
+the real H1 lifespan/response, permission denial with SQLSTATE, broker/R2
+failures, missing response keys, worker-env isolation, read-only checkout and
+metadata forwarding without secret values. Shared JS operator errors now retain
+the same metadata; active promotion wrappers must preserve it rather than
+replace it with a generic assertion. This standing rule is also in docs/11 and
+docs/41. Full gate and the promotion-only result are recorded next.
+
+#### Smoke-harness full gate and replacement seal — 30 October 2026
+
+The full gate passed on the final source, without a failure loop:
+
+| Tier | Result |
+|---|---|
+| Admin typecheck and offline build | Passed |
+| API | 2,151 passed, 11 opt-in skipped, 6 existing deprecation warnings |
+| DB | 63 SQL/concurrency checks and 94 Node tests passed; populated upgrade included |
+| Browser | 304 passed in one run (12.0 minutes), including both footer widths |
+| H1 | 68 Node/protocol checks, 10 smoke-harness regressions and 45 browser tests passed |
+| Credential scan | 716 source files and 64 browser files, zero matches; credential files not read |
+| Static Auth-write gate | 81 migrations and 84 scripts passed |
+| Hosted transaction-path scan | Passed with zero violations |
+
+Full receipt: `.local/hosted-content-rollout/h5i-full-6.json`, SHA-256
+`ce8eddbdfe09a1df22980bdfdf326a0dda2fd8fe19e22704d2e826dcd7feb444`.
+Logs are `artifacts/hosted-content-rollout/h5i-full-6-*.log`; the receipt pins
+their hashes and durations. The normal tooling produced the new seal at
+`.local/hosted-content-rollout/h5e-smoke-gates.json`, SHA-256
+`a113cb8848562c452e46f2e563c800a0dacc35def2f06cd5d8cfafaba179b0e3`,
+covering **709 source files**. The original gate receipt and seal remain intact.
+
+The four local Playwright screenshots listed above were regenerated by this
+run and are pinned in the new seal. The per-image footer remains below the
+editor actions at 1280 and 390 px; the mobile layout has no horizontal overflow.
+The suite tests the not-configured, waiting, completed, budget and ineligible
+states. No hosted Computer Use or provider call was made.
+
+Promotion-only admission requires the pushed operator commit, this new seal,
+the original Linux readiness receipt and exact equality of all **225 candidate
+application files** with the tested source. The corrected repo harness and its
+diagnostic helper run in memory against the existing candidate. The promotion
+wrapper also preserves the last readiness exception and HTTP status without
+response content. No application rebuild, schema batch, worker-login operation
+or env-file creation is part of this retry. A fresh verified backup precedes
+promotion; its outcome is recorded below.

@@ -177,6 +177,12 @@ REPEATABLE READ write-set/catalog attestation and same-snapshot Auth invariance.
 Static Auth-write prevention and the privilege postflight remain required.
 Earlier baselines, failed receipts and the H5h wording below are historical.
 
+**Operator diagnostic rule (30 October 2026; docs/46):** redaction removes
+secret values only. A STOP must retain the step, exception class, SQLSTATE and
+HTTP status, with API error code and missing response-key names when applicable.
+Do not discard these fields in subprocess wrappers or record DSNs, tokens,
+headers, SQL parameters or response values.
+
 Hosted TEST Auth comparisons, including UAT, follow owner decision **H5h
 (28 October 2026)** in `docs/46-hosted-content-rollout.md`: identity, schema,
 all unclassified Auth tables and every non-Auth protected table stay strict;

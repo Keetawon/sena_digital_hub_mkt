@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {readFile} from 'node:fs/promises';
-import { applyMigration, applyCombinedContentRelease, COMBINED_COMPONENTS, configuration, loadMigrations, mediaWorkerLoginStatements, migrationBody, requireVerifiedTls, runMigrations, safeError, statements, validateCombinedManifest, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
+import { applyMigration, applyCombinedContentRelease, COMBINED_COMPONENTS, configuration, loadMigrations, mediaWorkerLoginStatements, migrationBody, operatorDiagnostic, requireVerifiedTls, runMigrations, safeError, statements, validateCombinedManifest, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
 
 const ref = 'eqlrtevwpyboplljgowo';
 const env = {
@@ -70,6 +70,20 @@ test('connection and SQL errors never expose supplied secrets or SQL', () => {
   assert.doesNotMatch(safeError(Object.assign(new Error(secret), { code: '28P01', detail: secret })), /secret|postgresql/);
   assert.doesNotMatch(safeError(new Error(secret)), /secret|postgresql/);
   assert.match(safeError(Object.assign(new Error(secret), { code: 'ECONNREFUSED' })), /ECONNREFUSED/);
+});
+
+test('operator diagnostics keep failure location, cause and status without values', () => {
+  const error=Object.assign(new Error('postgresql://private:credential@host/db'),{code:'42501',detail:'private-request'});
+  const result=operatorDiagnostic(error,{step:'promotion/ai_state',httpStatus:403,apiErrorCode:'forbidden',missingResponseKeys:['data']});
+  assert.deepEqual(result,{step:'promotion/ai_state',exception_class:'Error',sqlstate:'42501',code:'42501',http_status:403,api_error_code:'forbidden',missing_response_keys:['data']});
+  assert.doesNotMatch(JSON.stringify(result),/postgresql|credential|private-request/);
+  assert.equal(operatorDiagnostic(new Error('wrapper',{cause:error}),{step:'lifespan'}).sqlstate,'42501');
+  assert.equal(JSON.parse(safeError(error,{step:'backup'})).step,'backup');
+  const wrapped=Object.assign(new Error('child raw output withheld'),{diagnostic:{...result,exception_class:'InsufficientPrivilegeError',message:'private-request',headers:{authorization:'private-token'}}});
+  assert.equal(operatorDiagnostic(wrapped).sqlstate,'42501');
+  assert.equal(operatorDiagnostic(wrapped).exception_class,'InsufficientPrivilegeError');
+  assert.equal(operatorDiagnostic(wrapped).http_status,403);
+  assert.doesNotMatch(safeError(wrapped),/private-request|private-token|headers/);
 });
 
 test('H5d refuses canonical 79 through both hosted apply entry points before any SQL', async () => {

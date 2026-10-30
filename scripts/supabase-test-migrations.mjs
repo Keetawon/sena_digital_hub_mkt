@@ -419,10 +419,29 @@ export async function runMigrations(client, config, { log = console.log, migrati
   } finally { if (locked) await client.query('select pg_advisory_unlock($1)', [LOCK]); }
 }
 
-export function safeError(error) {
-  // Database errors may include SQL, values or a connection string: print codes only.
-  if (error.code) return `Database/connection operation failed (${/^[A-Z0-9_]{2,40}$/.test(error.code) ? error.code : 'unclassified'}). No credentials logged.`;
-  return error instanceof GuardError ? error.message : 'Operation failed. Error details withheld to protect connection credentials.';
+export function operatorDiagnostic(error, {step='operation',httpStatus,apiErrorCode,missingResponseKeys=[]}={}) {
+  const child=error?.diagnostic;
+  if(child&&typeof child==='object'){
+    step=child.step??step;httpStatus=child.http_status??httpStatus;apiErrorCode=child.api_error_code??apiErrorCode;
+    if(Array.isArray(child.missing_response_keys))missingResponseKeys=child.missing_response_keys;
+  }
+  let current=error,sqlstate=null;
+  for(let i=0;current&&i<8;i++,current=current.cause){
+    const value=current.sqlstate??current.code;
+    if(typeof value==='string'&&/^[A-Z0-9]{5}$/.test(value)){sqlstate=value;break;}
+  }
+  if(typeof child?.sqlstate==='string'&&/^[A-Z0-9]{5}$/.test(child.sqlstate))sqlstate=child.sqlstate;
+  return {step:/^[a-z][a-z0-9_./-]{0,95}$/.test(step)?step:'operation',
+    exception_class:typeof child?.exception_class==='string'&&/^[A-Za-z_][A-Za-z_0-9]{0,79}$/.test(child.exception_class)?child.exception_class:error?.constructor?.name??'Error',sqlstate,
+    code:/^[A-Z0-9_]{2,40}$/.test(error?.code??'')?error.code:null,
+    http_status:Number.isInteger(httpStatus)&&httpStatus>=100&&httpStatus<=599?httpStatus:null,
+    api_error_code:typeof apiErrorCode==='string'&&/^[a-z][a-z0-9_]{0,63}$/.test(apiErrorCode)?apiErrorCode:null,
+    missing_response_keys:missingResponseKeys.filter(name=>typeof name==='string'&&/^[a-z][a-z0-9_.]{0,63}$/.test(name))};
+}
+
+export function safeError(error, options) {
+  // Retain actionable metadata; only trusted guard messages may add prose.
+  return JSON.stringify({...operatorDiagnostic(error,options),...(error instanceof GuardError?{reason:error.message}:{})});
 }
 
 export function requireVerifiedTls(client) {

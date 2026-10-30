@@ -16,7 +16,8 @@ import {authWriteInventory} from './auth-write-check.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
-if(args.some(x=>!['--test','--existing-simulation','--api-only','--admin-only'].includes(x)) || (component && !args.includes('--existing-simulation'))) throw new Error('Invalid local simulation arguments');
+const smokeOnly=args.includes('--smoke-only');
+if(args.some(x=>!['--test','--existing-simulation','--api-only','--admin-only','--smoke-only'].includes(x)) || (component && !args.includes('--existing-simulation')) || (smokeOnly&&args.length!==1)) throw new Error('Invalid local simulation arguments');
 const children=[];let database,mock,closing=false,adminProcess,apiProcess,identityDb;
 function child(command,arguments_,env,cwd=root) {
   const process_=spawn(command,arguments_,{cwd,env,stdio:'inherit',windowsHide:true});children.push(process_);return process_;
@@ -41,7 +42,7 @@ async function ready(url,process_) {
 }
 try {
   if((await authWriteInventory()).status!=='passed')throw new Error('H5h Auth-write release gate failed');
-  const ports=component==='api'?[8001]:component==='admin'?[3001]:[54329,8001,3001,...(args.includes('--existing-simulation')?[]:[55434])];
+  const ports=smokeOnly?[54329,55434]:component==='api'?[8001]:component==='admin'?[3001]:[54329,8001,3001,...(args.includes('--existing-simulation')?[]:[55434])];
   for(const port of ports)await new Promise((resolve,reject)=>{
     const probe=createServer();probe.once('error',()=>reject(new Error(`Local H1 port ${port} is already in use; stop its prior simulation first.`)));
     probe.listen(port,'127.0.0.1',()=>probe.close(resolve));
@@ -66,6 +67,15 @@ try {
       if(!user.email.endsWith('@example.test'))throw new Error('Synthetic identities only');
       await saveH1AuthFixture(identityDb,user);
     }});mock.listen(54329,'127.0.0.1');await once(mock,'listening');
+  }
+  if(smokeOnly||args.includes('--test')) {
+    const actor=(await identityDb.query("select id::text actor_id,hub_role role,hub.permission_projection(a) capabilities from hub.user_account a where status='ACTIVE' and hub_role='admin' order by id limit 1")).rows[0];
+    const project=(await identityDb.query('select public_project_id public_id from hub.projects order by id limit 1')).rows[0];
+    if(!actor||!project)throw new Error('Local H1 smoke fixtures missing');
+    const smoke=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','python','tests/h1-ai-state-smoke.py'],{...env,HUB_H1_SMOKE_CONTEXT:JSON.stringify({...actor,...project})});
+    const [code]=await once(smoke,'exit');
+    if(code!==0){await stop();process.exit(code??1);}
+    if(smokeOnly){await stop();console.log('PASS: H1 ai-state smoke tests complete');process.exit(0);}
   }
   if(component!=='admin') {
     apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','python','scripts/run-h1-api.py'],env);

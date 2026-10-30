@@ -336,6 +336,22 @@ The runner supplies the test connection and a unique run marker. Before API test
 
 ## Test gates
 
+Operator tooling must redact secret values without discarding the cause of a
+failure. Every STOP records its step, exception class, SQLSTATE and HTTP status
+(null when unavailable), plus the API error code and missing response-key names
+when applicable. Never include exception messages containing connection values,
+SQL parameters, request/response values, tokens or headers. Preserve these
+metadata fields across subprocess boundaries. Use `operatorDiagnostic` /
+`safeError` in `scripts/supabase-test-migrations.mjs` and
+`scripts/operator_diagnostics.py` for the active hosted operators.
+
+`node scripts/run-hosted-h1.mjs --smoke-only` runs the focused repository
+`hosted-ai-state-smoke.py` tests against the disposable H1 DB and R2 simulation.
+It rejects occupied ports and removes only its owned simulation. The same tests
+also run in the full H1 gate. The smoke uses the locked production `httpx2`
+dependency, exercises real lifespan checks, and enforces read-only mode on every
+pool checkout; it never opens a listener or a signed-in hosted session.
+
 **Quick gate:** run after every change while iterating. Aim for 1–3 minutes;
 shared-area changes require the wider selection below.
 
