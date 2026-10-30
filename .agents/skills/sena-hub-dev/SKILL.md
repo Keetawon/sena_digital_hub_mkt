@@ -55,6 +55,7 @@ $env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES = (Resolve-Path scripts/offline-fonts.cjs
 try { npm.cmd run build --prefix apps/admin -- --webpack }
 finally { Remove-Item Env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES }
 npm.cmd run test:api
+npm.cmd run test:production             # frozen production install/import guard
 npm.cmd run test:db
 npm.cmd run test:ui                     # รันชุดทดสอบตามลำดับ ไม่รันพร้อมกัน
 npm.cmd run test:hosted-h1              # where the slice touches hosted paths
@@ -84,7 +85,7 @@ shared-area changes require the wider selection below.
 | A single screen or endpoint | That endpoint's API tests and that screen's spec(s) |
 
 **Full gate:** run once, at the end of the slice. Run every verification command
-in the Definition of done: typecheck, the documented offline build, `test:api`,
+in the Definition of done: typecheck, the documented offline build, `test:production`, `test:api`,
 `test:db`, `test:ui`, and the H1 suite where the slice touches hosted paths.
 Run it before reporting the slice done, before any commit the owner asks for,
 and before any hosted TEST rollout step. Hosted rollout documents, including
@@ -103,6 +104,6 @@ run." Never write "all tests passed" unless the full gate ran on the final code.
 Migration + SQL/RLS test · API endpoint + pytest (validation, permission, happy path) · admin screen
 + Playwright spec · docs updated (the numbered doc that owns the design). Use quick gates while
 iterating. The verification commands listed above are the full gate, run once at the end: typecheck,
-the offline build, test:api, test:db, test:ui and H1 where hosted paths are touched. Report real output
+the offline build, test:production, test:api, test:db, test:ui and H1 where hosted paths are touched. Report real output
 before calling the slice done, an owner-requested commit or a hosted TEST rollout step. If a command
 cannot be run, say so; do not claim it passed.

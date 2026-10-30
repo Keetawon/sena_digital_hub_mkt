@@ -12,9 +12,17 @@ from hosted_write_attestation import AttestedTransaction, OperatorTransaction
 
 async def main():
     value = json.load(sys.stdin)
-    assert value['connection']['host'] == '127.0.0.1' and value['connection']['port'] == 55436
+    assert value['connection']['host'] == '127.0.0.1'
+    assert isinstance(value['connection']['port'], int) and 1024 <= value['connection']['port'] <= 65535
+    assert value['connection']['database'] == 'sena_hub_local'
+    base = (Path(__file__).resolve().parents[2] / '.local/test-runs').resolve(strict=True)
+    directory = Path(value['directory']).resolve(strict=True)
+    assert directory.parent == base and directory.name.startswith('attestation-')
+    marker = json.loads((directory / 'run.json').read_text(encoding='utf-8'))
     db = await asyncpg.connect(**value['connection'])
     try:
+        assert Path(await db.fetchval('show data_directory')).resolve(strict=True) == (directory / 'postgres').resolve(strict=True)
+        assert await db.fetchval('select run_id from public.disposable_test_run') == marker['run_id']
         async with AttestedTransaction(db, value['manifest']) as proof:
             await db.execute('insert into hub.allowed values(100)')
         assert proof.receipt and not db.is_in_transaction()

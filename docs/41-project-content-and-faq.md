@@ -166,6 +166,11 @@ Each phase lists what to build. Every phase also: adds DB/API/UI tests for new f
 
 Admin typecheck; the documented offline webpack build; full `test:api`; full `test:db`; the relevant `test:ui` specs plus new ones at 1280 px and 390 px; migration replay on a disposable database; a credential scan over changed files and the browser bundle. Do not skip, quarantine or weaken existing tests.
 
+Owner follow-up, 30 October 2026: the full gate also includes `test:production`,
+a frozen production-only temporary install with import/side-effect regressions.
+Candidate API and worker self-checks must pass under their actual OS identities
+before promotion; include them in candidate readiness. See docs/11 and docs/46.
+
 ## 6. STOP and report instead of proceeding when
 
 **H5i (29 October 2026), including its addendum, supersedes the H5h shared-data

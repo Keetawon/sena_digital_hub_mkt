@@ -3412,3 +3412,113 @@ violations; 716 source and 64 browser files with zero credential matches;
 credential files. Receipt `artifacts/hosted-content-rollout/h5e-smoke-stop-record-checks.json`,
 SHA-256 `b8df99b17548daac95daadbb9afc6c89eedb5da85cea4940ec0dcd8fa50f211c`. The full-gate results above remain valid for the
 unchanged code, but the hosted worker-import smoke remains a STOP.
+
+#### Owner follow-up: production dependency and pre-promotion guards
+
+30 October 2026: the owner authorizes moving `httpx>=0.28,<1` from the dev group
+to runtime dependencies, updating the lock with `uv`, adding a frozen production
+install/import gate and candidate API/worker self-checks, then quick/full gates,
+a new seal, a rebuilt Linux candidate and promotion only. Do not repeat
+migrations 79 through 81, the worker login or the env file. The media key stays
+absent; after successful promotion, STOP for the owner.
+
+The `uv lock` update moves only the dependency classification; no package
+version changes. `test:production` installs the frozen runtime set into a fresh
+temporary project/venv, imports all 47 API modules plus the API launchers and
+hosted worker launcher (**50 entries**), and creates the API with synthetic
+settings without lifespan. Checks block network access, writes and credential
+file reads. Pinned public package downloads are allowed during installation;
+no service credentials enter that process. Four regressions cover a runtime
+import of dev-only `pytest`, forbidden side effects, invalid worker settings,
+and valid synthetic worker settings with no connection or provider call.
+
+The worker's `--self-check` uses the same extracted connection validation as
+normal startup, including the exact TEST target/login, Session/direct port,
+TLS mode and public CA. It exits before connecting. Candidate checks run as
+`sena-hub-api` and `sena-hub-media` in temporary hardened units with private
+networking. Only the worker self-check unit loads the existing worker env file;
+the API self-check uses synthetic settings. Both results are required in
+candidate readiness and checked again before the promotion symlink switch.
+Startup errors retain diagnostic metadata without values.
+
+Quick gate: **50 production imports and four regressions passed** in
+`artifacts/hosted-content-rollout/h5e-production-quick.log`; **14 affected API
+tests passed** in `h5e-production-media-quick.log` in the same directory. The
+first offline install attempt correctly refused a missing cached wheel; the
+normal frozen install fetched that pinned public wheel. The full-gate commands
+in the canonical skill and docs/11 now include `test:production`. Full gate,
+new seal and hosted receipts follow below. No hosted operation has run in this
+follow-up at this checkpoint.
+
+The first full run, `.local/hosted-content-rollout/h5i-full-7.json` (SHA-256
+`591835db4acc13fb8d3c0ae093ea9d227e23cd496b8ab8725513bcf4a5868895`), passed
+typecheck, offline build, production imports/regressions and **2,151 API tests
+(11 skipped)**. The DB tier then refused to start its H5i attestation fixture:
+`EADDRINUSE` on `127.0.0.1:55436`. Read-only process inspection identified the
+separate DW workspace's PostgreSQL process, PID 27620. It was preserved; no
+port substitution or test weakening was made. All other required test ports
+were free. Port receipt: `artifacts/hosted-content-rollout/h5e-production-port-check.json`.
+The owner was asked to have that process's owner release the port. Following
+the failure-loop rule, rerun the failing test once free, then the full gate.
+No seal, commit or hosted mutation is authorized by this incomplete run.
+
+#### Owner follow-up: free ports for disposable test listeners
+
+30 October 2026: the owner directs that PID 27620 remain running and that the
+test choose its own free loopback port, retrying a bind race. This supersedes
+the request to wait for the DW owner above. The attestation and populated
+upgrade fixtures now probe `127.0.0.1:0`, close the listener and start their own
+SCRAM cluster on the assigned port. Only an address-in-use startup failure
+retries (at most five attempts); no competing process is stopped. The Python
+attestation bridge checks the actual data directory and matching run marker
+before any write, as well as loopback host and the disposable database name.
+
+The repository audit also found fixed H1 database/Auth/API/admin listeners.
+Those now use runtime loopback ports carried in the simulation's in-memory
+metadata. Synthetic Auth writers and the local migration/rehearsal exception
+require the disposable directory and matching marker; the real hosted target
+and TLS checks are unchanged. H1 origins remain loopback-only and cannot use
+the working service ports. The primary runner's fixed **55432/8000/3000** guards
+and branches are unchanged. Remaining literal ports in negative tests and
+synthetic configuration examples do not open listeners; production ports and
+historical receipts are unchanged.
+
+Quick gate: **89 Node tests passed**, including the bind-race regression,
+attestation bridge and populated upgrade; **87 affected API tests passed,
+1 opt-in skipped**; **10 H1 smoke tests passed** on dynamically allocated
+ports. Typecheck and the static Auth-write gate passed. Logs under
+`artifacts/hosted-content-rollout/`: `h5e-dynamic-ports-quick.log`,
+`h5e-dynamic-api-quick.log`, `h5e-dynamic-h1-quick.log`. The sandbox-only
+Windows account lookup failure was resolved by running with the normal local
+test permissions. An initial H1 marker-order failure was fixed by writing
+the marker after `initdb`; the focused rerun passed. A clean full gate follows;
+the earlier full run remains failed and is not reused for admission.
+
+#### Production dependency fix — clean full gate and seal
+
+30 October 2026: `.local/hosted-content-rollout/h5i-full-8.json` passed the
+complete gate on unchanged source. SHA-256:
+`0733c4293174eb4f501cabfa838e5720c9e5bbd5bedfce5fd2ccb3130c63df8f`.
+
+| Full-gate tier | Actual result |
+|---|---|
+| Admin typecheck and offline build | Passed |
+| Frozen production install | 50 imports and 4 isolation/dependency regressions passed |
+| API | 2,152 passed, 11 opt-in skipped, 6 existing warnings; 944.29 seconds |
+| DB | 63 SQL/concurrency checks and 95 Node tests passed; populated upgrade and replay passed |
+| Browser | 304 passed in one run, 12.6 minutes |
+| H1 | 68 protocol tests, 10 API smoke tests and 45 browser tests passed |
+| Credential scan | 722 source files and 64 browser files; zero matches; no credential files read |
+| Static Auth and hosted write paths | 81 migrations checked, no Auth writes; 116 operator paths, zero violations |
+
+The tooling-created seal is
+`.local/hosted-content-rollout/h5e-production-gates.json`, SHA-256
+`5f6bc609364048f1b0810ed2ce9084af12d6f5d998f0339930771486f8d69ffd`.
+It covers **715 files**, the exact rehearsal manifests and these regenerated
+local Playwright screenshots under ignored `artifacts/hosted-content-rollout/`:
+`h5e-ai-editor-1280.png`, `h5e-ai-editor-390.png`,
+`h5e-ai-website-1280.png`, `h5e-ai-website-390.png`. No Computer Use was used.
+All full logs are `h5i-full-8-*.log` in that artifact directory. No provider
+call ran. The code and this evidence are committed and pushed before hosted
+candidate staging; the hosted application remains on the rollback release at
+this pre-deployment checkpoint.

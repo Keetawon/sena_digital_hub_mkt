@@ -1,11 +1,9 @@
 // Synthetic invitation evidence only, never a hosted Auth writer.
 import assert from 'node:assert/strict';
+import {assertSimulationDatabase} from '../../scripts/disposable-simulation.mjs';
 
 async function requireDisposable(db) {
-  const c=db.connectionParameters??db.options;
-  assert.equal(c.host,'127.0.0.1');assert.equal(Number(c.port),55434);assert.equal(c.database,'hub_hosted_test_simulation');
-  const {rows:[actual]}=await db.query('select host(inet_server_addr()) host,inet_server_port() port,current_database() name');
-  assert.equal(actual.host,'127.0.0.1');assert.equal(actual.port,55434);assert.equal(actual.name,'hub_hosted_test_simulation');
+  await assertSimulationDatabase(db,{checkDataDirectory:true});
 }
 export async function createH1AuthFixture(db) {
   await requireDisposable(db);

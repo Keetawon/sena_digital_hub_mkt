@@ -7,9 +7,8 @@ import { pathToFileURL } from 'node:url';
 import { IDENTITIES, SIMULATION_PASSWORD, SIMULATION_STORAGE_KEY, syntheticAssets } from './hosted-test-fixtures.mjs';
 import { createR2Double } from './hosted-test-r2.mjs';
 
-const ORIGIN = 'http://127.0.0.1:54329';
-const ADMIN_ORIGIN = 'http://127.0.0.1:3001';
-export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted-test-simulation/auth-outbox.json', onIdentity = async () => {} } = {}) {
+export function createMockSupabase({ adminOrigin = 'http://127.0.0.1:3001', now = Date.now, outboxFile = '.local/hosted-test-simulation/auth-outbox.json', onIdentity = async () => {} } = {}) {
+  const origin=()=>`http://127.0.0.1:${server.address().port}`;
   const r2 = createR2Double();
   const users = structuredClone(IDENTITIES).map(u => ({ ...u, email_confirmed_at: u.created_at }));
   const passwords = new Map(users.map(u => [u.id, SIMULATION_PASSWORD]));
@@ -43,7 +42,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
     const sid = previous && sessions.get(previous) || randomUUID();
     if (previous) refreshTokens.delete(previous);
     const timestamp = Math.floor(now() / 1000), refresh = randomBytes(32).toString('base64url');
-    const input = `${b64({ alg: 'RS256', kid: jwk.kid, typ: 'JWT' })}.${b64({ sub: user.id, session_id:sid, is_anonymous:false, iss: `${ORIGIN}/auth/v1`, aud: 'authenticated', iat: timestamp, exp: timestamp + 3600, email: user.email, role: 'authenticated', app_metadata: user.app_metadata, user_metadata: user.user_metadata })}`;
+    const input = `${b64({ alg: 'RS256', kid: jwk.kid, typ: 'JWT' })}.${b64({ sub: user.id, session_id:sid, is_anonymous:false, iss: `${origin()}/auth/v1`, aud: 'authenticated', iat: timestamp, exp: timestamp + 3600, email: user.email, role: 'authenticated', app_metadata: user.app_metadata, user_metadata: user.user_metadata })}`;
     refreshTokens.set(refresh, user);
     sessions.set(refresh,sid);
     const result = { access_token: `${input}.${sign('RSA-SHA256', Buffer.from(input), privateKey).toString('base64url')}`, token_type: 'bearer', expires_in: 3600, expires_at: timestamp + 3600, refresh_token: refresh, user };
@@ -56,7 +55,7 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
       const token = header?.replace(/^Bearer /i, ''), [h, p, signature] = token.split('.');
       if (!verify('RSA-SHA256', Buffer.from(`${h}.${p}`), publicKey, Buffer.from(signature, 'base64url'))) return null;
       const data = JSON.parse(Buffer.from(p, 'base64url'));
-      if (data.iss !== `${ORIGIN}/auth/v1` || data.aud !== 'authenticated' || data.exp <= now() / 1000) return null;
+      if (data.iss !== `${origin()}/auth/v1` || data.aud !== 'authenticated' || data.exp <= now() / 1000) return null;
       if (revoked.has(data.session_id)) return null;
       return users.find(u => u.id === data.sub) ?? null;
     } catch { return null; }
@@ -66,19 +65,19 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
       res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end(data === undefined ? undefined : JSON.stringify(data));
     };
-    if (req.headers.origin === ADMIN_ORIGIN) {
-      res.setHeader('Access-Control-Allow-Origin', ADMIN_ORIGIN);
+    if (req.headers.origin === adminOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', adminOrigin);
       res.setHeader('Access-Control-Allow-Headers', 'authorization,apikey,content-type,x-client-info,x-supabase-api-version');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,OPTIONS');
     }
     if (req.method === 'OPTIONS') return reply(204);
     try {
-      const url = new URL(req.url, ORIGIN), path = url.pathname;
+      const url = new URL(req.url, origin()), path = url.pathname;
       if (path === '/health') return reply(200, { environment: 'local-simulation' });
       if (path === '/auth/v1/authorize' && req.method === 'GET') {
         const redirect = new URL(url.searchParams.get('redirect_to'));
         const email = url.searchParams.get('login_hint') || 'google-new@example.test';
-        if (redirect.origin !== ADMIN_ORIGIN || redirect.pathname !== '/auth/callback' || !synthetic(email) || url.searchParams.get('provider') !== 'google' || url.searchParams.get('code_challenge_method')?.toLowerCase() !== 's256' || !url.searchParams.get('code_challenge')) return reply(400,{error:'invalid_oauth_request'});
+        if (redirect.origin !== adminOrigin || redirect.pathname !== '/auth/callback' || !synthetic(email) || url.searchParams.get('provider') !== 'google' || url.searchParams.get('code_challenge_method')?.toLowerCase() !== 's256' || !url.searchParams.get('code_challenge')) return reply(400,{error:'invalid_oauth_request'});
         const user = users.find(u => u.email === email && u.email_confirmed_at) || newUser(email,'google');
         user.email_confirmed_at ||= new Date(now()).toISOString();
         user.app_metadata.providers = [...new Set([...user.app_metadata.providers,'google'])];
@@ -166,6 +165,6 @@ export function createMockSupabase({ now = Date.now, outboxFile = '.local/hosted
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const server = createMockSupabase();
-  server.listen(54329, '127.0.0.1', () => console.log('Local Auth/Storage simulation ready on loopback:54329; no hosted connection.'));
+  server.listen(0, '127.0.0.1', () => console.log(`Local Auth/Storage simulation ready on loopback:${server.address().port}; no hosted connection.`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => process.exit(0)));
 }

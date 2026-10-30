@@ -49,6 +49,19 @@ def test_simulation_refuses_wrong_targets_and_demo_auth(overrides):
         h1_settings(**overrides)
 
 
+def test_simulation_accepts_runtime_loopback_ports_without_relaxing_hosted_targets():
+    settings = h1_settings(
+        database_url="postgresql://hub_runtime:synthetic@127.0.0.1:49151/hub_hosted_test_simulation",
+        supabase_url="http://127.0.0.1:49152", admin_origin="http://127.0.0.1:49153")
+    assert settings.hosted_test_simulation
+    for value in ("http://localhost:49152", "http://127.0.0.1:8000", "http://127.0.0.1",
+                  "http://user@127.0.0.1:49152", "http://127.0.0.1:49152?x=1"):
+        with pytest.raises(ValueError):
+            h1_settings(supabase_url=value)
+    with pytest.raises(ValueError):
+        h1_settings(database_url="postgresql://hub_runtime:synthetic@127.0.0.1:55432/hub_hosted_test_simulation")
+
+
 def hosted_configuration(**overrides):
     return h1_settings(hosted_test_simulation=False, **{
         "database_url": "postgresql://hub_runtime:never-used@db.eqlrtevwpyboplljgowo.supabase.co:5432/postgres?sslmode=verify-full",
@@ -337,19 +350,22 @@ def test_disposable_managed_simulation_end_to_end():
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     database_url = metadata["runtimeDatabaseUrl"]
     target = urlparse(database_url)
-    if (target.hostname != "127.0.0.1" or target.port != 55434
+    if (target.hostname != "127.0.0.1" or target.port != metadata['port'] or target.port == 55432
             or target.path != "/hub_hosted_test_simulation" or target.username != "hub_runtime"):
         pytest.fail("H1 simulation target is not the isolated allowlisted database")
     sessions = {}
     # These public fixture values work only on the local mock; no real identity is created.
-    with httpx.Client(base_url="http://127.0.0.1:54329", timeout=10, follow_redirects=False) as auth:
+    auth_origin = f"http://127.0.0.1:{metadata['ports']['auth']}"
+    with httpx.Client(base_url=auth_origin, timeout=10, follow_redirects=False) as auth:
         for label in ("editor", "publisher", "viewer", "admin", "online", "agency-kin", "agency-combay"):
             response = auth.post("/auth/v1/token?grant_type=password", json={
                 "email": f"hub-test-{label}@example.test", "password": "H1-synthetic-only!",
             }, headers={"apikey": "h1-simulation-public-key"})
             assert response.status_code == 200
             sessions[label] = {"Authorization": "Bearer " + response.json()["access_token"]}
-    config = h1_settings(database_url=database_url, supabase_storage_key="", r2_private_bucket_confirmed=True,
+    config = h1_settings(database_url=database_url, supabase_url=auth_origin,
+                         admin_origin=f"http://127.0.0.1:{metadata['ports']['admin']}",
+                         supabase_storage_key="", r2_private_bucket_confirmed=True,
                          r2_credentials_file=str(metadata_path.parent / 'r2-simulation.json'))
     with TestClient(main.create_app(config), client=("127.0.0.1", 50000)) as client:
         for label, headers in sessions.items():

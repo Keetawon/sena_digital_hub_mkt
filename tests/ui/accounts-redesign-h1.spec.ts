@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { SIMULATION_PASSWORD } from '../../scripts/hosted-test-fixtures.mjs';
 
-const auth='http://127.0.0.1:54329/auth/v1',api='http://127.0.0.1:8001';
+const auth=`${process.env.HUB_SUPABASE_URL}/auth/v1`,api=process.env.HUB_API_URL!;
 const profile={display_name_th:'ผู้สมัคร สมมติ',phone:'020000000',company_type:'SENA',position:'ผู้ประสานงาน',team:'ฝ่ายทดสอบ',requested_tasks:['edit'],reason:'ตรวจข้อมูลโครงการสมมติ',privacy_acknowledged:true};
 async function identity(request:APIRequestContext,email=`redesign-${Date.now()}@example.test`,submitted=true) {
   const password=randomBytes(20).toString('hex');
@@ -27,11 +27,11 @@ async function findUser(page:Page,email:string) {
 
 test.describe('Accounts redesign on isolated loopback H1',()=>{
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION!=='1','Loopback only');
-  test.use({baseURL:'http://127.0.0.1:3001'});
+  test.use({baseURL:process.env.HUB_ADMIN_ORIGIN!});
   test.beforeEach(async({page})=>{await page.route('**/*',route=>['http:','https:'].includes(new URL(route.request().url()).protocol)&&new URL(route.request().url()).hostname!=='127.0.0.1'?route.abort():route.continue());});
 
   test('approve confirms success, appears in today and users, requester polls without reload',async({page,browser})=>{
-    const user=await identity(page.request);const requester=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    const user=await identity(page.request);const requester=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await requester.clock.install();await login(requester,user.email,user.password);await expect(requester.getByRole('heading',{name:'รออนุมัติ',exact:true})).toBeVisible();
     let navigations=0;requester.on('framenavigated',()=>navigations++);
     await login(page);await page.goto('/admin/accounts');await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(user.email);
@@ -82,7 +82,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     await page.screenshot({path:'artifacts/accounts-invite-create.png',fullPage:false});
     await panel.getByRole('button',{name:'สร้างคำเชิญ',exact:true}).click();await expect(panel).toHaveCount(0);
     await expect(page.getByRole('article').filter({hasText:email})).toContainText('รอตอบรับ');
-    const user=await identity(page.request,email,false),requester=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    const user=await identity(page.request,email,false),requester=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await login(requester,email,user.password);await expect(requester.getByRole('heading',{name:'ตอบรับคำเชิญ',exact:true})).toBeVisible();
     await expect(requester.getByLabel('ทีม / ฝ่าย')).toHaveValue('ทีมเอเจนซีสมมติ');await expect(requester.getByLabel('ชื่อบริษัท',{exact:true})).toHaveValue('KIN');await expect(requester.getByLabel('ชื่อบริษัท',{exact:true})).toHaveAttribute('readonly','');
     await requester.getByLabel('ชื่อและนามสกุลภาษาไทย').fill('ผู้รับเชิญ สมมติ');await requester.getByLabel('เบอร์โทรศัพท์ที่ทำงาน').fill('020000000');await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ผู้ประสานงาน');await requester.getByLabel('รับทราบประกาศความเป็นส่วนตัว').check();
@@ -101,7 +101,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
   });
 
   test('request focus refresh preserves dirty text after approval; mobile table stays contained',async({page,browser})=>{
-    const user=await identity(page.request);const requester=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    const user=await identity(page.request);const requester=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await login(requester,user.email,user.password);await requester.getByRole('button',{name:'แก้ไขคำขอ'}).click();await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ข้อความยังไม่บันทึก');
     await login(page);await page.goto('/admin/accounts');await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(user.email);await page.getByRole('article').filter({hasText:user.email}).getByRole('button',{name:/^อนุมัติเป็น/}).click();
     await expect(page.locator('.accounts-feedback[role=status]')).toContainText('อนุมัติ');await requester.bringToFront();await requester.evaluate(()=>window.dispatchEvent(new Event('focus')));
@@ -115,7 +115,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     const second=await identity(page.request,`request-second-${Date.now()}@example.test`);
     // Make the first account newer, so timestamp ordering cannot stand in for identity.
     expect((await page.request.patch(`${api}/v1/me/access-request`,{headers:first.headers,data:{...profile,position:'ตำแหน่งบัญชีแรก'}})).status()).toBe(200);
-    const context=await browser.newContext({baseURL:'http://127.0.0.1:3001'});const requester=await context.newPage();
+    const context=await browser.newContext({baseURL:process.env.HUB_ADMIN_ORIGIN!});const requester=await context.newPage();
     await login(requester,first.email,first.password);await requester.getByRole('button',{name:'แก้ไขคำขอ'}).click();
     await requester.getByLabel('ตำแหน่ง',{exact:true}).fill('ข้อความส่วนตัวของบัญชีแรกที่ยังไม่บันทึก');
     const switcher=await context.newPage();await login(switcher,second.email,second.password);
@@ -130,7 +130,7 @@ test.describe('Accounts redesign on isolated loopback H1',()=>{
     const user=await identity(page.request);await login(page);await page.goto('/admin/accounts');await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(user.email);
     const card=page.getByRole('article').filter({hasText:user.email});await card.getByRole('button',{name:'ปฏิเสธ',exact:true}).click();await card.getByLabel('เหตุผลที่ปฏิเสธ').fill('ข้อความในหน้าที่ยังไม่บันทึก');
     const me=await(await page.request.get(`${api}/v1/me`,{headers:user.headers})).json();
-    const result=await page.request.post(`/api/hub/v1/admin/accounts/${user.id}/decision`,{headers:{Origin:'http://127.0.0.1:3001'},data:{action:'reject',note:'คำตัดสินจากอีกหน้าหนึ่ง',updated_at:me.data.updated_at}});expect(result.status()).toBe(200);
+    const result=await page.request.post(`/api/hub/v1/admin/accounts/${user.id}/decision`,{headers:{Origin:process.env.HUB_ADMIN_ORIGIN!},data:{action:'reject',note:'คำตัดสินจากอีกหน้าหนึ่ง',updated_at:me.data.updated_at}});expect(result.status()).toBe(200);
     await card.getByRole('button',{name:'ยืนยันปฏิเสธ'}).click();await expect(card.getByRole('alert')).toContainText('ข้อมูลเปลี่ยนแล้ว');await card.getByRole('button',{name:'โหลดข้อมูลล่าสุด'}).click();
     await expect(card.getByRole('status')).toContainText('สถานะเปลี่ยนแล้ว');await expect(card.getByLabel('เหตุผลที่ปฏิเสธ')).toHaveValue('ข้อความในหน้าที่ยังไม่บันทึก');await expect(card.getByRole('button',{name:'ยืนยันปฏิเสธ'})).toBeDisabled();
   });

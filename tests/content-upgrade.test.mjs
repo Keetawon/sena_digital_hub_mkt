@@ -4,27 +4,22 @@ import assert from 'node:assert/strict';
 import {readFile,readdir,mkdir,mkdtemp,realpath,rm} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {createServer} from 'node:net';
-import EmbeddedPostgres from 'embedded-postgres';
+import {startPostgresOnFreePort} from '../scripts/disposable-ports.mjs';
 import { beforePhase7, afterPhase7 } from './phase7-upgrade-fixture.mjs';
 
 test('populated content upgrade preserves accounts and asset editors, audits backfill and drains deferred cache work',async()=>{
   const root=fileURLToPath(new URL('../',import.meta.url));
   const base=path.join(root,'.local/test-runs');
   await mkdir(base,{recursive:true});
-  await new Promise((resolve,reject)=>{
-    const probe=createServer();probe.once('error',()=>reject(new Error('Upgrade test port 55435 is occupied')));
-    probe.listen(55435,'127.0.0.1',()=>probe.close(resolve));
-  });
   const directory=await mkdtemp(path.join(base,'upgrade-'));
   const dataDirectory=path.join(directory,'postgres');
   const config=JSON.parse(await readFile(path.join(root,'.local/development.json'),'utf8'));
-  const server=new EmbeddedPostgres({databaseDir:dataDirectory,user:'postgres',password:config.adminPassword,
-    port:55435,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],
-    postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
-  let started=false,db;
+  let server,db;
   try{
-    await initialiseDisposableDb(dataDirectory,config.adminPassword);await server.start();started=true;
+    await initialiseDisposableDb(dataDirectory,config.adminPassword);
+    ({server}=await startPostgresOnFreePort({databaseDir:dataDirectory,user:'postgres',password:config.adminPassword,
+      persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],
+      postgresFlags:['-h','127.0.0.1'],onError:()=>{}}));
     db=server.getPgClient('postgres','127.0.0.1');await db.connect();
     assert.equal(await realpath((await db.query('SHOW data_directory')).rows[0].data_directory),await realpath(dataDirectory));
     const migrations=path.join(root,'supabase/migrations');
@@ -121,7 +116,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     assert.equal(Number((await db.query('select count(*) from hub.project_progress_dirty')).rows[0].count),0);
     assert.equal(Number((await db.query("select count(*) from audit.change_log where table_name='hub.assets' and actor is null and reason='Phase 2 migration: historical asset binding backfill'")).rows[0].count),bound.length);
   }finally{
-    if(db)await db.end();if(started)await server.stop();
+    if(db)await db.end();if(server)await server.stop();
     const actual=await realpath(directory),allowed=await realpath(base);
     assert.ok(actual.startsWith(allowed+path.sep)&&path.basename(actual).startsWith('upgrade-'));
     await rm(actual,{recursive:true,force:true});

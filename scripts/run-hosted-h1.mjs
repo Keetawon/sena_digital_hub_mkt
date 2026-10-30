@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { spawn, execFile } from 'node:child_process';
 import { once } from 'node:events';
-import { createServer } from 'node:net';
+import {assertSimulationDatabase} from './disposable-simulation.mjs';
 import { createMockSupabase } from './hosted-test-mock.mjs';
 import { SIMULATION_PUBLIC_KEY } from './hosted-test-fixtures.mjs';
 import { R2_SIMULATION } from './hosted-test-r2.mjs';
@@ -13,6 +13,7 @@ import pg from 'pg';
 import { scrubProviderKeys } from './provider-keys.mjs';
 import {saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
 import {authWriteInventory} from './auth-write-check.mjs';
+import {safeError} from './supabase-test-migrations.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url)), args=process.argv.slice(2);
 const component=args.includes('--api-only')?'api':args.includes('--admin-only')?'admin':null;
@@ -42,31 +43,31 @@ async function ready(url,process_) {
 }
 try {
   if((await authWriteInventory()).status!=='passed')throw new Error('H5h Auth-write release gate failed');
-  const ports=smokeOnly?[54329,55434]:component==='api'?[8001]:component==='admin'?[3001]:[54329,8001,3001,...(args.includes('--existing-simulation')?[]:[55434])];
-  for(const port of ports)await new Promise((resolve,reject)=>{
-    const probe=createServer();probe.once('error',()=>reject(new Error(`Local H1 port ${port} is already in use; stop its prior simulation first.`)));
-    probe.listen(port,'127.0.0.1',()=>probe.close(resolve));
-  });
   if(!args.includes('--existing-simulation'))database=await simulateHostedTest({keepRunning:true,persistMetadata:false,seed:true});
   const config=database?.metadata??JSON.parse(await readFile(path.join(root,'.local/hosted-test-simulation/current.json'),'utf8'));
-  if(config.host!=='127.0.0.1'||config.port!==55434||config.database!=='hub_hosted_test_simulation'||config.environment!=='hosted-test-simulation')throw new Error('Not the fixed local H1 simulation');
+  if(config.host!=='127.0.0.1'||!Number.isInteger(config.port)||config.port<1024||config.port===55432||config.database!=='hub_hosted_test_simulation'||config.environment!=='hosted-test-simulation')throw new Error('Not the fixed local H1 simulation');
   const dsn=new URL(config.runtimeDatabaseUrl);
-  if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||dsn.port!=='55434'||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
+  if(!['postgres:','postgresql:'].includes(dsn.protocol)||dsn.search||dsn.hash||dsn.hostname!=='127.0.0.1'||Number(dsn.port)!==config.port||dsn.pathname!=='/hub_hosted_test_simulation'||dsn.username!=='hub_runtime')throw new Error('Unsafe local simulation connection');
+  const {auth:authPort,api:apiPort,admin:adminPort}=config.ports??{};
+  const ports=[authPort,apiPort,adminPort];
+  if(ports.some(p=>!Number.isInteger(p)||p<1024||p>65535||[55432,8000,3000,config.port].includes(p))||new Set(ports).size!==3)throw new Error('Unsafe local simulation ports');
+  const authOrigin=`http://127.0.0.1:${authPort}`,apiOrigin=`http://127.0.0.1:${apiPort}`,adminOrigin=`http://127.0.0.1:${adminPort}`;
+  identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.adminUser,password:config.adminPassword});
+  await assertSimulationDatabase(identityDb,{checkDataDirectory:true});
   const env={...process.env};
   scrubProviderKeys(env);
   for(const name of Object.keys(env))if(name.startsWith('HUB_')||name.startsWith('NEXT_PUBLIC_SUPABASE_'))delete env[name];
   Object.assign(env,{HUB_AUTH_GOOGLE:'1',HUB_AUTH_PASSWORD:'1',HUB_ENV_LABEL:'LOCAL H1',HUB_ENV:'hosted-test',HUB_AUTH_MODE:'supabase',HUB_HOSTED_TEST_SIMULATION:'1',HUB_DATABASE_URL:config.runtimeDatabaseUrl,
-    HUB_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54329',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
-    HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:'memory:h1-r2',HUB_H1_R2_CONFIG:JSON.stringify(R2_SIMULATION),
-    HUB_R2_PRIVATE_BUCKET_CONFIRMED:'1',HUB_ADMIN_ORIGIN:'http://127.0.0.1:3001',HUB_API_URL:'http://127.0.0.1:8001'});
+    HUB_SUPABASE_URL:authOrigin,NEXT_PUBLIC_SUPABASE_URL:authOrigin,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:SIMULATION_PUBLIC_KEY,
+    HUB_SUPABASE_STORAGE_KEY:'',HUB_R2_CREDENTIALS_FILE:'memory:h1-r2',HUB_H1_R2_CONFIG:JSON.stringify({...R2_SIMULATION,endpoint_url:authOrigin+'/r2'}),
+    HUB_R2_PRIVATE_BUCKET_CONFIRMED:'1',HUB_ADMIN_ORIGIN:adminOrigin,HUB_API_URL:apiOrigin});
   // Next automatically loads .env.local; explicitly suppress demo-token fallbacks.
   for(const role of ['EDITOR','PUBLISHER','VIEWER','SERVICE_CONSUMER','ADMIN','ONLINE_STAFF','AGENCY_KIN','AGENCY_COMBAY','UAT_ADMIN','UAT_SUSPENDED','UAT_SOMCHAI'])env[`HUB_DEMO_${role}_TOKEN`]='';
   if(!component) {
-    identityDb=new pg.Pool({host:config.host,port:config.port,database:config.database,user:config.adminUser,password:config.adminPassword});
-    mock=createMockSupabase({onIdentity: async user => {
+    mock=createMockSupabase({adminOrigin,onIdentity: async user => {
       if(!user.email.endsWith('@example.test'))throw new Error('Synthetic identities only');
       await saveH1AuthFixture(identityDb,user);
-    }});mock.listen(54329,'127.0.0.1');await once(mock,'listening');
+    }});mock.listen(authPort,'127.0.0.1');await once(mock,'listening');
   }
   if(smokeOnly||args.includes('--test')) {
     const actor=(await identityDb.query("select id::text actor_id,hub_role role,hub.permission_projection(a) capabilities from hub.user_account a where status='ACTIVE' and hub_role='admin' order by id limit 1")).rows[0];
@@ -79,11 +80,11 @@ try {
   }
   if(component!=='admin') {
     apiProcess=child('uv',['--cache-dir','.cache/uv','run','--project','apps/api','python','scripts/run-h1-api.py'],env);
-    await ready('http://127.0.0.1:8001/health',apiProcess);
+    await ready(apiOrigin+'/health',apiProcess);
   }
   if(component!=='api') {
-    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
-    await ready('http://127.0.0.1:3001/login',adminProcess);
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port',String(adminPort)],env,path.join(root,'apps/admin'));
+    await ready(adminOrigin+'/login',adminProcess);
   }
   if(args.includes('--test')) {
     const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','tests/ui/auth-design-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
@@ -96,8 +97,8 @@ try {
     else adminProcess.kill('SIGTERM');
     await exited;
     const off={...env,HUB_AUTH_PASSWORD:'0',HUB_AUTH_GOOGLE:'0'};
-    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],off,path.join(root,'apps/admin'));
-    await ready('http://127.0.0.1:3001/login',adminProcess);
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port',String(adminPort)],off,path.join(root,'apps/admin'));
+    await ready(adminOrigin+'/login',adminProcess);
     const flagTests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/accounts-flags-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1-flags')],{...off,PLAYWRIGHT_CHANNEL:'msedge'});
     const [flagCode]=await once(flagTests,'exit');
     if(flagCode!==0) {await stop();process.exit(flagCode??1);}
@@ -106,8 +107,8 @@ try {
     if(process.platform==='win32') await new Promise(resolve=>execFile('taskkill',['/PID',String(adminProcess.pid),'/T','/F'],{windowsHide:true},()=>resolve()));
     else adminProcess.kill('SIGTERM');
     await flagsAdminExited;
-    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port','3001'],env,path.join(root,'apps/admin'));
-    await ready('http://127.0.0.1:3001/login',adminProcess);
+    adminProcess=child(process.execPath,[path.join(root,'apps/admin/node_modules/next/dist/bin/next'),'start','--hostname','127.0.0.1','--port',String(adminPort)],env,path.join(root,'apps/admin'));
+    await ready(adminOrigin+'/login',adminProcess);
     // Replace only this runner's API with a test-owned loopback outage double.
     const apiExited=once(apiProcess,'exit');
     if(process.platform==='win32') await new Promise(resolve=>execFile('taskkill',['/PID',String(apiProcess.pid),'/T','/F'],{windowsHide:true},()=>resolve()));
@@ -120,4 +121,4 @@ try {
     for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await stop();process.exit(0);});
     await new Promise(()=>{});
   }
-}catch(error){console.error(error instanceof Error && /^(Local H1|A local H1|Not the fixed local|Unsafe local simulation)/.test(error.message)?error.message:'Local H1 process failed; connection details withheld.');await stop();process.exit(1);}
+}catch(error){console.error(safeError(error,{step:'local_h1'}));await stop();process.exit(1);}

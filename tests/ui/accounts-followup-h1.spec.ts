@@ -1,8 +1,8 @@
 import { expect, test, type Page, type APIRequestContext } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-const auth = 'http://127.0.0.1:54329/auth/v1';
-const api = 'http://127.0.0.1:8001';
+const auth = `${process.env.HUB_SUPABASE_URL}/auth/v1`;
+const api = process.env.HUB_API_URL!;
 const requestBody = { display_name_th:'ผู้สมัคร ทดสอบเพิ่มเติม', phone:'020000000', team:'ทีมสมมติ', company_type:'SENA', position:'ผู้ประสานงาน', requested_tasks:['agency'], reason:'โครงการสมมติ', privacy_acknowledged:true };
 async function identity(request: APIRequestContext, suffix: string, submitted = false) {
   const email = `followup-${suffix}-${Date.now()}@example.test`, password='Synthetic-followup-12!';
@@ -27,7 +27,7 @@ async function login(page: Page, email='hub-test-admin@example.test', password='
 
 test.describe('Account follow-up on loopback H1',()=>{
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION!=='1','Loopback only');
-  test.use({baseURL:'http://127.0.0.1:3001'});
+  test.use({baseURL:process.env.HUB_ADMIN_ORIGIN!});
   test.beforeEach(async({page})=>{
     await page.route('**/*',route=>['http:','https:'].includes(new URL(route.request().url()).protocol)&&new URL(route.request().url()).hostname!=='127.0.0.1'?route.abort():route.continue());
   });
@@ -47,7 +47,7 @@ test.describe('Account follow-up on loopback H1',()=>{
     for(const [value,valid] of [['+66 (02) 123-4567',true],['02000000',true],['+'+'0'.repeat(30),true],['02+000000',false],['++02000000',false],['0200000',false],['0'.repeat(31),false],['๐๒๐๐๐๐๐๐',false]] as const) {
       await phone.fill(value);
       expect(await phone.evaluate((input:HTMLInputElement)=>input.validity.valid)).toBe(valid);
-      const result=await page.request.post('/api/hub/v1/me/access-request',{headers:{Origin:'http://127.0.0.1:3001'},data:{...requestBody,phone:value}});
+      const result=await page.request.post('/api/hub/v1/me/access-request',{headers:{Origin:process.env.HUB_ADMIN_ORIGIN!},data:{...requestBody,phone:value}});
       expect(result.status()).toBe(valid?200:422);
     }
     await expect(name).toHaveValue('Latin Only');
@@ -88,7 +88,7 @@ test.describe('Account follow-up on loopback H1',()=>{
     await expect(row.getByRole('button',{name:'ยืนยันปฏิเสธ'})).toBeDisabled();
     await row.getByLabel('เหตุผลที่ปฏิเสธ').fill('กรุณาระบุโครงการเพิ่มเติม');
     await row.getByRole('button',{name:'ยืนยันปฏิเสธ'}).click();await expect(row).toHaveCount(0);
-    const applicant=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    const applicant=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await login(applicant,pending.email,pending.password);await expect(applicant.getByText('เหตุผลจากผู้ดูแล: กรุณาระบุโครงการเพิ่มเติม')).toBeVisible();
     await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();
     await page.getByRole('row').filter({hasText:pending.email}).getByRole('button',{name:'จัดการ'}).click();

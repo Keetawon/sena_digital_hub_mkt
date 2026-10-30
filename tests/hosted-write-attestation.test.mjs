@@ -1,28 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile,mkdir,mkdtemp,realpath,rm} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
+import {readFile,writeFile,mkdir,mkdtemp,realpath,rm} from 'node:fs/promises';
+import {createHash,randomUUID} from 'node:crypto';
 import path from 'node:path';
-import {createServer} from 'node:net';
 import {spawn} from 'node:child_process';
+import {freeLoopbackPort,startPostgresOnFreePort} from '../scripts/disposable-ports.mjs';
 import EmbeddedPostgres from 'embedded-postgres';
+import {createServer} from 'node:net';
 import {initialiseDisposableDb} from '../scripts/initialise-disposable-db.mjs';
 import {attestedTransaction,rehearseTransaction,validateManifest} from '../scripts/hosted-write-attestation.mjs';
 import {securityWatch,workerAttribution} from '../scripts/hosted-security-watch.mjs';
 
+test('free-port startup retries only bind collisions and never stops another listener',async t=>{
+ const ports=[],listener=createServer();
+ const start=t.mock.method(EmbeddedPostgres.prototype,'start',async function(){
+  ports.push(this.options.port);
+  if(ports.length===1){
+   await new Promise((resolve,reject)=>listener.once('error',reject).listen(this.options.port,'127.0.0.1',resolve));
+   this.options.onLog('could not bind: Address already in use');throw new Error('synthetic collision');
+  }
+ });
+ try{
+  const result=await startPostgresOnFreePort({});
+  assert.equal(ports.length,2);assert.notEqual(ports[0],ports[1]);assert.equal(result.port,ports[1]);assert.ok(listener.listening);
+  start.mock.mockImplementation(async()=>{throw new Error('synthetic non-port failure');});
+  await assert.rejects(startPostgresOnFreePort({}),/startup failed/);
+  assert.equal(start.mock.callCount(),3);
+  const port=await freeLoopbackPort();assert.ok(port>=1024&&port<=65535);
+ }finally{start.mock.restore();await new Promise(resolve=>listener.close(resolve));}
+});
+
 test('H5i attests own writes and ignores concurrent Auth activity',async t=>{
  const base=path.resolve('.local/test-runs');await mkdir(base,{recursive:true});
- await new Promise((resolve,reject)=>{const p=createServer();p.once('error',reject);p.listen(55436,'127.0.0.1',()=>p.close(resolve));});
  const directory=await mkdtemp(path.join(base,'attestation-')),dataDirectory=path.join(directory,'postgres');
  const config=JSON.parse(await readFile('.local/development.json','utf8'));
- const server=new EmbeddedPostgres({databaseDir:dataDirectory,user:'postgres',password:config.adminPassword,port:55436,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
- let db,other,started=false;
+ const runId=randomUUID();await writeFile(path.join(directory,'run.json'),JSON.stringify({run_id:runId}),{flag:'wx'});
+ let db,other,server,port;
  try{
-  await initialiseDisposableDb(dataDirectory,config.adminPassword);await server.start();started=true;
+  await initialiseDisposableDb(dataDirectory,config.adminPassword);
+  ({server,port}=await startPostgresOnFreePort({databaseDir:dataDirectory,user:'postgres',password:config.adminPassword,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onError:()=>{}}));
   const admin=server.getPgClient('postgres','127.0.0.1');await admin.connect();await admin.query('create database sena_hub_local');await admin.end();
   db=server.getPgClient('sena_hub_local','127.0.0.1');await db.connect();other=server.getPgClient('sena_hub_local','127.0.0.1');await other.connect();
   assert.equal(await realpath((await db.query('show data_directory')).rows[0].data_directory),await realpath(dataDirectory));
-  await db.query(`create table public.disposable_test_run(id int);create schema auth;create schema hub;
+  await db.query('create table public.disposable_test_run(run_id text primary key)');
+  await db.query('insert into public.disposable_test_run values($1)',[runId]);
+  await db.query(`create schema auth;create schema hub;
    create table auth.users(id int primary key,email text,last_sign_in_at text,recovery_token text);
    create table auth.identities(id int primary key,user_id int,updated_at text);
    insert into auth.users values(1,'synthetic@example.test','before','before');insert into auth.identities values(1,1,'before');
@@ -67,7 +89,7 @@ test('H5i attests own writes and ignores concurrent Auth activity',async t=>{
    const child=spawn('uv',['--cache-dir','.cache/uv','run','--project','apps/api','python','tests/fixtures/attestation-bridge.py'],{windowsHide:true,stdio:['pipe','pipe','pipe']});
    let output='';child.stdout.on('data',part=>output+=part);child.stderr.resume();
    const closed=new Promise((resolve,reject)=>{child.on('error',reject);child.on('close',resolve);});
-   child.stdin.end(JSON.stringify({connection:{host:'127.0.0.1',port:55436,user:'postgres',password:config.adminPassword,database:'sena_hub_local'},manifest}));
+   child.stdin.end(JSON.stringify({connection:{host:'127.0.0.1',port,user:'postgres',password:config.adminPassword,database:'sena_hub_local'},directory,manifest}));
    assert.equal(await closed,0,'Bridge fixture failed: '+output);
    assert.deepEqual(JSON.parse(output),{allowed:true,hub_rollback:true,auth_rollback:true,unguarded_refused:true});
   });
@@ -115,7 +137,7 @@ test('H5i attests own writes and ignores concurrent Auth activity',async t=>{
    assert.equal((await workerAttribution(db,'2020-01-01T00:00:00Z')).status,'STOP');
   });
  }finally{
-  if(other)await other.end().catch(()=>{});if(db)await db.end().catch(()=>{});if(started)await server.stop();
+  if(other)await other.end().catch(()=>{});if(db)await db.end().catch(()=>{});if(server)await server.stop();
   const actual=await realpath(directory);assert.ok(actual.startsWith(await realpath(base)+path.sep)&&path.basename(actual).startsWith('attestation-'));
   await rm(actual,{recursive:true,force:true,maxRetries:5,retryDelay:200});
  }

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Authentication design on loopback H1', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Synthetic loopback only');
-  test.use({ baseURL: 'http://127.0.0.1:3001' });
+  test.use({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
   test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => ['http:', 'https:'].includes(new URL(route.request().url()).protocol) && new URL(route.request().url()).hostname !== '127.0.0.1' ? route.abort() : route.continue());
   });

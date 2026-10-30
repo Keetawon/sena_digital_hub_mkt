@@ -23,6 +23,7 @@
     "test:auth-protection": "node --test tests/auth-protection.test.mjs",
     "sync:questions": "python scripts/sync-questions.py --write",
     "test:api": "node scripts/run-disposable-tests.mjs api",
+    "test:production": "node scripts/run-production-install.mjs",
     "test:ui": "node scripts/run-disposable-tests.mjs ui",
     "test:db": "node scripts/run-disposable-tests.mjs db",
     "test:local": "node scripts/run-disposable-tests.mjs all"

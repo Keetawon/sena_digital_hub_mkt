@@ -106,7 +106,8 @@ async function assertDisposable(db){
  const c=db.connectionParameters,s=db.connection?.stream;
  assert.ok(c?.host==='127.0.0.1'&&s?.remoteAddress==='127.0.0.1','Rehearsal must use a disposable loopback connection');
  const state=(await db.query("select current_database() database,to_regclass('public.disposable_test_run') marker")).rows[0];
- assert.ok((state.database==='sena_hub_local'&&state.marker)||(state.database==='hub_hosted_test_simulation'&&Number(c.port)===55434),'Disposable rehearsal marker required');
+ assert.ok(['sena_hub_local','hub_hosted_test_simulation'].includes(state.database)&&state.marker,'Disposable rehearsal marker required');
+ if(state.database==='hub_hosted_test_simulation')await (await import('./disposable-simulation.mjs')).assertSimulationDatabase(db);
 }
 // Historical fixture/bootstrap transactions remain available on the fixed
 // disposable connection. A hosted connection ALWAYS requires a rehearsal proof.

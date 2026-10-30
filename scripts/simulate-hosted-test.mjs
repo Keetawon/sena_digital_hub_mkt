@@ -1,18 +1,16 @@
 import assert from 'node:assert/strict';
-import {createHash,randomBytes} from 'node:crypto';
+import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import {mkdir,mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import net from 'node:net';
+import {freeLoopbackPort,startPostgresOnFreePort} from './disposable-ports.mjs';
 import pg from 'pg';
-import EmbeddedPostgres from 'embedded-postgres';
 import {initialiseDisposableDb} from './initialise-disposable-db.mjs';
 import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,rehearseCombinedContentRelease,rehearseMediaWorkerLogin} from './supabase-test-migrations.mjs';
 import {createH1AuthFixture,saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const simulationRoot=path.join(root,'.local','hosted-test-simulation');
-const connection={host:'127.0.0.1',port:55434,database:'hub_hosted_test_simulation'};
 const secret=()=>randomBytes(32).toString('base64url');
 const identifier=value=>'"'+value.replaceAll('"','""')+'"';
 const denied=error=>error.code==='42501';
@@ -20,22 +18,27 @@ const owners={ads_registry_writer:['ads'],ads_export_owner:['ads_export'],ads_fi
 
 export async function simulateHostedTest({keepRunning=false,persistMetadata=true,seed=true,log=console.log}={}) {
   // No environment profile is read; all endpoints and random credentials are local.
-  const probe=net.createServer();
-  await new Promise((resolve,reject)=>probe.once('error',reject).listen(connection.port,connection.host,resolve));
-  await new Promise(resolve=>probe.close(resolve));
   await mkdir(simulationRoot,{recursive:true});
   const directory=await mkdtemp(path.join(simulationRoot,'run-'));
   const adminPassword=secret(),migrationPassword=secret(),runtimePassword=secret();
-  const server=new EmbeddedPostgres({databaseDir:directory,user:'postgres',password:adminPassword,port:connection.port,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:()=>{}});
+  const runId=randomUUID();
+  let server;
+  const connection={host:'127.0.0.1',database:'hub_hosted_test_simulation'};
   let admin,client,runtime,mediaLogin,metadata,verified=false,held=false;
   try {
-    await initialiseDisposableDb(directory,adminPassword);await server.start();
+    await initialiseDisposableDb(directory,adminPassword);
+    await writeFile(path.join(directory,'run.json'),JSON.stringify({run_id:runId}),{flag:'wx'});
+    const started=await startPostgresOnFreePort({databaseDir:directory,user:'postgres',password:adminPassword,persistent:true,authMethod:'scram-sha-256',initdbFlags:['--encoding=UTF8','--locale=C'],postgresFlags:['-h','127.0.0.1'],onError:()=>{}});
+    server=started.server;connection.port=started.port;
     admin=new pg.Client({...connection,database:'postgres',user:'postgres',password:adminPassword});await admin.connect();
     const actual=(await admin.query("select current_setting('data_directory') as directory")).rows[0].directory;
     assert.equal(path.resolve(actual).toLowerCase(),path.resolve(directory).toLowerCase());verified=true;
     await admin.query(`create role hub_migration_verifier login createrole noinherit nosuperuser nocreatedb noreplication nobypassrls password '${migrationPassword}'`);
     await admin.query(`create database ${identifier(connection.database)} owner hub_migration_verifier`);
     await admin.end();admin=new pg.Client({...connection,user:'postgres',password:adminPassword});await admin.connect();
+    await admin.query('create table public.disposable_test_run(run_id text primary key,data_directory text not null)');
+    await admin.query('insert into public.disposable_test_run values($1,$2)',[runId,directory]);
+    await admin.query('grant select on public.disposable_test_run to hub_migration_verifier');
     client=new pg.Client({...connection,user:'hub_migration_verifier',password:migrationPassword});await client.connect();
     // Protected, synthetic Auth source for invite confirmation tests only. App roles
     // have no grants; the mock's operator callback writes these rows on verification.
@@ -76,7 +79,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     await applyMigration(client,migrations[56],config,'hub_migration_verifier');
     await runMigrations(client,config,{log,migrations:migrations.slice(0,78)});
     const sourceFiles=['scripts/supabase-test-migrations.mjs','scripts/hosted-write-attestation.mjs','scripts/auth-write-check.mjs','scripts/auth-protection.mjs',
-      'scripts/simulate-hosted-test.mjs','tests/fixtures/h1-auth.mjs','supabase/hosted-test/profile.json',...migrations.slice(78).map(m=>'supabase/migrations/'+m.name)];
+      'scripts/simulate-hosted-test.mjs','scripts/disposable-simulation.mjs','scripts/disposable-ports.mjs','tests/fixtures/h1-auth.mjs','supabase/hosted-test/profile.json',...migrations.slice(78).map(m=>'supabase/migrations/'+m.name)];
     const attestedSources=Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
     const combinedProof=await rehearseCombinedContentRelease(client,config,attestedSources);
     log('PASS: populated prefix 78 rehearses and attests combined 79/80/81; own Auth snapshot unchanged.');
@@ -180,13 +183,15 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
       log('PASS: synthetic H1 seed and harmless replay; issuance flags remain false.');
     }
     if(keepRunning) {
-      metadata={...connection,environment:'hosted-test-simulation',projectRef:PROJECT_REF,dataDirectory:directory,migrationUser:'hub_migration_verifier',migrationPassword,runtimeUser:'hub_runtime',runtimePassword,adminUser:'postgres',adminPassword,created_at:new Date().toISOString()};
+      const ports=new Set([connection.port]);while(ports.size<4)ports.add(await freeLoopbackPort());
+      const [,auth,api,adminPort]=[...ports];
+      metadata={...connection,ports:{auth,api,admin:adminPort},environment:'hosted-test-simulation',projectRef:PROJECT_REF,dataDirectory:directory,migrationUser:'hub_migration_verifier',migrationPassword,runtimeUser:'hub_runtime',runtimePassword,adminUser:'postgres',adminPassword,created_at:new Date().toISOString()};
       metadata.runtimeDatabaseUrl=`postgresql://hub_runtime:${runtimePassword}@${connection.host}:${connection.port}/${connection.database}`;
       metadata.migrationDatabaseUrl=`postgresql://hub_migration_verifier:${migrationPassword}@${connection.host}:${connection.port}/${connection.database}`;
       if(persistMetadata) {
         const file=path.join(simulationRoot,'current.json');await writeFile(file,JSON.stringify(metadata,null,2)+'\n',{mode:0o600});
-        log('Simulation ready at 127.0.0.1:55434; private connection metadata: .local/hosted-test-simulation/current.json');
-      }else log('Simulation ready at 127.0.0.1:55434; connection metadata stays in memory.');
+        log(`Simulation ready on loopback:${connection.port}; private connection metadata: .local/hosted-test-simulation/current.json`);
+      }else log(`Simulation ready on loopback:${connection.port}; connection metadata stays in memory.`);
       held=true;
     }
     return {server,metadata,stop:async()=>{
@@ -202,7 +207,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
   } finally {
     await mediaLogin?.end().catch(()=>{});await runtime?.end().catch(()=>{});await client?.end().catch(()=>{});await admin?.end().catch(()=>{});
     if(!held) {
-      await server.stop().catch(()=>{});
+      await server?.stop().catch(()=>{});
       const target=path.resolve(directory),parent=path.resolve(simulationRoot)+path.sep;
       if(verified && target.startsWith(parent) && path.basename(target).startsWith('run-')) await rm(target,{recursive:true,force:true});
     }

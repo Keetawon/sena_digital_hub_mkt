@@ -19,7 +19,7 @@ const server=createServer((req,res)=>{
   const data=req.url==='/v1/me'?{id:'synthetic',status:active?'ACTIVE':'PENDING',role:active?'admin':null,hub_role:active?'admin':null,agency:null,can_manage_users:active,capabilities,pending_count:0,
       email:'outage@example.test',display_name_th:'ผู้ทดสอบ ระบบขัดข้อง',phone:'',team:'',requested_tasks:[],reason:'',privacy_acknowledged_at:null,company_type:null,company_name:null,position:null,decision_note:'',agency_code:null,anonymised_at:null,updated_at:'2026-10-09T00:00:00Z'}:
     req.url==='/v1/admin/accounts'?{items:[],events:[],agencies:[],actor_id:'synthetic'}:
-    req.url==='/v1/admin/account-invites'?{items:[],login_url:'http://127.0.0.1:3001/login'}:
+    req.url==='/v1/admin/account-invites'?{items:[],login_url:`${process.env.HUB_ADMIN_ORIGIN}/login`}:
     req.url==='/v1/admin/permissions/catalog'?catalog:[];
   res.end(JSON.stringify({data}));
 });
@@ -33,8 +33,8 @@ async function login(page:Page) {
 
 test.describe('Upstream availability is distinct from authentication',()=>{
   test.skip(process.env.HUB_ACCOUNT_OUTAGE_TEST!=='1','Owned loopback upstream only');
-  test.use({baseURL:'http://127.0.0.1:3001'});
-  test.beforeAll(async()=>{server.listen(8001,'127.0.0.1');await once(server,'listening');});
+  test.use({baseURL:process.env.HUB_ADMIN_ORIGIN!});
+  test.beforeAll(async()=>{server.listen(Number(new URL(process.env.HUB_API_URL!).port),'127.0.0.1');await once(server,'listening');});
   test.afterAll(async()=>{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));});
   test.beforeEach(async({page})=>{await page.route('**/*',route=>['http:','https:'].includes(new URL(route.request().url()).protocol)&&new URL(route.request().url()).hostname!=='127.0.0.1'?route.abort():route.continue());});
   test('each account response reads authority once and the next request sees a status change',async({page})=>{
@@ -78,7 +78,7 @@ test.describe('Upstream availability is distinct from authentication',()=>{
     await expect(page.getByRole('link',{name:'เข้าสู่ระบบอีกครั้งในแท็บใหม่'})).toHaveCount(0);
     const cookiesBefore=await page.context().cookies();
     const result=await page.goto('/questions?keep=this');expect(result?.status()).toBe(503);
-    await expect(page).toHaveURL('http://127.0.0.1:3001/questions?keep=this');
+    await expect(page).toHaveURL(`${process.env.HUB_ADMIN_ORIGIN}/questions?keep=this`);
     await expect(page.getByRole('heading',{name:'ระบบขัดข้องชั่วคราว กรุณาลองใหม่'})).toBeVisible();
     expect((await page.context().cookies()).map(c=>c.name)).toEqual(cookiesBefore.map(c=>c.name));
     mode='ok';await page.getByRole('link',{name:'ลองใหม่',exact:true}).click();
@@ -92,7 +92,7 @@ test.describe('Upstream availability is distinct from authentication',()=>{
     await expect(page).toHaveURL(/\/auth\/callback\?/);
     await expect(page.getByRole('link',{name:'ลองใหม่',exact:true})).toHaveAttribute('href','/questions');
     mode='ok';await page.getByRole('link',{name:'ลองใหม่',exact:true}).click();
-    await expect(page).toHaveURL('http://127.0.0.1:3001/questions');
+    await expect(page).toHaveURL(`${process.env.HUB_ADMIN_ORIGIN}/questions`);
     await expect(page.getByRole('button',{name:'ออกจากระบบ',exact:true})).toBeVisible();
   });
 

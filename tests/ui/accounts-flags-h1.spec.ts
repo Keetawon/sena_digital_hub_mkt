@@ -5,7 +5,7 @@ import path from 'node:path';
 
 test.describe('Account flags and public boundary', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1' || process.env.HUB_AUTH_PASSWORD !== '0', 'Requires loopback flag-off phase');
-  test.use({baseURL:'http://127.0.0.1:3001'});
+  test.use({baseURL:process.env.HUB_ADMIN_ORIGIN!});
   test('password signup/recovery and Google hidden; existing password login works', async ({page}) => {
     for (const url of ['/signup','/signup/verify','/login/forgot']) {
       await page.goto(url); await expect(page).toHaveURL(/\/login/);

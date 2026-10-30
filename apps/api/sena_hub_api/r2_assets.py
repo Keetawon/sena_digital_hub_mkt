@@ -38,7 +38,7 @@ class R2Assets:
                 raise ValueError()
             endpoint = urlsplit(config["endpoint_url"])
             if settings.hosted_test_simulation:
-                valid = config["endpoint_url"] == "http://127.0.0.1:54329/r2"
+                valid = config["endpoint_url"] == settings.supabase_url + "/r2"
             else:
                 valid = (endpoint.scheme == "https" and endpoint.port in {None, 443}
                          and re.fullmatch(r"[0-9a-f]{32}(?:\.(?:eu|fedramp|us))?\.r2\.cloudflarestorage\.com", endpoint.hostname or "")

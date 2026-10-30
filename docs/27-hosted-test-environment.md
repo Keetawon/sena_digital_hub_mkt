@@ -9,7 +9,7 @@ The paths below are protected configuration; entries list variable names only.
 |---|---|---|---|
 | `/etc/sena-hub-test/api.env` | `sena-hub-test-api.service` only | Operator: `HUB_ADMIN_ORIGIN`, `HUB_AUTH_MODE`, `HUB_DATABASE_URL`, `HUB_ENV`, `HUB_R2_CREDENTIALS_FILE`, `HUB_R2_PRIVATE_BUCKET_CONFIRMED`, `HUB_SUPABASE_URL`, `PYTHAINLP_DATA`, `PYTHAINLP_OFFLINE`, `PYTHAINLP_READ_ONLY`, `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`. Owner: `OPENAI_API_KEY`, assistant and knowledge project only. Neither worker variable is allowed. | Edit this file through the protected procedure; restart only the API unit; run the read-only postflight. |
 | `/etc/sena-hub-test/admin.env` | `sena-hub-test-admin.service`; unprivileged release build | Operator: `HUB_ADMIN_CONTACT`, `HUB_ADMIN_ORIGIN`, `HUB_API_URL`, `HUB_AUTH_GOOGLE`, `HUB_AUTH_MODE`, `HUB_AUTH_PASSWORD`, `HUB_ENV`, `HUB_ENV_LABEL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_TELEMETRY_DISABLED`, `NODE_ENV`. Neither worker variable is allowed. | Edit this file; rebuild when a build-time setting changes; restart only the admin unit; run the read-only postflight. |
-| `/etc/sena-hub-test/media-worker.env` | `sena-hub-test-media-worker.service` only | `HUB_MEDIA_WORKER_DATABASE_URL`: migration/release operator. `HUB_MEDIA_OPENAI_API_KEY`: owner. These are the only permitted variables in this file. | Edit this one file through the protected procedure; restart only the worker unit; run the read-only postflight. A database password rotation also requires the approved migration-runner procedure. |
+| `/etc/sena-hub-test/media-worker.env` | `sena-hub-test-media-worker.service`; temporary pre-promotion worker self-check unit under the same `sena-hub-media` identity, without network access | `HUB_MEDIA_WORKER_DATABASE_URL`: migration/release operator. `HUB_MEDIA_OPENAI_API_KEY`: owner. These are the only permitted variables in this file. | Edit this one file through the protected procedure; restart only the worker unit; run the read-only postflight. A database password rotation also requires the approved migration-runner procedure. |
 
 All three files must be regular non-symlink files owned by `root:root`, mode
 `0600`. The media file is the single new location approved in H5e. Never copy
@@ -632,11 +632,13 @@ provisioning remains pending; local simulation results do not establish that
 the hosted project's Auth, Storage policies or infrastructure are ready.
 
 Build the admin first, then run `npm.cmd run test:hosted-h1`. This creates a fresh
-disposable cluster on `127.0.0.1:55434`, reproduces the denied parameter grant,
-applies the profile, verifies replay/rollback/permissions, seeds synthetic data,
-and runs Edge against local Auth/Storage (`54329`), API (`8001`) and admin (`3001`).
-The harness refuses occupied ports and never reads `.env.supabase-test`. Private
-connection metadata stays in ignored `.local/hosted-test-simulation/current.json`.
+disposable cluster on a free `127.0.0.1` port, reproduces the denied parameter
+grant, applies the profile, verifies replay/rollback/permissions, seeds synthetic
+data, and runs Edge against local Auth/Storage, API and admin on separate free
+loopback ports. PostgreSQL retries a startup bind race; disposable directory
+and run-marker checks identify the database. The harness never reads
+`.env.supabase-test`; connection metadata stays in memory and is removed with
+the owned cluster at shutdown.
 The normal local demo remains on ports `55432`, `8000` and `3000`.
 
 `npm.cmd run dev:hosted-h1` starts the same disposable package for a local demo;

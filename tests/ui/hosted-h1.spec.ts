@@ -4,8 +4,8 @@ import { randomUUID } from 'node:crypto';
 // Opt-in only: this suite never targets the actual hosted project or normal local DB.
 test.describe('H1 disposable managed-permission simulation', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Requires the isolated H1 Auth/API/database simulation');
-  test.use({ baseURL: 'http://127.0.0.1:3001' });
-  const origin = 'http://127.0.0.1:3001';
+  test.use({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
+  const origin = process.env.HUB_ADMIN_ORIGIN!;
   const roles = [
     ['editor', 'ผู้แก้ไขข้อมูล', true], ['publisher', 'Manager · อนุมัติและเผยแพร่', true],
     ['viewer', 'ผู้อ่านข้อมูล', true], ['admin', 'ผู้ดูแลระบบ', true],
@@ -176,7 +176,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
     expect(original.status()).toBe(200);
     expect(original.headers()['content-disposition']).toMatch(/^attachment;/);
     expect(original.headers()['cache-control']).toContain('no-store');
-    expect((await page.request.get(`http://127.0.0.1:8001/v1/admin/knowledge/candidates/${candidate}/file`)).status()).toBe(401);
+    expect((await page.request.get(`${process.env.HUB_API_URL}/v1/admin/knowledge/candidates/${candidate}/file`)).status()).toBe(401);
     expect((await page.request.post('/api/hub/v1/admin/knowledge/preview',{data:{question:'synthetic'}})).status()).toBe(403);
     await page.screenshot({path:'artifacts/hosted-r2-knowledge-desktop.png',fullPage:true});
   });
@@ -189,7 +189,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
       await page.goto(`/?brand=${brands[0].public_brand_id}`);
       const slot = page.locator('[data-logo-role="logo_white"]');
       const name = `h1-white-${randomUUID()}.svg`;
-      const uploaded = page.waitForResponse(response => response.url() === 'http://127.0.0.1:8001/v1/admin/assets' && response.request().method() === 'POST');
+      const uploaded = page.waitForResponse(response => response.url() === `${process.env.HUB_API_URL}/v1/admin/assets` && response.request().method() === 'POST');
       await slot.getByLabel('เลือกไฟล์ · โลโก้สีขาว', { exact: true }).setInputFiles({ name, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="240"><script>alert(1)</script><rect width="600" height="240" fill="white"/><title>${name}</title></svg>`) });
       expect((await uploaded).status()).toBe(201);
       await expect(slot.locator('.asset-caption > .small-text.muted')).toHaveText(name);
@@ -201,7 +201,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
       expect((await download).suggestedFilename()).toBe(name);
       const data = (await (await page.request.get(`/api/hub/v1/admin/brands/${brands[0].public_brand_id}`)).json()).data;
       const asset = data.assets.find((item: { asset_role: string }) => item.asset_role === 'logo_white');
-      expect((await page.request.get(`http://127.0.0.1:8001/v1/admin/assets/${asset.id}/file`)).status()).toBe(401);
+      expect((await page.request.get(`${process.env.HUB_API_URL}/v1/admin/assets/${asset.id}/file`)).status()).toBe(401);
       const favicon = page.locator('[data-logo-role="favicon"]');
       const faviconName = `favicon-${randomUUID()}.svg`;
       await favicon.getByLabel('เลือกไฟล์ · ไอคอนเว็บไซต์ (favicon)', { exact: true }).setInputFiles({ name: faviconName, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="gold"/><title>${randomUUID()}</title></svg>`) });

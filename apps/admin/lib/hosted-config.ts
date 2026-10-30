@@ -23,10 +23,12 @@ export function hostedConfig(): HostedConfig | null {
   const adminOrigin = process.env.HUB_ADMIN_ORIGIN;
   if (!supabaseUrl || !publishableKey || !apiOrigin || !adminOrigin) throw new Error("Hosted H1 public configuration is incomplete");
   if (simulation ? publishableKey !== "h1-simulation-public-key" : !/^sb_publishable_[A-Za-z0-9_-]+$/.test(publishableKey)) throw new Error("Hosted H1 requires a publishable key, never a server credential");
-  if (supabaseUrl !== (simulation ? "http://127.0.0.1:54329" : "https://eqlrtevwpyboplljgowo.supabase.co")) throw new Error("Hosted H1 Auth target is not allowed");
-  for (const [value, local] of [[apiOrigin, "http://127.0.0.1:8001"], [adminOrigin, "http://127.0.0.1:3001"]]) {
+  if (!simulation && supabaseUrl !== "https://eqlrtevwpyboplljgowo.supabase.co") throw new Error("Hosted H1 Auth target is not allowed");
+  for (const value of [apiOrigin, adminOrigin, supabaseUrl]) {
     const url = new URL(value);
-    if (url.origin !== value || url.username || url.password || (simulation ? value !== local : url.protocol !== "https:" || /^(localhost|127\.|\[::1\])/.test(url.hostname))) throw new Error("Hosted H1 origin is not allowed");
+    if (url.origin !== value || url.username || url.password || (simulation
+      ? url.protocol !== "http:" || url.hostname !== "127.0.0.1" || Number(url.port) < 1024 || [3000, 8000, 55432].includes(Number(url.port))
+      : url.protocol !== "https:" || /^(localhost|127\.|\[::1\])/.test(url.hostname))) throw new Error("Hosted H1 origin is not allowed");
   }
   return { supabaseUrl, publishableKey, apiOrigin, adminOrigin, simulation, google: runtime.HUB_AUTH_GOOGLE === "1", password: runtime.HUB_AUTH_PASSWORD === "1", label: runtime.HUB_ENV_LABEL || runtime.HUB_ENV || "SENA Digital Hub", adminContact: runtime.HUB_ADMIN_CONTACT || "" };
 }

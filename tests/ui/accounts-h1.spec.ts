@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 test.describe('Accounts on loopback H1', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Local H1 protocol simulation only');
-  test.use({ baseURL: 'http://127.0.0.1:3001' });
+  test.use({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
   test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => ['http:', 'https:'].includes(new URL(route.request().url()).protocol) && new URL(route.request().url()).hostname !== '127.0.0.1' ? route.abort() : route.continue());
   });
@@ -45,19 +45,19 @@ test.describe('Accounts on loopback H1', () => {
     await expect(page.getByRole('heading', {name:'ขอสิทธิ์ใช้งาน'})).toBeVisible();
     await page.screenshot({path:'artifacts/accounts-request.png',fullPage:true});
     await request(page, 'กูเกิล สมมติ');
-    const admin = await browser.newPage({ baseURL: 'http://127.0.0.1:3001' });
+    const admin = await browser.newPage({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
     await login(admin); await approve(admin, 'กูเกิล สมมติ');
     await page.reload(); await page.getByRole('link', { name: 'เข้าสู่พื้นที่ทำงาน' }).click();
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
     await page.getByRole('button',{name:'ออกจากระบบ',exact:true}).click();
     await page.route('**/auth/v1/authorize?**', route => {
       const url=new URL(route.request().url());
-      url.searchParams.set('redirect_to','http://127.0.0.1:3001/auth/callback?next=//evil.example');
+      url.searchParams.set('redirect_to',`${process.env.HUB_ADMIN_ORIGIN}/auth/callback?next=//evil.example`);
       return route.continue({url:url.href});
     }, {times:1});
     await page.getByRole('button',{name:'เข้าสู่ระบบด้วย Google'}).click();
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
-    expect(new URL(page.url()).origin).toBe('http://127.0.0.1:3001');
+    expect(new URL(page.url()).origin).toBe(process.env.HUB_ADMIN_ORIGIN!);
     await admin.getByRole('tab', { name: 'ผู้ใช้ทั้งหมด' }).click();
     const row = admin.getByRole('row').filter({ hasText: 'กูเกิล สมมติ' });
     await row.getByRole('button',{name:'จัดการ'}).click();
@@ -92,7 +92,7 @@ test.describe('Accounts on loopback H1', () => {
     await page.getByLabel('ทีม / ฝ่าย').fill('ทีมแก้ไข');
     await page.getByRole('button', { name: 'ส่งคำขอ', exact: true }).click();
     await expect(page.getByText('ทีมแก้ไข', { exact: true })).toBeVisible();
-    const admin=await browser.newPage({baseURL:'http://127.0.0.1:3001'});
+    const admin=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await login(admin); await approve(admin,'อีเมล สมมติ');
     await page.reload(); await page.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).click();
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
@@ -107,7 +107,7 @@ test.describe('Accounts on loopback H1', () => {
   });
   test('recovery OTP sets a new password and revokes previous refresh sessions', async ({page}) => {
     const email=`recovery-${Date.now()}@example.test`, old='Synthetic-old-password!', password='Synthetic-new-password!';
-    const auth='http://127.0.0.1:54329/auth/v1';
+    const auth=`${process.env.HUB_SUPABASE_URL}/auth/v1`;
     await page.request.post(`${auth}/signup`,{data:{email,password:old}});
     const code=async(type:string)=>(JSON.parse(await readFile('.local/hosted-test-simulation/auth-outbox.json','utf8'))).findLast((r:{email:string;type:string})=>r.email===email&&r.type===type).token;
     const previous=await(await page.request.post(`${auth}/verify`,{data:{email,type:'email',token:await code('email')}})).json();

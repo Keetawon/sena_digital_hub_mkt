@@ -28,6 +28,15 @@ LOCAL_UAT_ACTORS = {
 HOSTED_TEST_REF = "eqlrtevwpyboplljgowo"
 
 
+def simulation_origin(value: str) -> bool:
+    url = urlparse(value)
+    return (url.scheme == "http" and url.hostname == "127.0.0.1"
+            and url.port is not None and 1024 <= url.port <= 65535
+            and url.port not in {3000, 8000, 55432}
+            and not (url.username or url.password or url.query or url.fragment)
+            and url.path == "")
+
+
 def failure(status: int, code: str, message: str) -> HTTPException:
     return HTTPException(status, {"code": code, "message": message})
 
@@ -62,11 +71,12 @@ class Settings:
             if self.auth_mode != "supabase" or self.demo_tokens and any(self.demo_tokens.values()):
                 raise ValueError("ระบบทดสอบ H1 ต้องเข้าสู่ระบบด้วยบัญชี Supabase เท่านั้น")
             if self.hosted_test_simulation:
-                if (database.hostname != "127.0.0.1" or database.port != 55434
+                if (database.hostname != "127.0.0.1" or database.port is None
+                        or not 1024 <= database.port <= 65535 or database.port == 55432
                         or database.path != "/hub_hosted_test_simulation"
                         or (query and query != {"sslmode": ["disable"]})
-                        or self.supabase_url != "http://127.0.0.1:54329"
-                        or self.admin_origin != "http://127.0.0.1:3001"):
+                        or not simulation_origin(self.supabase_url)
+                        or not simulation_origin(self.admin_origin)):
                     raise ValueError("การจำลอง H1 ใช้ได้เฉพาะฐานข้อมูลและบริการจำลองภายในเครื่องที่กำหนด")
             else:
                 direct = database.hostname == f"db.{HOSTED_TEST_REF}.supabase.co"

@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import pg from 'pg';
 import {assertNoAuthWrites} from './auth-write-check.mjs';
 import {authPrivilegePostflight} from './auth-protection.mjs';
+import {isSimulationConnection,assertSimulationDatabase} from './disposable-simulation.mjs';
 import {attestedTransaction,operatorTransaction,rehearseTransaction,verifySources,validateManifest,catalogDelta} from './hosted-write-attestation.mjs';
 
 export const SOURCE = 'sena-hub-supabase-test-v2';
@@ -25,13 +26,13 @@ const fail = message => { throw new GuardError(message); };
 const identifier = value => `"${value.replaceAll('"', '""')}"`;
 const literal = value => `'${value.replaceAll("'", "''")}'`;
 
-function requireCombinedContentRelease(client, migrations) {
+async function requireCombinedContentRelease(client, migrations) {
   if (!migrations.some(m => Number(/^\d{8}(\d{4})_/.exec(m.name)?.[1] ?? 0) >= CONTENT_RELEASE_HOLD)) return;
   // H5d: hard hold until the complete H5a 79/80 release admission is implemented.
   // The existing disposable H1 simulation remains local; no env flag bypasses it.
-  const c = client.connectionParameters, socket = client.connection?.stream;
-  if (c?.host === '127.0.0.1' && Number(c.port) === 55434 && c.database === 'hub_hosted_test_simulation'
-      && socket?.remoteAddress === '127.0.0.1') return;
+  if (isSimulationConnection(client) && client.connection?.stream?.remoteAddress === '127.0.0.1') {
+    await assertSimulationDatabase(client);return;
+  }
   fail('Migrations 79 and later are held for the complete combined H5a release; no standalone hosted apply is allowed.');
 }
 
@@ -139,7 +140,8 @@ async function inspect(client, migrations, config) {
   verifyHistory(rows, migrations, config.projectRef);
   if (history.hub && !(await client.query('select 1 from hub_deployment.target where project_ref=$1 and source=$2 and profile=$3 and environment=$4',[config.projectRef,SOURCE,PROFILE,'hosted-test'])).rowCount) fail('Deployment target provenance does not match this TEST profile.');
   const count=rows.length;
-  const localSimulation=client.connectionParameters?.host==='127.0.0.1'&&Number(client.connectionParameters?.port)===55434&&client.connectionParameters?.database==='hub_hosted_test_simulation'&&client.connection?.stream?.remoteAddress==='127.0.0.1';
+  const localSimulation=isSimulationConnection(client)&&client.connection?.stream?.remoteAddress==='127.0.0.1';
+  if(localSimulation)await assertSimulationDatabase(client);
   if([79,80].includes(count)&&!localSimulation)fail('Partial hosted 79/80/81 release detected; the combined release is required.');
   const expectedSchemas=count?SCHEMAS.slice(0,count>=27?9:count>=14?8:6):[];
   const actualSchemas=namespaces.map(row=>row.nspname).filter(name=>name!=='hub_deployment').sort();
@@ -235,7 +237,7 @@ async function applyMigrationStatements(client,migration,config,actor) {
 
 export async function applyMigration(client,migration,config,actor,attestation) {
   if(Number(migration.name.slice(8,12))>=80)assertNoAuthWrites(migration.body.join('\n'));
-  requireCombinedContentRelease(client,[migration]);
+  await requireCombinedContentRelease(client,[migration]);
   return operatorTransaction(client,attestation,async client=>{
     await applyMigrationStatements(client,migration,config,actor);
   });
@@ -379,7 +381,7 @@ export async function rehearseMediaWorkerLogin(client,config,sources){
 export async function runMigrations(client, config, { log = console.log, migrations,attestations={} } = {}) {
   if(config.projectRef!==PROJECT_REF) fail('Only the approved dedicated TEST project is accepted.');
   migrations ??= await loadMigrations();
-  if(config.apply) requireCombinedContentRelease(client,migrations);
+  if(config.apply) await requireCombinedContentRelease(client,migrations);
   let locked = false;
   try {
     if (config.apply) {

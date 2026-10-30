@@ -67,8 +67,8 @@ async def image_once(db, *, configured, provider=None, fetch=fetch_image, approv
     return {'status': state, 'error_code': error, 'job_id': str(job_id)}
 
 
-@asynccontextmanager
-async def hosted_connection():
+def connection_settings():
+    """Validate the existing dedicated connection without opening it."""
     raw = os.environ.get('HUB_MEDIA_WORKER_DATABASE_URL', '')
     uri = urlsplit(raw)
     direct = uri.hostname == f'db.{PROJECT_REF}.supabase.co' and unquote(uri.username or '') == 'hub_media_worker_login'
@@ -81,7 +81,13 @@ async def hosted_connection():
     if not ca:
         raise RuntimeError('Existing TEST CA file required')
     context = ssl.create_default_context(cafile=ca)
-    db = await asyncpg.connect(urlunsplit(uri._replace(query='')), ssl=context, timeout=15, command_timeout=15)
+    return urlunsplit(uri._replace(query='')), context
+
+
+@asynccontextmanager
+async def hosted_connection():
+    dsn, context = connection_settings()
+    db = await asyncpg.connect(dsn, ssl=context, timeout=15, command_timeout=15)
     try:
         actual = await db.fetchrow('select session_user,current_database() database')
         if actual['session_user'] != 'hub_media_worker_login' or actual['database'] != 'postgres':

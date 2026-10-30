@@ -323,6 +323,7 @@ $env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES = (Resolve-Path scripts/offline-fonts.cjs
 try { npm.cmd run build --prefix apps/admin -- --webpack }
 finally { Remove-Item Env:NEXT_FONT_GOOGLE_MOCKED_RESPONSES }
 npm.cmd run test:api
+npm.cmd run test:production            # frozen --no-dev install and imports, no runtime side effects
 npm.cmd run test:db
 npm.cmd run test:ui
 npm.cmd run test:hosted-h1              # where the slice touches hosted paths
@@ -335,6 +336,12 @@ The runner supplies the test connection and a unique run marker. Before API test
 `npm run test:db` runs the SQL/RLS checks, every two-connection regression and the frozen DW/content contract checks in the disposable cluster. Uploaded assets and synthetic archive files use directories inside that same disposable run. Existing test teardown may retain immutable test versions within the run; the entire cluster and test file stores are removed afterward, so no test brand, project, history or upload reaches the working DB or its file stores. H1 continues using its separate loopback simulation and its own synthetic seed; it never imports the working database.
 
 ## Test gates
+
+Disposable attestation, populated-upgrade and H1 simulation listeners select
+free loopback ports at runtime. PostgreSQL startup retries only a bind race;
+directory and run-marker checks identify each disposable database. The primary
+test runner still refuses occupied working ports **55432/8000/3000**. Never
+stop another workspace's process to run an auxiliary fixture.
 
 Operator tooling must redact secret values without discarding the cause of a
 failure. Every STOP records its step, exception class, SQLSTATE and HTTP status
@@ -367,7 +374,7 @@ shared-area changes require the wider selection below.
 | A single screen or endpoint | That endpoint's API tests and that screen's spec(s) |
 
 **Full gate:** run once, at the end of the slice. Run every verification command
-in the Definition of done: typecheck, the documented offline build, `test:api`,
+in the Definition of done: typecheck, the documented offline build, `test:production`, `test:api`,
 `test:db`, `test:ui`, and the H1 suite where the slice touches hosted paths.
 Run it before reporting the slice done, before any commit the owner asks for,
 and before any hosted TEST rollout step. Hosted rollout documents, including
@@ -382,6 +389,22 @@ the full gate for each fix attempt.
 run." Never write "all tests passed" unless the full gate ran on the final code.
 
 The verification commands above form the full gate, run once at the end of a slice; use quick gates while iterating. Report any command that could not be run instead of claiming it passed.
+
+`test:production` creates an owned temporary project/venv under ignored
+`.local/production-checks/` and runs `uv sync --no-dev --frozen`. Installation
+may fetch pinned public packages; the subsequent import checks cannot use the
+network, write files or read credential files. They import every API module,
+construct the API with synthetic settings without entering lifespan, and import
+the hosted worker launcher. The regression suite proves a runtime import of
+dev-only `pytest` fails. Cleanup removes only the verified temporary directory;
+the working `.venv` and credentials are untouched.
+
+Before promotion, `scripts/hosted-candidate-self-check.py <candidate-directory>`
+runs the candidate API check as `sena-hub-api` and the worker's `--self-check`
+as `sena-hub-media`, in temporary hardened units with private networking. The
+worker validates the existing dedicated DSN and public CA without connecting.
+Both results belong in candidate readiness; a failure prevents the live symlink
+switch. No media key is required, and no provider or database call is made.
 
 ## Deployment boundary
 
