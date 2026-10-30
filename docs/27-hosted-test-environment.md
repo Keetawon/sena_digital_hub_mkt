@@ -24,6 +24,14 @@ Hosted write batches use the H5i transaction attestation and catalog checks in
 doc 46; historical live-data fingerprints are no longer STOP gates. Never report
 secret values. The owner adds the media key after the combined deployment STOP.
 
+**30 October deployment status:** the dedicated media login, OS user and
+DSN-only `media-worker.env` now exist and are backed up. The application smoke
+failed, so the worker/socket units were removed during automatic application
+rollback; the worker env file is currently loaded by no service. API/admin are
+back on `07dda14-content-82bd4feeade5` and contain neither worker variable. The
+media key remains absent. Do not perform its rotation/setup steps until the
+successful deployment STOP; see doc 46 for the current failure receipts.
+
 ## Historical H1 plan
 
 Date: **2 October 2026 (Asia/Bangkok)**. Status: **H1 implemented and verified locally; hosted execution waits for the owner's exact “credentials ready” instruction**.

@@ -2974,3 +2974,193 @@ replace hosted screenshots under the owner's 30 October instruction.
 At this checkpoint no hosted write, pilot or provider call has run. The next
 step is the explicit-path H5i commit and push, followed by the approved TEST
 deployment with fresh verified backups and the sealed attestations.
+
+#### H5i hosted execution — 30 October 2026, application smoke STOP
+
+**The combined deployment is incomplete. The application was automatically
+rolled back to `07dda14-content-82bd4feeade5`; do not add the media key yet.**
+The candidate is `7781704-media-5b9714604a03`. Migrations 79–81 and the dedicated
+worker login were committed successfully and remain applied. No schema rollback,
+promotion retry, pilot or provider call was performed after the failed smoke.
+
+H5i code, tests and docs were committed and pushed to main as
+`7781704f0997f2b6bb049379183ffc1b7b822da2` before the hosted write steps. The
+source-commit receipt rechecked all 706 sealed files against that pushed commit.
+Post-push preflight confirmed exact migration prefix 1–78, the frozen 79/80
+checksums, the rehearsal's catalog prerequisites, Auth privileges and seven
+trusted-TLS HTTPS checks. The security watch reported no new users, identities
+or account/permission assignment changes in its observation window.
+
+The Linux candidate transferred and verified 225 source files. Its source
+manifest digest is `5b9714604a03d6786ac168a77818ee31325a479996aff034cf0a14f795227e91`.
+Linux build, two native Unix-peer/JPEG checks, systemd syntax, private-socket-only
+configuration, API rejection of both worker-only variables and key-absence
+checks passed. The candidate receipt pins the same gate SHA-256
+`460f4965a2b5d0b6b066806aea3ec3aa3540fa4a38bdbda269c74a14be9a4b7e`.
+Build output hash: `fdeb41c2592000cc44a606c9c10b853dc636cfe7ad77a021991cbc6c43815016`.
+
+**Committed database batches.** Each had a new protected, inventory-checked,
+fully read-verified backup less than 15 minutes old. The combined schema batch
+used `applyCombinedContentRelease`, never generic `--apply`. Both transactions
+ran at REPEATABLE READ, passed same-snapshot Auth invariance, allowed-write-set
+and exact catalog checks, and passed the final-function and privilege checks.
+
+| Batch / observed relation | Inserted | Updated | Deleted | HOT updated | New-page updated | H5i sum |
+|---|---:|---:|---:|---:|---:|---:|
+| 79+80+81: `audit.change_log` | 2 | 0 | 0 | 0 | 0 | 2 |
+| 79+80+81: `hub.media_ai_settings` | 1 | 1 | 0 | 1 | 0 | 3 |
+| 79+80+81: `hub.media_worker_status` | 1 | 0 | 0 | 0 | 0 | 1 |
+| 79+80+81: `hub_deployment.schema_migrations` | 3 | 0 | 0 | 0 | 0 | 3 |
+| Worker login: `hub_deployment.media_worker_provision` | 1 | 0 | 0 | 0 | 0 | 1 |
+
+The H5i sum includes the HOT counter as the owner specified; it is not a count
+of distinct changed rows. The schema batch's relation set was a subset of the
+rehearsal manifest. Its settings update applies the already-approved TEST cap
+of US$5. No content, Auth, account, permission, publication or job relation was
+written by either operator transaction.
+
+The exact 26 schema catalog changes matched rehearsal: the three relations
+`hub.media_ai_settings`, `hub.media_jobs`, `hub.media_worker_status`; policies
+`media_ai_owner` and `media_worker_status_owner`; and these 21 `hub` functions:
+`media_ai_state`, `media_budget_blocked`, `media_budget_exhausted`,
+`media_budget_totals`, `media_claim`, `media_clip_claim_legacy`, `media_finish`,
+`media_finish_legacy`, `media_image_begin`, `media_image_claim`,
+`media_image_fetch_audit`, `media_image_finish`, `media_image_lease`,
+`media_image_wait`, `media_job_audit`, `media_job_request`, `media_jobs_read`,
+`media_worker_heartbeat`, `provider_budget_event`, `website_media_claim` and
+`website_media_finish`. Function signatures and before/after catalog hashes are
+in the schema attestation.
+
+The login batch matched its five expected catalog entries: the
+`hub_media_worker_login` role, its database CONNECT grant, its membership in
+`hub_media_worker`, the platform-created deployment membership in the new
+login, and `hub_deployment.media_worker_provision`. Its random password was
+generated only into the existing ignored `.env.supabase-test`; only its SCRAM
+verifier entered SQL. The actual Session-pooler connection passed verify-full
+TLS and could SET ROLE only to itself and `hub_media_worker`. The postflight
+checked 19 roles / 513 Auth-table privilege combinations and all 504 final Hub
+function definitions: zero violations. `hub_runtime` cannot assume the worker.
+
+**Host configuration and rollback.** The exclusive `sena-hub-media` system
+user/group and `/etc/sena-hub-test/media-worker.env` were created. The env file
+is regular, non-symlink, root:root 0600, contains only
+`HUB_MEDIA_WORKER_DATABASE_URL`, and has a protected configuration backup.
+`HUB_MEDIA_OPENAI_API_KEY` remains absent. API/admin files and processes contain
+neither worker variable. The service users cannot read the root-owned source
+file; systemd is the intended loader for the worker alone.
+
+Promotion ran from **03:21:33 to 03:22:10 UTC (10:21:33–10:22:10 Bangkok)**.
+Candidate preview completed and the new application/worker/socket started, but
+the isolated, read-only deployed ASGI `ai-state` smoke service exited **1**.
+This harness uses the actual deployed API and runtime database role, injects an
+existing actor only inside a non-listening process, and removes provider keys
+before imports. It does not alter live authentication. The captured operator
+error withholds raw details; the underlying smoke failure is **not yet
+established**. This is not recorded as a passing API smoke or a completed release.
+
+The failure handler restored the previous symlink and original API/admin/cache
+units, restarted the previous API/admin, and removed/stopped the new worker,
+socket and broker drop-in. Read-only inspection confirmed the previous release
+active, API/admin running, worker/socket not installed and inactive, preview
+services inactive, and candidate source hashes unchanged. Original unit backups
+remain at `/srv/sena-hub-test/backups/7781704-media-5b9714604a03-h5e-units`.
+The candidate directory, database changes, OS user and protected DSN-only env
+file remain available; no further schema operation was attempted.
+
+**Read-only STOP postflight.** The restored application passed all seven HTTPS
+checks with verified TLS: health and login 200; consumer/admin unauthenticated
+routes 401. Database prefix 81 and checksums, Auth privileges, final function
+definitions and runtime/worker separation passed. The database ledger reports
+cap **US$5**, spent **US$0**, reserved **US$0**, remaining **US$5**, provider
+configured **false**. These SQL results do not replace the failed API smoke.
+No heartbeat had been recorded before the worker was stopped. Image jobs,
+running image jobs and provider attempts are all **0**; worker-attributed audit
+changes across the entire deployment window are **0**, including translation
+and other queues. No pilot or provider call ran.
+
+The first read-only STOP diagnostic used the wrong job column (`state` instead
+of `status`) and returned SQLSTATE 42703. Its failed receipt is preserved. Only
+that SELECT was corrected; the subsequent read-only diagnostic passed. No
+promotion retry, application change or database write followed the STOP.
+
+The security watch again reports zero new Auth users/identities and zero account
+assignment/status changes; Supabase `postgres` Auth-write access remains **true**,
+the report-only H5i F platform-role item. Candidate credential re-scan checked
+**84 browser files and 417 bundle files, zero matches**. Worker-env ownership,
+mode, DSN-only content and API/admin isolation were rechecked using flags only.
+No Computer Use or signed-in hosted browser inspection was used. The final local
+Playwright footer evidence at 1280/390 remains linked above; the owner will do
+hosted visual inspection after a successful deployment.
+
+The STOP remains in force for the failed smoke. The owner media-key instructions
+above are for a successful deployment only and must not be run at this checkpoint.
+Investigation and a new deployment attempt remain pending; no gate was waived
+or weakened.
+
+**Receipt and backup index.** The immutable
+`.local/hosted-content-rollout/h5e-deployment-stop-index-20261030.json`
+(SHA-256 `1e89010fc843b2fe2c9527485d9329b57f6c99d4dd4cb2581918cae6dd80ff8b`)
+indexes every receipt below, both observed write sets/catalog change lists, and
+all 11 protected backup files. Backup bytes were rehashed against their receipts.
+All receipts, backups and screenshots remain ignored; none was force-added.
+
+Receipt paths below are relative to `.local/hosted-content-rollout/`.
+
+| Receipt | Result | SHA-256 |
+|---|---|---|
+| `h5i-source-commit.json` | passed | `3218639125acfe1cfb3eafeb5c9f2193a63df3485dc098cdbf8e96b33f5a080b` |
+| `h5i-readiness-1793328851545.json` | passed | `aa80fd469c08334ffc032c7d8ffb8713dc1030c51e45b30d7592299c5800e760` |
+| `h5e-vps-readiness-20261030T025400Z.json` | passed | `bafcdc804b4c80ca39f5ebe3b4d59a7c1a4dc6ebd7ecd8b9cc2737788f7aba7b` |
+| `h5e-https-preflight-20261030T025401Z.json` | passed | `9a271c6c17ecbb0bd6e19f859ebdb0dbb3c8f61143beb5ba8534c4e95f94f537` |
+| `h5e-backup_stage-1793328984912.json` | passed | `cbc7edd1d1283b10d0d1e4184deeb1fb5df1e35ddff1ed8c504e390a94893e0b` |
+| `h5e-vps-candidate.json` | recorded | `6d170128461852393729b0b96098070ef5f8d83ae09fd3c757dbba0baaac7b7e` |
+| `h5e-vps-source-manifest.json` | recorded | `c3c900b5067addf38c854714f81fab62e1f63c4aff9da4d9ffb31b2777ea6376` |
+| `h5e-backup_build-1793329619728.json` | passed | `09882a943a658fffa20cee9a9cdfa43fd27440ca159f4d71d342110fa06248f4` |
+| `h5e-vps-build.json` | passed | `76d6b38312b9231b3a0ea7c91ff2b9bba0bc26dff49b575c9228935f67cabcf9` |
+| `h5e-candidate-readiness.json` | passed | `7d326c93e72dbf214e86c2ec7ec115be7a2771cc6d969f95dc9666998d8ea48e` |
+| `h5e-combined-manifest.json` | recorded | `29382bf63526bcd567a0c0bfa34c59772b8609e9f8efaea3137032095a469e24` |
+| `h5e-combined_schema-1793329938510.json` | passed | `9f8e2ef60f46b00669f7a7353022db888e8fbf863b1258b601515d8d1e97418b` |
+| `h5i-attestation-1793329929948-e8098685-9d23-44d3-8d3a-2b44cb18dd78.json` | committed | `3cbbe29ba044cb68b6b975ce03d4aa9dd627eae9d926447200df3b86c746067b` |
+| `h5e-media_worker_login-1793330118687.json` | passed | `c9168f890f45ece02b898b7abc6d3e700dd55c8e1c6e8f9b20ca78a9d16c5339` |
+| `h5i-attestation-1793330109959-08786e0a-795e-4bb3-b9ac-2b396f18d421.json` | committed | `ba851e15970b8ece3ce90532411253bfaaa6ac8b8cc28f1806f9c64ed68ffd82` |
+| `h5e-worker_connection-1793330145076.json` | passed | `67ae5bc162c0e24e5570d3d76f24ca46a10498eab1ca5b5267ff6ef847cd1df5` |
+| `h5e-backup_configure_worker-1793330293293.json` | passed | `8e31e780eb872f9a624b8026bcb65e52ab64306e3d8cca34390ee37574adcfc9` |
+| `h5e-configure_worker-1793330321196.json` | passed | `29c9721899f72c71b471a5bdad23add289d77c53f2f3f6e2c9ab40e99f08e37a` |
+| `h5e-vps-worker-config.json` | configured | `36b68243d3be3e0502f70eef1f1fc3247f9f0ee46d77ddf577f3d38a61d2ea7a` |
+| `h5e-backup_promote-1793330482929.json` | passed | `aeffa195bf02f27ae918f52a73b14487b1b171003425c9223ac23ee564dcbdad` |
+| `h5e-promote-1793330530988.json` | STOP | `92e9743b2b4d5e71b6afcf5a6b6dcf513f76f2995e93604993022a5b689e9be0` |
+| `h5e-promotion-stop-inspection-20261030T032408Z.json` | recorded | `e025ead21ba57c647991c0d195292276bd252b2c5b68f04d3a00ed6af1d6559b` |
+| `h5e-promotion-stop-journal-20261030T032601Z.json` | recorded | `8b2ce12da6ebe737ed44c5465b90983619a2e9ddca0a827439494fa419cbddac` |
+| `h5e-https-postflight-20261030T032603Z.json` | passed | `f6e5812c044ce307913fb4d8a15e5316b04bc9d491bc71b8a0aed4ec9f095486` |
+| `h5e-promotion-stop-postflight-1793330940345.json` | STOP | `1e459ebd08e2c40ab9de3e5e60a85017621bd658b4ad4cad25fd1502a05f3a09` |
+| `h5e-promotion-stop-postflight-1793331007648.json` | passed | `e2af206705a37a7127812796b23acc806b9e0d271d33fc9d38fa0942e6203090` |
+| `h5e-promotion-stop-env-scan-20261030T033141Z.json` | passed | `13f09b30a7796df4bf32e0526d5a292e418fcc8a3daae49ee68d577b5eca66d9` |
+
+Backup paths below are relative to `.local/backups/`. Each directory also
+contains a protected `receipt.json`; its hash is pinned in the index. All six
+database archives passed full read verification; all five configuration archives
+passed inventory verification.
+
+| Backup file | Bytes | SHA-256 |
+|---|---:|---|
+| `h5e-backup_build-20261030T030506Z/database-before-batch.dump` | 17019796 | `c624f61cab673b45a4f7b2642b4d601ae1dcc517a10771d338c158a0bbb0f3cb` |
+| `h5e-backup_configure_worker-20261030T031615Z/database-before-batch.dump` | 17051272 | `346591bdee5db3761aa03f344865d2bae7f099572995e09ecac0718b220f3c85` |
+| `h5e-backup_promote-20261030T031917Z/database-before-batch.dump` | 17051272 | `746847b45752a1c0807c585f2a865783c94021843ecb64cd708080549c7181ce` |
+| `h5e-backup_stage-20261030T025430Z/database-before-batch.dump` | 17019796 | `e8ac48021894107a20649303f1840d90684b44a301551a1b901384070841bdb0` |
+| `h5e-combined_schema-20261030T031005Z/database-before-batch.dump` | 17019796 | `e2df3d5d6cdc34b8e4cac7a687b04eeffc956d0951b5b531518339dc9061876f` |
+| `h5e-media_worker_login-20261030T031310Z/database-before-batch.dump` | 17050066 | `54b8d6448414b50d59e60e8c1dd3c60d6dae5412e008d322885343bcd3954c9d` |
+| `h5e-vps-build-20261030T030715027975Z/protected-configuration.tar.gz` | 2827 | `1dab4dd633349c4f30fb3becf5e5f8adb3efdd383269afc07925b00cf828bd06` |
+| `h5e-vps-configure_worker-20261030T031830543527Z/protected-configuration.tar.gz` | 2827 | `1dab4dd633349c4f30fb3becf5e5f8adb3efdd383269afc07925b00cf828bd06` |
+| `h5e-vps-configure_worker-20261030T031833058761Z/protected-configuration.tar.gz` | 2936 | `6a1a9f5e470a22668cea038b20ce6b7eb82746a1e9ade9cc4ef0e8af98f13d70` |
+| `h5e-vps-promote-20261030T032142373381Z/protected-configuration.tar.gz` | 2936 | `6a1a9f5e470a22668cea038b20ce6b7eb82746a1e9ade9cc4ef0e8af98f13d70` |
+| `h5e-vps-stage-20261030T030441272475Z/protected-configuration.tar.gz` | 2827 | `1dab4dd633349c4f30fb3becf5e5f8adb3efdd383269afc07925b00cf828bd06` |
+
+Record-only quick checks passed before the documentation commit: static Auth
+gate; 108 hosted operator paths with zero transaction-path violations; 713
+source / 64 browser files with zero credential matches and no credential files
+read; all 706 sealed source files unchanged; `git diff --check`; and
+`git check-ignore` for both approved local-development credential files.
+Receipt: `artifacts/hosted-content-rollout/h5i-stop-record-checks.json`, SHA-256
+`f45008655eaea4fbcc515620b27002751981a5cbec35dcddf176f786e348306d`.
+The final full-gate results above remain valid for the unchanged code. They do
+not override the hosted smoke STOP.
