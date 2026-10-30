@@ -25,12 +25,13 @@ doc 46; historical live-data fingerprints are no longer STOP gates. Never report
 secret values. The owner adds the media key after the combined deployment STOP.
 
 **30 October deployment status:** the dedicated media login, OS user and
-DSN-only `media-worker.env` now exist and are backed up. The application smoke
-failed, so the worker/socket units were removed during automatic application
-rollback; the worker env file is currently loaded by no service. API/admin are
-back on `07dda14-content-82bd4feeade5` and contain neither worker variable. The
-media key remains absent. Do not perform its rotation/setup steps until the
-successful deployment STOP; see doc 46 for the current failure receipts.
+DSN-only `media-worker.env` exist and are backed up. The corrected ai-state smoke
+passed during the promotion retry, but the worker then failed to import the
+development-only `httpx` dependency in the production install. Automatic
+application rollback restored `07dda14-content-82bd4feeade5`; worker/socket units
+were removed, and the worker env file is loaded by no service. API/admin contain
+neither worker variable. The media key remains absent. Do not add it until the
+successful deployment STOP; doc 46 records the worker-import STOP and receipts.
 
 ## Historical H1 plan
 

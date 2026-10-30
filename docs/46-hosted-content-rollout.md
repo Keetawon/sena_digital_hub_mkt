@@ -3295,3 +3295,120 @@ wrapper also preserves the last readiness exception and HTTP status without
 response content. No application rebuild, schema batch, worker-login operation
 or env-file creation is part of this retry. A fresh verified backup precedes
 promotion; its outcome is recorded below.
+
+
+#### Promotion-only retry ? worker import STOP, 30 October 2026
+
+The harness fix and diagnosis were committed and pushed as
+`cd453c13f6f8126a2fd696f5d8b4a9ef67bdccd8` before hosted execution. Admission
+verified the new seal, all 225 unchanged candidate files and the original Linux
+readiness proof. Seven trusted-HTTPS preflight checks passed. A fresh protected
+backup passed inventory and full-archive read verification; a protected
+configuration backup included the existing DSN-only worker env file.
+
+The retry ran **04:49:07?04:49:56 UTC**. The corrected ai-state smoke passed its
+HTTP 200, envelope, cap 5/spent 0/provider-not-configured, real lifespan and
+read-only assertions. Execution reached `promotion/environment_isolation`,
+then raised **`FileNotFoundError`** while inspecting process environments.
+SQLSTATE, HTTP status and API error code were null at this later step; there
+were no missing response keys. The operator retained this metadata and
+performed its automatic application rollback.
+
+**New cause established, read-only:** the production worker exits at
+`import/media_worker/httpx` with **`ModuleNotFoundError`**, in
+`apps/api/sena_hub_api/media_worker.py:13`. Both the deployment-window journal
+classification and an import-only probe as `sena-hub-media` reproduce it.
+`httpx` is available only in the development dependency group; the Linux
+candidate uses the correct production `--no-dev` install. The worker import
+fails before its connection/heartbeat loop. The follow-up probe read no
+credential file, opened no database connection and started no service. No raw
+journal, exception message, DSN, token, header or response value was retained.
+
+This is a separate application dependency issue after the harness fix. The
+passing local gates include development dependencies and did not establish
+production worker startup. Resolving it needs an application dependency/import
+correction and a production-only worker-startup regression, followed by quick
+and full gates, a new seal and Linux candidate validation. **No such app change,
+package installation on the VPS or second promotion attempt was made after
+this failed-smoke STOP.** No new credential is needed for the diagnosed import.
+
+Rollback verification at **04:50:37 UTC** found live release
+`07dda14-content-82bd4feeade5`, API/admin active, all previous unit references
+restored, and worker/socket/preview units inactive and removed. All 225 held
+candidate source hashes still match. Seven HTTPS checks passed again: health
+and login 200, five unauthenticated consumer/staff routes 401. The held candidate
+remains `7781704-media-5b9714604a03`.
+
+Read-only safety postflight passed:
+
+- Exact migration prefix **81** and checksums; migrations 79?81, worker login
+  provisioning and env-file creation were **not repeated**.
+- Auth privilege postflight: **513 table/role checks** passed; **504 final
+  function definitions** passed the static Auth-write check. The runtime still
+  cannot assume the worker role.
+- Media ledger: cap **US$5**, spent/reserved **US$0**, provider not configured;
+  no worker heartbeat recorded, zero image jobs and zero provider attempts.
+- Worker attribution from the original deployment start: **zero audit changes**,
+  including translation/other queues. No hosted DB write batch was executed by
+  this retry; there is no new migration/login write set to attest.
+- Security watch: no new Auth users/identities or account-assignment changes in
+  the observed window. The Supabase `postgres` role can write Auth tables; this
+  remains the informational platform-role observation required by H5i F.
+- Worker env remains regular `0600 root:root`, DSN only; all service users are
+  denied direct file reads. API/admin process presence flags for both worker
+  variables are false. Media key absent. Credential scan: **84 browser and 417
+  deployed bundle files, zero matches**.
+
+**STOP remains in force under the failed-smoke rule. Do not add the media key.**
+The owner key steps above remain conditional on a successful deployment STOP.
+No pilot, provider call, cap change, schema repair or account/permission change
+was performed in this retry. Earlier failed receipts and baselines remain intact.
+
+The diagnosis/rollback receipt index is
+`.local/hosted-content-rollout/h5e-smoke-stop-index-20261030.json`, SHA-256
+`28dd1f6ac11c4c349598bb39939b4229b8c54fcb998cc300c0c0930b01f64168`.
+It pins the following 17 receipts, both protected backup archives and their
+receipts, plus the exact private operator source hashes. Paths in this table
+are relative to `.local/hosted-content-rollout/`.
+
+| Receipt | Result | SHA-256 |
+|---|---|---|
+| `h5e-smoke-diagnosis-1793332301372.json` | recorded | `8f6783d6571f0b05cc77f710b4e5ffb20a87a34498367c4e90dc063a06d6f35e` |
+| `h5e-smoke-diagnosis-1793332393506.json` | recorded | `0d800f6377bc8cb079271359db7b31f542d5fa7649bcf035111c7fbcae531748` |
+| `h5e-smoke-diagnosis-1793333164435.json` | recorded | `46d4b51f68809843a73f851a1003aa8baa875c1034d59421752e22cc78f04aeb` |
+| `h5e-smoke-diagnosis-1793333230416.json` | recorded | `9d8b249f612172ad9f8342dbcb1c3695218fa59e460fed5e98af40994c11916a` |
+| `h5e-smoke-diagnosis-1793333352626.json` | recorded | `2d9fb8f9e10f26b6da5fc9fa405ba8f6bc51a9309051bde4074562e10fa85d53` |
+| `h5i-full-6.json` | passed | `ce8eddbdfe09a1df22980bdfdf326a0dda2fd8fe19e22704d2e826dcd7feb444` |
+| `h5e-smoke-gates.json` | passed | `a113cb8848562c452e46f2e563c800a0dacc35def2f06cd5d8cfafaba179b0e3` |
+| `h5e-smoke-source-commit.json` | passed | `209bd8f55df78caeaee719a60fa70434ea5d9a44d2555fd7378732a5c8fc707b` |
+| `h5e-https-preflight-20261030T044645Z.json` | passed | `cc519f67980021c5db50d04af9c0cc2b7ec730109d32b898c21b2fb8a63f47ab` |
+| `h5e-backup_promote-1793335734473.json` | passed | `860d46a3b2db433215761a95fbff456b9372a5337065417939abf1a14871100b` |
+| `h5e-promotion-resume-admission.json` | passed | `e4e6f69ef88e3c398e7c81866c77728f22fab6fe484ba304103fa38f88d76e92` |
+| `h5e-promote-1793335796356.json` | STOP | `044b49ce858d60c1d2fb6a26707ec5e63f90f9df0e2d614b1a7737caa54a1df1` |
+| `h5e-promotion-stop-inspection-20261030T045038Z.json` | recorded | `2106b12854d54a21c32698e81dfae4504ac84294362d40d6079425d7ebffa5cd` |
+| `h5e-https-postflight-20261030T045039Z.json` | passed | `487dea0ad6a296166adb45f9886a0d3a6e1f098f713a6b33251caf736971c27b` |
+| `h5e-worker-import-stop-20261030T045204Z.json` | diagnosed | `cee08bb2b3ff25499eb6d3bb7382debe524e1edaed72b664f1ebe56d340ef83b` |
+| `h5e-promotion-stop-postflight-1793335928746.json` | passed | `d159565ae9a658d12ec1d195b5b5ae54e13a95892b9616a8b90fcd5a723c0eb2` |
+| `h5e-promotion-stop-env-scan-20261030T045203Z.json` | passed | `13f09b30a7796df4bf32e0526d5a292e418fcc8a3daae49ee68d577b5eca66d9` |
+
+Protected backups (each directory also has its indexed `receipt.json`):
+
+| Path | Bytes | SHA-256 |
+|---|---:|---|
+| `.local/backups/h5e-backup_promote-20261030T044701Z/database-before-batch.dump` | 17051334 | `04dd09153911db2f7b04cd545fc027dbb3bb9155e6a15063dbacbfa8cf9b2005` |
+| `.local/backups/h5e-vps-promote-20261030T044923104304Z/protected-configuration.tar.gz` | 2938 | `94745b8f8b3efbeec18e191594fc2f17cd966dfdb975c52a2cf7a3754bfae56d` |
+
+The additional root-only unit backup is
+`/srv/sena-hub-test/backups/7781704-media-5b9714604a03-h5e-resume-units-20261030T044924Z`.
+Its three `0600` unit/configuration files and hashes are recorded separately in
+`.local/hosted-content-rollout/h5e-resume-unit-backup.json`, SHA-256
+`4f6561e40d2bed8f538214e37669420aa18cd50ee0031065438da815a3aec78e`.
+The previous application release and the original unit backup remain available.
+
+Record-only checks before this documentation commit passed: all 709 sealed
+source files unchanged; static Auth gate; 111 hosted operator paths with zero
+violations; 716 source and 64 browser files with zero credential matches;
+`git diff --check`; and `git check-ignore` on both approved local-development
+credential files. Receipt `artifacts/hosted-content-rollout/h5e-smoke-stop-record-checks.json`,
+SHA-256 `b8df99b17548daac95daadbb9afc6c89eedb5da85cea4940ec0dcd8fa50f211c`. The full-gate results above remain valid for the
+unchanged code, but the hosted worker-import smoke remains a STOP.
