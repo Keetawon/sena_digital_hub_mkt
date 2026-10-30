@@ -2886,8 +2886,8 @@ terminal, take fresh verified database and protected configuration backups using
 the existing operator (these modes only back up; they do not promote a release):
 
 ```powershell
-node --env-file=.env.supabase-test .local/hosted-content-rollout/h5e-operations.mjs backup_promote
-python -X utf8 .local/hosted-content-rollout/h5e-vps.py backup_worker_config
+node --env-file=.env.supabase-test .local/hosted-content-rollout/h5e-production-operations.mjs backup_promote
+python -X utf8 .local/hosted-content-rollout/h5e-production-vps.py backup_worker_config
 ```
 
 Require both receipts to pass. In an interactive SSH terminal on the TEST VPS,
@@ -3522,3 +3522,114 @@ All full logs are `h5i-full-8-*.log` in that artifact directory. No provider
 call ran. The code and this evidence are committed and pushed before hosted
 candidate staging; the hosted application remains on the rollback release at
 this pre-deployment checkpoint.
+
+#### H5e promotion completed — STOP for the media key
+
+30 October 2026: commit **0240315** was pushed before hosted work. Release
+**`0240315-media-ee2fbf04e1e9`** is now live on TEST. The candidate's 228 source
+files matched manifest SHA-256
+`ee2fbf04e1e9aa9ee2de4e336e8f3dd6b947d0364bf38a3e69ffd03237827dab`.
+Linux build, frozen production imports, two native broker checks and unit
+syntax validation passed. API and worker self-checks passed under
+`sena-hub-api` and `sena-hub-media`, both during candidate readiness and again
+before switching the live symlink. Each self-check recorded zero network
+calls, database connections, provider calls and writes. Candidate readiness
+and promotion admission reference the same gate seal above.
+
+Fresh protected database backups were fully read-verified before staging,
+building and promotion. Each VPS batch also captured and verified the protected
+configuration archive, including the existing worker env file. The application
+promotion used **no hosted database write transaction**, so its observed
+operator write sets are **`[]`**. Migrations **79–81**, worker-login provisioning
+and env-file creation were **not repeated**; the exact hosted prefix remains
+**81**. The existing schema/login attestation receipts stay unchanged.
+
+Postflight results:
+
+- API health and admin load passed. Seven HTTPS/TLS checks passed before and
+  after deployment; protected consumer/admin endpoints returned **401** to
+  anonymous requests. The deployed read-only `ai-state` smoke returned **200**,
+  with the expected envelope, **cap US$5, spent US$0, reserved US$0, remaining
+  US$5, provider not configured**. BNA7, its website queue and budget remained
+  readable under non-bypass `hub_runtime`; it cannot assume the worker role.
+- API, admin, worker and broker socket are active. The worker runs as
+  `sena-hub-media` and has a fresh heartbeat with `provider_configured=false`.
+  The socket is Unix-only, `0660 sena-hub-api:sena-hub-media`, under a `0755`
+  API-owned runtime directory. The worker group is exclusive; a wrong peer UID
+  was refused. The real private cache is writable by the API and its existing
+  file checksum was preserved.
+- The worker env file remains regular, nonsymlink, `0600 root:root` and
+  **DSN-only**. API/admin have neither worker variable; the worker has its DSN
+  and no provider key. The API rejects either worker-only variable at startup.
+  Only the worker service and its isolated self-check load that file; direct
+  file reads by API, admin, build, worker and nobody users were denied.
+- **513 Auth table/role privilege checks** and **504 final function-definition
+  checks** passed. The same-run catalog delta is empty. Worker-attributed job
+  changes are **zero**, including translation/other queues; image provider
+  attempts are **zero**. Current informational boundaries remain zero published
+  pages, all pages `no_ai`, and `sena_h_approved=false`.
+- H5i security watch: zero new Auth users/identities, no account or assignment
+  changes in the observed window. The Supabase `postgres` platform role can
+  write Auth tables; this is reported, not a live-data fingerprint STOP.
+- Deployed credential scans found **zero matches in 84 browser files and 420
+  deployed source/build files**. Protected existing configuration hashes match.
+  No signed-in hosted browser or Computer Use was used; the four local
+  Playwright screenshots above supply the owner-approved visual evidence.
+
+Rollback release:
+`/srv/sena-hub-test/releases/07dda14-content-82bd4feeade5`.
+The protected unit backup is
+`/srv/sena-hub-test/backups/0240315-media-ee2fbf04e1e9-h5e-resume-units-20261030T100925Z`
+(`0700 root:root`); its four files and hashes are in the unit postflight receipt.
+The application-only rollback operator is `h5e-production-vps.py rollback`,
+preceded by `h5e-production-operations.mjs backup_rollback`; it does not touch
+schema. No rollback was needed for this successful promotion.
+
+**STOP:** no media key was added, no pilot ran and no provider call ran. The
+owner's exact hidden-prompt instructions are in **Owner media-key steps** above;
+their backup commands now reference the sealed production-fix operators. Add
+the key only to `/etc/sena-hub-test/media-worker.env`, restart only
+`sena-hub-test-media-worker.service`, then report completion without the key
+for the read-only postflight. The pilot remains held. No new pending question
+is introduced.
+
+The immutable receipt index is
+`.local/hosted-content-rollout/h5e-production-deployment-index-20261030.json`,
+SHA-256 `c02b25240b350b04306cd9a91e304155554ca7668e0f1f662b7b8d8b33968f0a`.
+It pins 18 receipts, six protected archives and their receipts, and four private
+operator sources. No earlier receipt or baseline was rewritten.
+
+Receipt paths below are relative to `.local/hosted-content-rollout/`.
+
+| Receipt | SHA-256 |
+|---|---|
+| `h5e-production-admission.json` | `212a9ea0a407d1eeb6299ab29444176ba12c17c70035d5c35678e034b073b53f` |
+| `h5e-production-backup_build-1793354564015.json` | `b92c7cba925b4b9b4254fa0de1f0df43968ff7bb66ac279a092a3ff80101f818` |
+| `h5e-production-backup_promote-1793354941776.json` | `2e95615355c640cf05bbfd997bafe1f6801225815b41a0062674998735457b10` |
+| `h5e-production-backup_stage-1793354362420.json` | `dc2dd9079265dbb1e1a73a2af759f7d841a77ce0232887c77905bad345587711` |
+| `h5e-production-ca-preflight.json` | `4e077860036af04897c9be6bc9e68ca73c99c1bc6b201070ac5dcd7852cbf681` |
+| `h5e-production-candidate-readiness.json` | `863bcb1753ca743b9ed8d2b4d406d0d3f2adf2babd3bd36de894dd796255def3` |
+| `h5e-production-gates.json` | `5f6bc609364048f1b0810ed2ce9084af12d6f5d998f0339930771486f8d69ffd` |
+| `h5e-production-postflight-1793355055079.json` | `2955fc95301925fb0c97a8bfa72f56f1c360d1e69a1e0b808fd527c0ff6d99fe` |
+| `h5e-production-promote-1793355006910.json` | `48c0ca4a6739d0403534c67b3737d2d80ed9147eec45a953947a5b3e91dfced4` |
+| `h5e-production-source-commit.json` | `61e590c423ace87bf4b92e2d6f72c70b843b5d0ad958aee4f245dc4be9d47992` |
+| `h5e-production-unit-postflight.json` | `ba562faac3d9d950c7d154e9df133da35b6e05fcadc8fcfd1126acd8d9051aeb` |
+| `h5e-production-vps-build.json` | `9dbba07afd3efd0cfe0e940a40ebcaa34cf81b739e4b1ba061e03da92b7f7e78` |
+| `h5e-production-vps-candidate.json` | `de16051fdac6118f2520b1029ce86299747ac1c63f54da1b7076b9dd820b8e44` |
+| `h5e-production-vps-promotion.json` | `ebf59829c8a560faeda441566aa4800fe4257e71ce674e3ce9573bd4ff948c32` |
+| `h5e-production-vps-source-manifest.json` | `2451236b75c0f26a00f5570f263aac703ea6a862daca1923ab734e0458292992` |
+| `h5i-full-8.json` | `0733c4293174eb4f501cabfa838e5720c9e5bbd5bedfce5fd2ccb3130c63df8f` |
+| `h5e-https-preflight-20261030T095706Z.json` | `b25446cf24b23adf2049250e00592b193a0ed999da9088a2dd4ff4c2ade4ca2d` |
+| `h5e-https-postflight-20261030T101036Z.json` | `8296b369903972e9db57807631a1b75e30d98c06f4fd1a7639c8ec6ce0c6ed6b` |
+
+Protected archive paths are relative to `.local/backups/`; each directory also
+contains the indexed `receipt.json` with its verification result.
+
+| Protected archive | Bytes | SHA-256 |
+|---|---:|---|
+| `h5e-production-backup_build-20261030T100047Z/database-before-batch.dump` | 17051375 | `b50e64d4c2bda3301f78a79f2ca8f7bc5a4c55d249a2db37a2388987e4ed1fec` |
+| `h5e-production-backup_promote-20261030T100701Z/database-before-batch.dump` | 17051375 | `91d636fb21857ded31a271329a80439b15e5b5fbd12187149058ba98b19b9f6c` |
+| `h5e-production-backup_stage-20261030T095727Z/database-before-batch.dump` | 17051375 | `607157c7fb055554c6433e022629a5e05f4347a784ce916254e092ac62eef73c` |
+| `h5e-production-vps-build-20261030T100313200600Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |
+| `h5e-production-vps-promote-20261030T100924554373Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |
+| `h5e-production-vps-stage-20261030T100012043494Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |

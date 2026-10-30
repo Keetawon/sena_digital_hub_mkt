@@ -5,6 +5,11 @@
 The current deployment and receipts are in [doc 46](46-hosted-content-rollout.md).
 The paths below are protected configuration; entries list variable names only.
 
+30 October 2026: release `0240315-media-ee2fbf04e1e9` is live. API, admin,
+the dedicated media worker and Unix broker socket passed postflight. The worker
+file is DSN-only; the media key is absent and the provider stays disabled.
+The owner adds it only after the deployment STOP and restarts only the worker.
+
 | File | Loaded by | Variables and maintainer | Rotation |
 |---|---|---|---|
 | `/etc/sena-hub-test/api.env` | `sena-hub-test-api.service` only | Operator: `HUB_ADMIN_ORIGIN`, `HUB_AUTH_MODE`, `HUB_DATABASE_URL`, `HUB_ENV`, `HUB_R2_CREDENTIALS_FILE`, `HUB_R2_PRIVATE_BUCKET_CONFIRMED`, `HUB_SUPABASE_URL`, `PYTHAINLP_DATA`, `PYTHAINLP_OFFLINE`, `PYTHAINLP_READ_ONLY`, `PYTHONDONTWRITEBYTECODE`, `PYTHONUNBUFFERED`. Owner: `OPENAI_API_KEY`, assistant and knowledge project only. Neither worker variable is allowed. | Edit this file through the protected procedure; restart only the API unit; run the read-only postflight. |
