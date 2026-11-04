@@ -54,7 +54,7 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 
 | ID | Scope from docs/47 section 10.1 | Dependencies | Delivery owner / status |
 |---|---|---|---|
-| W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Agent A `w1_shell`; full gate passed, lead commit/push next |
+| W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Complete: `93b04cc`, pushed to origin/main |
 | W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Lead; planned |
 | W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | Agent A after W1; lead does initial route map |
 | W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Agent B `w4_governance` backend; lead UI integration |
@@ -661,8 +661,11 @@ API quick verification passed (20 tests). No business answer or grant is inferre
 
 ### W1 — service shell and theme
 
-- Commit/push: full gate passed; the implementation commit is made immediately
-  after this entry. Its exact hash and push receipt follow in the delivery log.
+- Commit/push: `93b04cc29a3fd65a8b442e78c046aa2adaa279e4`
+  (`Build unified workspace service shell and SENA theme`). Normal push to
+  `origin/main` succeeded (`5a087ea..93b04cc`); local HEAD and origin/main both
+  resolve to that full hash. This follow-up receipt changes documentation only;
+  the tested implementation is unchanged.
 - Built: permission-filtered service/group navigation, six content menu items,
   unchanged Ads destinations, Settings and bottom utilities, SENA logo/mark,
   persistent desktop rail, tablet overlay, mobile drawer, full labels on keyboard
