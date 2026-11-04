@@ -88,7 +88,7 @@ main:focus { outline: none; }
 .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 24px; max-width: 1110px; }
 .project-card { display: block; overflow: hidden; max-width: 480px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .project-card:hover { border-color: var(--primary-action); box-shadow: 0 6px 24px var(--shadow-soft); }
-.project-card-art { height: 164px; position: relative; display: grid; place-items: center; background: var(--art-background); border-bottom: 1px solid var(--gold); overflow: hidden; color: var(--gold-light); }
+.project-card-art { height: 164px; position: relative; display: grid; place-items: center; background: var(--art-background); border-bottom: 1px solid var(--gold); overflow: hidden; color: var(--art-ink); }
 .project-card-art::before, .project-card-art::after { content: ""; position: absolute; background: transparent; border: 1px solid var(--art-line); transform: rotate(-12deg); width: 210px; height: 210px; }
 .project-card-art::before { left: -130px; bottom: -115px; }
 .project-card-art::after { right: -110px; top: -140px; }
@@ -585,7 +585,7 @@ main:focus { outline: none; }
 /* Shared registry treatment for the existing Hub workspaces. */
 .panel, .ct-card { border-radius: 12px; }
 .panel-heading { background: var(--surface-warm); border-radius: 12px 12px 0 0; }
-.art-frame, .sample-stamp { color: var(--gold-light); }
+.art-frame, .sample-stamp { color: var(--art-ink); }
 .button:disabled { color: var(--muted); background: var(--surface-warm); border-color: var(--line-strong); }
 .source-list, .snapshot-list, .model-specs, .ct-facts, table { font-family: var(--font-table); font-size: var(--text-small); line-height: 1.6; }
 .source-list > div, .snapshot-list > div { font-size: inherit; }

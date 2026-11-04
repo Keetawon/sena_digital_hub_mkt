@@ -1,20 +1,37 @@
 # 22 — Hub assistant and UI
 
-## Sidebar hierarchy follow-up (6 October 2026)
+## Unified workspace shell (4 November 2026)
 
-Desktop and the mobile drawer share the existing group labels. Section toggles use
-12.5px bold gold text, `.04em` tracking and a right-hand chevron, without a section
-icon. Child links use 15px muted text (ink on hover), 16px icons at 80% opacity,
-and a 16px inset inside a 1px sidebar-line guide. The active child retains gold
-text, sidebar-active fill and an inset gold bar. Questions and the assistant sit
-below a divider, with 15.5px semibold ink text and 18px icons. Existing optional
-pending brand badges remain; no additional count request is required for navigation.
-Touch targets remain at least 44px. Group collapse uses a 150ms transition as an
-explicit exception to the motion restrictions below; reduced motion disables it.
-Keyboard operation, inert collapsed links, group persistence and mobile focus
-containment remain unchanged.
+[Docs/47 §§3.1 and 8.1](47-unified-content-workspace.md) supersede the earlier shell
+and palette below. Navigation data is service → groups → items: the content service
+`ข้อมูลเว็บไซต์และ AI` contains `หน้าแรก`, `ข้อมูลเว็บไซต์`, `โปรโมชั่น`,
+`บทความ`, `เผยแพร่` and the `ตั้งค่า` disclosure. Ads remain
+a separate service. Empty services disappear; a service with one permitted item
+still keeps its disclosure. The reviewed permission-route inventory remains separate.
 
-Updated: 30 September 2026 (Asia/Bangkok). Status: **P1 implemented locally; current theme: Emerald & Champagne (§1.3); human Thai readability acceptance pending**.
+The full SENA Development logo sits on a white plate and links home. A separate
+44px toggle beside it retains the saved desktop collapse state. The 64px rail uses
+the mark; hover or keyboard focus at the logo reveals the expand control. The
+1024px rail opens a native modal overlay; the 390px drawer retains Escape, focus
+containment and focus restoration. Service headings use 15.5px bold text and 20px
+icons; child items use 15px text, 16px icons and a 10px inset guide. All labels stay
+on one line with an ellipsis and an accessible full-text tooltip. Bottom utilities
+remain below a divider. Collapse is instant in normal and reduced-motion modes.
+
+The assistant has no sidebar item, including the H1 unavailable label. Its existing
+staff-only floating opener remains; the search entry is W2. The pending-brand count
+is a separate accessible link to the brand review list, beside the website item.
+Settings retain current working destinations and existing tab permissions; media
+settings preserve a selected project or open the existing chooser. Admin evidence
+requires an active content-admin account and Knowledge View, independently of the
+user-management special. Server/direct-URL enforcement and final entity destinations
+belong to W3. W1 does not alter grants or authorization policy.
+
+Successful local and disposable-H1 shell screenshots are written by the UI suites
+under `artifacts/unified-workspace/w1/` at 1280, 1024 and 390px, including light/dark
+and reduced-motion cases. The lead records executed gate results in docs/48.
+
+Updated: 4 November 2026 (Asia/Bangkok). Status: **P1 implemented locally; current theme: SENA Development (§1.3); human Thai readability acceptance pending**.
 This slice covers the SENA-H registry list, registration wizard and agency ID-return
 inbox. [Doc 19 §5.1](19-campaign-naming-registry.md#51-registry-schema-sena-h-implemented-in-p1)
 owns identity, permissions and issuing. [The priority plan](ads/PHASE1_PRIORITIES.md)
@@ -24,9 +41,9 @@ agencies see only their own names and return IDs only.
 
 ## 1. Theme tokens → Tailwind v4
 
-**Current visual direction:** the owner's luxury green-and-gold request supersedes the
-Flip7 palette. §1.3 defines the current values and measured contrast. The original
-Flip7 table and §1.1–1.2 remain historical implementation evidence.
+**Current visual direction:** SENA Development teal and aqua, with accessible dark
+and light theme roles in §1.3. The original Flip7 table and §1.1–1.2 remain historical
+implementation evidence; their palette and navigation details are superseded.
 
 `apps/admin/styles/tokens.css` remains the value source. P1.1 adds `tailwindcss` v4,
 `@tailwindcss/postcss` and `motion`; no Tailwind JavaScript configuration or new component
@@ -192,98 +209,136 @@ Dense residential source/snapshot lists, model specifications and facts now use 
 same Noto-first 15px/1.6 stack as registry tables. The human readability protocol in §2
 remains open.
 
-### 1.3 Emerald & Champagne — luxury green and gold, 30 September 2026
+### 1.3 SENA Development — light and dark, 4 November 2026
 
-Owner-requested color design for the existing Hub. Deep emerald anchors navigation
-and project artwork; ivory keeps tables and forms comfortable for sustained work.
-Brushed brass adds thin rules, selected-menu markers and small accents. Champagne
-surfaces highlight context. Solid colors keep contrast predictable; no metallic text,
-shimmer, background photography or transparency behind data is needed.
+Docs/47 O2 replaces the emerald-and-gold direction. The supplied logo samples are
+teal `#1FB3A3`, aqua `#88D0C8`, grey `#77787B` and white. Those samples are retained
+as logo tokens; text and action roles use contrast-safe related shades. The full
+logo and mark remain the supplied artwork, on a white plate in both themes. The
+logo samples are not used as unchecked text colors. The request for official vector
+artwork and brand color codes remains a pending owner question.
 
-| Token | Value | Role |
-|---|---|---|
-| canvas | `#F6F3EB` | Ivory workspace |
-| surface | `#FFFEFA` | Porcelain cards, forms, tables |
-| surface-warm | `#EFE8D8` | Champagne table headers and contextual panels |
-| ink | `#14291F` | Deep green body text |
-| muted / read-only | `#53645A` | Supporting text |
-| sidebar | `#102D23` | Deep emerald navigation |
-| sidebar-active | `#214536` | Selected/hovered navigation and artwork medallions |
-| sidebar-ink | `#F6F1E4` | Ivory navigation text |
-| sidebar-muted | `#C1CEBC` | Supporting navigation text |
-| sidebar-line | `#49614B` | Decorative navigation separator |
-| brand | `#214D39` | Forest-green project artwork; use light foregrounds |
-| action / primary-strong | `#18523D` / `#103A2C` | Primary action / hover |
-| gold | `#BDA36B` | Brushed-brass fills and decorative rules; ink text on fills |
-| gold-light | `#D8C28D` | Gold text and focus on dark green |
-| gold-strong | `#7A622A` | Gold labels/indicators on light surfaces |
-| line / line-strong | `#DCD6C7` / `#788477` | Decorative separators / control boundaries |
-| success-strong | `#0F6444` | Status text, darkened for champagne backgrounds |
-| coral-strong / danger | `#A43B27` | Error text and destructive actions |
+The default is light. `prefers-color-scheme: dark` changes the page and semantic
+tokens without an additional theme setting. Existing token names, typography,
+spacing and motion rules remain compatible. The sidebar keeps the same dark colors
+in both modes. Components must use semantic tokens, including text on fills.
 
-Compatibility aliases from §1.2 continue to work. Artwork's surface now maps to
-sidebar-active and its decorative line to gold; its icon and label use gold-light.
-The wordmark uses ivory and gold on the sidebar. Navigation focus uses gold-light
-with a sidebar-colored gap; ordinary control focus remains dark green with a porcelain
-gap. Gold never replaces readable text or becomes the sole status indicator.
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `--canvas` | `#F2F8F7` | `#0A211F` | Workspace background |
+| `--surface` | `#FFFFFF` | `#102C29` | Cards, forms, tables; text on action fills |
+| `--surface-warm` | `#E4F1EF` | `#1A3C38` | Context panels and table headers |
+| `--ink` | `#10312E` | `#EFFAF8` | Body and badge text |
+| `--muted` | `#43645F` | `#B1CEC8` | Supporting and disabled text |
+| `--sidebar` | `#0B3835` | `#0B3835` | Navigation background |
+| `--sidebar-active` | `#15534F` | `#15534F` | Hover and selected navigation |
+| `--sidebar-ink` | `#F4FCFB` | `#F4FCFB` | Primary navigation text |
+| `--sidebar-muted` | `#B8D9D5` | `#B8D9D5` | Secondary navigation text |
+| `--sidebar-line` | `#7FABA5` | `#7FABA5` | Navigation control boundaries |
+| `--brand` | `#096D65` | `#88D0C8` | Brand accents and content state labels |
+| `--action` | `#08786E` | `#88D0C8` | Primary actions, links and focus |
+| `--primary-strong` | `#075B54` | `#B0E8E0` | Action hover |
+| `--gold` | `#88D0C8` | `#195D55` | Compatibility badge/step fill; use ink |
+| `--gold-light` | `#B0E8E0` | `#B0E8E0` | Navigation selection, focus and badge fill |
+| `--gold-strong` | `#12665F` | `#88D0C8` | Compatibility accent text |
+| `--coral` | `#EF6C4A` | `#8B392B` | Attention fill; use ink |
+| `--coral-strong` | `#A43B27` | `#FFAD9D` | Error text and destructive fill |
+| `--line` | `#CBDEDB` | `#365B55` | Decorative separators and progress track |
+| `--line-strong` | `#668781` | `#7FABA5` | Control boundary |
+| `--art-background` | `#1FB3A3` | `#124740` | Project artwork |
+| `--art-surface` | `#E4F1EF` | `#205B54` | Artwork medallion and stamp |
+| `--art-ink` | `#10312E` | `#B0E8E0` | Artwork text and symbols |
+| `--logo-plate` | `#FFFFFF` | `#FFFFFF` | Full logo and mark backing |
 
-Typography, sizes, spacing, menu structure, registration behavior and reduced-motion
-rules are retained. Existing Google Sans Thai headings and Noto Thai data typography
-carry the same appearance through every screen. Motion follows the Apple-inspired language in §3: brief, springy and never blocking.
+Primary buttons, selected brand filters and selected content tabs all pair
+`--surface` text with `--action` fill: white on dark teal in light mode, dark teal
+on pale aqua in dark mode. Hover uses `--primary-strong`. Do not use
+`--brand-ink` or `--sidebar-ink` on pale action fills; those remain sidebar text.
+Completeness progress uses `--action` or `--success-strong` against `--line`,
+with its existing numeric/text label. Artwork uses `--art-ink`, not a sidebar
+foreground. Semantic success, warning, danger and info retain distinct wording and
+their own soft backgrounds.
 
-Measured with the sRGB formula in §1.1 before applying the palette. Ratios below are
-computed, not copied from a palette reference; text requires 4.5:1 and UI edges 3:1.
+Focus uses a 2px action outline with a 2px surface gap; the sidebar uses gold-light
+with a sidebar gap. Disabled controls retain muted text without whole-control
+opacity. Thin decorative `--line` separators are not the sole control boundary;
+controls use `--line-strong`. Status never relies on color alone.
 
-| Foreground | Background | Measured ratio | Decision |
-|---|---|---:|---|
-| `#14291F` ink | `#FFFEFA` surface | 15.2258:1 | Body text |
-| `#14291F` ink | `#F6F3EB` canvas | 13.8570:1 | Body text |
-| `#14291F` ink | `#EFE8D8` warm | 12.5882:1 | Panel/table text |
-| `#53645A` muted | `#FFFEFA` surface | 6.2334:1 | Supporting text |
-| `#53645A` muted | `#F6F3EB` canvas | 5.6731:1 | Supporting text |
-| `#53645A` muted | `#EFE8D8` warm | 5.1536:1 | Supporting/disabled text |
-| `#FFFEFA` surface | `#18523D` action | 8.9961:1 | Button text; inverse pair also passes |
-| `#FFFEFA` surface | `#103A2C` hover | 12.5083:1 | Hover button text |
-| `#18523D` action | `#F6F3EB` canvas | 8.1873:1 | Links/focus |
-| `#18523D` action | `#EFE8D8` warm | 7.4377:1 | Links/focus |
-| `#214D39` brand | `#FFFEFA` surface | 9.5223:1 | Existing facility control accent |
-| `#214D39` brand | `#F6F3EB` canvas | 8.6663:1 | Existing facility focus |
-| `#214D39` brand | `#EFE8D8` warm | 7.8728:1 | Selected facility control edge |
-| `#103A2C` primary-strong | `#F6F3EB` canvas | 11.3838:1 | Existing section labels |
-| `#103A2C` primary-strong | `#EFE8D8` warm | 10.3415:1 | Existing section labels |
-| `#F6F1E4` sidebar-ink | `#102D23` sidebar | 13.0981:1 | Navigation text |
-| `#F6F1E4` sidebar-ink | `#214536` active | 9.4562:1 | Hover navigation text |
-| `#C1CEBC` sidebar-muted | `#102D23` sidebar | 9.0192:1 | Sidebar supporting text |
-| `#D8C28D` gold-light | `#102D23` sidebar | 8.4557:1 | Gold labels/focus |
-| `#D8C28D` gold-light | `#214536` active | 6.1046:1 | Selected navigation/artwork text |
-| `#D8C28D` gold-light | `#214D39` brand | 5.5009:1 | Artwork foreground |
-| `#7A622A` gold-strong | `#FFFEFA` surface | 5.7675:1 | Gold text/indicators |
-| `#7A622A` gold-strong | `#F6F3EB` canvas | 5.2490:1 | Gold text/indicators |
-| `#7A622A` gold-strong | `#EFE8D8` warm | 4.7684:1 | Gold text/indicators |
-| `#14291F` ink | `#BDA36B` gold | 6.3034:1 | Gold badge/step text |
-| `#14291F` ink | `#EF6C4A` coral | 5.0589:1 | Retained attention-fill text |
-| `#788477` line-strong | `#FFFEFA` surface | 3.8783:1 | Control edge only |
-| `#788477` line-strong | `#F6F3EB` canvas | 3.5297:1 | Control edge only |
-| `#788477` line-strong | `#EFE8D8` warm | 3.2065:1 | Control edge only |
-| `#A43B27` danger | `#FFFEFA` surface | 6.4357:1 | Error text; inverse button pair passes |
-| `#A43B27` danger | `#F6F3EB` canvas | 5.8572:1 | Error text |
-| `#A43B27` danger | `#EFE8D8` warm | 5.3209:1 | Error text |
-| `#A43B27` danger | `#FEF2F2` danger-soft | 5.9372:1 | Existing error panels |
-| `#0F6444` success | `#FFFEFA` surface | 7.1102:1 | Success text |
-| `#0F6444` success | `#F6F3EB` canvas | 6.4710:1 | Success text |
-| `#0F6444` success | `#EFE8D8` warm | 5.8785:1 | Success text |
-| `#0F6444` success | `#ECFDF5` success-soft | 6.8116:1 | Existing success badges |
-| `#92400E` warning | `#EFE8D8` warm | 5.8086:1 | Retained warning text |
-| `#1D4ED8` info | `#EFE8D8` warm | 5.4903:1 | Retained info text |
-| `#BDA36B` gold | `#FFFEFA` surface | 2.4155:1 | Reject for text/essential edges; decoration only |
-| `#BDA36B` gold | `#214536` active | 4.3749:1 | Reject normal text; use gold-light |
-| `#18523D` action | `#102D23` sidebar | 1.6271:1 | Reject sidebar focus; use gold-light |
+Measured with the sRGB formula in §1.1 using the actual token values on 4 November
+2026. Threshold decisions use unrounded ratios. All 61 listed pairs pass in both
+themes: the lowest text ratio is 4.6069:1 in light and 5.7579:1 in dark; the lowest
+UI ratio is 3.3898:1 in light and 3.4721:1 in dark. The browser regression checks read
+computed theme tokens, test the same normal-text/control thresholds, and retain
+the floating assistant's normal/hover/focus contrast assertions.
 
-The earlier danger/success shades measured 4.4132:1 and 4.4927:1 on champagne and
-were darkened as above. Semantic status backgrounds and wording remain distinct.
-ui-ux-pro-max's luxury/premium palette search supports restrained gold accents on
-neutral surfaces; its generic marketing hero, glass and Latin font suggestions do
-not fit this Thai administration interface and are not applied.
+| Foreground token | Background token | Light hex pair | Light ratio | Dark hex pair | Dark ratio | Required |
+|---|---|---|---:|---|---:|---:|
+| `--ink` | `--surface` | #10312E / #FFFFFF | 13.9925:1 | #EFFAF8 / #102C29 | 13.9288:1 | 4.5:1 |
+| `--ink` | `--canvas` | #10312E / #F2F8F7 | 13.0233:1 | #EFFAF8 / #0A211F | 15.7569:1 | 4.5:1 |
+| `--ink` | `--surface-warm` | #10312E / #E4F1EF | 12.0784:1 | #EFFAF8 / #1A3C38 | 11.2740:1 | 4.5:1 |
+| `--muted` | `--surface` | #43645F / #FFFFFF | 6.5081:1 | #B1CEC8 / #102C29 | 8.8608:1 | 4.5:1 |
+| `--muted` | `--canvas` | #43645F / #F2F8F7 | 6.0573:1 | #B1CEC8 / #0A211F | 10.0237:1 | 4.5:1 |
+| `--muted` | `--surface-warm` | #43645F / #E4F1EF | 5.6178:1 | #B1CEC8 / #1A3C38 | 7.1719:1 | 4.5:1 |
+| `--read-only` | `--surface` | #43645F / #FFFFFF | 6.5081:1 | #B1CEC8 / #102C29 | 8.8608:1 | 4.5:1 |
+| `--read-only` | `--canvas` | #43645F / #F2F8F7 | 6.0573:1 | #B1CEC8 / #0A211F | 10.0237:1 | 4.5:1 |
+| `--read-only` | `--surface-warm` | #43645F / #E4F1EF | 5.6178:1 | #B1CEC8 / #1A3C38 | 7.1719:1 | 4.5:1 |
+| `--brand` | `--surface` | #096D65 / #FFFFFF | 6.2002:1 | #88D0C8 / #102C29 | 8.4162:1 | 4.5:1 |
+| `--brand` | `--canvas` | #096D65 / #F2F8F7 | 5.7708:1 | #88D0C8 / #0A211F | 9.5208:1 | 4.5:1 |
+| `--brand` | `--surface-warm` | #096D65 / #E4F1EF | 5.3520:1 | #88D0C8 / #1A3C38 | 6.8121:1 | 4.5:1 |
+| `--action` | `--surface` | #08786E / #FFFFFF | 5.3543:1 | #88D0C8 / #102C29 | 8.4162:1 | 4.5:1 |
+| `--action` | `--canvas` | #08786E / #F2F8F7 | 4.9835:1 | #88D0C8 / #0A211F | 9.5208:1 | 4.5:1 |
+| `--action` | `--surface-warm` | #08786E / #E4F1EF | 4.6219:1 | #88D0C8 / #1A3C38 | 6.8121:1 | 4.5:1 |
+| `--primary-strong` | `--surface` | #075B54 / #FFFFFF | 7.9742:1 | #B0E8E0 / #102C29 | 10.9346:1 | 4.5:1 |
+| `--primary-strong` | `--canvas` | #075B54 / #F2F8F7 | 7.4219:1 | #B0E8E0 / #0A211F | 12.3697:1 | 4.5:1 |
+| `--primary-strong` | `--surface-warm` | #075B54 / #E4F1EF | 6.8834:1 | #B0E8E0 / #1A3C38 | 8.8505:1 | 4.5:1 |
+| `--gold-strong` | `--surface` | #12665F / #FFFFFF | 6.7928:1 | #88D0C8 / #102C29 | 8.4162:1 | 4.5:1 |
+| `--gold-strong` | `--canvas` | #12665F / #F2F8F7 | 6.3223:1 | #88D0C8 / #0A211F | 9.5208:1 | 4.5:1 |
+| `--gold-strong` | `--surface-warm` | #12665F / #E4F1EF | 5.8636:1 | #88D0C8 / #1A3C38 | 6.8121:1 | 4.5:1 |
+| `--sidebar-ink` | `--sidebar` | #F4FCFB / #0B3835 | 12.3605:1 | #F4FCFB / #0B3835 | 12.3605:1 | 4.5:1 |
+| `--sidebar-ink` | `--sidebar-active` | #F4FCFB / #15534F | 8.4647:1 | #F4FCFB / #15534F | 8.4647:1 | 4.5:1 |
+| `--sidebar-muted` | `--sidebar` | #B8D9D5 / #0B3835 | 8.5355:1 | #B8D9D5 / #0B3835 | 8.5355:1 | 4.5:1 |
+| `--sidebar-muted` | `--sidebar-active` | #B8D9D5 / #15534F | 5.8453:1 | #B8D9D5 / #15534F | 5.8453:1 | 4.5:1 |
+| `--gold-light` | `--sidebar` | #B0E8E0 / #0B3835 | 9.4801:1 | #B0E8E0 / #0B3835 | 9.4801:1 | 4.5:1 |
+| `--gold-light` | `--sidebar-active` | #B0E8E0 / #15534F | 6.4922:1 | #B0E8E0 / #15534F | 6.4922:1 | 4.5:1 |
+| `--surface` | `--action` | #FFFFFF / #08786E | 5.3543:1 | #102C29 / #88D0C8 | 8.4162:1 | 4.5:1 |
+| `--surface` | `--primary-strong` | #FFFFFF / #075B54 | 7.9742:1 | #102C29 / #B0E8E0 | 10.9346:1 | 4.5:1 |
+| `--surface` | `--danger` | #FFFFFF / #A43B27 | 6.4947:1 | #102C29 / #FFAD9D | 8.2840:1 | 4.5:1 |
+| `--ink` | `--gold` | #10312E / #88D0C8 | 7.9312:1 | #EFFAF8 / #195D55 | 7.1943:1 | 4.5:1 |
+| `--ink` | `--coral` | #10312E / #EF6C4A | 4.6069:1 | #EFFAF8 / #8B392B | 7.2481:1 | 4.5:1 |
+| `--art-ink` | `--art-background` | #10312E / #1FB3A3 | 5.3539:1 | #B0E8E0 / #124740 | 7.7285:1 | 4.5:1 |
+| `--art-ink` | `--art-surface` | #10312E / #E4F1EF | 12.0784:1 | #B0E8E0 / #205B54 | 5.7579:1 | 4.5:1 |
+| `--success-strong` | `--success-soft` | #116B4C / #ECFDF5 | 6.1695:1 | #8ADCB4 / #103D2E | 7.5056:1 | 4.5:1 |
+| `--warning-strong` | `--warning-soft` | #92400E / #FFFBEB | 6.8370:1 | #F6D48B / #3F3214 | 8.7673:1 | 4.5:1 |
+| `--danger` | `--danger-soft` | #A43B27 / #FEF2F2 | 5.9372:1 | #FFAD9D / #452522 | 7.6042:1 | 4.5:1 |
+| `--info-strong` | `--info-soft` | #1D4ED8 / #EFF6FF | 6.1580:1 | #A5CBFF / #17344A | 7.7382:1 | 4.5:1 |
+| `--sidebar` | `--gold-light` | #0B3835 / #B0E8E0 | 9.4801:1 | #0B3835 / #B0E8E0 | 9.4801:1 | 4.5:1 |
+| `--line-strong` | `--surface` | #668781 / #FFFFFF | 3.9270:1 | #7FABA5 / #102C29 | 5.8479:1 | 3:1 |
+| `--focus` | `--surface` | #08786E / #FFFFFF | 5.3543:1 | #88D0C8 / #102C29 | 8.4162:1 | 3:1 |
+| `--line-strong` | `--canvas` | #668781 / #F2F8F7 | 3.6550:1 | #7FABA5 / #0A211F | 6.6155:1 | 3:1 |
+| `--focus` | `--canvas` | #08786E / #F2F8F7 | 4.9835:1 | #88D0C8 / #0A211F | 9.5208:1 | 3:1 |
+| `--line-strong` | `--surface-warm` | #668781 / #E4F1EF | 3.3898:1 | #7FABA5 / #1A3C38 | 4.7333:1 | 3:1 |
+| `--focus` | `--surface-warm` | #08786E / #E4F1EF | 4.6219:1 | #88D0C8 / #1A3C38 | 6.8121:1 | 3:1 |
+| `--sidebar-line` | `--sidebar` | #7FABA5 / #0B3835 | 5.0701:1 | #7FABA5 / #0B3835 | 5.0701:1 | 3:1 |
+| `--sidebar-line` | `--sidebar-active` | #7FABA5 / #15534F | 3.4721:1 | #7FABA5 / #15534F | 3.4721:1 | 3:1 |
+| `--action` | `--line` | #08786E / #CBDEDB | 3.8272:1 | #88D0C8 / #365B55 | 4.2749:1 | 3:1 |
+| `--success-strong` | `--line` | #116B4C / #CBDEDB | 4.6454:1 | #8ADCB4 / #365B55 | 4.6605:1 | 3:1 |
+| `--success-strong` | `--surface` | #116B4C / #FFFFFF | 6.4990:1 | #8ADCB4 / #102C29 | 9.1754:1 | 4.5:1 |
+| `--success-strong` | `--canvas` | #116B4C / #F2F8F7 | 6.0489:1 | #8ADCB4 / #0A211F | 10.3796:1 | 4.5:1 |
+| `--success-strong` | `--surface-warm` | #116B4C / #E4F1EF | 5.6100:1 | #8ADCB4 / #1A3C38 | 7.4266:1 | 4.5:1 |
+| `--warning-strong` | `--surface` | #92400E / #FFFFFF | 7.0900:1 | #F6D48B / #102C29 | 10.3999:1 | 4.5:1 |
+| `--warning-strong` | `--canvas` | #92400E / #F2F8F7 | 6.5990:1 | #F6D48B / #0A211F | 11.7648:1 | 4.5:1 |
+| `--warning-strong` | `--surface-warm` | #92400E / #E4F1EF | 6.1202:1 | #F6D48B / #1A3C38 | 8.4177:1 | 4.5:1 |
+| `--danger` | `--surface` | #A43B27 / #FFFFFF | 6.4947:1 | #FFAD9D / #102C29 | 8.2840:1 | 4.5:1 |
+| `--danger` | `--canvas` | #A43B27 / #F2F8F7 | 6.0449:1 | #FFAD9D / #0A211F | 9.3713:1 | 4.5:1 |
+| `--danger` | `--surface-warm` | #A43B27 / #E4F1EF | 5.6063:1 | #FFAD9D / #1A3C38 | 6.7051:1 | 4.5:1 |
+| `--info-strong` | `--surface` | #1D4ED8 / #FFFFFF | 6.7016:1 | #A5CBFF / #102C29 | 8.8991:1 | 4.5:1 |
+| `--info-strong` | `--canvas` | #1D4ED8 / #F2F8F7 | 6.2374:1 | #A5CBFF / #0A211F | 10.0671:1 | 4.5:1 |
+| `--info-strong` | `--surface-warm` | #1D4ED8 / #E4F1EF | 5.7849:1 | #A5CBFF / #1A3C38 | 7.2030:1 | 4.5:1 |
+
+The local ui-ux-pro-max data-dashboard guidance supports restrained hierarchy,
+persistent orientation and visible focus. Its generic storytelling, hero-motion
+and Latin-font suggestions do not fit this staff interface. Google Sans Thai,
+Noto Sans Thai data typography and the instant navigation behavior remain.
 
 ## 2. Google Sans Thai and dense-table readability
 

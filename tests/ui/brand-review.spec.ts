@@ -112,8 +112,10 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'แบรนด์ถอนการเผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);
     await openMenu(page);
     const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
-    const link = menu.getByRole('link', { name: 'แบรนด์ที่อยู่อาศัย', exact: true });
-    await expect(link.getByTitle('รอเผยแพร่ 2 แบรนด์', { exact: true })).toHaveText('2');
+    const link = menu.locator('.hub-brand-count-link');
+    await expect(link).toHaveAttribute('href', '/?view=brands');
+    await expect(link).toHaveAttribute('title', 'รอเผยแพร่ 2 แบรนด์');
+    await expect(link.locator('.hub-nav-count')).toHaveText('2');
     if (viewport.width === 390) { await page.keyboard.press('Escape'); await expect(page.getByRole('button', { name: 'เปิดเมนู', exact: true })).toBeFocused(); }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(data.writes).toEqual([]);

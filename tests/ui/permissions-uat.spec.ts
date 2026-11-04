@@ -88,9 +88,9 @@ test('Somchai has exactly four tabs with the custom grid, and hidden management 
   expect(me.capabilities.can_manage_users).toBe(false); expect(me.capabilities.customised).toBe(true);
   await page.goto('/');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
-  // Finance is the only permitted ads tab, so navigation renders its link
-  // directly rather than a redundant one-item group toggle.
-  for (const label of ['โครงการที่อยู่อาศัย', 'แบรนด์ที่อยู่อาศัย', 'โปรโมชั่นโครงการ', 'งบและค่าใช้จ่าย']) await expect(menu.getByRole('link', { name: label, exact: true })).toBeVisible();
+  // Services remain explicit even with one permitted item; empty services stay hidden.
+  await menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true }).click();
+  for (const label of ['หน้าแรก', 'ข้อมูลเว็บไซต์', 'โปรโมชั่น', 'งบและค่าใช้จ่าย']) await expect(menu.getByRole('link', { name: label, exact: true })).toBeVisible();
   for (const href of ['/ads/registry', '/ads/archive', '/ads/actuals', '/knowledge', '/releases', '/questions', '/admin/accounts']) await expect(menu.locator(`a[href="${href}"]`)).toHaveCount(0);
   await page.screenshot({ path: `${shots}/somchai-custom-tabs.png`, fullPage: true });
   for (const route of ['projects', 'brands/completeness.csv', 'ads/memos']) expect((await page.request.get(`${api}/${route}`)).status()).toBe(200);

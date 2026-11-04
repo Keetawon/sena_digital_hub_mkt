@@ -16,8 +16,63 @@ export const hubPages = [
   { id: "questions", href: "/questions", label: "คำถามที่รอคำตอบ", group: null, icon: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9 9a3 3 0 1 1 4 2.8c-.7.3-1 .7-1 1.7M12 17h.01" },
   { id: "accounts", href: "/admin/accounts", label: "ผู้ใช้และสิทธิ์", group: null, icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M17 11h6" },
 ] as const;
-export const hubGroups = { content: "ข้อมูลโครงการและแบรนด์", ads: "งานโฆษณาและงบ" } as const;
+export const hubGroups = { content: "ข้อมูลเว็บไซต์และ AI", ads: "งานโฆษณาและงบ" } as const;
 export type HubSection = typeof hubPages[number]["id"];
+
+// The permission route inventory above stays separate from menu presentation.
+// Destinations use the existing workspaces until their unified pages are ready.
+export type HubMenuItem = {
+  key: string;
+  label?: string;
+  targets: { section: HubSection; href: string }[];
+  icon?: string;
+  adminOnly?: boolean;
+  projectContext?: boolean;
+};
+export type HubMenuGroup = { key: string; label?: string; icon?: string; items: HubMenuItem[] };
+export type HubService = { key: keyof typeof hubGroups; label: string; icon: string; groups: HubMenuGroup[] };
+export const hubServices: HubService[] = [
+  { key: "content", label: hubGroups.content, icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5", groups: [
+    { key: "content-work", items: [
+      { key: "home", label: "หน้าแรก", icon: "m3 10 9-7 9 7v11H3zM9 21v-8h6v8", targets: [{ section: "projects", href: "/" }, { section: "brands", href: "/?view=brands" }, { section: "faq", href: "/faq" }] },
+      { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/?view=projects" }, { section: "brands", href: "/?view=brands" }, { section: "faq", href: "/faq" }] },
+      { key: "promotions", label: "โปรโมชั่น", targets: [{ section: "promotions", href: "/promotions" }] },
+      { key: "articles", label: "บทความ", targets: [{ section: "articles", href: "/articles" }] },
+      { key: "publishing", label: "เผยแพร่", targets: [{ section: "releases", href: "/releases" }, { section: "faq", href: "/faq?tab=publication" }] },
+    ] },
+    { key: "settings", label: "ตั้งค่า", icon: "M4 7h16M4 17h16M8 4v6M16 14v6", items: [
+      { key: "question-bank", label: "คำถามมาตรฐาน", targets: [{ section: "faq", href: "/faq?tab=bank" }] },
+      { key: "glossary", label: "คำแปลมาตรฐาน", icon: "M3 5h12M9 3v2M5 5c0 6 5 10 10 12M13 5c0 6-5 10-10 12M14 21l4-10 4 10M16 17h4", targets: [{ section: "faq", href: "/faq?tab=glossary" }] },
+      { key: "fields", label: "ทะเบียนฟิลด์", icon: "M4 4h16v16H4zM4 9h16M9 9v11", targets: [{ section: "projects", href: "/content/fields" }] },
+      { key: "media-tags", label: "แท็กรูป", icon: "M3 3h9l9 9-9 9-9-9V3zM8 8h.01", projectContext: true, targets: [{ section: "projects", href: "/media?tab=rules#tags" }] },
+      { key: "media-rules", label: "กติการูปที่ต้องมี", icon: "M4 4h16v16H4zM7 8l2 2 3-3M7 15l2 2 3-3M15 8h2M15 15h2", projectContext: true, targets: [{ section: "projects", href: "/media?tab=rules#requirements" }] },
+      { key: "legacy-evidence", label: "หลักฐานนำเข้าเดิม", adminOnly: true, targets: [{ section: "knowledge", href: "/knowledge" }] },
+    ] },
+  ] },
+  { key: "ads", label: hubGroups.ads, icon: "M4 3v18h17M8 17v-5M13 17V8M18 17V4", groups: [
+    { key: "ads-work", items: hubPages.filter(page => page.group === "ads").map(page => ({ key: page.id, targets: [{ section: page.id, href: page.href }] })) },
+  ] },
+];
+export const hubUtilities: HubMenuItem[] = hubPages.filter(page => page.group === null).map(page => ({ key: page.id, targets: [{ section: page.id, href: page.href }] }));
+
+export function hubCurrentMenuKey(section: HubSection, location = "/") {
+  const url = new URL(location, "https://hub.invalid");
+  if (url.pathname === "/content/fields") return "fields";
+  if (url.pathname === "/media" && url.searchParams.get("tab") === "rules") return url.hash === "#requirements" ? "media-rules" : "media-tags";
+  if (section === "faq") {
+    const tab = url.searchParams.get("tab");
+    return tab === "bank" ? "question-bank" : tab === "glossary" ? "glossary" : tab === "publication" ? "publishing" : "website";
+  }
+  if (section === "knowledge") return "legacy-evidence";
+  if (section === "releases") return "publishing";
+  if (section === "brands") return "website";
+  if (section === "projects") return url.pathname === "/" && !url.search ? "home" : "website";
+  return section;
+}
+
+export function hubMenuItem(key: string) {
+  return [...hubServices.flatMap(service => service.groups.flatMap(group => group.items)), ...hubUtilities].find(item => item.key === key);
+}
 
 export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);

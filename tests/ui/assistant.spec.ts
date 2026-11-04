@@ -34,7 +34,7 @@ async function mocked(page: Page, role = 'editor') {
   });
   return { posts, reads, config, setResponse: (value: string) => { response = value; }, denyCitation: () => { citationDenied = true; }, makeStale: () => { stale = true; }, holdConfig: () => { let release!: () => void; configGate = new Promise<void>(resolve => { release = resolve; }); return release; } };
 }
-async function open(page: Page) { await page.goto('/questions'); const sidebar = page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true }); await ((page.viewportSize()?.width ?? 1280) > 720 ? sidebar : page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }).getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); return page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); }
+async function open(page: Page) { await page.goto('/questions'); await page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true }).click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }).getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); return page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); }
 
 async function fullyExposed(locator: Locator) {
   // Visibility alone allows a composer below the fold. Check viewport bounds,
@@ -59,8 +59,8 @@ async function fullyExposed(locator: Locator) {
 
 test('assistant entry is staff-only and loads capabilities only when opened', async ({ page }) => {
   for (const role of ['editor', 'publisher', 'viewer', 'admin', 'online_staff']) {
-    const data = await mocked(page, role); await page.goto('/questions'); await expect(page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).toBeVisible(); expect(data.reads).toEqual([]);
-    await page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true }).click(); await expect.poll(() => data.reads.includes('/config')).toBe(true); await page.getByRole('button', { name: 'ปิดผู้ช่วย', exact: true }).click(); await page.unrouteAll();
+    const data = await mocked(page, role); await page.goto('/questions'); await expect(page.locator('.sidebar').getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toHaveCount(0); await expect(page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true })).toBeVisible(); expect(data.reads).toEqual([]);
+    await page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true }).click(); await expect.poll(() => data.reads.includes('/config')).toBe(true); await page.getByRole('button', { name: 'ปิดผู้ช่วย', exact: true }).click(); await page.unrouteAll();
   }
   for (const role of ['agency_kin', 'agency_combay']) {
     await session(page, role); const reads: string[] = []; const capture = (request: { url: () => string }) => { if (request.url().includes('/assistant/')) reads.push(request.url()); }; page.on('request', capture);
@@ -130,17 +130,16 @@ test('mobile editor entry uses reserved space and clears language and tab contro
 
 });
 
-test('sidebar and floating triggers reopen one conversation and return focus to their own opener', async ({ page }) => {
+test('floating trigger reopens one conversation and receives focus after closing', async ({ page }) => {
   const data = await mocked(page); const panel = await open(page);
-  const sidebar = page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true });
   const floating = page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true });
   const composer = panel.getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง');
-  await composer.fill('ข้อความที่ยังไม่ส่ง'); await page.keyboard.press('Escape'); await expect(sidebar).toBeFocused();
+  await composer.fill('ข้อความที่ยังไม่ส่ง'); await page.keyboard.press('Escape'); await expect(floating).toBeFocused();
   await floating.click(); await expect(page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true })).toHaveCount(1);
   await expect(composer).toHaveValue('ข้อความที่ยังไม่ส่ง'); await expect(composer).toBeFocused();
   await composer.press('Enter'); await expect(panel.locator('.assistant-turn')).toHaveCount(1);
   await expect.poll(() => data.posts.length).toBe(1); await panel.getByRole('button', { name: 'ปิดผู้ช่วย', exact: true }).click();
-  await expect(floating).toBeFocused(); await sidebar.click();
+  await expect(floating).toBeFocused(); await floating.click();
   await expect(panel.locator('.assistant-turn')).toHaveCount(1); await expect.poll(() => data.reads.filter(path => path === '/config').length).toBeGreaterThanOrEqual(3);
 });
 
@@ -271,21 +270,21 @@ test('assistant-generated draft suggestions remain proposals until explicit diff
 });
 
 test('assistant keyboard, mobile and reduced-motion behavior retain focus and readable controls', async ({ page }) => {
-  await mocked(page, 'viewer'); await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; })); await page.goto('/questions'); const menu = page.getByRole('button', { name: 'เปิดเมนู', exact: true }); await menu.click(); const trigger = page.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true });
+  await mocked(page, 'viewer'); await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' }); await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.fontSize = '200%'; })); await page.goto('/questions'); const trigger = page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true });
   for (const state of ['normal', 'hover', 'focus']) {
     if (state === 'hover') await trigger.hover();
     if (state === 'focus') await trigger.focus();
     const colors = await trigger.evaluate(element => {
-      const style = getComputedStyle(element); const sidebar = getComputedStyle(element.closest('.sidebar, .hub-menu-drawer')!);
+      const style = getComputedStyle(element);
       const luminance = (color: string) => { const channels = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4); return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722; };
-      const background = style.backgroundColor === 'rgba(0, 0, 0, 0)' ? sidebar.backgroundColor : style.backgroundColor;
+      const background = style.backgroundColor;
       const foreground = luminance(style.color); const backdrop = luminance(background);
-      return { color: style.color, expected: sidebar.color, ratio: (Math.max(foreground, backdrop) + .05) / (Math.min(foreground, backdrop) + .05) };
+      return { ratio: (Math.max(foreground, backdrop) + .05) / (Math.min(foreground, backdrop) + .05) };
     });
-    expect(colors.color).toBe(colors.expected); expect(colors.ratio, `${state} contrast`).toBeGreaterThanOrEqual(4.5);
+    expect(colors.ratio, `${state} contrast`).toBeGreaterThanOrEqual(4.5);
   }
   await page.keyboard.press('Enter');
-  const panel = page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).not.toBeVisible(); await expect(panel.getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeFocused(); await expect(panel.getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true); await panel.getByRole('tab', { name: 'เสนอแก้ร่าง', exact: true }).click(); await expect(panel.getByRole('button', { name: 'โหลดข้อความฉบับร่างที่มีสิทธิ์แก้', exact: true })).toHaveCount(0); await expect(panel).toContainText('บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง'); await page.keyboard.press('Escape'); await expect(panel).not.toBeVisible(); await expect(menu).toBeFocused();
+  const panel = page.getByRole('dialog', { name: 'ผู้ช่วย Hub', exact: true }); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).not.toBeVisible(); await expect(panel.getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeFocused(); await expect(panel.getByLabel('คำถามสำหรับโหมดจำลองในเครื่อง')).toBeVisible(); expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true); await panel.getByRole('tab', { name: 'เสนอแก้ร่าง', exact: true }).click(); await expect(panel.getByRole('button', { name: 'โหลดข้อความฉบับร่างที่มีสิทธิ์แก้', exact: true })).toHaveCount(0); await expect(panel).toContainText('บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง'); await page.keyboard.press('Escape'); await expect(panel).not.toBeVisible(); await expect(trigger).toBeFocused();
 });
 
 test('real assistant proxy streams a local fake run and denies extra route/query scopes', async ({ page }) => {

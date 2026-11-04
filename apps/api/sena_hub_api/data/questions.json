@@ -1747,6 +1747,102 @@
         "blocks": "None; fold the decision into Phase 3.",
         "default": "No domain allowlist. Require shared/company mailbox confirmation, warn without blocking on free webmail (including gmail.com, hotmail.com, outlook.com and yahoo.com), and retain four-eyes publication approval. No DW sales_email import. See docs/41-project-content-and-faq.md."
       }
+    },
+    {
+      "id": "Q77",
+      "status": "PENDING",
+      "owner_group": "it",
+      "owner_th": "เจ้าของ DW และเจ้าของระบบ Hub",
+      "question_th": "DW จะส่งมอบชุดข้อมูลโครงการและ BU สำหรับอ่านอย่างเดียว พร้อมสิทธิ์เชื่อมต่อสำหรับซิงก์รายวันเมื่อใด และใครจะติดตั้งสิทธิ์นี้บน hosted TEST?",
+      "default_th": "พัฒนาและทดสอบด้วยข้อมูลจำลองและชุดข้อมูลวันที่ 5 ตุลาคม 2026 ใช้ rem_bu_id และรหัสกับชื่อ BU ตาม REM โดยไม่แปลงค่า รอเจ้าของติดตั้งสิทธิ์ก่อนเปิดซิงก์บน hosted TEST ไม่อ่าน REM โดยตรง",
+      "links": [{ "href": "/questions#Q77", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q77",
+        "question": "Deliver the narrow read-only DW project/BU relation and dedicated read-only credential for the daily sync; owner installs it on hosted TEST.",
+        "owner": "DW owner + Hub owner",
+        "blocks": "Hosted BU-sync enablement only; local fixture and staged-package implementation proceeds.",
+        "default": "Mirror exact REM BU IDs/codes/names after the DW 16:00 Bangkok relay. Keep prior membership on failed, empty or over-48-hour stale input. No direct REM access or DW repository changes. See docs/47 section 7.1."
+      }
+    },
+    {
+      "id": "Q78",
+      "status": "PENDING",
+      "owner_group": "marketing",
+      "owner_th": "เจ้าของระบบและทีมแบรนด์",
+      "question_th": "ขอไฟล์โลโก้ SENA Development แบบเวกเตอร์อย่างเป็นทางการและรหัสสีแบรนด์ที่อนุมัติแล้วได้จากที่ใด?",
+      "default_th": "ใช้ไฟล์โลโก้ PNG ที่เจ้าของให้มาและสีที่เก็บจากไฟล์ก่อน ปรับเฉดสำหรับข้อความ ปุ่ม และกรอบโฟกัสให้ผ่านเกณฑ์ความต่างสี แล้วเปลี่ยนไฟล์เมื่อได้รับต้นฉบับทางการ",
+      "links": [{ "href": "/", "label": "หน้าแรก" }, { "href": "/questions#Q78", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q78",
+        "question": "Provide the official SENA Development vector logo and approved brand colour codes.",
+        "owner": "Hub owner + Brand team",
+        "blocks": "Official asset replacement only; the supplied PNG assets support local implementation.",
+        "default": "Use supplied logo/mark and sampled colours with measured accessible text, controls and focus shades in both themes. Keep the full logo on a light surface. See docs/47 section 8.1."
+      }
+    },
+    {
+      "id": "Q79",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "เจ้าของระบบ Hub",
+      "question_th": "ยืนยันกติกาเนื้อหาร่วมระดับเครือ ธุรกิจ แบรนด์ และโปรแกรมหรือไม่: ผู้แก้ไขต้องมีสิทธิ์อย่างน้อยหนึ่งโครงการที่ได้รับผล ส่วนผู้อนุมัติต้องมีสิทธิ์ครบทุกโครงการที่ได้รับผลหรือมีขอบเขตทุกโครงการ?",
+      "default_th": "ใช้กติกานี้เป็นค่าเริ่มต้นตามการตัดสินใจวันที่ 4 พฤศจิกายน 2026 ตรวจโครงการที่ได้รับผลจริงทุกครั้ง ไม่ใช้แบรนด์แทน BUD และไม่เปลี่ยนสิทธิ์บัญชีเดิมโดยอัตโนมัติ",
+      "links": [{ "href": "/questions#Q79", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q79",
+        "question": "Confirm the shared-level rule: draft with Edit covering at least one affected project; approve only with all affected projects covered or unrestricted approval.",
+        "owner": "Hub owner",
+        "blocks": "Business-policy confirmation; implement the stated default meanwhile.",
+        "default": "Enforce the current affected-project set across corporate, business, brand and programme content. Existing account scopes remain unrestricted until explicit preview/confirm. See docs/47 section 7.2."
+      }
+    },
+    {
+      "id": "Q80",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "เจ้าของระบบ Hub",
+      "question_th": "บัญชีใดเป็นทีม Online Marketing และควรได้รับสิทธิ์เผยแพร่ขึ้นเว็บ?",
+      "default_th": "ยังไม่เพิ่มหรือเปลี่ยนสิทธิ์บัญชีใด ผู้ดูแลต้องตรวจรายการเปลี่ยนแปลงและยืนยันผ่านหน้าผู้ใช้และสิทธิ์ ผู้เผยแพร่ต้องดูข้อมูลต้นทางได้และเป็นคนละคนกับผู้แก้ไข ผู้ตรวจภาษาอังกฤษ และผู้อนุมัติฉบับที่เผยแพร่",
+      "links": [{ "href": "/questions#Q80", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q80",
+        "question": "Identify the Online Marketing accounts that should receive the existing publish-to-website special.",
+        "owner": "Hub owner",
+        "blocks": "Real account assignment only; synthetic local publication tests proceed.",
+        "default": "No automatic grants or template propagation. Assign through existing preview/confirm; publication requires source View and the special, approved revisions and a different publisher. See docs/47 section 5."
+      }
+    },
+    {
+      "id": "Q81",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "เจ้าของระบบและเจ้าของงบ AI",
+      "question_th": "อนุมัติงบรายเดือนสำหรับตัวช่วยเขียนเนื้อหา AI เท่าใด และใครเป็นผู้ดูแลการใช้งบ?",
+      "default_th": "ใช้ตัวจำลองในงานพัฒนาและการทดสอบเท่านั้น ยังไม่เรียกผู้ให้บริการจริง ไม่ใช้งบรูปภาพแทนงบเขียนเนื้อหา และไม่บันทึกข้อความจนกว่าผู้ใช้ตรวจส่วนต่างและยอมรับ",
+      "links": [{ "href": "/questions#Q81", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q81",
+        "question": "Approve the monthly AI writing-aid budget and its operational owner.",
+        "owner": "Hub owner + AI budget owner",
+        "blocks": "Live provider calls only; stub development and automated tests proceed.",
+        "default": "Live allowance remains zero. Use a deterministic stub, protected numbers/placeholders, field eligibility and explicit diff acceptance. Never use the media budget for writing. See docs/47 section 8.3."
+      }
+    },
+    {
+      "id": "Q82",
+      "status": "PENDING",
+      "owner_group": "note",
+      "owner_th": "เจ้าของระบบ Hub",
+      "question_th": "จะเพิ่มธุรกิจใดนอกเหนือจากที่อยู่อาศัย และควรเพิ่มเมื่อใด?",
+      "default_th": "เริ่มจากที่อยู่อาศัยเพียงรายการเดียว เพิ่มหรือเปลี่ยนชื่อธุรกิจด้วย migration ที่ได้รับอนุมัติเท่านั้น LivNex และ RentNex คงเป็นโปรแกรมที่ผูกกับโครงการ ไม่สร้างเป็นระดับธุรกิจ",
+      "links": [{ "href": "/questions#Q82", "label": "คำถามที่รอคำตอบ" }],
+      "doc": {
+        "id_label": "Q82",
+        "question": "Which businesses beyond residential should be added, and when?",
+        "owner": "Hub owner",
+        "blocks": "Additional business entries only; residential implementation proceeds.",
+        "default": "Seed residential only in a fixed migration-maintained list. No create/rename API or UI, generic BU registry, or automatic FAQ rescoping. LivNex and RentNex remain programmes. See docs/47 section 6."
+      }
     }
   ]
 }

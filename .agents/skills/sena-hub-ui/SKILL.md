@@ -2,10 +2,9 @@
 name: sena-hub-ui
 description: >
   SENA Digital Hub admin UI system: Next.js 16 / React 19 in apps/admin,
-  Tailwind v4 layered over styles/tokens.css, the Flip7 palette with
-  contrast-checked roles, Google Sans + Noto Sans Thai for Thai-only users,
-  and the Motion (motion/react) spec (row→card shared-layout morph, backdrop
-  fade, tabbed card expand, dropdown pop) with prefers-reduced-motion. Use
+  Tailwind v4 layered over styles/tokens.css, the SENA Development palette
+  with measured light/dark roles, Google Sans + Noto Sans Thai for Thai-only
+  users, the service shell, and minimal motion with prefers-reduced-motion. Use
   for any apps/admin screen, component, style, font or animation work,
   including the ads registry screens and the assistant side panel. Pair with
   ui-ux-pro-max for general UX rules.
@@ -13,7 +12,7 @@ description: >
 
 # SENA Hub admin UI
 
-App: `apps/admin` (Next.js 16.3.5, React 19.3.0). **Read `apps/admin/AGENTS.md` first**: this
+App: `apps/admin` (Next.js 16.4.3, React 19.3.0). **Read `apps/admin/AGENTS.md` first**: this
 Next.js has breaking changes, so check `node_modules/next/dist/docs/` before using an API.
 All users are Thai. Every label, error, empty state and toast is Thai; codes and IDs stay as-is.
 
@@ -25,22 +24,45 @@ All users are Thai. Every label, error, empty state and toast is Thai; codes and
 - Migrate screen by screen. Existing `*.css` component files keep working, so don't bulk-rewrite them.
 - Components use semantic tokens (`bg-surface`, `text-ink`, `bg-action`), never raw hex.
 
-## Flip7 palette (source: designmd.ai/yiujc/flip7-card-game)
+## SENA Development palette and shell
 
-| Token | Hex | Use | Text on it |
+Docs/47 §§3.1 and 8.1 are authoritative for the unified content workspace. Copy
+Thai labels exactly from that UTF-8 document; never retype them. Docs/22 §1.3
+records the current token values and measured pairs. Earlier Flip7 and luxury
+green/gold guidance is historical.
+
+| Token | Light | Dark | Use |
 |---|---|---|---|
-| canvas | `#EFF8F7` | app background | ink |
-| surface | `#FFFFFF` | cards, tables, panels | ink |
-| surface-warm | `#FFF8E7` | highlighted panels, empty states | ink |
-| brand | `#2BA8A2` | **large areas only** (header band, illustrations); never small text or buttons | ink (dark) |
-| action | `#177A75` | primary buttons, links, focus ring | white (5.15:1) |
-| gold | `#FFD23F` | badges, highlights | dark ink only |
-| coral | `#EF6C4A` | attention fills | dark ink only |
-| coral-strong | `#B8442A` | destructive/alert buttons | white |
-| success / error | darker shades for text | status text | on white/canvas |
+| canvas | `#F2F8F7` | `#0A211F` | App background |
+| surface | `#FFFFFF` | `#102C29` | Cards, forms; text on action fills |
+| surface-warm | `#E4F1EF` | `#1A3C38` | Context panels |
+| ink | `#10312E` | `#EFFAF8` | Body text |
+| muted | `#43645F` | `#B1CEC8` | Supporting and disabled text |
+| action | `#08786E` | `#88D0C8` | Buttons, links, focus |
+| primary-strong | `#075B54` | `#B0E8E0` | Action hover |
+| line-strong | `#668781` | `#7FABA5` | Essential control boundaries |
+| sidebar / active | `#0B3835` / `#15534F` | Same | Service navigation |
+| sidebar-ink / muted | `#F4FCFB` / `#B8D9D5` | Same | Navigation text |
+| gold-light | `#B0E8E0` | Same | Compatibility name: aqua selection/focus |
 
-Every new pair needs a measured contrast ratio (≥4.5:1 text, ≥3:1 large text/UI edges) in the
-design doc's contrast table before use. Status is never color-only; pair it with an icon or text.
+- System dark mode is supported through `prefers-color-scheme`. Keep existing semantic token aliases.
+- Primary buttons and selected tabs use `surface` text on `action`; do not pair pale dark-mode
+  actions with white/sidebar text. Keep the distinct status-soft/strong pairs.
+- The supplied full SENA logo sits on a white plate in both themes; the 64px rail uses the mark.
+  The logo links home; the separate 44px collapse/expand button appears beside it on rail hover/focus.
+- Navigation is data-driven service → groups → items. Hide empty services, retain a service
+  disclosure even for one permitted item, and keep the permission route inventory separate.
+- Labels stay on one line with ellipsis and full-text tooltips on hover/focus. Keep 44px targets,
+  visible focus, instant collapse, saved state and native mobile/tablet dialog behavior.
+- Questions and accounts remain bottom utilities. The assistant uses its floating opener,
+  never a sidebar item or disabled H1 paragraph. Search entry is specified in docs/47 W2.
+- Validate 1280px, 1024px and 390px in local and disposable H1, light/dark, keyboard and reduced
+  motion. Save success screenshots under `artifacts/unified-workspace/w1/` for the W1 gate.
+
+Every new pairing needs a measured ratio in docs/22 before use: at least 4.5:1 for text and
+3:1 for essential UI boundaries in every supported theme. Use unrounded results; text does
+not pass by rounding. Recheck hover, focus, selected and disabled states. Status always
+includes text or an icon.
 
 ## Fonts
 

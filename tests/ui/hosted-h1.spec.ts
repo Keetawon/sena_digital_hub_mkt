@@ -30,6 +30,40 @@ test.describe('H1 disposable managed-permission simulation', () => {
     });
   });
 
+
+  for (const colorScheme of ['light', 'dark'] as const) for (const width of [1280, 1024, 390]) {
+    test(`service shell stays readable without overflow in H1 ${colorScheme} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: colorScheme === 'dark' ? 'reduce' : 'no-preference' });
+      await login(page, 'admin');
+      await expect(page.locator('.sidebar .assistant-trigger, .sidebar .hub-assistant-slot')).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: `artifacts/unified-workspace/w1/h1-${colorScheme}-${width}.png`, fullPage: width === 1280 });
+      if (width === 390) await page.getByRole('button', { name: 'เปิดเมนู', exact: true }).click();
+      if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); }
+      const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
+      await expect(menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true })).toBeVisible();
+      await expect(menu.getByRole('link', { name: 'หน้าแรก', exact: true })).toBeVisible();
+      await expect(menu.locator('.hub-nav-label').first()).toHaveCSS('white-space', 'nowrap');
+      await expect(page.locator('.hub-logo-full')).toBeVisible();
+      await expect(page.locator('.hub-logo-full')).toHaveJSProperty('naturalWidth', 1001);
+      await expect(page.locator('.hub-brand-logo')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      expect(await page.locator('.sidebar').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if (width !== 1280) {
+        const drawer = page.locator('.sidebar[open]');
+        await expect(drawer).toBeVisible();
+        await expect(drawer).toHaveCSS('animation-name', 'none');
+        await expect(drawer).toHaveCSS('opacity', '1');
+        await expect(drawer).toHaveCSS('transform', 'none');
+        expect(await drawer.evaluate(element => getComputedStyle(element, '::backdrop').animationName)).toBe('none');
+        await page.screenshot({ path: `artifacts/unified-workspace/w1/h1-${colorScheme}-${width}-drawer.png` });
+        await page.keyboard.press('Escape');
+        await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).not.toBeVisible();
+      }
+    });
+  }
+
   for (const [role, label, residential] of roles) {
     test(`${role}: verified login, role isolation, no demo selector, logout`, async ({ page }) => {
       await login(page, role);

@@ -2,7 +2,7 @@
 .brand-statuses .brand-unpublished { background: var(--warning-soft); color: var(--warning-strong); border-color: var(--warning-line); }
 .brand-review-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 10px; }
 .brand-review-filters .button { min-height: 44px; gap: 8px; }
-.brand-review-filters [aria-pressed="true"] { color: var(--brand-ink); background: var(--action); border-color: var(--action); }
+.brand-review-filters [aria-pressed="true"] { color: var(--surface); background: var(--action); border-color: var(--action); }
 .brand-review-filters [aria-pressed="true"] .count { color: var(--ink); background: var(--surface); }
 .brand-filter-help { margin-bottom: 24px; }
 .brand-completeness-tiles { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 12px; margin: 24px 0 12px; }
