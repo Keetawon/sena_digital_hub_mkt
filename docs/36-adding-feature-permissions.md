@@ -62,3 +62,5 @@ Use a disposable database and synthetic identities for fixture mutations. Do not
 Invites pin an exact server template version, never grant admin, and do not acquire newer defaults while waiting. Agency accounts cannot convert to an internal template or acquire arbitrary boxes; a canonical agency-code correction stays inside their external profile. New tab acknowledgment is per-manager receipt, not global permission approval.
 
 Per-project/brand scoping and strict revision-author four-eyes checks remain deferred. Adding either requires a separate permission card and changes to object-aware DB checks, cross-tab projections, caches, audit and concurrency tests; a new checkbox alone is insufficient.
+
+Update, 4 November 2026: scoping is now scheduled by BUD with per-project exceptions, and the edit/approve rules change for content, in [docs/47](47-unified-content-workspace.md) §5 and §7. The requirements above for a permission card and object-aware checks still apply.

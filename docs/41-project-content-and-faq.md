@@ -36,6 +36,8 @@ Before Phase 1, read: `REQUIREMENTS.md`, `docs/02-data-model.md`, `docs/05-api-c
 - **D5** The website server will fetch the Hub API and render HTML with caching, using a change feed. Integration with the web team is outside this programme.
 - **D6** The FAQ question bank is approved by Managers (approve level). Marketing may propose new questions.
 
+**Owner update, 4 November 2026:** [docs/47](47-unified-content-workspace.md) amends D3 and the Phase 8 publisher condition. A Manager may edit and approve the same version (with a recorded reason); D3 still applies at publication, where Online Marketing publishes only Manager-approved versions using View plus «เผยแพร่ขึ้นเว็บ». docs/47 also replaces the §3.8 navigation item and the §3.11 screen split with one page per level, and schedules BUD scoping.
+
 Earlier accepted rules that still apply: availability always hands off to Sales; no calculators in v1; floor plans for every storey/floor are a target, not a publication blocker; only the project hero and thumbnail block publication among media; unknown is never shown as absent; numbers in prose are never treated as structured facts.
 
 ## 3. Target design (authoritative)
