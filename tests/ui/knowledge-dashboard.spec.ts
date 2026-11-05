@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('knowledge progress filters pilots, preserves queue scope and shows no-KM coverage explicitly', async ({page}) => {
-  await page.context().addCookies([{name:'sena_local_persona',value:'viewer',url:'http://127.0.0.1:3000'}]);
+  await page.context().addCookies([{name:'sena_local_persona',value:'admin',url:'http://127.0.0.1:3000'}]);
   const card={name:{th:'โครงการทดสอบ'},status:{raw:2,label:'พร้อมอยู่'},mode:'DRAFT_PREVIEW'};
   const progress={state:'reviewing',staged:10,reviewed:4,pending:{section:2,faq:1,fact:0,asset:2,promotion:1},pending_other:0,conflicts:1,gaps:2,has_legacy_km:true,has_public_website:true,last_reviewed_at:'2026-10-06T03:00:00Z',last_reviewed_by:'00000000-0000-0000-0000-000000000001'};
   const rows=[{project_id:'BNA7',card,candidates:10,progress},{project_id:'EKAMI',card:{...card,name:{th:'เอกมัยทดสอบ'}},candidates:5,progress:{...progress,state:'not_started',reviewed:0,staged:5,conflicts:0,has_legacy_km:false,has_public_website:false,last_reviewed_at:null}}];

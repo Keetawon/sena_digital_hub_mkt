@@ -227,12 +227,47 @@ def test_knowledge_revocation_denies_api_before_embedding_and_files(permission_a
     async def forbidden_embed(_):
         raise AssertionError('Permission denial must precede embeddings')
     monkeypatch.setattr(knowledge, 'embed', forbidden_embed)
-    assert client.get('/v1/admin/knowledge/projects', headers=h('viewer')).status_code == 200
-    asyncio.run(set_bit(ids['viewer'], 'knowledge', can_view=False))
+    asyncio.run(set_bit(ids['admin'], 'knowledge', can_edit=False, can_approve=False))
+    assert client.get('/v1/admin/knowledge/projects', headers=h('admin')).status_code == 200
+    asyncio.run(set_bit(ids['admin'], 'knowledge', can_view=False))
     for path in ('projects', f'candidates/{uuid4()}/file'):
-        assert client.get('/v1/admin/knowledge/' + path, headers=h('viewer')).status_code == 403
-    assert client.post('/v1/admin/knowledge/preview', headers=h('viewer'), json={'question': 'Synthetic'}).status_code == 403
-    assert client.get('/v1/admin/projects', headers=h('viewer')).status_code == 200
+        assert client.get('/v1/admin/knowledge/' + path, headers=h('admin')).status_code == 403
+    assert client.post('/v1/admin/knowledge/preview', headers=h('admin'), json={'question': 'Synthetic'}).status_code == 403
+    assert client.get('/v1/admin/projects', headers=h('admin')).status_code == 200
+
+
+@pytest.mark.parametrize('choice', ['accepted', 'rejected', 'missing'])
+def test_legacy_faq_api_denies_every_decision_without_creating_rows(permission_accounts, choice):
+    client, _ = permission_accounts
+    candidate = uuid4()
+    fingerprint = uuid4().hex * 2
+
+    async def seed_or_read(seed=False):
+        operator = await disposable_operator()
+        try:
+            if seed:
+                await operator.execute("insert into staging.knowledge_batches(manifest_sha256,manifest) values($1,'{}')", fingerprint)
+                await operator.execute("""insert into staging.knowledge_candidates
+                    (id,batch_sha256,source_key,kind,project_ids,topic,source_ref,evidence)
+                    values($1,$2,'n7-api','faq',array['DEMO-001'],'design','synthetic-n7','{}')""", candidate, fingerprint)
+            return json.loads(await operator.fetchval("""select jsonb_build_object(
+                'faqs',(select count(*) from hub.faqs where candidate_id=$1),
+                'versions',(select count(*) from hub.faq_versions v join hub.faqs f on f.id=v.faq_id where f.candidate_id=$1),
+                'reviews',(select count(*) from hub.knowledge_reviews where candidate_id=$1),
+                'audit',(select count(*) from audit.change_log where table_name in ('hub.knowledge_reviews','hub.faqs')
+                  and after_row->>'candidate_id'=$1::text))""", candidate))
+        finally:
+            await operator.close()
+
+    before = asyncio.run(seed_or_read(True))
+    assert before == {'faqs': 0, 'versions': 0, 'reviews': 0, 'audit': 0}
+    path = f'/v1/admin/knowledge/candidates/{candidate}/review'
+    body = {'expected_revision': 0, 'decision': choice, 'applies_to_project_ids': ['DEMO-001'], 'reason': 'Synthetic N7 denial'}
+    for role in ('editor', 'publisher', 'viewer'):
+        assert client.post(path, headers=h(role), json=body).status_code == 403
+    response = client.post(path, headers=h('admin'), json=body)
+    assert response.status_code == 422, response.text
+    assert asyncio.run(seed_or_read()) == before
 
 
 def test_publication_storage_has_forced_rls_and_no_direct_writes(permission_accounts):

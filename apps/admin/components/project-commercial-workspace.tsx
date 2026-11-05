@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useHubPermissions } from "./accounts";
 import { request } from "./hub-request";
@@ -45,8 +46,10 @@ const valueText = (value: unknown, spec: FieldSpec) => value == null || value ==
 
 export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange }: { projectId: string; fields: ContentField[]; onEditingChange: (value: boolean) => void }) {
   const permissions = useHubPermissions(), canView = permissions.can("projects"), canEdit = permissions.can("projects", "edit"), canApprove = permissions.can("projects", "approve");
+  const query = useSearchParams(), targetField = query.get("field") ?? "";
+  const requestedKind = (Object.entries(groups).find(([, group]) => targetField.startsWith(group.entity + "."))?.[0] ?? "disclosures") as Kind;
   const permissionKey = JSON.stringify(permissions.capabilities.tabs);
-  const [data, setData] = useState<Workspace | null>(null), [kind, setKind] = useState<Kind>("disclosures"), [editing, setEditing] = useState<{ id?: string; values: Values; stamp: string } | null>(null);
+  const [data, setData] = useState<Workspace | null>(null), [kind, setKind] = useState<Kind>(requestedKind), [editing, setEditing] = useState<{ id?: string; values: Values; stamp: string } | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
   const [translationEditing, setTranslationEditing] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/commercial`;
@@ -113,8 +116,8 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange 
         <p className="field-help">คำแปลข้อมูลกฎหมายและเงื่อนไขขายต้องกรอกและตรวจเอง ไม่ส่งให้ AI</p>
         <div className="content-actions"><button type="button" className="button secondary" onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary">บันทึกร่าง</button></div>
       </fieldset>{!canEdit && <button type="button" className="button secondary" onClick={() => setEditing(null)}>ปิดแบบฟอร์ม</button>}</form>}
-      {!editing && data.records[kind].map(item => <article className="content-card" key={item.id}><h3>{group.title} · ฉบับ {item.revision}</h3><p className="content-state">{stateLabels[item.state]} · การอนุมัติข้อมูลยังไม่ใช่การเผยแพร่หน้าเว็บไซต์</p>
-        <dl className="commercial-record-values">{specs.map(spec => <div key={spec.key}><dt>{label(spec)?.label.th}</dt><dd className="content-preserve">{spec.type === "asset" && item[spec.key] ? <a href={`/api/hub/v1/admin/assets/${item[spec.key]}/file`}>เปิดเอกสารส่วนตัว</a> : valueText(item[spec.key], spec)}</dd></div>)}</dl>
+      {!editing && data.records[kind].map(item => <article className="content-card" key={item.id} data-workspace-item={item.id} tabIndex={-1}><h3>{group.title} · ฉบับ {item.revision}</h3><p className="content-state">{stateLabels[item.state]} · การอนุมัติข้อมูลยังไม่ใช่การเผยแพร่หน้าเว็บไซต์</p>
+        <dl className="commercial-record-values">{specs.map(spec => <div key={spec.key} data-workspace-field={`${group.entity}.${spec.key}`} tabIndex={-1}><dt>{label(spec)?.label.th}</dt><dd className="content-preserve">{spec.type === "asset" && item[spec.key] ? <a href={`/api/hub/v1/admin/assets/${item[spec.key]}/file`}>เปิดเอกสารส่วนตัว</a> : valueText(item[spec.key], spec)}</dd></div>)}</dl>
         <ul className="content-checklist">{item.readiness.items.map(check => <li key={check.field_key}>{check.complete ? "✓" : "○"} {check.label.th}{check.mismatch ? " · ค่าต่างหรือยังไม่มีข้อเท็จจริงอ้างอิง" : ""}</li>)}</ul>
         <div className="content-actions">{canEdit && item.state !== "in_review" && <button className="button secondary" disabled={busy || translationEditing} onClick={() => edit(item)}>แก้ไขฉบับ</button>}
           {canEdit && item.state === "draft" && <button className="button primary" disabled={busy || translationEditing || !item.readiness.ready} onClick={() => void act(() => request(`${base}/${kind}/${item.id}/submit`, "POST", { updated_at: data.project.updated_at }), "ส่งตรวจฉบับแล้ว")}>ส่งตรวจฉบับ</button>}

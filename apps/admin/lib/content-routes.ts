@@ -1,4 +1,5 @@
 // Exact private draft routes; source-specific authority is rechecked in SQL.
+import { workspaceAllowsApi, workspaceAllowsQuery } from './workspace-api-routes';
 import { amenityAllowsApi } from './amenity-routes';
 const id = "[a-zA-Z0-9_-]{1,128}";
 const uuid = "[0-9a-fA-F-]{36}";
@@ -12,7 +13,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
-  if (amenityAllowsApi(path, method)) return true;
+  if (workspaceAllowsApi(path, method) || amenityAllowsApi(path, method)) return true;
   return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method) || articleAllowsApi(path, method) || webAllowsApi(path, method);
 }
 
@@ -37,6 +38,7 @@ const intakeFilters: Record<string, RegExp> = {
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (workspaceAllowsApi(path, method)) return workspaceAllowsQuery(path, method, query);
   if (method === "GET") {
     if (path === "v1/admin/content/search" || path === "v1/admin/content/home") {
       const filters: Record<string, RegExp> = path.endsWith("/search")

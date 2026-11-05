@@ -28,6 +28,7 @@ from .faq_coverage import register_faq_coverage_routes
 from .articles import register_article_routes
 from .web_publication import register_web_routes
 from .workspace_home import register_workspace_home_routes
+from .content_workspace import register_content_workspace_routes
 from .ads import register_ads_routes
 from .finance import register_finance_routes
 from .questions import register_question_routes
@@ -917,6 +918,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_article_routes(app, authentication, database)
     register_web_routes(app, authentication, database, consumer)
     register_workspace_home_routes(app, authentication, database)
+    register_content_workspace_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

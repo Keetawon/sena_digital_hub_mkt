@@ -12,19 +12,19 @@ test('knowledge permission revocation reaches the browser on the next request wi
   const marker = JSON.parse(await readFile(path.join(directory, 'run.json'), 'utf8'));
   const config = JSON.parse(await readFile('.local/development.json', 'utf8'));
   const db = new pg.Client({ host: '127.0.0.1', port: 55432, database: 'sena_hub_local', user: 'postgres', password: config.adminPassword });
-  const viewer = '00000000-0000-0000-0000-000000000003';
-  let verified = false, previous: boolean | undefined;
+  const admin = '00000000-0000-0000-0000-000000000005';
+  let verified = false, previous: { can_view: boolean; can_edit: boolean; can_approve: boolean; special_actions: string[] } | undefined;
   try {
     await db.connect();
     expect(await realpath((await db.query('show data_directory')).rows[0].data_directory)).toBe(await realpath(path.join(directory, 'postgres')));
     expect((await db.query('select run_id from public.disposable_test_run')).rows[0].run_id).toBe(marker.run_id);
     verified = true;
-    previous = (await db.query("select can_view from hub.account_permission where account_id=$1 and tab='knowledge'", [viewer])).rows[0].can_view;
-    expect(previous).toBe(true);
-    await context.addCookies([{ name: 'sena_local_persona', value: 'viewer', url: 'http://127.0.0.1:3000' }]);
+    previous = (await db.query("select can_view,can_edit,can_approve,special_actions from hub.account_permission where account_id=$1 and tab='knowledge'", [admin])).rows[0];
+    expect(previous?.can_view).toBe(true);
+    await context.addCookies([{ name: 'sena_local_persona', value: 'admin', url: 'http://127.0.0.1:3000' }]);
     await page.goto('/knowledge');
     expect((await page.request.get('/api/hub/v1/admin/knowledge/projects')).status()).toBe(200);
-    await db.query("update hub.account_permission set can_view=false where account_id=$1 and tab='knowledge'", [viewer]);
+    await db.query("update hub.account_permission set can_view=false,can_edit=false,can_approve=false,special_actions='{}' where account_id=$1 and tab='knowledge'", [admin]);
     expect((await page.reload())?.status()).toBe(403);
     await expect(page.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้', exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/knowledge$/);
@@ -36,7 +36,7 @@ test('knowledge permission revocation reaches the browser on the next request wi
     })).status()).toBe(403);
     expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(200);
   } finally {
-    if (verified && previous !== undefined) await db.query("update hub.account_permission set can_view=$2 where account_id=$1 and tab='knowledge'", [viewer, previous]);
+    if (verified && previous !== undefined) await db.query("update hub.account_permission set can_view=$2,can_edit=$3,can_approve=$4,special_actions=$5 where account_id=$1 and tab='knowledge'", [admin, previous.can_view, previous.can_edit, previous.can_approve, previous.special_actions]);
     await db.end();
   }
 });

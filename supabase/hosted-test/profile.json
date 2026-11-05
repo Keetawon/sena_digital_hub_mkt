@@ -413,6 +413,11 @@
       "name": "202611040082_workspace_home.sql",
       "canonical_sha256": "ada4f2cde77322389dd45d6868effc7c8e3467d773a168483cf3ecf53cbe5c29",
       "executed_sha256": "ada4f2cde77322389dd45d6868effc7c8e3467d773a168483cf3ecf53cbe5c29"
+    },
+    {
+      "name": "202611040083_unified_content_workspace.sql",
+      "canonical_sha256": "2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f",
+      "executed_sha256": "2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f"
     }
   ]
 }

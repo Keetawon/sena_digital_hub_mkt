@@ -57,7 +57,7 @@ export type Project = {
 };
 type Version = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload: Project };
 type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; ad_disclaimer_en: string; meta_title: string; meta_title_en: string; meta_description: string; meta_description_en: string; website_content: string };
-type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
+export type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
 type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
 const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
 const matchLabels = { SUGGESTED: "รอตรวจสอบ", CONFIRMED: "ยืนยันแล้ว", REJECTED: "ปฏิเสธการจับคู่" };
@@ -146,7 +146,7 @@ function SetupNotice() {
   return <section className="welcome-panel"><div className="section-icon"><Icon name="shield" size={28} /></div><p className="eyebrow">ยังไม่เปิดใช้งาน</p><h1>กรุณาตั้งค่าการเข้าสู่ระบบ</h1><p className="muted">ระบบนี้ยังไม่พร้อมให้บุคลากรเข้าสู่ระบบจริง<br />ผู้ดูแลต้องตั้งค่าการยืนยันตัวตนก่อนใช้งาน ขณะนี้ยังไม่มีการเข้าถึงข้อมูล</p></section>;
 }
 
-function ProjectOverview({ role }: { role: LocalRole }) {
+export function ProjectOverview({ role }: { role: LocalRole }) {
   const [showSources, setShowSources] = useState(false);
   const [sourceSearch, setSourceSearch] = useState("");
   const { href } = useListQuery();
@@ -211,7 +211,7 @@ function StatusBadge({ project }: { project: Project }) {
 function LoadingState() { return <div className="loading-state" role="status"><span className="spinner" />กำลังโหลดข้อมูล…</div>; }
 function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
 
-function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void }) {
+export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onRelatedEditingChange, onPendingChange, onEmbeddedTabChange, onRevealField }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void; embeddedTab?: ProjectTab; onRelatedEditingChange?: (busy: boolean) => void; onPendingChange?: (pending: boolean) => void; onEmbeddedTabChange?: (tab: ProjectTab) => void; onRevealField?: (field: string) => void }) {
   const { catalog: contentCatalog } = useFieldCatalog();
   const permissions = useHubPermissions();
   const [project, setProject] = useState<Project | null>(null);
@@ -224,7 +224,8 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   const [saving, setSaving] = useState(false);
   const [action, setAction] = useState<Action | null>(null);
   const [modelAction, setModelAction] = useState<ModelAction | null>(null);
-  const [tab, setTab] = useState<ProjectTab>("content");
+  const [tab, setTab] = useState<ProjectTab>(embeddedTab ?? "content");
+  useEffect(() => { if (embeddedTab) setTab(embeddedTab); }, [embeddedTab]);
   const [navigationTarget, setNavigationTarget] = useState<string | null>(null);
   const [mediaModelId, setMediaModelId] = useState("");
   const [commercialDirty, setCommercialDirty] = useState(false);
@@ -239,6 +240,8 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   const relatedDirty = commercialDirty || facilitiesDirty || modelDirty;
   const anyDirty = dirty || relatedDirty;
   useEffect(() => { onDirtyChange(anyDirty); return () => onDirtyChange(false); }, [anyDirty, onDirtyChange]);
+  useEffect(() => { onRelatedEditingChange?.(relatedDirty || saving); return () => onRelatedEditingChange?.(false); }, [relatedDirty, saving, onRelatedEditingChange]);
+  useEffect(() => { onPendingChange?.(saving); return () => onPendingChange?.(false); }, [saving, onPendingChange]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(""); setConflict(false);
@@ -254,7 +257,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   useEffect(() => {
     if (loading || !project) return;
     const field = new URLSearchParams(window.location.search).get("field");
-    if (field) revealField(field);
+    if (field && (!embeddedTab || embeddedTab === "models" && /models?\./.test(field))) revealField(field);
     // The query is consumed once per loaded project; subsequent edits preserve the chosen tab.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, projectId]);
@@ -300,6 +303,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
 
   function goToTab(next: ProjectTab) {
     setTab(next);
+    onEmbeddedTabChange?.(next);
     setNavigationTarget(`${next}-panel`);
   }
 
@@ -323,6 +327,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   }
 
   function revealField(name: string) {
+    onRevealField?.(name);
     const anchor = missingAnchor(name);
     const asset = project?.assets?.find(item => name.split(".").includes(item.id));
     const linkedModel = project?.models?.find(model => name.split(".").some(part => part === model.id || part === model.public_model_id));
@@ -337,12 +342,12 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
   }
 
   if (loading) return <LoadingState />;
-  if (!project || !draft) return <><WorkspaceBack /><ErrorState message={error} retry={load} /></>;
+  if (!project || !draft) return <>{!embeddedTab && <WorkspaceBack />}<ErrorState message={error} retry={load} /></>;
   const readiness = project.readiness ?? { ready: false, percent: 0, missing: [] };
 
   function field(name: keyof Draft, multiline = false, help?: string) {
     const coordinate = name === "latitude" || name === "longitude";
-    const common = { id: name, name, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
+    const common = { id: name, name, "data-workspace-field": `project.${name}`, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
       onBlur: () => { if (coordinate) setFieldErrors(previous => ({ ...previous, [name]: coordinateError(name, draft![name]) })); },
       onPaste: (event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (!coordinate) return;
@@ -386,9 +391,9 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     { label: "แบบที่อยู่อาศัย", items: readiness.missing.filter(item => /model/i.test(item.field)) },
   ];
 
-  return <>
-    <WorkspaceBack />
-    <p><a className="button secondary" href={`/content?project=${encodeURIComponent(projectId)}`} onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) event.preventDefault(); }}>เนื้อหาเว็บไซต์โครงการ</a></p>
+  return <div className={embeddedTab ? "entity-embedded-editor" : undefined}>
+    {!embeddedTab && <WorkspaceBack />}
+    <p className="project-legacy-content-link"><a className="button secondary" href={`/content?project=${encodeURIComponent(projectId)}`} onClick={event => { if (anyDirty && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) event.preventDefault(); }}>เนื้อหาเว็บไซต์โครงการ</a></p>
     <div className="page-heading detail-heading"><div><div className="eyebrow">ข้อมูลโครงการ <span className="heading-separator">/</span> {project.public_project_id}</div><h1>{project.public_name.th || "โครงการที่ยังไม่ระบุชื่อ"}</h1><DemoFields fields={project.demo_fields} /><p className="muted">ปรับปรุงล่าสุด {formatDate(project.updated_at)}</p></div><StatusBadge project={{ ...project, version_count: versions.length, has_unpublished_changes: Boolean(live && projectChanges(project, live).length) }} /></div>
     {notice && <div className="notice success" role="status"><Icon name="check" />{notice}</div>}
     {error && <div className="notice error" role="alert"><div><strong>{error}</strong>{conflict && <p>ข้อมูลร่างของคุณยังอยู่ กรุณาคัดลอกข้อความที่ต้องการเก็บ ก่อนโหลดข้อมูลล่าสุด</p>}</div>{conflict && <button className="button secondary" onClick={() => void load()}>โหลดข้อมูลล่าสุด</button>}</div>}
@@ -479,7 +484,7 @@ function ProjectDetail({ projectId, role, onDirtyChange }: { projectId: string; 
     </div>
     {modelAction && modelAction.type !== "edit" && <ModelDialog action={modelAction} project={project} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
     {action && <ActionDialog action={action} project={project} live={live} projectName={project.public_name.th ?? "โครงการนี้"} onCancel={() => setAction(null)} onConfirm={runAction} />}
-  </>;
+  </div>;
 }
 
 function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = false, onDirtyChange }: {

@@ -31,8 +31,11 @@ export function can(caps: CapabilityProjection | null | undefined, tab: string, 
 export function canSpecial(caps: CapabilityProjection | null | undefined, action: string) {
   return can(caps, action.split(".")[0]) && caps?.special_actions?.[action] === true;
 }
+export function isContentAdmin(account: HubAccount | null | undefined) {
+  return account?.status === "ACTIVE" && (account.hub_role ?? account.role) === "admin";
+}
 export function capabilityKey(account: HubAccount | null) {
-  return JSON.stringify([account?.id, account?.status, account?.capabilities ?? null]);
+  return JSON.stringify([account?.id, account?.status, account?.hub_role ?? account?.role, account?.capabilities ?? null]);
 }
 export function canWorkspace(caps: CapabilityProjection | null | undefined) {
   return caps?.published_consumer === true && ["projects", "brands", "knowledge", "promotions", "releases"].some(tab => can(caps, tab));
@@ -53,6 +56,22 @@ export function pagePermission(path: string, query: URLSearchParams): { tab: str
 }
 export function canOpenPage(account: HubAccount, path: string, query: URLSearchParams) {
   if (path === "/home") return account.status === "ACTIVE" && canWorkspace(account.capabilities);
+  if (path === "/website") {
+    const view = query.get("view");
+    return account.status === "ACTIVE" && canWorkspace(account.capabilities) && (view === "brands" ? can(account.capabilities, "brands") : ["projects", "groups"].includes(view ?? "") ? can(account.capabilities, "projects") : true);
+  }
+  const actualAdmin = isContentAdmin(account);
+  if (path === "/knowledge") return actualAdmin && can(account.capabilities, "knowledge");
+  if (path === "/settings/activity") return actualAdmin && canWorkspace(account.capabilities);
+  if (path === "/settings") {
+    const section = query.get("section");
+    if (section === "bank" || section === "glossary") return can(account.capabilities, "knowledge");
+    if (["fields", "media-tags", "media-rules"].includes(section ?? "")) return can(account.capabilities, "projects");
+    return can(account.capabilities, "projects") || can(account.capabilities, "knowledge");
+  }
+  const entity = /^\/website\/(corporate|business|brand|project|programme|project_group|unit_type)\/[^/]+$/.exec(path);
+  if (entity) return account.status === "ACTIVE" && canWorkspace(account.capabilities) && (can(account.capabilities, "knowledge") || can(account.capabilities, entity[1] === "brand" ? "brands" : "projects"));
+  if (path === "/" && query.get("tab") === "faq" && (query.has("project") || query.has("brand"))) return can(account.capabilities, "knowledge");
   const permission = pagePermission(path, query);
   return !permission || (permission.tab === "accounts" ? account.capabilities?.can_manage_users === true : can(account.capabilities, permission.tab, permission.level));
 }

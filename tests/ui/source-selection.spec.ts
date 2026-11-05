@@ -1,3 +1,4 @@
+import { openWorkspaceTab, entityRef } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -53,7 +54,7 @@ async function fixture() {
 }
 
 async function enter(page: Page, role: 'editor' | 'viewer') {
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   const changed = page.waitForResponse(response => response.url().endsWith('/api/local-session') && response.request().method() === 'POST');
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(role);
   expect((await changed).ok()).toBeTruthy();
@@ -80,7 +81,7 @@ async function createFromChooser(page: Page, data: Awaited<ReturnType<typeof fix
   await commercialName.fill(data.name);
   await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
   await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
-  const publicId = new URL(page.url()).searchParams.get('project');
+  const publicId = entityRef(page, 'project');
   expect(publicId).toBeTruthy();
   return detail(page, publicId!);
 }
@@ -90,7 +91,7 @@ function modelCard(page: Page, name: string) {
 }
 
 async function selectModel(page: Page, publicModelId: string) {
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   await page.locator(`.rem-model-table tr[data-model-id="${publicModelId}"] button`).click();
   const inline = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
   if (await inline.count()) await inline.getByRole('button', { name: 'ยกเลิก', exact: true }).click();
@@ -182,14 +183,14 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     await selectModel(page, project.models.find(model => model.rem_model_id === 'MODEL-C')!.public_model_id);
     await expect(modelCard(page, 'แบบเพิ่มเติมภายหลัง').getByText('รอตรวจสอบ', { exact: true })).toBeVisible();
 
-    await page.goto('/');
+    await page.goto('/website?view=projects');
     await page.getByRole('button', { name: 'เลือกโครงการจากต้นทาง', exact: true }).click();
     await page.getByLabel('ค้นหาชื่อหรือรหัสโครงการต้นทาง').fill(data.sourceId);
     const source = page.locator('#source-picker li').filter({ has: page.getByRole('heading', { name: data.name, exact: true }) });
     await expect(source.getByRole('button', { name: 'เลือกโครงการนี้', exact: true })).toHaveCount(0);
     await source.getByRole('link', { name: 'เปิดโครงการที่มีอยู่', exact: true }).click();
     await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true })).toHaveValue(data.name);
-    expect(new URL(page.url()).searchParams.get('project')).toBe(project.public_project_id);
+    expect(entityRef(page, 'project')).toBe(project.public_project_id);
     expect((await data.db.query('select count(*)::int as count from hub.projects where rem_project_id=$1', [data.sourceId])).rows[0].count).toBe(1);
     expect((await detail(page, project.public_project_id)).models).toHaveLength(3);
   } finally { await data.cleanup(); }
@@ -205,7 +206,7 @@ test('model changes preserve unsaved project edits and retain stale-dialog input
     await expect(page.getByRole('button', { name: 'เลือกแบบเพิ่มเติมจากต้นทาง', exact: true })).toBeDisabled();
     for (const button of await page.getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).all()) await expect(button).toBeDisabled();
     for (const button of await page.getByRole('button', { name: 'ตรวจสอบการจับคู่', exact: true }).all()) await expect(button).toBeDisabled();
-    await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
+    await openWorkspaceTab(page, 'data');
     await page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true }).fill(data.name);
     await selectModel(page, project.models.find(model => model.rem_model_id === 'MODEL-A')!.public_model_id);
     await modelCard(page, 'แบบต้นทาง เอ').getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).click();
@@ -224,7 +225,7 @@ test('model changes preserve unsaved project edits and retain stale-dialog input
     page.once('dialog', confirmation => confirmation.accept());
     await dialog.getByRole('button', { name: 'โหลดข้อมูลล่าสุด', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+    await openWorkspaceTab(page, 'supplementary');
     await expect(page.getByLabel('ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล', { exact: true })).toHaveValue('ข้อมูลจากอีกหน้าต่าง');
     await selectModel(page, project.models.find(model => model.rem_model_id === 'MODEL-A')!.public_model_id);
     await expect(modelCard(page, 'แบบต้นทาง เอ')).toBeVisible();

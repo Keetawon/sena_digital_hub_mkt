@@ -1,3 +1,4 @@
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const origin = 'http://127.0.0.1:3000';
@@ -12,7 +13,7 @@ async function selectLoadedRole(page: Page, role: string) {
 }
 
 async function enter(page: Page, role: 'editor' | 'publisher' | 'viewer') {
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await expect(page.getByText('พื้นที่ทดสอบในเครื่อง', { exact: true })).toBeVisible();
   await selectLoadedRole(page, role);
   await expect(page.getByLabel('ค้นหาโครงการ แบรนด์ หรือรหัส REM')).toBeVisible();
@@ -36,12 +37,12 @@ async function switchRole(page: Page, role: string) {
   await selectLoadedRole(page, role);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toBeEnabled();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue(role);
-  await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
+  await openWorkspaceTab(page, 'data');
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeVisible();
 }
 
 async function publish(page: Page, reason: string) {
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
   await page.getByLabel('เหตุผลในการดำเนินการ').fill(reason);
   await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();
@@ -79,14 +80,14 @@ test('Thai draft → publish → isolated edit → rollback → withdrawal', asy
     await publish(page, 'ทดสอบการเผยแพร่ข้อมูลจำลองครั้งที่สอง');
     expect((await (await page.request.get(publicPath)).json()).data.public_name.th).toBe('โครงการจำลอง — ทดสอบเวอร์ชันที่สอง');
 
-    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+    await openWorkspaceTab(page, 'history');
     const previous = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: `เวอร์ชัน ${first.meta.entity_version}`, exact: true }) });
     await previous.getByRole('button', { name: 'คืนค่าเวอร์ชันนี้', exact: true }).click();
     await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบคืนค่าเวอร์ชันข้อมูลจำลอง');
     await page.getByRole('button', { name: 'ยืนยันคืนค่าเวอร์ชัน', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
-    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+    await openWorkspaceTab(page, 'history');
     await page.getByRole('button', { name: 'ถอนการเผยแพร่', exact: true }).click();
     await page.getByLabel('เหตุผลในการดำเนินการ').fill('สิ้นสุดการทดสอบข้อมูลจำลอง');
     await page.getByRole('button', { name: 'ยืนยันถอนการเผยแพร่', exact: true }).click();
@@ -108,7 +109,7 @@ test('viewer cannot edit, editor cannot publish and source values stay read-only
   await expect(page.locator('#gold-project_id')).toContainText('DEMO-001');
   await expect(page.locator('.source-field input')).toHaveCount(0);
   await switchRole(page, 'editor');
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toHaveCount(0);
   const denied = await page.request.post(`/api/hub/v1/admin/projects/${project.public_project_id}/publish`, { headers: { Origin: origin }, data: { change_reason: 'must fail as editor' } });
   expect(denied.status()).toBe(403);
@@ -121,15 +122,17 @@ test('mobile layout, Thai labels and keyboard tab navigation remain usable', asy
   await enter(page, 'editor');
   await expect(page.locator('html')).toHaveAttribute('lang', 'th');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
-  const content = page.getByRole('tab', { name: /ข้อมูลหลัก/ });
+  const content = page.locator('#workspace-tab-data');
   await content.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toBeFocused();
-  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-unit-types')).toBeFocused();
+  await expect(page.locator('#workspace-tab-unit-types')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('End');
-  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toBeFocused();
-  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-history')).toBeFocused();
+  await expect(page.locator('#workspace-tab-history')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Home');
+  await expect(page.locator('#workspace-tab-overview')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
   await expect(content).toBeFocused();
   await page.screenshot({ path: 'artifacts/hub-mobile.png', fullPage: true });
 });

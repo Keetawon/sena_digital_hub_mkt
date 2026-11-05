@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -29,8 +31,23 @@ async function fixture(page: Page, role = 'publisher') {
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     if(new URL(route.request().url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(route.request().url()).pathname.replace(base, '');
+    // The outer Media tab reads this workspace before canonical media is selected.
+    // Keep this exact fixture projection separate from the existing native writers.
+    if (route.request().method() === 'GET' && ['projects/P01/media', 'projects/P01/media/jobs', 'projects/P01/media/ai-state'].includes(path)) {
+      const owner = project('P01');
+      const data = path.endsWith('/jobs') ? [] : path.endsWith('/ai-state')
+        ? { cap_usd: 0, spent_usd: 0, remaining_usd: 0, ceiling_usd: 0, provider_configured: false, budget_exhausted: false }
+        : { project: { id: '66000000-0000-4000-8000-000000000002', public_project_id: owner.public_project_id, name: owner.public_name, updated_at: owner.updated_at },
+          assets: owner.assets.map(asset => ({ ...asset, media_category: ['master_plan', 'floor_plan'].includes(asset.asset_role) ? asset.asset_role : 'exterior',
+            caption: {}, image_kind: null, taken_at: null, people: 'unknown', third_party_marks: 'unknown', credit: {}, tags: [],
+            metadata_state: 'needs_review', ai_exposure: 'internal', marketing_publication: false, media_revision: 1, ai_suggestion: null })),
+          links: [], clips: [], context: { facilities: [], commercial_types: [], buildings: [], promotions: [], selling_points: [], features: [], places: [] },
+          tags: [], requirements: [], checklist: { items: [], recommended_score: 0, required_missing: 0, broken_links: [], unknown_coverage: [] } };
+      return route.fulfill({ json: { data } });
+    }
     if (route.request().method() !== 'GET') {
       writes.push({ path, body: route.request().postDataJSON() });
       if (path === 'assets/synthetic-image/review') { asset.rights_status = 'approved'; return route.fulfill({ json: { data: asset } }); }
@@ -68,7 +85,7 @@ test('brand expansion preserves exact IDs, shared groups, conflicts and scope th
   await expect(page.locator('.project-dashboard tbody tr')).toHaveCount(3);
   await page.screenshot({ path: 'artifacts/group-project-list.png', fullPage: true });
   await page.getByRole('link', { name: 'โครงการ P11', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /ข้อมูลหลัก/ })).toBeVisible();
+  await expect(page.locator('#workspace-tab-data')).toBeVisible();
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeDisabled();
   await page.getByRole('link', { name: 'กลับรายการก่อนหน้า', exact: true }).click();
   await expect(page.locator('#projects-top-page')).toHaveValue('2');
@@ -93,7 +110,7 @@ test('out-of-scope group selection keeps the toggle and source action stays read
 test('publisher approves an attached project file while content is incomplete, without publishing', async ({ page }) => {
   const { writes } = await fixture(page);
   await page.goto('/?project=P01');
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await page.getByRole('button', { name: 'อนุมัติใช้ไฟล์', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้ไฟล์', exact: true });
   await expect(dialog.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)')).toBeVisible();
@@ -102,14 +119,14 @@ test('publisher approves an attached project file while content is incomplete, w
   expect(writes).toHaveLength(1);
   expect(writes[0]).toMatchObject({ path: 'assets/synthetic-image/review', body: { decision: 'approved', updated_at: stamp, change_reason: 'อนุมัติใช้ไฟล์โดยผู้เผยแพร่' } });
   await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
 });
 
 test('project table has a sticky header, pagination and no mobile document overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await fixture(page, 'viewer');
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await expect(page.locator('.project-dashboard tbody tr')).toHaveCount(10);
   const header = page.locator('.project-progress-table th').first();
   expect(await header.evaluate(element => getComputedStyle(element).position)).toBe('sticky');
@@ -118,12 +135,12 @@ test('project table has a sticky header, pagination and no mobile document overf
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: 'artifacts/group-project-mobile.png', fullPage: true });
   await page.goto('/?project=P01&return_to=https%3A%2F%2Fexample.com');
-  await expect(page.locator('a.back-link')).toHaveAttribute('href', '/');
+  await expect(page.locator('a.back-link')).toHaveAttribute('href', '/website');
 });
 
 test('marketing names are shown in rows and filters while REM differences are flagged', async ({ page }) => {
   await fixture(page, 'viewer');
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await expect(page.locator('#project-group-filter option[value="MARKETING-G"]')).toHaveText('MARKETING-G · กลุ่มจำลอง');
   const row = page.locator('.project-summary-row').first();
   await expect(row).toContainText('กลุ่มการตลาด: MARKETING-G · กลุ่มจำลอง');

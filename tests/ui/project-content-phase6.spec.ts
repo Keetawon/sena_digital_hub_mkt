@@ -57,7 +57,7 @@ for (const width of [1280, 390]) {
     expect((await page.request.put(`${api}/faq/questions/${key}`, { headers, data: { expected_revision: 0, changes: { topic: 'design', default_level: 'corporate', question_template: { th: 'แนวคิดของ {project}' }, answer_kind: 'text', is_core: false, show_on_project_pages: true } } })).ok()).toBeTruthy();
     await persona(page, 'publisher');
     expect((await page.request.post(`${api}/faq/questions/${key}/approve`, { headers, data: { expected_revision: 1, decision: 'approved' } })).ok()).toBeTruthy();
-    await persona(page, 'editor'); await page.goto('/faq?tab=drafts&faq=new');
+    await persona(page, 'editor'); await page.goto('/website/corporate/sena?tab=faq&faq=new');
     await page.getByLabel('คำถามมาตรฐานที่อนุมัติแล้ว').selectOption(key);
     await page.locator('#faq-short_answer-th').fill('{project} ให้ความสำคัญกับการอยู่อาศัย');
     await page.getByText('เลือกโครงการด้วยเงื่อนไข', { exact: true }).click();

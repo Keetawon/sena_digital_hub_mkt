@@ -1,3 +1,4 @@
+import { workspaceText } from "@/lib/unified-workspace";
 import { canWorkspace, can, type CapabilityProjection } from "@/lib/hub-permissions";
 export const hubPages = [
   { id: "projects", href: "/", label: "โครงการที่อยู่อาศัย", group: "content", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" },
@@ -20,7 +21,7 @@ export const hubGroups = { content: "ข้อมูลเว็บไซต์�
 export type HubSection = typeof hubPages[number]["id"];
 
 // The permission route inventory above stays separate from menu presentation.
-// Destinations use the existing workspaces until their unified pages are ready.
+// Content destinations use the unified entity pages; source tab authority remains independent.
 export type HubMenuItem = {
   key: string;
   label?: string;
@@ -35,17 +36,18 @@ export const hubServices: HubService[] = [
   { key: "content", label: hubGroups.content, icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5", groups: [
     { key: "content-work", items: [
       { key: "home", label: "หน้าแรก", icon: "m3 10 9-7 9 7v11H3zM9 21v-8h6v8", targets: [{ section: "projects", href: "/home" }, { section: "brands", href: "/home" }, { section: "faq", href: "/home" }, { section: "promotions", href: "/home" }, { section: "releases", href: "/home" }] },
-      { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/?view=projects" }, { section: "brands", href: "/?view=brands" }, { section: "faq", href: "/faq" }] },
+      { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/website" }, { section: "brands", href: "/website?view=brands" }, { section: "faq", href: "/website?intent=faq" }] },
       { key: "promotions", label: "โปรโมชั่น", targets: [{ section: "promotions", href: "/promotions" }] },
       { key: "articles", label: "บทความ", targets: [{ section: "articles", href: "/articles" }] },
       { key: "publishing", label: "เผยแพร่", targets: [{ section: "releases", href: "/releases" }, { section: "faq", href: "/faq?tab=publication" }] },
     ] },
     { key: "settings", label: "ตั้งค่า", icon: "M4 7h16M4 17h16M8 4v6M16 14v6", items: [
-      { key: "question-bank", label: "คำถามมาตรฐาน", targets: [{ section: "faq", href: "/faq?tab=bank" }] },
-      { key: "glossary", label: "คำแปลมาตรฐาน", icon: "M3 5h12M9 3v2M5 5c0 6 5 10 10 12M13 5c0 6-5 10-10 12M14 21l4-10 4 10M16 17h4", targets: [{ section: "faq", href: "/faq?tab=glossary" }] },
-      { key: "fields", label: "ทะเบียนฟิลด์", icon: "M4 4h16v16H4zM4 9h16M9 9v11", targets: [{ section: "projects", href: "/content/fields" }] },
-      { key: "media-tags", label: "แท็กรูป", icon: "M3 3h9l9 9-9 9-9-9V3zM8 8h.01", projectContext: true, targets: [{ section: "projects", href: "/media?tab=rules#tags" }] },
-      { key: "media-rules", label: "กติการูปที่ต้องมี", icon: "M4 4h16v16H4zM7 8l2 2 3-3M7 15l2 2 3-3M15 8h2M15 15h2", projectContext: true, targets: [{ section: "projects", href: "/media?tab=rules#requirements" }] },
+      { key: "question-bank", label: "คำถามมาตรฐาน", targets: [{ section: "faq", href: "/settings?section=bank" }] },
+      { key: "glossary", label: "คำแปลมาตรฐาน", icon: "M3 5h12M9 3v2M5 5c0 6 5 10 10 12M13 5c0 6-5 10-10 12M14 21l4-10 4 10M16 17h4", targets: [{ section: "faq", href: "/settings?section=glossary" }] },
+      { key: "fields", label: "ทะเบียนฟิลด์", icon: "M4 4h16v16H4zM4 9h16M9 9v11", targets: [{ section: "projects", href: "/settings?section=fields" }] },
+      { key: "media-tags", label: "แท็กรูป", icon: "M3 3h9l9 9-9 9-9-9V3zM8 8h.01", targets: [{ section: "projects", href: "/settings?section=media-tags#tags" }] },
+      { key: "media-rules", label: "กติการูปที่ต้องมี", icon: "M4 4h16v16H4zM7 8l2 2 3-3M7 15l2 2 3-3M15 8h2M15 15h2", targets: [{ section: "projects", href: "/settings?section=media-rules#requirements" }] },
+      { key: "activity", label: workspaceText.activity, icon: "M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2", adminOnly: true, targets: [{ section: "projects", href: "/settings/activity" }, { section: "brands", href: "/settings/activity" }, { section: "faq", href: "/settings/activity" }] },
       { key: "legacy-evidence", label: "หลักฐานนำเข้าเดิม", adminOnly: true, targets: [{ section: "knowledge", href: "/knowledge" }] },
     ] },
   ] },
@@ -58,6 +60,12 @@ export const hubUtilities: HubMenuItem[] = hubPages.filter(page => page.group ==
 export function hubCurrentMenuKey(section: HubSection, location = "/") {
   const url = new URL(location, "https://hub.invalid");
   if (url.pathname === "/home") return "home";
+  if (url.pathname === "/website" || url.pathname.startsWith("/website/")) return "website";
+  if (url.pathname === "/settings/activity") return "activity";
+  if (url.pathname === "/settings") {
+    const selected = url.searchParams.get("section");
+    return selected === "bank" ? "question-bank" : selected === "glossary" ? "glossary" : selected === "fields" ? "fields" : selected === "media-tags" ? "media-tags" : selected === "media-rules" ? "media-rules" : "settings";
+  }
   if (url.pathname === "/content/fields") return "fields";
   if (url.pathname === "/media" && url.searchParams.get("tab") === "rules") return url.hash === "#requirements" ? "media-rules" : "media-tags";
   if (section === "faq") {
@@ -79,10 +87,16 @@ export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);
   return page && "permissionTab" in page ? page.permissionTab : section;
 }
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/website", "/settings", "/settings/activity", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+function entityPagePath(path: string) {
+  const match = /^\/website\/(?:corporate|business|brand|project|programme|project_group|unit_type)\/([^/]+)$/.exec(path);
+  if (!match) return false;
+  try { const ref = decodeURIComponent(match[1]); return ref.length > 0 && ref.length <= 200 && !/[\/\\\u0000-\u001f\u007f]/.test(ref); }
+  catch { return false; }
+}
 export function safeNext(value?: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
-  try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
+  try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && (hubRoutes.includes(url.pathname) || entityPagePath(url.pathname)) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
 }
 
 export function workspaceLanding(capabilities?: CapabilityProjection) {

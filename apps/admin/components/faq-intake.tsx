@@ -22,7 +22,7 @@ type Choice = "create" | "hold" | "reject" | "propose_question";
 type Answer = { question_key: string; scope_type: string; scope_id: string; question: string; short_answer: string; detail: string; applies_to_project_ids: string[]; append: boolean };
 
 export const holdLabels: Record<string, string> = { numeric: "มีตัวเลข", commercial: "มีเนื้อหาการขาย", programme_terms: "เงื่อนไขโครงการบริการ (รอ Q70)", phase_decision: "ต้องเลือกเฟส", mapping_conflict: "รหัสโครงการไม่ตรง", prompt_injection: "ข้อความไม่ปลอดภัย", closed_project: "มีโครงการที่ปิดแล้ว", other: "อื่น ๆ" };
-const stateLabels: Record<Status["state"], string> = { open: "ยังไม่ตัดสินใจ", held: "พักไว้", question_proposed: "รออนุมัติคำถามใหม่", decided: "ตัดสินใจแล้ว" };
+export const stateLabels: Record<Status["state"], string> = { open: "ยังไม่ตัดสินใจ", held: "พักไว้", question_proposed: "รออนุมัติคำถามใหม่", decided: "ตัดสินใจแล้ว" };
 const decisionLabels: Record<string, string> = { answer_created: "สร้างร่างคำตอบ", rejected: "ไม่ใช้", held: "พักไว้", question_proposed: "เสนอคำถามมาตรฐาน" };
 const choiceLabels: Record<Choice, string> = { create: "สร้างร่างคำตอบ", hold: "พักไว้ก่อน", reject: "ไม่ใช้กลุ่มนี้", propose_question: "เสนอคำถามมาตรฐานใหม่" };
 const sourceLabels: Record<string, string> = { public_website: "เว็บไซต์ SENA", legacy_website_km: "KM เดิม" };
@@ -31,10 +31,10 @@ type Filters = Partial<Record<(typeof filterKeys)[number], string>>;
 const blocking = ["prompt_injection", "programme_terms"];
 const same = (a: string, b: string) => a.normalize("NFC").toLowerCase().replace(/^[^—\n]{1,200}\s—\s/, "").replace(/\s+/g, " ").trim() === b.normalize("NFC").toLowerCase().replace(/\s+/g, " ").trim();
 
-export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpenFaq }: { bank: QuestionBank; references: IntakeReferences; onChanged: () => Promise<void>; onEditingChange: (value: boolean) => void; onOpenFaq: (id: string) => void }) {
+export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpenFaq, fixedScope, initialCluster }: { bank: QuestionBank; references: IntakeReferences; onChanged: () => Promise<void>; onEditingChange: (value: boolean) => void; onOpenFaq: (id: string) => void; fixedScope?: { type: string; id: string; name?: string }; initialCluster?: string }) {
   const permissions = useHubPermissions(), canEdit = permissions.can("knowledge", "edit");
   const [filters, setFilters] = useState<Filters>({ state: "open" }), [cursor, setCursor] = useState<number[]>([0]);
-  const [listing, setListing] = useState<Listing | null>(null), [detail, setDetail] = useState<Detail | null>(null), [selected, setSelected] = useState<string | null>(null);
+  const [listing, setListing] = useState<Listing | null>(null), [detail, setDetail] = useState<Detail | null>(null), [selected, setSelected] = useState<string | null>(initialCluster ?? null);
   const [choice, setChoice] = useState<Choice | null>(null), [answer, setAnswer] = useState<Answer | null>(null), [candidates, setCandidates] = useState<string[]>([]);
   const [note, setNote] = useState(""), [holdCode, setHoldCode] = useState("other");
   const [proposal, setProposal] = useState({ question_key: "", topic: "identity", default_level: "project", template: "", answer_kind: "text" });
@@ -43,10 +43,12 @@ export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpen
   const approved = bank.items.filter(item => item.status === "approved");
   const after = cursor[cursor.length - 1];
 
+  useEffect(() => { if (initialCluster) setSelected(initialCluster); }, [initialCluster]);
   const load = useCallback(async () => {
+    if (fixedScope) return;
     const query = new URLSearchParams(Object.entries({ ...filters, after: String(after), limit: "25" }).filter(([, value]) => value) as [string, string][]);
     setListing(await request<Listing>(`v1/admin/faq-intake/clusters?${query}`));
-  }, [filters, after]);
+  }, [filters, after, fixedScope?.type, fixedScope?.id]);
   useEffect(() => { let active = true; load().catch(e => { if (active) setError(errorMessage(e)); }); return () => { active = false; }; }, [load]);
   useEffect(() => { onEditingChange(Boolean(choice)); return () => onEditingChange(false); }, [choice, onEditingChange]);
   useEffect(() => {
@@ -59,12 +61,13 @@ export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpen
     if (!detail) return;
     const suggested = approved.find(item => item.question_key === detail.suggestion.question_key);
     const target = group ?? detail.answer_groups[0];
-    const level = suggested?.default_level ?? detail.suggestion.level;
+    const level = fixedScope?.type ?? suggested?.default_level ?? detail.suggestion.level;
     const phases = target?.project_ids ?? [];
-    const scope = level === "corporate" ? "sena" : level === "project" ? phases[0] ?? "" : "";
+    const scope = fixedScope?.id ?? (level === "corporate" ? "sena" : level === "project" ? phases[0] ?? "" : "");
     setAnswer({ question_key: suggested?.question_key ?? "", scope_type: level, scope_id: scope, question: detail.variants[0]?.question ?? "", short_answer: target?.answer ?? "", detail: "",
       applies_to_project_ids: level === "project" ? (scope ? [scope] : []) : phases, append: false });
-    setCandidates(group ? group.candidate_ids : detail.variants.map(v => v.candidate_id));
+    const eligible = detail.variants.filter(v => fixedScope?.type !== "project" || v.project_ids.includes(fixedScope.id));
+    setCandidates(eligible.filter(v => !group || group.candidate_ids.includes(v.candidate_id)).map(v => v.candidate_id));
     setNote(""); setHoldCode(detail.holds.find(h => h !== "closed_project") ?? "other"); setChoice(next); setError(""); setNotice("");
     setProposal({ question_key: "", topic: "identity", default_level: detail.suggestion.level, template: detail.template, answer_kind: detail.suggestion.kind });
   }
@@ -100,7 +103,7 @@ export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpen
     : Boolean(note.trim());
 
   return <section className="content-section faq-intake" aria-labelledby="intake-heading">
-    <div className="content-toolbar"><h2 id="intake-heading">คัดจากของเดิม</h2>{selected && <button className="button secondary" disabled={pending || Boolean(choice)} onClick={() => { setSelected(null); setNotice(""); }}>กลับรายการกลุ่ม</button>}</div>
+    <div className="content-toolbar"><h2 id="intake-heading">คัดจากของเดิม</h2>{selected && !fixedScope && <button className="button secondary" disabled={pending || Boolean(choice)} onClick={() => { setSelected(null); setNotice(""); }}>กลับรายการกลุ่ม</button>}</div>
     <p className="field-help">ระบบจัดกลุ่มคำถามจากเว็บไซต์ SENA และ KM เดิมที่ถามเรื่องเดียวกัน ตัดสินใจทีละกลุ่ม การตัดสินใจทุกครั้งบันทึกประวัติและไม่เผยแพร่ขึ้นเว็บไซต์</p>
     {counts && <div className="intake-progress"><p role="status">ตัดสินใจแล้ว {counts.decided.toLocaleString("th-TH")} จาก {counts.total.toLocaleString("th-TH")} กลุ่ม · พักไว้ {counts.held.toLocaleString("th-TH")} · รออนุมัติคำถาม {counts.question_proposed.toLocaleString("th-TH")} · ยังไม่ตัดสินใจ {counts.open.toLocaleString("th-TH")}</p><progress max={Math.max(counts.total, 1)} value={counts.decided} aria-label="ความคืบหน้าการคัด" /></div>}
     {error && <p className="notice error" role="alert">{error}{choice ? " ข้อความที่กรอกยังอยู่" : ""}</p>}{notice && <p className="notice success" role="status">{notice}</p>}
@@ -142,12 +145,12 @@ export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpen
       {canEdit && detail.status.state !== "decided" && !choice && <div className="content-actions">{(Object.keys(choiceLabels) as Choice[]).filter(c => c !== "create" || !detail.holds.some(h => blocking.includes(h))).map(c => <button key={c} className={c === "create" ? "button primary" : "button secondary"} onClick={() => start(c)}>{choiceLabels[c]}</button>)}</div>}
       {detail.holds.some(h => blocking.includes(h)) && detail.status.state !== "decided" && <p className="inline-warning">กลุ่มนี้มีเงื่อนไขที่ต้องแก้ก่อน ใช้ได้เพียงพักไว้หรือไม่ใช้</p>}
       {choice && <form className="intake-decision" onSubmit={event => { event.preventDefault(); void decide(); }}><h3>{choiceLabels[choice]}</h3><fieldset disabled={pending}>
-        <fieldset className="content-checks"><legend>คำถามเดิมที่ใช้ในการตัดสินใจ</legend>{detail.variants.map(v => <label key={v.candidate_id}><input type="checkbox" checked={candidates.includes(v.candidate_id)} onChange={e => setCandidates(e.target.checked ? [...candidates, v.candidate_id] : candidates.filter(id => id !== v.candidate_id))} />{v.question}</label>)}</fieldset>
+        <fieldset className="content-checks"><legend>คำถามเดิมที่ใช้ในการตัดสินใจ</legend>{detail.variants.map(v => <label key={v.candidate_id}><input type="checkbox" disabled={fixedScope?.type === "project" && !v.project_ids.includes(fixedScope.id)} checked={candidates.includes(v.candidate_id)} onChange={e => setCandidates(e.target.checked ? [...candidates, v.candidate_id] : candidates.filter(id => id !== v.candidate_id))} />{v.question}</label>)}</fieldset>
         {choice === "create" && answer && <>
           <label className="content-input">คำถามมาตรฐานที่อนุมัติแล้ว<select required value={answer.question_key} onChange={e => setAnswer({ ...answer, question_key: e.target.value, append: false })}><option value="">เลือกคำถาม</option>{approved.map(q => <option key={q.question_key} value={q.question_key}>{q.question_template.th}</option>)}</select></label>
           {!approved.length && <p className="inline-warning">ยังไม่มีคำถามที่อนุมัติ เสนอคำถามใหม่หรือให้ Manager อนุมัติก่อน</p>}
-          <div className="content-two-columns"><label className="content-input">ระดับคำตอบ<select value={answer.scope_type} onChange={e => { const kind = e.target.value; setAnswer({ ...answer, scope_type: kind, scope_id: kind === "corporate" ? "sena" : "", applies_to_project_ids: kind === "project" ? [] : answer.applies_to_project_ids, append: false }); }}>{Object.entries(scopeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
-            <label className="content-input">ขอบเขตคำตอบ<select required value={answer.scope_id} onChange={e => setAnswer({ ...answer, scope_id: e.target.value, applies_to_project_ids: answer.scope_type === "project" ? [e.target.value] : answer.applies_to_project_ids, append: false })}><option value="">เลือกขอบเขต</option>{scopeOptions(answer.scope_type).map(r => <option key={r.id} value={r.id}>{r.name} · {r.id}</option>)}</select></label></div>
+          {fixedScope ? <p className="content-state">{scopeLabels[fixedScope.type]} · {fixedScope.name ?? fixedScope.id}</p> : <div className="content-two-columns"><label className="content-input">ระดับคำตอบ<select value={answer.scope_type} onChange={e => { const kind = e.target.value; setAnswer({ ...answer, scope_type: kind, scope_id: kind === "corporate" ? "sena" : "", applies_to_project_ids: kind === "project" ? [] : answer.applies_to_project_ids, append: false }); }}>{Object.entries(scopeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+            <label className="content-input">ขอบเขตคำตอบ<select required value={answer.scope_id} onChange={e => setAnswer({ ...answer, scope_id: e.target.value, applies_to_project_ids: answer.scope_type === "project" ? [e.target.value] : answer.applies_to_project_ids, append: false })}><option value="">เลือกขอบเขต</option>{scopeOptions(answer.scope_type).map(r => <option key={r.id} value={r.id}>{r.name} · {r.id}</option>)}</select></label></div>}
           <label className="content-input">เฟส REM ที่คำตอบนี้ใช้<select multiple size={6} disabled={answer.scope_type === "project"} value={answer.applies_to_project_ids} onChange={e => setAnswer({ ...answer, applies_to_project_ids: Array.from(e.target.selectedOptions, o => o.value) })}>{references.projects.map(p => <option key={p.id} value={p.id}>{p.name} · {p.id}{detail.projects.find(x => x.id === p.id)?.closed ? " · ปิดโครงการ" : ""}</option>)}</select><span className="field-help">ระบุเฟสให้ชัดเจน ระดับองค์กรเว้นว่างได้ กฎเลือกเฟสอัตโนมัติจะมาในขั้นถัดไป</span></label>
           {closedSelected && <p className="inline-warning">มีเฟสที่ปิดโครงการแล้ว ห้ามใส่ราคา โปรโมชัน ห้องว่าง หรือเงื่อนไขการขาย</p>}
           {existing && <label className="content-checks"><input type="checkbox" checked={answer.append} onChange={e => setAnswer({ ...answer, append: e.target.checked })} />มีคำตอบสำหรับคำถามและขอบเขตนี้แล้ว ({existing.state}) เพิ่มเป็นฉบับใหม่ของคำตอบเดิม</label>}

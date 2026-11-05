@@ -9,7 +9,7 @@ import { hubGroups, hubPages, hubPermissionTab, hubCurrentMenuKey, hubMenuItem, 
 import { BrandReviewProvider } from "./brand-review";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { deferredH1Sections, h1Unavailable } from "@/lib/hosted-config";
-import { canWorkspace, capabilityKey } from "@/lib/hub-permissions";
+import { canWorkspace, canOpenPage, capabilityKey } from "@/lib/hub-permissions";
 import { useHubPermissions } from "./accounts";
 import { WorkspaceSearch } from "./workspace-search";
 import { workspaceCopy } from "@/lib/workspace-copy";
@@ -30,7 +30,6 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const hosted = Boolean(hostedConfig);
   const permissions = useHubPermissions();
   const staff = permissions.account?.status === "ACTIVE" && permissions.capabilities.published_consumer;
-  const allowed = workspace ? canWorkspace(permissions.capabilities) : section === "accounts" ? permissions.admin : permissions.can(hubPermissionTab(section));
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [medium, setMedium] = useState(false);
@@ -40,6 +39,9 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const wasOverlay = useRef(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const allowed = workspace
+    ? canWorkspace(permissions.capabilities) && Boolean(permissions.account && canOpenPage(permissions.account, pathname, new URLSearchParams(searchParams.toString())))
+    : section === "accounts" ? permissions.admin : permissions.can(hubPermissionTab(section));
   const [hash, setHash] = useState("");
   const location = pathname + (searchParams.size ? `?${searchParams}` : "") + hash;
   const drawer = useRef<HTMLDialogElement>(null);

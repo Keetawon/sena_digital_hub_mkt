@@ -16,7 +16,7 @@ test('uploaded SVG appears as a private WebP list thumbnail on the neutral tile'
     attention:[],gaps:{core:[],media:[],models:[],brand:[]},confirmed_models:0,total_models:0,waiting_on:['editor'],
     amenities:null,updated_at:null,age_days:null,first_seen_at:null,age_basis:'unknown'}];
   await page.route('**/api/hub/v1/admin/projects/progress**',route=>route.fulfill({json:{data:progressFixture(route.request().url(),rows)}}));
-  await page.goto('/');
+  await page.goto('/?view=projects');
   const image=page.getByRole('img',{name:'โลโก้เวกเตอร์ทดสอบ',exact:true});
   await image.scrollIntoViewIfNeeded();
   await expect(image).toHaveJSProperty('naturalWidth',96);
@@ -39,7 +39,7 @@ test('staff project thumbnails use project, brand, then initials and recover fro
     }
     return route.fulfill({json:{data:path.endsWith('/projects/progress')? progressFixture(route.request().url(), rows) :[]}});
   });
-  await page.goto('/');
+  await page.goto('/?view=projects');
   await expect(page.getByRole('img',{name:'ภาพโครงการ',exact:true})).toHaveAttribute('src',/project-image\/thumbnail$/);
   await expect(page.getByRole('img',{name:'โลโก้แทนภาพ',exact:true})).toHaveAttribute('src',/brand-logo/);
   await expect(page.getByRole('img',{name:'ชื่อย่อ',exact:true})).toHaveText('ชื');

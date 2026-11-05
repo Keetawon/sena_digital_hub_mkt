@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import type { CommercialType, CommercialAsset } from '../../apps/admin/components/commercial-types';
 
@@ -24,6 +26,7 @@ async function openFixture(page: Page, initial: CommercialType[] = [], role = 'e
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
     if (path === 'assets' && request.method() === 'POST') {
@@ -51,7 +54,7 @@ async function openFixture(page: Page, initial: CommercialType[] = [], role = 'e
     else await route.fulfill({ json: { data: [] } });
   });
   await page.goto('/?project=commercial-test');
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   await expect(page.getByRole('heading', { name: /แบบขายและรหัสแบบต้นทาง/ })).toBeVisible();
   return { project, writes, library, setConflict: (value: boolean) => { conflict = value; } };
 }
@@ -86,9 +89,9 @@ test('inline edits survive tabs and a stale revision preserves the draft for rev
   await panel.getByRole('button', { name: 'แก้ไข Garden', exact: true }).click();
   await panel.getByLabel('ชื่อแบบขาย (ไทย)').fill('Garden revised');
   await panel.getByLabel('ห้องครัว', { exact: true }).fill('1');
-  await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
+  await openWorkspaceTab(page, 'data');
   await expect(page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true })).toBeDisabled();
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   await expect(panel.getByLabel('ชื่อแบบขาย (ไทย)')).toHaveValue('Garden revised');
   setConflict(true);
   await panel.getByRole('button', { name: 'บันทึกแบบขาย', exact: true }).click();

@@ -29,7 +29,13 @@ def test_search_filters_sources_before_results_and_retains_neighbour(permission_
     asyncio.run(set_bit(ids['viewer'], 'projects', can_view=False))
     response = client.get('/v1/admin/content/search', params={'q': 'DEMO'}, headers=h('viewer'))
     assert response.status_code == 200, response.text
-    assert not any(row['kind'] in ('project', 'bud') for row in response.json()['data']['items'])
+    restricted = response.json()['data']['items']
+    assert not any(row['kind'] == 'bud' for row in restricted)
+    assert all(row['context']['tab'] == 'faq' for row in restricted if row['kind'] == 'project')
+    asyncio.run(set_bit(ids['viewer'], 'knowledge', can_view=False))
+    closed = client.get('/v1/admin/content/search', params={'q': 'DEMO'}, headers=h('viewer'))
+    assert closed.status_code == 200
+    assert not any(row['kind'] in ('project', 'bud') for row in closed.json()['data']['items'])
     assert client.get('/v1/admin/brands', headers=h('viewer')).status_code == 200
     assert all(row['href'].startswith('/') and not row['href'].startswith('//') for row in before)
 

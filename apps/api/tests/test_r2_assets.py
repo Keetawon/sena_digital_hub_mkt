@@ -182,7 +182,7 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
     @asynccontextmanager
     async def database(request,actor): yield DB()
     monkeypatch.setattr(main,'database',database)
-    client, headers = signed_client(signing_key,role='viewer',settings=settings)
+    client, headers = signed_client(signing_key,role='admin',settings=settings)
     path = f'/v1/admin/knowledge/candidates/{UUID(int=900)}/file'
     response = client.get(path,headers=headers)
     assert response.status_code == 200 and response.content == content
@@ -190,6 +190,11 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
     assert response.headers['content-type'] == 'application/octet-stream'
     assert response.headers['content-disposition'].startswith('attachment;')
     assert response.headers['cache-control'] == 'no-store'
+    for role in ('viewer', 'editor', 'publisher'):
+        other, other_headers = signed_client(signing_key, role=role, settings=settings)
+        before = len(s3.calls)
+        assert other.get(path, headers=other_headers).status_code == 403
+        assert len(calls) == 1 and len(s3.calls) == before
     original = Authentication.load_account
     async def hidden(self,request,claims):
         account = await original(self,request,claims)
@@ -205,7 +210,7 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
     ('projects/SYNTHETIC/preview-release',{'expected_reviews':{},'reason':'test','confirmed':True})])
 def test_hosted_knowledge_never_runs_preview(configured, signing_key, monkeypatch, path, body):
     monkeypatch.setattr(main,'database',lambda *a: pytest.fail('Deferred operation reached DB'))
-    client,headers = signed_client(signing_key,role='publisher',settings=configured[0])
+    client,headers = signed_client(signing_key,role='admin',settings=configured[0])
     response = client.post('/v1/admin/knowledge/'+path,headers=headers,json=body)
     assert response.status_code == 503
     assert response.json()['error']['code'] == 'knowledge_preview_unavailable'

@@ -1,3 +1,4 @@
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -67,12 +68,12 @@ async function role(page: Page, value: 'editor' | 'publisher' | 'viewer') {
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption(value);
   expect((await changed).ok()).toBeTruthy();
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toBeEnabled();
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await expect(page.locator('#assets')).toBeVisible();
 }
 
 async function library(page: Page) {
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   const open = page.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true });
   if (await open.count()) await open.click();
   await expect(page.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true })).toBeVisible();
@@ -110,7 +111,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
       expect(removed.ok()).toBeTruthy();
       initial = (await (await page.request.get(base)).json()).data;
     }
-    await page.reload(); await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+    await page.reload(); await openWorkspaceTab(page, 'media');
     const uploadButton = page.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true });
     await uploadButton.click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -154,12 +155,12 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     let project = (await (await page.request.get(base)).json()).data;
     expect(project.readiness.ready).toBe(false);
     await role(page, 'publisher');
-    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+    await openWorkspaceTab(page, 'history');
     await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
-    await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+    await openWorkspaceTab(page, 'media');
     await approve(page, asset, 'approved');
     expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
-    await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+    await openWorkspaceTab(page, 'history');
     await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
     await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
     await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();

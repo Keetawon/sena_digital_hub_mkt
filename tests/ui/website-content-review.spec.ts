@@ -1,3 +1,4 @@
+import { workspaceText } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile, realpath } from 'node:fs/promises';
@@ -84,9 +85,9 @@ for (const width of [1280, 390]) {
       expect(asset.tags).toEqual(['living_room']);
       expect(saved.links.filter((row: { asset_id: string }) => row.asset_id === id).every((row: { binding_confirmed: boolean; ai_exposure: string }) => row.binding_confirmed && row.ai_exposure === 'internal')).toBe(true);
     }
-    await page.goto(`/content?project=${project.public_project_id}&tab=website`);
-    await expect(page.getByRole('heading', { name: 'ข้อมูลจากเว็บไซต์ที่รอตรวจ' })).toBeVisible();
-    await page.getByText('ทำเลและการเดินทาง · สถานศึกษา · โรงเรียนจำลอง 500 เมตร', { exact: true }).last().click();
+    await page.goto(`/content?project=${project.public_project_id}&tab=places`);
+    await expect(page.getByRole('region', { name: workspaceText.suggestions, exact: true })).toBeVisible();
+    await expect(page.getByText('สถานศึกษา · โรงเรียนจำลอง 500 เมตร', { exact: true }).last()).toBeVisible();
     await expect(page.getByText('ระยะทางจากหน้าเว็บยังไม่ยืนยัน และยังไม่ได้ระบุวิธีวัด', { exact: true }).last()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `artifacts/hosted-content-rollout/website-sources-${width}.png`, fullPage: true });

@@ -10,7 +10,7 @@ export function MediaRules({ tags, rules, canEdit, canApprove, onChanged, onDirt
   const [tag, setTag] = useState<MediaTag | null>(null), [rule, setRule] = useState<Rule | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
   useEffect(() => { onDirty(Boolean(tag || rule)); return () => onDirty(false); }, [tag, rule, onDirty]);
   async function action(work: () => Promise<unknown>) { setBusy(true); setError(""); try { await work(); await onChanged(); } catch (error) { setError(errorMessage(error)); } finally { setBusy(false); } }
-  return <><MediaPanel title="แท็กสื่อที่ควบคุม"><p>ผู้แก้ไขเสนอแท็ก ผู้มีสิทธิ์อนุมัติอีกคนตรวจและเปิดใช้ คำแนะนำ AI ไม่เปิดใช้แท็กเอง</p>
+  return <><div id="tags" tabIndex={-1}><MediaPanel title="แท็กสื่อที่ควบคุม"><p>ผู้แก้ไขเสนอแท็ก ผู้มีสิทธิ์อนุมัติอีกคนตรวจและเปิดใช้ คำแนะนำ AI ไม่เปิดใช้แท็กเอง</p>
     {error && <p className="notice error" role="alert">{error}</p>}
     {canEdit && !tag && !rule && <button className="button primary" onClick={() => setTag({ code: "", label: {}, tag_group: "room", allowed_categories: [], status: "proposed", revision: 0 })}>เสนอแท็กใหม่</button>}
     {tag && <form onSubmit={event => { event.preventDefault(); void action(async () => { await request(`v1/admin/media/tags/${tag.code}`, "PUT", { expected_revision: tag.revision, changes: { label: tag.label, tag_group: tag.tag_group, allowed_categories: tag.allowed_categories } }); setTag(null); }); }}><fieldset disabled={!canEdit || busy}><legend>ข้อเสนอแท็ก</legend>
@@ -24,7 +24,7 @@ export function MediaRules({ tags, rules, canEdit, canApprove, onChanged, onDirt
       {canEdit && item.status !== "active" && !tag && !rule && <button className="button secondary" onClick={() => setTag(item)}>แก้ไขข้อเสนอแท็ก</button>}
       {canApprove && !tag && !rule && <button className="button secondary" disabled={busy} onClick={() => void action(() => request(`v1/admin/media/tags/${item.code}/approve`, "POST", { expected_revision: item.revision, decision: item.status === "active" ? "retired" : "active" }))}>{item.status === "active" ? "เลิกใช้แท็ก" : "อนุมัติแท็ก"}</button>}
     </div></li>)}</ul>
-  </MediaPanel><MediaPanel title="เกณฑ์ความครบของภาพ"><p>เฉพาะภาพหลักและภาพย่อเป็นเงื่อนไขเผยแพร่ แผนผังทุกชั้นเป็นเป้าหมายแนะนำ</p>
+  </MediaPanel></div><div id="requirements" tabIndex={-1}><MediaPanel title="เกณฑ์ความครบของภาพ"><p>เฉพาะภาพหลักและภาพย่อเป็นเงื่อนไขเผยแพร่ แผนผังทุกชั้นเป็นเป้าหมายแนะนำ</p>
     {canApprove && !rule && !tag && <button className="button primary" onClick={() => setRule({ rule_key: "", label: {}, per: "project", media_category: "exterior", usage: null, tags: [], min_count: 1, target_count: 3, blocks_publish: false, max_age_days: null, status: "active", revision: 0 })}>เพิ่มเกณฑ์ภาพ</button>}
     {rule && <form onSubmit={event => { event.preventDefault(); void action(async () => { const { rule_key, revision, ...changes } = rule; await request(`v1/admin/media/requirements/${rule_key}`, "PUT", { expected_revision: revision, changes }); setRule(null); }); }}><fieldset disabled={!canApprove || busy}><legend>แก้ไขเกณฑ์ภาพ</legend>
       <MediaInput fieldKey="media_requirement.rule_key" label="รหัสเกณฑ์" required pattern="[a-z][a-z0-9_]{0,79}" maxLength={80} disabled={rule.revision > 0} value={rule.rule_key} onChange={value => setRule({ ...rule, rule_key: value })} />
@@ -39,5 +39,5 @@ export function MediaRules({ tags, rules, canEdit, canApprove, onChanged, onDirt
       <div className="content-actions"><button className="button primary" type="submit">บันทึกเกณฑ์ภาพ</button><button className="button secondary" type="button" onClick={() => setRule(null)}>ยกเลิก</button></div>
     </fieldset></form>}
     <ul className="content-checklist">{rules.map(item => <li key={item.rule_key}><div><strong>{item.label.th}</strong><p>{perLabels[item.per as keyof typeof perLabels]} · ขั้นต่ำ {item.min_count} / เป้าหมาย {item.target_count} · {item.blocks_publish ? "จำเป็น" : "แนะนำ"}{item.max_age_days ? ` · ภายใน ${item.max_age_days} วัน` : ""}</p>{canApprove && !rule && !tag && <button className="button secondary" onClick={() => setRule({ rule_key: item.rule_key, label: item.label, per: item.per, media_category: item.media_category, usage: item.usage, tags: item.tags, min_count: item.min_count, target_count: item.target_count, blocks_publish: item.blocks_publish, max_age_days: item.max_age_days, status: item.status, revision: item.revision })}>แก้ไขเกณฑ์ · {item.label.th}</button>}</div></li>)}</ul>
-  </MediaPanel></>;
+  </MediaPanel></div></>;
 }

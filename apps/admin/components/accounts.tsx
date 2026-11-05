@@ -1,10 +1,11 @@
 "use client";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { hubPages, workspaceLanding } from "./hub-navigation-data";
+import { workspaceText } from "@/lib/unified-workspace";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { AuthLayout } from "./auth-layout";
 import { roleLabels, localPersonas, type LocalRole } from "@/lib/roles";
-import { can, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
+import { can, canOpenPage, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
 
 export const taskLabels: Record<string, string> = { read: "อ่านข้อมูลโครงการ", edit: "แก้ไขข้อมูลและสื่อ", publish: "อนุมัติและเผยแพร่ข้อมูล", online: "ดูแลงานโฆษณาและงบ", agency: "ทำงานในนามเอเจนซี" };
 export const statuses: Record<string, string> = { PENDING: "รออนุมัติ", ACTIVE: "ใช้งานอยู่", SUSPENDED: "ระงับ", REJECTED: "ปฏิเสธ" };
@@ -117,6 +118,9 @@ export function LocalPersonaPicker({ initialRole = null }: { initialRole?: Local
   const [selected, setSelected] = useState(initialRole ?? "");
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   async function select(next: string) {
+    const unsaved = new CustomEvent("hub-check-unsaved", { detail: { dirty: false } });
+    window.dispatchEvent(unsaved);
+    if (unsaved.detail.dirty && !window.confirm(workspaceText.local_persona_discard)) return;
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/local-session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: next }) });
@@ -124,11 +128,11 @@ export function LocalPersonaPicker({ initialRole = null }: { initialRole?: Local
       if (!response.ok) throw new Error(body.error?.message || "เปลี่ยนบัญชีทดสอบไม่สำเร็จ");
       setSelected(next); window.dispatchEvent(new Event("hub-accounts-changed"));
       const account: HubAccount = await accountApi("v1/me");
-      location.assign(account.status === "ACTIVE" ? workspaceLanding(account.capabilities) : "/account/request");
+      location.assign(account.status !== "ACTIVE" ? "/account/request" : location.pathname !== "/account/request" && canOpenPage(account, location.pathname, new URLSearchParams(location.search)) ? location.pathname + location.search + location.hash : workspaceLanding(account.capabilities));
     } catch (failure) { setError((failure as AccountApiError).status === 503 || failure instanceof TypeError ? "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" : failure instanceof Error ? failure.message : "เปลี่ยนบัญชีทดสอบไม่สำเร็จ"); }
     finally { setBusy(false); }
   }
-  return <div className="registry-panel"><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={selected} disabled={busy} onChange={event => void select(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{localPersonas.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>{error && <p role="alert">{error}</p>}</div>;
+  return <div className="registry-panel local-persona-picker"><p className="local-note" role="note"><span><strong>{workspaceText.local_testing}</strong>{workspaceText.local_testing_note}</span></p><label>บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={selected} disabled={busy} onChange={event => void select(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{localPersonas.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>{error && <p role="alert">{error}</p>}</div>;
 }
 
 export function ActorName({ id }: { id?: string | null }) { const { names } = useAccountDirectory(); return <span title={id || undefined}>{id ? names[id] || (/^[0-9a-f-]{36}$/i.test(id) ? "ผู้ใช้เดิม" : id) : "ยังไม่มีผู้ดำเนินการ"}</span>; }

@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const snapshotTime = '2026-09-17T15:45:42.124034+00:00';
@@ -9,7 +11,7 @@ const brand = { ...evidence, rem_brand_id: '000003', brand_name_rem: 'แบร�
 
 test('public website identity does not claim a REM snapshot or synthetic content', async ({ page }) => {
   await mockStaffReads(page, { 'sources/projects': [{ ...source, source_record: { source_kind: 'sena_public_website' } }] });
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await page.getByRole('button', { name: 'เลือกโครงการจากต้นทาง', exact: true }).click();
   const row = page.locator('#source-picker li').filter({ hasText: source.project_name_rem });
   await expect(row).toContainText('ดึงจากเว็บไซต์สาธารณะ SENA');
@@ -26,7 +28,7 @@ test('empty default view offers other source statuses without inventing active s
     await route.fulfill({ json: { data: query.get('view') === 'counts'
       ? facets : { rows: [], total: 0, pages: 1, page: 1, facets } } });
   });
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await expect(page.getByText('อาจมีโครงการที่ปิด ถูกลบ หรือยังไม่ทราบสถานะต้นทาง')).toBeVisible();
   await page.getByRole('button', { name: 'รวมโครงการสถานะอื่น', exact: true }).click();
   await expect(page).toHaveURL(/pother=1/);
@@ -38,6 +40,7 @@ async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, id => (responses[`projects/${id}`] ?? responses[`brands/${id}`]) as any)) return;
     expect(route.request().method()).toBe('GET');
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
     await route.fulfill({ json: { data: responses[path] ?? [] } });
@@ -49,7 +52,7 @@ test('source pickers distinguish reviewed snapshots from samples and do not inve
     'sources/projects': [source, { ...source, rem_project_id: 'KUBON', project_name_rem: 'โครงการทดสอบป้ายจำลอง', intake_manifest_sha256: null }],
     'sources/brands': [brand, { ...brand, rem_brand_id: '36', brand_name_rem: 'แบรนด์ทดสอบป้ายจำลอง', intake_manifest_sha256: null }],
   });
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await page.getByRole('button', { name: 'เลือกโครงการจากต้นทาง', exact: true }).click();
   const realProject = page.locator('#source-picker li').filter({ hasText: source.project_name_rem });
   const sampleProject = page.locator('#source-picker li').filter({ hasText: 'โครงการทดสอบป้ายจำลอง' });
@@ -75,7 +78,7 @@ test('model evidence keeps raw area separate from blank approved specifications'
   });
   await page.goto('/?project=project-test');
   await expect(page.locator('.source-provenance')).toContainText(snapshotLabel);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   await page.locator('.rem-model-table').getByRole('button', { name: 'A1-1', exact: true }).click();
   const dialog = page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ', exact: true });
   await expect(dialog).toContainText('CON4');

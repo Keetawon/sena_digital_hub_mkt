@@ -5,6 +5,7 @@ import "./hub-navigation.css";
 
 import { hubPages, hubServices, hubUtilities, hubPermissionTab, type HubMenuItem } from "./hub-navigation-data";
 import { useHubPermissions } from "./accounts";
+import { isContentAdmin } from "@/lib/hub-permissions";
 import { useBrandReviews } from "./brand-review";
 
 type Item = { key: string; href: string; label: string; icon: string };
@@ -47,7 +48,7 @@ export function HubNavigation({ current, location }: { current: string; location
   const accounts = useHubPermissions();
   const { pendingCount } = useBrandReviews();
   const query = new URL(location, "https://hub.invalid").searchParams;
-  const internalAdmin = accounts.account?.status === "ACTIVE" && (accounts.account.role === "admin" || accounts.account.hub_role === "admin");
+  const internalAdmin = isContentAdmin(accounts.account);
   function resolve(item: HubMenuItem): Item | null {
     if (item.adminOnly && !internalAdmin) return null;
     const target = item.targets.find(target => target.section === "accounts" ? accounts.admin : accounts.can(hubPermissionTab(target.section)));

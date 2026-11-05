@@ -2,7 +2,11 @@ import { test,expect,type Page } from '@playwright/test';
 const base='/api/hub/v1/admin/knowledge';
 const id='00000000-0000-4000-9900-000000000001';
 async function setup(page:Page,role='editor'){
- await page.context().addCookies([{name:'sena_local_persona',value:role,url:'http://127.0.0.1:3000'}]);
+ await page.context().addCookies([{name:'sena_local_persona',value:'admin',url:'http://127.0.0.1:3000'}]);
+ const account = (await (await page.request.get('/api/hub/v1/me')).json()).data;
+ account.capabilities.tabs.knowledge.edit = role === 'editor' || role === 'admin';
+ account.capabilities.tabs.knowledge.approve = role === 'publisher' || role === 'admin';
+ await page.route('**/api/hub/v1/me', route => route.fulfill({ json: { data: account } }));
  const calls:{path:string;body:Record<string,unknown>}[]=[];
  const card={name:{th:'โครงการบางนาทดสอบ'},status:{raw:2,label:'พร้อมอยู่'},mode:'DRAFT_PREVIEW'};
  const common={project_ids:['BNA7'],holds:[],source_ref:'synthetic',source_url:null,review:null,bulk_rights_eligible:false};
@@ -23,7 +27,7 @@ async function setup(page:Page,role='editor'){
  });
  await page.goto('/knowledge?project=BNA7');await expect(page.getByRole('heading',{name:'รายการตรวจ BNA7 ก่อนส่งพรีวิว'})).toBeVisible();return calls;
 }
-test('MKT sees split draft labels and explicitly verifies expected answers',async({page})=>{
+test('Admin editor sees split draft labels and explicitly verifies expected answers',async({page})=>{
  const calls=await setup(page);await page.getByText('คำถามทดสอบ 2 ข้อ',{exact:false}).click();
  await expect(page.getByText('ชุดปรับเกณฑ์: 1 · ชุดทดสอบแยก: 1',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'ตรวจคำตอบที่คาดหวัง'}).first().click();
@@ -38,7 +42,7 @@ test('hero suggestions start as gallery and promotions separate expired and non-
  const headings=page.locator('.knowledge-items article h2');await expect(headings).toHaveText(['ยังใช้ได้','หมดอายุ']);
  await page.getByLabel('กรองภาพโปรโมชั่น').selectOption('text');await expect(headings).toHaveText(['ข้อความทั่วไป']);
 });
-test('publisher explicitly creates private preview then reruns BNA7 alone',async({page})=>{
+test('Admin approver explicitly creates private preview then reruns BNA7 alone',async({page})=>{
  const calls=await setup(page,'publisher');const evaluate=page.getByRole('button',{name:'ทดสอบคำตอบ BNA7 จากชุดพรีวิวล่าสุด'});await expect(evaluate).toBeDisabled();
  await page.getByRole('button',{name:'ตรวจและยืนยันชุดพรีวิวส่วนตัว'}).click();
  const confirm=page.getByRole('button',{name:'ยืนยันพรีวิวส่วนตัว',exact:true});await expect(confirm).toBeDisabled();

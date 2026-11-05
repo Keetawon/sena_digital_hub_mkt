@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test } from '@playwright/test';
 import { projectChanges } from '../../apps/admin/components/project-review';
 import type { Project } from '../../apps/admin/components/hub-admin';
@@ -31,6 +33,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   const me=(await (await page.request.get('/api/hub/v1/me')).json()).data;
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
     const data = path.endsWith('/v1/me') ? me : path.endsWith('/accounts/display-names') ? [{id:'00000000-0000-0000-0000-000000000002',display_name_th:'สมหญิง ผู้จัดการ'}] : path.endsWith('/projects/review-test') ? project : path.endsWith('/projects/review-test/versions') ? [{ version_id: 'version-1', version_no: 1,
@@ -39,7 +42,7 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   });
   await page.goto('/?project=review-test');
   await expect(page.locator('.detail-heading .status-badge')).toHaveText('มีการแก้ไขที่ยังไม่เผยแพร่');
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await expect(page.locator('.readiness-compact-number')).toHaveText('พร้อมเผยแพร่ · ไม่มีรายการค้าง');
   await expect(page.locator('.project-save-bar')).toHaveCount(0);
   await expect(page.locator('.version-list')).toContainText('สมหญิง ผู้จัดการ');
@@ -57,17 +60,18 @@ test('publish preview lists changed fields, role attribution and ready text; ope
   await expect(page.locator('.detail-heading .status-badge')).toHaveText('ถอนการเผยแพร่แล้ว');
 });
 
-test('five tabs and one-row mobile save bar fit; optional fields stay on the optional tab', async ({ page }) => {
+test('six tabs and one-row mobile save bar fit; optional fields stay on the optional tab', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   const me=(await (await page.request.get('/api/hub/v1/me')).json()).data;
-  await page.route('**/api/hub/**', route => {
+  await page.route('**/api/hub/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, fixture())) return;
     return route.fulfill({ json: { data: route.request().url().endsWith('/v1/me') ? me : route.request().url().endsWith('/projects/review-test') ? { ...fixture(), published_version_id: null } : [] } });
   });
   await page.goto('/?project=review-test');
-  await expect(page.getByRole('tab')).toHaveCount(5);
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await expect(page.getByRole('tab')).toHaveCount(6);
+  await openWorkspaceTab(page, 'supplementary');
   await expect(page.locator('#meta_title')).toBeVisible();
   await expect(page.locator('#slug')).toBeHidden();
   const bar = page.locator('.project-save-bar');

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 
 test.describe('Accounts on loopback H1', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Local H1 protocol simulation only');
@@ -32,7 +33,9 @@ test.describe('Accounts on loopback H1', () => {
     await page.getByLabel('ค้นหาชื่อ อีเมล บริษัท หรือทีม').fill(name);
     const names = await page.request.get('/api/hub/v1/accounts/display-names');
     expect(names.status()).toBe(200);
+    await openMobileMenu(page);
     await expect(page.getByRole('link', {name: /ผู้ใช้และสิทธิ์/})).toBeVisible();
+    await closeMobileMenu(page);
     const row = page.getByRole('article').filter({ hasText: name });
     await page.screenshot({path:'artifacts/accounts-admin.png',fullPage:true});
     await row.getByRole('button', { name: /^อนุมัติเป็น/ }).click();
@@ -48,6 +51,7 @@ test.describe('Accounts on loopback H1', () => {
     const admin = await browser.newPage({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
     await login(admin); await approve(admin, 'กูเกิล สมมติ');
     await page.reload(); await page.getByRole('link', { name: 'เข้าสู่พื้นที่ทำงาน' }).click();
+    await expect(page).toHaveURL(`${process.env.HUB_ADMIN_ORIGIN}/home`);
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
     await page.getByRole('button',{name:'ออกจากระบบ',exact:true}).click();
     await page.route('**/auth/v1/authorize?**', route => {
@@ -95,6 +99,7 @@ test.describe('Accounts on loopback H1', () => {
     const admin=await browser.newPage({baseURL:process.env.HUB_ADMIN_ORIGIN!});
     await login(admin); await approve(admin,'อีเมล สมมติ');
     await page.reload(); await page.getByRole('link',{name:'เข้าสู่พื้นที่ทำงาน'}).click();
+    await expect(page).toHaveURL(`${process.env.HUB_ADMIN_ORIGIN}/home`);
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
     await admin.close();
   });

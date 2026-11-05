@@ -33,7 +33,15 @@ test.describe('workspace home in disposable H1', () => {
       await expect(page.locator('.workspace-assistant-disabled')).toBeDisabled();
       expect(assistantRequests).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: `artifacts/unified-workspace/w2/h1-home-search-${width}.png`, fullPage: width === 1280 });
+      await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/h1-home-search-${width}.png`, fullPage: width === 1280 });
+      const publicId = new URL((await result.getAttribute('href'))!, process.env.HUB_ADMIN_ORIGIN).searchParams.get('project');
+      expect(publicId).toBeTruthy();
+      await result.click();
+      await expect(page).toHaveURL(url => url.pathname === `/website/project/${encodeURIComponent(publicId!)}` && url.searchParams.get('tab') === 'data' && url.searchParams.get('section') === 'identity');
+      await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('.workspace-persistent-editor input#public_name')).toBeVisible();
+      await expect(page.locator('.workspace-persistent-editor input#public_name')).not.toBeEditable();
+      expect(assistantRequests).toEqual([]);
     });
   }
 });

@@ -23,7 +23,7 @@ async function setup(page: Page, role = 'viewer') {
       path.endsWith('/sources/projects') ? rows.map(row => ({...row, project_name_rem: row.name, model_count: 1, source_record: null, intake_manifest_sha256: 'a'.repeat(64)})) : [];
     await route.fulfill({json: {data}});
   });
-  await page.goto('/');
+  await page.goto('/?view=projects');
   return writes;
 }
 

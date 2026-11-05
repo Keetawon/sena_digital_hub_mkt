@@ -31,6 +31,8 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/project_content_core.sql', import.meta.url), 'utf8'));
   await connection.query(await readFile(new URL('../supabase/tests/workspace_home.sql', import.meta.url), 'utf8'));
   console.log('PASS: private read-only workspace helpers and external-principal denial');
+  await connection.query(await readFile(new URL('../supabase/tests/content_workspace.sql', import.meta.url), 'utf8'));
+  console.log('PASS: entity workspace source authority, immutable evidence and N7 legacy FAQ closure');
   console.log('PASS: project content FORCE RLS/audit, closed workers, REM building prefill, stale facts, private readiness and immediate revocation');
   await connection.query(await readFile(new URL('../supabase/tests/project_media.sql', import.meta.url), 'utf8'));
   console.log('PASS: media FORCE RLS/audit, closed workers, unknown floors, facility covers, rights-aware coverage and immediate revocation');

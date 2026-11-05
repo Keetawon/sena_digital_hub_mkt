@@ -7,6 +7,10 @@ insert into staging.knowledge_candidates(id,batch_sha256,source_key,kind,project
 ('00000000-0000-4000-9000-000000000002',repeat('a',64),'test-phase','section',array['KN-PILOT','TPRAK'],'design','synthetic','{"title":{"th":"สวน"},"body":{"th":"โครงการทดสอบ มีสวน"}}',array['needs_phase_decision']),
 ('00000000-0000-4000-9000-000000000003',repeat('a',64),'test-price','fact',array['KN-PILOT'],'commercial_terms','synthetic','{"source_value":"ราคา 3 ล้านบาท"}',array['commercial_text']),
 ('00000000-0000-4000-9000-000000000004',repeat('a',64),'test-asset','asset',array['KN-PILOT'],'media_documents','synthetic','{"sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","classification":{"people":"absent","third_party_marks":"absent","stock_imagery":"unknown"}}','{}');
+-- An unaccepted historical FAQ is evidence only under N7.
+insert into staging.knowledge_candidates(id,batch_sha256,source_key,kind,project_ids,topic,source_ref,evidence,holds)
+ values('00000000-0000-4000-9000-000000000005',repeat('a',64),'test-faq-read-only','faq',array['KN-PILOT'],'design','synthetic-n7',
+ '{"canonical_question":{"th":"Synthetic question"},"short_answer":{"th":"Synthetic answer"}}','{}');
 insert into rag.project_fact_cards(rem_project_id,batch_sha256,payload)
   values('KN-PILOT',repeat('a',64),'{"mode":"DRAFT_PREVIEW"}');
 do $$ begin
@@ -52,5 +56,32 @@ reset role;
 do $$ begin
   assert (select count(*) from audit.change_log where table_name='hub.knowledge_reviews' and after_row->>'candidate_id'='00000000-0000-4000-9000-000000000001')=1;
   assert not exists(select 1 from hub.content_sections where status<>'DRAFT');
+end $$;
+-- The application DB role cannot use any old FAQ decision, even with an
+-- actual Admin's explicit Knowledge Edit. The private delegate is not callable.
+set local role hub_app;
+select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
+do $$ declare choice text; gaps bigint; begin
+ assert hub.can('knowledge','edit');
+ assert not has_function_privilege('hub_app','hub.review_knowledge_candidate_before_workspace(uuid,integer,text,text[],text,boolean,text,text)','EXECUTE');
+ select count(*) into gaps from hub.content_gaps where project_id='KN-PILOT';
+ foreach choice in array array['accepted','rejected','missing'] loop
+  begin
+   perform hub.review_knowledge_candidate('00000000-0000-4000-9000-000000000005',0,choice,array['KN-PILOT'],'N7 denial',false,null,null);
+   raise exception 'Legacy FAQ mutation was allowed';
+  exception when check_violation then
+   assert sqlerrm like 'Legacy FAQ candidates are read-only%';
+  end;
+  assert not exists(select 1 from hub.faqs where candidate_id='00000000-0000-4000-9000-000000000005');
+  assert not exists(select 1 from hub.knowledge_reviews where candidate_id='00000000-0000-4000-9000-000000000005');
+  assert (select count(*) from hub.content_gaps where project_id='KN-PILOT')=gaps;
+ end loop;
+ assert (hub.workspace_legacy_faq_candidates(array['00000000-0000-4000-9000-000000000005']::uuid[])
+  #>>'{00000000-0000-4000-9000-000000000005,read_only}')::boolean;
+end $$;
+reset role;
+do $$ begin
+ assert not exists(select 1 from audit.change_log where table_name='hub.knowledge_reviews'
+  and after_row->>'candidate_id'='00000000-0000-4000-9000-000000000005');
 end $$;
 rollback;

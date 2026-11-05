@@ -411,7 +411,7 @@ def test_submitted_faq_is_immutable_and_financial_topics_never_queue_ai(permissi
     run(check())
 
 
-def test_intake_rejection_withdraws_copied_faq_and_section_versions(permission_accounts):
+def test_legacy_faq_is_read_only_and_section_rejection_withdraws_versions(permission_accounts):
     _, ids = permission_accounts
 
     async def check():
@@ -430,6 +430,12 @@ def test_intake_rejection_withdraws_copied_faq_and_section_versions(permission_a
             # Seed before the runtime transaction takes the progress-cache lock.
             for kind, candidate in candidates:
                 sql = 'select hub.review_knowledge_candidate($1,$2,$3,$4,$5,false,null,null)'
+                if kind == 'faq':
+                    for choice in ('accepted', 'rejected'):
+                        with pytest.raises(asyncpg.CheckViolationError, match='read-only'):
+                            await call(db, ids['editor'], sql, candidate, 0, choice, [project], 'Synthetic legacy decision')
+                    assert not await call(db, ids['editor'], 'select exists(select 1 from hub.faqs where candidate_id=$1)', candidate)
+                    continue
                 await call(db, ids['editor'], sql, candidate, 0, 'accepted', [project], 'Synthetic acceptance')
                 table = 'hub.faqs' if kind == 'faq' else 'hub.content_sections'
                 # The RLS reader is the same runtime role used by HTTP requests.

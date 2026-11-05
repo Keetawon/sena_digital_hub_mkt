@@ -108,7 +108,7 @@ def test_database_coverage_detects_unreviewed_or_unguarded_feature_storage(mutat
 @pytest.mark.parametrize('tab,path', [
     ('projects', '/v1/admin/projects'), ('brands', '/v1/admin/brands'),
     ('promotions', '/v1/admin/promotions'), ('releases', '/v1/admin/releases'),
-    ('knowledge', '/v1/admin/knowledge/projects'), ('registry', '/v1/admin/ads/registrations'),
+    ('knowledge', '/v1/admin/faq/references'), ('registry', '/v1/admin/ads/registrations'),
     ('finance', '/v1/admin/ads/memos'), ('actuals', '/v1/admin/ads/actuals'),
     ('documents', '/v1/admin/ads/document-tracking'), ('archive', '/v1/admin/ads/archive'),
     ('exceptions', '/v1/admin/ads/findings'), ('questions', '/v1/admin/questions'),

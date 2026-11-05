@@ -1,3 +1,4 @@
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const headers = { Origin: 'http://127.0.0.1:3000' };
@@ -38,7 +39,7 @@ for (const width of [1280, 390]) {
       await expect(page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true })).toBeDisabled();
       await fits(page);
       await page.screenshot({ path: `artifacts/project-content-phase1/project-english-${width}.png`, fullPage: true });
-      await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+      await openWorkspaceTab(page, 'supplementary');
       await page.getByLabel('ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล (ภาษาอังกฤษ)', { exact: true }).fill(`${suffix} title`);
       await page.getByLabel('คำอธิบายย่อ (ภาษาอังกฤษ)', { exact: true }).fill(`${suffix} description`);
       await expect(page.getByText('ข้อความอ้างอิงภายใน Hub สำหรับตรวจและเรียบเรียง ไม่ส่งออกเว็บไซต์หรือ AI')).toBeVisible();
@@ -72,6 +73,7 @@ for (const width of [1280, 390]) {
 
       await persona(page, 'publisher');
       await page.reload();
+      await openWorkspaceTab(page, 'history');
       await page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true }).click();
       await expect(page.getByRole('dialog').getByRole('heading', { name: 'เผยแพร่แบรนด์', exact: true })).toBeInViewport();
       const brandPreview = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์' });
@@ -84,7 +86,7 @@ for (const width of [1280, 390]) {
       await page.keyboard.press('Escape');
 
       await page.goto(`/?project=${project.public_project_id}`);
-      await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+      await openWorkspaceTab(page, 'history');
       await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
       await expect(page.getByRole('dialog').getByRole('heading', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeInViewport();
       const comparison = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลโครงการ' });

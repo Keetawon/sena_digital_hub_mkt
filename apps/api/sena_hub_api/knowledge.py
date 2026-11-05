@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated,Literal
 from uuid import UUID
-from fastapi import Depends,Request
+from fastapi import Depends,Request,HTTPException
 from fastapi.responses import FileResponse,Response
 from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
@@ -81,6 +81,10 @@ def private_thumbnail(content,evidence):
 
 def register_knowledge_routes(app,authentication,database,settings):
     async def staff(request:Request,actor:Actor=Depends(authentication)):
+        # docs/48 W3 card: direct legacy evidence routes and files require actual Admin.
+        account=getattr(request.state,'account',{})
+        if account.get('status')!='ACTIVE' or account.get('hub_role')!='admin':
+            raise HTTPException(403)
         if settings.environment!='local':
             if settings.environment!='hosted-test' or not settings.r2_credentials_file:
                 raise failure(403,'knowledge_local_only','คลังความรู้ยังไม่พร้อมใช้งานในสภาพแวดล้อมนี้')
@@ -118,11 +122,16 @@ def register_knowledge_routes(app,authentication,database,settings):
                 WHERE $1=ANY(c.project_ids) OR $1=ANY(c.programme_ids)
                   OR ($1='KNOWLEDGE_TERMS' AND c.kind='alias' AND cardinality(c.project_ids)=0) ORDER BY c.kind,c.source_key''',project_id)
             followup=await db.fetchval('SELECT hub.knowledge_followup($1)',project_id) or {}
+            faq_ids=[row['id'] for row in rows if row['kind']=='faq']
+            faq_controls={}
+            for offset in range(0,len(faq_ids),500):
+                faq_controls.update(await db.fetchval('SELECT hub.workspace_legacy_faq_candidates($1)',faq_ids[offset:offset+500]))
         data=[]
         for record in rows:
             row=dict(record);row['bulk_rights_eligible']=bulk_eligible(row)
             # No filesystem paths in browser payloads.
             row['evidence']={k:v for k,v in row['evidence'].items() if k not in {'locations','validated_metadata'}}
+            if row['kind']=='faq':row.update(faq_controls.get(str(row['id']),{'read_only':True,'cluster_ids':[]}))
             data.append(row)
         return {'data':{'card':card,'items':data,'followup':followup,'mode':'DRAFT_PREVIEW'}}
 

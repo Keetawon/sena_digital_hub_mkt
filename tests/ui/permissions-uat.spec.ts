@@ -57,7 +57,8 @@ test.afterAll(() => seed(true));
 
 test('local UAT personas retain a switch path from suspension and land by actual capabilities', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('button', { name: /ผู้ดูแลสำรอง \(UAT\)/ })).toBeVisible();
+  await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toBeVisible();
+  await expect(page.getByLabel('เลือกบัญชีทดสอบ').getByRole('option', { name: /ผู้ดูแลสำรอง \(UAT\)/ })).toHaveAttribute('value', 'uat_admin');
   await page.screenshot({ path: `${shots}/local-personas.png`, fullPage: true });
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('uat_suspended');
   await expect(page).toHaveURL(/\/account\/request$/);
@@ -149,6 +150,7 @@ test('real permission revocation denies hidden CSV immediately and suspension ta
   const original = await account(manager.request, personas.uat_somchai);
   try {
     await persona(page.request, 'uat_somchai'); await page.goto('/?view=brands');
+    await expect(page).toHaveURL(`${origin}/website?view=brands`);
     expect((await page.request.get(`${api}/brands/completeness.csv`)).status()).toBe(200);
     await setAccess(manager.request, personas.uat_somchai, { ...original.access, tabs: { ...original.access.tabs, brands: [] } });
     for (const route of ['brands', 'brands/completeness.csv']) expect((await page.request.get(`${api}/${route}`)).status()).toBe(403);

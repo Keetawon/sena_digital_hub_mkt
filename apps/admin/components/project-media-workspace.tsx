@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { workspaceHref, workspaceText } from "@/lib/unified-workspace";
 import { useHubPermissions } from "./accounts";
 import { request } from "./hub-request";
 import { errorMessage, useFieldCatalog } from "./content-common";
@@ -30,14 +31,15 @@ function LocalPreview({ file }: { file: File }) {
   return /image\/(png|jpeg|webp)/.test(file.type) && url ? <img className="media-local-preview" src={url} alt={`ภาพก่อนอัปโหลด ${file.name}`} /> : <p>ตัวอย่างไฟล์จะแสดงหลังตรวจไฟล์และอัปโหลด</p>;
 }
 
-export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
+export function ProjectMediaWorkspace({ projectId, embedded = false, onEditingChange }: { projectId: string; embedded?: boolean; onEditingChange?: (value: boolean) => void }) {
   const { catalog, error: catalogError } = useFieldCatalog();
   const permissions = useHubPermissions(), canView = permissions.can("projects"), canEdit = permissions.can("projects", "edit");
   const [data, setData] = useState<Workspace | null>(null), [jobs, setJobs] = useState<Job[]>([]), [error, setError] = useState("");
   const [budget, setBudget] = useState<MediaAiBudget | null>(null);
   const [dirty, setDirty] = useState(false), [editingAsset, setEditingAsset] = useState<MediaAsset | null>(null);
-  const location = useContentLocation(dirty), current = location.params.get("tab") ?? "checklist";
-  const tab = current in tabs ? current as keyof typeof tabs : "checklist";
+  const location = useContentLocation(dirty, !embedded), tabKeyQuery = embedded ? "section" : "tab", current = location.params.get(tabKeyQuery) ?? (embedded ? "library" : "checklist");
+  useEffect(() => { onEditingChange?.(dirty); return () => onEditingChange?.(false); }, [dirty, onEditingChange]);
+  const tab = current in tabs ? current as keyof typeof tabs : embedded ? "library" : "checklist";
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/media`;
   const permissionKey = JSON.stringify(permissions.capabilities.tabs);
   const reload = useCallback(async () => { const [value, queued, ledger] = await Promise.all([request<Workspace>(base), request<Job[]>(`${base}/jobs`), request<MediaAiBudget>(`${base}/ai-state`)]); setData(value); setJobs(queued); setBudget(ledger); }, [base]);
@@ -47,27 +49,29 @@ export function ProjectMediaWorkspace({ projectId }: { projectId: string }) {
     return () => { live = false; };
   }, [base, projectId, canView, permissionKey]);
   useEffect(() => { if (!jobs.some(job => job.kind === "image_suggestion" && (job.status === "queued" || job.status === "running"))) return; const timer = window.setInterval(() => { void reload().catch(error => setError(errorMessage(error))); }, 3000); return () => clearInterval(timer); }, [jobs, reload]);
+  const selectedAsset = location.params.get("asset");
+  useEffect(() => { if (data && selectedAsset) setEditingAsset(data.assets.find(asset => asset.id === selectedAsset) ?? null); }, [data, selectedAsset]);
   const act = async (work: () => Promise<unknown>) => { setError(""); try { await work(); await reload(); } catch (error) { setError(errorMessage(error)); } };
-  const edit = (asset: MediaAsset) => { if (location.navigate({ tab: "upload" })) setEditingAsset(asset); };
+  const edit = (asset: MediaAsset) => { if (location.navigate({ [tabKeyQuery]: "upload" })) setEditingAsset(asset); };
   const deepLink = (item: Coverage) => {
-    if (item.blocks_publish) return `/?project=${encodeURIComponent(projectId)}&media_role=${item.rule_key}&media_upload=1#assets`;
-    return `/media?${new URLSearchParams({ project: projectId, tab: "upload", category: item.context.media_category ?? "exterior", target_type: item.kind, target_key: item.key, floor: String(item.floor ?? ""), tags: item.context.tags.join(","), usage: item.context.usage })}`;
+    if (item.blocks_publish) return workspaceHref({ level: "project", id: projectId, tab: "media", phase: location.params.get("phase"), section: "canonical" }, { media_role: item.rule_key, media_upload: "1" });
+    return workspaceHref({ level: "project", id: projectId, tab: "media", phase: location.params.get("phase"), media_slot: { rule_key: item.rule_key, media_category: item.context.media_category ?? "exterior", target_type: item.kind, target_key: item.key, floor: item.floor, tags: item.context.tags, usage: item.context.usage } });
   };
-  return <MediaCatalog.Provider value={catalog?.items ?? []}><MediaAiContext.Provider value={{ base, budget, jobs, refresh: reload }}><div className="content-workspace media-workspace"><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
+  return <MediaCatalog.Provider value={catalog?.items ?? []}><MediaAiContext.Provider value={{ base, budget, jobs, refresh: reload }}><div className={`content-workspace media-workspace${embedded ? " entity-embedded-media" : ""}`}><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}</p>}
     {!projectId ? <><p>เลือกโครงการจากหน้ารวมก่อนจัดการสื่อ</p>{canView && <WebsiteMediaProjects />}</> : !canView ? <p>บัญชีนี้ไม่มีสิทธิ์ดูสื่อโครงการ</p> : !data ? <p role="status">กำลังโหลดสื่อ…</p> : <>
-      <nav className="content-tabs" aria-label="ส่วนสื่อ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={dirty && tab !== key} onClick={() => { if (location.navigate({ tab: key })) setEditingAsset(null); }}>{label}</button>)}</nav>
+      <nav className="content-tabs" aria-label="ส่วนสื่อ">{Object.entries(tabs).filter(([key]) => !embedded || key !== "rules").map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={dirty && tab !== key} onClick={() => { if (location.navigate({ [tabKeyQuery]: key })) setEditingAsset(null); }}>{embedded && key === "website" ? workspaceText.legacyMedia : label}</button>)}</nav>
       {tab === "checklist" && <MediaPanel title="รายการภาพที่ยังขาด"><p>ความครบตามเป้าหมายแนะนำ {data.checklist.recommended_score}% · ยังขาดภาพจำเป็น {data.checklist.required_missing} รายการ</p><p>ภาพหลักและภาพย่อเท่านั้นที่เป็นเงื่อนไขเผยแพร่ ภาพอื่นเป็นเป้าหมายเก็บข้อมูล</p>
         {data.checklist.unknown_coverage.map(item => <p className="inline-warning" key={item.key}>ยังนับชั้นของ {item.label.th ?? item.key} ไม่ได้ กรุณาตรวจข้อมูลอาคารหรือแบบที่อยู่อาศัย</p>)}
         <ul className="content-checklist">{data.checklist.items.map(item => <li key={`${item.rule_key}-${item.key}-${item.floor}`}><span aria-hidden="true">{item.complete ? "✓" : "○"}</span><div><strong>{item.label.th}</strong><p>{item.context_label} · {item.count}/{item.target_count} ภาพ · {item.blocks_publish ? "จำเป็น" : "แนะนำ"}</p>{!item.complete && canEdit && <a className="button secondary" href={deepLink(item)}>เติมภาพ · {item.label.th}</a>}</div></li>)}</ul>
-        {data.checklist.broken_links.length > 0 && <div role="status"><h3>ลิงก์ที่ถูกซ่อน</h3><p>{data.checklist.broken_links.length} ลิงก์เปิดไม่ได้ เป็นส่วนตัว หรือถูกนำออก</p><button className="button secondary" onClick={() => location.navigate({ tab: "clips" })}>แก้ไขคลิปและทัวร์</button></div>}
+        {data.checklist.broken_links.length > 0 && <div role="status"><h3>ลิงก์ที่ถูกซ่อน</h3><p>{data.checklist.broken_links.length} ลิงก์เปิดไม่ได้ เป็นส่วนตัว หรือถูกนำออก</p><button className="button secondary" onClick={() => location.navigate({ [tabKeyQuery]: "clips" })}>แก้ไขคลิปและทัวร์</button></div>}
       </MediaPanel>}
-      {tab === "upload" && <MediaUpload key={`${projectId}-${editingAsset?.id ?? "new"}`} data={data} base={base} initialAsset={editingAsset} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} query={location.params} onChanged={reload} onDirty={setDirty} />}
+      {tab === "upload" && <MediaUpload key={`${projectId}-${editingAsset?.id ?? "new"}-${location.params.get("target_type")}-${location.params.get("target_key")}-${location.params.get("floor")}`} data={data} base={base} initialAsset={editingAsset} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} query={location.params} onChanged={reload} onDirty={setDirty} />}
       {tab === "website" && <WebsiteMediaQueue base={base} project={data.project.id} assets={data.assets} context={data.context} tags={data.tags} canEdit={canEdit} canPromotions={permissions.can("promotions", "edit")} onChanged={reload} onDirty={setDirty} />}
       {tab === "library" && <MediaPanel title="ภาพและเอกสารในโครงการ"><p>ไฟล์ที่อัปโหลดโดยคุณและยังไม่ผูกจะแสดงเพื่อให้ทำงานต่อได้</p><div className="media-grid">{data.assets.map(asset => {
         const links = data.links.filter(link => link.asset_id === asset.id), suggestion = asset.ai_suggestion;
         const mismatch = suggestion && (suggestion.media_category !== asset.media_category || links.some(link => link.target_type === "facility" && suggestion.tags.some(code => data.tags.some(tag => tag.code === code && tag.tag_group === "facility")) && !suggestion.tags.includes(link.target_key)));
-        return <article className="media-card" key={asset.id}><Preview asset={asset} /><h3>{asset.original_filename}</h3><p>{categoryLabels[asset.media_category] ?? "ยังไม่จัดหมวด"} · {asset.metadata_state === "confirmed" ? "ยืนยันข้อมูลแล้ว" : "รอตรวจข้อมูล"}</p><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><p>{asset.caption.th || "ยังไม่มีคำบรรยาย"}</p>
+        return <article className="media-card" key={asset.id} data-workspace-item={asset.id} tabIndex={-1}><Preview asset={asset} /><h3>{asset.original_filename}</h3><p>{categoryLabels[asset.media_category] ?? "ยังไม่จัดหมวด"} · {asset.metadata_state === "confirmed" ? "ยืนยันข้อมูลแล้ว" : "รอตรวจข้อมูล"}</p><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><p>{asset.caption.th || "ยังไม่มีคำบรรยาย"}</p>
           {canEdit && <button className="button secondary" onClick={() => edit(asset)}>แก้ไขข้อมูลภาพ</button>}
           {suggestion && <div className="media-suggestion"><h4>คำแนะนำ AI · ยังไม่ยืนยัน</h4>{mismatch && <p role="alert" className="inline-warning">คำแนะนำต่างจากหมวดหรือส่วนกลางที่เลือก กรุณาตรวจภาพ</p>}<p>{categoryLabels[suggestion.media_category]} · {suggestion.caption.th}</p><p>คำอธิบายภาพ: {suggestion.alt_text.th}</p><p>แท็ก: {suggestion.tags.map(code => data.tags.find(tag => tag.code === code)?.label.th ?? code).join(" · ")}</p><details><summary>รายละเอียดคำแนะนำ</summary><p>ความมั่นใจ {Math.round(suggestion.confidence * 100)}% · {suggestion.model} · {suggestion.suggested_at}</p><p>แท็กเสนอใหม่: {suggestion.proposed_tags.map(tag => tag.label.th).join(" · ") || "ไม่มี"}</p><p>{suggestion.source_revision === asset.media_revision ? "ตรงกับข้อมูลล่าสุด" : "ข้อมูลภาพเปลี่ยนหลังให้คำแนะนำ"}</p></details></div>}
           {links.map(link => <div className="media-binding" key={link.id}><p>{targetName(link, data.context)} · {link.is_primary ? "ภาพปก" : "ภาพประกอบ"}</p>{canEdit && <>{link.target_type === "facility" && <button className="button secondary" onClick={() => void act(() => request(`${base}/links/${link.id}`, "PUT", { expected_revision: link.revision, changes: { is_primary: !link.is_primary } }))}>{link.is_primary ? "ยกเลิกภาพปก" : "ตั้งเป็นภาพปก"}</button>}<button className="button danger" onClick={() => void act(() => request(`${base}/links/${link.id}/remove`, "POST", { expected_revision: link.revision }))}>นำการผูกนี้ออก</button></>}</div>)}

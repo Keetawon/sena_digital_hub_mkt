@@ -58,6 +58,20 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'translation_requester_allowed', 'claim_translation', 'finish_translation', 'translation_complete',
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
     'review_knowledge_candidate_before_versions')}
+WORKSPACE_FUNCTIONS = {
+    'hub.content_activity', 'hub.content_history', 'hub.content_history_event',
+    'hub.review_knowledge_candidate_before_workspace', 'hub.website_text_decide', 'hub.website_text_key',
+    'hub.website_text_latest', 'hub.website_text_numeric', 'hub.workspace_actor',
+    'hub.workspace_admin', 'hub.workspace_confirmed_groups', 'hub.workspace_faq',
+    'hub.workspace_faq_impact', 'hub.workspace_faq_scope_access', 'hub.workspace_faq_scope_allowed',
+    'hub.workspace_faq_target', 'hub.workspace_faq_visible', 'hub.workspace_field_target',
+    'hub.workspace_history_action', 'hub.workspace_history_contexts', 'hub.workspace_history_event',
+    'hub.workspace_history_fields', 'hub.workspace_history_matches', 'hub.workspace_history_visible',
+    'hub.workspace_legacy_faq_candidates', 'hub.workspace_name', 'hub.workspace_page',
+    'hub.workspace_phase', 'hub.workspace_preview', 'hub.workspace_projects',
+    'hub.workspace_resolve', 'hub.workspace_target', 'hub.workspace_tree',
+}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -174,7 +188,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
-                    additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES if name == 'relations' else WEBSITE_FUNCTIONS
+                    additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':

@@ -1,4 +1,6 @@
 import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
+import { mockWorkspaceProjection } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const api = '/api/hub/v1/admin';
@@ -64,12 +66,8 @@ async function fixture(page: Page, role = 'publisher') {
     return route.fulfill({ json: { data: rows.find(row => row.public_brand_id === key) } });
   });
   await page.route(`**${api}/brand-requests`, route => route.fulfill({ json: { data: [] } }));
+  await mockWorkspaceProjection(page, rows);
   return { rows, versions, writes, failVersions: (value: boolean) => { failVersions = value; } };
-}
-
-async function openMenu(page: Page) {
-  const trigger = page.getByRole('button', { name: 'เปิดเมนู', exact: true });
-  if (await trigger.isVisible()) await trigger.click();
 }
 
 for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
@@ -82,9 +80,11 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await page.goto('/?view=brands');
     await expect(page.getByRole('checkbox', { name: 'เลือกเผยแพร่ ยังขาดข้อมูล', exact: true })).toBeDisabled();
     await page.getByRole('link', { name: 'เปิดตรวจแบรนด์ ยังขาดข้อมูล', exact: true }).click();
-    await expect(page).toHaveURL(/\?brand=brd_missing&return_to=/);
+    await expect(page).toHaveURL(/\/website\/brand\/brd_missing\?.*return_to=/);
     await expect(page.locator('.detail-heading')).toContainText('ยังขาดข้อมูล');
+    await openWorkspaceTab(page, 'history');
     await expect(page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true })).toBeDisabled();
+    await page.locator('#workspace-tab-media').click();
     await page.getByRole('checkbox', { name: `เลือกอนุมัติ ${logo.original_filename}`, exact: true }).check();
     await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (1)', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
@@ -111,7 +111,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await page.getByRole('button', { name: 'ทั้งหมด 6', exact: true }).click();
     await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'ฉบับร่างตรงกับที่เผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);
     await expect(page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: 'แบรนด์ถอนการเผยแพร่', exact: true }) }).getByText(/มีการแก้ไขรอเผยแพร่/)).toHaveCount(0);
-    await openMenu(page);
+    await openMobileMenu(page);
     const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
     const link = menu.locator('.hub-brand-count-link');
     await expect(link).toHaveAttribute('href', '/?view=brands');
@@ -132,6 +132,7 @@ test('logo content changes count as edits while readonly metadata and ordering d
   await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
   data.rows[3].assets[2].alt_text = { th: 'คำอธิบายโลโก้สีขาวรองที่แก้ไข' };
   await page.reload(); await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toBeVisible();
+  await openWorkspaceTab(page, 'history');
   await page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true }).click();
   const comparison = page.getByRole('dialog').getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์', exact: true });
   await expect(comparison.locator('[data-field="assets"]')).toHaveClass(/changed/);
@@ -143,17 +144,19 @@ test('logo content changes count as edits while readonly metadata and ordering d
 
 test('unavailable version reads stay unknown and block publication until exact snapshots reload', async ({ page }) => {
   const data = await fixture(page); data.failVersions(true); await page.goto('/?view=brands');
-  await openMobileMenu(page);
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
+  await openMobileMenu(page);
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).locator('.hub-nav-count')).toHaveText('…');
   await closeMobileMenu(page);
   data.failVersions(false); await page.reload();
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   data.failVersions(true); await page.goto('/?brand=brd_changed');
+  await openWorkspaceTab(page, 'history');
   const publish = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
   await expect(publish).toBeDisabled();
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('ยังเปรียบเทียบเวอร์ชันที่เผยแพร่ไม่ได้');
-  data.failVersions(false); await page.getByRole('button', { name: 'ลองโหลดเวอร์ชันแบรนด์อีกครั้ง', exact: true }).click();
+  const versionRetry = page.getByRole('button', { name: 'ลองโหลดเวอร์ชันแบรนด์อีกครั้ง', exact: true });
+  await expect(page.getByRole('main').getByRole('alert').filter({ has: versionRetry })).toContainText('ยังเปรียบเทียบเวอร์ชันที่เผยแพร่ไม่ได้');
+  data.failVersions(false); await versionRetry.click();
   await expect(publish).toBeEnabled();
   await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toBeVisible();
   expect(data.writes).toEqual([]);

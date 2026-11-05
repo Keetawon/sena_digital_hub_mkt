@@ -1,12 +1,19 @@
-import { PermissionBoundary } from "@/components/accounts";
-import { getHubRole } from "@/lib/hosted-session";
-import { isLocalMode } from "@/lib/local-session";
-import { HubAdmin } from "@/components/hub-admin";
+import { redirect } from "next/navigation";
+import { getHubAccount } from "@/lib/hosted-session";
+import { canWorkspace } from "@/lib/hub-permissions";
+import { workspaceLanding } from "@/components/hub-navigation-data";
+import { legacyWorkspaceHref, queryParameters } from "@/lib/unified-workspace";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ project?: string; brand?: string; view?: string; version?: string; draft_at?: string }> }) {
-  const query = await searchParams;
-  const localMode = isLocalMode(), initialRole = await getHubRole();
-  return <PermissionBoundary localMode={localMode} initialRole={initialRole} tab={query.brand || query.view === "brands" ? "brands" : "projects"}><HubAdmin key={`${query.brand ?? query.project ?? query.view ?? "overview"}:${query.version ?? query.draft_at ?? "current"}`} localMode={localMode} initialRole={initialRole} projectId={query.project ?? null} brandId={query.brand ?? null} view={query.view ?? null} sourceVersion={query.version ?? null} sourceDraftAt={query.draft_at ?? null} /></PermissionBoundary>;
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = queryParameters(await searchParams);
+  if (!query.size) {
+    const account = await getHubAccount();
+    if (account && !canWorkspace(account.capabilities)) {
+      const destination = workspaceLanding(account.capabilities);
+      if (destination !== "/") redirect(destination);
+    }
+  }
+  redirect(legacyWorkspaceHref("/", query) ?? "/website");
 }

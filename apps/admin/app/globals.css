@@ -657,3 +657,7 @@ main:focus { outline: none; }
 .session-expired { position: sticky; top: 0; z-index: 1000; padding: 16px; background: var(--surface-warm); color: var(--ink); border: 2px solid var(--action); }
 .accounts-admin summary { cursor: pointer; padding: 12px 0; }
 @media (max-width: 600px) { .account-summary { grid-template-columns: 1fr; } .account-summary dt { font-weight: 700; } .accounts-admin { padding: 16px; } }
+
+/* The local test selector must also fit when the root text size doubles. */
+.local-persona-picker label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
+.local-persona-picker select { width: 100%; min-width: 0; max-width: 100%; }

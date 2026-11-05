@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { workspaceText } from '../../apps/admin/lib/unified-workspace';
 
 // Opt-in only: this suite never targets the actual hosted project or normal local DB.
 test.describe('H1 disposable managed-permission simulation', () => {
@@ -38,7 +39,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
       await login(page, 'admin');
       await expect(page.locator('.sidebar .assistant-trigger, .sidebar .hub-assistant-slot')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: `artifacts/unified-workspace/w1/h1-${colorScheme}-${width}.png`, fullPage: width === 1280 });
+      await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/h1-${colorScheme}-${width}.png`, fullPage: width === 1280 });
       if (width === 390) await page.getByRole('button', { name: 'เปิดเมนู', exact: true }).click();
       if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); }
       const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
@@ -57,7 +58,7 @@ test.describe('H1 disposable managed-permission simulation', () => {
         await expect(drawer).toHaveCSS('opacity', '1');
         await expect(drawer).toHaveCSS('transform', 'none');
         expect(await drawer.evaluate(element => getComputedStyle(element, '::backdrop').animationName)).toBe('none');
-        await page.screenshot({ path: `artifacts/unified-workspace/w1/h1-${colorScheme}-${width}-drawer.png` });
+        await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/h1-${colorScheme}-${width}-drawer.png` });
         await page.keyboard.press('Escape');
         await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).not.toBeVisible();
       }
@@ -107,7 +108,8 @@ test.describe('H1 disposable managed-permission simulation', () => {
   });
 
   test('H1 cached progress stays synthetic, paginated and visible in the default scope', async ({page}) => {
-    await login(page, 'viewer');
+    await login(page, 'viewer', '/?view=projects');
+    await expect(page).toHaveURL(`${origin}/website?view=projects`);
     const response=await page.request.get('/api/hub/v1/admin/projects/progress?page=1&size=10');
     expect(response.status()).toBe(200);
     const data=(await response.json()).data;
@@ -195,11 +197,12 @@ test.describe('H1 disposable managed-permission simulation', () => {
   test('login rejects a control-character external return target', async ({ page }) => {
     await login(page, 'editor', '/\t/attacker.example');
     expect(new URL(page.url()).origin).toBe(origin);
-    await expect(page.getByRole('heading', { name: 'โครงการที่อยู่อาศัย', exact: true })).toBeVisible();
+    await expect(page).toHaveURL(`${origin}/website`);
+    await expect(page.getByRole('heading', { name: workspaceText.website, exact: true })).toBeVisible();
   });
 
   test('R2 Knowledge originals are private, thumbnails are checked, and preview processing stays off', async ({page}) => {
-    await login(page,'viewer','/knowledge?project=H1-PROJECT-001&kind=asset');
+    await login(page,'admin','/knowledge?project=H1-PROJECT-001&kind=asset');
     await expect(page.getByText('พื้นที่ทดสอบนี้เปิดให้ตรวจข้อมูลและไฟล์ ยังไม่เปิดทดลองคำตอบ',{exact:true})).toBeVisible();
     const candidate='72000000-0000-0000-0000-000000000011';
     const file=`/api/hub/v1/admin/knowledge/candidates/${candidate}/file`;
@@ -215,12 +218,24 @@ test.describe('H1 disposable managed-permission simulation', () => {
     await page.screenshot({path:'artifacts/hosted-r2-knowledge-desktop.png',fullPage:true});
   });
 
+  test('Knowledge View without actual Admin cannot read legacy evidence or its private files', async ({ page }) => {
+    await login(page, 'viewer', '/home');
+    expect((await page.request.get('/api/hub/v1/admin/projects')).status()).toBe(200);
+    const evidence = '/api/hub/v1/admin/knowledge/candidates/72000000-0000-0000-0000-000000000011/file';
+    for (const path of ['/knowledge?project=H1-PROJECT-001&kind=asset', evidence, evidence + '?thumbnail=1']) {
+      expect((await page.request.get(path)).status()).toBe(403);
+    }
+  });
+
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
     test(`private logo upload and authenticated preview at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport); await login(page, 'editor');
       const brands = (await (await page.request.get('/api/hub/v1/admin/brands')).json()).data;
       expect((await page.request.get('/api/hub/v1/admin/brands/bulk-preview')).status()).toBe(403);
       await page.goto(`/?brand=${brands[0].public_brand_id}`);
+      await expect(page).toHaveURL(`${origin}/website/brand/${encodeURIComponent(brands[0].public_brand_id)}?tab=data&section=identity`);
+      await page.locator('#workspace-tab-media').click();
+      await expect(page.locator('#workspace-tab-media')).toHaveAttribute('aria-selected', 'true');
       const slot = page.locator('[data-logo-role="logo_white"]');
       const name = `h1-white-${randomUUID()}.svg`;
       const uploaded = page.waitForResponse(response => response.url() === `${process.env.HUB_API_URL}/v1/admin/assets` && response.request().method() === 'POST');

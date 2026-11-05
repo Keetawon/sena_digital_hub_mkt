@@ -1,3 +1,4 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
@@ -29,6 +30,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
   await page.context().addCookies([{ name: 'sena_local_persona', value: role, url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, rows)) return;
     if (route.request().method() !== 'GET') writes.push(route.request().url());
     const path = new URL(route.request().url()).pathname;
     if(path==='/api/hub/v1/me')return route.continue();
@@ -39,7 +41,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
         readiness: { ready: false, percent: 0, missing: [gap] }, source: { rem_project_id: 'A', project_name_rem: 'โครงการ A' }, models: [], assets: [] } : [];
     await route.fulfill({ json: { data } });
   });
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   await expect(page.getByRole('heading', { name: 'ความคืบหน้าโครงการ' })).toBeVisible();
   return writes;
 }
@@ -72,7 +74,7 @@ test('required field links focus the editor and recommended items cannot change 
   await setup(page);
   await page.locator('.project-summary-row').first().getByRole('button', { name: /รายการตรวจ/ }).click();
   await page.locator('.project-detail-row').getByRole('link', { name: `ไปแก้ ${gap.message}` }).click();
-  await expect(page).toHaveURL(/project=A&field=latitude/);
+  await expect(page).toHaveURL(/\/website\/project\/A\?.*field=latitude/);
   await expect(page.locator('#latitude')).toBeFocused();
 });
 
@@ -104,7 +106,7 @@ test('actual local viewer dashboard matches the authenticated progress response'
   const data = (await response.json()).data;
   const reads: string[] = [];
   page.on('request', request => { if (new URL(request.url()).pathname === '/api/hub/v1/admin/projects/progress') reads.push(request.url()); });
-  await page.goto('/');
+  await page.goto('/website?view=projects');
   const dashboard = page.locator('.project-dashboard');
   await expect(dashboard.locator('tbody tr')).toHaveCount(Math.min(10, data.rows.filter((row: { source_review?: { default_scope: boolean } }) => row.source_review?.default_scope !== false).length));
   await expect(dashboard.getByRole('button', { name: `ทั้งหมด ${(await (await page.request.get('/api/hub/v1/admin/projects/progress?view=counts')).json()).data.counts.all}`, exact: true })).toBeVisible();

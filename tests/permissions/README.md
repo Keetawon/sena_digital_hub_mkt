@@ -40,3 +40,16 @@ off direct SQL and every SECURITY DEFINER entry point, neighboring allowed cases
 cross-tab dependencies and mandatory agency isolation. Do not bless ACL drift by
 blindly rewriting a snapshot. A new route, table or definer must be reviewed and
 mapped; a hidden UI control alone is never sufficient evidence of denial.
+
+Unified workspace additions are separate reviewed inventories. W2 adds
+`workspace-home-routes.json` for read-only home, tasks and search. W3 adds
+`content-workspace-routes.json` for eight read projections and the existing
+project website-candidate decision. The shared `content_workspace` entry gate
+admits active internal staff with any source View; each projection then applies
+its exact source checks, and activity requires actual Admin. Knowledge-only
+callers can read FAQ envelopes without receiving project facts or media.
+Legacy `/knowledge` evidence now requires actual Admin plus the existing source
+V/E/A bit. All old FAQ candidate mutations are closed; historical rows remain.
+Migration 0083's 33 new or renamed functions are explicitly listed in the DB
+baseline test, including private delegates with no application execution grant.
+The historical fixture JSON files above remain unchanged.

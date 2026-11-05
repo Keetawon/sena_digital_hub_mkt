@@ -1,3 +1,4 @@
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
@@ -6,7 +7,7 @@ async function persona(page: Page, role: string) { expect((await page.request.po
 async function read(page: Page, path: string) { const response = await page.request.get(path); expect(response.ok(), path).toBeTruthy(); return (await response.json()).data; }
 async function fits(page: Page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy(); }
 async function open(page: Page, project: string, name?: string) {
-  await page.goto(`/?project=${project}`); await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await page.goto(`/?project=${project}`); await openWorkspaceTab(page, 'unit-types');
   await page.getByRole('button', { name: name ? `เปิด 6 ขั้นตอน · ${name}` : 'สร้างแบบด้วย 6 ขั้นตอน', exact: true }).click();
   await expect(page.getByRole('navigation', { name: 'ขั้นตอนแบบขาย' })).toBeVisible();
 }

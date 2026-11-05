@@ -19,10 +19,19 @@ test.describe('Account flags and public boundary', () => {
     await expect(page.locator('.topbar-right')).toContainText('ผู้อ่านข้อมูล');
     await expect(page.locator('.hosted-h1-note')).toContainText('LOCAL H1 · ข้อมูลสมมติ');
   });
-  test('shared route list preserves knowledge and blocks open redirect encodings', () => {
+  test('shared route list preserves canonical and legacy context while blocking open redirect encodings', () => {
     expect(safeNext('/knowledge?project=synthetic#review')).toBe('/knowledge?project=synthetic#review');
     for(const route of hubRoutes) expect(safeNext(route)).toBe(route);
+    for (const route of [
+      '/website?view=projects', '/website?view=brands',
+      '/website/project/SYNTHETIC-001?tab=data&phase=00001&field=project.meta_title',
+      '/website/brand/SYNTHETIC-BRAND?tab=faq&question=synthetic.question',
+      '/website/unit_type/65000000-0000-4000-8000-000000000001?tab=media&unit_type=PUBLIC-TYPE',
+      '/settings?section=bank&question=synthetic.question', '/settings?section=media-rules#requirements',
+      '/settings/activity?project=SYNTHETIC-001', '/home?section=coverage&phase=00001',
+    ]) expect(safeNext(route)).toBe(route);
     for(const bad of ['//evil.example','/\\evil.example','/\t/evil.example','https://evil.example','/%2f%2fevil.example','/auth/callback?next=//evil.example','/not-a-route']) expect(safeNext(bad)).toBe('/');
+    for (const bad of ['/website/project/%2F%2Fevil.example', '/website/project/%5Cevil.example', '/website/project/%00', '/website/project/a/b', '/website/unknown/a']) expect(safeNext(bad)).toBe('/');
   });
   test('browser assets and app environment contain no service/OAuth/SMTP credential', async () => {
     const privateValues = Object.entries(process.env).filter(([key,value]) => /(?:PASSWORD|TOKEN|DATABASE_URL|STORAGE_KEY)/.test(key) && value && value.length >= 20).map(([,value]) => value!);

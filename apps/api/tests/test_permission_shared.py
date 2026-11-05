@@ -34,7 +34,15 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
     assert actual == CONTENT_RULES.keys() | shared
     assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable', 'content_registry', 'content_translation', 'content_workspace'}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_workspace'} == {
-        ('GET', '/v1/admin/content/search'), ('GET', '/v1/admin/content/home')}
+        ('GET', '/v1/admin/content/search'), ('GET', '/v1/admin/content/home'),
+        ('GET', '/v1/admin/content/workspace/tree'),
+        ('GET', '/v1/admin/content/workspace/resolve'),
+        ('GET', '/v1/admin/content/workspace/{kind}/{ref}'),
+        ('GET', '/v1/admin/content/workspace/{kind}/{ref}/faq'),
+        ('GET', '/v1/admin/content/workspace/{kind}/{ref}/preview'),
+        ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history'),
+        ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history/{event_id}'),
+        ('GET', '/v1/admin/content/activity'),}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_registry'} == {('GET', '/v1/admin/content/fields')}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_translation'} == {
         ('POST', '/v1/admin/content/translations/{translation_id}/review'), ('POST', '/v1/admin/content/translations/{translation_id}/retry')}

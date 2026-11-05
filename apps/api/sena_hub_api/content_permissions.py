@@ -9,6 +9,7 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('POST', '/v1/admin/projects/{public_id}/content/website/{candidate_id}/decision'): ('projects', 'edit'),
     ('GET', '/v1/admin/web'): ('knowledge', 'view'),
     ('PUT', '/v1/admin/web/pages/{page_key}'): ('knowledge', 'edit'),
     ('GET', '/v1/admin/web/pages/{page_key}/history'): ('knowledge', 'view'),
@@ -283,6 +284,14 @@ CONTENT_RULES = {
 SHARED_RULES = {
     ('GET', '/v1/admin/content/search'): 'content_workspace',
     ('GET', '/v1/admin/content/home'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/tree'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/resolve'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/{kind}/{ref}'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/{kind}/{ref}/faq'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/{kind}/{ref}/preview'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history'): 'content_workspace',
+    ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history/{event_id}'): 'content_workspace',
+    ('GET', '/v1/admin/content/activity'): 'content_workspace',
     ('GET', '/v1/web/pages/{page_key}'): 'public',
     ('GET', '/v1/web/pages/{page_key}/faq'): 'public',
     ('GET', '/v1/web/changes'): 'public',

@@ -1,3 +1,4 @@
+import { mockWorkspaceProjection } from './unified-workspace-helpers';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const base = '/api/hub/v1/admin/assistant';
@@ -295,6 +296,7 @@ test('real assistant proxy streams a local fake run and denies extra route/query
 
 test('residential source links show the exact frozen version and never substitute a changed draft', async ({ page }) => {
   await mocked(page); const version = '65000000-0000-4000-8000-000000000005';
+  await mockWorkspaceProjection(page, { public_project_id: 'PROJECT-DEMO', source: { rem_project_id: 'PROJECT-DEMO' } });
   await page.route('**/api/hub/v1/admin/projects/PROJECT-DEMO/versions', route => route.fulfill({ json: { data: [{ version_id: version, version_no: 1, published_at: '2026-09-30T03:00:00Z', payload: { public_name: { th: 'ชื่อโครงการในฉบับเผยแพร่' }, meta_title: { th: 'ชื่อเรื่องที่เผยแพร่แล้ว' }, models: [{ public_model_id: 'MODEL-01', public_name: { th: 'แบบในรุ่นที่อ้างอิง' }, bedrooms: 3 }] } }] } }));
   await page.goto(`/?project=PROJECT-DEMO&version=${version}`); await expect(page.getByRole('heading', { name: 'แหล่งข้อมูลที่อ้างอิง', exact: true })).toBeVisible(); await expect(page.getByRole('main')).toContainText('ชื่อโครงการในฉบับเผยแพร่'); await expect(page.getByRole('main')).toContainText('ฉบับย้อนหลังที่อ้างอิง'); await expect(page.getByRole('main')).toContainText('แบบในรุ่นที่อ้างอิง'); await expect(page.getByRole('main').locator('input,textarea')).toHaveCount(0);
   await page.goto('/?project=PROJECT-DEMO&draft_at=2026-09-01T03%3A00%3A00Z'); await expect(page.getByRole('main').getByRole('alert')).toContainText('ฉบับร่างเปลี่ยนไปจากที่อ้างอิงแล้ว'); await expect(page.getByRole('main')).not.toContainText('ชื่อเรื่องเดิมตัวอย่าง');

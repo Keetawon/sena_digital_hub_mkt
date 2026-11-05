@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
+import { mockWorkspaceProjection } from './unified-workspace-helpers';
 
 const origin = 'http://127.0.0.1:3000';
 const project = {
@@ -21,6 +22,7 @@ function capabilities(account: any, tabs: Record<string, string[]>) {
   } };
 }
 async function syntheticProject(page: Page) {
+  await mockWorkspaceProjection(page, project);
   await page.route('**/api/hub/v1/admin/projects/CAPABILITY-UI', route => route.fulfill({ json: { data: project } }));
   await page.route('**/api/hub/v1/admin/projects/CAPABILITY-UI/versions', route => route.fulfill({ json: { data: [] } }));
 }
@@ -33,14 +35,15 @@ test('capability projection drives controls and names-only brand references with
   await page.route('**/api/hub/v1/me', route => route.fulfill({ json: { data: me } }));
   await syntheticProject(page);
   await page.goto('/?project=CAPABILITY-UI');
+  await expect(page).toHaveURL('/website/project/CAPABILITY-UI?tab=data&section=identity');
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true })).toBeEditable();
   await openMobileMenu(page);
   await page.getByRole('navigation').getByRole('button', { name: 'งานโฆษณาและงบ', exact: true }).click();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'งบและค่าใช้จ่าย', exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation').locator('a[href="/?view=brands"]')).toHaveCount(0);
+  await expect(page.getByRole('navigation').locator('a[href="/website?view=brands"]')).toHaveCount(0);
   await expect(page.getByRole('navigation').getByRole('link', { name: 'ผู้ใช้และสิทธิ์', exact: true })).toHaveCount(0);
   await expect(page.getByText('ชื่อแบรนด์อ้างอิงเท่านั้น', { exact: true })).toBeVisible();
-  await expect(page.locator('a[href*="brand="]')).toHaveCount(0);
+  await expect(page.locator('a[href*="brand="], a[href^="/website/brand/"]')).toHaveCount(0);
   await closeMobileMenu(page);
   expect(brandReads).toBe(0); expect(accountDirectoryReads).toBe(0);
 
@@ -64,6 +67,7 @@ for (const revoke of ['view', 'edit', 'signed-out'] as const) {
     await page.route('**/api/hub/v1/me', route => { checks++; return route.fulfill(denied ? { status: 401, json: { error: { message: 'กรุณาเข้าสู่ระบบ' } } } : { json: { data: me } }); });
     await syntheticProject(page);
     await page.goto('/?project=CAPABILITY-UI');
+    await expect(page).toHaveURL('/website/project/CAPABILITY-UI?tab=data&section=identity');
     const authored = 'ชื่อที่ฉันพิมพ์เองและยังไม่บันทึก';
     await page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true }).fill(authored);
     const before = checks;
@@ -105,13 +109,18 @@ test('direct management URLs use tab boxes while agencies retain the registry bo
   expect((await page.request.get('/ads/finance')).status()).toBe(403);
   expect((await page.request.get('/admin/accounts')).status()).toBe(403);
   expect((await page.request.get('/?view=brands')).status()).toBe(200);
+  expect((await page.request.get('/website?view=brands')).status()).toBe(200);
   await persona(page, 'agency_kin');
   expect((await page.request.get('/?project=CAPABILITY-UI')).status()).toBe(403);
   expect((await page.request.get('/?view=brands')).status()).toBe(403);
+  expect((await page.request.get('/website/project/CAPABILITY-UI?tab=data')).status()).toBe(403);
+  expect((await page.request.get('/website?view=brands')).status()).toBe(403);
   await page.goto('/');
+  await openMobileMenu(page);
   await expect(page.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   expect((await page.request.get('/ads/registry')).status()).toBe(200);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('agency_kin');
+  await closeMobileMenu(page);
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('viewer');
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('viewer');
   await openMobileMenu(page);

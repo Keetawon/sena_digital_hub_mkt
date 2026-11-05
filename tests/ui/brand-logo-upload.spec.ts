@@ -1,3 +1,4 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -263,6 +264,7 @@ async function retryFixture(page: Page, failure: 'upload' | 'bind', existingMono
   let failed = false, revision = 0;
   await session(page, 'editor');
   await page.route(`**${api}/**`, async route => {
+    if (await fulfilWorkspaceProjection(route, brand)) return;
     const request = route.request(), path = new URL(request.url()).pathname.slice(`${api}/`.length);
     if (request.method() === 'GET') {
       if (path === 'content/fields') return route.continue();

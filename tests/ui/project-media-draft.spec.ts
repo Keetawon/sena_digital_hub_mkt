@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const initialRevision = '2026-09-21T00:00:00Z';
@@ -39,10 +41,23 @@ async function openFixture(page: Page) {
   // Keep every admin operation synthetic, including previews and uploads.
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
     const method = request.method();
     if (method === 'GET') {
+      // Exact read-only companion responses; canonical binding writers below stay unchanged.
+      if ([`${projectPath}/media`, `${projectPath}/media/jobs`, `${projectPath}/media/ai-state`].includes(path)) {
+        const data = path.endsWith('/jobs') ? [] : path.endsWith('/ai-state')
+          ? { cap_usd: 0, spent_usd: 0, remaining_usd: 0, ceiling_usd: 0, provider_configured: false, budget_exhausted: false }
+          : { project: { id: '66000000-0000-4000-8000-000000000003', public_project_id: project.public_project_id, name: project.public_name, updated_at: project.updated_at },
+            assets: project.assets.map(asset => ({ ...asset, media_category: ['master_plan', 'floor_plan'].includes(asset.asset_role) ? asset.asset_role : 'exterior',
+              caption: {}, image_kind: null, taken_at: null, people: 'unknown', third_party_marks: 'unknown', credit: {}, tags: [],
+              metadata_state: 'needs_review', ai_exposure: 'internal', marketing_publication: false, media_revision: 1, ai_suggestion: null })),
+            links: [], clips: [], context: { facilities: [], commercial_types: [], buildings: [], promotions: [], selling_points: [], features: [], places: [] },
+            tags: [], requirements: [], checklist: { items: [], recommended_score: 0, required_missing: 0, broken_links: [], unknown_coverage: [] } };
+        return route.fulfill({ json: { data } });
+      }
       if (/^assets\/[^/]+\/file$/.test(path)) return route.fulfill({ contentType: 'image/png', body: png });
       return route.fulfill({ json: { data: path === 'assets' ? library : path === projectPath || path === `${projectPath}/models/model-A` ? project : [] } });
     }
@@ -96,7 +111,7 @@ async function expectLocalText(page: Page) {
 }
 
 async function chooseReplacement(page: Page) {
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   const media = page.locator('#assets');
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
   await media.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true }).fill('replacement');
@@ -107,7 +122,7 @@ async function chooseReplacement(page: Page) {
 test('dirty project text survives upload, another image and removal; save uses the latest media revision', async ({ page }) => {
   const fixture = await openFixture(page);
   await editText(page);
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   const media = page.locator('#assets');
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true }).click();
@@ -182,7 +197,7 @@ test('refreshing a media conflict preserves local text without allowing it to ov
 test('model-scoped plan binding also preserves dirty project text and advances its save revision', async ({ page }) => {
   const fixture = await openFixture(page);
   await editText(page);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   const media = page.locator('#model-media');
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
@@ -194,7 +209,7 @@ test('model-scoped plan binding also preserves dirty project text and advances i
   await expect(dialog).toHaveCount(0);
   await expect(media.locator('.bound-assets')).toContainText('replacement.png');
   expect(fixture.writes[0].path).toBe(`${projectPath}/models/model-A/assets`);
-  await page.getByRole('tab', { name: /ข้อมูลหลัก/ }).click();
+  await openWorkspaceTab(page, 'data');
   await expect(page.locator('#assets .bound-assets')).toHaveCount(0);
   await expectLocalText(page);
   await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();

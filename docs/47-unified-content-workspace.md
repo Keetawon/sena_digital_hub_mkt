@@ -400,6 +400,9 @@ editors retain their existing copy unless a label above supersedes it.
 
 | Key | Thai label |
 | --- | --- |
+| local_testing | พื้นที่ทดสอบในเครื่อง |
+| local_testing_note |  · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด |
+| local_persona_discard | มีข้อมูลร่างที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนบัญชีทดสอบหรือไม่? |
 | search | ค้นหา |
 | search_placeholder | ค้นหาโครงการ แบรนด์ BUD หรือคำถาม |
 | loading | กำลังโหลดข้อมูล… |

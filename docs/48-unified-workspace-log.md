@@ -55,7 +55,7 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 | ID | Scope from docs/47 section 10.1 | Dependencies | Delivery owner / status |
 |---|---|---|---|
 | W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Complete: `93b04cc`, pushed to origin/main |
-| W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Lead; implementation started from `2387dd3` |
+| W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Complete: `b5dc456`, pushed; receipt `d3ec1d6` |
 | W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | A UI / C backend; new worktrees at `2387dd3` |
 | W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Agent B `w4_governance` backend; lead UI integration |
 | W5 | Fixed business level and composition order | W4 merged | Agent B after W4; planned |
@@ -555,7 +555,7 @@ The same release applies to `test_permission_db_baseline.py`,
 as handoff text; lead owns their W2/W3/W4 integration in order. W3 updates the
 legacy FAQ test to assert denial and no mutation, retaining section behavior.
 
-Lock owner: lead only. State: **released — W2 final suites passed; W3 is next**.
+Lock owner: lead only. State: **held — W3 integration and serial local gates**.
 Before each run check 55432/8000/3000; if occupied by owner/another process,
 report and wait. Never terminate another process. Runner cleanup may stop only
 its own disposable services. All port-bound suites run sequentially from main.
@@ -1761,3 +1761,945 @@ W2 delivery receipt: code commit
 immediately before commit. The staged set was checked against the exact 45-path
 receipt, with no unrelated path present. W2 is complete; W3 integration begins
 after this log receipt is pushed.
+
+W3's reviewed 103-path delta is now integrated over clean main receipt d3ec1d6.
+The transfer validated every source hash and predecessor before copying and
+preserved current docs47/48. Lead acquires the test lock for W3's typecheck,
+offline build, disposable DB/API, browser checks and final full gate. W4/W5
+remain in external worktrees; no W4/W5 code is included in this gate.
+
+Isolated preparation adjustment: B's W5 twelve-file backend is frozen after
+static checks. While lead gates W3/W4, B may prepare W6 scope/security in
+`D:/Personal/workspace/sena_hub_wt/w6-scopes`, branch `ws/w6-scopes`, cut from
+current main d3ec1d6 with enumerated W3/W4 and frozen W5 backend overlays. This
+does not advance merge order or authorize a live source connection.
+
+Its exact write lease is migration
+`supabase/migrations/202611040087_content_scopes.sql`, new
+`apps/api/sena_hub_api/content_scopes.py`, existing
+`apps/api/sena_hub_api/accounts.py`, new
+`apps/api/tests/test_content_scopes.py`, `supabase/tests/content_scopes.sql`,
+and `supabase/tests/concurrent_content_scopes.mjs`. Migration 0088 is reserved
+for the later BU importer lease; B must provide its minimal shared-schema
+contract before that lease starts. Implement the frozen W6 design/finite
+inventory in C's w6-scope-design docs48 appendix, incorporating the owner's
+replacement rules in its docs47 section 7.1. B owns no other existing API file,
+shared registry, permission inventory, UI, script, test, migration or document.
+
+Scope done criteria: independent additive scope rows; missing scopes remain
+unrestricted; object-aware canonical guards and direct RLS across the finite
+inventory; exact account preview/apply with stale/time/epoch rejection; bounded
+manager history; actual Admin grace setting; W7 private translation-scope guard;
+real deny/allowed-neighbour, shared-object, expiry and two-connection regressions.
+No existing content/history/account/grant/template rewrite or guessed BUD
+mapping. Allowed checks are AST/collection, SQL/PL parse, encoding and diff
+checks with no ports. Lead reviews every delta and runs all runtime/full gates
+on main. Docs47's owner-rule replacement and the full W6 design merge together
+in the eventual W6 commit, not in this preparation entry.
+
+W4 regression adaptation leases, after A/C's read-only maps and form refreezes:
+
+- A: `D:/Personal/workspace/sena_hub_wt/w4-browser-regressions`, branch
+  `ws/w4-browser-regressions`. Own exactly tests/ui/{project-workflow,
+  project-review,brands,brand-review,brand-completeness,assets,
+  project-content-phase1,project-content-phase2,project-content-phase5,
+  project-content-phase7,project-content-phase9,articles,web-publication,
+  residential-operations,phasec-accounts}.spec.ts and new
+  tests/ui/content-workflow-fixtures.ts. Existing real lifecycle tests stay real;
+  generic mocks get explicit authoritative metadata, not invented default grants.
+- C: `D:/Personal/workspace/sena_hub_wt/w4-lifecycle-tests`, branch
+  `ws/w4-lifecycle-tests`. Own scripts/sample-brands.sql,
+  scripts/seed-hub-content-contract.mjs, scripts/hosted-test-seed.mjs,
+  scripts/hosted-test-fixtures.mjs, supabase/hosted-test/h1-seed.sql;
+  apps/api/tests/{test_permission_foundations,test_permission_accounts,
+  test_permission_content,test_permission_assistant,test_permission_publication,
+  test_integration,test_brand_integration,test_coordinates_db,test_promotions_db,
+  test_real_promotions,test_assistant_tools_db,test_residential_seed,test_api,
+  test_promotions,test_web_publication,test_articles,test_unit_type_workflow,
+  test_project_commercial,test_project_amenities}.py; new
+  apps/api/tests/content_workflow_fixture.py; supabase/tests/{core_slice,
+  brands,asset_library,model_media,project_media_collections,source_selection,
+  public_content_boundary,residential_demo,web_publication,articles,
+  project_commercial,workspace_home}.sql and supabase/tests/{
+  brand_completeness.test,concurrent_residential_release,hub_export.test}.mjs.
+
+Both worktrees start at current main d3ec1d6 plus enumerated predecessor overlays.
+All other files are read-only, including sample-accounts.sql, conftest.py,
+base permission fixture defaults, configuration loaders, production source and
+shared registrations/inventories. Lead supplies any required separate fixture
+integration after reviewing a concrete interface. Implement docs47 section5
+N1/N2/N6 and preserve W3 routes/N7 closure. Keep immutable history, source/rights
+revocation, stale revisions, independent review/publish, public 404 withdrawal,
+rollback, concurrency, exact decimal/time, dirty recovery and viewport checks.
+Only obsolete all-or-nothing item failure expectations change to required N2
+per-item outcomes with a successful neighbour; batch digest conflicts stay atomic.
+Positive fixtures use explicit guarded synthetic permissions and real approval
+commands, never forged certificates or weakened guards. No default account,
+grant or template changes, no harness configuration-loading changes. Done means
+reviewable diffs, collected tests, AST/typecheck/SQL/static checks and exact hashes;
+all runtime gates remain lead-owned and serialized on main. No ports, credential
+access, hosted execution, commits or pushes in either lease.
+
+W3 quick gate: typecheck, offline build and full disposable DB suite passed.
+The targeted API run exposed a fixture lifetime error in test_content_workspace:
+it imported the rollback-scoped runtime helper but also queried/updated through
+HTTP and independent operator connections. A retained project write blocked the
+operator update. Lead verified only wait states and relation names through the
+existing attested disposable_operator fixture, then cancelled only the exact
+blocked fixture query so the test could unwind; no process was terminated.
+The new test module now uses the existing non-bypass runtime connection with
+per-command transactions, making committed state visible across its connections.
+All assertions remain; the API gate must rerun after the interrupted attempt.
+
+Automatic approval review rejected A's proposed new credential-loading browser
+helper. Nothing from that rejected helper was written and no credential opened.
+Resolution: existing authenticated Accounts APIs perform and restore the explicit
+disposable browser fixture permissions; no new credential reader or DB loader.
+C's bulk fixture rewrite was separately rejected because it could remove negative
+assertions; C is applying finite per-file changes with each denial preserved.
+These review rejections do not authorize bypasses or require changing configuration
+loading. C additionally owns new supabase/tests/fixtures/content_workflow.sql as
+a reviewed disposable pg_temp fixture; lead retains its runner integration.
+
+W4 queue integration contract for legacy regressions: source history uses
+`/publish?source=project|brand|promotion&id=<publicID>`, with current-authorized
+readiness evidence, retained snapshots, exact source-version rollback and source
+withdrawal. Brand dashboard passes repeated `brand=<publicBrandID>` keys (maximum
+100) to preselect only matching currently allowed release candidates; no automatic
+POST or silent replacement of a missing source. Root owns these source controls.
+
+Root W4 preparation mounted the configuration-only editor at the exact canonical
+configuration URL, suppressing queue/history fetches in that mode. Peer ordinary
+page edits are blocked while a workflow command is pending. Non-port typecheck
+passed. Shared explicit reload now clears its conflict latch and refreshes workflow
+metadata only after the normal form reload succeeds; failed reload preserves it.
+The generic control also gains a native submit-readiness input. Pending integration
+must wire article current.readiness.length, unit workflow.ready, price readiness.ready
+and native commercial readiness.ready; narrative/FAQ keep their existing dirty,
+pending and server validation behavior. The existing disabled-submit tests remain.
+
+W3 recovery, 5 November: the focused API gate now passes 39 tests, and the five
+affected API suites pass 192 tests with no skips or failures. The workspace
+fixture now assigns each synthetic project an explicit synthetic brand instead
+of assuming the website fixture resolves one. The earlier source-name and group
+updates set their audit actor. Migration 0083's two FAQ queries use qualified
+aliases to avoid the PL/pgSQL state-variable collision; the reviewed replay
+profile records its new canonical hash
+`1fcf6097f5fa4019558ad0e797b5a6c461d0a300b72b2e8661b7065fd6b6e2c9`.
+No already committed migration changed. Initial browser quick gate: 45 passed,
+5 failed. The FAQ cases now create and independently approve their own question;
+the subsequent browser run passed those cases. Two UI cases still used the
+previous bundle. Lead fixed the Brands view's shell context and separated the
+tree search styles from the global search class, then started a fresh offline
+build and affected browser gate. The W3 full gate and commit remain pending.
+
+W4 isolated lead preparation now includes the source history panel at
+`apps/admin/components/publication-source-history.tsx`, with independently
+authorized before/after projections, exact source-version selection, actor names,
+excluded model names/REM IDs/reasons, explicit retry, reason and confirmation.
+Source withdrawal and retained-version restore use the existing guarded APIs;
+promotion DATA/LEGAL reviews remain on their original form and release rollback
+remains in the shared queue. Brand selection passes at most 100 exact public IDs
+to the queue without a write. The configuration editor and source panel passed a
+non-port typecheck; runtime verification remains pending on final integration.
+
+A froze its 16 browser regression files in ws/w4-browser-regressions with
+aggregate `ef9ae17d9374b168056af43bac05bf9da1665a20e958ee65317572247aa7761f`.
+Typecheck, strict UTF-8, whitespace and diff checks passed; desktop and mobile
+each collect 82 tests. Runtime was not run. A now performs a read-only review of
+C's 12 frozen record components using the lead's review-record diff artifacts,
+focusing on pending commands, source stamps and explicit reload. This adds no
+component write lease and no port permission. Root found a missing workflow-busy
+guard on the media batch save/clear controls and will resolve review findings
+before integration.
+
+C's exact promotion expiry fixture will use the actual public promotion view
+definition with only its clock expressions replaced inside an operator-only
+temporary read projection. It retains a genuinely approved/published immutable
+version, the exact exclusive end boundary, unchanged public output before expiry,
+and existing source-revocation assertions. It does not fabricate approval
+evidence or change a production clock/view. The historical Hub export fixture
+also pins the changing synthetic seed's generator checksum; root owns a truthful
+provenance resolution and will not relabel old export bytes with a new generator.
+
+A's record review confirmed pending-command gaps on Add/check actions in media
+clips and FAQ question/glossary lists, plus peer translation controls. Lead now
+extends A's ws/w4-browser-regressions write lease to exactly the 11 frozen record
+components other than web-publication: project-assets, project-media-workspace,
+media-clips, commercial-types, unit-type-wizard, project-commercial-workspace,
+project-facilities, project-amenities, faq-workspace, faq-bank and
+articles-workspace (all .tsx under apps/admin/components), plus new
+tests/ui/content-workflow-locks.spec.ts. Preserve the frozen 16 browser files.
+No root or other agent edits those 11 components until A freezes the correction.
+Scope: block ordinary peer mutations/unmounting while workflow controls are
+pending; preserve the owning confirmation control, original source stamps and
+dirty recovery; wire original native submit readiness into the shared control.
+Web configuration's equivalent gap is already fixed by root and remains outside
+A's lease, as do shared controls, API/SQL, navigation, docs and configurations.
+Done requires finite diff review, actual-component pending/reload regressions,
+typecheck/collection/encoding checks and exact final hashes. No runtime ports,
+credential reads, commits or pushes. Implements docs47 sections 4.2 and 5.
+
+W3 final quick recovery passed: typecheck, offline webpack build, 192 affected
+API tests and 50 affected browser tests, zero skips/failures in those test runs.
+The measured remaining overflow was the local persona label/select at 437px in
+a 390px viewport with 200% root text. Its dedicated grid/width styles now keep
+the original text size and visible controls inside the viewport. The navigation
+assertion retains its original no-overflow requirement and includes element-bound
+diagnostics. Website brand view context and genuine approved FAQ fixtures also
+passed. A temporary PowerShell wrapper first treated normal server stderr as a
+terminating error; only that ignored lead wrapper was corrected, and listener
+inspection confirmed the three test ports free before rerunning. No process was
+stopped, harness altered or test weakened. Lead now holds the lock for W3's full
+typecheck/build/production/API/DB/H1/UI-1280/UI-390/replay/scan gate on main.
+
+C froze W4's 40 lifecycle fixture files with aggregate
+`f4c98051d97459a49eb289f08713a0465900762b81051c7a4d991b8aca2b49be`.
+Python AST20, Node syntax5, SQL15/PL136, strict UTF-8/whitespace/diff40 passed;
+545 API cases collect, zero executed. Existing harness configuration loading,
+default accounts/grants/templates and hosted Auth fixtures are unchanged. Root
+must preload the reviewed pg_temp SQL fixture once before suite transactions,
+review every diff, resolve historical export provenance and adapt the new W3
+publication fixtures before W4 runtime gates. Seed/sample initialization remains
+self-contained; the seed helper does not require a new credential loader.
+
+W6 D/importer preparation is now assigned to C in
+`D:/Personal/workspace/sena_hub_wt/w6-bu-import`, branch `ws/w6-bu-import`, cut
+from then-current main d3ec1d6. Its enumerated read-only predecessors include
+current W3 fixes, frozen W4 backend/lifecycle fixtures, frozen W5 and a captured
+draft of B's 0087 interface. Refresh that predecessor after B freezes; C must
+never transfer or alter those files. This isolated preparation does not change
+W4 -> W5 -> W6 merge order.
+
+C exclusively owns `supabase/migrations/202611040088_bu_membership.sql`,
+new `apps/api/sena_hub_api/bu_membership.py`, `scripts/sync-content-bu.py`,
+`apps/api/tests/test_bu_membership.py`, `supabase/tests/bu_membership.sql`,
+and exactly `supabase/tests/fixtures/bu_membership/{valid,move,no-bu,invalid}.json`.
+All other files are read-only. Implements docs47 section7.1 owner replacement
+and the frozen W6 design in ws/w6-scope-design docs48, including its exact
+eight-column contract, all-or-nothing 48h validation, pre-fetch pointer/epoch
+fence, unchanged-input no-op, independent dated membership, stale/handover grace,
+alerts, history and local fake-clock tests. Do not write any staging table.
+Use an injected read-only connection to test the one-transaction,
+sslmode=verify-full source contract; local CLI and tests use fixtures only, with
+no DW/REM connection, credential/config file, hosted job enablement or DW edit.
+The actual 5 October package keeps its source timestamp and is accepted only
+under its historical fake clock or rejected as stale under November.
+
+B is adding private `content_scope_settle_deadlines()` as a no-op in 0087;
+0088 replaces its body. The exclusive-lock helper invokes it after acquiring
+account/settings/state locks and before account/base/scope/settings/publication
+mutations. D must not recursively reacquire that helper. Read-only authorization
+never settles or writes history. This records elapsed stale/handover effects
+against the old grants before a later mutation obscures them. Use trusted clock,
+existing permission_event/audit history, exact effect sets and idempotent event
+keys. Coordinate the bounded project/home notice projection interface with root;
+root owns existing routes, shared registrations, clients, permission inventories
+and notice mounts. Allowed checks: pure validation, AST/collection, SQL parsing,
+encoding, diff and other checks that bind no ports. Done requires fixtures and
+source-adapter/fake-clock/runtime test definitions, finite diff and exact hashes;
+root alone runs runtime gates, integrates, commits and pushes.
+
+The staged 5 October package's manifest extraction time is not its row source
+time. C verified the manifest and gold-project file hashes: the 278 rows carry
+source_snapshot_at from 3 October 2026, 18:06:28 through 18:07:51 +07. The
+historical adapter preserves those timestamps, accepts them under the 5 October
+02:50 UTC fake clock (within 48 hours), and rejects them under November. Earlier
+references to a 5 October source timestamp in this log mean extraction time and
+are corrected here. Missing BU activity/deletion flags remain unknown, never
+invented. This package is legacy offline evidence, not a serving.hub_project_bu
+snapshot; the W6 design merge must state that distinction and the exact hashes.
+
+W3 full API attempt: 2210 passed, 11 existing skips, 19 failed. Root fixed the
+history projection's article translation ownership (owner_key includes a field
+path; use row_ref.article_id), added its real leaf-translation regression, and
+made four SQL-only page/cluster fixtures roll back on their attested operator
+connection while retaining hub_app calls. The focused run then passed 137 with
+one remaining global corporate FAQ fixture failure. The SQL-only impact fixture
+now rolls back and HTTP-only private Knowledge fixtures explicitly use internal
+exposure. Legacy FAQ expectations now assert N7 denial with no draft creation;
+the W2 search test retains Knowledge-only FAQ targets while proving that source
+data and BU results disappear, then proves full denial after Knowledge removal.
+No production guard or existing assertion was bypassed. Current 0083 canonical
+hash is 2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f.
+
+A froze the 11 W4 record components plus content-workflow-locks.spec.ts with
+aggregate aa73cef4de2e1f998a9da8e8a9a4b4311acbc2b48f3c453f9ba5b6a7bd6e11a2.
+Typecheck/static checks passed; 21 browser cases collect per viewport, no runtime
+executed. B froze the six W6 scope backend files; 0087 is
+65ab6816f2a591cffabc2f5543762f16a6e6ba07e3210dc63402e2e9a4ce82d6.
+117 SQL/73 PL migration statements/bodies and 25 SQL/6 PL suite statements/bodies
+parsed, Python3/Node checks passed, 30 API cases collected, runtime0. Exact
+receipts are under artifacts/unified-workspace/w4/locks-frozen.json and
+w6/scope-frozen.json. Root refreshed only B's six verified predecessors in C's
+importer worktree; C's owned importer files were untouched.
+
+Next isolated UI assignments, both cut from current main d3ec1d6 with 194 explicit
+predecessors and dependency-only junctions (no configuration copies):
+
+- A: ws/w5-business-ui, D:/Personal/workspace/sena_hub_wt/w5-business-ui.
+  Owns apps/admin/components/{entity-workspace,website-tree,faq-workspace,
+  faq-bank,faq-applicability,faq-intake,content-narrative,content-contacts}.tsx;
+  apps/admin/lib/unified-workspace.ts; apps/admin/app/website/[level]/[id]/page.tsx;
+  new components/business-workspace.tsx, lib/business-workspace-text.ts and
+  tests/ui/{business-workspace,business-workspace-h1}.spec.ts. Also owns only the
+  finite business addition to WorkflowInventoryScope in lib/content-workflow.ts.
+  Implements docs47 sections4/6: fixed business hierarchy/content/FAQ seven-level
+  composition, exact links/history/preview, preserving W4 stamps/locks. Includes
+  a stale-response guard for applicability callbacks. No new business CRUD.
+- B: ws/w6-account-ui, D:/Personal/workspace/sena_hub_wt/w6-account-ui.
+  Owns existing apps/admin/components/admin-accounts.tsx; new components/
+  content-scope-editor.tsx, content-scope-settings.tsx, content-scope.css;
+  lib/content-scope-text.ts; tests/ui/{content-scopes,content-scopes-h1}.spec.ts.
+  Implements docs47 sections7.2/7.3 and owner-replaced7.1: independent V/E/A
+  scope selections, exact BU/project tree, existing preview/confirm gained/lost
+  workflow, finite paged effective history and actual-Admin grace setting.
+
+All other files are read-only, including API/SQL, shared shell/navigation/tokens,
+proxy/permission registrations and docs. Root owns those integrations and the
+authoritative UTF-8 label catalogue. Agents must preserve dirty selections,
+discard stale responses, test permission denials and exact links, and report
+typecheck/collection/encoding/diff checks plus hashes. No ports, credentials,
+commits or pushes. Root reviews every diff and performs all runtime/full gates
+before the W4 -> W5 -> W6 merge order proceeds.
+
+W3 recovery completed: the six affected API files passed 138 cases, followed by
+the complete DB quick gate and 403 permission API cases (1,838 deselected).
+The final full gate restarted on unchanged application code; typecheck, offline
+webpack and production checks passed. Full API, DB, H1 and both browser widths
+remain in the serial root test lane until their logs report completion.
+
+Root reviewed and integrated C's 40 W4 lifecycle fixture files and A's 28 browser
+and record-control files into the isolated W4 lead candidate. Review corrections
+keep the solar fixture's operator observation in its rolled-back transaction,
+attribute publication to the real synthetic publisher, and await wizard parent
+refresh callbacks before releasing its lock. Historical Hub export bytes and
+checksums remain unchanged; an exact archived generator preserves the recorded
+checksum while the current generator exercises ordinary guarded publication.
+The W4 candidate typecheck and 15 port-free migration manifest checks passed.
+Runtime checks have not run. The finite local/H1 workflow transport allowlist,
+SQL fixture preload and W4 suite registration are prepared in that candidate;
+no configuration loader was changed.
+
+W6 frozen receipts: B's seven account UI files are recorded in
+artifacts/unified-workspace/w6/account-ui-frozen.json (11 local and three H1 cases
+collected, no runtime). C's nine importer files are recorded in importer-frozen.json
+in the same directory: 24 pure cases passed; 58 API cases collected; SQL/PL and
+UTF-8 checks passed, no database runtime. Root corrected the unmerged 0087 grace
+durations to exact 24-hour units; its canonical candidate SHA256 is now
+f3e8fbbd957585599da1e61c29b7186aa8e6d2e06f71c2074b9e261ee7de68d9.
+0088 excludes only the operational deadline-settlement cursor from preview
+fingerprints and pins affected fingerprint functions to UTC; membership,
+permission, settings and authorization epochs remain part of stale detection.
+B is auditing non-SQL revocation boundaries read-only. C is mapping remaining W7
+field-button integration read-only. Neither owns further edits yet.
+
+W3 full API passed 2,230 cases with 11 existing skips and zero failures; the full
+DB and H1 suites passed. The 1280 browser invocation is collecting failures on
+the unchanged candidate. Root will repair persona navigation, persistent editor
+tab behavior, publication-action placement, exact citation read-only mode,
+coverage denial rendering and individual FAQ hold markup before rerunning the
+affected quick gate and then the full gate. No assertion is removed or weakened.
+
+Corrective lease for C: `ws/w3-browser-recovery`, outside main at
+`D:/Personal/workspace/sena_hub_wt/w3-browser-recovery`, cut from d3ec1d6 with the
+108 explicit W3 predecessors and dependency junctions only. Owns exactly
+`tests/ui/{brand-review,assistant,dw-project-intake,entity-thumbnails,permission-publication}.spec.ts`.
+Scope: update authorized route/tab destinations, exact synthetic workspace
+projection and actual-Admin N7 disposable fixture while preserving all original
+semantic assertions. Existing config loading is unchanged. All production,
+shared helpers, docs and other files are read-only. Done requires finite diff,
+typecheck/static/collection and exact hashes; no ports, credentials, commits or
+pushes. Root owns the product fixes, serial runtime gate and integration.
+
+A's W6 entity and home containers are frozen with only the finite notice import
+and mount additions, so root can repair the W3 containers without overlapping
+edits. A continues only the notice component/styles/tests. B continues the W6
+assistant expiry and queued-stream authority checks, having frozen the separate
+W5 business citation adapter and its tests. W7 actual field-button wiring waits
+for C's W3 recovery handoff; its read-only map found ordinary guarded writers
+for every currently exposed allowlisted editor, with corporate section keys
+remaining disabled because no ordinary authoring surface exists.
+
+C's W3 corrective test lease also includes project-content-phase2.spec.ts for
+the same finite entity navigation and fixed-scope FAQ adaptation. A's W6 notice
+handoff is frozen in artifacts/unified-workspace/w6/notices-frozen.json: six
+files, 14 local cases per width and eight H1 cases collected; typecheck and
+static checks passed, runtime not run. Container changes are import/mount only.
+
+New A lease: `ws/w6-read-boundaries`, outside main at
+`D:/Personal/workspace/sena_hub_wt/w6-read-boundaries`, current main plus 244
+explicit predecessors. Owns only apps/api/sena_hub_api/knowledge.py and
+brand_completeness.py, plus new apps/api/tests/test_content_scope_read_boundaries.py.
+Scope is docs47 7.1/7.2: recheck exact private file identity after storage or
+thumbnail awaits, fresh source/version authority after preview embedding/gap
+awaits, and final multi-query project/brand projections at an access deadline.
+Keep N7 Admin authority, private no-store and ordinary consumer behavior.
+No new authorization system or configuration loader. All other files, including
+shared main/auth/assistant, SQL, inventories and docs, are read-only. Done requires
+finite diff, fake-await/fake-clock denial and positive-neighbour cases, AST and
+collection evidence, exact hashes. No ports, credentials, commits or pushes.
+
+W3 browser full gate completed with 290 passed and 48 failed at 1280 px;
+390 px did not run after that failure. C's recovery lease was extended only to
+project-form.spec.ts, project-groups.spec.ts, project-media-draft.spec.ts and
+project-multi-media.spec.ts for exact synthetic media read envelopes and the
+canonical safe return URL. All ten recovery test files are frozen; 63 cases
+collected, no assertions removed. Root reviewed and integrated 24 finite product
+and test corrections, recorded in
+artifacts/unified-workspace/w3/browser-recovery-integrated.json. The 115-path W3
+commit manifest includes three existing local-test strings copied into docs47's
+canonical copy table. The shared dirty guard now protects persona changes,
+without storing draft text or changing authority. The targeted browser gate
+runs at 1280 and 390 before another full gate; no W3 commit or push yet.
+
+A's W6 read-boundary lease had one narrow addition: staff_media.py extracts its
+unchanged thumbnail SQL as a constant for the final guarded projections. Four
+files are frozen in artifacts/unified-workspace/w6/read-boundaries-frozen.json.
+Six pure checks passed, 39 new cases and 148 affected cases collected; database
+and API runtime remain pending. Root will preserve the existing R2 denial tests
+while adjusting the two exact query-count expectations for the final re-read.
+A now performs a read-only review of 0087/0088 grace, refresh validation and
+effective-access history. C performs a read-only W4 governance/route review.
+
+New B lease: ws/w6-client-boundaries, external worktree of the same name,
+current main plus 248 explicit predecessors. Owns only
+apps/admin/lib/hub-permissions.ts, components/accounts.tsx,
+components/workspace-search.tsx, app/api/hub/[...path]/route.ts, and new
+tests/ui/content-scope-proxy.spec.ts and content-scope-expiry.spec.ts.
+Scope: docs47 7.1/7.2 caller scope fingerprints/deadlines, immediate cache
+invalidation and late-response guards, with fresh uncached identity validation
+after private buffered responses. Preserve same-account authored text and the
+existing H1/account-own transport behavior. No duplicate BUD authorization
+model, route expansion or config loader changes. All other files are read-only;
+root reserves the finite shell change removing the assistant remount key.
+Done requires fake-clock/delayed-response denial and positive-neighbour tests,
+typecheck, collection, finite diffs and hashes. No ports, credentials, commits
+or pushes. Root's W3 LocalPersonaPicker changes will be forwarded separately.
+
+W3 focused recovery now passes 12 cases at 1280 px and 12 at 390 px, following
+the wider 123-pass/six-failure run. The fixes retain the publication status and
+reader notice outside hidden legacy headings, preserve the FAQ English-review
+tab across refreshes, use canonical IN_REVIEW text, and complete the exact
+empty-media facility fixture. The full gate restarted on this repaired source.
+Previous full-attempt logs are retained in artifacts/unified-workspace/w3/full-attempt2.
+
+W4 follow-up lease for C: ws/w4-http-gates, current main plus 208 explicit
+predecessors. Owns only apps/api/tests/test_permission_publication.py and new
+test_publication_queue_http.py. The review found two obsolete release grant
+assertions and missing positive HTTP publication coverage. The frozen delivery
+adds 15 real HTTP/hub_app cases, with 64 cases collected and static checks
+passed; runtime is pending. Coverage keeps independent source View, publication
+special, contributor exclusions, stale-item isolation, immutable history and
+positive neighbours. No production/config/helper changes, ports, commits or
+pushes. Root keeps W3 and W4 shared-file leases separate until W3 commits.
+
+B's W6 lease adds only components/hub-request.ts to the previous six-file list.
+Explicit invalidate_access errors clear protected source caches immediately
+and request fresh authority; ordinary object-specific denials remain local.
+Root forwarded three finite W3 predecessor changes for persona copy and the
+unsaved-edit event, recorded in w6/client-w3-predecessor-delta.json. Root still
+owns the shell and the remaining raw-fetch caller integrations.
+
+New A corrective lease: ws/w6-scope-audit-fixes, current main plus 249 explicit
+predecessors. Owns only already allocated migrations 0087 and 0088 and new
+apps/api/tests/test_content_scope_history.py. Fix clock capture after notice
+lock acquisition and record invitation activation's effective-access gains
+through existing audit history. Preserve the original invitation authority and
+ACL, current grants/templates, seven-day duration, and independent scopes.
+Done requires finite diffs, SQL/PL parse, static/collection evidence and hashes;
+root performs the two-connection/fake-clock runtime checks later. No credentials,
+ports, live connections, commits or pushes; every other file is read-only.
+
+A's corrective delivery is frozen in w6/scope-audit-frozen.json: 0087 now records
+invitation activation gains through the original guarded entry point, and 0088
+captures notice time after the scope lock. Ten new tests cover real lock waits,
+invitation history, preserved scopes, denied activation and private ACLs.
+SQL/PL parse, AST, UTF-8, whitespace and credential checks passed; 131 affected
+cases collected, runtime pending. The 247 read-only predecessors are unchanged.
+A next reviews W7 backend read-only; no new file lease or runtime test authority.
+
+B's frozen W6 client/proxy delivery has 29 cases per viewport collected and
+admin/test typechecks passed. The follow-up lease ws/w6-client-callers owns only
+components/workspace-home.tsx, knowledge-review.tsx, commercial-types.tsx,
+project-assets.tsx and new tests/ui/content-scope-raw-callers.spec.ts. It connects
+the remaining raw fetch paths to explicit invalidate_access handling. Ordinary
+errors retain draft text and partial-upload retries; authority invalidation
+closes protected components without caching files or automatically retrying.
+All other files are read-only. Root alone runs port-bound checks.
+
+Wave adjustment: C starts W7 native field bindings during the final W3 gate;
+integration remains W3, W4, W5, W6, W7. The external ws/w7-field-bindings lease
+owns components/hub-admin.tsx, brand-admin.tsx, content-narrative.tsx,
+faq-workspace.tsx, unit-type-wizard.tsx, project-amenities.tsx,
+project-facilities.tsx, articles-workspace.tsx, business-workspace.tsx,
+content-common.tsx, content-field-registry.tsx, writing-aid.tsx,
+lib/writing-aid.ts and new writing-fields.spec.ts/writing-fields-h1.spec.ts.
+Scope is docs47 8.3: opt-in saved fields, exact locale/revision/authority binding,
+explicit proposals, ordinary draft writers and awaited refresh. Corporate
+sections lacking an ordinary editor stay disabled. Commercial types remain
+with B until root forwards that frozen delta and explicitly transfers its lease.
+No shared shell, API, SQL, config, inventories or docs changes; no ports,
+credentials, live provider, commits or pushes. Both worktrees received the exact
+frozen scope catalogue as a documented read-only predecessor, without config.
+
+Current W3 full gate has passed typecheck, offline webpack build, production
+checks and API (2230 passed, 11 existing skips). DB, H1 and both browser widths
+are pending under the root test lock. No W3 commit or push yet.
+
+B's raw-caller follow-up is frozen in w6/raw-callers-frozen.json: five exact
+files, 24 cases collected at each width, admin/test typechecks and static checks
+passed. Runtime remains pending. Root forwarded only commercial-types.tsx to C's
+W7 predecessor and transferred that file's lease to C for writing-aid bindings.
+
+New B lease ws/w4-publication-navigation owns only
+components/hub-navigation-data.ts, lib/hub-permissions.ts,
+lib/unified-workspace.ts, app/releases/page.tsx, app/publish/page.tsx and new
+publication-navigation.spec.ts/publication-navigation-h1.spec.ts. It implements
+the single queue destination, Knowledge-or-Releases View entry, legacy aliases,
+context-preserving redirects and the existing local persona picker. All other
+files are read-only; no ports, credentials, commits or pushes. Root retains
+shared API/SQL/profile changes until W3 commits. W3 DB and local H1 now passed;
+the 1280 px browser gate is running, with 390 px queued after it.
+
+The W4 navigation delivery is frozen in w4/navigation-frozen.json. Admin/test
+typechecks and static/integrity checks passed; 16 local cases at each width and
+five H1 cases collected, runtime pending. Repeated query values survive both
+aliases. Root will update the existing H1 no-View assertion from 404 to the
+earlier page-proxy 403 denial; the server component's own guard remains tested.
+Later W6 integration must preserve this publication-entry guard.
+
+A's read-only W7 review found two lock issues: input was captured before the
+budget wait, and quota completion inverted the scope/budget order. B's next
+lease ws/w7-admission-order owns only already allocated migration 0089 and new
+apps/api/tests/test_writing_admission.py. It acquires scope before budget/row
+locks, validates source/context after waiting, and adds real lock-barrier,
+fake-clock and account-change concurrency tests. Existing idempotency, usage,
+private ACLs and stub-only behavior remain required. Every other file is
+read-only; only static/collection checks, no port commands or credentials.
+
+A's next lease ws/w6-asset-delivery owns only new
+apps/api/sena_hub_api/content_asset_delivery.py and
+apps/api/tests/test_content_asset_delivery.py. Root retains main.py integration.
+The helper buffers bounded private canonical file/thumbnail bytes, then checks
+current caller and exact asset authority after storage awaits before delivery.
+Preserve original MIME, attachment, CSP, integrity and no-store behavior;
+public assets stay on their existing path. Done includes delayed-authority and
+integrity regressions plus positive neighbours. No ports, credentials, config,
+commits or pushes; all predecessor sources are read-only.
+
+W3 third full attempt passed typecheck, offline build, production, API (2230
+passed/11 existing skips), DB and H1. Desktop browser result: 336 passed, two
+failed; 390 px did not run. Both failures were the same product regression:
+the new preserve-permitted-route persona switch kept an active account on
+/account/request after switching from a suspended persona. Root excludes that
+status page from route preservation; existing content routes and dirty-form
+confirmation remain unchanged. No test assertion changed. The targeted quick
+gate runs permissions-uat, hub-navigation and project-form at both widths after
+typecheck/build, then another complete gate is required. Evidence retained in
+artifacts/unified-workspace/w3/full-attempt3. Root will preserve this exact
+one-line correction when applying W6's frozen accounts.tsx later.
+
+A's W6 private asset helper is frozen in w6/asset-delivery-frozen.json. Exactly
+two new files; 241 read-only predecessors unchanged. AST, UTF-8, whitespace and
+credential checks passed; one pure integrity regression passed and 147 affected
+tests collected (50 new). Runtime pending. Root reviewed the bounded-byte,
+fresh-authentication and exact-metadata check; integration replaces only staff
+file/thumbnail route bodies, preserving the public asset path. A next reviews
+W5 backend read-only, with no additional file ownership or runtime authority.
+
+The W3 persona recovery passed all 28 targeted browser cases at 1280 px and
+all 28 at 390 px after typecheck and the offline build. The fourth full gate
+now runs against the same 114 frozen source files; only this log may change.
+
+B's W7 admission correction is frozen in w7/admission-frozen.json: migration
+0089 and four new real database concurrency cases. Root reviewed both finite
+SQL changes and every new test. Begin and finish acquire the shared scope lock
+before budget/usage locks; source/context revisions and BUD expiry are checked
+after any budget wait. Barrier assertions inspect actual database locks rather
+than treating elapsed time as proof. SQL/PL parsing, collection, AST, UTF-8,
+whitespace and credential checks passed; runtime remains pending in W7's gate.
+
+W5 review found an unqualified SQL state column that conflicts with the local
+PL/pgSQL variable in assistant_saved_source. Root transfers only migration
+0086 in the existing external ws/w5-business-level worktree to B for a finite
+alias/qualification correction. Every other file, including its existing
+saved-citation regression, stays read-only. This implements docs47 section 6
+and preserves exact source/version and caller checks. Done requires a reviewed
+diff, SQL/PL parsing, UTF-8/whitespace checks and an updated SHA-256 receipt;
+no ports, configuration reads, commits or pushes. A's review stays read-only.
+The lease also covers apps/api/tests/test_business_content.py for a positive
+Knowledge-only business FAQ publication-task regression and retained source/N2
+denials. Migration 0086 must add business to W4's shared-page branch in
+publication_task_native_ready; otherwise the home task disappears for a
+publisher who correctly lacks Projects View. No other file is writable.
+
+The same two-file W5 repair lease includes preserving resolved phase IDs and
+the existing faq_applicability_changed guard on business FAQ shared-page
+composition. A changed rule match after approval must require re-approval;
+unchanged neighbours remain publishable. Two HTTP assertions will use the
+existing final middleware no-store directive, without changing cache policy.
+
+C's next isolated lease ws/w5-business-transport owns only
+apps/admin/lib/hub-permissions.ts, workspace-api-routes.ts, new
+business-api-routes.ts and new tests/ui/business-proxy.spec.ts. It adds the fixed
+business kind to the existing workspace transport and finite ordinary business
+content endpoints, with Knowledge-only page entry. Root will wire the helper
+into hosted-config.ts; no broader path regex or source permission fallback.
+Implement docs47 section 6 and the W5 permission card, preserve W4 publication
+entry, and test positive/negative methods, query bounds, identifiers and page
+entry. Only typechecks and pure tests/collection; no ports, config, other edits,
+commits or pushes. All source authorization remains in API and SQL.
+
+C's 16 W7 field-binding files are frozen in w7/fields-frozen.json; all read-only
+predecessor hashes remain unchanged. Admin typecheck, UTF-8 and diff checks
+passed; 27 cases per browser width and one H1 case collected, runtime pending.
+Root starts diff review and A performs an additional read-only review of exact
+field identity, ordinary revision-checked acceptance, awaited reload, authority
+loss and partial-save recovery. Corporate narrative has no ordinary editor and
+stays unwired; drafting without eligible context remains disabled. Integration
+requires the W5 business mount and existing synthetic H1 catalogue-management
+special. No live provider calls, commits or pushes occurred.
+
+Root extended B's existing W5 migration/test lease with one business-only
+publication_dependency_check guard: on unchanged=true, compare an approved
+business FAQ's saved phase set with the current rule resolution and reject
+drift after preparation too. Retained publications/rollback use unchanged=false
+and remain unchanged. Before-prepare and after-prepare regressions must retain
+an independently publishable neighbour. No migration data rewrite is allowed.
+
+C's W5 transport lease also closes JavaScript end-anchor acceptance of a
+trailing newline in existing workspace references/query values, using bounded
+full-string matches and valid-neighbour tests. Root added only dependency
+junctions for port-free checks; no configuration was copied.
+
+The fourth W3 full gate API result is 2230 passed, 11 existing skips and six
+warnings; typecheck, offline webpack and production checks also passed. DB,
+local H1 and both browser widths remain pending. A completed W7's independent
+read-only review with no additional defects; all 16 frozen hashes matched.
+
+A now owns only docs/49-uat-unified-workspace-th.md in the existing external
+ws/w8-uat-draft worktree to reconcile the preparatory Thai UAT pack against
+reviewed W4-W7 behavior and the owner's replacement BUD rules. The prior draft
+hash is 42f0dea90d6669d1e3b282804dab7f969a53d1a00cdc1fae194bff3bf1496cd8.
+This is preparation, not W8 completion: every owner execution result remains
+not run, and final commit/gate receipts stay explicitly pending. Read the final
+source fixtures and existing scripts without opening configuration; never
+invent setup commands. Copy UI labels from docs47 and write UTF-8 files only.
+No other edits, ports, credentials, commits or pushes. Root later integrates
+the pack and supplies final-main evidence after W7.
+
+B's two-file W5 repair is frozen in w5/backend-repairs-frozen.json. Migration
+0086 now has SHA-256 ba371303c50f291476f67f460d7e73a9bc95c2659525046158960df77095fe68.
+Root reviewed the full finite SQL and test diff. SQL/PL and expanded definition
+parsing, AST, encoding/whitespace and credential checks passed; 15 API cases
+collected, runtime pending. The original 12-file receipt is retained as review
+evidence; these two corrected files supersede it at integration.
+
+C's four-file W5 transport delivery is frozen in w5/transport-frozen.json.
+Root reviewed all four diffs/tests. Admin and strict typechecks, 15 pure cases,
+collection, UTF-8 and whitespace checks passed. Six read-only predecessors are
+unchanged. Root must dispatch the exact business namespace through both helpers
+before hosted/proxy fallbacks. W6's later hub-permissions merge must preserve
+both W4 publication entry and W5 Knowledge-only business entry.
+
+Root found one W6 alert-placement gap: an account manager with no source View
+lands on account management and cannot open Home, so Home/project-only notice
+mounts do not reach that manager. After C's read-only W7 inventory report, C's
+next lease in ws/w6-account-ui owns only content-scope-settings.tsx and new
+tests/ui/content-bu-account-notices.spec.ts. Reuse ContentBuNotices visibly on
+account management, outside collapsed run-history details. Cover manager-only
+access, failed/stale/day-five/day-seven notices, temporary-project-grant link,
+and loss of manager authority. No extra grants, new notification system or
+source-content read. Root supplies only the two frozen notice component/style
+predecessors; every other file stays read-only. Typechecks and collection only;
+no ports, configurations, commits or pushes.
+
+B's W6 inventory review found 211 new functions across 0087/0088, including
+private delegates. Root allocates ws/w6-permission-inventory from current main
+to preserve that reviewed mapping in exactly one owned file,
+tests/permissions/content-scope-db.json. Record explicit table/policy/function
+names, expected execution roles, SECURITY DEFINER and search_path/TimeZone
+exceptions; distinguish existing modified entries. No automatic live catalogue
+snapshot or legacy-manifest rewrite. All other paths are read-only, with only
+JSON/static validation allowed. Root reviews and integrates this inventory with
+runtime boundary assertions in W6; no ports, credentials, commits or pushes.
+
+A's reconciled W8 draft has SHA-256
+382325f4042e1849d0b75e89e1182293d1f1dab42d619efb58d70d3b33078bfe.
+All 30 cases remain not run. UTF-8/whitespace, 96 canonical quoted labels and
+32 source references passed static validation. Root will review the finite
+delta and supply final-main evidence only after W7.
+
+A's next lease ws/w7-proxy-transport owns only new
+apps/admin/lib/writing-aid-routes.ts and tests/ui/writing-proxy.spec.ts. Provide
+finite GET state and POST proposals routes using exact UUIDs, no query/extra
+method/suffix, and no accept endpoint. Root retains content-routes/hosted-config
+wiring and API registration. Positive and malformed-neighbour pure tests,
+typechecks and collection are allowed; no ports, configs, live provider,
+commits or pushes. All other files stay read-only.
+
+Root verified the new frozen handoffs: w6/inventory-frozen.json (211 explicit
+new functions, six owner-only tables, 92 restrictive policy relations),
+w6/account-notices-frozen.json (two files, visible manager alerts above collapsed
+history), and w7/transport-frozen.json (two files, exact state/proposal routes).
+The account notice repair passed admin/test typechecks and one pure case; eight
+cases per viewport collected, seven require browser runtime. Writing transport
+passed typechecks and seven pure cases. Root reviewed both UI/transport deltas;
+catalogue assertions and runtime integration remain pending.
+
+Follow-on inventory leases, while root retains the sole W3 port-test lock:
+
+- A, ws/w5-business-transport: only new tests/permissions/content-business-db.json
+  and apps/api/tests/test_content_business_inventory.py. Review corrected 0086;
+  cover two FORCE-RLS owner-only tables and nine closed functions. Preserve the
+  four frozen transport files and six read-only predecessors.
+- B, ws/w6-permission-inventory: only new
+  apps/api/tests/test_content_scope_inventory.py. Keep content-scope-db.json
+  frozen. Assert explicit function ACL/signature/config, table/trigger and
+  restrictive-policy contracts, including private delegate relationships.
+- C, ws/w7-admission-order: only new tests/permissions/content-writing-db.json
+  and apps/api/tests/test_content_writing_inventory.py. Review corrected 0089;
+  cover two FORCE-RLS tables, nine closed functions, field opt-in and settings
+  defaults. Preserve all prior frozen sources.
+
+Each brief implements its docs47 workstream and docs36 exhaustive inventory
+gate. Existing runtime()/catalogue SQL test helpers may be imported; no harness
+loader changes or direct config reads. Only static/type/collection checks are
+allowed. No DB/ports, credentials, provider calls, commits or pushes. Root owns
+shared baseline classification and final runtime checks. Done means exact
+leased files, frozen hashes, review notes and check results.
+
+W5 and W7 two-file inventories are frozen in w5/inventory-frozen.json and
+w7/inventory-frozen.json. Their static/AST/JSON/encoding checks passed; three
+W5 and five W7 tests collected. W7's pure contract test passed and four database
+cases remain pending. W5's optional parser check was unavailable in that
+worktree's cache; no package was installed. No DB tests have run for either
+handoff. Their prior frozen predecessors remain unchanged.
+
+C next owns exactly new apps/admin/lib/content-scope-routes.ts and
+tests/ui/content-scope-transport.spec.ts in ws/w6-route-transport, cut from
+current main d3ec1d6. Implement the six reviewed W6 routes with finite methods,
+bounded known queries, duplicate/control/traversal rejection and exact raw BUD
+references. All shared proxy/hosted wiring stays with root. API/SQL retain
+authority. Only port-free type/static/collection/pure checks; no config copies,
+ports, credentials, commits or pushes. Root supplied dependency junctions only.
+
+A is reviewing final W6 acceptance/expiry/handover and private-delegate ACLs
+read-only in ws/w6-scope-audit-fixes, with no owned files or runtime commands.
+
+W3 fourth full gate: typecheck, offline build, production (4), API (2230 passed,
+11 existing skips), DB (95 Node, 39 SQL suites and 23 concurrent scenarios),
+H1 (69 Node, 10 smoke, 57 browser) and desktop (338) passed. Mobile finished
+337 passed / one failed: brand-review's unavailable-version case opened the
+drawer twice and clicked a trigger behind the modal. Root removed that duplicate
+open and replaced the local blind helper with the existing state-aware helper;
+all publication/retry assertions remain. The matching W4 prepared test received
+the same finite fix. Production code is unchanged. Evidence is preserved in
+w3/full-attempt4. Per docs11's failure loop, run focused checks at both widths,
+then the full gate again. An initial restricted-process attempt failed inside
+Node os.userInfo before database setup; retry uses the authorized disposable
+harness outside that process restriction. No working port was occupied.
+
+Root reviewed the three new permission-inventory test modules. B's W6 test
+hash is frozen in w6/inventory-tests-frozen.json. A independently found no new
+concrete W6 timing/ACL defect in the final 0087/0088 source: rejection retains
+last-good membership, exact 24-hour grace arithmetic and NULL BU handling are
+preserved, production has no injectable clock, accepted changes avoid staging
+and approval data, and existing wrapper ACLs/private delegate closure remain.
+This is static evidence only; runtime remains pending.
+
+Preparation timing adjustment: root may forward the hash-frozen W3 predecessor
+into the W4 integration worktree while W3's final gate runs. The preparation
+checks the complete 115-path lease, empty index and frozen source hashes before
+writing only the external candidate. Main integration, port gates and commits
+still wait for W3's successful full gate and push. This advances static review
+without overlapping tests or changing the source under the active gate.
+
+The navigation-only W3 recovery passed 23 cases at each viewport; the fifth
+full gate is now running. Root forwarded 121 reviewed predecessor files into
+the external W4 candidate. A tracked navigation base file was absent from its
+dependency-overlay list; the preparation stopped before writes, then verified
+that file against the actual branch base before proceeding. W4's admin
+typecheck passed. Root restored W4-only proxy dispatch that the W3 forward had
+omitted and added malformed-neighbour/prototype-key/final-newline coverage:
+three actual pure protocol cases passed. Main remains unchanged by W4.
+
+Final W4 static review leases (all read-only, no owned files or runtime): A
+reviews API modules and 0084/0085; B reviews lifecycle fixtures, tests, H1 seed
+and archived export provenance; C reviews native editor controls, publication
+UI and preservation of W3 draft behavior. The finite reviewed transfer now has
+132 paths in w4/main-transfer.json. Root alone retains registration/transport
+edits and the eventual main integration after W3 passes.
+
+W6's six-route transport is frozen in w6/transport-frozen.json. Root reviewed
+the helper and 18 pure cases: typechecks, all 18 executions and collection at
+both widths passed. No ports/config loaders were involved. Exact raw BUD
+identities are preserved; settings accept no queries, account history needs
+an exact UUID, unknown/duplicate/control-bearing parameters are rejected.
+
+W4 final review findings and disjoint repair leases:
+
+- A found a post-wait authority race: publication_actor ran before the shared
+  account-decision lock, so a special revoked during that wait needed a fresh
+  check. In new ws/w4-publication-recheck, A owns only still-uncommitted 0085
+  and new apps/api/tests/test_publication_authority_wait.py. Recheck authority
+  after acquiring that lock, preserve lock order, and prove revoke-while-waiting
+  denial with real two-connection tests plus an unchanged-special neighbour.
+- A found that disclosure staged evidence included raw imported area/unit and
+  building totals even when the ordinary comparison used unchanged saved
+  manual facts or an override. In new ws/w4-disclosure-evidence, C owns only
+  still-uncommitted 0084 and new apps/api/tests/test_disclosure_source_evidence.py.
+  Restrict imported dependencies to exact comparison sources/choices and
+  registered imported building values actually used. Keep old/new evidence,
+  drafts and approved history; prove unused import changes remain independent.
+
+Both branches were cut from current main d3ec1d6. Root copied 157 explicit
+Python, permission JSON and 0084/0085 source predecessors only; the per-branch
+overlay manifests record hashes. All other files are read-only. No new migration
+numbers, ports, credential/config copies, commits or pushes. Static/parse/collect
+checks only; root will review and run all runtime gates. C's prior W4 UI review
+found no further concrete issue, with browser evidence explicitly pending.
+
+Root reviewed A's two-file publication-authority repair and integrated it only
+into the external W4 candidate. Eight collected two-connection cases cover
+special revocation and an unrelated-grant positive neighbour for prepare,
+publish, return and withdrawal. The command rechecks authority immediately
+after the account-decision lock and before source locks or writes. No lock was
+added. AST/encoding/collection passed; runtime is pending. The receipt is
+w4/publication-recheck-integrated.json; C will supply separate finite 0085
+caller changes after completing its 0084 disclosure-source repair.
+
+B's fixture review prompted two strict True assertions in the rich-project
+publication test. The existing ordinary lifecycle already supplies source View
+and the publish special; equality could previously pass with two false values.
+The following source-View revocation denial is unchanged. This tests permission
+to attempt the batch; per-item readiness and stale-source checks remain separate.
+The first exact-edit preparation failed its AST guard before writing; the full
+line and indentation were then matched and the two-line change passed parsing.
+
+Root declined B's suggestion to delete immutable synthetic review certificates
+from a concurrency fixture: docs11 permits retained immutable test history until
+the complete disposable database is removed. No history guard was weakened.
+C's private disclosure source selectors will remain in the existing authorized
+evidence-table boundary, with no new ACL, and be excluded from application and
+history DTOs and value comparisons.
+
+Follow-on read-only reviews: B reviews the complete W8 UAT draft and feasible
+existing disposable setup; A reviews the W7 H1 synthetic field-catalog special
+setup. Neither owns files or may run ports, configuration readers or mutations.
+Root retains all integration and test ownership.
+
+W5 preparation is an ignored-artifact merge preview only: 31 frozen source
+deltas in w5/merge-preview, no worktree or main change. Root resolved two
+overlaps as finite edits: business entity mounting keeps W3's navigation/draft
+recovery, and business task routing keeps W4's complete publication query and
+version. API/database registration and canonical copy remain separate future
+steps. All before hashes must be rechecked after W4's final commit.
+
+B's W8 review identified missing explicit checks for home readiness by BUD and
+brand, corporate FAQ opt-in beside empty business applicability, Releases-only
+history, and client deadline/fingerprint invalidation with authored-input
+recovery. B now owns only docs/49 in the existing ws/w8-uat-draft branch to add
+those cases, exact source-suite references and the documented retained local
+H1 walkthrough command with its limitations. The original draft hash is
+382325f4042e1849d0b75e89e1182293d1f1dab42d619efb58d70d3b33078bfe.
+All actual fixture, final-main and gate details remain pending. Thai labels
+must come from docs47; static checks only, no ports/config/credentials or
+commits/pushes. The owner has not run UAT.
+
+C's disclosure repair is frozen and reviewed: 0084
+f4d2c2a1182314be192a2e4975093b583bb5b27bf40c20b687ed6bb0c74ccec6;
+combined 0085 beb20e95ca4239f4a3ee5bd037b69210ceaee83ab092f158f4be7bd23543b3cd.
+Root integrated both finite publication callers and matching canonical replay
+hashes in the external W4 candidate. Eleven collected disclosure tests cover
+manual/unused imports, total versus counted selection, registered building
+units, frozen source reassignment, pending approvals, private metadata and
+history preservation. SQL/PL parsing and static checks passed; runtime pending.
+C independently verified the combined callers and preserved authority recheck.
+The complete W4 transfer now contains 134 finite paths.
+
+A's H1 review found that the synthetic Admin lacks the existing field-catalog
+special, and self-assignment is correctly prohibited. In new
+ws/w7-h1-catalog-fixture cut from d3ec1d6, A owns exactly
+tests/ui/writing-catalog-h1-fixture.ts, tests/ui/writing-aid-h1.spec.ts and
+tests/ui/writing-fields-h1.spec.ts. Use the ordinary Accounts API with two
+synthetic actors, explicit manager confirmation, fresh revisions and finally
+restoration of the field flag and both exact access snapshots. Preserve denials
+for Admin without the special and an actual non-Admin with the special. Root
+supplied three source-only predecessors and dependency junctions. No default
+template, archived seed, configuration-loading or production changes; static
+type/collection checks only, no ports/credentials/commits/pushes.
+
+B's repaired W8 draft is frozen at
+72970a8ff05f3521e8325a288a8210ae2e1018024ddfb3c88f9736fb2ea116b5.
+All 112 quoted labels and 47 source references passed static checks. The stock
+retained H1 walkthrough has seven synthetic identities and a small seed; it
+does not provide all advanced BUD/multi-phase/pagination fixtures or positive
+assistant streaming. Final W8 setup must distinguish actual owner walkthrough
+steps from separately executed API/fake-clock and mocked browser evidence.
+
+### Owner delegation change, 5 November 2026
+
+The owner requested Sol subagents for suitable bounded tasks and retained harder
+work with the lead. The previous three agents are no longer active. New agents
+use explicit GPT-6.1 Sol configuration with a fresh context and a narrow brief.
+The lead personally owns architecture, permission and migration decisions,
+concurrency fixes, code integration, runtime gates and final review. Existing
+frozen handoffs remain subject to that lead review; no model names are added to
+commit messages.
+
+The first new lease is read-only ws/w8-sol-doc-checks, cut from main d3ec1d6.
+The Sol documentation checker owns no editable files. It inventories the frozen
+UAT draft's remaining placeholders with line numbers and checks the U01-U30
+case/result-row correspondence. No design, translations, fixture implementation,
+ports, configuration readers, credentials, commits, pushes or delegation.
+
+## W3 final gate and delivery preparation
+
+The fifth full gate passed on the unchanged 114-source hash manifest. The lead
+retained the only port-test lock throughout, and each browser width used its own
+disposable database. Session 68041 exited successfully and released the lock.
+
+| Suite | Passed | Skipped | Failed |
+|---|---|---|---|
+| Admin typecheck / offline webpack build | both | 0 | 0 |
+| Production isolation | 4 | 0 | 0 |
+| API | 2230 | 11 pre-existing | 0 |
+| DB | 95 Node tests, 39 SQL suites, 23 concurrent cases in 10 scripts | 0 | 0 |
+| Local H1 | 69 Node, 10 smoke, 57 browser | 0 | 0 |
+| Browser 1280 px | 338 | 0 | 0 |
+| Browser 390 px | 338 | 0 | 0 |
+| Disposable migration replay / populated H1 replay | both | 0 | 0 |
+| Provider scan / broad source and browser scan | zero matches | 0 | 0 |
+
+Evidence: artifacts/unified-workspace/w3/*-full.log,
+full-gate-receipt.json, final-gated-source.json and credential-scan-broad.json.
+The broad scan covered 756 source files and 72 browser files without opening
+credential files. All five credential paths remained ignored. The explicit
+commit lease contains 115 paths including this log.
+
+Built: hierarchical entity pages and reused native editors, exact readiness and
+legacy deep links, fixed-scope FAQ and inline imported suggestions, media views,
+private previews, version/audit history and actual-Admin activity projection.
+The legacy unkeyed FAQ accept route is closed and imported FAQ evidence is
+read-only. Migration: 202611040083_unified_content_workspace.sql, canonical
+SHA256 2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f.
+
+Screenshots include artifacts/unified-workspace/w3/history.png, activity.png,
+faq-390.png, entity-light-1280.png, entity-dark-390.png, preview-dark-390.png
+and navigation/h1-dark-390-drawer.png. The loading-state H1 history capture is
+not used as proof of populated history; the loaded local history capture is.
+
+Agents A and C supplied the entity UI/navigation and workspace API/history/N7
+handoffs; the lead reviewed, integrated and repaired cross-workstream behavior
+and all runtime failures. No tests were skipped, quarantined or weakened.
+Deviation retained: accepting legacy suggestions keeps their existing internal
+draft exposure; an ordinary explicit edit is required to broaden it. Automatic
+approval review rejected broadening that default without authorization, and the
+safe existing default allowed implementation to continue. Earlier failed full
+attempts and focused recoveries remain recorded above and in their artifacts.
+No new pending questions; Q77-Q82 remain in the existing catalogue.
+
+Commit/push receipt follows after the explicit-path commit. Next: W4 finite
+integration, the required quick gates, then its complete workstream gate.

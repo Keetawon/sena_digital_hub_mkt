@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const time = '2026-09-18T08:00:00Z';
@@ -17,7 +19,22 @@ async function openFixture(page: Page, gold = true, extra: Record<string, unknow
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
+    // The outer Media tab reads this workspace before canonical media is selected.
+    // Keep this exact fixture projection separate from the existing native writers.
+    if (route.request().method() === 'GET' && ['projects/form-test/media', 'projects/form-test/media/jobs', 'projects/form-test/media/ai-state'].includes(path)) {
+      const owner = project;
+      const data = path.endsWith('/jobs') ? [] : path.endsWith('/ai-state')
+        ? { cap_usd: 0, spent_usd: 0, remaining_usd: 0, ceiling_usd: 0, provider_configured: false, budget_exhausted: false }
+        : { project: { id: '66000000-0000-4000-8000-000000000001', public_project_id: owner.public_project_id, name: owner.public_name, updated_at: owner.updated_at },
+          assets: owner.assets.map(asset => ({ ...asset, media_category: ['master_plan', 'floor_plan'].includes(asset.asset_role) ? asset.asset_role : 'exterior',
+            caption: {}, image_kind: null, taken_at: null, people: 'unknown', third_party_marks: 'unknown', credit: {}, tags: [],
+            metadata_state: 'needs_review', ai_exposure: 'internal', marketing_publication: false, media_revision: 1, ai_suggestion: null })),
+          links: [], clips: [], context: { facilities: [], commercial_types: [], buildings: [], promotions: [], selling_points: [], features: [], places: [] },
+          tags: [], requirements: [], checklist: { items: [], recommended_score: 0, required_missing: 0, broken_links: [], unknown_coverage: [] } };
+      return route.fulfill({ json: { data } });
+    }
     if (route.request().method() === 'PATCH') {
       Object.assign(project, route.request().postDataJSON());
       await route.fulfill({ json: { data: project } });
@@ -33,7 +50,7 @@ async function openFixture(page: Page, gold = true, extra: Record<string, unknow
 test('website source stays separate from approval and dirty website text survives a stale save', async ({ page }) => {
   const project = await openFixture(page, true, { website_content: { th: 'เนื้อหาจากเว็บไซต์สำหรับทดสอบ', en: 'Preserved English' },
     website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] });
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await openWorkspaceTab(page, 'supplementary');
   await expect(page.getByText('ดึงจากเว็บไซต์สาธารณะ SENA', { exact: true })).toBeVisible();
   await expect(page.getByText('แหล่งข้อมูล · ยังไม่ใช่การอนุมัติโดยบุคคล')).toBeVisible();
   const field = page.getByLabel('เนื้อหาจากเว็บไซต์ (อ้างอิงภายใน)', { exact: true });
@@ -87,7 +104,7 @@ test('Thailand coordinates reject zero and outside bounds, accept pasted pairs a
   expect(project.longitude).toBe(100.5018);
 });
 
-test('ordered source fields, bilingual draft and unsaved edits survive five tabs', async ({ page }) => {
+test('ordered source fields, bilingual draft and unsaved edits survive six tabs', async ({ page }) => {
   const project = await openFixture(page);
   const fields = page.locator('.project-fields input, .project-fields textarea, .project-fields .source-field p');
   expect(await fields.evaluateAll(nodes => nodes.map(node => node.id))).toEqual(['gold-commercial_brand', 'gold-project_id', 'gold-rem_project_group_id', 'gold-project_name', 'public_name', 'gold-project_name_eng', 'public_name_en', 'address', 'address_en', 'latitude', 'longitude', 'slug', 'ad_disclaimer', 'ad_disclaimer_en']);
@@ -96,13 +113,15 @@ test('ordered source fields, bilingual draft and unsaved edits survive five tabs
   await expect(page.locator('#public_name')).toHaveValue('ชื่อที่ทีมงานแก้แล้ว');
   await page.locator('#public_name_en').fill('Revised English');
   await page.locator('#address_en').fill('Revised address');
-  const content = page.getByRole('tab', { name: /ข้อมูลหลัก/ });
+  const content = page.locator('#workspace-tab-data');
   await content.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toBeFocused();
+  await expect(page.locator('#workspace-tab-unit-types')).toBeFocused();
   await page.keyboard.press('End');
-  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toBeFocused();
+  await expect(page.locator('#workspace-tab-history')).toBeFocused();
   await page.keyboard.press('Home');
+  await expect(page.locator('#workspace-tab-overview')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
   await expect(content).toBeFocused();
   await expect(page.locator('#public_name_en')).toHaveValue('Revised English');
   await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
@@ -116,20 +135,20 @@ test('ordered source fields, bilingual draft and unsaved edits survive five tabs
 
 test('readiness links reveal correct tab and advanced field; model plans stay scoped', async ({ page }) => {
   await openFixture(page);
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   expect(await page.locator('.rem-model-table tbody tr td:nth-child(2)').allTextContents()).toEqual(['model-A', 'model-A2', 'model-A10', 'model-B']);
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await expect(page.locator('#assets')).toContainText('project-plan.pdf');
   await expect(page.locator('#assets')).not.toContainText('model-a-plan.pdf');
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await page.locator('.readiness-groups summary').filter({ hasText: 'ข้อมูลโครงการ' }).click();
   await page.getByRole('link', { name: 'กรอกรหัส URL', exact: true }).click();
   await expect(page.locator('#slug')).toBeVisible();
   await expect(page.locator('#slug')).toBeFocused();
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await page.locator('.readiness-groups summary').filter({ hasText: 'แบบที่อยู่อาศัย' }).click();
   await page.getByRole('link', { name: 'ตรวจสอบแบบ A', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-unit-types')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#model-media')).toContainText('model-a-plan.pdf');
   await expect(page.locator('#model-media')).not.toContainText('model-b-plan.pdf');
   await page.getByText('ข้อมูลแบบจาก DW สำหรับตรวจสอบ', { exact: true }).click();
@@ -138,7 +157,7 @@ test('readiness links reveal correct tab and advanced field; model plans stay sc
   await expect(page.getByRole('region', { name: 'แก้ไขรายละเอียดแบบ' })).toBeVisible();
   await expect(page.locator('#model-media')).toContainText('model-b-plan.pdf');
   await expect(page.locator('#model-media')).not.toContainText('model-a-plan.pdf');
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
+  await openWorkspaceTab(page, 'history');
   await page.getByRole('link', { name: 'ตรวจสอบแบบ A', exact: true }).click();
   await expect(page.locator('.rem-model-table tr[aria-selected="true"]')).toContainText('model-A');
 });
@@ -166,6 +185,7 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     if (route.request().method() !== 'GET') {
       writes++;
       if (failSave) return route.fulfill({ status: 409, json: { error: { message: 'ข้อมูลเปลี่ยนแปลง กรุณาตรวจสอบ' } } });
@@ -184,18 +204,18 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   await page.locator('#public_name_en').fill('Reviewed English');
   await page.getByRole('button', { name: 'บันทึกและไปต่อ', exact: true }).click();
   await expect(page.locator('.notice[role="alert"]')).toContainText('ข้อมูลเปลี่ยนแปลง');
-  await expect(page.getByRole('tab', { name: /ข้อมูลหลัก/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#public_name_en')).toHaveValue('Reviewed English');
   failSave = false;
   await page.getByRole('button', { name: 'บันทึกและไปต่อ', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /รูปภาพ/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-media')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#media-panel')).toBeFocused();
   expect(project.public_name.en).toBe('Reviewed English');
   expect(project.address.zh).toBe('保留地址');
   await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
   await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
   await page.getByRole('button', { name: 'ถัดไป', exact: true }).click();
-  await expect(page.getByRole('tab', { name: /เผยแพร่และประวัติ/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#workspace-tab-history')).toHaveAttribute('aria-selected', 'true');
   expect(project.published_version_id).toBeNull();
 });
 
@@ -212,7 +232,7 @@ test('adding a second model plan uses the selected model route and retains exist
     project.assets.push(binding('additional-plan', 'model-A', 'floor_plan'));
     await route.fulfill({ json: { data: project } });
   });
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
   const media = page.locator('#model-media');
   await media.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true }).click();
   await media.getByRole('button', { name: 'เลือกใช้กับแบบที่อยู่อาศัย', exact: true }).click();

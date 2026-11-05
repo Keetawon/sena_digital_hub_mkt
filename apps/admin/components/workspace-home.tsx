@@ -10,6 +10,10 @@ import { HubShell } from "./hub-shell";
 import { useHostedSession } from "./hosted-session";
 import { openWorkspaceAssistant } from "./hub-assistant";
 import { WorkspaceSearch, workspaceLabel } from "./workspace-search";
+import { FaqCoverage } from "./faq-coverage";
+import { workspaceText, workspaceHref } from "@/lib/unified-workspace";
+import { request } from "./hub-request";
+import type { WorkspaceTarget } from "@/lib/unified-workspace";
 import "./workspace-home.css";
 
 type Label = { th?: string; en?: string };
@@ -26,6 +30,15 @@ const date = (value: string) => new Intl.DateTimeFormat("th-TH", { dateStyle: "m
 
 function HomeContent({ hosted }: { hosted: boolean }) {
   const params = useSearchParams(); const router = useRouter();
+  const permissions = useHubPermissions();
+  const canCoverage = permissions.can("knowledge") && permissions.can("projects");
+  const coverage = params.get("section") === "coverage";
+  const [coverageError, setCoverageError] = useState(false);
+  async function openFaq(id: string) {
+    setCoverageError(false);
+    try { router.push(workspaceHref(await request<WorkspaceTarget>(`v1/admin/content/workspace/resolve?faq=${encodeURIComponent(id)}`))); }
+    catch { setCoverageError(true); }
+  }
   const [data, setData] = useState<Home | null>(null);
   const [error, setError] = useState(false); const [retry, setRetry] = useState(0);
   const filters = new URLSearchParams();
@@ -57,6 +70,11 @@ function HomeContent({ hosted }: { hosted: boolean }) {
     <section className="workspace-home-hero"><h1>{copy.greeting}</h1><WorkspaceSearch hosted={hosted} home />
       {data && data.tasks.length > 0 && <div className="workspace-home-examples">{data.tasks.slice(0, 3).map(task => <button className="button secondary" type="button" key={task.id} disabled={hosted} title={hosted ? copy.assistant_disabled : undefined} onClick={event => openWorkspaceAssistant(`${copy.task_question}: ${workspaceLabel(task.label)}`, task.context.project ? { project_id: task.context.project } : task.context.brand ? { brand_id: task.context.brand } : {}, event.currentTarget)}>{copy.ask_prefix}{workspaceLabel(task.label)}</button>)}</div>}
     </section>
+    {(canCoverage || coverage) && <section className="workspace-home-card" aria-label={workspaceText.coverage}>
+      {canCoverage && <a href="/home?section=coverage">{workspaceText.coverage}</a>}
+      {coverageError && <p role="alert">{copy.load_error}</p>}
+      {coverage && <FaqCoverage onOpenFaq={id => void openFaq(id)} />}
+    </section>}
     {error ? <p role="alert">{copy.load_error} <button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{copy.retry}</button></p> : !data ? <p role="status">{copy.loading}</p> : <>
       {data.selected_gap && <section className="workspace-home-card workspace-home-gap" id={`selected-${data.selected_gap.id}`} tabIndex={-1} aria-label={copy.unanswered_task}><h2>{copy.unanswered_task}</h2><h3>{workspaceLabel(data.selected_gap.label)}</h3><p>{copy.unanswered_note}</p>{data.selected_gap.last_seen && <p className="workspace-home-meta">{copy.date}: {date(data.selected_gap.last_seen)}</p>}{data.selected_gap.context.project && <a href={`/?project=${encodeURIComponent(data.selected_gap.context.project)}`}>{copy.project}</a>}</section>}
       <div className="workspace-home-filters">

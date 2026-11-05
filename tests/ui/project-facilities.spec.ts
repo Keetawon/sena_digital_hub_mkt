@@ -1,3 +1,5 @@
+import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
+import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const initialTime = '2026-09-20T08:00:00Z';
@@ -42,9 +44,20 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
   // Domain requests are intercepted; identity reads retain the real capability projection.
   await page.route('**/api/hub/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
+    if (await fulfilWorkspaceProjection(route, project)) return;
     const request = route.request();
     if(new URL(request.url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
+    // The outer Media tab can load before its canonical-media button is chosen.
+    // This fixture has no media; preserve all native facility writers below.
+    if (request.method() === 'GET' && ['projects/facility-test/media', 'projects/facility-test/media/jobs', 'projects/facility-test/media/ai-state'].includes(path)) {
+      const data = path.endsWith('/jobs') ? [] : path.endsWith('/ai-state')
+        ? { cap_usd: 0, spent_usd: 0, remaining_usd: 0, ceiling_usd: 0, provider_configured: false, budget_exhausted: false }
+        : { project: { id: '66000000-0000-4000-8000-000000000005', public_project_id: project.public_project_id, name: project.public_name, updated_at: project.updated_at },
+          assets: [], links: [], clips: [], context: { facilities: [], commercial_types: [], buildings: [], promotions: [], selling_points: [], features: [], places: [] },
+          tags: [], requirements: [], checklist: { items: [], recommended_score: 0, required_missing: 0, broken_links: [], unknown_coverage: [] } };
+      return route.fulfill({ json: { data } });
+    }
     const facility = path.match(/^projects\/facility-test\/facilities\/([^/]+)$/);
     if (request.method() === 'PUT' && facility) {
       const body = request.postDataJSON();
@@ -70,7 +83,7 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
     }
   });
   await page.goto('/?project=facility-test');
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await openWorkspaceTab(page, 'supplementary');
   await expect(page.locator('#facilities')).toBeVisible();
   return { project, writes, unexpectedWrites };
 }
@@ -108,25 +121,25 @@ test('unknown and absent are distinct; saved status updates collection with revi
 test('unsaved facility work survives tabs and blocks conflicting project and media changes until cancelled', async ({ page }) => {
   const { writes, unexpectedWrites } = await openFixture(page);
   const section = page.locator('#facilities');
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await openWorkspaceTab(page, 'supplementary');
   await page.getByRole('button', { name: 'รายละเอียด สระว่ายน้ำ', exact: true }).click();
   await page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true }).fill('ข้อมูลที่ยังไม่บันทึก');
   await expect(page.locator('#public_name')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true })).toBeDisabled();
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await expect(page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeDisabled();
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await expect(page.locator('#assets').getByRole('button', { name: 'เปิดคลังสื่อ', exact: true })).toBeEnabled();
-  await page.getByRole('tab', { name: /แบบที่อยู่อาศัย/ }).click();
-  await page.getByRole('tab', { name: /เผยแพร่และประวัติ/ }).click();
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await openWorkspaceTab(page, 'unit-types');
+  await openWorkspaceTab(page, 'history');
+  await openWorkspaceTab(page, 'supplementary');
   await expect(page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true })).toHaveValue('ข้อมูลที่ยังไม่บันทึก');
   await section.getByRole('button', { name: 'ยกเลิก', exact: true }).click();
   await expect(section.locator('form')).toHaveCount(0);
   await expect(page.locator('#public_name')).toBeEnabled();
-  await page.getByRole('tab', { name: /รูปภาพ/ }).click();
+  await openWorkspaceTab(page, 'media');
   await expect(page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
-  await page.getByRole('tab', { name: /ข้อมูลเสริม/ }).click();
+  await openWorkspaceTab(page, 'supplementary');
   await page.getByRole('button', { name: 'รายละเอียด สระว่ายน้ำ', exact: true }).click();
   await expect(page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true })).toHaveValue('');
   expect(writes).toEqual([]);

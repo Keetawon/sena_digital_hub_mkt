@@ -31,7 +31,7 @@ test('FAQ applicability clears resolved membership on source revocation and reta
   const original = (await (await page.request.get('/api/hub/v1/me')).json()).data;
   let account = structuredClone(original), checks = 0;
   await page.route('**/api/hub/v1/me', route => { checks++; return route.fulfill({ json: { data: account } }); });
-  await page.goto('/faq?tab=drafts&faq=new');
+  await page.goto('/website/corporate/sena?tab=faq&faq=new');
   await page.locator('#faq-short_answer-th').fill('ข้อความร่างที่ยังไม่บันทึก');
   await page.getByText('เลือกโครงการด้วยเงื่อนไข', { exact: true }).click();
   await page.getByRole('listbox', { name: 'ประเภทที่อยู่อาศัยในเงื่อนไข', exact: true }).selectOption('condominium');

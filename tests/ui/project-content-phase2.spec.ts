@@ -1,3 +1,4 @@
+import { workspaceHref, workspaceText } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
@@ -11,8 +12,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 900 }); await persona(page, 'editor');
     const project = (await read(page, `${api}/projects`)).find((row: { source: { rem_project_id: string } }) => row.source.rem_project_id === 'DEMO-001');
     const base = `${api}/projects/${project.public_project_id}`;
-    await page.goto(`/?project=${project.public_project_id}`);
-    await page.getByRole('link', { name: 'เนื้อหาเว็บไซต์โครงการ', exact: true }).click();
+    await page.goto(workspaceHref({ level: 'project', id: project.public_project_id, phase: project.source.rem_project_id, tab: 'data', section: 'facts' }));
     await expect(page.getByRole('heading', { name: 'ข้อเท็จจริงของโครงการ / เฟสนี้' })).toBeVisible();
     await page.getByRole('button', { name: 'แก้ไข จำนวนยูนิตทั้งหมด', exact: true }).click();
     await page.getByLabel('ยืนยันแหล่งจำนวนยูนิต').selectOption('marketing');
@@ -64,7 +64,7 @@ for (const width of [1280, 390]) {
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/english-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'เนื้อหาและจุดขาย', exact: true }).click();
     await page.getByRole('button', { name: 'ส่งตรวจ แนะนำโครงการ', exact: true }).click();
-    await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'แนะนำโครงการ', exact: true }) })).toContainText('ส่งตรวจแล้ว');
+    await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'แนะนำโครงการ', exact: true }) })).toContainText(workspaceText.IN_REVIEW);
 
     await page.getByRole('button', { name: 'ช่องทางติดต่อ', exact: true }).click();
     await page.getByRole('button', { name: 'เพิ่มช่องทางติดต่อ', exact: true }).click();
@@ -100,8 +100,8 @@ for (const width of [1280, 390]) {
     await page.getByRole('button', { name: `อนุมัติคำถาม ${key}`, exact: true }).click();
     await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: question, exact: true }) })).toContainText('อนุมัติแล้ว');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/question-bank-${width}.png`, fullPage: true });
-    await persona(page, 'editor'); await page.goto('/faq');
-    await page.getByRole('button', { name: 'เพิ่มคำตอบ FAQ', exact: true }).click();
+    await persona(page, 'editor'); await page.goto(workspaceHref({ level: 'corporate', id: 'sena', tab: 'faq', question_key: key }));
+    await page.locator(`[data-workspace-question="${key}"]`).getByRole('button', { name: 'เพิ่มคำตอบ FAQ', exact: true }).click();
     await page.getByLabel('คำถามมาตรฐานที่อนุมัติแล้ว').selectOption(key);
     await page.locator('#faq-short_answer-th').fill('SENA ให้ความสำคัญกับการอยู่อาศัยที่สะดวกสบาย');
     await page.locator('#faq-short_answer-en').fill('SENA focuses on comfortable living.');
@@ -132,7 +132,7 @@ for (const width of [1280, 390]) {
     await page.getByRole('button', { name: 'บันทึกคำตอบ', exact: true }).click();
     await expect(page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'ประวัติ', exact: true }).click();
-    await expect(page.getByText(/ฉบับ 1 · ส่งตรวจแล้ว/)).toBeVisible();
+    await expect(page.getByText(new RegExp(`ฉบับ 1 · ${workspaceText.IN_REVIEW}`))).toBeVisible();
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/faq-history-${width}.png`, fullPage: true });
     await persona(page, 'viewer'); await page.reload();
     await expect(page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true })).toHaveCount(0);

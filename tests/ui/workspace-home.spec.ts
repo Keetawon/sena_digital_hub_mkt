@@ -30,6 +30,12 @@ for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as 
     await expect(page.getByRole('link', { name: 'SYNTHETIC RETURNED ITEM', exact: true })).toHaveAttribute('href', /field=section.project_intro/);
     await page.locator('details').getByText(copy.readiness, { exact: false }).click();
     await expect(page.getByRole('link', { name: 'SYNTHETIC FIELD', exact: true })).toHaveAttribute('href', /tab=narrative&field=section.project_intro/);
+    const fieldLink = await page.getByRole('link', { name: 'SYNTHETIC FIELD', exact: true }).getAttribute('href');
+    const redirect = await page.request.get(fieldLink!, { maxRedirects: 0 });
+    expect(redirect.status()).toBe(307);
+    const destination = new URL(redirect.headers().location, origin);
+    expect(destination.pathname).toBe('/website/project/PROJECT-DEMO');
+    expect(Object.fromEntries(destination.searchParams)).toEqual({ tab: 'data', section: 'narrative', field: 'section.project_intro' });
     await page.evaluate(() => scrollTo(0, 0));
     const search = page.locator('.topbar').getByRole('combobox', { name: copy.search, exact: true });
     await search.fill('SYNTHETIC');
@@ -39,7 +45,7 @@ for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as 
     await expect(search).toBeFocused();
     expect(await search.evaluate(element => getComputedStyle(element).outlineStyle)).toBe('solid');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `artifacts/unified-workspace/w2/home-search-${colorScheme}-${width}.png`, fullPage: width === 1280 });
+    await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/home-search-${colorScheme}-${width}.png`, fullPage: width === 1280 });
     await search.press('Escape'); await expect(search).toHaveAttribute('aria-expanded', 'false');
     await page.getByRole('combobox', { name: 'BUD', exact: true }).selectOption('  BU-031  ');
     await expect(page).toHaveURL(/bud=\+\+BU-031\+\+/);
@@ -65,6 +71,15 @@ test('search assistant and task examples fill only the composer and retain exact
   await expect(page.locator('#assistant-question')).toHaveValue(`${copy.task_question}: SYNTHETIC RETURNED ITEM`);
   await expect(page.locator('.assistant-context-trigger')).toContainText('PROJECT-DEMO');
   expect(posts).toBe(0);
+});
+
+test('legacy home coverage preserves the selected project, phase and filter on its canonical route', async ({ page }) => {
+  await enter(page);
+  const response = await page.request.get('/faq?tab=coverage&project=PROJECT-DEMO&phase=00001&status=missing', { maxRedirects: 0 });
+  expect(response.status()).toBe(307);
+  const destination = new URL(response.headers().location, origin);
+  expect(destination.pathname).toBe('/home');
+  expect(Object.fromEntries(destination.searchParams)).toEqual({ project: 'PROJECT-DEMO', phase: '00001', status: 'missing', section: 'coverage' });
 });
 
 test('permission refresh removes search results and home projections from the revoked source', async ({ page }) => {

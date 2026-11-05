@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import "./ads-registry.css";
 import "./content-operations.css";
 
@@ -22,29 +23,34 @@ export function ErrorSummary({ message, fields = [] }: { message: string; fields
 export function Field({ id, label, children, hint }: { id: string; label: string; children: ReactNode; hint?: string }) {
   return <div className="content-field"><label htmlFor={id}>{label}</label>{children}{hint && <small id={`${id}-hint`}>{hint}</small>}</div>;
 }
-export function useContentLocation(dirty: boolean) {
-  const [query, setQuery] = useState("");
+export function useContentLocation(dirty: boolean, guard = true) {
+  const query = useSearchParams();
   const previous = useRef("");
   const dirtyRef = useRef(dirty); dirtyRef.current = dirty;
   useEffect(() => {
-    previous.current = location.href; setQuery(location.search);
+    previous.current = location.href;
     const pop = () => {
       if (dirtyRef.current && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) { history.pushState(null, "", previous.current); return; }
-      previous.current = location.href; setQuery(location.search);
+      previous.current = location.href;
     };
     const leave = (event: BeforeUnloadEvent) => { if (dirtyRef.current) event.preventDefault(); };
     const link = (event: MouseEvent) => {
       const anchor = (event.target as Element)?.closest("a[href]") as HTMLAnchorElement | null;
       if (anchor && !anchor.hash && dirtyRef.current && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) event.preventDefault();
     };
+    const checkUnsaved = (event: Event) => {
+      if (dirtyRef.current) (event as CustomEvent<{ dirty: boolean }>).detail.dirty = true;
+    };
+    if (!guard) return;
+    addEventListener("hub-check-unsaved", checkUnsaved);
     addEventListener("popstate", pop); addEventListener("beforeunload", leave); document.addEventListener("click", link);
-    return () => { removeEventListener("popstate", pop); removeEventListener("beforeunload", leave); document.removeEventListener("click", link); };
-  }, []);
+    return () => { removeEventListener("hub-check-unsaved", checkUnsaved); removeEventListener("popstate", pop); removeEventListener("beforeunload", leave); document.removeEventListener("click", link); };
+  }, [guard]);
   function navigate(values: Record<string, string | null>, discard = false) {
     if (!discard && dirtyRef.current && !window.confirm("มีข้อมูลที่ยังไม่บันทึก ต้องการออกและละทิ้งการแก้ไขหรือไม่")) return false;
     const url = new URL(location.href);
     for (const [key, value] of Object.entries(values)) value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
-    history.pushState(null, "", url); previous.current = url.href; setQuery(url.search); return true;
+    history.pushState(null, "", url); previous.current = url.href; return true;
   }
-  return { params: new URLSearchParams(query), navigate };
+  return { params: new URLSearchParams(query.toString()), navigate };
 }

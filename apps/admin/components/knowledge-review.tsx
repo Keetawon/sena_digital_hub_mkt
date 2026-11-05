@@ -1,4 +1,5 @@
 "use client";
+import { workspaceText } from "@/lib/unified-workspace";
 import { useHubPermissions } from "./accounts";
 import { useEffect, useRef, useState } from "react";
 import "./knowledge-review.css";
@@ -7,7 +8,7 @@ import { KnowledgeFollowup, type Followup } from "./knowledge-followup";
 type Json = Record<string, unknown>;
 type Card = { name: { th: string }; status: { raw: number | null; label: string }; mode: string };
 type Review = { revision: number; decision: string; applies_to_project_ids: string[]; sena_owned: boolean; asset_role: string; alt_th: string };
-type Item = { id: string; kind: string; source_url: string | null; source_ref: string; project_ids: string[]; holds: string[]; evidence: Json; review: Review | null; bulk_rights_eligible: boolean; rights_approved?: boolean };
+type Item = { read_only?: boolean; cluster_ids?: string[]; id: string; kind: string; source_url: string | null; source_ref: string; project_ids: string[]; holds: string[]; evidence: Json; review: Review | null; bulk_rights_eligible: boolean; rights_approved?: boolean };
 type Pack = { card: Card; items: Item[]; followup?: Followup };
 const kinds: Record<string, string> = { section: "เนื้อหา", faq: "คำถามพบบ่อย", fact: "ข้อเท็จจริง", facility: "สิ่งอำนวยความสะดวก", nearby: "สถานที่ใกล้เคียง", alias: "ชื่อเรียก", asset: "รูปและเอกสาร", promotion: "โปรโมชั่น", gap: "ข้อมูลที่ยังขาด", programme: "กติกาโปรแกรม" };
 const roles: Record<string, string> = { hero: "ภาพหลัก", gallery: "แกลเลอรี", master_plan: "ผังโครงการ", floor_plan: "แปลนชั้น", unit_plan: "แปลนห้อง", brochure: "โบรชัวร์", promotion_banner: "ภาพโปรโมชั่น", unclassified: "ยังไม่ระบุประเภท" };
@@ -45,6 +46,7 @@ export function KnowledgeReview({ role, allowPreview = true, hostedFiles = false
   function selectProject(id: string) { setProject(id); setNotice(""); const url=new URL(window.location.href); url.searchParams.set("project",id); url.hash="knowledge-queue"; window.history.replaceState(null,"",url); document.getElementById("knowledge-queue")?.scrollIntoView({block:"start"}); }
   function close() { setEditing(null); setRights(false); opener.current?.focus(); }
   function start(item: Item, decision: string, trigger: HTMLElement) {
+    if (item.kind === "faq" || item.read_only) return;
     opener.current = trigger; setEditing(item); setChoice(decision); setReason(""); setOwned(item.review?.sena_owned || false);
     setScope(item.review?.applies_to_project_ids || (item.holds.includes("needs_phase_decision") ? [] : item.project_ids.filter(p => p !== "TPRAK")));
     const classification = item.evidence.classification as Json | undefined;
@@ -54,7 +56,7 @@ export function KnowledgeReview({ role, allowPreview = true, hostedFiles = false
     setBusy(true); setError("");
     try {
       if (rights) { await api("rights/approve", { items: pack!.items.filter(i => selected.has(i.id)).map(i => ({ candidate_id: i.id, expected_revision: i.review!.revision })), reason, confirmed: true }); setNotice("อนุมัติสิทธิ์ไฟล์แล้ว ยังไม่มีการเผยแพร่เนื้อหา"); setSelected(new Set()); }
-      else if (editing) { await api(`candidates/${editing.id}/review`, { expected_revision: editing.review?.revision || 0, decision: choice, applies_to_project_ids: scope, reason, sena_owned: owned, asset_role: editing.kind === "asset" ? assetRole : null, alt_th: editing.kind === "asset" ? alt : null }); setNotice("บันทึกผลตรวจแล้ว รายการที่ถูกต้องเป็นฉบับร่างเท่านั้น"); }
+      else if (editing && editing.kind !== "faq" && !editing.read_only) { await api(`candidates/${editing.id}/review`, { expected_revision: editing.review?.revision || 0, decision: choice, applies_to_project_ids: scope, reason, sena_owned: owned, asset_role: editing.kind === "asset" ? assetRole : null, alt_th: editing.kind === "asset" ? alt : null }); setNotice("บันทึกผลตรวจแล้ว รายการที่ถูกต้องเป็นฉบับร่างเท่านั้น"); }
       await reload(); close();
     } catch (e) { setError(e instanceof Error ? e.message : "บันทึกไม่สำเร็จ"); } finally { setBusy(false); }
   }
@@ -83,7 +85,8 @@ export function KnowledgeReview({ role, allowPreview = true, hostedFiles = false
           <p>ระยะที่อ้างถึง: {item.project_ids.join(", ") || "ยังไม่ระบุโครงการ"}</p><p className="knowledge-source">{item.source_url && /^https:\/\//.test(item.source_url) ? <a href={item.source_url} target="_blank" rel="noreferrer">เปิดแหล่งข้อมูล</a> : "หลักฐานจากชุดนำเข้า"} · <code>{item.source_ref}</code></p>
           {item.source_ref.startsWith("sena-public:") && <p><strong>ดึงจากเว็บไซต์สาธารณะ SENA</strong> · แหล่งข้อมูล ไม่ใช่การอนุมัติโดยบุคคล</p>}
           <p>ผลตรวจ: {item.review ? ({ accepted: "ถูก · ฉบับร่าง", rejected: "ผิด · เก็บหลักฐานเดิม", missing: "ขาด · รอผู้รับผิดชอบ" }[item.review.decision] || "รอตรวจ") : "รอตรวจ"}</p>
-          {canEdit && <div className="knowledge-actions"><button disabled={busy || blocked || project === "TPRAK"} onClick={ev => start(item, "accepted", ev.currentTarget)}>ถูก</button><button disabled={busy} onClick={ev => start(item, "rejected", ev.currentTarget)}>ผิด</button><button disabled={busy} onClick={ev => start(item, "missing", ev.currentTarget)}>ขาด</button></div>}
+          {item.kind === "faq" && item.cluster_ids?.map(cluster => <p key={cluster}><a href={`/website?legacy_cluster=${encodeURIComponent(cluster)}&phase=${encodeURIComponent(project)}`}>{workspaceText.suggestions}</a></p>)}
+          {canEdit && item.kind !== "faq" && !item.read_only && <div className="knowledge-actions"><button disabled={busy || blocked || project === "TPRAK"} onClick={ev => start(item, "accepted", ev.currentTarget)}>ถูก</button><button disabled={busy} onClick={ev => start(item, "rejected", ev.currentTarget)}>ผิด</button><button disabled={busy} onClick={ev => start(item, "missing", ev.currentTarget)}>ขาด</button></div>}
           {permissions.can("knowledge", "approve") && item.kind === "asset" && <label><input type="checkbox" disabled={!item.bulk_rights_eligible || busy} checked={selected.has(item.id)} onChange={ev => setSelected(previous => { const next = new Set(previous); if (ev.target.checked) next.add(item.id); else next.delete(item.id); return next; })} /> เลือกอนุมัติสิทธิ์{!item.bulk_rights_eligible && <small> · ต้องให้ MKT ยืนยันว่าเป็นไฟล์ของ SENA และไม่มีธงรอตรวจ</small>}</label>}
         </article>;
       })}</div>

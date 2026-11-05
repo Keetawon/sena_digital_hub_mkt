@@ -4,7 +4,7 @@ import { closeMobileMenu } from './hub-navigation-helpers';
 const api = '/api/hub/v1/admin/ads';
 const origin = 'http://127.0.0.1:3000';
 
-async function enter(page: Page, role: 'admin' | 'editor', path = '/') {
+async function enter(page: Page, role: 'admin' | 'editor', path = '/home') {
   const response = await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role } });
   expect(response.ok()).toBeTruthy();
   await page.goto(path);
@@ -49,10 +49,10 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await activeSection(page, 'หน้าแรก');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await menu.getByRole('link', { name: 'ข้อมูลเว็บไซต์', exact: true }).click();
-  await expect(page).toHaveURL(/\?view=projects$/);
+  await expect(page).toHaveURL(/\/website$/);
   await expect(menu.locator('.hub-brand-count-link')).toHaveCount(0);
-  await page.locator('.project-workspace-nav').locator('a[href="/?view=brands"]').click();
-  await expect(page).toHaveURL(/\?view=brands$/);
+  await page.locator('.unified-workspace > nav.content-tabs').locator('a[href="/website?view=brands"]').click();
+  await expect(page).toHaveURL(/\/website\?view=brands$/);
   await activeSection(page, 'ข้อมูลเว็บไซต์');
   await reveal(page, 'งานโฆษณาและงบ');
   await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
@@ -108,7 +108,14 @@ test('shared navigation stays keyboard accessible at 390px with large Thai text 
     // Wait for its new document before reopening the responsive drawer.
     await Promise.all([page.waitForEvent('domcontentloaded'), page.keyboard.press('Enter')]);
     await activeSection(page, name);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const layout = await page.evaluate(() => ({
+      width: document.documentElement.scrollWidth, viewport: innerWidth, path: location.pathname,
+      overflowing: [...document.querySelectorAll('body *')].map(element => ({
+        tag: element.tagName, class: element.className, left: element.getBoundingClientRect().left,
+        right: element.getBoundingClientRect().right, width: element.getBoundingClientRect().width,
+      })).filter(item => item.left >= 0 && item.right > innerWidth + 1).slice(0, 20),
+    }));
+    expect(layout.width, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewport);
     const target = await menu.getByRole('link', { name, exact: true }).boundingBox();
     expect(target?.height).toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
@@ -126,6 +133,7 @@ test('shared navigation stays keyboard accessible at 390px with large Thai text 
 
 test('mobile drawer starts closed, traps focus, closes for navigation and returns focus on Escape', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await enter(page, 'admin', '/?view=brands');
+  await expect(page).toHaveURL(/\/website\?view=brands$/);
   const opener = page.getByRole('button', { name: 'เปิดเมนู', exact: true });
   const drawer = page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true });
   await expect(opener).toHaveAttribute('aria-expanded', 'false');
@@ -213,13 +221,13 @@ test('desktop rail persists, labels appear on focus and badges remain visible', 
   await expect(accounts.getByRole('tooltip')).toHaveText('ผู้ใช้และสิทธิ์');
   const label = await accounts.getByRole('tooltip').boundingBox(); expect(label!.x).toBeGreaterThanOrEqual(64);
   await expect(accounts.getByLabel('บัญชีรออนุมัติ')).toBeVisible();
-  await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-focus-1280.png', fullPage: false });
+  await page.screenshot({ path: 'artifacts/unified-workspace/w3/navigation/local-sidebar-focus-1280.png', fullPage: false });
   await expect(sidebar.locator('.hub-logo-mark')).toBeVisible();
   await expect(sidebar.locator('.hub-logo-mark')).toHaveJSProperty('naturalWidth', 1001);
   await expect(sidebar.locator('.hub-logo-full')).not.toBeVisible();
   await expect(sidebar.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toHaveCount(0);
   await page.reload(); await expect(sidebar).toHaveCSS('width', '64px');
-  await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-rail-1280.png', fullPage: true });
+  await page.screenshot({ path: 'artifacts/unified-workspace/w3/navigation/local-sidebar-rail-1280.png', fullPage: true });
   await sidebar.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus();
   await page.keyboard.press('Enter');
   await page.reload(); await expect(sidebar).toHaveCSS('width', '244px');
@@ -244,32 +252,40 @@ for (const width of [1280, 1024, 390]) test(`sidebar has no horizontal page over
   if (width === 390) await openMenu(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.locator('.sidebar-footer')).toHaveCount(0);
-  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-sidebar-${width}.png`, fullPage: width !== 390 });
-  if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await stableDrawer(page); await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-overlay-1024.png' }); }
+  await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/local-sidebar-${width}.png`, fullPage: width !== 390 });
+  if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await stableDrawer(page); await page.screenshot({ path: 'artifacts/unified-workspace/w3/navigation/local-sidebar-overlay-1024.png' }); }
   if (width !== 1280) await page.keyboard.press('Escape');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 
-test('settings retain destinations, project context and active state through native query navigation', async ({ page }) => {
+test('settings keep canonical destinations, legacy context and active state through native query navigation', async ({ page }) => {
   await enter(page, 'admin');
   await reveal(page, 'ตั้งค่า');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   for (const [label, href] of [
-    ['คำถามมาตรฐาน', '/faq?tab=bank'], ['คำแปลมาตรฐาน', '/faq?tab=glossary'],
-    ['ทะเบียนฟิลด์', '/content/fields'], ['แท็กรูป', '/media?tab=rules#tags'],
-    ['กติการูปที่ต้องมี', '/media?tab=rules#requirements'], ['หลักฐานนำเข้าเดิม', '/knowledge'],
+    ['คำถามมาตรฐาน', '/settings?section=bank'], ['คำแปลมาตรฐาน', '/settings?section=glossary'],
+    ['ทะเบียนฟิลด์', '/settings?section=fields'], ['แท็กรูป', '/settings?section=media-tags#tags'],
+    ['กติการูปที่ต้องมี', '/settings?section=media-rules#requirements'], ['หลักฐานนำเข้าเดิม', '/knowledge'],
   ]) await expect(menu.getByRole('link', { name: label, exact: true })).toHaveAttribute('href', href);
   await menu.getByRole('link', { name: 'คำถามมาตรฐาน', exact: true }).click();
   await activeSection(page, 'คำถามมาตรฐาน');
   await closeMobileMenu(page);
-  await page.locator('.content-tabs').getByRole('button', { name: 'คำแปลมาตรฐาน', exact: true }).click();
+  await page.getByRole('navigation', { name: 'ตั้งค่า', exact: true }).getByRole('link', { name: 'คำแปลมาตรฐาน', exact: true }).click();
   await activeSection(page, 'คำแปลมาตรฐาน');
   await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลเว็บไซต์และ AI/คำแปลมาตรฐาน');
   await page.goBack(); await activeSection(page, 'คำถามมาตรฐาน');
-  await page.evaluate(() => history.replaceState(null, '', '/faq?tab=bank&project=SYNTHETIC-CONTEXT'));
-  await expect(menu.getByRole('link', { name: 'แท็กรูป', exact: true })).toHaveAttribute('href', '/media?tab=rules&project=SYNTHETIC-CONTEXT#tags');
-  await expect(menu.getByRole('link', { name: 'กติการูปที่ต้องมี', exact: true })).toHaveAttribute('href', '/media?tab=rules&project=SYNTHETIC-CONTEXT#requirements');
+  await page.goto('/faq?tab=bank&project=SYNTHETIC-CONTEXT&question=SYNTHETIC-QUESTION');
+  await expect(page).toHaveURL(url => url.pathname === '/settings' && url.searchParams.get('section') === 'bank' && url.searchParams.get('project') === 'SYNTHETIC-CONTEXT' && url.searchParams.get('question') === 'SYNTHETIC-QUESTION');
+  await page.evaluate(() => history.pushState(null, '', '/settings?section=glossary&project=SYNTHETIC-CONTEXT'));
+  await activeSection(page, 'คำแปลมาตรฐาน');
+  await page.goBack(); await activeSection(page, 'คำถามมาตรฐาน');
+  await page.goto('/media?tab=rules&project=SYNTHETIC-CONTEXT#tags');
+  await expect(page).toHaveURL(url => url.pathname === '/settings' && url.searchParams.get('section') === 'media-rules' && url.searchParams.get('project') === 'SYNTHETIC-CONTEXT' && url.hash === '#tags');
+  await expect(page.locator('#tags')).toBeInViewport();
+  await reveal(page, 'ตั้งค่า');
+  await expect(menu.getByRole('link', { name: 'แท็กรูป', exact: true })).toHaveAttribute('href', '/settings?section=media-tags#tags');
+  await expect(menu.getByRole('link', { name: 'กติการูปที่ต้องมี', exact: true })).toHaveAttribute('href', '/settings?section=media-rules#requirements');
 });
 
 test('legacy evidence needs an active content admin and Knowledge View, independent of user management', async ({ page }) => {
@@ -329,7 +345,7 @@ for (const colorScheme of ['light', 'dark'] as const) test(`SENA semantic palett
   await expect(page.locator('.hub-brand-logo')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.hub-logo-full')).toBeVisible();
   await expect(page.locator('.hub-logo-full')).toHaveJSProperty('naturalWidth', 1001);
-  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-${colorScheme}-1280.png`, fullPage: true });
+  await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/local-${colorScheme}-1280.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' }); await openMenu(page); await reveal(page, 'ตั้งค่า');
   const label = page.locator('.hub-navigation').getByRole('link', { name: 'หลักฐานนำเข้าเดิม', exact: true });
   // A pointer click opened Settings. Re-enter with Tab so the browser applies
@@ -347,5 +363,5 @@ for (const colorScheme of ['light', 'dark'] as const) test(`SENA semantic palett
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   expect(await tooltip.evaluate(element => element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight)).toBe(true);
-  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-${colorScheme}-390-reduced.png`, fullPage: false });
+  await page.screenshot({ path: `artifacts/unified-workspace/w3/navigation/local-${colorScheme}-390-reduced.png`, fullPage: false });
 });
