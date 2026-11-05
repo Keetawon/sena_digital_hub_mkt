@@ -56,7 +56,7 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 |---|---|---|---|
 | W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Complete: `93b04cc`, pushed to origin/main |
 | W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Complete: `b5dc456`, pushed; receipt `d3ec1d6` |
-| W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | A UI / C backend; new worktrees at `2387dd3` |
+| W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | Complete: `487e090`, pushed to origin/main |
 | W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Agent B `w4_governance` backend; lead UI integration |
 | W5 | Fixed business level and composition order | W4 merged | Agent B after W4; planned |
 | W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Lead with Agent B after W5; planned |
@@ -2703,3 +2703,9 @@ No new pending questions; Q77-Q82 remain in the existing catalogue.
 
 Commit/push receipt follows after the explicit-path commit. Next: W4 finite
 integration, the required quick gates, then its complete workstream gate.
+
+W3 delivery receipt: commit 487e090f807690ad0db8e1a340d407d0c435a5bf,
+`Unify content entity pages and history`. Push to origin/main succeeded
+(d3ec1d6..487e090). The 115-path commit matches the tested source. No hosted
+action occurred. W4's 134-path external candidate is ready for a fresh transfer
+manifest against this final predecessor; all W4 runtime gates remain pending.
