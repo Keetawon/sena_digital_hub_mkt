@@ -1754,3 +1754,10 @@ and reviews are recorded above. All 45 W2 paths are explicit in the local commit
 receipt. Test lock is released after the completed W2 run and will be acquired
 by lead for W3. Next workstream: W3 entity workspace, history and canonical routes.
 Code commit and origin/main push receipt will be recorded immediately after push.
+
+W2 delivery receipt: code commit
+`b5dc4563970d223c54fa9f427cfdd1b43455ba70` pushed successfully to origin/main
+(`2387dd3..b5dc456`). All five protected configuration paths passed git check-ignore
+immediately before commit. The staged set was checked against the exact 45-path
+receipt, with no unrelated path present. W2 is complete; W3 integration begins
+after this log receipt is pushed.
