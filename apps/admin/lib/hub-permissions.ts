@@ -34,6 +34,9 @@ export function canSpecial(caps: CapabilityProjection | null | undefined, action
 export function capabilityKey(account: HubAccount | null) {
   return JSON.stringify([account?.id, account?.status, account?.capabilities ?? null]);
 }
+export function canWorkspace(caps: CapabilityProjection | null | undefined) {
+  return caps?.published_consumer === true && ["projects", "brands", "knowledge", "promotions", "releases"].some(tab => can(caps, tab));
+}
 
 export function pagePermission(path: string, query: URLSearchParams): { tab: string; level: PermissionLevel } | null {
   if (path === "/media") return { tab: "projects", level: "view" };
@@ -49,6 +52,7 @@ export function pagePermission(path: string, query: URLSearchParams): { tab: str
   return operations ? { tab: operations[1], level: operations[2] === "new" ? "edit" : "view" } : null;
 }
 export function canOpenPage(account: HubAccount, path: string, query: URLSearchParams) {
+  if (path === "/home") return account.status === "ACTIVE" && canWorkspace(account.capabilities);
   const permission = pagePermission(path, query);
   return !permission || (permission.tab === "accounts" ? account.capabilities?.can_manage_users === true : can(account.capabilities, permission.tab, permission.level));
 }

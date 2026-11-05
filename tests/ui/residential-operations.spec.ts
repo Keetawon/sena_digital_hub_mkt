@@ -1,3 +1,4 @@
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const api = '/api/hub/v1/admin';
@@ -77,7 +78,9 @@ test('residential workspaces deny online staff and agencies without fetching con
 test('promotion draft retains other locales, exact timestamps, source IDs and money; edits invalidate reviews', async ({ page }) => {
   const { posts, promotion } = await fixture(page); const startsAt = promotion.starts_at; const endsAt = promotion.ends_at;
   await page.goto('/promotions');
+  await openMobileMenu(page);
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'โปรโมชั่น', exact: true })).toHaveAttribute('aria-current', 'page');
+  await closeMobileMenu(page);
   const opener = page.getByRole('button', { name: 'โปรโมชันบ้านตัวอย่าง', exact: true }); await opener.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('note', { name: 'ข้อมูลตัวอย่าง: ชื่อโปรโมชัน (ภาษาไทย) · ข้อกำหนดทางกฎหมาย (ภาษาไทย)' })).toBeVisible();

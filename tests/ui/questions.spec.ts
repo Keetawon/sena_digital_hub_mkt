@@ -1,3 +1,4 @@
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const api = '/api/hub/v1/admin/questions';
@@ -29,8 +30,10 @@ test('all five staff roles read the same pending questions without changing fina
     await page.goto('/questions');
     await expect(page.getByRole('heading', { name: 'คำถามที่รอคำตอบ', exact: true })).toBeVisible();
     await expect(page.locator('.question-card')).toHaveCount(ids.length);
+    await openMobileMenu(page);
     const navigation = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
     await expect(navigation.getByRole('link', { name: 'คำถามที่รอคำตอบ', exact: true })).toHaveAttribute('aria-current', 'page');
+    await closeMobileMenu(page);
     for (const id of excluded) await expect(page.locator(`article#${id}`)).toHaveCount(0);
     if (['editor', 'publisher', 'viewer'].includes(role)) {
       expect((await page.request.get('/api/hub/v1/admin/ads/memos')).status()).toBe(403);

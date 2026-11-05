@@ -392,6 +392,100 @@ projects gained and lost before confirmation.
   Account and permission data never enters content views, exports, the
   assistant or AI calls.
 
+### 8.5 Shared interface copy
+
+Implementation copy for the screens above. Copy these UTF-8 strings into the
+interface; this catalogue adds no permission or workflow behavior. Existing
+editors retain their existing copy unless a label above supersedes it.
+
+| Key | Thai label |
+| --- | --- |
+| search | ค้นหา |
+| search_placeholder | ค้นหาโครงการ แบรนด์ BUD หรือคำถาม |
+| loading | กำลังโหลดข้อมูล… |
+| retry | ลองใหม่ |
+| empty | ไม่พบรายการตามตัวกรอง |
+| all | ทั้งหมด |
+| previous | ก่อนหน้า |
+| next | ถัดไป |
+| project | โครงการ |
+| brand | แบรนด์ |
+| readiness | ความพร้อมของข้อมูล |
+| required_missing | ข้อมูลจำเป็นที่ยังขาด |
+| returned_task | ถูกส่งกลับให้ฉัน |
+| approval_task | รอฉันอนุมัติ |
+| needs_reapproval | ต้องอนุมัติใหม่ |
+| publish_task | รอเผยแพร่ |
+| expiring_task | ใกล้หมดอายุ |
+| missing_fact_task | ข้อมูลที่ยังขาดทำให้ตอบไม่ได้ |
+| review_task | ถึงรอบทบทวน |
+| unanswered_task | คำถามที่ผู้ช่วยยังตอบไม่ได้ |
+| unanswered_note | มีบันทึกว่าตอบไม่ได้ แต่ไม่ได้เก็บข้อความคำถาม |
+| date | วันที่ |
+| person | ผู้ดำเนินการ |
+| date_from | วันที่เริ่ม |
+| date_to | วันที่สิ้นสุด |
+| before | ก่อนเปลี่ยนแปลง |
+| after | หลังเปลี่ยนแปลง |
+| affected_projects | โครงการที่ได้รับผลตามสิทธิ์ของคุณ |
+| since_publication | การเปลี่ยนแปลงหลังเผยแพร่ล่าสุด |
+| assistant_disabled | ผู้ช่วยยังไม่เปิดใช้งาน |
+| task_question | รายการนี้ต้องทำอะไรต่อ |
+| canonical_media | รูปภาพและไฟล์ประกอบโครงการ |
+| load_error | โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่ |
+| reason | เหตุผล |
+| confirm | ยืนยัน |
+| cancel | ยกเลิก |
+| save | บันทึก |
+| refresh | โหลดข้อมูลล่าสุด |
+| select_item | เลือกรายการ |
+| clear_selection | ล้างรายการที่เลือก |
+| prepare_review | เตรียมตรวจรายการเผยแพร่ |
+| review_publication | ตรวจรายการก่อนเผยแพร่ |
+| confirm_publication | ยืนยันเผยแพร่ |
+| partial_publication | เผยแพร่บางรายการแล้ว โปรดตรวจรายการที่ยังไม่ผ่าน |
+| rejected | ไม่ผ่าน |
+| stale_item | รายการเปลี่ยนแปลงแล้ว กรุณาโหลดข้อมูลล่าสุด |
+| publisher_conflict | ผู้เผยแพร่ต้องเป็นคนละคนกับผู้แก้ไข ผู้ตรวจภาษาอังกฤษ และผู้อนุมัติฉบับนี้ |
+| not_approved_or_available | ยังไม่อนุมัติหรือไม่พร้อมเผยแพร่ |
+| pointer_changed | เวอร์ชันที่เผยแพร่เปลี่ยนแปลงแล้ว |
+| retained_source_unavailable | เนื้อหาจากเวอร์ชันเดิมไม่พร้อมใช้งาน |
+| page_config_changed_or_unapproved | การตั้งค่าหน้าเว็บเปลี่ยนแปลงหรือยังไม่อนุมัติ |
+| web_history | ประวัติเผยแพร่เว็บไซต์ |
+| release_history | ประวัติชุดเผยแพร่ข้อมูล |
+| withdraw_page | ถอนหน้าเว็บ |
+| rollback_release | ย้อนกลับชุดเผยแพร่ |
+| restore_version | คืนเวอร์ชันนี้ |
+| confirm_pointer_change | ยืนยันเปลี่ยนเวอร์ชันที่เผยแพร่ |
+| confirm_release_rollback | ยืนยันย้อนกลับชุดเผยแพร่ |
+| own_approval_reason | ระบุเหตุผลที่อนุมัติงานที่แก้เอง |
+| submit_results | ผลการส่งอนุมัติ |
+| version | เวอร์ชัน |
+| thai | ภาษาไทย |
+| english | ภาษาอังกฤษ |
+| permission_required | ไม่มีสิทธิ์ดำเนินการนี้ |
+| draft_preserved | เก็บข้อมูลที่คุณแก้ไขไว้แล้ว |
+| normal_review_required | โปรโมชั่นต้องผ่านการตรวจข้อมูลและกฎหมายตามขั้นตอนเดิม |
+| withdrawn | ถอนแล้ว |
+| rolled_back | ย้อนกลับแล้ว |
+| website_publication | เผยแพร่เว็บไซต์ |
+| data_publication | ชุดเผยแพร่ข้อมูล |
+| publication_results | ผลการเผยแพร่แต่ละรายการ |
+| preview | ดูตัวอย่างหน้าเว็บ |
+| current_version | เวอร์ชันที่เผยแพร่อยู่ |
+| detail | ดูรายละเอียด |
+| prepared | เตรียมรายการแล้ว |
+| writing_unavailable | ช่องนี้ยังไม่เปิดให้ผู้ช่วยร่างข้อความ |
+| writing_enabled | เปิดใช้ผู้ช่วยร่างข้อความ |
+| writing_unsaved | บันทึกหรือโหลดข้อมูลล่าสุดก่อนขอให้ช่วยร่างข้อความ |
+| writing_ambiguous | ยังยืนยันผลไม่ได้ ระบบจะไม่ลองซ้ำอัตโนมัติ กรุณาตรวจสถานะ |
+| writing_processing | กำลังเตรียมข้อเสนอข้อความ |
+| writing_accept | ยอมรับและบันทึกฉบับร่าง |
+| writing_reject | ไม่ใช้ข้อเสนอนี้ |
+| writing_saved | บันทึกข้อเสนอเป็นฉบับร่างแล้ว |
+| writing_save_failed | บันทึกไม่สำเร็จ ข้อเสนอยังอยู่ กรุณาตรวจข้อมูลก่อนลองอีกครั้ง |
+| writing_protected_invalid | ข้อเสนอเปลี่ยนข้อความที่ต้องคงไว้ จึงไม่สามารถใช้ข้อเสนอนี้ได้ |
+
 ## 9. Pending questions to register
 
 Add to the existing «คำถามที่รอคำตอบ» catalogue with suggested owners:

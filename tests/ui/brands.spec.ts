@@ -162,6 +162,7 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     await expect(page.locator('.detail-heading').getByText('เผยแพร่แล้ว', { exact: true })).toBeVisible();
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
     await page.goto('/?view=brands');
+    await page.locator('#brand-search').fill(data.sourceId);
     const changed = page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: `${data.name} ฉบับใหม่`, exact: true }) });
     await expect(changed.getByText(/เผยแพร่แล้ว · มีการแก้ไขรอเผยแพร่/)).toBeVisible();
     await changed.click();

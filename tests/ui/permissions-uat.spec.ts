@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { execFileSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -65,16 +66,16 @@ test('local UAT personas retain a switch path from suspension and land by actual
   expect((await page.request.get(`${api}/projects`)).status()).toBe(403);
   await page.screenshot({ path: `${shots}/suspended-status.png`, fullPage: true });
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('uat_admin');
-  await expect(page).toHaveURL(`${origin}/`);
+  await expect(page).toHaveURL(`${origin}/home`);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('uat_admin');
   expect((await (await page.request.get('/api/hub/v1/me')).json()).data.capabilities.can_manage_users).toBe(true);
   await page.goto('/ads/finance');
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('viewer');
-  await expect(page).toHaveURL(`${origin}/`);
+  await expect(page).toHaveURL(`${origin}/home`);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('viewer');
   await persona(page.request, 'online_staff'); await page.goto('/ads/registry');
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('uat_somchai');
-  await expect(page).toHaveURL(`${origin}/`);
+  await expect(page).toHaveURL(`${origin}/home`);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('uat_somchai');
 });
 
@@ -87,6 +88,7 @@ test('Somchai has exactly four tabs with the custom grid, and hidden management 
   expect(Object.keys(tabs).filter(tab => tabs[tab].approve)).toEqual([]);
   expect(me.capabilities.can_manage_users).toBe(false); expect(me.capabilities.customised).toBe(true);
   await page.goto('/');
+  await openMobileMenu(page);
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   // Services remain explicit even with one permitted item; empty services stay hidden.
   await menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true }).click();
@@ -97,8 +99,9 @@ test('Somchai has exactly four tabs with the custom grid, and hidden management 
   for (const route of ['ads/registrations', 'ads/archive', 'ads/actuals', 'knowledge/projects', 'releases/candidates']) expect((await page.request.get(`${api}/${route}`)).status()).toBe(403);
   expect((await page.request.post(`${api}/brands`, { headers, data: {} })).status()).toBe(403);
   expect((await page.request.post(`${api}/ads/memos/00000000-0000-4000-8000-000000000000/confirm-record`, { headers, data: { expected_version: 1 } })).status()).toBe(403);
+  await closeMobileMenu(page);
   await page.setViewportSize({ width: 400, height: 860 });
-  await page.getByRole('button', { name: 'เปิดเมนู', exact: true }).click();
+  await openMobileMenu(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true }).waitFor({ state: 'visible' });
   await page.screenshot({ path: `${shots}/somchai-mobile-400.png`, fullPage: false, animations: 'disabled' });
@@ -159,7 +162,7 @@ test('real permission revocation denies hidden CSV immediately and suspension ta
     await page.goto('/'); await expect(page).toHaveURL(/\/account\/request$/);
     await expect(page.getByRole('heading', { name: 'ระงับ', exact: true })).toBeVisible();
     await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('uat_admin');
-    await expect(page).toHaveURL(`${origin}/`);
+    await expect(page).toHaveURL(`${origin}/home`);
   } finally {
     if ((await account(manager.request, personas.uat_somchai)).status === 'SUSPENDED') await decide(manager.request, personas.uat_somchai, 'reactivate');
     await setAccess(manager.request, personas.uat_somchai, original.access); await manager.close();

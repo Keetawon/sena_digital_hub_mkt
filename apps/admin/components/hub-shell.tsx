@@ -9,10 +9,12 @@ import { hubGroups, hubPages, hubPermissionTab, hubCurrentMenuKey, hubMenuItem, 
 import { BrandReviewProvider } from "./brand-review";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { deferredH1Sections, h1Unavailable } from "@/lib/hosted-config";
-import { capabilityKey } from "@/lib/hub-permissions";
+import { canWorkspace, capabilityKey } from "@/lib/hub-permissions";
 import { useHubPermissions } from "./accounts";
+import { WorkspaceSearch } from "./workspace-search";
+import { workspaceCopy } from "@/lib/workspace-copy";
 
-export function HubShell({ section, roleLabel, toolbar, children, registry = false }: {
+export function HubShell({ section, roleLabel, toolbar, children, registry = false, workspace = false }: {
   section: HubSection;
   roleLabel: string;
   staff: boolean;
@@ -22,12 +24,13 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   registry?: boolean;
   finance?: boolean;
   publisher?: boolean;
+  workspace?: boolean;
 }) {
   const hostedConfig = useHostedSession();
   const hosted = Boolean(hostedConfig);
   const permissions = useHubPermissions();
   const staff = permissions.account?.status === "ACTIVE" && permissions.capabilities.published_consumer;
-  const allowed = section === "accounts" ? permissions.admin : permissions.can(hubPermissionTab(section));
+  const allowed = workspace ? canWorkspace(permissions.capabilities) : section === "accounts" ? permissions.admin : permissions.can(hubPermissionTab(section));
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [medium, setMedium] = useState(false);
@@ -75,7 +78,7 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const sidebar = <>
     {narrow && <button className="hub-menu-close" type="button" onClick={closeMenu}>ปิดเมนู <span aria-hidden="true">×</span></button>}
     <div className="hub-brand-header">
-      <a className="hub-brand-logo" href="/" aria-label="หน้าแรก"><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></a>
+      <a className="hub-brand-logo" href="/home" aria-label="หน้าแรก"><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></a>
       {!narrow && <button ref={sidebarToggle} type="button" className="hub-sidebar-toggle" aria-label={rail ? "ขยายเมนู" : "ย่อเมนู"} title={rail ? "ขยายเมนู" : "ย่อเมนู"} aria-expanded={!rail} aria-controls={menuId} onClick={toggleSidebar}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={rail ? "m9 5 7 7-7 7" : "m15 5-7 7 7 7"} /></svg><span className="hub-nav-tooltip" role="tooltip">{rail ? "ขยายเมนู" : "ย่อเมนู"}</span></button>}
     </div>
     <HubNavigation current={currentMenu} location={location} />
@@ -88,8 +91,9 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeMenu();
     }}>{sidebar}</dialog> : <aside id={menuId} className="sidebar" data-rail={rail} aria-label="พื้นที่ทำงาน">{sidebar}</aside>}
     {staff && !hosted && <HubAssistant key={capabilityKey(permissions.account)} navigationTarget={null} onNavigationOpen={() => null} />}
+    {staff && hosted && <button className="button secondary workspace-assistant-disabled" type="button" disabled title={workspaceCopy.assistant_disabled}>{workspaceCopy.ask}<small>{workspaceCopy.assistant_disabled}</small></button>}
     <div className="main-shell">
-      <header className="topbar"><div className="hub-topbar-navigation"><button ref={menuButton} className="button secondary hub-menu-toggle" type="button" aria-label="เปิดเมนู" aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId} onClick={() => setMenuOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg><span>เมนู</span></button><div className="breadcrumb">{page?.group && <><span>{hubGroups[page.group]}</span><span aria-hidden="true">/</span></>}<span>{page?.label}</span></div></div><div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
+      <header className="topbar"><div className="hub-topbar-navigation"><button ref={menuButton} className="button secondary hub-menu-toggle" type="button" aria-label="เปิดเมนู" aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId} onClick={() => setMenuOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg><span>เมนู</span></button><div className="breadcrumb">{page?.group && <><span>{hubGroups[page.group]}</span><span aria-hidden="true">/</span></>}<span>{page?.label}</span></div></div>{staff && canWorkspace(permissions.capabilities) && <WorkspaceSearch key={capabilityKey(permissions.account)} hosted={hosted} />}<div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
       {hostedConfig && <div className="hosted-h1-note" role="note"><strong>{hostedConfig.label} · {hostedConfig.simulation ? "ข้อมูลสมมติ" : "ตรวจแหล่งข้อมูลและสถานะก่อนใช้งาน"}</strong><span> · ปิดการออกชื่อแคมเปญ</span> <SignOut /></div>}
       {toolbar}
       <main id="main-content" className={registry ? "registry-shell" : undefined} tabIndex={-1}>{!permissions.ready ? <p role="status">กำลังตรวจสิทธิ์การใช้งาน…</p> : permissions.error && !permissions.account ? <p role="alert">{permissions.error}</p> : permissions.signedOut || permissions.account && !allowed ? <section className="registry-panel"><h1>ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p>เลือกหน้าที่ได้รับสิทธิ์จากเมนู หรือขอให้ผู้ดูแลปรับสิทธิ์ให้บัญชีนี้</p>{permissions.account?.status !== "ACTIVE" && <a href="/account/request">ตรวจสถานะบัญชี</a>}</section> : hosted && deferredH1Sections.has(section) ? <section className="registry-panel hosted-unavailable"><h1>{page?.label}</h1><p role="note">{h1Unavailable}</p><p>พื้นที่นี้ยังไม่เชื่อมข้อมูลหรือเริ่มงานเบื้องหลังใน TEST H1</p><a className="button secondary" href="/ads/registry">กลับไปทะเบียนแคมเปญ</a></section> : <Fragment key={capabilityKey(permissions.account)}>{children}</Fragment>}</main>

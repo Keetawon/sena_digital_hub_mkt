@@ -296,8 +296,8 @@ test('commitment review separates forecast, cover cap and actual cash consumptio
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'ประมาณการตามเดือน (ไม่ใช่ค่าใช้จ่ายจริง)', exact: true })).toBeVisible();
   await expect(dialog.getByRole('columnheader', { name: 'ใช้จริงจากยอดเรียกเก็บ', exact: true })).toBeVisible();
-  await expect(dialog.getByRole('cell', { name: '300.01 บาท', exact: true })).toBeVisible();
-  await expect(dialog.getByRole('cell', { name: '99.99 บาท', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('cell').filter({ hasText: /^300\.01 บาท$/ })).toBeVisible();
+  await expect(dialog.getByRole('cell').filter({ hasText: /^99\.99 บาท$/ })).toBeVisible();
 });
 
 test('live synthetic memo, approved line revision and explicit SN assignment round trip', async ({ page }) => {

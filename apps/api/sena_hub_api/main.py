@@ -27,6 +27,7 @@ from .project_commercial import register_project_commercial_routes
 from .faq_coverage import register_faq_coverage_routes
 from .articles import register_article_routes
 from .web_publication import register_web_routes
+from .workspace_home import register_workspace_home_routes
 from .ads import register_ads_routes
 from .finance import register_finance_routes
 from .questions import register_question_routes
@@ -234,7 +235,7 @@ async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     # Every app request uses the base role; SQL resolves table-backed authority.
     # Machine integrations outside this API keep their separate fixed principals.
     category = route_class(request.method, getattr(request.scope.get("route"), "path", None))
-    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation"}:
+    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation", "content_workspace"}:
         raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
@@ -915,6 +916,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_faq_coverage_routes(app, authentication, database)
     register_article_routes(app, authentication, database)
     register_web_routes(app, authentication, database, consumer)
+    register_workspace_home_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

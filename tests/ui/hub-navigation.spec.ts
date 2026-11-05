@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeMobileMenu } from './hub-navigation-helpers';
 
 const api = '/api/hub/v1/admin/ads';
 const origin = 'http://127.0.0.1:3000';
@@ -57,15 +58,18 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   await activeSection(page, 'ทะเบียนแคมเปญ');
+  await closeMobileMenu(page);
   const registry = page.getByRole('navigation', { name: 'เมนูทะเบียนแคมเปญ', exact: true });
   await expect(registry.getByRole('link', { name: 'รายการชื่อแคมเปญ', exact: true })).toHaveAttribute('aria-current', 'page');
   await registry.getByRole('link', { name: 'ส่งคืนรหัสแคมเปญ', exact: true }).click();
   await expect(page).toHaveURL(/\/ads\/registry\/inbox$/);
   await activeSection(page, 'ทะเบียนแคมเปญ');
+  await closeMobileMenu(page);
   await expect(registry.getByRole('link', { name: 'ส่งคืนรหัสแคมเปญ', exact: true })).toHaveAttribute('aria-current', 'page');
   await registry.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true }).click();
   await expect(page).toHaveURL(/\/ads\/registry\/new$/);
   await activeSection(page, 'ทะเบียนแคมเปญ');
+  await closeMobileMenu(page);
   await expect(registry.getByRole('link', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'ลงทะเบียนแคมเปญ', exact: true })).toBeVisible();
   await reveal(page, 'ข้อมูลเว็บไซต์และ AI');
@@ -141,28 +145,28 @@ test('mobile drawer starts closed, traps focus, closes for navigation and return
   expect(await drawer.evaluate(element => element.contains(document.activeElement))).toBe(true);
   await page.keyboard.press('Escape'); await expect(drawer).not.toBeVisible(); await expect(opener).toBeFocused();
   await opener.click(); await drawer.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'หน้าแรก', exact: true }).click();
-  await expect(page).toHaveURL(/\/$/); await expect(drawer).not.toBeVisible();
+  await expect(page).toHaveURL(/\/home$/); await expect(drawer).not.toBeVisible();
   await expect(opener).toHaveAttribute('aria-expanded', 'false');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('sidebar groups toggle independently, persist even when the current page is in a collapsed group', async ({ page }) => {
-  await enter(page, 'admin'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
+  await enter(page, 'admin'); await openMenu(page); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
   await expect(content).toHaveAttribute('aria-expanded', 'true'); await expect(ads).toHaveAttribute('aria-expanded', 'false'); await ads.click(); await content.click(); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await expect(content).toHaveAttribute('aria-expanded', 'false');
   const contentId = await content.getAttribute('aria-controls'); await expect(page.locator(`[id="${contentId}"]`)).toHaveAttribute('inert', ''); await expect(menu.getByRole('link', { name: 'หน้าแรก', exact: true })).not.toBeVisible();
-  await page.goto('/questions'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(content).toHaveAttribute('data-current', 'true'); await expect(content).toHaveAttribute('aria-description', 'มีหน้าที่กำลังใช้งานอยู่ในกลุ่มนี้');
+  await page.goto('/questions'); await openMenu(page); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await openMenu(page); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(content).toHaveAttribute('data-current', 'true'); await expect(content).toHaveAttribute('aria-description', 'มีหน้าที่กำลังใช้งานอยู่ในกลุ่มนี้');
   await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลเว็บไซต์และ AI/ข้อมูลเว็บไซต์');
   const paths = await menu.locator('a.nav-link svg path').evaluateAll(elements => elements.map(element => element.getAttribute('d'))); expect(new Set(paths).size).toBe(paths.length);
 });
 
 test('collapsed children are skipped by keyboard and storage errors never prevent navigation', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get: () => { throw new DOMException('Storage unavailable', 'SecurityError'); } }); });
-  await enter(page, 'admin'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
+  await enter(page, 'admin'); await openMenu(page); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }); const content = menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true }); const ads = menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true });
   await expect(content).toHaveAttribute('aria-expanded', 'true'); await content.focus(); await page.keyboard.press('Space'); await expect(content).toHaveAttribute('aria-expanded', 'false'); await page.keyboard.press('Tab'); await expect(ads).toBeFocused(); await page.keyboard.press('Enter'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click(); await activeSection(page, 'ทะเบียนแคมเปญ');
 });
 
 test('agency keeps direct registry access and never receives financial, publication or staff-only links', async ({ page }) => {
-  expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role: 'agency_kin' } })).ok()).toBeTruthy(); await page.goto('/ads/registry'); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
+  expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role: 'agency_kin' } })).ok()).toBeTruthy(); await page.goto('/ads/registry'); await openMenu(page); const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await expect(menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true })).toHaveAttribute('aria-expanded', 'true'); await expect(menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่น', 'เผยแพร่', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
   await expect(menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true })).toHaveCount(0);
@@ -209,13 +213,13 @@ test('desktop rail persists, labels appear on focus and badges remain visible', 
   await expect(accounts.getByRole('tooltip')).toHaveText('ผู้ใช้และสิทธิ์');
   const label = await accounts.getByRole('tooltip').boundingBox(); expect(label!.x).toBeGreaterThanOrEqual(64);
   await expect(accounts.getByLabel('บัญชีรออนุมัติ')).toBeVisible();
-  await page.screenshot({ path: 'artifacts/unified-workspace/w1/local-sidebar-focus-1280.png', fullPage: false });
+  await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-focus-1280.png', fullPage: false });
   await expect(sidebar.locator('.hub-logo-mark')).toBeVisible();
   await expect(sidebar.locator('.hub-logo-mark')).toHaveJSProperty('naturalWidth', 1001);
   await expect(sidebar.locator('.hub-logo-full')).not.toBeVisible();
   await expect(sidebar.getByRole('button', { name: 'ผู้ช่วย Hub', exact: true })).toHaveCount(0);
   await page.reload(); await expect(sidebar).toHaveCSS('width', '64px');
-  await page.screenshot({ path: 'artifacts/unified-workspace/w1/local-sidebar-rail-1280.png', fullPage: true });
+  await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-rail-1280.png', fullPage: true });
   await sidebar.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus();
   await page.keyboard.press('Enter');
   await page.reload(); await expect(sidebar).toHaveCSS('width', '244px');
@@ -240,8 +244,8 @@ for (const width of [1280, 1024, 390]) test(`sidebar has no horizontal page over
   if (width === 390) await openMenu(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.locator('.sidebar-footer')).toHaveCount(0);
-  await page.screenshot({ path: `artifacts/unified-workspace/w1/local-sidebar-${width}.png`, fullPage: width !== 390 });
-  if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await stableDrawer(page); await page.screenshot({ path: 'artifacts/unified-workspace/w1/local-sidebar-overlay-1024.png' }); }
+  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-sidebar-${width}.png`, fullPage: width !== 390 });
+  if (width === 1024) { await page.getByRole('button', { name: 'ขยายเมนู', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(page.getByRole('dialog', { name: 'เมนูพื้นที่ทำงาน', exact: true })).toBeVisible(); await stableDrawer(page); await page.screenshot({ path: 'artifacts/unified-workspace/w2/local-sidebar-overlay-1024.png' }); }
   if (width !== 1280) await page.keyboard.press('Escape');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -258,6 +262,7 @@ test('settings retain destinations, project context and active state through nat
   ]) await expect(menu.getByRole('link', { name: label, exact: true })).toHaveAttribute('href', href);
   await menu.getByRole('link', { name: 'คำถามมาตรฐาน', exact: true }).click();
   await activeSection(page, 'คำถามมาตรฐาน');
+  await closeMobileMenu(page);
   await page.locator('.content-tabs').getByRole('button', { name: 'คำแปลมาตรฐาน', exact: true }).click();
   await activeSection(page, 'คำแปลมาตรฐาน');
   await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลเว็บไซต์และ AI/คำแปลมาตรฐาน');
@@ -324,7 +329,7 @@ for (const colorScheme of ['light', 'dark'] as const) test(`SENA semantic palett
   await expect(page.locator('.hub-brand-logo')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.hub-logo-full')).toBeVisible();
   await expect(page.locator('.hub-logo-full')).toHaveJSProperty('naturalWidth', 1001);
-  await page.screenshot({ path: `artifacts/unified-workspace/w1/local-${colorScheme}-1280.png`, fullPage: true });
+  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-${colorScheme}-1280.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' }); await openMenu(page); await reveal(page, 'ตั้งค่า');
   const label = page.locator('.hub-navigation').getByRole('link', { name: 'หลักฐานนำเข้าเดิม', exact: true });
   // A pointer click opened Settings. Re-enter with Tab so the browser applies
@@ -342,5 +347,5 @@ for (const colorScheme of ['light', 'dark'] as const) test(`SENA semantic palett
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   expect(await tooltip.evaluate(element => element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight)).toBe(true);
-  await page.screenshot({ path: `artifacts/unified-workspace/w1/local-${colorScheme}-390-reduced.png`, fullPage: false });
+  await page.screenshot({ path: `artifacts/unified-workspace/w2/local-${colorScheme}-390-reduced.png`, fullPage: false });
 });

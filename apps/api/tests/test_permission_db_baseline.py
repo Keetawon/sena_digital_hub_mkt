@@ -43,6 +43,11 @@ PROJECT_CONTENT_TABLES = {'hub.' + name for name in (
     'knowledge_topics', 'faq_questions', 'faq_question_versions', 'content_section_versions', 'faq_versions', 'faq_sources',
     'translation_glossary', 'content_translations', 'translation_jobs')}
 PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
+    'content_scope_allowed', 'workspace_require', 'workspace_project_bu', 'workspace_search',
+    'workspace_faq_allowed', 'workspace_review_rows', 'workspace_home',
+    'workspace_context', 'workspace_scope_matches', 'workspace_native_rows',
+    'workspace_native_publishable', 'workspace_content_tasks',
+    'workspace_project_readiness', 'workspace_brand_readiness',
     'content_scope_tab', 'content_scope_access', 'require_field_admin', 'content_fields', 'save_content_field',
     'save_contact_domain', 'content_number', 'content_rem_values', 'project_content_facts', 'save_project_fact',
     'save_project_building', 'content_contacts', 'save_content_contact', 'section_visible', 'content_version_guard',

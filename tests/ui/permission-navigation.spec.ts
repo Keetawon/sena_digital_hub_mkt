@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 
 const origin = 'http://127.0.0.1:3000';
 const project = {
@@ -33,12 +34,14 @@ test('capability projection drives controls and names-only brand references with
   await syntheticProject(page);
   await page.goto('/?project=CAPABILITY-UI');
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)', { exact: true })).toBeEditable();
+  await openMobileMenu(page);
   await page.getByRole('navigation').getByRole('button', { name: 'งานโฆษณาและงบ', exact: true }).click();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'งบและค่าใช้จ่าย', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation').locator('a[href="/?view=brands"]')).toHaveCount(0);
   await expect(page.getByRole('navigation').getByRole('link', { name: 'ผู้ใช้และสิทธิ์', exact: true })).toHaveCount(0);
   await expect(page.getByText('ชื่อแบรนด์อ้างอิงเท่านั้น', { exact: true })).toBeVisible();
   await expect(page.locator('a[href*="brand="]')).toHaveCount(0);
+  await closeMobileMenu(page);
   expect(brandReads).toBe(0); expect(accountDirectoryReads).toBe(0);
 
   const registryActor = await persona(page, 'admin');
@@ -111,6 +114,7 @@ test('direct management URLs use tab boxes while agencies retain the registry bo
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('agency_kin');
   await page.getByLabel('เลือกบัญชีทดสอบ').selectOption('viewer');
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('viewer');
+  await openMobileMenu(page);
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'หน้าแรก', exact: true })).toBeVisible();
 });
 

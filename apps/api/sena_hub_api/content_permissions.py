@@ -281,6 +281,8 @@ CONTENT_RULES = {
 # These surfaces have SQL identity/ownership or fixed technical boundaries rather
 # than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
 SHARED_RULES = {
+    ('GET', '/v1/admin/content/search'): 'content_workspace',
+    ('GET', '/v1/admin/content/home'): 'content_workspace',
     ('GET', '/v1/web/pages/{page_key}'): 'public',
     ('GET', '/v1/web/pages/{page_key}/faq'): 'public',
     ('GET', '/v1/web/changes'): 'public',

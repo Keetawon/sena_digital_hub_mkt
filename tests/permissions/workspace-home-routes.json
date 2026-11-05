@@ -1,0 +1,7 @@
+{
+  "phase": "Unified workspace W2",
+  "routes": [
+    {"method":"GET","path":"/v1/admin/content/search","tab":"content_workspace","level":"view","entry_roles":["viewer","editor","publisher","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/workspace_home.py"},
+    {"method":"GET","path":"/v1/admin/content/home","tab":"content_workspace","level":"view","entry_roles":["viewer","editor","publisher","admin"],"conditional_h1":false,"source":"apps/api/sena_hub_api/workspace_home.py"}
+  ]
+}

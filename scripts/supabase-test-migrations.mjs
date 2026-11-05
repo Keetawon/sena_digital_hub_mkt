@@ -358,7 +358,8 @@ export async function provisionMediaWorkerLogin(client,config,{manifestFile,back
 // The exact hosted bodies rehearsed against the populated, fixed-loopback H1
 // prefix. The rehearsal helper checks that connection before opening a write.
 export async function rehearseCombinedContentRelease(client,config,sources){
- const migrations=await loadMigrations(),state=await inspect(client,migrations,config);
+ await assertSimulationDatabase(client);
+ const migrations=(await loadMigrations()).slice(0,81),state=await inspect(client,migrations,config);
  if(migrations.length!==81||state.rows.length!==78)fail('Combined rehearsal requires exact prefix 78.');
  const body=async client=>{for(const m of migrations.slice(78))await applyMigrationStatements(client,m,config,state.actor);};
  const proof=await rehearseTransaction(client,{prefix:78,sources},body);
@@ -366,7 +367,8 @@ export async function rehearseCombinedContentRelease(client,config,sources){
  return proof;
 }
 export async function rehearseMediaWorkerLogin(client,config,sources){
- const migrations=await loadMigrations(),state=await inspect(client,migrations,config);
+ await assertSimulationDatabase(client);
+ const migrations=(await loadMigrations()).slice(0,81),state=await inspect(client,migrations,config);
  if(state.rows.length!==81)fail('Worker rehearsal requires exact prefix 81.');
  const body=async client=>{
   const database=(await client.query('select current_database() name')).rows[0].name;
@@ -376,6 +378,26 @@ export async function rehearseMediaWorkerLogin(client,config,sources){
  const proof=await rehearseTransaction(client,{prefix:81,sources},body);
  await attestedTransaction(client,proof.manifest,body);
  return proof;
+}
+
+// Programme migrations are rehearsed only after the unchanged historical H1
+// release checks. This entry cannot admit a hosted release or a working DB.
+export async function rehearseWorkspaceMigrations(client,config,sources){
+ await assertSimulationDatabase(client);
+ if(client.connection?.stream?.remoteAddress!=='127.0.0.1'||config.projectRef!==PROJECT_REF||config.apply!==true)
+  fail('Verified disposable workspace rehearsal required.');
+ const migrations=await loadMigrations();
+ const history=async()=>(await client.query(`select name,checksum,executed_checksum,project_ref,source,profile,environment from ${HISTORY} order by name`)).rows;
+ const before=await history();verifyHistory(before,migrations,config.projectRef);
+ if(before.length===migrations.length)return {status:'already_applied'};
+ if(before.length!==81)fail('Workspace rehearsal requires the exact historical H1 prefix.');
+ const state=await inspect(client,migrations.slice(0,81),config);
+ const body=async client=>{for(const migration of migrations.slice(81))await applyMigrationStatements(client,migration,config,state.actor);};
+ const proof=await rehearseTransaction(client,{prefix:81,sources},body);
+ await attestedTransaction(client,proof.manifest,body);
+ const after=await history();verifyHistory(after,migrations,config.projectRef);
+ if(after.length!==migrations.length)fail('Workspace rehearsal history is incomplete.');
+ return {...proof,status:'applied'};
 }
 
 export async function runMigrations(client, config, { log = console.log, migrations,attestations={} } = {}) {

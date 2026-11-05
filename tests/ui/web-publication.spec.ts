@@ -53,7 +53,7 @@ for (const width of [1280, 390]) {
       await page.getByRole('textbox', { name: 'เหตุผลการเผยแพร่หรือเปลี่ยนฉบับ', exact: true }).fill(reason);
       await page.getByRole('button', { name: 'เตรียมชุดตรวจทุกหน้าที่เปลี่ยน', exact: true }).click();
       const review = page.getByRole('region', { name: 'ตรวจชุดเผยแพร่', exact: true });
-      await expect(review.locator('.web-html-preview')).toContainText('บ้านและพื้นที่ร่วมกัน');
+      await expect(review.locator('article').filter({ has: page.getByRole('heading', { name: key, exact: true }) }).locator('.web-html-preview')).toContainText('บ้านและพื้นที่ร่วมกัน');
       await expect(review.getByRole('button', { name: 'เผยแพร่ขึ้นเว็บ', exact: true })).toBeDisabled();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
       await page.screenshot({ path: `artifacts/project-content-phase8/review-${width}.png`, fullPage: true });
@@ -63,7 +63,7 @@ for (const width of [1280, 390]) {
         await review.getByRole('checkbox', { name: 'ตรวจทุกหน้าและรายชื่อเฟสแล้ว ยืนยันเผยแพร่ชุดนี้' }).check();
         await db.query("update hub.account_permission set special_actions=$2 where account_id=$1 and tab='knowledge'", [publisher, previous]);
         await review.getByRole('button', { name: 'เผยแพร่ขึ้นเว็บ', exact: true }).click();
-        await expect(page.getByRole('alert')).toBeVisible();
+        await expect(page.locator('.web-publication').getByRole('alert')).toBeVisible();
         expect((await read(page, `${base}/web`)).pages.find((p: { page_key: string }) => p.page_key === key).published_version_id).toBeNull();
         await db.query("update hub.account_permission set special_actions=array_append(special_actions,'knowledge.publish_web') where account_id=$1 and tab='knowledge'", [publisher]);
         await page.reload();

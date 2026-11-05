@@ -6,7 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {freeLoopbackPort,startPostgresOnFreePort} from './disposable-ports.mjs';
 import pg from 'pg';
 import {initialiseDisposableDb} from './initialise-disposable-db.mjs';
-import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,rehearseCombinedContentRelease,rehearseMediaWorkerLogin} from './supabase-test-migrations.mjs';
+import {applyMigration,loadMigrations,runMigrations,PROJECT_REF,safeError,rehearseCombinedContentRelease,rehearseMediaWorkerLogin,rehearseWorkspaceMigrations} from './supabase-test-migrations.mjs';
 import {createH1AuthFixture,saveH1AuthFixture} from '../tests/fixtures/h1-auth.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
@@ -48,7 +48,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     assert.equal((await client.query("select has_parameter_privilege(current_user,'app.ads_test_issuing','SET') allowed")).rows[0].allowed,false);
     log('PASS: managed login reproduces 42501; no custom-parameter privilege is granted.');
     const config={projectRef:PROJECT_REF,runtimePassword,apply:false};
-    const migrations=await loadMigrations();
+    const allMigrations=await loadMigrations(),migrations=allMigrations.slice(0,81);
     await runMigrations(client,config,{log,migrations});
     assert.equal((await client.query("select count(*)::int count from pg_namespace where nspname in('hub','ads','hub_deployment')")).rows[0].count,0);
     config.apply=true;
@@ -79,7 +79,7 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     await applyMigration(client,migrations[56],config,'hub_migration_verifier');
     await runMigrations(client,config,{log,migrations:migrations.slice(0,78)});
     const sourceFiles=['scripts/supabase-test-migrations.mjs','scripts/hosted-write-attestation.mjs','scripts/auth-write-check.mjs','scripts/auth-protection.mjs',
-      'scripts/simulate-hosted-test.mjs','scripts/disposable-simulation.mjs','scripts/disposable-ports.mjs','tests/fixtures/h1-auth.mjs','supabase/hosted-test/profile.json',...migrations.slice(78).map(m=>'supabase/migrations/'+m.name)];
+      'scripts/simulate-hosted-test.mjs','scripts/disposable-simulation.mjs','scripts/disposable-ports.mjs','tests/fixtures/h1-auth.mjs','supabase/hosted-test/profile.json',...allMigrations.slice(78).map(m=>'supabase/migrations/'+m.name)];
     const attestedSources=Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
     const combinedProof=await rehearseCombinedContentRelease(client,config,attestedSources);
     log('PASS: populated prefix 78 rehearses and attests combined 79/80/81; own Auth snapshot unchanged.');
@@ -173,6 +173,14 @@ export async function simulateHostedTest({keepRunning=false,persistMetadata=true
     const mediaFlags=(await client.query("select rolcanlogin,rolinherit,rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls,rolconnlimit from pg_roles where rolname='hub_media_worker_login'")).rows[0];
     assert.deepEqual(mediaFlags,{rolcanlogin:true,rolinherit:false,rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,rolconnlimit:2});
     log('PASS: dedicated media LOGIN uses the runner SCRAM bootstrap, assumes only its worker role, and cannot read Auth; API cannot assume the worker.');
+    if(allMigrations.length>81){
+      const beforeWorkspace=await contentUpgradeState();
+      const workspaceProof=await rehearseWorkspaceMigrations(client,config,attestedSources);
+      assert.equal(workspaceProof.status,'applied');
+      assert.deepEqual(await contentUpgradeState(),beforeWorkspace);
+      assert.equal((await rehearseWorkspaceMigrations(client,config,attestedSources)).status,'already_applied');
+      log(`PASS: disposable workspace migrations 82-${allMigrations.length} attested and replayed; accounts, grants and templates unchanged.`);
+    }
     if(seed) {
       const {IDENTITIES}=await import('./hosted-test-fixtures.mjs');
       for (const u of IDENTITIES) await saveH1AuthFixture(admin,{...u,email_confirmed_at:u.created_at});

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {readFile} from 'node:fs/promises';
+import {rehearseWorkspaceMigrations} from '../scripts/supabase-test-migrations.mjs';
 import { applyMigration, applyCombinedContentRelease, COMBINED_COMPONENTS, configuration, loadMigrations, mediaWorkerLoginStatements, migrationBody, operatorDiagnostic, requireVerifiedTls, runMigrations, safeError, statements, validateCombinedManifest, verifyHistory } from '../scripts/supabase-test-migrations.mjs';
 
 const ref = 'eqlrtevwpyboplljgowo';
@@ -10,6 +11,19 @@ const env = {
   HUB_SUPABASE_TEST_RUNTIME_PASSWORD: 'x'.repeat(40),
 };
 const args = ['--project-ref', ref];
+
+test('workspace rehearsal rejects hosted and working databases before issuing SQL',async()=>{
+ for(const connectionParameters of [
+  {host:`db.${ref}.supabase.co`,port:5432,database:'postgres'},
+  {host:'127.0.0.1',port:55432,database:'sena_hub_local'},
+  {host:'127.0.0.1',port:55432,database:'hub_hosted_test_simulation'},
+  {host:'127.0.0.1',port:55433,database:'another_database'},
+ ]){
+  const queries=[],client={connectionParameters,query:async sql=>queries.push(sql)};
+  await assert.rejects(rehearseWorkspaceMigrations(client,{projectRef:ref,apply:true},{}),/Disposable H1 loopback/);
+  assert.deepEqual(queries,[]);
+ }
+});
 
 test('default is dry-run with an explicitly named matching project and verified TLS config', () => {
   const config = configuration(env, args);
@@ -53,10 +67,10 @@ test('SQL scanner preserves quoted bodies and strips only the outer transaction'
   for (const bad of ['begin; create table a(x int);', 'begin; commit; commit;', 'begin; rollback; commit;', 'create table a(x int);', "begin; select 'unterminated; commit;"]) assert.throws(() => migrationBody(bad));
 });
 
-test('all 81 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
+test('all 82 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
   const migrations = await loadMigrations();
-  assert.equal(migrations.length,81);
-  assert.equal(migrations.at(-1).name,'202610290081_media_worker_heartbeat.sql');
+  assert.equal(migrations.length,82);
+  assert.equal(migrations.at(-1).name,'202611040082_workspace_home.sql');
   assert.notEqual(migrations[13].checksum,migrations[13].executedChecksum);
   assert.equal(migrations.filter(m=>m.checksum!==m.executedChecksum).length,1);
   const rows = migrations.map(m => ({ name: m.name, checksum:m.checksum,executed_checksum:m.executedChecksum,project_ref:ref,source:'sena-hub-supabase-test-v2',profile:'hosted-test-settings-v1',environment:'hosted-test' }));

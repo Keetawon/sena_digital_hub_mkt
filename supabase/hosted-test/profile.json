@@ -408,6 +408,11 @@
       "name": "202610290081_media_worker_heartbeat.sql",
       "canonical_sha256": "fd710b763d18b1539b77ad310428439275915d7d59c462934c5aa74febe853be",
       "executed_sha256": "fd710b763d18b1539b77ad310428439275915d7d59c462934c5aa74febe853be"
+    },
+    {
+      "name": "202611040082_workspace_home.sql",
+      "canonical_sha256": "ada4f2cde77322389dd45d6868effc7c8e3467d773a168483cf3ecf53cbe5c29",
+      "executed_sha256": "ada4f2cde77322389dd45d6868effc7c8e3467d773a168483cf3ecf53cbe5c29"
     }
   ]
 }

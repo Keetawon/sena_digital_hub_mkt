@@ -1,4 +1,4 @@
-import { can, type CapabilityProjection } from "@/lib/hub-permissions";
+import { canWorkspace, can, type CapabilityProjection } from "@/lib/hub-permissions";
 export const hubPages = [
   { id: "projects", href: "/", label: "โครงการที่อยู่อาศัย", group: "content", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" },
   { id: "brands", href: "/?view=brands", label: "แบรนด์ที่อยู่อาศัย", group: "content", icon: "M4 21V6l8-3v18M12 9h8v12M2 21h20M7 8v2M7 13v2M16 12v2M16 17v2" },
@@ -34,7 +34,7 @@ export type HubService = { key: keyof typeof hubGroups; label: string; icon: str
 export const hubServices: HubService[] = [
   { key: "content", label: hubGroups.content, icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5", groups: [
     { key: "content-work", items: [
-      { key: "home", label: "หน้าแรก", icon: "m3 10 9-7 9 7v11H3zM9 21v-8h6v8", targets: [{ section: "projects", href: "/" }, { section: "brands", href: "/?view=brands" }, { section: "faq", href: "/faq" }] },
+      { key: "home", label: "หน้าแรก", icon: "m3 10 9-7 9 7v11H3zM9 21v-8h6v8", targets: [{ section: "projects", href: "/home" }, { section: "brands", href: "/home" }, { section: "faq", href: "/home" }, { section: "promotions", href: "/home" }, { section: "releases", href: "/home" }] },
       { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/?view=projects" }, { section: "brands", href: "/?view=brands" }, { section: "faq", href: "/faq" }] },
       { key: "promotions", label: "โปรโมชั่น", targets: [{ section: "promotions", href: "/promotions" }] },
       { key: "articles", label: "บทความ", targets: [{ section: "articles", href: "/articles" }] },
@@ -57,6 +57,7 @@ export const hubUtilities: HubMenuItem[] = hubPages.filter(page => page.group ==
 
 export function hubCurrentMenuKey(section: HubSection, location = "/") {
   const url = new URL(location, "https://hub.invalid");
+  if (url.pathname === "/home") return "home";
   if (url.pathname === "/content/fields") return "fields";
   if (url.pathname === "/media" && url.searchParams.get("tab") === "rules") return url.hash === "#requirements" ? "media-rules" : "media-tags";
   if (section === "faq") {
@@ -78,12 +79,13 @@ export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);
   return page && "permissionTab" in page ? page.permissionTab : section;
 }
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
 export function safeNext(value?: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) return "/";
   try { const url = new URL(value, "https://hub.invalid"); return url.origin === "https://hub.invalid" && hubRoutes.includes(url.pathname) ? url.pathname + url.search + url.hash : "/"; } catch { return "/"; }
 }
 
 export function workspaceLanding(capabilities?: CapabilityProjection) {
+  if (canWorkspace(capabilities)) return "/home";
   return hubPages.find(page => page.id === "accounts" ? capabilities?.can_manage_users : can(capabilities, hubPermissionTab(page.id)))?.href ?? "/";
 }

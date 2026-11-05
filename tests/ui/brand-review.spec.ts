@@ -1,3 +1,4 @@
+import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const api = '/api/hub/v1/admin';
@@ -142,8 +143,10 @@ test('logo content changes count as edits while readonly metadata and ordering d
 
 test('unavailable version reads stay unknown and block publication until exact snapshots reload', async ({ page }) => {
   const data = await fixture(page); data.failVersions(true); await page.goto('/?view=brands');
+  await openMobileMenu(page);
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).locator('.hub-nav-count')).toHaveText('…');
+  await closeMobileMenu(page);
   data.failVersions(false); await page.reload();
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   data.failVersions(true); await page.goto('/?brand=brd_changed');

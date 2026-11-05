@@ -380,6 +380,22 @@ Run it before reporting the slice done, before any commit the owner asks for,
 and before any hosted TEST rollout step. Hosted rollout documents, including
 `docs/46-hosted-content-rollout.md`, continue to require full-gate evidence.
 
+The unified workspace programme runs the complete browser suite at both 1280
+and 390 pixels. Run each viewport through a separate disposable harness so
+fixed write fixtures from the first complete suite cannot affect the second:
+
+```powershell
+$env:PLAYWRIGHT_VIEWPORT_WIDTH = '1280'
+try { npm.cmd run test:ui } finally { Remove-Item Env:PLAYWRIGHT_VIEWPORT_WIDTH }
+$env:PLAYWRIGHT_VIEWPORT_WIDTH = '390'
+try { npm.cmd run test:ui } finally { Remove-Item Env:PLAYWRIGHT_VIEWPORT_WIDTH }
+```
+
+The default is 1280 pixels. Specs that explicitly compare desktop and mobile
+keep their own viewport steps. Neither run excludes or skips any local spec;
+H1 continues to use its existing simulation selection. Credential loading in
+the disposable harness is unchanged.
+
 **Failure loop:** fix the failure, then rerun only the failing tests and their
 quick-gate set until they pass. Then run the full gate once more. Never rerun
 the full gate for each fix attempt.

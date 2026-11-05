@@ -2,6 +2,7 @@ import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
 
 test('public website source remark is visible in the approval/source column', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await setup(page, 'editor', { firstRow: { website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] } });
   const table = page.getByRole('region', { name: 'ตารางความคืบหน้าโครงการ', exact: true });
   await expect(table.getByRole('columnheader', { name: 'อนุมัติโดย / แหล่งข้อมูล', exact: true })).toBeVisible();

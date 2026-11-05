@@ -18,11 +18,18 @@ type TypedDraft = { text: string; rationale: string };
 type Proposal = { id: string; entity_type: "project" | "brand"; entity_id: string; field_path: string; old_text: string | null; new_text: string; expected_updated_at: string; status: string; digest: string };
 const contextLabels = { project_id: "โครงการ", brand_id: "แบรนด์", rem_project_id: "รหัสโครงการ REM", code: "รหัสแคมเปญ SN", line_id: "รายการสื่อ" } as const;
 type ContextKind = keyof typeof contextLabels;
+// Opening a suggestion fills the composer only. Sending remains an explicit
+// action in the existing permission-checked assistant.
+export function openWorkspaceAssistant(text = "", context?: Context, source?: HTMLElement) {
+  window.dispatchEvent(new CustomEvent("hub-assistant-open", { detail: { text, context, source } }));
+}
 const fieldLabels: Record<string, string> = { "meta_title.th": "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", "meta_description.th": "คำอธิบายย่อโครงการ", "description.th": "คำอธิบายแบรนด์" };
 const messageOf = (error: unknown) => error instanceof TypeError ? "เชื่อมต่อผู้ช่วยไม่ได้ กรุณาตรวจการเชื่อมต่อแล้วลองอีกครั้ง" : error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง";
 const sourceLink = (href: unknown): href is string => typeof href === "string" && /^\/(?!\/)[^\\\u0000-\u001f\u007f]*$/.test(href);
 function pageContext(): Context {
   const query = new URLSearchParams(window.location.search);
+  const entity = /^\/website\/(project|brand)\/([^/]+)$/.exec(window.location.pathname);
+  if (entity) return { [entity[1] === "project" ? "project_id" : "brand_id"]: decodeURIComponent(entity[2]) };
   if (query.get("project")) return { project_id: query.get("project")! };
   if (query.get("brand")) return { brand_id: query.get("brand")! };
   if (query.get("registration")) return { code: query.get("registration")! };
@@ -96,6 +103,7 @@ function DraftProposal({ context, config, draft, onDraft, onDenied }: { context:
 export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigationTarget: HTMLElement | null; onNavigationOpen: () => HTMLElement | null }) {
   const [open, setOpen] = useState(false); const [config, setConfig] = useState<Config | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const configKey = useRef<string | null>(null); const checkingConfig = useRef(false);
+  const launchContext = useRef<Context | null>(null);
   const [drafts, setDrafts] = useState<Record<string, TypedDraft>>({});
   const [context, setContext] = useState<Context>({}); const [contextKind, setContextKind] = useState<ContextKind>("project_id"); const [contextId, setContextId] = useState(""); const [month, setMonth] = useState(""); const [visibility, setVisibility] = useState<"draft" | "published">("draft");
   const [mode, setMode] = useState<"fake" | "live">("fake"); const [question, setQuestion] = useState(""); const [golden, setGolden] = useState(""); const [turns, setTurns] = useState<Turn[]>([]); const [busy, setBusy] = useState(false); const [status, setStatus] = useState("");
@@ -149,6 +157,18 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     setContext(next); const key = (Object.keys(contextLabels) as ContextKind[]).find(key => next[key]); setContextKind(key ?? "project_id"); setContextId(key ? next[key]! : ""); setMonth(next.month?.slice(0, 7) ?? ""); setVisibility(next.visibility ?? "draft");
     if (value) try { sessionStorage.setItem(`hub-assistant-context:${value.session_key}`, JSON.stringify(next)); } catch { /* Context still remains available in this mounted session. */ }
   }
+  useEffect(() => {
+    const launch = (event: Event) => {
+      const detail = (event as CustomEvent<{ text?: string; context?: Context; source?: HTMLElement }>).detail;
+      if (!detail || typeof detail.text !== "string") return;
+      launchContext.current = cleanContext(detail.context ?? pageContext());
+      setQuestion(detail.text.slice(0, 2000)); setMode("fake");
+      toggle(true, detail.source);
+      if (config) { contextSaved(launchContext.current); launchContext.current = null; }
+    };
+    window.addEventListener("hub-assistant-open", launch);
+    return () => window.removeEventListener("hub-assistant-open", launch);
+  }, [config]);
   function invalidateAccess(error: unknown) {
     stop(); setTurns([]); setConfig(null); contextSaved({}, null);
     try { if (configKey.current) sessionStorage.removeItem(`hub-assistant-context:${configKey.current}`); } catch { /* Browser storage is optional. */ }
@@ -169,12 +189,22 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
         if (!changed) try { const stored = sessionStorage.getItem(`hub-assistant-context:${value.session_key}`); if (stored != null) next = cleanContext(JSON.parse(stored)); } catch { /* Invalid storage never becomes a request context. */ }
         contextSaved(next, value);
       }
+      if (launchContext.current !== null) { contextSaved(launchContext.current, value); launchContext.current = null; }
       configKey.current = value.session_key; setConfig(value); setGolden(current => current || value.live_questions[0]?.id || "");
     } catch (error) { invalidateAccess(error); }
     finally { checkingConfig.current = false; setLoading(false); }
   }
   function toggle(next: boolean, source?: HTMLElement) {
-    if (next && source) { opener.current = source; setTab("chat"); }
+    if (next && source) {
+      opener.current = source; setTab("chat");
+      if (source === floatingTrigger.current) {
+        const current = pageContext();
+        if (Object.keys(current).length) {
+          launchContext.current = current;
+          if (config) { contextSaved(launchContext.current); launchContext.current = null; }
+        }
+      }
+    }
     if (!next) stop(); setOpen(next); const url = new URL(window.location.href); if (next) url.searchParams.set("assistant", "open"); else url.searchParams.delete("assistant"); window.history.replaceState(window.history.state, "", url);
   }
   function closeContext() { contextPopover.current?.hidePopover(); contextButton.current?.focus(); }
