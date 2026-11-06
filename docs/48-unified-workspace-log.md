@@ -3761,3 +3761,91 @@ were run on an earlier draft and must be repeated on final code. Multichannel
 16-bit transforms/remaining HDR descriptions, authorization, dedup, DB/API/UI,
 operator adapters and public/provider privacy tests remain unfinished. No W9
 delivery, full-gate pass or integration is claimed at this checkpoint.
+
+
+## W4 commit, push and review handoff
+
+Primary W4 commit: `16b38cd6effede7f11693e9fcd6128c68258cf3b` — `Unify content review and publication governance`.
+Push to `origin/main` succeeded and the remote head was verified at that exact
+commit. The checkpoint contains the 162 explicit W4 paths, migrations 0084/0085,
+the owner decision/design records and the verified full-gate result above.
+Credential paths passed git check-ignore immediately before the commit. No
+hosted migration, deployment, storage write or live provider call occurred.
+
+The owner requested this checkpoint to inspect work in progress. Delivered:
+W1 shell, W2 home/search/assistant, W3 entity workspace and W4 governance/queue.
+Remaining: W3.1 exposure/overview corrections, W3.2 contextual Promotions,
+W5 business, W6 BUD scoping/sync, W7 stub writing aid, W9 upload optimization,
+and W8 UAT/final programme gate. Prepared drafts are not delivered features.
+Next implementation slice is W3.1. Hosted rollout still requires separate
+authorization.
+
+### Finished worktree cleanup and remaining inventory
+
+Removed finished worktrees and their merged branches with normal git worktree
+remove and git branch -d: `w1-service-shell`, `w3-review`, `w4-review`. Before removal, every changed W1 source
+blob was verified as already preserved in main history. No force option or
+unmerged unique file was discarded. The unrelated phase7 checkout remains
+untouched.
+
+53 programme worktrees remain. The following are task descriptions, not
+replacement filesystem paths; the stable inventory ID identifies each reviewed
+checkout. Older prepared variants with distinct/unreviewed source are retained
+until their work is reconciled. Actual checkout paths remain available through
+git worktree list. Main is additional to this table.
+
+| Task description | Inventory ID | Changed paths | Reason retained |
+|---|---|---:|---|
+| w2-home-projection | `a1f2b3a19e2a52f1` | 2 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-browser-recovery | `d98a162853687e11` | 115 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-entity-ui | `2f98f59956480279` | 63 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-lead-integration | `8e767ff8114199c6` | 124 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-legacy-tests | `d345eb3986cab117` | 117 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-navigation-tests | `cb2cc7a7d3004bf2` | 116 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3-workspace-api | `b1c0224bfb87b084` | 5 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w3.1-review-inventory | `89468956fc56f267` | 0 | Unfinished preparation or review handoff |
+| w4-browser-regressions | `943d470f04b2a4dc` | 151 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-disclosure-evidence | `493dc8fae1cf22fa` | 51 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-governance | `bc2914174aa0c342` | 14 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-http-gates | `7c5658a93955fbe4` | 199 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-lead-integration | `f71e812d12cc3faf` | 224 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-lifecycle-tests | `6c53420fd6aa19ad` | 171 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-primary-forms | `ee236f74a4ab3dd7` | 140 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-publication-navigation | `93335edb2cc730a0` | 212 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-publication-recheck | `a212cfc1173e31fa` | 51 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-record-forms | `4cd93f23cf44e0e7` | 145 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-bounded-fixture-confirmation | `27e9bf86b94699c8` | 7 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-bounded-form-fixtures | `6fb1bb2ce0600915` | 3 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-bounded-logo-fixture | `1f6dd40d5be64f7a` | 5 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-bounded-ui-fixtures | `a677c878760d5cff` | 9 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w4-workflow-ui | `2858e71bd69f5350` | 8 | Distinct or unreviewed earlier source; preserve until reconciled |
+| w5-business-design | `aedbe2ce15d80561` | 0 | Unfinished preparation or review handoff |
+| w5-business-level | `8757011dae7792f4` | 152 | Unfinished preparation or review handoff |
+| w5-business-transport | `38d284f0389abec6` | 10 | Unfinished preparation or review handoff |
+| w5-business-ui | `0316398b31805e4c` | 199 | Unfinished preparation or review handoff |
+| w6-account-ui | `f89e0573e898bf91` | 204 | Unfinished preparation or review handoff |
+| w6-asset-delivery | `57eef06a894aa1be` | 243 | Unfinished preparation or review handoff |
+| w6-assistant-scope | `1309d8b53a9fc874` | 240 | Unfinished preparation or review handoff |
+| w6-bu-import | `5d9b8d66f1165abd` | 183 | Unfinished preparation or review handoff |
+| w6-client-boundaries | `2e66db65d8a5f0bc` | 244 | Unfinished preparation or review handoff |
+| w6-client-callers | `63db680bf2c24bc6` | 219 | Unfinished preparation or review handoff |
+| w6-notice-ui | `34300adf55f1fa5e` | 239 | Unfinished preparation or review handoff |
+| w6-permission-inventory | `8ef7a4bec5dbc472` | 2 | Unfinished preparation or review handoff |
+| w6-read-boundaries | `a4f65e8fee71f0ee` | 238 | Unfinished preparation or review handoff |
+| w6-review | `1543199d0e4c4177` | 0 | Unfinished preparation or review handoff |
+| w6-route-transport | `8caab7f1f6181272` | 2 | Unfinished preparation or review handoff |
+| w6-scope-audit-fixes | `50637b37d8fb4a38` | 241 | Unfinished preparation or review handoff |
+| w6-scope-design | `75430df53139a796` | 2 | Unfinished preparation or review handoff |
+| w6-scopes | `833cdfa8123490a6` | 145 | Unfinished preparation or review handoff |
+| w7-admission-order | `4db641ceb50bc08c` | 115 | Unfinished preparation or review handoff |
+| w7-field-bindings | `adc4435ada31b96d` | 232 | Unfinished preparation or review handoff |
+| w7-h1-catalog-fixture | `b346267139a88b8f` | 4 | Unfinished preparation or review handoff |
+| w7-proxy-transport | `b2562b41fda0b018` | 2 | Unfinished preparation or review handoff |
+| w7-writing-aid | `6716bf39d83fb963` | 4 | Unfinished preparation or review handoff |
+| w7-writing-ui | `7a94b0d716f577ef` | 5 | Unfinished preparation or review handoff |
+| w8-promotion-uat | `04f6f1b56b538c47` | 1 | Unfinished preparation or review handoff |
+| w8-bounded-doc-checks | `d744787658596fa6` | 0 | Unfinished preparation or review handoff |
+| w8-uat-draft | `d344cd90fb140a01` | 1 | Unfinished preparation or review handoff |
+| w9-upload-fixtures | `001534655654cb3a` | 1 | Unfinished preparation or review handoff |
+| w9-upload-inventory | `0cfeaad33bbdc2db` | 0 | Unfinished preparation or review handoff |
+| w9-upload-processing | `d694d210dd5a112a` | 3 | Unfinished preparation or review handoff |
