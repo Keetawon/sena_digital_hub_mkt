@@ -8,7 +8,7 @@ const bounded = (value: string | null, max: number) => value !== null && value.l
 
 export function workflowAllowsApi(path: string, method: string) {
   if (method === 'GET') return [workflow, workflow + '/items', queue].includes(path);
-  return method === 'POST' && [workflow + '/submit', workflow + '/review', workflow + '/save-approve',
+  return method === 'POST' && [workflow + '/submit', workflow + '/review', workflow + '/save-approve', workflow + '/exposure',
     queue + '/prepare', queue + '/publish', queue + '/return'].includes(path);
 }
 

@@ -41,6 +41,11 @@ class WorkflowRevision(WorkflowTarget):
     expected_hash: ContentHash
 
 
+class WorkflowExposure(WorkflowRevision):
+    kind: Literal['asset', 'asset_context', 'media_link']
+    exposure: Literal['open', 'web_only', 'internal']
+
+
 class WorkflowDecision(WorkflowRevision):
     decision: Literal['approve', 'return', 'withdraw']
     reason: DecisionReason | None = None
@@ -75,7 +80,11 @@ def publication_targets(value: dict) -> dict:
     """Encode only finite server-owned descriptor targets, never stored URLs."""
     target = value.get('target')
     workflow = value.get('workflow') or {}
-    kind = workflow.get('kind')
+    kind = workflow.get('kind') or value.get('kind')
+    if isinstance(value.get('exposure_target'), dict):
+        editor = {'target': value['exposure_target'],
+                  'workflow': workflow or {'kind': kind, 'identity': value.get('identity', {})}}
+        value['exposure_href'] = publication_targets(editor).get('href')
     if isinstance(target, dict):
         keys = {'tab', 'phase', 'section', 'field', 'question_key', 'faq', 'cluster',
                 'unit_type', 'revision', 'binding', 'scope_type', 'scope_id', 'term',
@@ -126,7 +135,8 @@ def register_content_workflow_routes(app, authentication, database):
 
     async def call(request, actor, statement, *args):
         async with database(request, actor) as connection:
-            return {'data': await connection.fetchval(statement, *args)}
+            value = await connection.fetchval(statement, *args)
+            return {'data': publication_targets(value) if isinstance(value, dict) else value}
 
     @app.get('/v1/admin/content-workflow/items')
     async def items(request: Request,
@@ -148,6 +158,11 @@ def register_content_workflow_routes(app, authentication, database):
         except (ValueError, TypeError):
             raise HTTPException(422, 'Invalid content identity') from None
         return await call(request, actor, 'select hub.content_workflow_read($1,$2)', target.kind, target.identity)
+
+    @app.post('/v1/admin/content-workflow/exposure')
+    async def exposure(body: WorkflowExposure, request: Request, actor: Actor = Depends(staff)):
+        return await call(request, actor, 'select hub.content_workflow_exposure_save($1,$2,$3,$4)',
+                          body.kind, body.identity, body.expected_hash, body.exposure)
 
     @app.post('/v1/admin/content-workflow/submit')
     async def submit(body: WorkflowRevision, request: Request, actor: Actor = Depends(staff)):

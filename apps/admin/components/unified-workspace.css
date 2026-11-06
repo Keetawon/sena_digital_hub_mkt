@@ -18,8 +18,21 @@
 .workspace-tabs button { min-height: 44px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 14px; background: var(--surface); color: var(--ink); font: inherit; }
 .workspace-tabs button[aria-selected="true"] { background: var(--action); color: var(--surface); border-color: var(--action); }
 .workspace-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.workspace-overview > :first-child { grid-row: span 2; }
+.workspace-gap-counts { display: block; font-size: var(--text-small); }
 .workspace-panel { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
 .workspace-panel h2 { margin-top: 0; }
+.workspace-count { display: block; font-size: var(--text-small); color: var(--muted); font-weight: 400; }
+.workspace-gap-group { border-bottom: 1px solid var(--line); }
+.workspace-gap-group > summary { min-height: 44px; padding: 10px 0; cursor: pointer; overflow-wrap: anywhere; }
+.workspace-gap-group > summary span { color: var(--muted); }
+.workspace-gap-group .workspace-items a { text-decoration: underline; font-weight: 600; }
+.workspace-gap-group .workspace-items time { margin-left: 8px; }
+.workspace-gap-group .button { margin-bottom: 12px; }
+.workspace-timeline.workspace-timeline-compact > li { padding: 8px 12px; margin-bottom: 8px; }
+.workspace-timeline-compact p { margin: 4px 0; }
+.workspace-timeline-compact .content-preserve { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.workspace-timeline-compact a, .workspace-history-link { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; }
 .workspace-items li { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .workspace-items a { display: block; min-height: 44px; }
 .workspace-section-states { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -44,6 +57,7 @@
 .entity-embedded-content > .content-header, .entity-embedded-media > .content-header, .entity-embedded-faq > .content-header { display: none; }
 @media (max-width: 720px) {
   .workspace-overview, .workspace-history-diff { grid-template-columns: minmax(0, 1fr); }
+  .workspace-overview > :first-child { grid-row: auto; }
   .workspace-heading, .workspace-panel, .workspace-faq-card { padding: 12px; }
   .workspace-tree li { padding: 10px; }
   .workspace-tree .workspace-tree { margin-left: 6px; }

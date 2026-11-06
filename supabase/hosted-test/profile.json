@@ -428,6 +428,11 @@
       "name": "202611040085_unified_publication.sql",
       "canonical_sha256": "c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817",
       "executed_sha256": "c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817"
+    },
+    {
+      "name": "202611060086_workspace_summary_exposure.sql",
+      "canonical_sha256": "8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b",
+      "executed_sha256": "8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b"
     }
   ]
 }

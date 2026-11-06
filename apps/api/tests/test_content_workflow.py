@@ -617,7 +617,8 @@ def test_saved_item_inventory_pages_all_own_drafts_without_inherited_or_approved
             assert any(item['kind'] == 'faq' and item['source_tab'] == 'knowledge' for item in entries)
             assert all(item['can_submit'] and item['can_edit'] and item['expected_hash'] and item['href'] for item in entries)
             assert all(set(item) == {'kind', 'identity', 'expected_hash', 'source_revision', 'source_updated_at', 'state',
-                                     'can_submit', 'can_edit', 'source_tab', 'source_tabs', 'label', 'target', 'href'} for item in entries)
+                                     'can_submit', 'can_edit', 'source_tab', 'source_tabs', 'label', 'target', 'href',
+                                     'ai_exposure', 'exposure_policy', 'exposure_editor', 'exposure_target', 'exposure_href'} for item in entries)
             with pytest.raises(asyncpg.CheckViolationError):
                 await call(db, ids['editor'], 'select hub.content_workflow_items($1,$2,null,$3,100)', 'corporate', 'sena', pages[0]['next_cursor'])
             with pytest.raises(asyncpg.CheckViolationError):

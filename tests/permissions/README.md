@@ -52,4 +52,14 @@ Legacy `/knowledge` evidence now requires actual Admin plus the existing source
 V/E/A bit. All old FAQ candidate mutations are closed; historical rows remain.
 Migration 0083's 33 new or renamed functions are explicitly listed in the DB
 baseline test, including private delegates with no application execution grant.
+
+Migration 0086 adds two private presentation helpers, `workspace_item_context`
+and `content_exposure`, to that explicit database inventory. Neither is executable
+by runtime roles. The exposure save route delegates through the source lock and
+existing media Edit conjunctions; `content_workflow_exposure_save` is explicitly
+listed as an application entry point. Existing workspace/workflow/publication
+entry guards remain. No permission bit, special or account/template grant changes.
+Suggestion decisions resolve the active field's default exposure server-side,
+and broader forged values are rejected. The owner decision and permission card
+are recorded in docs/47 section 4.5 and docs/48 W3.1.
 The historical fixture JSON files above remain unchanged.

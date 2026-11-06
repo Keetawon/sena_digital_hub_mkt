@@ -59,6 +59,7 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
     'review_knowledge_candidate_before_versions')}
 WORKSPACE_FUNCTIONS = {
+    'hub.workspace_item_context',
     'hub.content_activity', 'hub.content_history', 'hub.content_history_event',
     'hub.review_knowledge_candidate_before_workspace', 'hub.website_text_decide', 'hub.website_text_key',
     'hub.website_text_latest', 'hub.website_text_numeric', 'hub.workspace_actor',
@@ -74,6 +75,7 @@ WORKSPACE_FUNCTIONS = {
 
 WORKFLOW_TABLES = {'hub.content_review_versions'}
 WORKFLOW_FUNCTIONS = {
+    'hub.content_exposure',
     'hub.content_decision_stamp',
     'hub.content_definition_replace',
     'hub.content_glossary_version',
@@ -95,6 +97,7 @@ WORKFLOW_FUNCTIONS = {
     'hub.content_submission_freeze',
     'hub.content_workflow_authors',
     'hub.content_workflow_hash',
+    'hub.content_workflow_exposure_save',
     'hub.content_workflow_history_review',
     'hub.content_workflow_history_staged',
     'hub.content_workflow_identity',
@@ -150,6 +153,7 @@ WORKFLOW_FUNCTIONS = {
     'hub.web_source_available_before_workflow',
 }
 WORKFLOW_APP_FUNCTIONS = {
+    'hub.content_workflow_exposure_save',
     'hub.content_workflow_items',
     'hub.content_workflow_read',
     'hub.content_workflow_review',

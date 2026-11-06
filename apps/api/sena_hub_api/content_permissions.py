@@ -292,6 +292,7 @@ SHARED_RULES = {
     ('POST', '/v1/admin/content-workflow/submit'): 'content_workflow',
     ('POST', '/v1/admin/content-workflow/review'): 'content_workflow',
     ('POST', '/v1/admin/content-workflow/save-approve'): 'content_workflow',
+    ('POST', '/v1/admin/content-workflow/exposure'): 'content_workflow',
 
     ('GET', '/v1/admin/content/search'): 'content_workspace',
     ('GET', '/v1/admin/content/home'): 'content_workspace',

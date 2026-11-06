@@ -6,6 +6,7 @@ import { request } from "./hub-request";
 import { DetailDialog } from "./registry-motion";
 import { ErrorSummary, dateTime } from "./content-operations-shared";
 import { publicationValue } from "./publication-comparison";
+import { ExposureChip, InternalExposureNotice } from "./content-exposure";
 import { workflowAllowed, workflowCommand, workflowFailure, workflowKey, workflowReadPath, workflowRequiresReason, workflowMatchesSource,
   workflowText as text, submitWorkflowItems, loadWorkflowInventory, workflowSubmissionAllowed, workflowSubmitCommand, publicationHref,
   type SubmissionItem, type SubmissionOutcome, type WorkflowAction, type WorkflowInventory, type WorkflowInventoryPage, type WorkflowInventoryScope,
@@ -70,9 +71,10 @@ export function useContentWorkflowItems(scope: WorkflowInventoryScope | null, { 
 
 // disabled describes other forms' dirty/busy state, not this header's own
 // onBusyChange. revision advances only after an ordinary form save/reload.
-export function SavedContentSubmission({ scope, revision, disabled = false, onChanged, onBusyChange }: {
+export function SavedContentSubmission({ scope, revision, disabled = false, onChanged, onBusyChange, onExposureChanged }: {
   scope: WorkflowInventoryScope | null; revision?: string | number; disabled?: boolean;
   onChanged?: (outcomes: SubmissionOutcome[]) => void | Promise<void>; onBusyChange?: (pending: boolean) => void;
+  onExposureChanged?: () => void | Promise<void>;
 }) {
   const inventory = useContentWorkflowItems(scope, { revision, blocked: disabled }), [pending, setPending] = useState(false);
   if (!scope) return null;
@@ -83,6 +85,7 @@ export function SavedContentSubmission({ scope, revision, disabled = false, onCh
     <SubmitAllContent key={JSON.stringify([scope.level, scope.id, scope.phase ?? null])}
       items={inventory.items.map(item => ({ label: item.label.th || item.label.en || text.submit, href: publicationHref(item), snapshot: item }))}
       disabled={disabled || inventory.loading || !inventory.complete} onChanged={onChanged}
+      onExposureChanged={async () => { await onExposureChanged?.(); inventory.refresh(); }}
       onBusyChange={value => { setPending(value); onBusyChange?.(value); }} />
     {inventory.complete && !inventory.items.length && <p>{text.empty}</p>}
   </div>;
@@ -100,10 +103,11 @@ export function ContentWorkflow({ target, label, revision, disabled = false, sub
   const permissions = useHubPermissions(), workflow = useContentWorkflow(target, revision), id = useId();
   const [choice, setChoice] = useState<Exclude<WorkflowAction, "submit"> | null>(null), [reason, setReason] = useState(""), [localError, setLocalError] = useState<unknown>(null);
   const acting = useRef(false), [preparing, setPreparing] = useState(false);
+  const [exposureEditing, setExposureEditing] = useState(false);
   const draftKey = (target ? workflowKey(target) : "") + ":" + String(revision ?? ""), [conflictedDraft, setConflictedDraft] = useState<string | null>(null);
   const callbacks = useRef({ onStateChange, onEditingChange }); callbacks.current = { onStateChange, onEditingChange };
   useEffect(() => { callbacks.current.onStateChange?.(workflow.snapshot); }, [workflow.snapshot]);
-  useEffect(() => { callbacks.current.onEditingChange?.(Boolean(choice || workflow.pending || preparing)); return () => callbacks.current.onEditingChange?.(false); }, [choice, workflow.pending, preparing]);
+  useEffect(() => { callbacks.current.onEditingChange?.(Boolean(choice || workflow.pending || preparing || exposureEditing)); return () => callbacks.current.onEditingChange?.(false); }, [choice, workflow.pending, preparing, exposureEditing]);
   useEffect(() => { setChoice(null); setReason(""); setLocalError(null); }, [target ? workflowKey(target) : "", permissions.account?.id]);
   useEffect(() => { if (workflow.stale && draft?.dirty) setConflictedDraft(draftKey); }, [workflow.stale, draft?.dirty, draftKey]);
   const item = workflow.snapshot;
@@ -126,14 +130,15 @@ export function ContentWorkflow({ target, label, revision, disabled = false, sub
     workflowAllowed(permissions.capabilities, item, action) && (action !== "save_approve" || draft?.dirty));
   const needsReload = Boolean(draft?.dirty && conflictedDraft === draftKey);
   const sourceMatches = workflowMatchesSource(item, draft?.sourceStamp);
-  const locked = disabled || workflow.pending || preparing || workflow.stale || needsReload;
+  const locked = disabled || workflow.pending || preparing || workflow.stale || needsReload || exposureEditing;
   async function reload() {
     if (!onReload) { if (!draft?.dirty) workflow.refresh(); return; }
     setPreparing(true); setLocalError(null);
     try { await onReload(); setConflictedDraft(null); workflow.refresh(); } catch (error) { setLocalError(error); } finally { setPreparing(false); }
   }
   return <section className="content-workflow" aria-label={label} data-workflow-kind={target.kind} data-workflow-key={workflowKey(target)}>
-    <div className="workflow-status"><strong>{label}</strong>{item && <span className="workflow-state">{workflowStateLabel(item.state)}{item.version_no != null && <> · {text.version} {item.version_no}</>}</span>}</div>
+    <div className="workflow-status"><strong>{label}</strong>{item && <><ExposureChip exposure={item.ai_exposure} /><span className="workflow-state">{workflowStateLabel(item.state)}{item.version_no != null && <> · {text.version} {item.version_no}</>}</span></>}</div>
+    {item && <InternalExposureNotice exposure={item.ai_exposure} href={item.exposure_href} editor={item.exposure_editor} disabled={locked || Boolean(draft?.dirty)} onEditingChange={setExposureEditing} onChanged={async () => { await onReload?.(); workflow.refresh(); }} />}
     <ErrorSummary message={workflow.error || localError ? workflowFailure(workflow.error || localError) : ""} />
     {Boolean(workflow.error || localError) && draft?.dirty && <p role="status">{text.draft_preserved}</p>}
     {needsReload && !workflow.error && <p role="status">{text.stale_item} · {text.draft_preserved}</p>}
@@ -152,6 +157,7 @@ export function ContentWorkflow({ target, label, revision, disabled = false, sub
     {choice && item && <DetailDialog dialogId={id} title={`${text[choice]} · ${label}`} onClose={() => { if (!workflow.pending && !preparing) setChoice(null); }}>
       <form className="workflow-form" onSubmit={event => { event.preventDefault(); void perform(choice); }}>
         <ErrorSummary message={workflow.error || localError ? workflowFailure(workflow.error || localError) : ""} />
+        <InternalExposureNotice exposure={item.ai_exposure} href={item.exposure_href} editor={item.exposure_editor} disabled={locked || Boolean(draft?.dirty)} onEditingChange={setExposureEditing} onChanged={async () => { setChoice(null); await onReload?.(); workflow.refresh(); }} />
         {choice === "approve" && workflowRequiresReason(item, choice) || choice === "save_approve" ? <p>{text.own_approval_reason}</p> : null}
         <label className="workflow-reason" htmlFor={`${id}-reason`}>{text.reason}<textarea id={`${id}-reason`} value={reason} rows={3} maxLength={2000} required={workflowRequiresReason(item, choice)} disabled={workflow.pending} onChange={event => setReason(event.target.value)} /></label>
         {workflow.stale && <p role="status">{text.draft_preserved}</p>}
@@ -161,17 +167,20 @@ export function ContentWorkflow({ target, label, revision, disabled = false, sub
   </section>;
 }
 
-export function SubmitAllContent({ items, disabled = false, onChanged, onBusyChange }: {
+export function SubmitAllContent({ items, disabled = false, onChanged, onBusyChange, onExposureChanged }: {
   items: SubmissionItem[]; disabled?: boolean; onChanged?: (outcomes: SubmissionOutcome[]) => void | Promise<void>; onBusyChange?: (pending: boolean) => void;
+  onExposureChanged?: () => void | Promise<void>;
 }) {
   const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
   const [outcomes, setOutcomes] = useState<SubmissionOutcome[]>([]), [pending, setPending] = useState(false), [error, setError] = useState<unknown>(null);
+  const [exposureEditing, setExposureEditing] = useState(false);
+  const exposureBusy = (value: boolean) => { setExposureEditing(value); onBusyChange?.(value); };
   const busy = useRef(false), scope = useRef(authority), blocked = useRef(disabled); scope.current = authority; blocked.current = disabled;
   const completed = new Set(outcomes.filter(item => item.status === "submitted").map(item => workflowKey(item.snapshot) + item.snapshot.expected_hash));
   const eligible = items.filter(item => workflowSubmissionAllowed(permissions.capabilities, item.snapshot) && !completed.has(workflowKey(item.snapshot) + item.snapshot.expected_hash));
   useEffect(() => { setOutcomes([]); setError(null); }, [authority]);
   async function submit() {
-    if (busy.current || disabled || !eligible.length) return;
+    if (busy.current || disabled || exposureEditing || !eligible.length) return;
     busy.current = true; setPending(true); setError(null); onBusyChange?.(true);
     try {
       const result = await submitWorkflowItems(eligible, item => {
@@ -186,9 +195,12 @@ export function SubmitAllContent({ items, disabled = false, onChanged, onBusyCha
     finally { busy.current = false; setPending(false); onBusyChange?.(false); }
   }
   return <section className="content-workflow" aria-label={text.submit_all}>
-    <button type="button" className="button primary" disabled={disabled || pending || !eligible.length} onClick={() => void submit()}>{text.submit_all} ({eligible.length})</button>
+    {eligible.some(item => item.snapshot.ai_exposure === "internal") && <><InternalExposureNotice exposure="internal" /><details><summary>{text.submit_all} · <ExposureChip exposure="internal" /></summary>
+      <ul>{eligible.filter(item => item.snapshot.ai_exposure === "internal").map(item => <li key={workflowKey(item.snapshot)}>{item.label}<InternalExposureNotice exposure="internal" href={item.snapshot.exposure_href} editor={item.snapshot.exposure_editor} disabled={disabled || pending} onEditingChange={exposureBusy} onChanged={async () => { await onExposureChanged?.(); }} /></li>)}</ul>
+    </details></>}
+    <button type="button" className="button primary" disabled={disabled || pending || exposureEditing || !eligible.length} onClick={() => void submit()}>{text.submit_all} ({eligible.length})</button>
     {pending && <p role="status">{text.loading}</p>}<ErrorSummary message={error ? workflowFailure(error) : ""} />
-    {outcomes.length > 0 && <><h3>{text.submit_results}</h3><ul className="workflow-results" aria-live="polite">{outcomes.map(item => <li key={workflowKey(item.snapshot)}><strong>{publicationHref(item) ? <a href={publicationHref(item)!}>{item.label}</a> : item.label}</strong> · {item.status === "submitted" ? workflowStateLabel(item.result.state) : text.rejected}{item.status === "failed" && <p>{workflowFailure(item.error)}</p>}</li>)}</ul></>}
+    {outcomes.length > 0 && <><h3>{text.submit_results}</h3><ul className="workflow-results" aria-live="polite">{outcomes.map(item => <li key={workflowKey(item.snapshot)}><strong>{publicationHref(item) ? <a href={publicationHref(item)!}>{item.label}</a> : item.label}</strong> · {item.status === "submitted" ? workflowStateLabel(item.result.state) : text.rejected}{item.status === "failed" && <p>{workflowFailure(item.error)}</p>}<InternalExposureNotice exposure={item.snapshot.ai_exposure} href={item.snapshot.exposure_href} editor={item.snapshot.exposure_editor} disabled={disabled || pending} onEditingChange={exposureBusy} onChanged={async () => { await onExposureChanged?.(); }} /></li>)}</ul></>}
   </section>;
 }
 

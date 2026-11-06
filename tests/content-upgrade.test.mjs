@@ -46,7 +46,18 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State;
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState;
+    const workspaceRows=async()=>{
+      const tables=(await db.query("select schemaname,tablename from pg_tables where schemaname in ('hub','staging','audit') order by schemaname,tablename")).rows;
+      const result=[];
+      for(const table of tables){
+        const quote=value=>'"'+value.replaceAll('"','""')+'"';
+        const relation=quote(table.schemaname)+'.'+quote(table.tablename);
+        const row=(await db.query(`select count(*)::integer count,md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text),'')) digest from ${relation} t`)).rows[0];
+        result.push({relation,...row});
+      }
+      return result;
+    };
     const unitState=async()=>(await db.query(`select name,rows from (
       select 'types' name,jsonb_agg(to_jsonb(t)-array['category','special_rooms','ceiling_height_m','furniture_package','highlights','price_mode','ai_exposure','revision','editors','approved_by','approved_at','website_source'] order by id) rows from hub.commercial_types t union all
       select 'sources',jsonb_agg(to_jsonb(t) order by commercial_type_id,model_id) from hub.commercial_type_sources t
@@ -60,6 +71,11 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id','website_source'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
+      if(name==='202611060086_workspace_summary_exposure.sql'){
+        workspaceState=await workspaceRows();
+        for(const table of ['content_section_versions','faq_versions','assets','user_account','account_permission'])
+          assert.ok(workspaceState.find(row=>row.relation==='"hub"."'+table+'"')?.count>0,'Populated W3.1 preservation fixture: '+table);
+      }
       if(name==='202610210058_project_content_core.sql') {
         const project=(await db.query('select rem_project_id from staging.rem_projects order by rem_project_id limit 1')).rows[0].rem_project_id;
         const actor=(await db.query("select id from hub.user_account where hub_role='editor' order by id limit 1")).rows[0].id;
@@ -90,6 +106,8 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       }
       phase7State=await beforePhase7(db,name,phase7State);
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(name==='202611060086_workspace_summary_exposure.sql')
+        assert.deepEqual(await workspaceRows(),workspaceState,'W3.1 must preserve every Hub, staging and audit row exactly');
       if(name==='202610270078_website_content_suggestions.sql') {
         for(const table of ['contacts','project_facilities','project_places','commercial_types','project_progress','project_disclosures','media_links','content_sections','asset_links']) {
           assert.equal(Number((await db.query(`select count(*) from hub.${table} where website_source is not null`)).rows[0].count),0,`${name} assigned website provenance to existing ${table}`);

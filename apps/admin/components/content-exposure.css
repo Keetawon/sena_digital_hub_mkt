@@ -1,0 +1,5 @@
+.content-exposure-chip { display: inline-block; max-width: 100%; border: 1px solid var(--line-strong); border-radius: 6px; padding: 2px 6px; font-size: var(--text-small); font-weight: 400; color: var(--ink); background: var(--surface-warm); white-space: normal; overflow-wrap: anywhere; }
+.content-exposure-notice { color: var(--ink); background: var(--surface-warm); border-left: 3px solid var(--line-strong); padding: 8px 12px; overflow-wrap: anywhere; }
+.content-exposure-notice a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; }
+.content-exposure-edit { min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: inherit; text-decoration: underline; cursor: pointer; }
+.content-exposure-edit:disabled { cursor: default; }

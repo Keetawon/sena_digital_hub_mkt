@@ -664,6 +664,32 @@ W9 upload copy (owner decision, 6 November 2026):
 | file_metadata_offset_unknown | ไม่ทราบเขตเวลาที่ถ่าย |
 | file_metadata_unmapped_tags | คำสำคัญจากไฟล์ที่ยังไม่ตรงกับป้ายกำกับ |
 
+W3.1 overview and exposure copy:
+
+| Key | Thai label |
+|---|---|
+| view_all | ดูทั้งหมด |
+| show_less | แสดงน้อยลง |
+| view_history | ดูประวัติทั้งหมด |
+| gap_count | รายการที่ยังขาด |
+| item_count | รายการ |
+| context_selling_point | จุดขาย |
+| context_building | อาคาร |
+| context_unit_type | แบบห้อง |
+| context_price | ราคา |
+| context_record | รายการ |
+| section_commercial | กฎหมายและการขาย |
+| section_investor | ผู้ลงทุน |
+| exposure_open | เว็บไซต์และ AI |
+| exposure_web_only | เว็บไซต์เท่านั้น |
+| exposure_internal | ภายใน Hub |
+| exposure_registry | ตามทะเบียนฟิลด์ |
+| exposure_source | ตามนโยบายของเนื้อหา |
+| exposure_draft_notice | บันทึกเป็นร่าง ต้องผ่านการอนุมัติและเผยแพร่ก่อนเปลี่ยนข้อมูลบนเว็บไซต์หรือใน AI |
+| exposure_default | ช่องทางตามค่าเริ่มต้นของฟิลด์ |
+| internal_notice | รายการนี้ใช้ภายใน Hub เท่านั้น จะไม่ปรากฏบนเว็บไซต์หรือในคำตอบของ AI |
+| change_exposure | เปลี่ยนช่องทางการใช้ข้อมูล |
+
 ### 8.6 Upload optimization
 
 The following owner decision and addendum are recorded verbatim. The addendum

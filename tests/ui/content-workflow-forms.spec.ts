@@ -1,12 +1,14 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { workflowText as text, type WorkflowKind, type WorkflowSnapshot } from '../../apps/admin/lib/content-workflow';
 import { workspaceProjection, fitsWorkspace, openWorkspaceTab } from './unified-workspace-helpers';
+import { workspaceText } from '../../apps/admin/lib/unified-workspace';
 
 const origin = 'http://127.0.0.1:3000', publicId = 'WORKFLOW-PRIMARY-UI', brandId = 'WORKFLOW-BRAND-UI', phase = 'REM-WORKFLOW-EXACT';
 const stamp = '2026-11-04T09:00:00+00:00', newerStamp = '2026-11-04T09:01:00+00:00';
 const ids = {
   project: '71000000-0000-4000-8000-000000000001', model: '71000000-0000-4000-8000-000000000002', brand: '71000000-0000-4000-8000-000000000003',
   section: '71000000-0000-4000-8000-000000000004', point: '71000000-0000-4000-8000-000000000005', contact: '71000000-0000-4000-8000-000000000006', fact: '71000000-0000-4000-8000-000000000007',
+  asset: '71000000-0000-4000-8000-000000000008',
 };
 const identity = (kind: WorkflowKind) => kind === 'building' ? { project_id: ids.project, building_key: 'B-01' }
   : kind === 'selling_point' ? { project_id: ids.project, point_key: ids.point } : { id: ids[kind as keyof typeof ids] };
@@ -51,7 +53,8 @@ async function fixture(page: Page, levels = ['view', 'edit', 'approve']) {
   function inventoryRow(kind: WorkflowKind) {
     const row = snapshots[kind];
     return { kind: row.kind, identity: row.identity, expected_hash: row.expected_hash, source_revision: row.source_revision, source_updated_at: row.source_updated_at,
-      state: 'DRAFT', can_submit: true, can_edit: true, source_tab: row.source_tab, source_tabs: row.source_tabs, label: { th: 'Saved ' + kind }, target: null, href: null };
+      state: 'DRAFT', can_submit: true, can_edit: true, source_tab: row.source_tab, source_tabs: row.source_tabs, label: { th: 'Saved ' + kind }, target: null, href: null,
+      ai_exposure: row.ai_exposure, exposure_editor: row.exposure_editor };
   }
   function apply(kind: WorkflowKind, changes: any) {
     if (kind === 'project') Object.assign(project, changes, { updated_at: newerStamp });
@@ -113,6 +116,95 @@ async function fixture(page: Page, levels = ['view', 'edit', 'approve']) {
     revokeEdit: () => { me = { ...me, capabilities: { ...me.capabilities, tabs: { ...me.capabilities.tabs, projects: { view: true, edit: false, approve: false } } } }; } };
 }
 const controls = (page: Page, kind: WorkflowKind) => page.locator(`[data-workflow-kind="${kind}"]:visible`);
+
+test('header exposure save refreshes its inventory and submits the new exact draft hash', async ({ page }) => {
+  const data = await fixture(page), saves: any[] = [];
+  data.snapshots.asset = { ...snapshot('asset'), ai_exposure: 'internal', exposure_editor: { kind: 'asset', identity: { id: ids.asset } } };
+  data.inventory(['asset']);
+  await page.route('**/api/hub/v1/admin/content-workflow/exposure', async route => {
+    const body = route.request().postDataJSON(); saves.push(body);
+    data.snapshots.asset = { ...data.snapshots.asset, ai_exposure: body.exposure, source_revision: 6, expected_hash: 'e'.repeat(64), state: 'DRAFT' };
+    await route.fulfill({ json: { data: data.snapshots.asset } });
+  });
+  await data.visit(`/website/project/${publicId}?tab=data&section=identity`);
+  const header = page.getByRole('region', { name: text.submit_all, exact: true });
+  await header.locator('details > summary').click();
+  const reads = data.inventoryReads.length;
+  await header.getByRole('button', { name: workspaceText.change_exposure, exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('combobox').selectOption('open');
+  await dialog.getByRole('button', { name: text.save, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => data.inventoryReads.length).toBeGreaterThan(reads);
+  await expect(header.getByRole('button', { name: text.submit_all + ' (1)', exact: true })).toBeEnabled();
+  expect(saves).toEqual([{ kind: 'asset', identity: { id: ids.asset }, expected_hash: hash('asset'), exposure: 'open' }]);
+  await header.getByRole('button', { name: text.submit_all + ' (1)', exact: true }).click();
+  await expect.poll(() => data.commands.length).toBe(1);
+  expect(data.commands[0]).toEqual({ path: 'content-workflow/submit', body: { kind: 'asset', identity: { id: ids.asset }, expected_hash: 'e'.repeat(64) } });
+});
+
+for (const stale of [false, true]) test(`inherited brand media exposure edits the parent draft with its exact hash${stale ? ' and keeps a stale edit visible' : ''}`, async ({ page }) => {
+  const data = await fixture(page), assetId = '71000000-0000-4000-8000-000000000090', bindingId = '71000000-0000-4000-8000-000000000091';
+  (data.brand.assets as any[]).push({ id: assetId, binding_id: bindingId, original_filename: 'synthetic-brand.png', mime_type: 'image/png', public_url: null,
+    rights_status: 'approved', asset_role: 'logo_primary', is_primary: true, alt_text: { th: 'Synthetic logo' }, display_order: 0 });
+  let asset: WorkflowSnapshot = { ...snapshot('asset'), kind: 'asset', identity: { id: assetId }, ai_exposure: 'internal', source_tab: 'brands', source_tabs: ['brands'], expected_hash: 'c'.repeat(64) };
+  const binding: WorkflowSnapshot = { ...snapshot('brand_asset'), kind: 'brand_asset', identity: { id: bindingId }, ai_exposure: 'internal',
+    source_tab: 'brands', source_tabs: ['brands'], expected_hash: 'd'.repeat(64), exposure_editor: { kind: 'asset', identity: { id: assetId } } };
+  const writes: any[] = [];
+  await page.route('**/api/hub/v1/admin/content-workflow?**', route => {
+    const kind = new URL(route.request().url()).searchParams.get('kind');
+    return kind === 'asset' || kind === 'brand_asset' ? route.fulfill({ json: { data: kind === 'asset' ? asset : binding } }) : route.fallback();
+  });
+  await page.route('**/api/hub/v1/admin/content-workflow/exposure', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    if (stale) return route.fulfill({ status: 409, json: { error: { code: 'source_changed', message: 'Synthetic stale asset' } } });
+    asset = { ...asset, ai_exposure: body.exposure, source_revision: 6, expected_hash: 'e'.repeat(64), state: 'DRAFT' };
+    binding.ai_exposure = body.exposure;
+    await route.fulfill({ json: { data: asset } });
+  });
+  await data.visit(`/website/brand/${brandId}?tab=media&section=canonical`);
+  const control = controls(page, 'brand_asset');
+  await expect(control.locator('[data-exposure="internal"]')).toBeVisible();
+  await control.getByRole('button', { name: workspaceText.change_exposure, exact: true }).click();
+  const dialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: workspaceText.change_exposure, exact: true }) });
+  await expect(dialog.getByText(workspaceText.exposure_draft_notice)).toBeVisible();
+  await dialog.getByRole('combobox').selectOption('open');
+  await dialog.getByRole('button', { name: text.save, exact: true }).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toEqual({ kind: 'asset', identity: { id: assetId }, expected_hash: 'c'.repeat(64), exposure: 'open' });
+  if (stale) {
+    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(dialog.getByRole('combobox')).toHaveValue('open');
+    await expect(control.getByRole('button', { name: text.submit, exact: true })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(control.getByRole('button', { name: workspaceText.change_exposure, exact: true })).toBeFocused();
+  } else await expect(control.locator('[data-exposure="open"]')).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  expect(data.commands).toHaveLength(0); expect(data.ordinaryWrites).toHaveLength(0);
+  await fitsWorkspace(page);
+});
+
+test('W3.1 internal chips and exact exposure links inform submit and approval without blocking either action', async ({ page }) => {
+  const data = await fixture(page);
+  const href = `/website/project/${publicId}?tab=data&section=narrative&item=${ids.section}&field=ai_exposure`;
+  data.snapshots.section = { ...data.snapshots.section, ai_exposure: 'internal', exposure_href: href, can_approve: true };
+  await data.visit(`/website/project/${publicId}?tab=data&section=narrative`);
+  const workflow = controls(page, 'section');
+  await expect(workflow.locator('[data-exposure="internal"]')).toBeVisible();
+  await expect(workflow.getByRole('note')).toContainText(workspaceText.internal_notice);
+  await expect(workflow.getByRole('link', { name: workspaceText.change_exposure })).toHaveAttribute('href', href);
+  await expect(workflow.getByRole('button', { name: text.submit, exact: true })).toBeEnabled();
+  await workflow.getByRole('button', { name: text.submit, exact: true }).click();
+  await expect.poll(() => data.commands.length).toBe(1);
+  await workflow.getByRole('button', { name: text.approve, exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('note')).toContainText(workspaceText.internal_notice);
+  await dialog.getByLabel(text.reason, { exact: true }).fill('Checked internal content');
+  await dialog.getByRole('button', { name: text.approve, exact: true }).click();
+  await expect.poll(() => data.commands.length).toBe(2);
+  expect(data.commands.map(command => command.path)).toEqual(['content-workflow/submit', 'content-workflow/review']);
+  await expect(workflow).toContainText(text.APPROVED);
+});
 async function approveDraft(page: Page, kind: WorkflowKind) {
   await controls(page, kind).getByRole('button', { name: text.save_approve, exact: true }).click();
   const dialog = page.getByRole('dialog');

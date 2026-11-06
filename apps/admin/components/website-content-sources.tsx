@@ -4,12 +4,13 @@ import { request } from "./hub-request";
 import { useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { workspaceText as text } from "@/lib/unified-workspace";
-import { errorMessage, ExposureInput, type Exposure } from "./content-common";
+import { ExposureChip } from "./content-exposure";
+import { errorMessage, type Exposure } from "./content-common";
 import type { NarrativeSection } from "./content-narrative";
 type Item = { id: string; kind: string; value: unknown; source: { page_url: string; fetched_at: string };
   wiring: { project_id: string; outcome: string; reason?: string }[]; holds: string[];
   section_key?: string | null; decision_id?: string | null; decision?: "use" | "edit_use" | "reject" | null;
-  can_use?: boolean; requires_manual_entry?: boolean };
+  default_ai_exposure?: Exposure | null; can_use?: boolean; requires_manual_entry?: boolean };
 const labels: Record<string, string> = { concept: "แนวคิด", concept_name: "ชื่อแนวคิด", description: "แนะนำโครงการ",
   project_information: "ข้อมูลโครงการ", facilities: "ส่วนกลาง", nearby: "ทำเลและการเดินทาง", contacts: "ช่องทางติดต่อ",
   call_centres: "คอลเซ็นเตอร์", unit_types: "แบบที่อยู่อาศัย", floor_plans: "ผังชั้น", unit_plans: "แปลนแบบที่อยู่อาศัย",
@@ -40,7 +41,6 @@ export function WebsiteContentSources({ projectId, section, sections = [], disab
   const [items, setItems] = useState<Item[] | null>(null), [error, setError] = useState(""), [kind, setKind] = useState("");
   const [choice, setChoice] = useState<{ item: Item; decision: "edit_use" | "reject" } | null>(null);
   const [body, setBody] = useState(""), [reason, setReason] = useState(""), [pending, setPending] = useState(false);
-  const [exposure, setExposure] = useState<Exposure>("internal");
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/content/website`;
   const load = useCallback(() => request<Item[]>(base), [base]);
   useEffect(() => { let live = true; setItems(null); setChoice(null); setError("");
@@ -57,7 +57,7 @@ export function WebsiteContentSources({ projectId, section, sections = [], disab
       await request(`${base}/${encodeURIComponent(item.id)}/decision`, "POST", {
         expected_decision_id: item.decision_id ?? null, decision,
         ...(decision === "reject" ? { reason: reason.trim() } : { expected_revision: current?.revision ?? 0 }),
-        ...(decision === "edit_use" ? { changes: { body: { th: body, ...(current?.version.body.en ? { en: current.version.body.en } : {}) }, ai_exposure: exposure } } : {}),
+        ...(decision === "edit_use" ? { changes: { body: { th: body, ...(current?.version.body.en ? { en: current.version.body.en } : {}) } } } : {}),
       });
       await onChanged?.(); setItems(await load()); setChoice(null); setBody(""); setReason("");
     } catch (e) { setError(errorMessage(e)); } finally { setPending(false); }
@@ -70,7 +70,7 @@ export function WebsiteContentSources({ projectId, section, sections = [], disab
     {items && <>{!section && <label className="content-input">{text.scope}<select value={kind} onChange={event => setKind(event.target.value)}><option value="">{text.suggestions}</option>
       {Object.entries(labels).filter(([key]) => items.some(item => item.kind === key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>}
       {visible.map(item => <article className="content-card" key={item.id} id={`website-suggestion-${item.id}`} tabIndex={-1}>
-        <h3>{labels[item.kind] ?? text.data}</h3>
+        <h3>{labels[item.kind] ?? text.data}</h3>{item.default_ai_exposure && <p>{text.exposure_default} <ExposureChip exposure={item.default_ai_exposure} /></p>}
         <a href={item.source.page_url} target="_blank" rel="noreferrer noopener">{text.source}</a> · <time dateTime={item.source.fetched_at}>{new Date(item.source.fetched_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</time>
         <p className="content-preserve">{sourceText(item.value)}</p>
         <p>{item.wiring.some(row => row.outcome === "conflict") ? "มีข้อมูลเดิมอยู่แล้ว · เก็บข้อความนี้ไว้เป็นหลักฐานเพื่อเปรียบเทียบ" : item.wiring.some(row => row.outcome === "draft") ? "สร้างฉบับร่างภายในแล้ว · ต้องตรวจข้อมูลก่อนใช้" : "รอตรวจและจับคู่กับข้อมูลโครงการ"}</p>
@@ -80,11 +80,11 @@ export function WebsiteContentSources({ projectId, section, sections = [], disab
         {item.decision && <p className="content-state">{item.decision === "reject" ? text.reject : item.decision === "edit_use" ? text.editUse : text.use}{item.decision !== "reject" && <> · {text.DRAFT}</>}</p>}
         {choice?.item.id === item.id ? <form onSubmit={event => { event.preventDefault(); void decide(item, choice.decision); }}>
           <label className="content-input">{choice.decision === "reject" ? text.reject : text.editUse}<textarea required rows={5} maxLength={choice.decision === "reject" ? 2000 : 12000} disabled={pending} value={choice.decision === "reject" ? reason : body} onChange={event => choice.decision === "reject" ? setReason(event.target.value) : setBody(event.target.value)} /></label>
-          {choice.decision === "edit_use" && <fieldset disabled={pending}><ExposureInput value={exposure} onChange={setExposure} /></fieldset>}
+          {choice.decision === "edit_use" && <p>{text.exposure_default} <ExposureChip exposure={item.default_ai_exposure} /></p>}
           <div className="content-actions"><button className="button secondary" type="button" disabled={pending} onClick={() => setChoice(null)}>{text.cancel}</button><button className="button primary" disabled={pending || (choice.decision === "reject" ? !reason.trim() : !body.trim())}>{choice.decision === "reject" ? text.reject : text.editUse}</button></div>
         </form> : canEdit && <div className="content-actions">
           {item.can_use && !item.requires_manual_entry && <><button className="button secondary" disabled={disabled || pending || Boolean(choice)} onClick={() => void decide(item, "use")}>{text.use}</button>
-            <button className="button secondary" disabled={disabled || pending || Boolean(choice)} onClick={() => { setChoice({ item, decision: "edit_use" }); setBody(sourceText(item.value)); setReason(""); setExposure(sections.find(row => row.section_key === item.section_key)?.version.ai_exposure ?? "internal"); }}>{text.editUse}</button></>}
+            <button className="button secondary" disabled={disabled || pending || Boolean(choice)} onClick={() => { setChoice({ item, decision: "edit_use" }); setBody(sourceText(item.value)); setReason(""); }}>{text.editUse}</button></>}
           <button className="button secondary" disabled={disabled || pending || Boolean(choice)} onClick={() => { setChoice({ item, decision: "reject" }); setReason(""); }}>{text.reject}</button>
         </div>}
       </article>)}</>}

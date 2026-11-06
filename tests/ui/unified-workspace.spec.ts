@@ -5,6 +5,56 @@ import { fitsWorkspace, workspaceHref, workspaceProjection, workspaceText as tex
 
 const api = '/api/hub/v1/admin', origin = 'http://127.0.0.1:3000';
 const headers = { Origin: origin };
+
+test('W3.1 many-gap overview is compact, contextual, keyboard expandable and limited to five changes', async ({ page }) => {
+  const project = await projectFixture(page), id = project.public_project_id;
+  const projection = workspaceProjection(project);
+  const sections = ['identity', 'narrative', 'facts', 'buildings', 'contacts', 'facilities', 'features', 'places', 'commercial', 'investor'];
+  projection.overview.readiness.required = sections.flatMap((section, group) => Array.from({ length: 12 }, (_, index) => ({
+    code: 'gap-' + group + '-' + index, label: { th: 'Synthetic field ' + index }, state: 'missing',
+    context: { kind: 'selling_point' as const, label: String(index + 1) },
+    target: { level: 'project' as const, id, tab: 'data' as const, section, field: 'selling_point.title', item: `point-${group}-${index}` },
+  })));
+  projection.overview.readiness.recommended = projection.overview.readiness.required.map(item => ({ ...item }));
+  projection.overview.tasks = projection.overview.readiness.required.slice(0, 12);
+  projection.overview.changes_since_publication = Array.from({ length: 30 }, (_, index) => ({
+    audit_id: String(900 - index), occurred_at: '2026-11-06T00:00:00Z', actor: { id: 'fixture-author', name: 'Synthetic author' },
+    action: 'edit', entity: { kind: 'project' as const, ref: id, name: { th: 'Synthetic project' } },
+    source_tab: 'projects', section_key: 'identity', reason: 'Synthetic latest change ' + index,
+    version: { id: null, number: 30 - index, state: 'DRAFT' },
+    target: { level: 'project' as const, id, tab: 'data' as const, section: 'identity', field: 'project.public_name' }, diff_available: false,
+  }));
+  await page.route(`**/content/workspace/project/${id}`, route => route.fulfill({ json: { data: projection } }));
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  for (const theme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+    await page.goto(`/website/project/${id}?tab=overview`);
+    const required = page.getByRole('region', { name: text.readiness, exact: true });
+    await expect(required.locator('h2')).toContainText('240');
+    await expect(page.locator('.workspace-heading [role="status"]')).toHaveCount(0);
+    await expect(required.locator('.workspace-gap-counts').first()).toHaveText(text.required + ' 12 · ' + text.recommended + ' 12');
+    await expect(required.locator('.workspace-gap-group')).toHaveCount(10);
+    await expect(required.locator('.workspace-gap-group[open]')).toHaveCount(0);
+    const changes = page.getByRole('region', { name: text.since_publication, exact: true });
+    await expect(changes.locator('.workspace-timeline > li')).toHaveCount(5);
+    await expect(changes).toContainText(text.version + ' 30');
+    await expect(changes.getByRole('link', { name: text.view_history, exact: true })).toHaveAttribute('href', `/website/project/${id}?tab=history`);
+    await fitsWorkspace(page);
+    const width = page.viewportSize()!.width;
+    if (width >= 1280) expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(page.viewportSize()!.height * 2.2);
+    await page.screenshot({ path: `artifacts/unified-workspace/w3.1/overview-${theme}-${width}.png`, fullPage: true });
+    const group = required.locator('.workspace-gap-group').first();
+    await group.locator('summary').focus(); await page.keyboard.press('Enter');
+    await expect(group.locator('a')).toHaveCount(5);
+    await expect(group.locator('a').first()).toHaveText(text.context_selling_point + ' 1 · Synthetic field 0');
+    await expect(group.locator('a').first()).toHaveAttribute('href', workspaceHref(projection.overview.readiness.required[0].target));
+    await group.getByRole('button', { name: `${text.view_all} (24)`, exact: true }).click();
+    await expect(group.locator('a')).toHaveCount(24);
+    await group.getByRole('button', { name: `${text.show_less} (24)`, exact: true }).click();
+    await expect(group.locator('a')).toHaveCount(5);
+  }
+  expect(errors).toEqual([]);
+});
 async function persona(page: Page, role: string) {
   expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy();
 }
@@ -263,11 +313,11 @@ test('Knowledge-only FAQ and history never request project or brand editor data'
   await page.screenshot({ path: 'artifacts/unified-workspace/w3/knowledge-only.png', fullPage: true });
 });
 
-test('inline website decisions retain revisions, exposure and manual numeric evidence', async ({ page }) => {
+test('inline website decisions retain revisions, show the registry default and preserve manual numeric evidence', async ({ page }) => {
   const project = await projectFixture(page), id = project.public_project_id;
   const content = await read(page, `${api}/projects/${id}/content`);
   const existing = content.sections.find((item: { section_key: string }) => item.section_key === 'concept');
-  const base = { kind: 'concept', value: 'Synthetic source narrative', source: { page_url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-11-04T00:00:00Z' }, wiring: [], holds: [], section_key: 'concept', decision_id: null, decision: null, can_use: true, requires_manual_entry: false };
+  const base = { kind: 'concept', value: 'Synthetic source narrative', source: { page_url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-11-04T00:00:00Z' }, wiring: [], holds: [], section_key: 'concept', default_ai_exposure: 'web_only', decision_id: null, decision: null, can_use: true, requires_manual_entry: false };
   const items = [{ ...base, id: 'suggestion-use' }, { ...base, id: 'suggestion-edit' }, { ...base, id: 'suggestion-manual', kind: 'nearby', value: 'Synthetic numeric distance 500 m', section_key: null, can_use: false, requires_manual_entry: true }];
   const decisions: { id: string; body: Record<string, unknown> }[] = [];
   await page.route(`**/projects/${id}/content/website**`, async route => {
@@ -286,12 +336,13 @@ test('inline website decisions retain revisions, exposure and manual numeric evi
   expect(decisions[0]).toEqual({ id: 'suggestion-use', body: { expected_decision_id: null, decision: 'use', expected_revision: existing?.revision ?? 0 } });
   const edit = page.locator('#website-suggestion-suggestion-edit');
   await edit.getByRole('button', { name: text.editUse, exact: true }).click();
-  await expect(edit.locator('select')).toHaveValue(existing?.version.ai_exposure ?? 'internal');
+  await expect(edit.locator('form [data-exposure]')).toHaveAttribute('data-exposure', 'web_only');
+  await expect(edit.locator('select')).toHaveCount(0);
   await edit.locator('textarea').fill('Revised synthetic narrative');
-  await edit.locator('select').selectOption('internal');
   await edit.getByRole('button', { name: text.editUse, exact: true }).click();
   await expect.poll(() => decisions.length).toBe(2);
-  expect(decisions[1].body).toMatchObject({ expected_decision_id: null, decision: 'edit_use', expected_revision: existing?.revision ?? 0, changes: { body: { th: 'Revised synthetic narrative' }, ai_exposure: 'internal' } });
+  expect(decisions[1].body).toMatchObject({ expected_decision_id: null, decision: 'edit_use', expected_revision: existing?.revision ?? 0, changes: { body: { th: 'Revised synthetic narrative' } } });
+  expect(decisions[1].body.changes).not.toHaveProperty('ai_exposure');
   await page.goto(`/website/project/${id}?tab=data&section=places`);
   const manual = page.locator('#website-suggestion-suggestion-manual');
   await expect(manual).toContainText('Synthetic numeric distance 500 m');

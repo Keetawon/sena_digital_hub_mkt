@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickPublication } from './content-workflow-fixtures';
+import { workspaceText } from '../../apps/admin/lib/unified-workspace';
 import { workflowText as text, type PublicationItem, type PublicationQueue, type PublicationReview, type ReleaseHistory } from '../../apps/admin/lib/content-workflow';
 
 const origin = 'http://127.0.0.1:3000', api = '/api/hub/v1/admin', hash = 'a'.repeat(64), digest = 'b'.repeat(64);
@@ -25,12 +26,57 @@ function fixture() {
 async function enter(page: Page, role = 'publisher') {
   expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role } })).ok()).toBe(true);
 }
+
+test('W3.1 an internal excluded item explains its exposure and links to its editor without blocking the approved neighbour', async ({ page }) => {
+  await enter(page); const value = await mock(page);
+  value.stale.ai_exposure = 'internal'; value.stale.code = 'not_approved_or_available';
+  value.stale.exposure_href = '/website/project/prj_exact?tab=faq&question=exact&field=ai_exposure';
+  value.approved.ai_exposure = 'web_only';
+  await page.goto('/publish');
+  const item = page.locator('[data-publication-target="web:project:prj_exact"] [data-publication-item="faq:exact"]');
+  await expect(item.getByRole('note')).toContainText(workspaceText.internal_notice);
+  await expect(item.getByRole('link', { name: workspaceText.change_exposure })).toHaveAttribute('href', value.stale.exposure_href);
+  await page.getByRole('checkbox', { name: text.select_item + ' · Synthetic website', exact: true }).check();
+  await page.locator('.publication-workspace > form').getByRole('textbox', { name: text.reason, exact: true }).fill('Publish the eligible neighbour');
+  await page.getByRole('button', { name: new RegExp('^' + text.prepare_review) }).click();
+  await expect(page.locator('.publication-review [data-publication-item="faq:exact"]')).toContainText(workspaceText.internal_notice);
+  await expect(page.locator('.publication-review [data-publication-item="section:exact"] [data-exposure]')).toHaveAttribute('data-exposure', 'web_only');
+  await page.locator('.publication-review').getByRole('checkbox', { name: text.confirm_publication, exact: true }).check();
+  await expect(page.locator('.publication-review').getByRole('button', { name: text.publish, exact: true })).toBeEnabled();
+});
 async function fits(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   for (const element of await page.locator('.publication-workspace input, .publication-workspace textarea, .publication-workspace button').all()) {
     const box = await element.boundingBox(); if (box) expect(box.x + box.width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 1280) + 1);
   }
 }
+
+test('publication commands stay locked while an exposure dialog is open', async ({ page }) => {
+  await enter(page); const value = await mock(page);
+  value.stale.ai_exposure = 'internal';
+  value.stale.exposure_editor = { kind: 'asset', identity: { id: ids.section } };
+  await page.route('**/api/hub/v1/admin/content-workflow?**', route => route.fulfill({ json: { data: {
+    kind: 'asset', identity: { id: ids.section }, expected_hash: hash, ai_exposure: 'internal', can_edit: false, state: 'DRAFT',
+  } } }));
+  await page.goto('/publish');
+  await page.getByRole('checkbox', { name: text.select_item + ' · Synthetic website', exact: true }).check();
+  const form = page.locator('.publication-workspace > form');
+  await form.getByRole('textbox', { name: text.reason, exact: true }).fill('Keep this prepared selection');
+  const prepare = page.getByRole('button', { name: new RegExp('^' + text.prepare_review) });
+  await expect(prepare).toBeEnabled();
+  const item = page.locator('[data-publication-target="web:project:prj_exact"] [data-publication-item="faq:exact"]');
+  await item.getByRole('button', { name: workspaceText.change_exposure, exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(prepare).toBeDisabled();
+  await form.evaluate(element => element.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(value.calls).toHaveLength(0);
+  await page.keyboard.press('Escape');
+  await expect(prepare).toBeEnabled();
+  await expect(form.getByRole('textbox', { name: text.reason, exact: true })).toHaveValue('Keep this prepared selection');
+  await prepare.click();
+  await expect.poll(() => value.calls.length).toBe(1);
+  expect(value.calls[0].path).toBe(api + '/publication-queue/prepare');
+});
 async function mock(page: Page, publisher = true) {
   // Component protocol fixtures explicitly carry N2 capabilities; defaults gain no grants.
   const response = await page.request.get('/api/hub/v1/me'); expect(response.ok()).toBe(true);

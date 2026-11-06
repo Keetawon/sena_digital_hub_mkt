@@ -4,6 +4,7 @@ import { ActorName, useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { workspaceApi, workspaceHref, workspaceName, workspaceText, type WorkspaceLevel, type WorkspaceTarget } from "@/lib/unified-workspace";
 import { ContentWorkflow } from "./content-workflow";
+import { ExposureChip } from "./content-exposure";
 import { request } from "./hub-request";
 import { useContentLocation } from "./content-operations-shared";
 import { ContentContacts, type Contact } from "./content-contacts";
@@ -129,7 +130,7 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
 type ScopeQuestion = {
   question_key: string; label: Locales; is_core: boolean; answer_kind: string; display_state: string; content_state?: string;
   own_answer: null | { id: string; revision: number; version_id: string; state: string };
-  effective_answer: null | { id: string; revision: number; version_id: string; question: Locales | string; short_answer: Locales | string; detail: Locales | string;
+  effective_answer: null | { ai_exposure?: Exposure | null; id: string; revision: number; version_id: string; question: Locales | string; short_answer: Locales | string; detail: Locales | string;
     source: { scope_type: string; scope_id: string; name: Locales; target?: WorkspaceTarget; affected_project_count: number; affected_count_complete: boolean };
     author: { id: string; name: string } | null; approver: { id: string; name: string } | null };
   facts: { field_key: string; available: boolean; value: unknown; text: string; unit: string | null; as_of: string | null; target?: WorkspaceTarget }[];
@@ -188,7 +189,7 @@ function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { 
     {pending && !data && <p role="status">{workspaceText.loading}</p>}
     {shownItems.map(item => <article className="workspace-faq-card" id={`question-${item.question_key}`} data-workspace-question={item.question_key} tabIndex={-1} key={item.question_key}>
       <h3>{workspaceName(item.label)}</h3><p className="workspace-faq-states">{item.is_core && <span>{workspaceText.required}</span>}<span>{item.display_state === "handoff" ? kindLabels.handoff : scopeQuestionStates[item.display_state] ?? stateLabel(item.content_state ?? item.own_answer?.state ?? "DRAFT")}</span></p>
-      {item.effective_answer && <><p className="content-preserve">{workspaceName(item.effective_answer.short_answer)}</p>
+      {item.effective_answer && <><ExposureChip exposure={item.effective_answer.ai_exposure} /><p className="content-preserve">{workspaceName(item.effective_answer.short_answer)}</p>
         {item.display_state === "inherited" && <p className="content-state">{workspaceText.inheritedFrom}{scopeLabels[item.effective_answer.source.scope_type]} · {workspaceName(item.effective_answer.source.name)}</p>}
         <p>{item.effective_answer.author?.name}{item.effective_answer.approver?.name && <> · {item.effective_answer.approver.name}</>}</p></>}
       <div className="workspace-faq-facts">{item.facts.map(fact => <p key={fact.field_key}>{fact.available ? fact.text || String(fact.value ?? "") : fact.target ? <a href={workspaceHref(fact.target)}>{catalog?.items.find(field => field.field_key === fact.field_key)?.label.th ?? workspaceText.data}</a> : workspaceText.empty}{fact.unit && <> {fact.unit}</>}{fact.as_of && <> · {contentDate(fact.as_of)}</>}</p>)}</div>

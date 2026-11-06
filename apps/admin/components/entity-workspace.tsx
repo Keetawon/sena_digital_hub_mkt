@@ -13,14 +13,38 @@ import { ProjectContentWorkspace } from "./project-content-workspace";
 import { ProjectMediaWorkspace } from "./project-media-workspace";
 import { WebsiteContentSources } from "./website-content-sources";
 import { FaqWorkspace } from "./faq-workspace";
+import { ExposureChip } from "./content-exposure";
 import { SavedContentSubmission } from "./content-workflow";
 import type { SubmissionOutcome } from "@/lib/content-workflow";
 import { ContentSource } from "./content-source";
 import { ContentHistory, ContentTimeline } from "./content-history";
 import { legacyWorkspaceHref, workspaceApi, workspaceHref, workspaceName, workspaceText as text, workspaceTabs, tabLabels, type WorkspaceEntity, type WorkspaceItem, type WorkspaceLevel, type WorkspaceTab } from "@/lib/unified-workspace";
 import "./unified-workspace.css";
-function Items({ title, items }: { title: string; items: WorkspaceItem[] }) {
-  return <section className="workspace-panel"><h2>{title}</h2>{items.length ? <ul className="workspace-items">{items.map((item, index) => <li key={item.code + index}><a href={workspaceHref(item.target)}>{workspaceName(item.label)}</a>{item.state && text[item.state.toUpperCase() as keyof typeof text] && <span> · {text[item.state.toUpperCase() as keyof typeof text]}</span>}{item.due && <p><time dateTime={item.due}>{contentDate(item.due)}</time></p>}</li>)}</ul> : <p>{text.empty}</p>}</section>;
+type OverviewItem = WorkspaceItem & { priority?: "required" | "recommended" };
+function ItemLinks({ items }: { items: OverviewItem[] }) {
+  return <ul className="workspace-items">{items.map((item, index) => <li key={item.code + index}>
+    <a href={workspaceHref(item.target)}>{item.context && <>{text[`context_${item.context.kind}`]} {workspaceName(item.context.label)} · </>}{workspaceName(item.label)}</a>
+    {item.priority && <span>{text[item.priority]}</span>}{item.state && text[item.state.toUpperCase() as keyof typeof text] && <span>{text[item.state.toUpperCase() as keyof typeof text]}</span>}
+    {item.due && <time dateTime={item.due}>{contentDate(item.due)}</time>}
+  </li>)}</ul>;
+}
+function ItemGroup({ name, items }: { name: string; items: OverviewItem[] }) {
+  const [all, setAll] = useState(false);
+  return <details className="workspace-gap-group"><summary>{name} <span>({items.length})</span>{items.some(item => item.priority) && <span className="workspace-gap-counts">{text.required} {items.filter(item => item.priority === "required").length} · {text.recommended} {items.filter(item => item.priority === "recommended").length}</span>}</summary>
+    <ItemLinks items={all ? items : items.slice(0, 5)} />
+    {items.length > 5 && <button type="button" className="button secondary" aria-expanded={all} onClick={() => setAll(value => !value)}>{all ? text.show_less : text.view_all} ({items.length})</button>}
+  </details>;
+}
+function Items({ title, items }: { title: string; items: OverviewItem[] }) {
+  const groups = new Map<string, { name: string; items: OverviewItem[] }>();
+  for (const item of items) {
+    const section = item.target.section, key = item.target.tab + ":" + (section ?? "");
+    const group = groups.get(key) ?? { name: tabLabels[item.target.tab] + (section ? " · " + (section === "commercial" ? text.section_commercial : section === "investor" ? text.section_investor : sectionLabel(section)) : ""), items: [] };
+    group.items.push(item); groups.set(key, group);
+  }
+  return <section className="workspace-panel" aria-label={title}><h2>{title} <span className="workspace-count">{items.length} {text.item_count}</span></h2>
+    {items.length ? Array.from(groups, ([key, group]) => <ItemGroup key={key} {...group} />) : <p>{text.empty}</p>}
+  </section>;
 }
 function PagePreview({ endpoint }: { endpoint: string }) {
   const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
@@ -122,7 +146,8 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
     <header className="workspace-heading"><div><WorkspaceBack fallback="/website" label={text.website} /><h1>{workspaceName(data.entity.name)}</h1></div>
       {data.phases.length > 1 && <label className="content-input">{text.phase}<select disabled={primaryBusy || suggestionEditing || headerBusy} value={data.selected_phase ?? ""} onChange={event => location.navigate({ phase: event.target.value, field: null, item: null, faq: null, cluster: null, unit_type: null })}>{data.phases.map(item => <option key={item.rem_project_id} value={item.rem_project_id}>{workspaceName(item.name)} · {item.rem_project_id}</option>)}</select></label>}
       <SavedContentSubmission scope={level === "business" ? null : { level, id, phase: level === "project" || level === "unit_type" ? data.selected_phase : null }} revision={inventoryRevision}
-        disabled={primaryDirty || primaryBusy || editing || suggestionEditing} onBusyChange={setHeaderBusy} onChanged={submitted} />
+        disabled={primaryDirty || primaryBusy || editing || suggestionEditing} onBusyChange={setHeaderBusy} onChanged={submitted}
+        onExposureChanged={() => { setEditorRevision(value => value + 1); onWorkflowChanged(); }} />
     </header>
     {error && <p className="notice error" role="alert">{error}</p>}
     {data.entity.grouping?.review_href && <p><a href={data.entity.grouping.review_href}>{text.groups} · {text.settings}</a></p>}
@@ -135,9 +160,9 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
     <div key={editorRevision} inert={headerBusy} id={`workspace-panel-${tab}`} role="tabpanel" aria-labelledby={`workspace-tab-${tab}`} tabIndex={-1}>
       {tab === "overview" && (section === "preview" ? <PagePreview endpoint={webPage && sourceVersion ? `v1/admin/web/pages/${encodeURIComponent(webPage)}/versions/${encodeURIComponent(sourceVersion)}?locale=th` : `${workspaceApi(level, id)}/preview?locale=th${data.selected_phase ? "&phase=" + encodeURIComponent(data.selected_phase) : ""}`} /> : <>
         {data.overview.preview_target && <p><a className="button secondary" href={workspaceHref(data.overview.preview_target)}>{text.preview}</a></p>}
-        <div className="workspace-overview"><Items title={text.required_missing} items={data.overview.readiness.required} /><Items title={text.recommended} items={data.overview.readiness.recommended} /><Items title={text.tasks} items={data.overview.tasks} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline items={data.overview.changes_since_publication} /> : <p>{text.empty}</p>}</section></div>
+        <div className="workspace-overview"><Items title={text.readiness} items={[...data.overview.readiness.required.map(item => ({ ...item, priority: "required" as const })), ...data.overview.readiness.recommended.map(item => ({ ...item, priority: "recommended" as const }))]} /><Items title={text.tasks} items={data.overview.tasks} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline compact items={data.overview.changes_since_publication.slice(0, 5)} /> : <p>{text.empty}</p>}<a className="workspace-history-link" href={workspaceHref({ level, id, tab: "history" })}>{text.view_history}</a></section></div>
       </>)}
-      {tab === "data" && <><nav className="workspace-section-states" aria-label={text.data}>{data.sections.filter(item => item.tab === "data").map(item => <a key={item.key} href={workspaceHref(item.target)}>{workspaceName(item.label ?? sectionLabel(item.key))} · {text[item.state as keyof typeof text] ?? item.state}{item.suggestion_count > 0 && <> · {text.suggestions} {item.suggestion_count}</>}</a>)}</nav>
+      {tab === "data" && <><nav className="workspace-section-states" aria-label={text.data}>{data.sections.filter(item => item.tab === "data").map(item => <a key={item.key} href={workspaceHref(item.target)}>{workspaceName(item.label ?? sectionLabel(item.key))} <ExposureChip exposure={item.ai_exposure} /> · {text[item.state as keyof typeof text] ?? item.state}{item.suggestion_count > 0 && <> · {text.suggestions} {item.suggestion_count}</>}</a>)}</nav>
         {publicProject ? <ProjectContentWorkspace projectId={publicProject} embedded primary={primary} supplementary={primary} navigationBlocked={primaryBusy} navigationPending={primaryPending} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />
           : level === "brand" ? <ProjectContentWorkspace brandId={id} embedded primary={primary} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />
           : level === "corporate" ? <FaqWorkspace embedded initialSection="contacts" scope={scope} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} /> : null}

@@ -821,6 +821,8 @@ def test_readiness_keeps_public_type_and_exact_media_slot_context(permission_acc
                 assert entry['target']['tab'] == 'unit-types'
                 assert entry['target']['unit_type'] == unit['public_commercial_type_id']
                 assert entry['target']['phase'] == p['rem_project_id'] and entry['target']['item']
+                assert entry['context']['kind'] == ('price' if entry['code'].startswith('price.') else 'unit_type')
+                assert unit['public_name']['th'] in entry['context']['label']['th']
             hero = next(entry for entry in entries if entry['code'] == 'hero')
             assert hero['target']['media_slot']['media_role'] == 'hero'
             assert hero['target']['media_slot']['target_type'] == 'project'

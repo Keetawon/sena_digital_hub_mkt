@@ -43,7 +43,10 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
         ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history'),
         ('GET', '/v1/admin/content/workspace/{kind}/{ref}/history/{event_id}'),
         ('GET', '/v1/admin/content/activity'),}
-    assert {key for key, value in SHARED_RULES.items() if value == 'content_workflow'} == {('GET', '/v1/admin/content-workflow/items'), ('POST', '/v1/admin/content-workflow/review'), ('POST', '/v1/admin/content-workflow/save-approve'), ('POST', '/v1/admin/content-workflow/submit'), ('GET', '/v1/admin/content-workflow')}
+    assert {key for key, value in SHARED_RULES.items() if value == 'content_workflow'} == {
+        ('GET', '/v1/admin/content-workflow/items'), ('POST', '/v1/admin/content-workflow/review'),
+        ('POST', '/v1/admin/content-workflow/save-approve'), ('POST', '/v1/admin/content-workflow/submit'),
+        ('POST', '/v1/admin/content-workflow/exposure'), ('GET', '/v1/admin/content-workflow')}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_registry'} == {('GET', '/v1/admin/content/fields')}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_translation'} == {
         ('POST', '/v1/admin/content/translations/{translation_id}/review'), ('POST', '/v1/admin/content/translations/{translation_id}/retry')}

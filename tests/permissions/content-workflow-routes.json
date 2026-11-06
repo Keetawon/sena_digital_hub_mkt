@@ -31,6 +31,20 @@
     },
     {
       "method": "POST",
+      "path": "/v1/admin/content-workflow/exposure",
+      "tab": "content_workflow",
+      "level": "other",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_workflow.py"
+    },
+    {
+      "method": "POST",
       "path": "/v1/admin/content-workflow/submit",
       "tab": "content_workflow",
       "level": "other",

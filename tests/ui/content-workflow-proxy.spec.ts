@@ -6,7 +6,7 @@ const workflow = 'v1/admin/content-workflow', queue = 'v1/admin/publication-queu
 test('workflow transport admits only exact saved-item and queue commands', () => {
   for (const [method, paths] of [
     ['GET', [workflow, workflow + '/items', queue]],
-    ['POST', [workflow + '/submit', workflow + '/review', workflow + '/save-approve', queue + '/prepare', queue + '/publish', queue + '/return']],
+    ['POST', [workflow + '/submit', workflow + '/review', workflow + '/save-approve', workflow + '/exposure', queue + '/prepare', queue + '/publish', queue + '/return']],
   ] as const) for (const path of paths) {
     expect(contentAllowsApi(path, method), path).toBe(true);
     expect(h1AllowsApi(path, method), path).toBe(true);

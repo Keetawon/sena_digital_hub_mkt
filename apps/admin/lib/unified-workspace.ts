@@ -1,5 +1,29 @@
 // Labels are copied from docs/47 and existing editor UI, never translated here.
 export const workspaceText = {
+  "exposure_source": "ตามนโยบายของเนื้อหา",
+  "exposure_draft_notice": "บันทึกเป็นร่าง ต้องผ่านการอนุมัติและเผยแพร่ก่อนเปลี่ยนข้อมูลบนเว็บไซต์หรือใน AI",
+  "section_commercial": "กฎหมายและการขาย",
+  "section_investor": "ผู้ลงทุน",
+
+  "view_all": "ดูทั้งหมด",
+  "show_less": "แสดงน้อยลง",
+  "view_history": "ดูประวัติทั้งหมด",
+  "gap_count": "รายการที่ยังขาด",
+  "item_count": "รายการ",
+  "context_selling_point": "จุดขาย",
+  "context_building": "อาคาร",
+  "context_unit_type": "แบบห้อง",
+  "context_price": "ราคา",
+  "context_record": "รายการ",
+  "exposure_open": "เว็บไซต์และ AI",
+  "exposure_web_only": "เว็บไซต์เท่านั้น",
+  "exposure_internal": "ภายใน Hub",
+  "exposure_registry": "ตามทะเบียนฟิลด์",
+  "exposure_default": "ช่องทางตามค่าเริ่มต้นของฟิลด์",
+  "internal_notice": "รายการนี้ใช้ภายใน Hub เท่านั้น จะไม่ปรากฏบนเว็บไซต์หรือในคำตอบของ AI",
+  "change_exposure": "เปลี่ยนช่องทางการใช้ข้อมูล",
+  "version": "เวอร์ชัน",
+
   "local_testing": "พื้นที่ทดสอบในเครื่อง",
   "local_testing_note": " · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด",
   "local_persona_discard": "มีข้อมูลร่างที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนบัญชีทดสอบหรือไม่?",
@@ -99,12 +123,12 @@ export type WorkspaceTarget = {
   revision?: number; binding?: string; scope_type?: string; scope_id?: string; term?: string; kind?: string; floor_from?: number; floor_to?: number; facility?: string; item?: string; building?: string; grain?: string; media_category?: string; usage?: string; target_type?: string; target_key?: string; floor?: number; tags?: string[]; rule_key?: string; media_role?: string; version?: string; draft_at?: string; asset_id?: string; web_page?: string;
   media_slot?: { rule_key: string; media_category: string; target_type: string; target_key: string; floor?: number | null; tags: string[]; usage: string; media_role?: string };
 };
-export type WorkspaceItem = { code: string; label: LocalizedName | string; target: WorkspaceTarget; state?: string; due?: string | null };
+export type WorkspaceItem = { context?: { kind: "selling_point" | "building" | "unit_type" | "price" | "record"; label: LocalizedName | string }; code: string; label: LocalizedName | string; target: WorkspaceTarget; state?: string; due?: string | null };
 export type WorkspaceEntity = {
   entity: { kind: WorkspaceLevel; ref: string; name: LocalizedName; scope_type: string; scope_id: string; grouping?: { state: string; group_ref: string | null; review_href?: string | null } | null };
   phases: { rem_project_id: string; public_project_id: string; name: LocalizedName }[];
   selected_phase: string | null; tabs: WorkspaceTab[];
-  sections: { key: string; label?: LocalizedName | string; tab: WorkspaceTab; state: string; revision: number; target: WorkspaceTarget; suggestion_count: number }[];
+  sections: { ai_exposure?: "open" | "web_only" | "internal" | null; key: string; label?: LocalizedName | string; tab: WorkspaceTab; state: string; revision: number; target: WorkspaceTarget; suggestion_count: number }[];
   overview: { readiness: { required: WorkspaceItem[]; recommended: WorkspaceItem[] }; tasks: WorkspaceItem[]; changes_since_publication: import("../components/content-history").ContentEvent[]; preview_target: WorkspaceTarget | null };
 };
 export const tabLabels: Record<WorkspaceTab, string> = {

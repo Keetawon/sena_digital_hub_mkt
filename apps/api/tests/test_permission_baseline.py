@@ -119,7 +119,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     expected = {(r['method'], r['path']) for r in ROUTES}
     assert len(WORKSPACE['routes']) == 2
     assert len(ENTITY_WORKSPACE['routes']) == 9
-    assert len(WORKFLOW['routes']) == 9
+    assert len(WORKFLOW['routes']) == 10
     assert len(PROJECT_CONTENT['routes']) == 32
     assert len(MEDIA['routes']) == 18  # H5e adds the projects/view AI-state read.
     assert len(COMMERCIAL['routes']) == 6

@@ -74,7 +74,7 @@ export function ContentLabel({ htmlFor, field, children }: { htmlFor?: string; f
   return <div className="content-label"><label htmlFor={htmlFor}>{children ?? field?.label.th ?? "ข้อมูล"}</label><FieldInfo field={field} /></div>;
 }
 export function ExposureInput({ value, onChange }: { value: Exposure; onChange: (value: Exposure) => void }) {
-  return <label className="content-input">ใช้ข้อมูลนี้ในช่องทางใด<select value={value} onChange={event => onChange(event.target.value as Exposure)}>{Object.entries(exposureLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>;
+  return <label data-workspace-field="ai_exposure" tabIndex={-1} className="content-input">ใช้ข้อมูลนี้ในช่องทางใด<select value={value} onChange={event => onChange(event.target.value as Exposure)}>{Object.entries(exposureLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>;
 }
 export function BilingualInput({ id, field, label, value, onChange, rows = 3, maxLength = 12000, translationHint = true }: {
   id: string; field?: ContentField; label?: string; value: Locales; onChange: (value: Locales) => void; rows?: number; maxLength?: number; translationHint?: boolean;

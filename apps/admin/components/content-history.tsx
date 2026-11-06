@@ -33,14 +33,14 @@ function EventDiff({ event }: { event: ContentEvent }) {
     </div></section>)}
   </details>;
 }
-export function ContentTimeline({ items }: { items: ContentEvent[] }) {
-  return <ol className="workspace-timeline">{items.map(event => <li key={event.audit_id} id={`content-event-${event.audit_id}`} tabIndex={-1}>
+export function ContentTimeline({ items, compact = false }: { items: ContentEvent[]; compact?: boolean }) {
+  return <ol className={compact ? "workspace-timeline workspace-timeline-compact" : "workspace-timeline"}>{items.map(event => <li key={event.audit_id} id={`content-event-${event.audit_id}`} tabIndex={-1}>
     <strong>{actions[event.action] ?? text.history} · {sectionLabel(event.section_key)}</strong>
-    <p><time dateTime={event.occurred_at}>{dateTime(event.occurred_at)}</time> · {event.actor?.name ?? <ActorName id={event.actor?.id} />}</p>
+    <p><time dateTime={event.occurred_at}>{dateTime(event.occurred_at)}</time> · {event.actor?.name ?? <ActorName id={event.actor?.id} />}{compact && event.version?.number != null && <> · {text.version} {event.version.number}</>}</p>
     <a href={workspaceHref(event.target)}>{workspaceName(event.entity.name)}</a>
     {event.reason && <p className="content-preserve">{event.reason}</p>}
-    {event.version && (event.version.number != null || event.version.state) && <p>{[event.version.number, event.version.state ? text[event.version.state.toUpperCase() as keyof typeof text] ?? text.history : null].filter(value => value != null).join(" · ")}</p>}
-    {event.diff_available && <EventDiff event={event} />}
+    {!compact && event.version && (event.version.number != null || event.version.state) && <p>{[event.version.number == null ? null : `${text.version} ${event.version.number}`, event.version.state ? text[event.version.state.toUpperCase() as keyof typeof text] ?? text.history : null].filter(value => value != null).join(" · ")}</p>}
+    {!compact && event.diff_available && <EventDiff event={event} />}
   </li>)}</ol>;
 }
 export function ContentHistory({ level, id }: { level: WorkspaceLevel; id: string }) {

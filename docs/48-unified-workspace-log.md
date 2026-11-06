@@ -3849,3 +3849,450 @@ git worktree list. Main is additional to this table.
 | w9-upload-fixtures | `001534655654cb3a` | 1 | Unfinished preparation or review handoff |
 | w9-upload-inventory | `0cfeaad33bbdc2db` | 0 | Unfinished preparation or review handoff |
 | w9-upload-processing | `d694d210dd5a112a` | 3 | Unfinished preparation or review handoff |
+
+## Continuation after the review checkpoint — 6 November 2026
+
+Owner repeated the W9 file-metadata addendum. It is already recorded verbatim
+in docs/47 section 8.6; do not duplicate or weaken it. Private unconfirmed
+file_metadata suggestions, mandatory non-legal PDF metadata/history removal,
+legal byte preservation and all exclusion tests remain W9 acceptance criteria.
+The separate private provenance/suggestion table remains the recorded design;
+no suggestion may enter public payloads, exports, retrieval or provider inputs.
+
+Main starts clean at `5a59e13`; fast-forward pull reports already up to date.
+Continue in the agreed order: W3.1, W3.2, W5, W6, W7, W9, W8. W3.1's permission
+card above applies before code. Lead owns its exposure policy, migration 0086,
+overview implementation, integration and all runtime gates. No W3.1 runtime
+pass is claimed yet.
+
+Bounded sub-agents perform a static W9 metadata fixture-coverage review in
+`D:/Personal/workspace/sena_hub_wt/w9-metadata-verification`, branch
+`ws/w9-metadata-verification`, cut from current main `5a59e13`. Exclusive write
+ownership: `artifacts/w9-metadata-verification.md` in that worktree. The brief is
+`artifacts/unified-workspace/w9/metadata-verification-brief.md` in main. Read-only
+inspection of the isolated processor, its tests and synthetic helper is allowed;
+no product edits, ports, configuration reads, commits or pushes. Lead retains
+privacy/authorization design and implementation. This adds one unfinished
+review worktree to the inventory above.
+
+### W3.1 implementation map before code
+
+Lead exclusively owns migration 202611060086_workspace_summary_exposure.sql,
+the existing content_workspace/content_workflow API adapters where presentation
+is needed, entity-workspace, content-history, website-content-sources,
+content-workflow and publication-workspace components, their existing libraries
+and styles, and a small shared content-exposure presentation component. Existing
+FAQ/media read projections receive chips where they do not render the shared
+workflow component. Lead owns affected API/SQL/browser tests and permission
+inventories. No other workstream edits these paths concurrently.
+
+The migration replaces functions, not stored rows: website_content_sources and
+website_text_decide resolve active registry defaults; workspace_page adds safe
+context and section exposure; content_workflow_read/items and publication
+descriptors add bounded exposure metadata. New private helpers, if needed, are
+revoked from runtime/public roles and enumerated in tests. Exact editor targets
+reuse the existing guarded descriptor and URL encoder, with historical version
+selection removed for an exposure edit. Composite entities without one stored
+exposure show the existing per-field registry policy rather than an invented
+open/internal value. Publication descriptors must describe the included source
+version; a stale version cannot borrow the current draft's exposure.
+
+The overview uses native details/summary and existing semantic colours. Local
+UI guidance searches did not find a relevant summary pattern; the explicit
+owner design and existing native controls are the implementation basis. Counts
+remain visible while groups are collapsed. Expanded groups show five links,
+then an in-place view-all control. The full History tab retains its pagination
+and permitted diff inspection.
+
+### W9 bounded metadata review receipt
+
+Bounded sub-agents delivered the static report at
+`D:/Personal/workspace/sena_hub_wt/w9-metadata-verification/artifacts/w9-metadata-verification.md`
+(SHA256 `6b2e94fc71c706575eead504673de757a7c6914d03b14ffe5efde2e02ae76ce3`).
+It inventories 38 test methods; runtime tests were NOT RUN. Remaining fixture
+gaps include dedicated user/computer-name inputs, full-image CreateDate and
+stock-identifier cases, independent PDF incremental/nested-metadata input
+preconditions, unsafe-rewrite rejection, and broader negative log checks.
+Database/API/public/export/RAG/assistant/provider/UI exclusions still require
+integration tests. The three prototype source hashes were unchanged; no product
+files were edited by this review. W9 remains unfinished.
+
+### W3.1 implementation and quick-gate checkpoint
+
+The implementation uses one readiness panel grouped by destination tab/section,
+showing separate required/recommended counts in each collapsed summary. Expanding
+shows five contextual links, then an in-place view-all control. The first browser
+height regression correctly failed at 2,644 px; combining duplicated groups and
+compacting the five-entry timeline fixes the layout without raising its 2.2-screen
+limit. Full History keeps pagination and permitted diffs. New section labels and
+all exposure/overview copy are copied from docs/47 section 8.5.
+
+Migration 0086 changes function definitions only. Newly accepted suggestions use
+the active exact-field registry default under a row lock; broader forged input
+is rejected. Existing drafts are not rewritten. Private helpers
+`hub.workspace_item_context(uuid,jsonb)` and `hub.content_exposure(jsonb,jsonb)`
+are explicitly denied to all runtime roles. The existing permission baseline
+lists them. Workflow, FAQ, section and publication DTOs expose only bounded
+exposure metadata and existing guarded editor targets. Publication descriptors
+derive exposure from the included version rather than a newer draft or a
+different dependency. Publication eligibility and public filtering stay intact.
+
+Chips appear in the shared item workflow, section navigation, inherited FAQ and
+media cards. Composite records explicitly show the existing per-field registry
+policy. Internal notices appear before single/batch submission, in approval
+dialogs and publication items; they do not disable an otherwise authorized
+action. Existing writers and source guards still control exposure changes.
+
+Additional owned files are content-common, faq-workspace,
+project-media-workspace, content-exposure.tsx/css, the local migration checksum
+profile, its inventory test and tests/content-upgrade.test.mjs. The latter now
+compares the row count and complete-row digest of every existing Hub, staging
+and audit table across 0086, with populated version/assets/account/grant fixtures.
+No harness configuration loading was changed and no hosted operation was run.
+
+Quick evidence so far (not a completed full gate):
+
+- Typecheck and documented offline webpack build pass through attempt 3.
+- API workspace/default tests: 51 passed; permission-baseline/exposure/context
+  selection: 31 passed. Additional included-version/public/context assertions
+  are being checked before the final source freeze.
+- Disposable DB gates pass through attempt 3, including populated row
+  preservation. Later presentation-only SQL refinements will receive the final
+  replay and complete gate. An initial unregistered-checksum stop and one SQL
+  expression parser error were fixed; neither touched a working database.
+- Browser quick gate at 1280 px: 70 passed, zero skipped/failed on the latest
+  rebuilt UI. The earlier 68-pass/one-height-failure result is retained. The
+  focused corrected height test also passes. The 390 px quick run and full
+  gate remain outstanding.
+- Screenshots are under `artifacts/unified-workspace/w3.1/`; regenerate all
+  four on the final full gate and review them before delivery.
+
+No W3.1 commit/push yet, no new pending owner question and no scope deviation.
+The bounded W9 report is preparation only. Next after W3.1 delivery: W3.2.
+
+Bounded W9 fixture follow-up: `ws/w9-metadata-fixture-cases` at
+`D:/Personal/workspace/sena_hub_wt/w9-metadata-fixture-cases`, cut from current
+main `5a59e13`. Exclusive writes are its upload optimization test file, synthetic
+fixture helper and `artifacts/metadata-cases.md`. Only the three explicit
+prototype source/test files were copied; no configuration was copied. The
+processor is read-only. Brief: `artifacts/unified-workspace/w9/metadata-fixture-cases-brief.md`.
+Scope is missing metadata test cases and independent input preconditions; only
+small pure tests without ports or environment loading are allowed. Lead retains
+all processing/privacy decisions. This adds one unfinished worktree (55 programme
+worktrees plus main; the unrelated phase7 checkout remains untouched).
+
+### W3.1 final quick checks and full-gate start
+
+Final focused API selection: 52 passed, zero failed/skipped, one existing
+deprecation warning (`api-context-public-quick-4.log`). It verifies contextual
+selling-point/building/unit/price labels, exact targets, public denial of accepted
+drafts, immutable earlier rows and exposure from the actual included version.
+Final affected browser/navigation selection: 70 passed at 1280 and 70 passed
+at 390, zero failed/skipped (`ui-1280-quick-4.log`, `ui-390-quick-4.log`).
+The strengthened settled-header height/screenshot check separately passes once
+at each width (`ui-ready-1280-quick-6.log`, `ui-ready-390-quick-6.log`).
+The height limit is unchanged. Lead reviewed the desktop light and mobile dark
+screenshots; all four themes/widths will be regenerated by the full gate.
+
+Freeze the explicit current source set in `full-start-source-hashes.json` and
+run the complete local gate serially. The full API suite also supplies the
+required wider shared-helper/permission coverage. No completion or commit is
+claimed until every suite, final source verification and both credential scans
+pass. Migration 0086 final candidate SHA256:
+`08a6eddcc395ebc6f1bc27d7dd14807474b30d5a6f98b3953580d611a67b4dd9`.
+
+The bounded W9 fixture follow-up reports 39 small tests passed, zero failed or
+skipped, and two files parsed for syntax. Its processor remained unchanged.
+Lead diff review and integration are pending; this is not a W9 full-gate pass.
+
+### W3.1 first full-gate failure and continuing review
+
+The first frozen candidate had 27 paths and all hashes were unchanged at the
+end of the API run. Typecheck, offline webpack build and production (4 tests)
+passed. Full API: 2,335 passed, 13 failed, 11 existing skips, 6 warnings.
+Twelve failures expose a JSON null target incorrectly treated as an object
+by the new exposure-link projection. One strict inventory DTO allowlist needs
+the four intentional exposure metadata keys added, while retaining exact-key
+equality. DB, H1, both complete browser suites and final scans were NOT RUN
+because the runner stopped on API failure. Logs retain the failed result;
+there is no W3.1 commit/push or completed full gate.
+
+The bounded inventory review also confirms that canonical asset bindings and
+clip targets inherit exposure from their parent asset/clip. A universal
+null-to-field-registry label is misleading. Lead will correct these projections
+and their source editor links before the next final freeze. Existing source
+guards, private Legal evidence, version snapshots and publication eligibility
+remain authoritative; no change may infer extra edit permission.
+
+W9 lead diff review is now complete. The processor and the two fixture files
+were hash-verified, and the lead reran all 43 pure tests (39 small and 4 large):
+43 passed, zero failed/skipped. Receipt:
+`artifacts/unified-workspace/w9/metadata-cases-lead-receipt.json`.
+The current six-image synthetic corpus averages 1,582,908.83 stored bytes per
+image; three PDFs average 25,173.33 bytes, including one byte-exact legal PDF.
+These are fixture measurements, not a production forecast. Originals were not
+written. Persistence, deduplication, UI, public/export/RAG/provider exclusions
+and the complete W9 gate remain outstanding. No W9 commit/push is claimed.
+
+### W3.1 exposure-editor completion design (before code)
+
+The existing media metadata writer requires Projects E plus every shared source
+E, even for a brand asset. Keep this rule. A binding has no exposure field of its
+own; display the parent asset/clip's stored setting. An asset-context link does
+have its own setting, so keep its setting distinct from the asset's setting.
+Composite records without one stored setting use a neutral source-policy label,
+not a fabricated public/internal value. Included publication items continue to
+read their frozen dependency value rather than the current draft.
+
+The ordinary project media and clip editors already cover their fields, but
+brand-only asset and existing asset-context forms lack an exposure control.
+Complete the owner-requested change link with one bounded exposure editor reused
+by the shared workflow/notice surface. It changes only exposure; existing review,
+rights, Legal restrictions and publication are unaffected. It is an explicit
+normal draft save, never save-and-approve or a public write.
+
+Permission-card supplement: proposed POST
+`/v1/admin/content-workflow/exposure` accepts only asset, asset_context or
+media_link identities, exact current expected_hash and the three existing
+exposure values. SQL `hub.content_workflow_exposure_save` takes the existing
+workflow source lock and Edit guard. Asset writes also use
+`hub.media_require_asset_edit` (Projects E and all shared source E), forbid
+non-internal legal documents and preserve metadata/category/rights. Context and
+clip writes delegate to their existing media writers and revision checks.
+The submission-freeze trigger and audit.change_log remain in effect. No account,
+grant, template, tab bit or special changes. Inventory the route and function;
+deny viewer, missing shared-source E, illegal exposure, stale hash and pending
+review edits, with positive neighbors. No direct runtime table DML is granted.
+
+Lead owns the existing W3.1 files plus
+`tests/permissions/content-workflow-routes.json` and the exact API/UI regression
+files needed for this control. The exact transport allowlists also need the new
+POST path: lead exclusively owns content_permissions.py and
+apps/admin/lib/content-workflow-routes.ts for this slice, plus its proxy spec.
+The first HTTP positive-neighbor test correctly hit the default unmapped-route
+denial, identifying these required mappings; do not loosen the default denial.
+Main.py and W9 upload files need no changes. Final source freeze and full gate
+are still required after these changes.
+
+### W3.1 exposure completion and failure-loop receipts
+
+The original full-gate failure is fixed: its affected API/permission/disclosure
+selection passed 82 tests. The bounded editor now changes only asset, context-link
+or clip exposure through an exact hash, with Legal and all existing Edit guards.
+It never approves or publishes. Canonical bindings read their parent's setting;
+context links retain their independent setting. Pinned publication descriptors
+retain the included parent value after a newer draft changes. Composite records
+use neutral source-policy copy from docs/47. The private helper now has signature
+`hub.content_exposure(text,jsonb,jsonb,boolean)`; the single new app entry is
+`hub.content_workflow_exposure_save(text,jsonb,text,text)`.
+
+The expanded API quick selection passed 83 tests and found one incorrect HTTP
+fixture assumption: an unbound private upload is correctly hidden from the
+viewer with 404. The fixture now binds its synthetic asset, explicitly verifies
+viewer GET succeeds, then verifies viewer POST is 403 and an editor POST saves
+the draft. Corrected HTTP quick result: 1 passed, 13 deselected, zero skipped or
+failed. The DB quick gate passed, including migration replay, populated row
+preservation and all existing concurrency suites. New inheritance, pinned-value,
+Legal, shared-source Edit, stale hash and submitted-freeze checks passed.
+
+Typecheck and the offline build passed through exposure build 6. Both initial
+brand-asset browser regressions passed, including conflict value preservation
+and focus restoration. The affected 1280 px selection passed all 75 tests.
+The 390 px selection completed 42 passing tests before its process terminated
+with exit 1073807364; it has no complete suite result and is not credited as a
+pass. No assertion failure is reported in that interrupted log.
+
+The bounded final inventory report is archived under
+`artifacts/unified-workspace/w3.1/w3.1-final-editor-check.md`; runtime checks were
+NOT RUN by that agent. Lead verified and fixed its batch callback finding by
+adding a separate exposure-save refresh callback (no false submission outcome),
+and added a separate publication exposure-edit lock. Two focused browser
+regressions now exercise the refreshed hash and blocked publication command.
+The source guard, permission inventory and transport default denial are retained.
+The latest callback quick gate and the complete final gate remain outstanding.
+
+The failed first full-run logs and its exact 27-path source manifest are retained
+under `artifacts/unified-workspace/w3.1/full-1/`. Current ownership is 32 changed
+paths; no unrelated file has been staged or edited. No new pending owner question,
+hosted activity, live provider call, W3.1 commit or push is claimed.
+
+### W3.1 second final freeze
+
+The two callback regressions passed (2/2), then the complete affected browser,
+navigation and proxy selection passed 77 tests at 1280 px and 77 at 390 px, with
+zero skipped/failed. Logs: `ui-exposure-callbacks-quick-9.log`,
+`ui-exposure-1280-quick-10.log`, `ui-exposure-390-quick-10.log` under the W3.1
+artifact directory. Typecheck and documented offline build pass through build 7.
+The interrupted earlier mobile run remains recorded; it is superseded by this
+complete run, not counted as a pass itself.
+
+The bounded report's appended read-only recheck confirms both wiring fixes;
+archived report SHA256:
+`5e6469102bbaad41d5faa2595d22fa87e17f44def512af070e88e757fd92c69c`.
+No runtime result is attributed to that agent. Lead owns the runtime results.
+Migration 0086 current SHA256:
+`8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b`.
+
+Freeze all 32 owned paths in `full-start-source-hashes.json` and run the second
+complete gate serially. The first run remains in `full-1/`. Do not change source
+during the gate or infer completion from quick results. Commit/push and finished
+worktree cleanup remain pending the full result, source verification, four
+overview screenshot reviews and credential scans.
+
+### W3.1 second full-gate result and exact inventory correction
+
+The second full gate verified the same frozen 32 paths throughout. Typecheck,
+offline webpack build and production tests (4 passed) passed. API completed
+with 2 failed, 2,348 passed, 11 existing skipped and 6 warnings. The two failures
+are exact inventory assertions: test_permission_baseline.py still expects nine
+workflow routes, and test_permission_shared.py omits the new exposure POST from
+its explicit expected set. The route, permission mapping and runtime positive/
+denial tests were already present. Update the count to ten and add only that
+exact route; retain equality, unmapped-route denial and every permission test.
+Lead ownership expands to those two test files, for 34 candidate paths.
+
+The failed attempt and unchanged-source receipt are archived in
+`artifacts/unified-workspace/w3.1/full-2/`. Its runner stopped at API, so DB,
+local H1, both full UI suites and credential scans were NOT RUN in that attempt.
+No commit/push is claimed. The focused API failure loop and a new complete gate
+remain required. Four quick-run overview screenshots were visually reviewed at
+1280/390 in light/dark; their final gate regeneration/review remains pending.
+
+### W9 isolated privacy and PNG follow-up
+
+While main stayed frozen, lead integrated the reviewed fixture pair into the
+existing W9 processor worktree and fixed three demonstrated cases: non-legal
+PDF page thumbnails are removed by the existing full rewrite; GPS IFD decoding
+requires project coordinates; and opaque 8-bit PNGs with an all-255 alpha channel
+follow the over-4-MiB quality-90 JPEG exception. Legal/disclosure/unknown PDF
+bytes remain exact. Failed focused checks and passing follow-ups are retained.
+
+Latest isolated quick result: 42 small checks passed, zero skipped/failed.
+The four large checks require a rerun after the image change; no W9 full-gate
+or integration result is claimed. The exact hashes and evidence are in
+`artifacts/unified-workspace/w9/pdf-thumbnail-receipt.md`. Processing adapters,
+provenance/deduplication, remaining color formats, privacy projections, UI and
+operator paths remain unfinished. No new pending owner question, hosted action,
+provider call, worktree removal, W9 commit or push occurred in this follow-up.
+
+### W3.1 third final freeze and W9 verification receipt
+
+The focused API failure loop passed 71 tests, zero skipped/failed, with one
+existing dependency warning. It includes the two corrected exact-route
+inventories, the full shared-permission file, W3.1 regressions and content
+workflow tests. Log: `artifacts/unified-workspace/w3.1/api-inventory-quick-11.log`.
+No product code changed after the second freeze; only the two explicit test
+expectations and this log changed. Whitespace checks pass. Freeze the 34 owned
+paths and run the complete gate again, serially. The freeze script now rejects
+any unexpected path rather than collecting an unrelated change. Commit/push
+and finished-worktree cleanup still require the complete passing result.
+
+In the free lead lane, W9's current pure processor passed all 46 checks
+(42 small and 4 large), zero skipped/failed. Fixtures now use the existing
+exterior category rather than a made-up category; legal/disclosure handling
+still has explicit overrides. This is isolated preparation, not an API or W9
+full gate. Source hashes and result: `artifacts/unified-workspace/w9/current-processor-receipt.json`.
+
+The refreshed seven-image synthetic corpus averages 1,526,350.14 stored bytes
+per image (2,792,034.57 input bytes). Three PDFs average 25,173.33 stored bytes
+(160,540 input bytes), including one byte-exact legal PDF. The corpus now
+includes the opaque-alpha PNG regression. These are fixture measurements, not
+a production forecast. Originals were not written and no objects were installed.
+Full measurement: `artifacts/unified-workspace/w9/storage-summary-current.json`.
+W9 integration and remaining color-format work remain unfinished.
+
+### W3.1 final full gate and visual review — 6 November 2026
+
+The third full gate passed on all 34 frozen paths at base
+`5a59e13f05fce582a7307b33f3033f7428549afc`. Lead verified every source hash after
+completion; no product or test changed during the gate. Evidence is under
+`artifacts/unified-workspace/w3.1/`, including `full-gate-receipt.json`,
+`full-start-source-hashes.json` and the individual `*-full.log` files.
+
+| Full suite | Passed | Skipped | Failed |
+|---|---:|---:|---:|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production | 4 | 0 | 0 |
+| API | 2,350 | 11 existing | 0 |
+| DB | 95 Node tests; 41 SQL suites; 23 concurrency scenarios | 0 | 0 |
+| Local H1 simulation | 69 Node tests; 10 smoke tests; 66 browser tests | 0 | 0 |
+| UI, 1280 px | 437 | 0 | 0 |
+| UI, 390 px | 437 | 0 | 0 |
+
+API reports six existing dependency warnings. No test was skipped, quarantined
+or weakened for this workstream. Fresh disposable migration replay and populated
+upgrade preservation checks passed. Both provider and broad source/browser
+credential scans found zero matches; the broad scan covered 792 source files
+and 72 browser files. Credential files were not opened by the scans. The
+documented harnesses used only their authorized local configuration internally.
+
+Migration added: `202611060086_workspace_summary_exposure.sql`, SHA256
+`8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b`.
+It changes guarded functions and adds the bounded exposure-save entry; it does
+not rewrite existing content, versions, reviews, grants or templates. Website
+suggestions take exactly the active field default. Internal notices and chips
+retain the normal approval/publication workflow. The overview groups contextual
+links, expands five at a time and shows only five recent changes.
+
+Lead visually reviewed all four regenerated screenshots:
+`overview-light-1280.png`, `overview-dark-1280.png`, `overview-light-390.png` and
+`overview-dark-390.png` in that artifact directory. The 240-gap fixture measures
+1280 x 2088 px and 390 x 3436 px in both themes. The desktop height regression,
+keyboard expansion and no-horizontal-overflow checks passed. Exact image hashes
+are in `screenshot-review.json`.
+
+The bounded W3.1 inventory agent supplied the three archived static reports;
+lead integrated its callback findings and ran every runtime gate. No new pending
+question or requirement deviation. Commit, push verification and normal removal
+of the finished review worktree follow this receipt. Next slice: W3.2.
+
+### W3.2 bounded preparation receipt
+
+A bounded sub-agent used `ws/w3.2-editor-inventory`, cut from current main in
+`D:/Personal/workspace/sena_hub_wt/w3.2-editor-inventory`. Its sole owned file was
+the ignored `artifacts/w3.2-editor-inventory.md`; all source was read-only and
+runtime checks were NOT RUN. Lead reviewed the report and archived it under
+`artifacts/unified-workspace/w3.2/` (SHA256
+`235bcca4a84b8b73d33ef4e4f6e0c2916d7a609f5b62260c11968603c033b1e8`).
+It maps reusable editor forms, exact routes, evidence and test gaps. Lead source
+review corrected the draft design: promotion codes are globally unique, and
+W3.2 will preserve that constraint. Contextual actions can open the existing
+standalone editor through ordinary links. No W3.2 code, migration or runtime
+result is claimed; its final lease follows the W3.1 commit.
+
+### W9 metadata follow-up and isolated verification
+
+Lead fixed 16-bit grayscale intensity clipping on the PNG-to-JPEG exception,
+and corrected PDF processing records: a metadata-only rewrite never claims that
+original bytes were kept. It records unchanged image encoding separately.
+Legal documents remain byte-exact. These decisions and their failed/passing
+focused checks are retained in the W9 artifact directory.
+
+A bounded sub-agent reused `ws/w9-metadata-verification` and owned only the new
+ignored `artifacts/w9-allowlist-review.md`. It found file-path text surviving
+the shared suggestion filter and nested XMP history supplying caption values.
+Lead reproduced both, fixed the shared filter/top-level parser, then reproduced
+and closed the excluded-root fallback found on recheck. Synthetic generic XML
+wrappers were corrected to real RDF Description roots without changing expected
+values. The final static recheck has no open finding within that bounded scope;
+the agent ran no runtime checks. Archived report SHA256:
+`3643e017b18808445709575547ff6fb937731d62432bdd162e77cce2dd725bc8`.
+
+After W3.1 released the test lane, the current pure processor passed all 49
+checks (45 small and four large), zero skipped/failed. Exact hashes and evidence:
+`artifacts/unified-workspace/w9/current-processor-receipt.json` and
+`processor-all-current.log`. Earlier failures remain recorded and are not
+counted as passes. The refreshed seven-image corpus averages 1,526,350.14 stored
+bytes per image; three PDFs average 25,173.33 stored bytes, including one
+byte-exact legal PDF. See `storage-summary-current.json` for each fixture.
+
+W9 remains isolated and uncommitted. API/SQL/UI/operator integration, original
+checksum deduplication, downstream privacy checks, remaining color-format work
+and its own full gate remain required. No hosted action, live provider call or
+new pending owner question occurred. Its preparation does not delay W3.2.
+
+The final staged whitespace check identified CRLF endings in migration 0086.
+`.gitattributes` explicitly marks migrations `-text` to preserve exact checksum
+bytes. The CRLF-aware check retains blank-at-EOL, blank-at-EOF and space-before-tab
+checks and passes. No SQL bytes or profile checksum changed after the full gate.

@@ -82,7 +82,9 @@ export type WorkflowTarget =
   | { kind: "selling_point"; identity: { project_id: string; point_key: string } }
   | { kind: Exclude<WorkflowKind, "question" | "glossary" | "building" | "facility" | "selling_point">; identity: { id: string } };
 export type WorkflowAction = "submit" | "approve" | "return" | "withdraw" | "save_approve";
+export type ExposureEditorTarget = { kind: "asset" | "asset_context" | "media_link"; identity: { id: string } };
 export type WorkflowSubmissionSnapshot = WorkflowTarget & {
+  ai_exposure?: "open" | "web_only" | "internal" | null; exposure_policy?: "stored" | "source"; exposure_href?: string | null; exposure_editor?: ExposureEditorTarget | null;
   source_tab: string; source_tabs: string[]; expected_hash: string; state: string;
   source_revision: number | null; source_updated_at: string | null;
   can_edit: boolean; can_submit: boolean;
@@ -201,6 +203,7 @@ export function workflowFailure(error: unknown) {
 
 export type PublicationLabel = { th?: string; en?: string };
 export type PublicationDescriptor = {
+  ai_exposure?: "open" | "web_only" | "internal" | null; exposure_policy?: "stored" | "source"; exposure_href?: string | null; exposure_editor?: ExposureEditorTarget | null;
   label?: PublicationLabel | null; href?: string | null; target?: Record<string, unknown> | null;
   workflow: (WorkflowTarget & { expected_hash: string }) | null; can_return: boolean;
 };

@@ -7,6 +7,7 @@ import { ErrorSummary, dateTime, useContentLocation } from "./content-operations
 import { DetailDialog } from "./registry-motion";
 import { publicationChanges, publicationValue } from "./publication-comparison";
 import { workflowStateLabel } from "./content-workflow";
+import { ExposureChip, InternalExposureNotice } from "./content-exposure";
 import { PublicationSourceHistory } from "./publication-source-history";
 import { WebPublication } from "./web-publication";
 import { workspaceText } from "@/lib/unified-workspace";
@@ -21,9 +22,10 @@ function ItemLink({ item, fallback }: { item: PublicationDescriptor; fallback: s
   const href = publicationHref(item), label = publicationLabel(item, fallback);
   return href ? <a href={href}>{label}</a> : <span>{label}</span>;
 }
-function ItemResults({ items, mayReturn, pending, onReturn }: { items: PublicationItem[]; mayReturn: boolean; pending: boolean; onReturn: (item: PublicationItem) => void }) {
+function ItemResults({ items, mayReturn, pending, onReturn, onExposureChanged, onExposureEditing }: { onExposureChanged: () => void; onExposureEditing: (value: boolean) => void; items: PublicationItem[]; mayReturn: boolean; pending: boolean; onReturn: (item: PublicationItem) => void }) {
   return <ul className="workflow-results">{items.map(item => <li key={item.item_key} data-publication-item={item.item_key}>
     <strong><ItemLink item={item} fallback={item.item_key} /></strong> · {item.status === "REJECTED" ? text.rejected : workflowStateLabel(item.status)}
+    <ExposureChip exposure={item.ai_exposure} /><InternalExposureNotice exposure={item.ai_exposure} href={item.exposure_href} editor={item.exposure_editor} disabled={pending} onChanged={onExposureChanged} onEditingChange={onExposureEditing} />
     {item.code && <p>{publicationIssue(item.code)}</p>}
     {mayReturn && item.can_return && item.workflow && <button className="button secondary" disabled={pending} onClick={() => onReturn(item)}>{text.return}</button>}
   </li>)}</ul>;
@@ -64,7 +66,8 @@ export function PublicationWorkspace() {
   const busy = useRef(false), scope = useRef(authority); scope.current = authority;
   const [configurationDirty, setConfigurationDirty] = useState(false);
   const [sourceBusy, setSourceBusy] = useState(false), [sourceDirty, setSourceDirty] = useState(false);
-  const pending = commandPending || sourceBusy;
+  const [exposureEditing, setExposureEditing] = useState(false);
+  const pending = commandPending || sourceBusy || exposureEditing;
   const location = useContentLocation(Boolean(selected.length || reason || commandReason) || pending || configurationDirty || sourceDirty);
   const configuration = location.params.get("tab") === "configuration";
   const sourceKind = location.params.get("source"), sourceId = location.params.get("id");
@@ -126,7 +129,7 @@ export function PublicationWorkspace() {
     setSelected(current => checked ? current.includes(key) || current.length >= selectionLimit ? current : [...current, key] : current.filter(value => value !== key)); setConfirmed(false);
   }
   async function prepare() {
-    if (busy.current || sourceBusy || !publisher || !queue?.can_publish || !reason.trim()) return;
+    if (busy.current || sourceBusy || exposureEditing || !publisher || !queue?.can_publish || !reason.trim()) return;
     const items = queue.items.filter(item => selected.includes(publicationSelectionKey(item))); if (!items.length || items.length > selectionLimit) return;
     busy.current = true; setPending(true); setError(null);
     try {
@@ -136,7 +139,7 @@ export function PublicationWorkspace() {
     finally { busy.current = false; setPending(false); }
   }
   async function publish() {
-    if (busy.current || sourceBusy || !publisher || !review?.can_publish || review.state !== "IN_REVIEW" || !confirmed) return;
+    if (busy.current || sourceBusy || exposureEditing || !publisher || !review?.can_publish || review.state !== "IN_REVIEW" || !confirmed) return;
     busy.current = true; setPending(true); setReviewError(null);
     try {
       const value = await request<PublishedResult>(publicationBase + "/publish", "POST", { publication_id: review.id, expected_digest: review.digest });
@@ -148,7 +151,7 @@ export function PublicationWorkspace() {
   function closeCommand() { if (!pending) { setCommand(null); setCommandReason(""); } }
   const canRollback = (value: ReleaseHistory) => publisher && value.status === "PUBLISHED" && value.members.every(member => permissions.can(member.entity_type + "s"));
   async function runCommand() {
-    if (busy.current || sourceBusy || !publisher || !command || !commandReason.trim() || !commandConfirmed) return;
+    if (busy.current || sourceBusy || exposureEditing || !publisher || !command || !commandReason.trim() || !commandConfirmed) return;
     if (command.kind === "return" && (!command.item.can_return || !command.item.workflow)) return;
     if (command.kind === "pointer" && !web?.can_publish) return;
     if (command.kind === "rollback" && !canRollback(command.release)) return;
@@ -197,7 +200,8 @@ export function PublicationWorkspace() {
           const key = publicationSelectionKey(item), label = publicationLabel(item, item.system === "web" ? item.page_key : item.public_id);
           return <li key={key} data-publication-target={key}><label className="publication-selection"><input type="checkbox" aria-label={`${text.select_item} · ${label}`} checked={selected.includes(key)} disabled={!publisher || !queue.can_publish || pending || !selected.includes(key) && selected.length >= selectionLimit} onChange={event => choose(item, event.target.checked)} /><span>{label}</span></label>
             {publicationHref(item) && <p><ItemLink item={item} fallback={label} /></p>}
-            {item.items && <ItemResults items={item.items} mayReturn={publisher} pending={pending} onReturn={returnItem} />}
+            <ExposureChip exposure={item.ai_exposure} /><InternalExposureNotice exposure={item.ai_exposure} href={item.exposure_href} editor={item.exposure_editor} disabled={pending} onChanged={() => setRefresh(value => value + 1)} onEditingChange={setExposureEditing} />
+            {item.items && <ItemResults items={item.items} mayReturn={publisher} pending={pending} onReturn={returnItem} onExposureChanged={() => setRefresh(value => value + 1)} onExposureEditing={setExposureEditing} />}
             {publisher && item.can_return && item.workflow && <button className="button secondary" disabled={pending} onClick={() => startCommand({ kind: "return", item, label })}>{text.return}</button>}
           </li>;
         })}</ul>{!queue.items.some(item => item.system === system) && <p>{text.empty}</p>}
@@ -216,13 +220,13 @@ export function PublicationWorkspace() {
             {page.status === "REJECTED" && <p>{text.rejected} · {publicationIssue(page.code)}</p>}
             {page.issues?.length ? <ul>{page.issues.map((issue, index) => <li key={index}>{publicationIssue(issue.code)}{issue.label?.th && <> · {issue.label.th}</>}</li>)}</ul> : null}
             <Comparison before={page.previous ?? null} after={page.preview} beforeRedacted={page.previous_redacted} afterRedacted={page.preview_redacted} expanded={page.system === "release" || page.previous_redacted || page.preview_redacted} />{page.html && !page.preview_redacted && page.system !== "release" && <Preview html={page.html} label={label} />}
-            <ItemResults items={page.items} mayReturn={publisher} pending={pending} onReturn={returnItem} />
+            <ItemResults items={page.items} mayReturn={publisher} pending={pending} onReturn={returnItem} onExposureChanged={() => setRefresh(value => value + 1)} onExposureEditing={setExposureEditing} />
           </article>;
         })}{review.state === "IN_REVIEW" && publisher && <><label className="publication-selection"><input type="checkbox" checked={confirmed} disabled={pending || !review.can_publish} onChange={event => setConfirmed(event.target.checked)} /><span>{text.confirm_publication}</span></label><button className="button primary" disabled={pending || !review.can_publish || !confirmed} onClick={() => void publish()}>{text.publish}</button></>}</>}
         {result && <section aria-live="polite"><h3>{text.publication_results}</h3><p>{workflowStateLabel(result.state)}</p>{result.outcomes.map((outcome, index) => <article key={outcome.page_key ?? outcome.member?.entity_id ?? index}>
           <h4><ItemLink item={outcome} fallback={outcome.page_key ?? outcome.member?.public_id ?? outcome.member?.entity_id ?? String(index + 1)} /></h4>
           {outcome.status && <p>{outcome.status === "REJECTED" ? text.rejected : workflowStateLabel(outcome.status)}</p>}{outcome.code && <p>{publicationIssue(outcome.code)}</p>}
-          {outcome.items && <ItemResults items={outcome.items} mayReturn={publisher} pending={pending} onReturn={returnItem} />}
+          {outcome.items && <ItemResults items={outcome.items} mayReturn={publisher} pending={pending} onReturn={returnItem} onExposureChanged={() => setRefresh(value => value + 1)} onExposureEditing={setExposureEditing} />}
           {outcome.rejected?.map(item => <p key={item.entity_type + item.entity_id}>{item.public_id ?? item.entity_id} · {publicationIssue(item.code)}</p>)}
         </article>)}</section>}
       </section>}
