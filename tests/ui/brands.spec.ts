@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { approveLegacySource, confirmPublication, confirmSourceCommand, persona, preparePublication, publishingGrant, sourceHistory, workflowText } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' };
 type Brand = { id: string; public_brand_id: string; rem_brand_id: string; public_name: Record<string, string>; updated_at: string; published_version_id: string | null };
@@ -68,16 +69,9 @@ async function exposed(locator: Locator) {
   })).toBe(true);
 }
 
-async function publish(page: Page, reason: string, expected: { before?: string; after: string }) {
-  await openWorkspaceTab(page, 'history');
-  await page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'เผยแพร่แบรนด์', exact: true });
-  const confirm = dialog.getByRole('button', { name: 'ยืนยันเผยแพร่แบรนด์', exact: true });
-  await expect(confirm).toBeDisabled();
-  const field = dialog.getByLabel('เหตุผลในการเผยแพร่แบรนด์', { exact: true });
-  await expect(field).toHaveAttribute('required');
-  await field.fill('   '); await expect(confirm).toBeDisabled();
-  const comparison = dialog.getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์', exact: true });
+async function publish(page: Page, publicId: string, reason: string, expected: { before?: string; after: string }) {
+  const history = await sourceHistory(page, 'brand', publicId);
+  const comparison = history.getByRole('region', { name: `${workflowText.before} / ${workflowText.after}`, exact: true });
   await expect(comparison).toContainText(expected.after);
   await expect(comparison.locator('.brand-comparison-row')).toHaveCount(7);
   for (const key of ['public_brand_id', 'public_name', 'description', 'slug', 'status', 'assets', 'synthetic']) {
@@ -87,15 +81,19 @@ async function publish(page: Page, reason: string, expected: { before?: string; 
     await expect(comparison).toContainText(expected.before);
     await expect(comparison.locator('[data-field="public_name"]')).toHaveClass(/changed/);
     await expect(comparison.locator('[data-field="slug"]')).not.toHaveClass(/changed/);
-  } else await expect(dialog.getByRole('heading', { name: 'ตัวอย่างข้อมูลที่จะเผยแพร่', exact: true })).toBeVisible();
-  await field.fill(reason); await expect(confirm).toBeEnabled(); await confirm.click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  } else await expect(comparison.getByRole('heading', { name: 'ตัวอย่างข้อมูลที่จะเผยแพร่', exact: true })).toBeVisible();
+  const brand = await approveLegacySource(page, 'brand', publicId);
+  await persona(page, 'viewer');
+  const review = await preparePublication(page, [{ system: 'release', entity_type: 'brand', entity_id: brand.id }], reason);
+  await expect(review.locator('.publication-reviewed-page')).toContainText(expected.after);
+  await confirmPublication(page, review);
 }
 
 for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
 test(`admin registers a brand, editors prepare logos and publisher versions stay isolated at ${viewport.width}x${viewport.height}`, async ({ page }) => {
   test.setTimeout(90_000);
   const data = await fixture();
+  const grant = await publishingGrant();
   try {
     await page.setViewportSize(viewport);
     await page.goto('/?view=brands');
@@ -143,16 +141,17 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     await expect(page.locator('.detail-heading')).toContainText(data.sourceId);
     await expect(page.locator('.detail-heading')).not.toContainText(brand.public_brand_id);
     await openWorkspaceTab(page, 'history');
-    const publishButton = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
+    const publishButton = page.locator('.brand-readiness').getByRole('link', { name: workflowText.queue, exact: true });
     if (viewport.width === 1366) await page.evaluate(() => window.scrollTo(0, 600));
     else await publishButton.scrollIntoViewIfNeeded();
     await exposed(publishButton);
     const [publishBox, assistantBox] = await Promise.all([publishButton.boundingBox(), page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true }).boundingBox()]);
     expect(publishBox && assistantBox && (publishBox.x + publishBox.width <= assistantBox.x || assistantBox.x + assistantBox.width <= publishBox.x || publishBox.y + publishBox.height <= assistantBox.y || assistantBox.y + assistantBox.height <= publishBox.y)).toBe(true);
-    await publish(page, 'เผยแพร่แบรนด์สมมติครั้งแรก', { after: data.name });
+    await publish(page, brand.public_brand_id, 'เผยแพร่แบรนด์สมมติครั้งแรก', { after: data.name });
     const first = await (await page.request.get(publicPath)).json();
+    const firstVersion = (await detail(page, brand.public_brand_id)).published_version_id;
     expect(first.data.public_name.th).toBe(data.name);
-    await role(page, 'editor');
+    await persona(page, 'editor'); await page.goto(`/?brand=${brand.public_brand_id}`);
     await page.getByLabel('ชื่อแบรนด์ที่ใช้เผยแพร่').fill(`${data.name} ฉบับใหม่`);
     // Declining a role switch preserves the unsaved brand draft.
     page.once('dialog', dialog => void dialog.dismiss());
@@ -170,37 +169,28 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     await expect(changed.getByText(/เผยแพร่แล้ว · มีการแก้ไขรอเผยแพร่/)).toBeVisible();
     await changed.click();
     await role(page, 'publisher');
-    await publish(page, 'เผยแพร่แบรนด์สมมติครั้งที่สอง', { before: data.name, after: `${data.name} ฉบับใหม่` });
+    await publish(page, brand.public_brand_id, 'เผยแพร่แบรนด์สมมติครั้งที่สอง', { before: data.name, after: `${data.name} ฉบับใหม่` });
+    await page.goto(`/?brand=${brand.public_brand_id}`);
     await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
     expect((await (await page.request.get(publicPath)).json()).data.public_name.th).toBe(`${data.name} ฉบับใหม่`);
-    await openWorkspaceTab(page, 'history');
-    await page.getByRole('button', { name: 'คืนค่าเวอร์ชันแบรนด์นี้', exact: true }).click();
-    const rollback = page.getByRole('dialog');
-    await expect(rollback.getByRole('button', { name: 'ยืนยันคืนค่าเวอร์ชันแบรนด์', exact: true })).toBeDisabled();
-    await expect(rollback.getByRole('textbox')).toHaveAttribute('required');
+    const rollback = await sourceHistory(page, 'brand', brand.public_brand_id);
+    await rollback.locator(`[data-source-version="${firstVersion}"]`).click();
     await expect(rollback.locator('[data-field="public_name"]')).toHaveClass(/changed/);
     await expect(rollback.locator('[data-field="public_name"]')).toContainText(`${data.name} ฉบับใหม่`);
     await expect(rollback.locator('[data-field="public_name"]')).toContainText(data.name);
-    await expect(rollback).toContainText('เวอร์ชันที่จะคืนค่า');
-    await page.getByRole('dialog').getByRole('textbox').fill('ทดสอบคืนค่าแบรนด์สมมติ');
-    await page.getByRole('button', { name: 'ยืนยันคืนค่าเวอร์ชันแบรนด์', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await confirmSourceCommand(page, rollback.getByRole('button', { name: workflowText.restore_version, exact: true }), 'ทดสอบคืนค่าแบรนด์สมมติ');
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
-    await openWorkspaceTab(page, 'data');
+    await page.goto(`/?brand=${brand.public_brand_id}`);
     await page.screenshot({ path: `artifacts/brand-detail-${viewport.width}.png`, fullPage: false });
-    await openWorkspaceTab(page, 'history');
-    await page.getByRole('button', { name: 'ถอนการเผยแพร่แบรนด์', exact: true }).click();
-    await expect(page.getByRole('dialog').getByRole('button', { name: 'ยืนยันถอนการเผยแพร่แบรนด์', exact: true })).toBeDisabled();
-    await expect(page.getByRole('dialog').getByRole('textbox')).toHaveAttribute('required');
-    await page.getByRole('dialog').getByRole('textbox').fill('สิ้นสุดการทดสอบแบรนด์สมมติ');
-    await page.getByRole('button', { name: 'ยืนยันถอนการเผยแพร่แบรนด์', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const history = await sourceHistory(page, 'brand', brand.public_brand_id);
+    await confirmSourceCommand(page, history.getByRole('button', { name: workflowText.withdraw_page, exact: true }), 'สิ้นสุดการทดสอบแบรนด์สมมติ');
+    await page.goto(`/?brand=${brand.public_brand_id}`);
     await expect(page.locator('.detail-heading').getByText('หยุดแสดง', { exact: true })).toBeVisible();
     await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
     expect((await page.request.get(publicPath)).status()).toBe(404);
     expect((await page.request.get('/api/hub/v1/projects?unexpected=1')).status()).toBe(404);
     expect((await page.request.get(`/api/hub/v1/projects?brand_id=${brand.public_brand_id}&brand_id=x`)).status()).toBe(404);
-  } finally { await data.cleanup(); }
+  } finally { try { await grant.restore(); } finally { await data.cleanup(); } }
 });
 }
 
@@ -213,7 +203,7 @@ test('long synthetic brand title keeps the initial and sticky publish action cle
   await page.goto(`/?brand=${brand.public_brand_id}`);
   await expect(page.getByRole('heading', { name: brand.public_name.th, level: 1, exact: true })).toBeVisible();
   await openWorkspaceTab(page, 'history');
-  const publish = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
+  const publish = page.locator('.brand-readiness').getByRole('link', { name: workflowText.queue, exact: true });
   const floating = page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true });
   for (const scroll of [0, 600]) {
     if (scroll) await page.evaluate(value => window.scrollTo(0, value), scroll);
@@ -232,7 +222,7 @@ test('mobile assistant clears the real publish action throughout intermediate sc
   expect(brand, 'The existing synthetic brand is inspected without editing it').toBeDefined();
   await page.goto(`/?brand=${brand.public_brand_id}`);
   await openWorkspaceTab(page, 'history');
-  const publish = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
+  const publish = page.locator('.brand-readiness').getByRole('link', { name: workflowText.queue, exact: true });
   const floating = page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true });
   await expect(publish).toBeVisible();
   const initial = (await publish.boundingBox())!;

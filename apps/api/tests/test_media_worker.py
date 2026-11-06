@@ -76,7 +76,7 @@ def test_worker_result_never_confirms_metadata_and_stale_source_is_discarded(per
         await transaction.start()
         try:
             await operator.execute('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()')
-            project = await call(operator, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(operator, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             asset = await upload(operator, ids['editor'])
             asset_id = UUID(asset['id'])
             await call(operator, ids['editor'], 'select hub.media_save_asset($1,$2,0,$3)', project, asset_id,
@@ -146,7 +146,7 @@ def test_clip_metadata_periodic_checks_and_stale_completion(permission_accounts)
         transaction = operator.transaction()
         await transaction.start()
         try:
-            project = await call(operator, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(operator, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             clip_id = uuid4()
             clip = await call(operator, ids['editor'], 'select hub.media_clip_save($1,$2,0,$3)', project, clip_id,
                               {'provider': 'youtube', 'kind': 'walkthrough', 'url': 'https://youtu.be/abcdefghijk', 'owner_type': 'sena_owned'})
@@ -166,6 +166,8 @@ def test_clip_metadata_periodic_checks_and_stale_completion(permission_accounts)
             await operator.execute('SET LOCAL ROLE hub_media_worker')
             assert await operator.fetchval('select hub.media_finish($1,$2,$3,null,null)', UUID(job['id']), UUID(job['lease_token']), {'link_status': 'removed'}) == 'superseded'
             await operator.execute('SET LOCAL ROLE postgres')
+            # This explicit clock fixture still attributes the row to its editor.
+            await operator.execute("select set_config('app.actor_id',$1,true)", str(ids['editor']))
             await operator.execute("update hub.media_links set checked_at=now()-interval '8 days' where id=$1", clip_id)
             await operator.execute("update hub.media_jobs set created_at=now()-interval '2 days' where subject_id=$1", clip_id)
             await operator.execute('SET LOCAL ROLE hub_media_worker')

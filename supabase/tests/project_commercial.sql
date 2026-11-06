@@ -35,8 +35,10 @@ do $$ declare result jsonb;t text;begin
   and not hub.translation_allowed('sales_term.conditions') and not hub.translation_allowed('promotion.legal_terms'),'Restricted text sent to AI';
 end $$;
 set local role hub_app;
+select set_config('app.content_review_reason','Synthetic commercial withdrawal',true);
 select hub.review_project_commercial(public_project_id,'construction',current_setting('test.c5_record')::uuid,updated_at,'withdraw')
  from hub.projects where id=current_setting('test.c5_project')::uuid;
+select set_config('app.content_review_reason','',true);
 reset role;
 do $$ begin
  assert hub.project_current_commercial(current_setting('test.c5_project')::uuid)->'construction'='[]'::jsonb,'Withdrawn snapshot is still eligible';

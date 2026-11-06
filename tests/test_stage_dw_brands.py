@@ -144,8 +144,11 @@ class DatabaseTests(unittest.IsolatedAsyncioTestCase):
             await stage.stage_package(self.db, data)
 
     async def test_fresh_synthetic_bootstrap_supplies_hub_owned_public_name(self):
-        for file in ('supabase/seed.sql', 'scripts/sample-intake.sql', 'scripts/sample-brands.sql'):
-            await self.db.execute((ROOT / file).read_text(encoding='utf-8'))
+        for file in ('supabase/seed.sql', 'scripts/sample-intake.sql', 'tests/fixtures/pre-workspace/sample-brands.sql'):
+            source = (ROOT / file).read_bytes()
+            if file == 'tests/fixtures/pre-workspace/sample-brands.sql':
+                self.assertEqual(hashlib.sha256(source).hexdigest(), '218b1b80a11b1dc04feca8812d8c8369f217636d5937224dc577262a071985ae')
+            await self.db.execute(source.decode('utf-8'))
         public = await self.db.fetchval("SELECT payload#>>'{public_name,th}' FROM public_api.brands WHERE payload->>'rem_brand_id'='DEMO-BRAND-01'")
         self.assertEqual(public, 'แบรนด์จำลอง — สำหรับทดสอบเท่านั้น')
 

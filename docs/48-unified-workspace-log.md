@@ -57,17 +57,20 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 | W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Complete: `93b04cc`, pushed to origin/main |
 | W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Complete: `b5dc456`, pushed; receipt `d3ec1d6` |
 | W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | Complete: `487e090`, pushed to origin/main |
-| W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Agent B `w4_governance` backend; lead UI integration |
-| W5 | Fixed business level and composition order | W4 merged | Agent B after W4; planned |
-| W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Lead with Agent B after W5; planned |
-| W7 | Stub-only writing aid, registry flag, budget and diff UI | Backend independent; UI after W3 | Agent C `w7_writing`; backend prepared, runtime gate after W6 |
-| W8 | Thai UAT pack covering all docs/47 flows; final full gate | W1–W7 | Lead; planned |
+| W3.1 | Registry-default suggestion exposure, exposure chips/notices and compact contextual overview | W4 committed | Owner scope received 6 November; design and permission card below; implementation/gates pending |
+| W3.2 | Contextual Promotions tabs, owning brand, reviewed exclusions and legacy suggestions | W3.1 committed | Lead design recorded; implementation/gates pending |
+| W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Full gate passed; 0084/0085; final review checkpoint and delivery receipt below |
+| W5 | Fixed business level and composition order | W4 merged | Prepared; 31-file preview refreshed against current W4; integration and runtime gates pending |
+| W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Prepared design and implementation slices; lead integration/runtime gates pending |
+| W7 | Stub-only writing aid, registry flag, budget and diff UI | Backend independent; UI after W3 | Backend/UI prepared; lead integration/runtime gates after W6 |
+| W9 | Optimize future uploads, retain only stored result, allowlisted private file metadata suggestions | Bounded preparation parallel; shared adapters serialized; before W8 | Decision/card recorded; isolated processor has 34 small preparation checks passing; integration/full gate pending |
+| W8 | Thai UAT pack covering all docs/47 flows; final full gate | W1–W7, W3.2 and W9 | Fifty-four-case draft including Promotions and W9 amendments reviewed; fixtures, rehearsal and final programme gate pending |
 
-Wave 1 uses three agent slots (A/B/C), with the lead doing W3 mapping, question
-registration and integration preparation instead of a fourth agent. Wave 2:
-W2 and W3 after W1; W4 UI after the W3 shell. Wave 3: W5, W6, then W7 integration.
-Wave 4: W8 and the final gate. Merge order is W1 → W2 → W3 → W4 → W5 → W6 → W7
-→ W8. Backend work can finish early but cannot bypass that merge order.
+Current owner-ordered merge sequence: W1 → W2 → W3 → W4 → W3.1 → W3.2
+→ W5 → W6 → W7 → W9 → W8. Bounded W9 preparation may continue independently;
+shared adapters wait for their active file owner. W8 covers all delivered slices
+and the final programme gate. Historical wave notes below describe earlier
+planning and are superseded by the owner decision received on 6 November.
 
 The W1 menu initially uses existing working destinations: `/`,
 `/?view=projects`, `/promotions`, `/articles`, `/releases` and existing settings
@@ -300,10 +303,12 @@ to the working database or hosted TEST by this programme.
 | 0083 | W3 | Entity/FAQ/history reads, N7 closure and audited website-text decision adapter |
 | 0084 | W4 | Per-item lifecycle, N1 flags and revision/contributor checks |
 | 0085 | W4 | Single queue, N2 and both publication-system entry points |
-| 0086 | W5 | Fixed business list, new associations and composition support |
-| 0087 | W6 | Object-aware content grant scopes and account preview/confirm |
-| 0088 | W6 | Dated BU membership, guarded sync and notices |
-| 0089 | W7 | Default-off writing eligibility and bounded budget/usage state |
+| 0086 | W3.1 | Registry-default suggestion exposure and bounded overview/notice projections |
+| 0087 | W3.2 | Additive promotion ownership and reviewed exclusions |
+| 0088 | W5 | Fixed business list, new associations and composition support |
+| 0089 | W6 | Object-aware content grant scopes and account preview/confirm |
+| 0090 | W6 | Dated BU membership, guarded sync and notices |
+| 0091 | W7 | Default-off writing eligibility and bounded budget/usage state |
 
 An unnecessary reserved migration must be reported before changing unmerged
 allocations. Never renumber or edit a merged migration. New defaults/relations
@@ -2641,19 +2646,17 @@ steps from separately executed API/fake-clock and mocked browser evidence.
 
 ### Owner delegation change, 5 November 2026
 
-The owner requested Sol subagents for suitable bounded tasks and retained harder
-work with the lead. The previous three agents are no longer active. New agents
-use explicit GPT-6.1 Sol configuration with a fresh context and a narrow brief.
-The lead personally owns architecture, permission and migration decisions,
-concurrency fixes, code integration, runtime gates and final review. Existing
-frozen handoffs remain subject to that lead review; no model names are added to
-commit messages.
+The owner requested bounded sub-agents for suitable confined tasks and retained
+harder work with the lead. Previous agents are no longer active. Bounded
+sub-agents receive fresh context, disjoint files and narrow written briefs.
+The lead owns architecture, permission and migration decisions, concurrency
+fixes, code integration, runtime gates and final review. Existing frozen
+handoffs remain subject to lead review.
 
-The first new lease is read-only ws/w8-sol-doc-checks, cut from main d3ec1d6.
-The Sol documentation checker owns no editable files. It inventories the frozen
-UAT draft's remaining placeholders with line numbers and checks the U01-U30
-case/result-row correspondence. No design, translations, fixture implementation,
-ports, configuration readers, credentials, commits, pushes or delegation.
+The first bounded sub-agents performed a read-only documentation check from
+main d3ec1d6. They owned no editable files and inventoried the frozen UAT draft's
+remaining placeholders and U01-U30 case/result-row correspondence. No design,
+translations, fixtures, ports, credentials, configuration, commits or pushes.
 
 ## W3 final gate and delivery preparation
 
@@ -2709,3 +2712,1052 @@ W3 delivery receipt: commit 487e090f807690ad0db8e1a340d407d0c435a5bf,
 (d3ec1d6..487e090). The 115-path commit matches the tested source. No hosted
 action occurred. W4's 134-path external candidate is ready for a fresh transfer
 manifest against this final predecessor; all W4 runtime gates remain pending.
+
+## W4 lead integration and runtime gates
+
+W3's receipt was pushed as 9c6beb730bf07695b9733fec260ec34a421a543e.
+Root regenerated the W4 transfer against that clean main/origin revision and
+verified every before/after hash before applying 134 explicit deltas. Main now
+contains W4 for local testing only; no staging, commit or hosted change. The
+135-path commit lease adds this lead log. Migrations remain 0084 and 0085 with
+the reviewed disclosure-source and post-lock authority repairs recorded above.
+Root holds the single port-test lock for the quick gate: typecheck, offline
+build, DB replay, complete API, local H1 and affected browser specs plus
+navigation at both widths. A successful quick gate must precede the full gate.
+
+W7's three-file H1 fixture repair is frozen in w7/h1-fixture-frozen.json.
+Root reviewed the ordinary Accounts API setup and restoration against the
+actual account-access functions. Strict TypeScript, nine pure failure/cleanup
+checks and three-case collection passed; runtime remains pending. The field
+flag, Admin access and temporary Editor manager access are restored with fresh
+revisions and preserved audit. The extra login/assignment steps use a 180-second
+test timeout; all existing functional and security assertions remain intact.
+
+Bounded sub-agents completed the read-only documentation task: the UAT
+draft hash matched, all 30 case headings and 30 result rows appeared exactly
+once. It identified 54 pre-UAT factual placeholder cells and separated these
+from intentional owner observation/result fields. Final gate receipts and
+concrete fixture setup remain lead-owned W8 work; no UAT result was inferred.
+
+W4 quick attempt 1: typecheck and offline build passed. Both migrations applied,
+but disposable fixture initialization failed on a qualified local variable in
+content_submission_freeze. The lead corrected four routines with the same
+pattern using explicit PL/pgSQL block labels: submission freeze, glossary
+version capture, pinned-source lookup and queue publication outcomes. Function
+parameters, SQL predicates, authority checks and immutability rules are unchanged.
+Replay hashes were updated for the still-uncommitted 0084/0085; the receipt is
+w4/local-variable-labels.json. Resume the quick gate at DB; admin source/build
+did not change. No API/browser result is claimed from the failed attempt.
+
+Further focused DB recovery found two JSON subtraction precedence errors and
+one more local-variable qualifier in publication_certificate, plus its ambiguous
+kind reference inside a source query. The lead corrected these and audited every
+remaining function-name qualifier in 0084/0085: each now names an actual argument;
+locals use explicit block labels. The existing publication predicates remain.
+Still-uncommitted migration hashes are in w4/latest-migration-hashes.json.
+
+Fixture initialization then correctly rejected the local synthetic brand logo:
+it still had default internal/needs-review metadata. The lead added an explicit
+ordinary media_save_asset confirmation before its ordinary content approval,
+using the existing promotion_ad category for the synthetic marketing artwork,
+its existing alt text and web_only exposure. No application default, existing
+content migration or validation gate was relaxed. A trial with the unsupported
+logo category was rejected and corrected to the existing catalogue value.
+Failed DB attempts are preserved under w4/quick-attempt1 through quick-attempt6.
+The next DB run reached the existing H5i attestation tests successfully.
+
+The historical populated-upgrade test then exposed its use of today's brand
+fixture against a pre-0047 schema. Root pinned the exact pre-workspace fixture
+from 9c6beb7 in tests/fixtures/pre-workspace/sample-brands.sql, SHA256
+218b1b80a11b1dc04feca8812d8c8369f217636d5937224dc577262a071985ae.
+The populated-upgrade and early brand-intake tests now verify that digest before
+loading it; current local development still uses the ordinary W4 lifecycle.
+Bounded sub-agents verified identical 4,718-byte provenance, both reference sites
+and preservation of every existing assertion in that finite change.
+
+An additional upgrade assertion distinguished 0085's new nullable review_evidence
+columns from changed historical payloads. Root retained full comparisons of all
+old fields, asserted null evidence on every old project/brand/promotion version,
+and asserted that the upgrade creates zero content-review approvals. The focused
+populated-upgrade test passed (1/1, no skips). The complete DB quick gate is
+running again. The explicit W4 lease now contains 139 paths; the full workstream
+gate has not started. No harness configuration-loading logic changed.
+
+W4 quick attempt 9 rejected the legacy publication-boundary fixture because
+its two fixed synthetic assets still had internal/unconfirmed metadata. Root
+added explicit ordinary media confirmation in five positive SQL fixture suites;
+approval itself never changes exposure or rights. The boundary suite then passed.
+Attempt 10 reached the home-task fixture, whose question and glossary were saved
+but never submitted under W4. Root added their ordinary submissions and retained
+the existing construction_progress home-task kind while using progress inside
+the new workflow. Existing task assertions remain intact.
+
+Bounded sub-agents' read-only inventory covered all 41 registered SQL suites and identified
+13 separate positive-publication fixture assets needing explicit confirmation.
+The same bounded sub-agents now own only asset_library.sql, brands.sql,
+model_media.sql, project_media_collections.sql and residential_demo.sql in
+a separate worktree cut from 9c6beb7. Written briefs and exact before
+copies remain in W4 artifacts. Root owns the attested helper, all production decisions,
+diff review and runtime gates. No ports, configuration readers or commits are
+delegated. No hosted resource or live provider is used.
+
+Root reviewed bounded sub-agents' five fixture diffs against the exact forwarded bytes: 13
+explicit confirmations, 14 added lines, no removed original lines. UTF-8,
+byte-preservation and diff checks passed. The finite integration receipt is
+the recorded handoff. Runtime testing remains lead-owned.
+
+Attempt 11 passed the home and new workflow/publication suites, then exposed
+missing EXECUTE on the session-local W4 fixture helpers under legacy SQL roles.
+Root granted only those temporary INVOKER helpers to the test's staff roles;
+each helper now runs ordinary content calls as hub_app and restores its caller
+role and actor. w4_setup remains owner-only. Production functions, account
+permissions, defaults and harness configuration loading are unchanged.
+Attempt 12 reached the final core audit assertion. Root corrected its expected
+actor to the explicit independent fixture publisher, and made the brand audit
+assert both that exact publisher and hub_app. Bounded sub-agents verified the three unrelated
+direct rights-review expectations must remain unchanged; they were preserved.
+Failed attempts 9-12 are retained. Complete DB quick gate is running again;
+no W4 full-gate or commit/push result is claimed.
+
+Attempt 13 passed core, coordinates, source selection, progress and asset-library
+suites, then found a real rollback regression: after replacing a brand logo and
+withdrawing the current brand, the old approved asset has no current binding,
+so require_asset_access rejected the retained historical version. Root repaired
+0085 with private publication_retained_media_source, which requires the exact
+stored dependency, still-approved version and the existing caller-scoped history
+projection. Only unchanged=false retained checks can use it. Assets still pass
+current rights/metadata/validity rules; a replaced binding can ignore only its
+soft-delete marker if every other material value matches the frozen approval.
+Source View, independent publisher and all certificate checks remain required.
+No file reader or production grant was broadened. The legacy rollback assertions
+remain, with added missing-current-binding, altered-evidence, missing-View and
+private-helper ACL checks. Replay hashes and qualifier audit passed; runtime
+gate is running. The private helper must be retained in later W5/W6 integration;
+W6 authorization continues through its existing history/scope projection.
+
+Attempt 14 passed every registered SQL suite, including retained-media rollback
+and all 23 concurrency scenarios. The later Node group had three passes and two
+failures: brand-completeness rejected both members because its ready member's
+new logo was still internal/unconfirmed; the synthetic export seed hit the same
+media predicate. Root added explicit ordinary metadata confirmation for that
+one named bulk logo and the export seed's six named assets. Existing bindings
+supply their alt text; rights reviews and all assertions are unchanged. Syntax
+checks passed. This is no claim that the full DB or workstream gate passed;
+the complete serial quick gate is running again.
+
+W4 DB quick gate passed on attempt 15: 95 Node tests, 41 SQL suites and 23
+concurrency scenarios across 10 scripts, zero failures/skips in that gate.
+All migrations replayed on the disposable cluster; teardown confirmed that the
+working database and file stores were not used. Receipt: w4/db-quick-receipt.json.
+Canonical migration hashes: 0084
+835335012929d02c4ad289564f72f25977d5bc94b4cd72dd1eabc10e28ffbdc2;
+0085 83db638062c512eeaad5eea89a2b842cd945e841e507513f237cb1949ec62f23.
+The complete API quick suite is now running under the same lead test lock.
+The 139-path dirty tree exactly matches the explicit W4 lease.
+
+The API quick run did not complete: it reported 81 failures among 2,295 completed
+cases, then waited indefinitely in test_web_publication_stale_batch_atomic_four_eyes_and_revocation.
+Port-free collection identified all 2,346 node IDs and mapped the flushed progress;
+the partial failure/remaining list is w4/api-progress-failures.json. Root verified
+the exact pytest executable ancestry and start time, stopped only its hung Python
+child (24084), and the existing harness exited and cleaned up its owned run.
+The failed log is preserved in w4/api-attempt1. No other process was stopped.
+
+The fixture attempted a second-connection account grant while its own publication
+transaction held the account-decision lock. Root changed its helper to use the
+existing guarded account-directory/configuration commands on the supplied test
+connection. The web tests' explicit permission changes now use ordinary manager
+commands on that same transaction. Their revocation/contributor assertions and
+production lock remain unchanged. Root added the new retained-media predicate to
+the explicit permission-function inventory. Syntax passed; a focused disposable
+recovery with diagnostic stack timeout runs next. API/H1/UI and the full W4 gate
+are still pending; no W4 commit/push exists.
+
+The focused deadlock recovery completed in 3.19 seconds: the same fixture now
+reaches its contributor-denial assertion rather than hanging. It exposed a real
+read-projection mismatch: can_publish advertised the special even when every
+prepared item rejected that publisher. Root changed the projection to require
+at least one eligible item, preserving eligible neighbours in a partial batch;
+the write still rechecks every item. The previous successful DB receipt therefore
+precedes this new uncommitted 0085 change and must be rerun.
+
+The failed-file diagnostic run is recorded in w4/api-failures.log. It began
+before the new projection and fixture changes and is not final gate evidence.
+bounded sub-agents performed a read-only audit of two positive-publication fixtures. Root
+reordered their ordinary binding/metadata confirmation/rights-review steps;
+all contributor, revocation and stale-child assertions remain intact. Bounded sub-agents did
+not edit production code, run ports, read configuration or commit. Root retains
+all permission, migration, concurrency and runtime work.
+
+The failed-file diagnostic completed with 257 passed and 83 failed in 296.26s.
+Root found that the shared test command released a nested savepoint while leaving
+SET LOCAL ROLE/actor active in its outer operator transaction. Both explicit W4
+helpers now restore the caller after success; transaction rollback still handles
+errors. Atomic fixture bit changes also avoid an invalid intermediate grant row.
+No harness configuration loading or production permission was changed.
+
+The first focused rerun passed 39 of those 83 cases and failed 44 (112.90s), with
+all staged-value/disclosure and workflow cases passing. Failure traces are kept
+in w4/api-recovery1-failure-details.json. Root fixed two SQL name ambiguities,
+preserved exact included-tour contributors in new native unit-type reviews, and
+forwarded the existing explicit legacy-intake reason to its withdrawal audit.
+The explicit permission inventory now includes publication_compose_faq. A legacy
+FAQ regression now asserts frozen-save denial, explicit return and retained answer
+history; its previously clean file was added to the finite W4 lease (140 paths).
+
+Further review found the pre-web residential catalogue trigger adding residential
+defaults to new web snapshots. The uncommitted migration now leaves new web-page
+payloads exact; existing version rows are untouched. Descriptor tests assert the
+actual kind/identity/hash contract. The coordinate fixture now uses hub_app like
+the real API; its focused regression passed. Positive publication fixtures now
+explicitly confirm the two named demo images and complete required human English
+reviews, separate from content approval. These are synthetic local fixture choices,
+not changes to upload defaults, templates, credentials or production content.
+The second focused recovery is running. Full API/DB/H1/UI gates, credential scans,
+W4 commit and push remain outstanding; the earlier DB receipt is not final evidence
+for these later SQL changes. No new pending owner question or hosted action.
+
+Second recovery: 72 passed, 11 failed in 103.38s. Nine failures shared one real
+listing defect: the project list selected soft-deleted rows before invoking a
+detail reader which correctly rejects them. Root filtered deleted projects and
+added a real HTTP regression proving that the deleted detail stays 404 while a
+live neighbour remains available. Temporary diagnostic instrumentation was removed.
+The remaining two expectations now preserve the residential insertion's exact
+catalogue flag and prove that an identical web page retains its version/history
+instead of creating a duplicate. All 83 original failing cases then passed in
+108.48s; log: w4/api-recovery3-passed.log. This is focused quick-gate evidence only.
+The full API suite also needs to run the new deleted-project regression.
+
+Root has restarted the wider serial quick gates (DB replay, full API, local H1,
+affected UI plus navigation at 1280/390). The prior successful DB run is archived
+under w4/quick-attempt15. Current canonical hashes are 0084
+38c2a170bd31c5dda0ecd3fe6352ce075ecd59a4e0d43905da89f4c77c70ff3c
+and 0085 c9ba255a2d3e24b0711c91065792cfb966a778928e11cc35a392024ab9c04bad.
+All 140 dirty paths match the explicit W4 lease; no unrelated work was touched.
+bounded sub-agents' bounded read-only review found no descriptor-shape or duplicate-publication
+assumption in the four publication/navigation browser suites. No ports or edits
+were delegated. W4's final full gate and commit/push remain pending.
+
+Wider quick-gate recovery: DB attempt 16 passed on the current hashes above:
+95 Node tests, 41 SQL suites and 23 concurrency scenarios across 10 scripts;
+zero failures/skips and normal disposable teardown. The refreshed receipt is
+w4/db-quick-receipt.json, with its log hash and preserved attempt-15 evidence.
+The full API suite is now running; H1 and both affected-browser widths follow
+serially. No full-gate or commit/push success is claimed yet.
+
+While that serial run continues, bounded sub-agents inspected the three W5 preview predecessor
+hash mismatches without editing files or running tests. faq_coverage.py and
+faq-applicability.tsx still match their stored source bases; the preview adds
+the business scope and stale-request guards respectively. The assistant preview
+retains existing exact-source checks and adds saved business/FAQ/section evidence.
+All three preview hashes match their receipt's after hash. No W3/W4 regression
+was found by this bounded source comparison; root will still refresh the receipt
+and review the actual W5 integration after W4 commits. This is not runtime or
+permission validation of W5. The running full API quick suite has reported one
+failure so far; its final result and failure trace remain pending.
+
+The wider API quick run completed in 1,271.35 seconds: 2,332 passed, 11 existing
+skips and 4 failures. Full output remains in w4/api-quick.log and the four exact
+traces/nodes in w4/api-quick-failure-details.json and
+w4/api-quick-failed-node-args.txt. H1 and UI did not start because the serial
+wrapper correctly stopped on that failure.
+
+Root repaired the four test dependencies: the media clock fixture explicitly
+keeps its editor attribution after command helpers restore the caller; the
+private-function privilege probe runs as its intended hub_app caller; the
+publication feed asserts exactly both locale publish events after its saved
+cursor instead of assuming no preceding test has published; and the standalone
+workspace SQL projection test loads its attested temporary workflow helpers.
+No application or SQL migration changed in this recovery. The previously clean
+media-worker and public-website-import test files expand the explicit W4 lease
+from 140 to 142 paths. All four complete affected files are rerunning under the
+lead's serial lock, preserving every existing negative and history assertion.
+The DB attempt-16 receipt remains applicable; the W4 full gate is still pending.
+
+The four complete affected API files passed: 69 tests, zero skips/failures,
+40.36 seconds, normal disposable teardown (w4/api-remaining-recovery.log).
+bounded sub-agents' read-only review found no weakened negative or history assertions in
+those four repairs. The feed cursor uses its first page; the failed full run's
+19 entries are below that API's 1,000-entry page limit, as are the isolated
+fixture's two entries. Root has started the remaining serial quick gates:
+local H1 simulation, then affected browser specs plus navigation at 1280/390.
+The full W4 gate, commit and push remain outstanding.
+
+The H1 quick attempt passed its 69 preliminary Node tests and migration/replay
+preservation checks, then stopped before smoke/browser startup at the seed's
+three-member publication assertion. Safe diagnostic artifacts are
+w4/h1-seed-diagnostic.log, h1-seed-recovery.log, h1-seed-recovery2.log and
+h1-seed-release-diagnostic.log; they contain no connection values. The seed now
+explicitly confirms only its three named synthetic images before separate
+rights review, preserving all existing UTF-8 labels. Its guarded metadata RPC
+runs as the already verified deployment operator with the explicit fixture actor;
+no new role membership or configuration loader was introduced.
+
+Root also found a real release-order regression: the W4 preflight rejected a
+promotion whose approved project was being published for the first time in the
+same release. The uncommitted 0085 release command now validates source-tab View,
+locks its members, and publishes brands, projects, then promotions through the
+existing ordinary commands. Each item rechecks current approval, contributor
+separation, rights, readiness and expected source; a rejected item's subtransaction
+rolls back only its own writes. Successful items share one release/history row;
+an entirely rejected batch creates none. Promotion DATA and LEGAL checks remain
+unchanged. Existing versions, review/history rows, accounts and grants are not
+rewritten.
+
+The corrected disposable H1 seed published all three fixture members with zero
+rejections and passed harmless replay (w4/h1-seed-order-recovery.log). This is a
+focused recovery, not the full H1 gate. Because 0085 changed, DB attempt 16 is
+no longer final evidence. Root has started the required serial SQL quick set:
+DB replay/concurrency; API permission/publication/promotion/residential tests;
+then full local H1 and affected UI plus navigation at both widths. No owner
+decision or hosted action is needed. W4 remains uncommitted.
+
+DB attempt 17 passed on the release-order fix: 95 Node tests, 41 SQL suites,
+23 concurrency scenarios across 10 scripts, zero failures/skips and normal
+disposable teardown. Receipt: w4/db-release-quick-receipt.json; log:
+w4/db-release-quick.log. Current 0084 hash remains
+38c2a170bd31c5dda0ecd3fe6352ce075ecd59a4e0d43905da89f4c77c70ff3c;
+0085 is c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817.
+The required permission/publication API selection is running next under the
+same serial lock; H1 and browser gates follow only if it passes.
+
+The SQL-change API quick selection passed: 655 passed, 2 existing skips,
+1,690 deselected by the documented focused selection, zero failures in 565.80s
+(w4/api-release-quick.log). The H1 retry has completed setup and started its
+owned local services; browser checks are now running. Its original failed log
+is preserved as w4/h1-quick-attempt1.log.
+
+Bounded sub-agents also inventoried the eight W4 browser specs read-only: nine screenshot
+writing sites cover primary forms, light/dark review/results, web/release history,
+return conflicts and local/H1 navigation. Existing tests check the required
+1280/390 widths, focus retention/restoration, overflow and six contrast token
+pairs in both themes. Reduced motion is selected; the new W4 stylesheet itself
+adds no animation or transition. This is a source inventory, not a runtime pass
+or a claim that every rendered state has been individually measured. Runtime
+screenshots and all browser results remain to be verified.
+
+H1 attempt 2 passed the 69 Node checks, 10 smoke tests and 55 of its first 56
+browser cases. The remaining case referenced DEMO-001, which belongs to the
+ordinary local harness; this simulation seeds the exact H1-PROJECT-001 instead.
+Root corrected only that source reference, retaining source View, submit denial
+and missing-publication-special assertions. Failure evidence is preserved in
+w4/h1-quick-attempt2.log and w4/h1-attempt2-fixture-failure.png. The serial H1
+retry is running; browser flag/outage checks and both local UI widths remain
+pending. No SQL, runtime code or permission behavior changed in this repair.
+
+H1 quick attempt 3 passed: 69 Node checks, 10 smoke tests and 66 browser tests
+(56 main, 3 provider-flags, 7 outage cases), zero failures/skips. Root inspected
+the generated h1-queue-1280.png (light) and h1-queue-390.png (dark); their queue,
+controls and histories fit the page width. Evidence: w4/h1-quick.log and the
+W4 screenshot paths inventoried above. The serial runner has advanced to the
+affected local UI specs plus navigation at 1280, then 390. W4's final full gate
+still has not run; no commit/push success is claimed.
+
+## Owner addition, 5 November 2026: W3.2 contextual promotions
+
+Recorded the owner's ten requirements and complete pre-code docs/36 permission
+card in docs47 section 4.7; updated navigation mapping, tab order and UTF-8 copy
+catalogue in sections 3.2, 4.2 and 8.5. Source review confirms migration 0070
+resolves primary project plus up to 100 targets, freezes published project IDs,
+and has no brand ownership without primary project or exclusions. Planned
+additive ownership/exclusion fields preserve all existing rows and published
+payloads. Project and brand tabs only; no business/group ownership expansion.
+W6 must apply any-resolved-project draft permission and all-resolved-project
+DATA/LEGAL/approval scope. No grant or template change is authorized.
+
+The requested dependency is W3.1. No W3.1 definition or receipt exists in this
+checkout; a concise clarification is pending while current W4 work continues.
+Do not silently equate W3.1 to delivered W3 or allocate a conflicting migration.
+W3.2 implementation will receive a separate frozen file/route/migration lease,
+full gate, explicit commit, push and four-theme/width screenshot receipt under
+artifacts/unified-workspace/w3.2/. This is a recorded design, not delivered code.
+docs47 is now a root-owned programme decision file included in the next receipt.
+
+W4 affected-browser quick gate at 1280 finished: 167 passed, 24 failed, zero
+skips (14.9 minutes); 390 did not start because the serial runner stopped.
+All failures remain in w4/ui-1280-quick.log and preserved Playwright artifacts.
+Root owns the native form freeze, solar withdrawal reason, navigation and
+publication concurrency investigations. No assertion is dropped or quarantined.
+
+Bounded sub-agents repair assignment in a separate worktree cut from
+current main 9c6beb7. The written brief is retained in W4 artifacts.
+Exclusive owned paths:
+tests/ui/{assets,project-workflow,brand-completeness,publication-navigation,
+unified-publication,residential-operations}.spec.ts. Root seeded only those
+current files and three read-only source dependencies, never configs. Bounded sub-agents may
+repair finite fixture metadata, selection reset assertions, VM Promise handling,
+reason locators, real capability-refresh fixture transitions and contextual
+links. Port-free inspection only; root retains all runtime gates and integration.
+No agent commit or push. Root reviews diff plus quick gate before accepting it.
+
+W4 UI recovery, continuing 6 November: root reviewed and hash-integrated all six
+bounded sub-agents files (the recorded handoff). Static parser checks passed 6/6;
+48 test definitions and 347 prior assertions were retained with exact locator
+and context corrections. Root corrected the brand queue badge destination,
+distinct publication icon, initial queue-action placement, FAQ/narrative frozen
+edit controls and a reasoned solar withdrawal dialog. Lifecycle tests now assert
+the submitted FAQ is frozen, return it through the ordinary Manager command,
+then create a new draft; the section test returns its shared fixture after all
+viewer denials so the second width does not edit an IN_REVIEW source.
+
+Typecheck and documented offline webpack build passed. A restricted-execution
+attempt failed before database startup at Windows userInfo/uv_os_get_passwd;
+the unchanged owner-authorized harness ran under scoped escalation. Its recovery
+finished 137 passed, 4 failed, zero skipped in 8.9 minutes. The remaining cases
+were one settings navigation timing failure, two solar withdrawals and the
+1280 publication retry after restoration of its permission. Evidence:
+w4/ui-1280-recovery.log, w4/ui-1280-recovery-attempt1/; earlier 24-failure evidence
+remains in w4/ui-1280-attempt1/. No skipped/quarantined assertions or harness
+configuration-loader changes were made.
+
+The ordinary solar route reproduced the database failure: its older immutable
+scenario guard rejected a changed decision_reason, although the reviewed figures
+were unchanged. Uncommitted migration 0084 now excludes only decision_reason
+and self_approval from that existing decision-metadata comparison. The approved
+payload/figures stay immutable. A direct-route regression retains its approved
+snapshot and the complete amenity API file passes 27 tests (zero skips/failures),
+including normal teardown: w4/solar-route-fixed.log. Canonical/executed hashes
+were refreshed only for uncommitted 0084/0085. Prior DB/H1 receipts predate this
+fix, so required DB/permission/H1 checks must run again before the full gate.
+
+Root also completed the open-editor freeze edge identified by bounded sub-agents: an already
+open native section/point editor preserves typed text while disabling its fields
+and save button if its loaded source becomes submitted. Navigation reveal now
+waits for the authorized group and asserts it opened, rather than silently
+skipping before it mounts. The explicit root lease is 145 paths, including
+docs47 decision text and the previously clean hub-navigation component/test.
+
+A temporary boolean-only console trace in PublicationWorkspace is active for
+the focused browser diagnostic (w4/run-ui-diagnostic.ps1). It records only busy,
+sourceBusy, publisher, canPublish, state and confirmed; no payload/config/identity
+is logged. Remove W4_PUBLICATION_GUARD before final build/gate/commit. The exact
+pre-trace source is w4/publication-before-guard-trace.tsx. No W4 full gate or
+commit/push is claimed.
+
+Bounded sub-agents' W3.2 read-only inventory confirmed additional dependencies: the primary
+project inner join and readiness in migration0021, primary-project locking in
+0025, immutable frozen scope/public eligibility and banner predicates in0070,
+publication certification/rollback/queue in0085, and promotion-linked starting
+price validation in0067/0070. Legacy sources are website promotion_terms and
+staging knowledge_promotion_annotations, retaining likely_expired/date_unknown
+and non-promotion classifications. The existing editor and commercial-fields
+component both assume a primary project. Root tightened the docs47 permission
+card's planned routes to the existing content/workspace namespace and named the
+affected functions and existing FORCE RLS policies. No W3.2 code started.
+
+6 November continuation: DB quick attempt 18 passes on the solar decision-metadata
+fix: 95 Node tests, 41 SQL suites and 23 concurrency scenarios across 10 scripts,
+zero failures/skips; ordinary disposable teardown completed. Exact migration and
+log hashes are in w4/db-solar-quick-receipt.json. Admin typecheck and the offline
+webpack build also pass (w4/typecheck-native-events.log and
+w4/build-native-events.log). The required permission/amenity API selection runs
+next under the same lead-owned serial lock. The application console guard trace
+has been removed. A temporary browser-test-only, in-memory pointer/scroll recorder
+is prepared to distinguish a missed native click from a request or permission
+failure; it must be removed before the clean browser and final full gates.
+The last clean failure produced no second publish request. Diagnostic timing
+changes that happen to pass are not accepted as a repair. W4 remains uncommitted.
+
+The corresponding API quick selection passes: 438 passed, 1,909 deselected by
+the focused permission/amenity selection, zero failed/skipped, 429.27 seconds
+(w4/api-solar-quick.log). This includes the added negative assertion that a
+reviewed solar figure remains immutable while the withdrawal decision reason
+can change. The serial lock has transferred to the native browser diagnostic;
+no other port-bound runner is active.
+
+The native-event diagnostic reproduced one missed publish click in six cases,
+including a failure before the expected denied-request alert. Its retained
+trace records the confirmation checkbox's pointer events followed by 40 scroll
+events, but no publish-button event. Evidence: w4/ui-native-events-attempt1/ and
+w4/publication-native-evidence.json. The browser helper now explicitly scrolls
+the publish control into view and asserts full viewport visibility before its
+ordinary, unforced click. Both denial and successful publication use this helper;
+all existing assertions remain, with no fixed delay or retry of the command.
+No application permission or publishing behavior was changed for this repair.
+
+With all temporary diagnostics removed, the clean publishing regression passes
+6/6 cases across three repetitions (42.1 seconds, zero failures/skips;
+w4/ui-publication-scroll-recovery.log). The affected 15-spec UI selection plus
+navigation is now running at 1280, then 390, under the lead's serial lock. The
+previous recovery log is preserved as w4/ui-1280-recovery-before-scroll.log.
+W4's final full gate, explicit commit and push still remain.
+
+During the serial UI gate, root refreshed only ignored W5 review artifacts:
+w5/merge-preview-current/ now contains 31 hash-checked paths against current
+main source, including the frozen transport, permission inventory and assistant
+additions. All 13 Python files and 15 TypeScript files parse. Two form merge
+resolutions retain the W4 submitted-state and pending-command guards. This is
+preparation, not integration or a runtime gate; W5 API/DB registration still
+waits for W4's commit. The older preview based on w4-lead-integration remains
+superseded and must not be copied over main.
+
+The clean affected UI quick gate passes 141/141 at 1280 (6.5 minutes), zero
+failures/skips, including the prior FAQ, navigation, solar withdrawal and
+publication retry failures. Normal disposable teardown completed. The serial
+390 run has started. Root inspected review-light-1280.png and
+result-dark-1280.png for queue/review/result layout; the automated navigation
+checks also pass both semantic contrast palettes. Evidence remains a quick
+gate; the final full suite has not run yet.
+
+The 390 recovery finished 140 passed, 1 failed, zero skipped (7.5 minutes).
+All publication cases passed. The remaining wizard media-lock test installed
+its held-read fixture before the initial unit-types request finished, leaving
+the wizard in its initial loading state. Root added an explicit enabled-control
+precondition before holding the post-command reload; the existing lock, reload
+and single-command assertions are unchanged. Evidence is preserved in
+w4/ui-390-recovery-attempt1.log and w4/ui-390-wizard-initial-read-failure/.
+The complete mobile workflow-lock spec is rerunning as the failure quick gate.
+Root also inspected review-dark-390.png and result-light-390.png: queue, review,
+result and history content stack within the viewport; no page-width overflow
+was reported by the automated checks.
+
+The first mobile lock-spec retry passed the repaired media wizard case, but
+finished 20 passed/1 failed: the price-wizard case had the same initial-read
+fixture race. Root applied the same enabled-control precondition consistently
+before held reloads in question/glossary, English retry, unit/price wizard and
+article/FAQ/progress cases. The asset case already fills its loaded caption
+before installing its gate. No application code, timeout or existing assertion
+was loosened. Failure evidence remains in w4/ui-390-price-initial-read-failure/
+and w4/ui-390-locks-recovery-attempt1.log. The 21-case mobile spec is rerunning.
+
+The mobile workflow-lock recovery passes 21/21, zero failures/skips, including
+both wizard cases (w4/ui-390-locks-recovery.log). This completes the documented
+quick failure loop: 141/141 affected desktop cases; the mobile run's 140 passes
+plus its repaired full 21-case lock spec; 438 permission/amenity API passes;
+95 Node/41 SQL/23 concurrency DB passes; clean typecheck/build; and zero scan
+matches. Lead now starts the first W4 final full gate through w4/run-full.ps1.
+All port-bound suites remain serial and disposable; no hosted operation is
+authorized. Final results, commit and push remain pending.
+
+Final-gate infrastructure interruption, 6 November: typecheck, offline webpack
+build and all four production checks completed successfully. The daemon restart
+terminated the runner during API execution, after partial progress to 64%; that
+partial run is not accepted as a suite result. Its log is preserved as
+w4/api-full-interrupted.log. Read-only process metadata and port inspection
+confirmed no full-gate/disposable/pytest runner and no listeners on
+55432/8000/3000 remained. All 145 pre-gate source hashes still matched exactly.
+Lead resumes the same final gate from the full API suite, followed by DB, local
+H1, both complete UI widths and scans (w4/run-full-resume.ps1). Completed
+typecheck/build/production evidence is retained; no process was stopped.
+
+W4 final API gate recovery, 6 November: the resumed full suite completed with
+2,324 passed, 11 existing skips and 12 failures. All failures were positive
+media/content workflows whose old fixture SQL selected the first arbitrary
+project UUID. W4's committed concurrency/history fixtures retain soft-deleted
+synthetic projects; migration 0083 correctly rejects those content scopes.
+Lead claims the previously clean apps/api/tests/test_project_media.py, extending
+the explicit W4 lease to 146 paths, and replaces 13 arbitrary selectors across
+that file, test_project_content_core.py and test_media_worker.py with the named
+active DEMO-001 fixture. Production guards and all negative/staleness assertions
+remain unchanged. Full-attempt evidence is preserved under w4/full-attempt1/.
+The failure quick gate runs the tombstone-producing workflow tests before all
+three affected test files. A new complete full gate is required after recovery;
+W4 remains uncommitted and unpushed.
+
+The live-fixture recovery gate passed 44/44 tests, zero skips or failures,
+including both retained-history producers followed by all three affected files
+(w4/api-live-fixture-quick.log, 31.11 seconds). Lead starts a new complete W4
+full gate from typecheck on the 146-path source set. No product guard was relaxed.
+
+## W4 browser recovery and W9 addition, 6 November 2026
+
+Full attempt 2 completed typecheck, offline webpack build, production (4 passed),
+API (2,336 passed, 11 existing skips, zero failures), DB (95 Node tests, 41 SQL
+suites, 23 concurrency scenarios across 10 scripts), and local disposable H1
+(69 Node, 10 smoke, 66 browser checks), including clean migration replay through
+0085. UI at 1280 px finished with 394 passed, 36 failed, zero skips in 30.2 minutes.
+The runner stopped on that failure; full UI 390 and final scans were not run in
+this attempt. No W4 commit or push exists. The 146 source hashes stayed unchanged
+through the run. Logs, hashes and all 36 failure traces are retained in
+`artifacts/unified-workspace/w4/full-attempt2/`.
+
+Thirty failures had the same legacy mock omission: a catch-all empty array was
+returned for the new workflow snapshot, causing the page to fail before the
+original test interaction. Four other failures were ambiguous selectors after
+workflow statuses, source names and reload controls became visible. Media retry
+trace inspection confirmed that the third metadata write succeeded at revision
+1, the retry recovered it without a second metadata write, and its missing link
+was saved; the broad status locator had failed immediately during that recovery.
+The remaining two failures were old N1/N6 expectations: Projects Approve must now
+be selectable but still unchecked for the unchanged account, and the old FAQ
+publication route must redirect to the single queue.
+
+Lead reviewed and integrated twelve explicit test paths into the W4 working
+lease (158 paths total), preserving mutation handlers, ownership checks, stale
+drafts, original write/upload counts and rights assertions. Source-selection
+checks now address the native snapshot and stale-save error summary; media checks
+address the file status rather than nested workflow notices. The group fixture
+also checks the N6 queue link and retains the single rights-review write.
+All twelve candidate specs passed syntax parsing and the complete diff check.
+The serial recovery gate covers all twelve specs plus hub-navigation at 1280 and
+390 px from main. A new full gate is mandatory after this recovery passes.
+
+### Bounded sub-agents assignments for browser recovery
+
+All worktrees were cut from current main `9c6beb7`; no agent ran ports, copied
+configuration, committed or pushed. Lead kept all product, permission, migration,
+integration and runtime work. Written briefs are in the W4 artifact directory.
+
+- Bounded sub-agents in the separate fixture worktree own only
+  `tests/ui/brand-logo-upload.spec.ts`, `commercial-types.spec.ts`,
+  `project-media-draft.spec.ts`, `project-multi-media.spec.ts` and
+  `project-facilities.spec.ts` plus its ignored review report. Delivered finite
+  GET-only workflow snapshots/inventories; original test bodies preserved.
+- Bounded sub-agents in the separate fixture worktree own only
+  `tests/ui/project-form.spec.ts`, `pilot-provenance.spec.ts`,
+  `project-groups.spec.ts` and ignored reports. Delivered finite read fixtures,
+  native identities, syntax and unchanged-body checks; reported the old group
+  publication assertion for lead's separate N6 update.
+- Lead owns the N1 assertion, media/source selector updates and legacy redirect
+  expectation. Exact before/after hashes and review receipts are in
+  `w4/ui-fixture-recovery/` and `w4/ui-recovery-integration.json`.
+
+Bounded sub-agents completed the Promotions amendment in
+`D:/Personal/workspace/sena_hub_wt/w8-promotion-uat` (branch
+`ws/w8-promotion-uat`). Only docs/49 and an ignored report were owned. Lead
+reviewed U31–U40 and the eight fixture sets; all forty UAT cases remain NOT RUN.
+Final draft SHA256: `f28ea21263ab06e46e68b086dec431868aa3b7adbc63279356bbe386a6387dee`.
+Receipt: `artifacts/unified-workspace/w8/promotion-uat-lead-receipt.json`.
+This draft remains outside main and needs the W9 amendment before final UAT.
+
+### W9 owner decision and bounded preparation
+
+The 6 November owner decision and metadata addendum are recorded verbatim in
+docs/47 section 8.6; new Thai upload/suggestion labels are in section 8.5. W9
+must merge before W8. The addendum requires metadata removal and a safe rewrite
+for every non-legal PDF even below the 20% compression-gain threshold; legal and
+unknown-category files remain byte-exact under existing limits and private.
+Only future uploads are processed. No existing asset, object or public identity
+will be rewritten, reprocessed or deleted.
+
+Bounded sub-agents own only `artifacts/w9-upload-inventory.md` in
+`D:/Personal/workspace/sena_hub_wt/w9-upload-inventory`, branch
+`ws/w9-upload-inventory`, cut from `9c6beb7`. Its written brief is retained in W4 artifacts. This is a read-only
+source/call-path/test inventory, with no ports, main edits, providers, credential
+files, commits or pushes. Lead owns the hard processing, privacy, deduplication,
+legal-context and permission design. Shared main.py, project-assets.tsx,
+commercial-types.tsx and project-media-workspace.tsx remain leased to W4 until
+that workstream is committed. W9 implementation has not started and no W9
+migration number is allocated yet.
+
+Later hosted rollout will need coordinated web-server and proxy request-body
+ceilings supporting 50 MiB PDFs and 30 MiB images (plus transport overhead where
+applicable), matching API validation and sufficient memory for a bounded
+100-million-pixel decode, orientation/color conversion and encoding. A decoded
+RGBA image alone can consume about 400 MB; actual peak headroom and worker count
+must be measured with the serialized fixture workload before setting a limit.
+The documented one-image lock must cover decode through encode; request-body
+buffering also needs bounded admission. No hosted configuration is changed.
+
+Storage summary: pending W9 fixtures; average stored image and PDF sizes have
+not been measured. W9 quick/full gates, screenshots, commit and push are pending.
+
+Bounded sub-agents' completed static inventory was reviewed by lead:
+`D:/Personal/workspace/sena_hub_wt/w9-upload-inventory/artifacts/w9-upload-inventory.md`,
+SHA256 `9c4528cfc13c95649157b17094c209a6752fd10713f83268d0bc8868348d79f4`.
+It confirms 10 MiB / 40-million-pixel / 200-page intake, SVG-only transformation,
+no pre-upload context, and whole-row internal asset projections. Existing
+knowledge thumbnails and bulk-rights evidence require the original checksum;
+historical package verification also compares exact validation metadata.
+Future intake must use the new pipeline while those historical validation-only
+paths retain their existing identity checks. Stored PDF limits must cover SQL,
+local readers, H1 and R2 adapters, not only the incoming proxy/API request.
+No storage or network action was performed by this inventory.
+
+### W9 permission card — design before implementation
+
+No permission catalog, account, grant, template or role change is expected.
+The following card defines the intended boundary; the lead will register its
+concrete additive migration and exact runtime inventory before executing it.
+
+| Field | Decision |
+|---|---|
+| Feature / owner | W9 future-upload optimization and file metadata suggestions; lead owns processing, privacy, dedup, storage and integration. Staff upload in the existing project, brand, commercial-type, promotion-banner and media workflows. |
+| Tab | Existing `projects`, `brands`, `promotions` and `knowledge` boundaries; no new checkbox, tab, special action or automatic grant. |
+| View (V) | Existing authorized asset lists/details, project media, private thumbnails/downloads and audit history. Processing results and allowlisted suggestions are private staff projections subject to the same asset and object visibility; never infer access from a known checksum or a cached context. Legal/unknown-category uploads remain private. |
+| Edit (E) | Existing authorized upload and normal draft metadata actions. Validate category and owning project/brand context before processing; a disclosure context always forces legal handling. A suggestion's Use action changes only an ordinary editable draft field and requires the existing E permission at save. It never confirms metadata, rights, English review or publication. |
+| Approve (A) | Existing individual rights-review and content-review actions remain unchanged. Show bounded file credit/stock evidence to authorized rights approvers. Stock evidence makes a file ineligible for bulk rights approval in both API and SQL, without blocking the existing individual evidence-based review workflow. |
+| Special actions | None added. Existing publishing special and N2/N6 controls still apply after ordinary approval. |
+| Separation | Existing asset-rights and content revision-author rules remain. N1 applies only to project/brand content; Promotions retains DATA/LEGAL separation. File suggestions grant no authority and are never approval evidence by themselves. |
+| Templates | All existing versions/defaults unchanged; no account copying, template propagation or backfill. |
+| Agency | Existing external boundary retained. No new agency access to internal upload/suggestion/rights surfaces; use existing canonical identity and object predicates wherever agency access is already explicitly permitted. |
+| Sensitivity | Internal/restricted source evidence. Extract a bounded plain-text allowlist only. Store original checksum/size/MIME/dimensions, processing version/result and sanitized suggestions; retain no original bytes for optimized uploads. Never store/log raw GPS, distance, serials, contacts, face regions, paths/usernames, edit histories or thumbnails. GPS is computed transiently against authorized project coordinates and persisted only as near/far/unknown. Legal bytes/metadata remain the expressly required private exception. Audit through audit.change_log, not a second log system. |
+| Other tabs | Enforce current binding source/destination V/E conjunctions. Promotions banner attachment still requires Projects E and the existing Promotions action. Category/context cannot authorize a hidden project/brand or promote an optimized marketing file into byte-exact legal evidence. BUD/object checks follow W6 on upload, dedup result, binding, suggestion read/use and review. |
+| Shared surfaces | No file suggestions in public payloads, JSON-LD, exports/DW, RAG, assistant tools/citations/history or provider contexts. Private previews, thumbnails and image jobs consume the stored file. Preserve original evidence validation for historical packages/knowledge. Sentinel fixtures must prove all exclusion paths, including reused files and cached payloads. |
+| Endpoints / SQL | Keep POST/GET `/v1/admin/assets`, GET `/v1/admin/assets/{asset_id}`, POST `/v1/admin/assets/{asset_id}/review`, GET `/v1/admin/assets/{asset_id}/file` and `/thumbnail`, GET `/v1/assets/{asset_id}/file`; GET `/v1/admin/projects/{public_id}/media`, PUT `/media/assets/{asset_id}` and `/media/links/{link_id}`, POST/GET `/media/jobs`; POST `/v1/admin/knowledge/rights/approve`; existing project/model/brand asset-binding routes. No new HTTP route is planned. Existing SQL inventory includes hub.register_uploaded_asset, list_assets, asset_detail, asset_file, public_asset_file, review_asset, project_media, media_save_asset, media_link_save, media_job_request, media_jobs_read, claim_media_image_job, public_content_payload and the knowledge-rights dispatcher. Add FORCE-RLS `hub.asset_upload_sources` for immutable upload provenance and context-scoped suggestions, with bounded `hub.asset_upload_context(jsonb)`, `hub.find_uploaded_asset_source(text,jsonb)` and `hub.record_asset_upload_source(uuid,jsonb,jsonb)` entry points. Fix search paths, close PUBLIC EXECUTE, forbid direct app DML and enumerate each new helper/policy in the permission inventory. No credential/harness changes. |
+| Rollout / verification | Additive migration only, number not allocated yet. No changes to existing asset rows, stored bytes, versions, rights or published identity. New source associations require existing upload/object authority; original-checksum reuse must check access before returning any existing asset. Keep legal/unknown and marketing processing classes distinct so dedup can never substitute optimized bytes for legal originals. Test deny and positive neighbors under real runtime, next-request revocation, concurrent original/stored dedup, serialized decode, safe suggestion use, unchanged historical assets/packages, public/AI/export exclusions, all owner fixtures and per-file UI at 1280/390 in both themes. Use the existing fixture/stub-only gate and final scan; no live provider or hosted write. |
+
+Design choice: file metadata suggestions live in the new immutable upload-source
+association object, with explicit `source: file_metadata`, pipeline version and
+validated context, separate from both confirmed asset fields and `ai_suggestion`.
+This avoids automatic inclusion by existing `to_jsonb(asset)` projections and
+allows GPS proximity to remain scoped to the project where it was computed.
+Only bounded staff-media and rights-review projections opt in. Original-first
+dedup returns an authorized matching processing class before any re-encoding;
+stored-checksum dedup remains the second stage. New source associations do not
+rewrite a reused asset or its rights. A full privacy/locking review is required
+before W9 code; this is a design record, not implementation or runtime evidence.
+
+### W9 UAT amendment prepared in parallel
+
+Lead assigned the bounded W9 amendment to the bounded sub-agents preparing UAT and
+`ws/w8-promotion-uat` worktree; owned files were only docs/49 and the ignored
+`artifacts/w9-uat-review.md`. Written brief:
+`artifacts/unified-workspace/w9/uat-brief.md`. Lead reviewed all U41–U54 and
+requested the explicit small-image quality exception in U43. The original
+forty-case, 158,687-byte prefix remains byte-exact. Strict UTF-8, 54 unique case
+IDs, fourteen new NOT RUN rows, 21 quoted labels matching docs/47 and whitespace
+checks passed. No runtime tests, implementation, fixture rehearsal, commits or
+pushes occurred in this task.
+
+Final draft SHA256:
+`c6baf6664fdcb7457f5d3fd3f255c40beb65c408fbc72d54cf376b4d7b05ff8e`.
+Review SHA256:
+`74205a18dc9d9a3e6dd2afb10e3ec765f91e15a01f4214bfe7d144d2b3fd99e0`.
+Lead receipt: `artifacts/unified-workspace/w9/uat-lead-receipt.json`.
+All 54 cases remain NOT RUN. The nine W9 fixture packs, byte/privacy/concurrency
+evidence, storage averages and final owner-ready links remain implementation
+work; the draft is still outside main pending W8 integration.
+
+W4 quick recovery attempt 1 finished 84 passed / 8 failed / 0 skipped at 1280 px
+(5.1 minutes); 390 px was not started. Archived under `w4/ui-recovery-attempt1/`.
+Five logo failures identified omitted saved brand-binding DTOs; bounded sub-agents supplied a
+finite current-binding/current-asset extension, reviewed by lead (new logo spec
+SHA256 `2cfd0c0397b9776d5358538a3f7da2bebfec79cf1b86e9b3affee7536c9b9b5e`).
+Three native success-notice selectors were narrowed to exclude workflow status
+messages, keeping expected text unchanged. The targeted three-spec rerun passed
+19/19 with zero skips/failures (`w4/ui-recovery-targeted.log`). The broader
+92-case recovery set is rerunning at both widths. A screenshot-only refinement
+also scrolls the sandboxed publication preview into view before capture; it will
+receive its own affected-spec quick gate and visual inspection before full gate.
+
+W9 library feasibility inspection used only installed source, without importing
+configuration or invoking processing: pypdf supports a fresh writer, removal of
+the document Info dictionary and replacement of writer-owned embedded images
+through Pillow. Inline-image replacement is not supported by that API, so W9
+must retain a safe metadata-only result when recompression is unsupported and
+reject any case where mandatory stripping cannot be verified. Metadata cleanup
+must include reachable page/resource metadata and remove orphan/history objects;
+matching page count and extracted text alone is not a privacy proof. No system
+binary or new dependency has been introduced. This note is a design constraint,
+not a claim that PDF processing has been implemented or tested.
+
+W4 browser recovery is complete: targeted 19/19, affected suite 92/92 at 1280 px
+(5.1 minutes) and 92/92 at 390 px (5.3 minutes), all zero failures/skips with clean
+disposable teardown. Receipt: `w4/ui-recovery-receipt.json`. Its source comparison
+confirms all 119 non-UI/document paths from full attempt 2 remained unchanged.
+The publication capture follow-up passed all 14 cases (18.5 seconds), including
+all four theme/width reviews. The initial child-frame scroll timed out; moving
+the parent iframe into view and using the existing viewport-settled native click
+helper preserved the original publish-result assertions. The two intermediate
+capture attempts (10 passed / 4 failed each) remain as `ui-preview-attempt1.log`
+and `ui-preview-attempt2.log`; final evidence is `ui-preview-quick.log`.
+Lead visually inspected `review-light-1280.png` and `review-dark-390.png`: the
+sandboxed approved preview is now rendered, with readable controls and no page
+overflow. No product click handler, approval guard or test timeout was changed.
+
+Lead now freezes the 158-path W4 lease and starts a complete new full gate from
+typecheck, offline webpack and production through API, DB/replay, local H1,
+both full UI widths and credential scans. The full start hashes are recorded
+again after these documentation changes. No W4 commit or push yet; pending
+questions and requirement deviations are unchanged. W9 requirement/design
+records are included, without claiming W9 implementation or verification.
+
+For independent W9 preparation, lead assigned bounded sub-agents to
+`D:/Personal/workspace/sena_hub_wt/w9-upload-fixtures`, branch
+`ws/w9-upload-fixtures`, cut from `9c6beb7`. Owns only the new
+`apps/api/tests/upload_optimization_fixtures.py` and ignored
+`artifacts/w9-fixture-review.md`. The written brief is
+`artifacts/unified-workspace/w9/fixture-brief.md`. Scope: deterministic small
+synthetic image/PDF metadata containers and fixture-validity smoke checks;
+no product logic, security assertions, main changes, large decodes, ports,
+configuration, credentials, providers, commits or pushes. Lead retains the
+processing/privacy/dedup implementation and all final test assertions. This
+work does not alter the frozen W4 source or hold its test lock.
+
+### W4 full attempt 3 and final fixture repair (6 November 2026)
+
+The complete 158-path source set stayed unchanged throughout full attempt 3.
+Typecheck and offline webpack passed; production 4 passed / 0 skipped / 0 failed;
+API 2,336 passed / 11 existing skipped / 0 failed; DB 95 Node tests, 41 SQL suites
+and 23 concurrency scenarios passed with zero skips/failures and migration replay
+through 0085; local H1 69 Node, 10 smoke and 66 browser checks passed with zero
+skips/failures. Desktop UI finished 429 passed / 0 skipped / 1 failed in 20.0
+minutes. The runner stopped before mobile UI and final scans. Evidence and the
+unchanged-source receipt are archived under `w4/full-attempt3/`. This is a failed
+full gate, not delivery evidence. No W4 commit or push has occurred.
+
+The sole failure was the assistant frozen-version citation fixture: its
+synthetic PROJECT-DEMO had no workflow inventory response, so a real 404 from
+the new shell produced a second alert. The broad citation assertion raced that
+unrelated alert. Lead added a finite GET-only inventory for that exact identity
+and audited other synthetic workspace fixtures. The same missing read contract
+was repaired for CAPABILITY-UI in `permission-navigation.spec.ts` and A in
+`project-dashboard.spec.ts`. The three specs gained only 20 fixture lines;
+all original assertions and writes remain unchanged. No production code,
+permission, timeout or retry policy changed. The explicit W4 lease is now 161
+paths. Quick gates cover these three specs plus hub-navigation at both widths;
+after they pass, the whole full gate restarts as docs/11 requires.
+
+### W9 isolated processor draft and synthetic measurements (6 November 2026)
+
+Lead owns `ws/w9-upload-processing`, cut from main `9c6beb7`, in
+`D:/Personal/workspace/sena_hub_wt/w9-upload-processing`. The written brief is
+`w9/processing-brief.md`. Owned product/test files are
+`apps/api/sena_hub_api/upload_optimization.py` and
+`apps/api/tests/test_upload_optimization.py`; no API/UI/SQL adapter is integrated.
+Lead retained all optimization/privacy logic and assertions. Bounded sub-agents supplied only
+the synthetic helper in its separate fixture worktree. Its extensions now
+include a different EXIF IFD1 thumbnail, actual PDF incremental history,
+page/resource XMP, and direct/nested/reused/inline metadata-bearing JPEGs.
+Lead reviewed source and helper validity before copying. Final helper SHA256:
+`835e59cb5cc2764cf40f2d611205aadd0b6feee8a0eea1ddf655c24eb7a26c5c`.
+
+The pure draft handles image orientation, sRGB profiles, bounded resize/encoding,
+metadata-free pixels, private unconfirmed allowlisted suggestions, stock evidence
+even when credit text is discarded for contact details, and transient GPS
+proximity. C2PA detection is an unconfirmed presence signal, never signature or
+authenticity verification. PDF processing uses pypdf, strips Info/XMP/old revisions
+and embedded JPEG metadata, and checks page count and extracted text. Legal,
+unknown-category and disclosure PDFs retain exact bytes. A context-local
+diagnostic redactor strips third-party decoder message arguments before the
+existing log handlers format them; it adds no logging store. No dependency,
+system binary, provider, credential, hosted object or existing asset was used.
+
+Preparation checks: 25 small standalone checks passed, then 4 real-size checks
+passed under the lead's serial lane after W4 teardown, all zero skipped/failed.
+Evidence: `w9/processing-small-quick-8.log`, `w9/processing-large-quick.log`.
+Cases include 6000x4000 oriented JPEG, lossless PNG/transparent color keys,
+photographic PNG conversion, WebP, ICC/XMP/IPTC/EXIF/C2PA, GPS near/far/unknown,
+excluded metadata and thumbnail removal, output/input limits, serialized encodes,
+legal preservation, active PDF rejection, compression gain and no-gain metadata
+rewrites. Metadata-only direct/nested/inline PDFs also rendered pixel-for-pixel
+identically through the existing renderer. These are configuration-free pure
+checks, not the required API/runtime/full W9 gate.
+
+Draft processor SHA256:
+`59e9a335d31e77b6871dfaa367b0efe6e9c5803b65e1e95cbf83b57d2bb524c1`.
+Draft test SHA256:
+`e1e26a7d530dfe485400785d55041f4410e0fed290d54623377e55b8938daaf6`.
+
+The first storage measurement used nine synthetic fixtures; no originals or
+optimized objects were installed. It is a fixture measurement, not a production
+storage forecast, and must be repeated on final W9 code.
+
+| Fixture group | Count | Average input bytes | Average stored bytes |
+|---|---:|---:|---:|
+| Images: oriented/small JPEG, line-art/opaque-noise/transparent-noise PNG, WebP | 6 | 2,421,261.33 | 1,677,711.17 |
+| PDFs: image brochure, text-only metadata, byte-exact legal history | 3 | 160,540.00 | 25,173.33 |
+
+Per-file dimensions, MIME, processing decisions and stored hashes are in
+`w9/storage-summary.json`; execution log: `w9/storage-measurement.log`.
+
+Draft interpretation/deviation: optional PDF image recompression must save 20%
+against both the input and the metadata-only rewrite, so mandatory metadata
+removal does not justify marginal lossy recompression. Opaque embedded metadata
+that cannot be stripped safely (currently JPX) uses the re-export rejection.
+Review these choices against the final corpus before integration. Outstanding:
+high-bit-depth PNG and non-ICC color handling, cross-process admission before
+buffering, all authorized context/immutable provenance/dedup/permission adapters,
+historical validator/operator compatibility, legal/private/public boundaries,
+UI limits/results/suggestions/rights evidence, end-to-end public/export/AI
+exclusion tests, full gate and screenshots. No migration number, commit or push
+is claimed for W9. The W3.1 prerequisite was subsequently resolved by the owner decision recorded below;
+no new pending owner question is introduced by this preparation.
+
+W4 final fixture quick gate: the first 1280 run had 51 passed / 6 failed /
+0 skipped because lead's new exact-query fixtures omitted the existing
+`limit=100` parameter; the 390 run did not start. Evidence remains under
+`w4/ui-final-fixtures-attempt1/`. Adding that bounded query parameter fixed the
+fixture assertion without changing any original test assertion. The same set
+then passed 57/57 at 1280 px (1.3 minutes) and 57/57 at 390 px (1.4 minutes),
+zero skips/failures, with clean disposable teardown. Receipt:
+`w4/final-fixture-quick-receipt.json`. All 158 prior source hashes except this
+log stayed unchanged, and the three new spec changes contain only 20 insertions
+and no deleted assertions. Lead now records the 161-path baseline and starts
+the entire full gate again. No W4 commit or push yet.
+
+Subsequent isolated W9 refinement preserves the compressed image stream of a
+small JPEG/WebP when neither orientation nor profile conversion is required,
+stripping only metadata instead of re-encoding or expanding it. The small
+preparation set now passes 26/26 (`w9/processing-small-quick-9.log`), zero skips
+or failures. The earlier 25+4 checks and storage table remain evidence for their
+recorded processor hash; final large checks/averages will be repeated after the
+remaining W9 work. No main source adapter or new permission has been introduced.
+
+
+## Owner review W3.1 — received 6 November 2026
+
+The owner confirmed that the separate 5 November W3.1 message had not been
+delivered earlier. Finish the current W4 full gate and W4 commit first; then
+W3.1, W3.2, W5, W6 and W7, with bounded W9 preparation continuing independently
+and W8 last. Record the verbatim exposure decision in docs/47 section 4.5.
+Remove all AI model/vendor model names from docs/47 and docs/48 in the W4
+commit without rewriting history. Future documentation, logs, commits and code
+comments describe delegation only as bounded sub-agents.
+
+### Design and unchanged boundaries
+
+The existing guarded website suggestion decision is the only acceptance entry
+point. It resolves its exact registry field in the transaction and uses that
+field's current default exposure for both use and edit_use. Missing, inactive
+or invalid registry state cannot grant broader exposure. Explicit forged broader
+input cannot bypass the server rule. Existing draft/version/import rows are
+unchanged by the migration; only a later authorized user save creates a new
+draft. Preserve numeric/manual-entry guards, source URLs, stale-decision and
+revision locks, ordinary Manager approval and independent Online publication.
+
+Expose stored item exposure through existing bounded DTOs. A compact shared
+chip uses existing exposure labels. Internal notices are informational and link
+to the exact authorized editor; they do not block submit/approval/publication
+or change any payload's existing eligibility. Items without a stored exposure
+must resolve their existing field policy explicitly, never guess that approval
+makes them public. Final source/component mapping precedes implementation.
+
+Overview is a summary: required and recommended counts grouped by destination
+tab and section, with native expandable group controls. A group displays at
+most five contextual exact-field links before its separate view-all expansion.
+Use collapsed group summaries to keep the initial many-gap page around two
+desktop screens; user-requested expansion may make it longer. Label repeated
+items with their actual visible context, never hidden object names. Keep only
+the latest five changes and link to History. Display user-facing version numbers
+with their meaning; omit bare internal revision counters. Preserve existing
+deep-link navigation, dirty-form protection, keyboard focus and reduced motion.
+Use the same summary on project/brand/group/business levels where applicable.
+
+### W3.1 permission card (docs/36)
+
+| Field | Decision |
+|---|---|
+| Feature / owner | W3.1 owner-review corrections; lead owns SQL, exposure, permission decisions and integration; bounded sub-agents may inventory/test confined files. |
+| Tab | Existing Projects, Brands and Knowledge source tabs; existing Releases/publication entry. No new tab, checkbox, catalog grant or special. |
+| View (V) | Only currently visible entity fields, readiness gaps, source metadata, exposure chips and history. Exact context labels inherit the source object's existing View; no hidden names or widened cached projections. |
+| Edit (E) | Existing Projects E is required to use/edit_use a project website suggestion. The field registry's default_ai_exposure is applied server-side for that exact field. Internal defaults remain internal; no broader exposure, implicit confirmation, imported-row rewrite or permission bypass. Ordinary source edits retain their existing authority. |
+| Approve (A) | Existing per-item Manager approvals, self-approval reason rules and source snapshots remain; internal notice does not grant or revoke approval. No automatic approval. |
+| Special actions | Existing independent Online publication special plus source View. No new special; notice is non-blocking and never publishes a draft. |
+| Separation | W4 N1/N2 unchanged; Promotions retains DATA/LEGAL and edit/approve separation. Editors, English reviewers and self-approvers cannot publish their included version. |
+| Templates | No template/account/grant/default changes. |
+| Agency | Existing external boundary; no new agency access. Canonical identity, row scope and runtime denials remain. |
+| Sensitivity | Owner explicitly authorizes a newly accepted website suggestion to use its registry default. Draft remains private until the ordinary approval/publication gates; internal exposure excludes website and AI content. Existing audit.change_log and version history only. |
+| Other tabs | Maintain all existing source/destination View/Edit/Approve conjunctions. Readiness and notice links do not authorize destination data; inaccessible sources remain hidden. |
+| Shared surfaces | Existing public/JSON-LD/export/RAG/assistant filtering is preserved. Test approved/unapproved and internal/default cases against public output, not only chips. No provider calls. |
+| Endpoints / SQL | Existing POST /v1/admin/projects/{public_id}/content/website/{candidate_id}/decision and hub.website_text_decide; GET /v1/admin/content/workspace/{kind}/{ref} and hub.workspace_page; existing history routes/functions and hub.workspace_field_target. Existing workflow reads/items/submit/review/save-approve and publication queue DTOs may gain bounded exposure presentation, retaining guards. Inventory any helper added during final design; no unclassified route or app-callable private helper. |
+| Rollout / verification | Additive function/projection migration only. No data/version/review/history/account/grant/template rewrite. Test per-field defaults, internal stays internal, forged broadening denial plus positive neighbor, no migration row changes, notices with exact editor links, contextual readiness and expanded groups, latest-five history, many-gap default page height, 1280/390 light/dark screenshots and all mandatory quick/full gates before explicit-path commit/push. |
+
+### Migration lane and cleanup
+
+Committed migrations through 0085 remain unchanged. New uncommitted reservation
+order: W3.1 0086; W3.2 0087; W5 0088; W6 0089/0090; W7 0091. W9's number is
+allocated when its additive design is ready. Earlier prepared W5-W7 files are
+not integrated or committed; rename their reservations and dependent manifests
+when rebasing them after W3.2, then review/gate the final files normally.
+
+After a merged slice, inspect its worktrees and remove finished clean worktrees
+with git worktree remove, then merged branches with git branch -d. Never force
+or delete unmerged work. Preserve unfinished work and report its reason. Record
+remaining programme worktrees in docs/48; the unrelated phase7 checkout is not
+programme-owned and must remain untouched.
+
+### Current evidence
+
+Design/read-only preparation only while W4 runs. No W3.1 code, migration,
+runtime test, screenshot, commit or push yet. The bounded inventory owns only
+its separate report. That inventory was read-only while the fourth W4 gate ran; the final W4 rerun includes the new owner documentation.
+
+Bounded sub-agents delivered a read-only W3.1 UI inventory at
+`D:/Personal/workspace/sena_hub_wt/w3.1-review-inventory/artifacts/w3.1-ui-inventory.md`.
+Lead reviewed its exact component/route mapping and test gaps. No W3.1 implementation or runtime pass is claimed.
+
+
+## W4 fourth full attempt and owner review checkpoint request
+
+The owner requested a summary and a commit/push of finished work for review.
+W1-W3 are already pushed. W4 remains uncommitted until its mandatory full gate
+passes. The fourth full attempt had typecheck/build/production pass; API 2,336
+passed / 11 existing skipped / 0 failed; DB 95 Node checks, 41 SQL suites and 23
+concurrency scenarios passed; local H1 69 Node / 10 smoke / 66 browser checks
+passed. Desktop UI passed 430/430. Mobile UI passed 429 with one failure in the
+archive memo-search test. Final scans did not run because the runner stopped.
+All 161 source hashes remained unchanged. Evidence and failure trace are kept
+under `artifacts/unified-workspace/w4/full-attempt4/`; this is failed evidence.
+
+The trace shows the browser automation filling the search field while the
+closing native dialog was still modal. The fill did not enter the new query,
+so no new search request was made. The test now waits for dialog removal and
+the restored URL, asserts the entered value and verifies that the new query
+was requested. Every previous search-result, evidence and isolation assertion
+remains. No application code, timeout or retry policy changed. The explicit
+commit manifest now contains 162 paths. Archive and navigation quick checks
+run at both widths, followed by the full gate again if they pass.
+
+The owner-requested documentation cleanup and the separate W3.1 decision/card
+are applied before this final rerun. No git history is rewritten. W3.1/W3.2
+implementation and W9 integration are excluded from this W4 checkpoint.
+
+Archive/navigation quick gate passed 29/29 at 1280 px and 29/29 at 390 px,
+zero skipped/failed, with clean disposable teardown. Both widths exercised the
+repaired memo search. Logs: `w4/archive-quick-1280.log` and
+`w4/archive-quick-390.log`. Broad source/browser scan found zero credential
+matches. The fifth full gate now runs against the frozen 162-path manifest.
+
+## W4 final full gate — review checkpoint, 6 November 2026
+
+W4's fifth full attempt passed on the frozen 162-path source manifest,
+including the owner's documentation cleanup and verbatim W3.1 decision/card.
+No application, API, SQL, fixture or test source changed during the run. This
+post-gate edit records the result only. No git history was rewritten. Delivery
+commit/push confirmation follows below.
+
+Built: per-item submit/approve/return and FAQ withdrawal; N1 project/brand
+catalog separation change; approved-version and independent-publisher N2
+guards; the N6 unified publication queue with individual stale-item outcomes;
+source-value reapproval and old/new local staging values in history. Promotions
+keep DATA/LEGAL review. Existing drafts, versions, reviews, publication history,
+accounts, grants and templates were not rewritten by migrations.
+
+Migrations: `202611040084_content_workflow.sql` and
+`202611040085_unified_publication.sql`. Both replayed on disposable databases;
+no working-database or hosted migration was applied.
+
+| Suite | Passed | Skipped | Failed |
+|---|---:|---:|---:|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production install/import checks | 4 | 0 | 0 |
+| API | 2,336 | 11 existing | 0 |
+| DB Node checks | 95 | 0 | 0 |
+| DB SQL suites | 41 | 0 | 0 |
+| DB concurrency scenarios | 23 | 0 | 0 |
+| Local H1 Node checks | 69 | 0 | 0 |
+| Local H1 smoke checks | 10 | 0 | 0 |
+| Local H1 browser checks | 66 | 0 | 0 |
+| UI at 1280 px | 430 | 0 | 0 |
+| UI at 390 px | 430 | 0 | 0 |
+
+The 11 API skips are pre-existing opt-in checks; no test was newly skipped,
+quarantined or weakened. Six dependency deprecation warnings remain. Provider
+and broad source/browser credential scans passed with zero matches and no
+credential files read. `git diff --check` passed. Exact log/migration/source
+hashes are in `artifacts/unified-workspace/w4/full-gate-receipt.json`.
+
+Screenshots: `artifacts/unified-workspace/w4/review-light-1280.png`,
+`review-light-390.png`, `review-dark-1280.png`, `review-dark-390.png`,
+`result-light-1280.png`, `result-light-390.png`, `result-dark-1280.png`,
+`result-dark-390.png`, `h1-queue-1280.png`, `h1-queue-390.png` and the publication
+navigation/history captures in that directory. Lead visually reviewed the
+desktop queue and mobile dark review; automated viewport/theme/focus checks
+ran in the complete suites.
+
+Bounded sub-agents supplied finite browser/SQL fixtures, source inventories and
+UAT documentation. Lead reviewed their diffs and quick checks and retained all
+governance, permissions, migrations, concurrency, integration and runtime gates.
+No new W4 requirement deviation or pending question. The W3.1 prerequisite is
+now resolved by the owner's newly delivered scope. Next: W3.1, then W3.2.
+
+W9 remains an isolated uncommitted prototype: 34 small pure processing/privacy
+checks pass, including SDR colour handling, raw embedded PDF JPEG metadata and
+real preview-thumbnail removal. Four large checks and the older storage sample
+were run on an earlier draft and must be repeated on final code. Multichannel
+16-bit transforms/remaining HDR descriptions, authorization, dedup, DB/API/UI,
+operator adapters and public/provider privacy tests remain unfinished. No W9
+delivery, full-gate pass or integration is claimed at this checkpoint.

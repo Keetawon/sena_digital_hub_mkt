@@ -38,7 +38,8 @@ WORKSPACE = json.loads((ROOT / 'tests/permissions/workspace-home-routes.json').r
 ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION['routes'] + SHARED['routes'] + ACCOUNTS_UI['routes'] + PROJECT_CONTENT['routes'] + MEDIA['routes'] + UNITS['routes'] + FAQ_INTAKE['routes'] + COMMERCIAL['routes'] + FAQ_COVERAGE['routes'] + AMENITIES['routes'] + ARTICLES['routes'] + WEB['routes']
 ROLES = ('viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency_kin', 'agency_combay', 'service_consumer')
 ENTITY_WORKSPACE = json.loads((ROOT / 'tests/permissions/content-workspace-routes.json').read_text(encoding='utf-8'))
-ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes']
+WORKFLOW = json.loads((ROOT / 'tests/permissions/content-workflow-routes.json').read_text(encoding='utf-8'))
+ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes'] + WORKFLOW['routes']
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
 
@@ -118,6 +119,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     expected = {(r['method'], r['path']) for r in ROUTES}
     assert len(WORKSPACE['routes']) == 2
     assert len(ENTITY_WORKSPACE['routes']) == 9
+    assert len(WORKFLOW['routes']) == 9
     assert len(PROJECT_CONTENT['routes']) == 32
     assert len(MEDIA['routes']) == 18  # H5e adds the projects/view AI-state read.
     assert len(COMMERCIAL['routes']) == 6
@@ -127,7 +129,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     assert len(ARTICLES['routes']) == 8
     assert len(WEB['routes']) == 14
     assert len(AMENITIES['routes']) == 11
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes'])
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes']) + len(WORKFLOW['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 
@@ -164,6 +166,11 @@ def test_every_route_entry_uses_account_authority_despite_forged_claims(baseline
             # the old brand_writer dependency already enforced this entry rule.
             if entry['tab'] == 'promotions' and entry['level'] == 'edit':
                 denied = True
+        # W4 N2 keeps the historical inventory intact but replaces these
+        # entry ceilings with the existing publication special. No default
+        # template receives that special; positive assignments have runtime tests.
+        if status == 'ACTIVE' and method == 'POST' and path in {'/v1/admin/releases/publish', '/v1/admin/projects/{public_id}/withdraw', '/v1/admin/promotions/{promotion_id}/publish', '/v1/admin/brands/{public_id}/withdraw', '/v1/admin/brands/{public_id}/publish', '/v1/admin/projects/{public_id}/publish', '/v1/admin/brands/{public_id}/rollback', '/v1/admin/web/publications', '/v1/admin/promotions/{promotion_id}/withdraw', '/v1/admin/releases/{release_id}/rollback', '/v1/admin/projects/{public_id}/rollback'}:
+            denied = True
         if status == 'ACTIVE' and entry['path'].startswith('/v1/admin/knowledge/'):
             # N7 retains source V/E/A and adds actual Admin; no template is changed.
             denied = denied or db_role != 'admin'

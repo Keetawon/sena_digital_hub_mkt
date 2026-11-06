@@ -9,6 +9,7 @@ import pytest
 
 from sena_hub_api.unit_types import MarketingPrice
 from pydantic import ValidationError
+from content_workflow_fixture import decide_item
 from test_permission_baseline import disposable_operator
 from test_permission_content import call, set_bit
 from test_permission_foundations import permission_accounts, h
@@ -44,6 +45,8 @@ async def review_english(db, actor, key, owner):
 
 
 async def type_action(db, actor, key, item, decision):
+    if decision in ('return', 'withdraw'):
+        return await decide_item(db, actor, 'unit_type', {'id': item['id']}, decision)
     current = await workspace(db, actor, key)
     return await call(db, actor, "select hub.unit_type_review($1,$2,$3,$4)", key, item['public_commercial_type_id'],
                       datetime.fromisoformat(current['project']['updated_at']), decision)
@@ -65,6 +68,8 @@ async def save_price(db, actor, key, item, **changes):
 
 
 async def price_action(db, actor, key, price, decision):
+    if decision in ('return', 'withdraw'):
+        return await decide_item(db, actor, 'price', {'id': price['price_id']}, decision)
     data = await workspace(db, actor, key)
     return await call(db, actor, 'select hub.project_price_review($1,$2,$3,$4)', key, UUID(price['price_id']),
                       datetime.fromisoformat(data['project']['updated_at']), decision)

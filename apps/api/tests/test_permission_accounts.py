@@ -96,7 +96,7 @@ def test_permission_accounts_template_recopy_and_manager_flag_are_independent(pe
 
 
 @pytest.mark.parametrize('tabs', [
-    {'projects':['view','edit','approve']}, {'brands':['edit']}, {'promotions':['view','edit','approve']},
+    {'projects':['edit','approve']}, {'brands':['edit']}, {'promotions':['view','edit','approve']},
     {'releases':['view','edit']}, {'questions':['view','edit']}, {'actuals':['view','approve']},
     {'brands':['view','archive.legal_hold']}, {'unknown':['view']},
 ])
@@ -132,7 +132,7 @@ def test_permission_accounts_atomic_custom_approval_and_explicit_manager(permiss
     before = me(client, 'pending')
     path = f'/v1/admin/accounts/{ids["pending"]}/decision'
     body = {'action':'approve', 'updated_at':before['updated_at'], 'template':{'code':'admin','version':1},
-        'tabs':{'projects':['view','edit','approve']}, 'note':'หมายเหตุเฉพาะผู้ดูแล'}
+        'tabs':{'promotions':['view','edit','approve']}, 'note':'หมายเหตุเฉพาะผู้ดูแล'}
     assert client.post(path, headers=h('admin'), json=body).status_code == 422
     assert me(client, 'pending') == before
     body['tabs'] = {'projects':['view','edit'], 'finance':['view','edit']}
@@ -379,3 +379,17 @@ def test_permission_accounts_batch_blocks_concurrent_pending_team_membership(per
             await second.close()
             await observer.close()
     asyncio.run(run())
+
+
+@pytest.mark.parametrize('tab', ['projects', 'brands'])
+def test_n1_manager_explicitly_assigns_edit_and_approve_without_default_changes(permission_accounts, tab):
+    client, ids = permission_accounts
+    before_admin = me(client, 'admin')['capabilities']
+    before_publisher = me(client, 'publisher')['capabilities']
+    assert not me(client, 'editor')['capabilities']['tabs'][tab]['approve']
+    response = save(client, ids, tabs={tab: ['view', 'edit', 'approve']})
+    assert response.status_code == 200, response.text
+    assert me(client, 'editor')['capabilities']['tabs'][tab] == {'view': True, 'edit': True, 'approve': True}
+    assert me(client, 'admin')['capabilities'] == before_admin
+    assert me(client, 'publisher')['capabilities'] == before_publisher
+    assert not before_publisher['special_actions']['knowledge.publish_web']

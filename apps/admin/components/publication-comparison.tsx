@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { workflowText } from "@/lib/content-workflow";
 
 export type PublicationPayload = Record<string, unknown>;
 
@@ -53,20 +54,22 @@ function display(value: unknown, field?: string): string {
   return field === "asset_role" || field === "status" ? values[String(value)] ?? String(value) : unitValues[field ?? ""]?.[String(value)] ?? String(value);
 }
 export { display as publicationValue };
-export function PublicationComparison({ current, target, label, rollback = false, redacted = false, currentMedia, targetMedia }: {
+export function PublicationComparison({ current, target, label, rollback = false, redacted = false, currentRedacted = false, targetRedacted = false, currentMedia, targetMedia }: {
   current?: PublicationPayload; target?: PublicationPayload; label: string; rollback?: boolean; redacted?: boolean;
-  currentMedia?: ReactNode; targetMedia?: ReactNode;
+  currentMedia?: ReactNode; targetMedia?: ReactNode; currentRedacted?: boolean; targetRedacted?: boolean;
 }) {
   if (!target) return <p role="alert">โหลดข้อมูลสำหรับเปรียบเทียบไม่สำเร็จ กรุณาโหลดใหม่ก่อนเผยแพร่</p>;
-  const fields = publicationChanges(target, current);
+  const fields = publicationChanges(targetRedacted ? {} : target, currentRedacted ? undefined : current);
   return <section className="brand-comparison" aria-label={label}>
     <h3>{current ? "ตรวจการเปลี่ยนแปลงก่อนยืนยัน" : "ตัวอย่างข้อมูลที่จะเผยแพร่"}</h3>
     {redacted ? <p role="alert">สิทธิ์ปัจจุบันไม่ครอบคลุมข้อมูลบางส่วนที่ส่งออก กรุณาให้ผู้มีสิทธิ์ตรวจข้อมูลครบก่อนยืนยัน</p> : <p className="field-help">แสดงทุกช่องข้อมูลที่ส่งออก รวมภาษาไทยและภาษาอังกฤษ ช่องที่เปลี่ยนแปลงมีแถบกำกับ</p>}
     {current && !fields.some(field => field.changed) && <p>ไม่มีการเปลี่ยนแปลงจากเวอร์ชันที่เผยแพร่</p>}
+    {currentRedacted && <p role="status">{workflowText.before} · {workflowText.permission_required}</p>}
+    {targetRedacted && <p role="status">{workflowText.after} · {workflowText.permission_required}</p>}
     {fields.map(field => <div key={field.key} data-field={field.key} className={`brand-comparison-row${field.changed ? " changed" : ""}`}>
       <h4>{field.label} {field.changed && <span className="brand-change-mark">{current ? "เปลี่ยนแปลง" : "เผยแพร่ใหม่"}</span>}</h4>
-      <div className="brand-comparison-pair"><div><p className="brand-comparison-caption">ที่เผยแพร่ปัจจุบัน</p>{field.key === "assets" && currentMedia}<p className="project-comparison-value">{display(field.before, field.key)}</p></div>
-        <div><p className="brand-comparison-caption">{rollback ? "เวอร์ชันที่จะคืนค่า" : "ฉบับที่จะเผยแพร่"}</p>{field.key === "assets" && targetMedia}<p className="project-comparison-value">{display(field.after, field.key)}</p></div></div>
+      <div className="brand-comparison-pair" style={currentRedacted || targetRedacted ? { gridTemplateColumns: "minmax(0, 1fr)" } : undefined}>{!currentRedacted && <div><p className="brand-comparison-caption">ที่เผยแพร่ปัจจุบัน</p>{field.key === "assets" && currentMedia}<p className="project-comparison-value">{display(field.before, field.key)}</p></div>}
+        {!targetRedacted && <div><p className="brand-comparison-caption">{rollback ? "เวอร์ชันที่จะคืนค่า" : "ฉบับที่จะเผยแพร่"}</p>{field.key === "assets" && targetMedia}<p className="project-comparison-value">{display(field.after, field.key)}</p></div>}</div>
     </div>)}
   </section>;
 }

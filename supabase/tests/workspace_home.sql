@@ -62,6 +62,10 @@ do $$ declare p hub.projects;data jsonb;t record;model text;price uuid;progress 
  perform hub.review_project_commercial(p.public_project_id,'construction',progress,(select updated_at from hub.projects where id=p.id),'submit');
  perform hub.save_faq_question('w2_question',0,'{"topic":"design","default_level":"project","question_template":{"th":"W2 question","en":"W2 question"},"answer_kind":"text"}');
  perform hub.save_glossary('w2_term',0,'{"th":"W2 term","en":"W2 term"}');
+ perform hub.content_workflow_submit('question','{"question_key":"w2_question"}',
+  hub.content_workflow_read('question','{"question_key":"w2_question"}')->>'expected_hash');
+ perform hub.content_workflow_submit('glossary','{"term_key":"w2_term"}',
+  hub.content_workflow_read('glossary','{"term_key":"w2_term"}')->>'expected_hash');
 end $$;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 
@@ -70,9 +74,11 @@ do $$ declare tasks jsonb;begin
  assert exists(select 1 from jsonb_array_elements(tasks) t where t->>'kind'='question' and t#>>'{context,question}'='w2_question'),'Question approval missing';
  assert exists(select 1 from jsonb_array_elements(tasks) t where t->>'kind'='glossary' and t#>>'{context,term}'='w2_term'),'Glossary approval target missing';
  assert exists(select 1 from jsonb_array_elements(tasks) t where t->>'item_id'=current_setting('test.w2_progress') and t->>'version_id' is not null),'Commercial approval lacks frozen version';
+ perform set_config('app.content_review_reason','Synthetic returned work item',true);
  perform hub.unit_type_review(current_setting('test.w2_public'),current_setting('test.w2_type_public'),(select updated_at from hub.projects where id=current_setting('test.w2_project')::uuid),'return');
  perform hub.project_price_review(current_setting('test.w2_public'),current_setting('test.w2_price')::uuid,(select updated_at from hub.projects where id=current_setting('test.w2_project')::uuid),'return');
  perform hub.review_project_commercial(current_setting('test.w2_public'),'construction',current_setting('test.w2_progress')::uuid,(select updated_at from hub.projects where id=current_setting('test.w2_project')::uuid),'return');
+ perform set_config('app.content_review_reason','',true);
  perform hub.approve_faq_question('w2_question',(select revision from hub.faq_questions where question_key='w2_question'),'approved');
 end $$;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
@@ -100,14 +106,13 @@ select hub.review_project_commercial(current_setting('test.w2_public'),'construc
 reset role;
 
 -- Native publication tasks require an independent Online caller, never merely A.
-update hub.account_permission set can_view=true,can_approve=true,special_actions=array['knowledge.publish_web']
- where account_id='00000000-0000-0000-0000-000000000003' and tab='knowledge';
+-- The test harness has configured a separate, explicit View-only publisher.
 
 do $$ declare r jsonb;begin
  select value into r from hub.workspace_native_rows() value where value->>'item_id'=current_setting('test.w2_progress');
  assert r->>'state'='APPROVED' and jsonb_array_length(r->'approvers')=1,'Approved native certificate missing';
  assert not hub.workspace_native_publishable(r),'Approver acquired publish task';
- perform set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
+ perform set_config('app.actor_id',pg_temp.w4_actor('publisher')::text,true);
  select value into r from hub.workspace_native_rows() value where value->>'item_id'=current_setting('test.w2_progress');
  assert hub.workspace_native_publishable(r),'Independent source viewer lacks eligible publish task';
  assert not hub.workspace_native_publishable(r||'{"current_material":false}'),'Stale native material remained publishable';

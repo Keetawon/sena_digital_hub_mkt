@@ -111,6 +111,7 @@ layout change. This is navigation only, not a tenant or workspace framework
 | `/faq` «ติดต่อองค์กร» | Group page «ข้อมูล» |
 | «แบรนด์ที่อยู่อาศัย», «กลุ่มโครงการ» | «ข้อมูลเว็บไซต์» tree (brand pages; a group is a project page with several phases) |
 | `/releases`, `/faq?tab=publication` | «เผยแพร่» |
+| `/promotions` | Contextual Promotions tab on project and brand pages (section 4.7); standalone menu remains for cross-project campaigns, DATA and LEGAL queues and expiring-soon work |
 | «ผู้ช่วย Hub» sidebar item | Top search bar and floating button |
 
 Old URLs keep working by redirecting to the new place with the same context
@@ -142,6 +143,7 @@ confirmed grouping has its own project page.
 | «ภาพรวม» | Readiness (required and recommended), open tasks, changes since the last publication, link «ดูตัวอย่างหน้าเว็บ» |
 | «ข้อมูล» | Sections for the level: narrative and selling points, facts, buildings, location and places, facilities, features, contacts, legal and sales records, investor section, brand story and logo, corporate contacts |
 | «แบบห้อง» | Project only: the existing six-step unit-type wizard and prices |
+| «โปรโมชั่น» | Project and brand only: applicable promotions, source, scope and legacy suggestions (section 4.7); after Unit types on project and after Data on brand; hidden without Promotions View |
 | «รูปและวิดีโอ» | Media grid, filters, tagging panel, clips and tours, website images awaiting confirmation |
 | «FAQ» | Questions for this level and inherited answers (section 4.4) |
 | «ประวัติ» | Timeline of edits, submissions, approvals, returns, publications and withdrawals (section 8.4) |
@@ -156,6 +158,17 @@ also sees «แก้และอนุมัติ» (N1).
 Every missing or expiring item on «ภาพรวม», «หน้าแรก» and the FAQ coverage opens
 the exact field, question or media slot with its context selected (project,
 phase, question key, unit type, facility). No item may lead to a generic list.
+
+Owner review W3.1 (5 November 2026, received 6 November): the overview is a
+summary. Group required/recommended gap counts by tab and section; show at
+most five contextual exact-field links per expanded group, with view-all
+expanding in place. Every repeated item names its visible owning item (selling
+point, unit type or building). Keep the latest five changes plus a History link;
+explain version numbers and omit meaningless internal counters. Target about
+two desktop screens at 1280 px for many gaps, readable at 390 px without
+horizontal scroll. Preserve exact-field navigation and existing test intent;
+add a many-gap page-height regression and light/dark screenshots at both widths
+under artifacts/unified-workspace/w3.1/.
 
 ### 4.4 FAQ tab
 
@@ -193,6 +206,15 @@ phase, question key, unit type, facility). No item may lead to a generic list.
   apart from confirmed values, batch confirmation of at most 40 and per-asset
   audit. Rights approval stays separate.
 
+#### Owner decision 5 Nov 2026
+
+The owner authorizes this change. When a user accepts a website suggestion ("use" or "edit then use"), the resulting draft takes the field registry's default_ai_exposure for that field instead of internal.
+- Never broader than the registry default. A field whose default is internal stays internal.
+- The draft still needs Manager approval and an Online Marketing publication before anything reaches the website or AI. No other workflow changes.
+- Do not bulk-rewrite existing drafts, versions or imported rows in a migration. Drafts created earlier keep their stored exposure until a user saves them through the suggestion flow or an ordinary edit.
+- Show the exposure on every section and item as a small chip. When an item marked internal is submitted, approved or added to a publication, show a clear non-blocking notice that it will not appear on the website or in AI answers, with a link to change it.
+- Record the decision verbatim in docs/47 section 4.5 ("Owner decision 5 Nov 2026") and add the exposure rule to the docs/36 permission card for W3.1. Tests: default applied per field, internal stays internal, no broadening, notice shown, existing rows unchanged.
+
 ### 4.6 Home «หน้าแรก»
 
 - Greeting and the search box (section 8.2).
@@ -200,6 +222,102 @@ phase, question key, unit type, facility). No item may lead to a generic list.
   publish (Online), expiring soon, facts missing that hide answers, review due,
   questions the AI could not answer. Each opens the exact field.
 - Readiness by BUD and by brand, filtered to the account's scope.
+
+### 4.7 Promotions in context — owner decision, 5 November 2026 (W3.2)
+
+W3.2 follows the W3.1 commit. Its design and permission card precede code; it
+gets its own full gate, explicit-path commit and push. W6 implements the BUD
+rules below. The standalone Promotions menu remains available for cross-project
+campaigns, the DATA and LEGAL review queues and the expiring-soon list.
+
+Verified baseline: migration `202610220070_real_promotions.sql` extends the
+existing required primary `project_id` with at most 100 project, brand or
+commercial-type targets. `hub.promotion_target_projects` resolves the primary
+project plus targets; publication freezes `target_project_ids`. The create DTO
+still requires `project_id`. There is no owning brand without a primary project
+and no excluded-target model. Existing promotions and published payloads retain
+their exact interpretation and history.
+
+The smallest planned extension adds an optional owning brand and explicit
+excluded project targets, and permits a null primary project only for a new
+brand-owned promotion. A constraint requires exactly one primary project or
+owning brand. Existing rows keep their primary project, targets and null owning
+brand; no backfill, fake primary project or content/version rewrite is allowed.
+Project-owned creation uses the existing primary project. Brand-owned creation
+resolves the brand's projects and displays them before submission. Business and
+group ownership are outside this slice, so those pages receive no Promotions
+tab. If the implementation cannot retain these additive semantics, stop and
+report before changing the model.
+
+- The project tab includes every promotion whose resolved scope includes the
+  project, with active, DATA/LEGAL in-review, draft and expired groups. Show
+  title, source (this project, originating brand, or shared project count),
+  start/end, booking/transfer windows, banner thumbnail and rights state, and
+  audience. Retain explicit published versus draft status: an unpublished scope
+  edit must not make the existing published promotion disappear. Include a row
+  when either its current resolved draft or frozen published scope applies,
+  distinguishing those scopes rather than mislabelling draft applicability as
+  live. Scheduled and withdrawn states remain visible with their exact status.
+- Reuse the existing promotion editor and validation. Context pre-fills the
+  owning project or brand. Shared editing shows the affected-project count and
+  source. Scope resolution is authoritative on the server and rechecked during
+  submission, DATA/LEGAL review and publication; changed resolution requires
+  review of the new version. Publication freezes the resolved list minus
+  exclusions; old versions continue reading their frozen lists.
+- On a project page, the exclusion action opens the source editor with this
+  project pre-selected for exclusion. Saving creates a new draft revision and
+  invalidates its prior review; normal DATA and LEGAL review is required.
+  Neither opening nor saving changes the published website. Exclusions are
+  explicit project IDs, validated and deduplicated, never inferred.
+- Website import evidence and quarantined KM promotion candidates appear as
+  legacy suggestions with source-page link, capture date and their existing
+  likely-expired, undated and not-a-promotion flags. Creating from a suggestion
+  copies only title, benefit/summary and conditions text into the same editor.
+  Dates, money, prices, quantities and validity fields start empty and require
+  human entry. OCR numbers are never parsed into structured fields. Keep the
+  original evidence and normal audit provenance; no automatic approval,
+  publication or candidate acceptance bypass.
+- Overview counts link to the exact promotion/filter for promotions ending
+  within seven days, active promotions lacking a rights-approved banner, and
+  starting prices referring to expired or withdrawn promotions. Use the same
+  server clock and publication eligibility as the public promotion feed;
+  project-price details require Projects View.
+- Promotions keep E/A separation, independent DATA and LEGAL evidence, revision
+  checks and contributor exclusions. N1 does not apply. Online Marketing
+  publishes through the single N2/N6 queue. Promotion FAQ answers still read
+  only approved, in-date promotions.
+- W6: drafting requires at least one resolved project in the actor's scope;
+  DATA review, LEGAL review and approval require every resolved project, or
+  unrestricted scope. Legal reviewers normally receive unrestricted scope
+  through ordinary account administration; this slice grants nothing. Apply
+  object checks to lists, counts, details, references, suggestions, banners,
+  history, preview, queue, exports and assistant retrieval, including revoked
+  access and runtime deny/positive-neighbour cases.
+
+Permission card (docs/36), lead-owned; intended users are content editors,
+DATA/LEGAL reviewers and Online Marketing:
+
+| Field | W3.2 decision |
+|---|---|
+| Tab | Existing `promotions`; contextual UI adds no catalog checkbox |
+| View (V) | Promotions V for lists/detail, scope/source chips, preview/history, suggestions and banner summaries; project/brand page additionally needs its own source V; denied tabs emit no private payload or counts |
+| Edit (E) | Promotions E creates/edits drafts, exclusions and suggestion-derived text; Projects E also required for banner upload/binding/metadata commands on the actual project; existing rights-review permission remains separate |
+| Approve (A) | Promotions A for existing DATA/LEGAL review and approval commands, with existing lane identity and author separation; existing publication/withdrawal specials remain required |
+| Special actions | Reuse existing publish/withdraw/rights specials only; N2 requires source V, current APPROVED versions and independent publisher |
+| Separation | Promotions E/A remain mutually exclusive; exact revision editors and English reviewers cannot publish; DATA and LEGAL evidence retained |
+| Templates | No new default, template, account or grant changes |
+| Agency | Existing fixed external boundary; no access to internal contextual management or evidence |
+| Sensitivity | Internal drafts/import evidence; public only through existing eligible frozen snapshots; audit.change_log and existing review/version history, no second log |
+| Other tabs | Projects/Brands V for corresponding source names, scope resolution and entity page; Knowledge V for quarantined KM evidence; Projects V/E and binding authorization for banner access/writes; hidden source permits no new private reference exception |
+| Shared surfaces | Scope-aware assistant/citations/history, RAG, exports, asset bytes, workers and caches; existing public feed eligibility and FAQ promotion resolution preserved |
+| Endpoints / SQL | Extend existing GET /v1/admin/promotions, /references, /{promotion_id}; POST /promotions; PATCH /{promotion_id}; POST /{promotion_id}/review; existing publication queue/withdrawal paths. Add bounded GET /v1/admin/content/workspace/{kind}/{ref}/promotions and /promotions/suggestions and POST /v1/admin/promotions/resolve, registered exactly before runtime. SQL: public_promotions additive columns/constraints; promotion_target_projects, promotion_read, promotion_references, promotion_payload, promotion_command, promotion_readiness, promotion_banners, publication_promotion_check, public_api.promotions and public_api.read_promotions; preserve FORCE RLS publication_owner, publication_app_read and restrictive publication_permission policies; inventory every affected private helper/dispatcher before code review |
+| Rollout / verification | Local only; fresh replay plus before/after existing rows and versions byte-equivalence; scope resolve/exclusion reviewed revision; no live change before publication; suggestion structured fields empty; default deny, revoked access and allowed neighbours; overview counts; tab hidden without V; four screenshots at 1280/390 in light/dark under artifacts/unified-workspace/w3.2/; complete programme full gate before commit |
+
+Exact helper names, route signatures and migration number are frozen in the
+W3.2 implementation lease before code. Any additional entry point must first
+extend this card and the permission inventories. Migration allocation stays
+with the lead and must follow committed dependencies without renumbering a
+committed migration.
 
 ## 5. Lifecycle and governance (N1, N2, N6)
 
@@ -488,6 +606,134 @@ editors retain their existing copy unless a label above supersedes it.
 | writing_saved | บันทึกข้อเสนอเป็นฉบับร่างแล้ว |
 | writing_save_failed | บันทึกไม่สำเร็จ ข้อเสนอยังอยู่ กรุณาตรวจข้อมูลก่อนลองอีกครั้ง |
 | writing_protected_invalid | ข้อเสนอเปลี่ยนข้อความที่ต้องคงไว้ จึงไม่สามารถใช้ข้อเสนอนี้ได้ |
+| promotion_tab | โปรโมชั่น |
+| promotion_active | กำลังใช้งาน |
+| promotion_review | รอตรวจข้อมูลหรือกฎหมาย |
+| promotion_draft | ร่าง |
+| promotion_expired | หมดอายุแล้ว |
+| promotion_scheduled | ยังไม่เริ่มใช้สิทธิ์ |
+| promotion_this_project | เฉพาะโครงการนี้ |
+| promotion_from_brand | จากแบรนด์ {brand} |
+| promotion_shared | ใช้ร่วมกับ {count} โครงการ |
+| promotion_exclude_project | ไม่ใช้กับโครงการนี้ |
+| promotion_create_project | สร้างโปรโมชั่นสำหรับโครงการนี้ |
+| promotion_create_brand | สร้างโปรโมชั่นสำหรับแบรนด์นี้ |
+| promotion_shared_edit | การแก้ไขนี้มีผลกับ {count} โครงการ |
+| promotion_create_suggestion | สร้างจากข้อเสนอนี้ |
+| promotion_suggestion_source | ข้อเสนอจากเว็บเดิม |
+| promotion_source_page | ดูหน้าอ้างอิง |
+| promotion_captured_at | วันที่เก็บข้อมูล |
+| promotion_likely_expired | น่าจะหมดอายุแล้ว |
+| promotion_undated | ไม่ระบุวันที่ |
+| promotion_not_offer | ไม่ใช่โปรโมชั่น |
+| promotion_confirm_numbers | กรุณากรอกวันที่ จำนวนเงิน ราคา และช่วงใช้สิทธิ์ที่ยืนยันแล้วด้วยตนเอง |
+| promotion_ending_seven_days | โปรโมชั่นที่จะสิ้นสุดภายใน 7 วัน |
+| promotion_missing_banner_rights | โปรโมชั่นที่กำลังใช้งานแต่ยังไม่มีภาพแบนเนอร์ที่อนุมัติสิทธิ์แล้ว |
+| promotion_invalid_starting_price | ราคาเริ่มต้นอ้างอิงโปรโมชั่นที่หมดอายุหรือถอนแล้ว |
+| promotion_resolved_projects | โครงการที่ใช้โปรโมชั่นนี้ |
+| promotion_excluded_projects | โครงการที่ไม่ใช้โปรโมชั่นนี้ |
+| promotion_scope_pending | ขอบเขตฉบับร่างยังไม่เปลี่ยนข้อมูลบนเว็บไซต์ |
+| promotion_booking_window | ช่วงจอง |
+| promotion_transfer_window | ช่วงโอน |
+| promotion_banner_rights | สิทธิ์ภาพแบนเนอร์ |
+| promotion_audience | กลุ่มผู้รับสิทธิ์ |
+
+W9 upload copy (owner decision, 6 November 2026):
+
+| Key | Thai label |
+|---|---|
+| upload_original | ไฟล์ก่อนปรับขนาด |
+| upload_stored | ไฟล์ที่จัดเก็บ |
+| upload_unchanged | เก็บไฟล์โดยไม่เปลี่ยนแปลง |
+| upload_metadata_removed | ลบข้อมูลแฝงของไฟล์แล้ว |
+| upload_image_limit | ภาพไม่เกิน 30 MB ต่อไฟล์ |
+| upload_pdf_limit | PDF ไม่เกิน 50 MB ต่อไฟล์ |
+| upload_legal_limit | เอกสารกฎหมายหรือไฟล์ที่ยังไม่ระบุประเภทต้องไม่เกิน 10 MB |
+| upload_image_output_limit | ภาพหลังปรับขนาดยังเกิน 10 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง |
+| upload_pdf_output_limit | PDF หลังปรับขนาดยังเกิน 20 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง |
+| upload_pdf_reexport | ไม่สามารถลบข้อมูลแฝงของ PDF ได้อย่างปลอดภัย กรุณาส่งออก PDF ใหม่แล้วอัปโหลดอีกครั้ง |
+| file_metadata_suggestions | ข้อเสนอจากข้อมูลในไฟล์ |
+| file_metadata_source | จากข้อมูลในไฟล์ |
+| file_metadata_use | นำมาใช้ |
+| file_metadata_unconfirmed | ยังไม่ได้ยืนยัน |
+| file_metadata_credit_evidence | หลักฐานเครดิตและสิทธิ์จากไฟล์ |
+| file_metadata_stock_evidence | พบข้อมูลภาพจากคลังภาพ กรุณาตรวจสิทธิ์เป็นรายไฟล์ |
+| file_metadata_near | ถ่ายใกล้โครงการ |
+| file_metadata_far | ถ่ายห่างจากโครงการ |
+| file_metadata_location_unknown | ไม่ทราบความใกล้โครงการ |
+| file_metadata_offset_unknown | ไม่ทราบเขตเวลาที่ถ่าย |
+| file_metadata_unmapped_tags | คำสำคัญจากไฟล์ที่ยังไม่ตรงกับป้ายกำกับ |
+
+### 8.6 Upload optimization
+
+The following owner decision and addendum are recorded verbatim. The addendum
+supersedes the earlier PDF no-gain byte-retention rule for non-legal PDFs:
+metadata removal and a safe full rewrite are mandatory even without compression
+gain. Legal and unknown-category uploads retain the byte-exact existing limits.
+Implementation and the docs/36 permission card are tracked under W9 in docs/48.
+
+#### Owner decision and addendum (verbatim)
+
+Owner decision (6 Nov 2026): uploads are optimized automatically and the Hub keeps ONLY the optimized file, not the camera or designer original. The Hub serves the website and AI, not print production; print originals stay with designers and agencies. New workstream W9. It may run in parallel with W4-W6 as a bounded sub-agent that owns the upload files listed below, but merge it before W8 so the UAT covers it. Record the decision verbatim in docs/47 (new section 8.6 "Upload optimization") and log the work in docs/48.
+
+CURRENT STATE (verify)
+- apps/api/sena_hub_api/assets.py stores uploaded bytes unchanged: max 10 MB per file (MAX_BYTES), max 40 million pixels, PNG, JPEG, WebP, sanitized SVG and PDF. The stored checksum is the content address and the public asset identity. EXIF and other metadata (including GPS) are kept today.
+- prepare_upload() already transforms SVG before hashing; that is the natural place for the new step.
+- The same 10 MB limit appears in the Next proxy (apps/admin/app/api/hub/[...path]/route.ts, maxUploadBytes), in client checks (project-assets.tsx, commercial-types.tsx and other upload components), in hosted_assets.py, and in operator importers that call prepare_upload or validate_file.
+
+IMAGES
+- Accept inputs up to 30 MB and 100 million pixels. Keep the decompression-bomb guard. Process one image at a time under a lock so concurrent uploads cannot exhaust memory.
+- Apply EXIF orientation, convert to sRGB, and strip all metadata (EXIF including GPS and camera serials, XMP, IPTC, comments).
+- Resize so the long edge is at most 4096 px. Never upscale.
+- JPEG stays JPEG and WebP stays WebP, encoded at quality 85. PNG stays PNG with lossless optimization, so plans, maps, logos and line art never blur. Exception: a PNG without transparency that is still larger than 4 MB after lossless optimization is converted to JPEG at quality 90.
+- A file already within 4096 px and 2 MB keeps its dimensions; only its metadata is stripped, with no visible quality loss (for example JPEG quality "keep").
+- The stored result must not exceed 10 MB; otherwise reject with a clear Thai message. Animated images stay rejected. SVG keeps its existing sanitization.
+
+PDF
+- Accept inputs up to 50 MB and the existing page limit. Run the existing active-content checks on the input and on the output.
+- Brochures and other marketing PDFs: recompress embedded images to about 200 dpi at JPEG quality 80 with the existing pypdf library. Do not add a system binary such as Ghostscript.
+- Keep the compressed file only when it is at least 20% smaller, has the same page count and still yields extractable text where the original did. Otherwise keep the original bytes. The stored PDF must not exceed 20 MB; otherwise reject with a clear Thai message.
+- Legal documents (media category legal_document and any disclosure evidence) are never modified. They are stored byte-exact with the existing limits. The category must be known before processing; if it is not, treat the file as legal and do not modify it.
+
+IDENTITY, DEDUP AND AUDIT
+- The stored file's checksum remains the content address and public identity, exactly as today.
+- Add metadata: original checksum, size, MIME type and dimensions, and a processing record (pipeline version, max edge, quality, output format, metadata stripped, PDF images recompressed, kept original because no gain).
+- Dedup on the original checksum first, so uploading the same original again reuses the existing asset even after a library upgrade, then on the stored checksum.
+- Never reprocess, rewrite or delete existing stored objects or asset rows. Existing files keep their bytes and identities. Future operator imports use the same pipeline.
+- Thumbnails, private previews and image suggestions use the stored optimized file.
+
+UI
+- Update every upload limit consistently: client checks, Next proxy and API (30 MB images, 50 MB PDFs).
+- After upload, show a result line per file, for example original 18.4 MB 6000x4000 -> stored 1.6 MB 4096x2731, or "kept unchanged" for legal documents and PDFs with no gain. Thai labels as UTF-8 in docs/47 section 8.5.
+
+HOSTED
+- Local only. Write down in docs/48 the hosted settings the later rollout will need (web server and proxy request-body limits, API memory headroom). Do not change hosted configuration.
+
+TESTS
+Large JPEG resized to 4096 px with GPS removed and orientation applied; PNG line art stays lossless; large photographic PNG becomes JPEG; small file keeps its dimensions; WebP; animated image and decompression bomb rejected; brochure recompressed when it gains at least 20% and kept original otherwise; active PDF rejected; legal document byte-exact; dedup by original checksum; existing assets untouched; per-file result shown; limits enforced in client, proxy and API; concurrent uploads serialized. Add a storage summary to docs/48: the average stored size per image and per PDF on the test fixtures.
+
+GATES AND REPORT
+Complete the docs/36 permission card (no permission change expected; say so). Quick gates while iterating, one full gate before the W9 commit, then commit explicit paths and push. Report the commit hash, files changed, tests per suite, the storage summary and deviations. Addendum to W9 (owner, 6 Nov 2026): file metadata. Add this to docs/47 section 8.6 and implement it inside W9.
+
+1) EXTRACT USEFUL METADATA AS SUGGESTIONS, THEN STRIP
+Before stripping an image, read only the allowlisted fields below and store them as suggestions with source "file_metadata" and the pipeline version. Keep them apart from confirmed values exactly like the existing AI suggestions (the ai_suggestion column with an explicit source, or a separate suggestion object; your choice, recorded in docs/48). Never auto-confirm. Never include them in public payloads, JSON-LD, exports, RAG, assistant tools or any AI provider call. Treat all metadata text as untrusted: plain text only, length-limited, safely decoded.
+- Capture date (DateTimeOriginal or CreateDate, with its offset when present) -> suggested taken_at. A missing offset stays unknown; never substitute the upload time.
+- Creator, copyright, credit line and usage terms (EXIF Artist and Copyright, IPTC By-line, Credit and CopyrightNotice, XMP dc:creator, dc:rights and xmpRights:UsageTerms) -> suggested credit, and shown to the rights approver as evidence.
+- Stock-agency identifiers or credits (for example Shutterstock, Getty, iStock, Adobe Stock) -> suggested stock flag "present", which keeps the file out of bulk rights approval.
+- AI or render signals (IPTC DigitalSourceType trainedAlgorithmicMedia or compositeWithTrainedAlgorithmicMedia, a C2PA manifest present, or a rendering tool named in Software) -> suggested image_kind "render". Camera make and model present with none of these -> suggested "photo".
+- Caption and keywords (IPTC Caption-Abstract and Keywords, XMP dc:description and dc:subject) -> caption and tag suggestions. Tags only map to the active controlled vocabulary; anything else is shown as text, not proposed automatically.
+- GPS: only when the upload context is a project with stored coordinates, compute whether the photo was taken within 1 km of the project and store only "near", "far" or "unknown". Never store the coordinates or the distance.
+- PDF: the document Title may become a caption suggestion. Nothing else from a PDF is kept.
+
+Never extract or keep: GPS coordinates, camera or lens serial numbers, photographer contact details (email, phone, address), face or person region names, edit history, file paths, user or computer names, embedded preview thumbnails, PDF author, creator, producer and dates.
+
+UI: the media tagging panel shows these suggestions next to the AI suggestions, labelled as coming from the file, each with a "use" action. The rights review screen shows the credit and stock evidence.
+
+2) STRIP PDF METADATA EVEN WITHOUT COMPRESSION GAIN
+For every non-legal PDF, remove the document information dictionary, XMP metadata and incremental-update history (rewrite the file), even when the embedded images are not recompressed because the gain is under 20%. Content must stay identical: same page count and extractable text. If metadata cannot be removed safely, reject the upload with a clear Thai message asking the user to export the PDF again. Legal documents remain byte-exact and keep their metadata; they are private and never public.
+
+3) TESTS
+Fixtures with each metadata kind: capture date with and without offset; credit and copyright; stock identifier; DigitalSourceType AI marker; caption and keywords; GPS near, far and missing project coordinates; serial number, contact details, face regions and an embedded thumbnail that differs from the main image. Assert the suggestions, assert that none of the excluded fields survive anywhere (stored file, database, logs, API responses), assert the stored image has no metadata or embedded thumbnail, assert suggestions never reach public payloads or AI calls, assert non-legal PDFs lose their metadata with identical page count and text, and assert legal PDFs are byte-exact.
 
 ## 9. Pending questions to register
 
@@ -511,14 +757,24 @@ Add to the existing «คำถามที่รอคำตอบ» catalogue 
 | W1 | Service shell, logo, theme, collapse, overflow fix, assistant leaves the sidebar | none | none |
 | W2 | Global search, floating assistant, home greeting, «งานของฉัน» (read-only aggregation) | W1 shell merged | read-only views if needed |
 | W3 | Entity pages: level tree, page shell and tabs reusing existing sections, readiness deep links, FAQ tab (section 4.4), inline legacy suggestions and N7, media tab, history tab, Admin activity log, old URL redirects | W1 | read-only projections only |
+| W3.1 | Owner-review corrections: registry-default suggestion exposure, exposure chips/notices and compact contextual overview (sections 4.3/4.5) | W4 committed | additive function/projection changes only |
+| W3.2 | Contextual Promotions tabs, brand ownership, reviewed exclusions and legacy suggestions (section 4.7) | W3.1 committed | additive only, lead allocated |
 | W4 | Governance: N1, per-item approval, return per item, FAQ withdraw, N2 publisher rules, N6 single queue | none for backend; UI after W3 | yes |
 | W5 | Business level (N3) | W4 migrations merged | yes |
 | W6 | BUD scoping (N4), daily read-only BU sync (section 7.1) and account scope screen | W4 merged | yes |
 | W7 | AI writing aid (N5): backend with stub provider, field-registry flag, UI buttons | backend none; UI after W3 | small |
+| W9 | Upload optimization, safe file metadata suggestions and private legal retention (section 8.6) | independent bounded preparation; shared upload adapters after their active owner; before W8 | additive only, lead allocated |
 | W8 | Thai UAT pack `docs/49-uat-unified-workspace-th.md` covering every flow in this document | all | none |
 
-Order of merges into `main`: W1 → (W2, W3) → W4 → W5 → W6 → W7 UI → W8.
-Backend work for W4 and W7 may proceed in parallel with W1–W3.
+Order of merges into `main` (owner clarification received 6 November 2026):
+W1 → W2 → W3 → W4 → W3.1 → W3.2 → W5 → W6 → W7 → W9 → W8.
+Finish the current W4 full gate and commit before W3.1 implementation. Bounded
+W9 preparation may run in parallel; shared upload UI/API adapters wait for the
+active owner. W8 and the final programme gate remain last.
+
+After a workstream is merged, remove its finished worktrees with
+`git worktree remove` and merged branches with `git branch -d`; never force or
+delete unmerged work. List remaining worktrees in docs/48.
 
 ### 10.2 Parallel work rules
 
@@ -550,8 +806,8 @@ Backend work for W4 and W7 may proceed in parallel with W1–W3.
   and a credential scan of changed files and the browser bundle.
 - After a workstream passes its full gate, commit explicit paths to `main` and
   push to `origin/main`, then continue without waiting unless a STOP applies.
-  No pull requests unless the owner asks. No AI model or vendor names in
-  commit messages.
+  No pull requests unless the owner asks. No AI model or vendor model names in docs, logs, commit messages or
+  code comments; describe delegation only as bounded sub-agents.
 - Log each workstream in `docs/48-unified-workspace-log.md`: commit hash,
   migrations, what was built, tests per suite (passed/skipped/failed),
   screenshots under `artifacts/`, deviations, new pending questions, next step.

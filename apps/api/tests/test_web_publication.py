@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 import asyncpg
 import pytest
 
+from content_workflow_fixture import approve_entity, approve_item, decide_item, prepare_web, publication_persona, load_sql_fixture, confirm_demo_media, complete_demo_content
 from test_articles import content, review_english
 from test_permission_baseline import disposable_operator, ROOT
 from test_permission_content import call, set_bit
@@ -41,26 +42,29 @@ def test_web_publication_article_lifecycle_and_no_implicit_special(permission_ac
             a, body = await approved_article(db, ids)
             key = 'article:' + body['slug']
             await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', key, config())
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Synthetic review')
+            batch = await prepare_web(db, ids, 'Synthetic review')
             preview = await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
             assert preview['pages'][0]['issues'] == []
             assert preview['pages'][0]['preview']['content']['article']['title'] == 'Synthetic article'
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
-            await set_bit(ids['publisher'], 'knowledge', can_approve=True, special_actions=['knowledge.publish_web'])
-            result = await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            assert await call(db, ids['viewer'], "select hub.can('knowledge','view') and not hub.can('knowledge','approve') and hub.can_special('knowledge','knowledge.publish_web')")
+            cursor = (await call(db, ids['service_consumer'], 'select hub.web_public_changes(0)'))['next_cursor']
+            result = await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
             assert result['state'] == 'PUBLISHED'
             public = await call(db, ids['service_consumer'], "select hub.web_public_page($1,'en')", key)
             assert public['content']['article']['title'] == 'Synthetic article'
             assert len(public['content_sha256']) == 64
-            changes = await call(db, ids['service_consumer'], 'select hub.web_public_changes(0)')
+            changes = await call(db, ids['service_consumer'], 'select hub.web_public_changes($1)', cursor)
             assert len(changes['items']) == 2
+            assert {item['locale'] for item in changes['items']} == {'th', 'en'}
+            assert all(item['page_key'] == key and item['operation'] == 'publish' for item in changes['items'])
             history = await call(db, ids['viewer'], 'select hub.web_history($1)', key)
             version = UUID(history[0]['id'])
-            await call(db, ids['publisher'], 'select hub.web_pointer($1,$2,null,$3)', key, version, 'Synthetic withdrawal')
+            await call(db, ids['viewer'], 'select hub.web_pointer($1,$2,null,$3)', key, version, 'Synthetic withdrawal')
             with pytest.raises(asyncpg.NoDataFoundError):
                 await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", key)
-            await call(db, ids['publisher'], 'select hub.web_pointer($1,null,$2,$3)', key, version, 'Synthetic rollback')
+            await call(db, ids['viewer'], 'select hub.web_pointer($1,null,$2,$3)', key, version, 'Synthetic rollback')
             assert (await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", key))['content']['article']
         finally:
             await transaction.rollback()
@@ -81,22 +85,29 @@ def test_web_publication_stale_batch_atomic_four_eyes_and_revocation(permission_
             keys = ['article:' + first['slug'], 'article:' + second['slug']]
             for key in keys:
                 await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', key, config())
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Atomic review')
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
+            batch = await prepare_web(db, ids, 'Atomic review')
+            await publication_persona(ids, operator=db)
             await call(db, ids['editor'], 'select hub.web_page_save($1,1,$2)', keys[1], config('/changed'))
-            with pytest.raises(asyncpg.SerializationError):
-                await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
-            assert all(not p['published_version_id'] for p in (await call(db, ids['viewer'], 'select hub.web_workspace()'))['pages'] if p['page_key'] in keys)
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Fresh review')
-            await set_bit(ids['editor'], 'knowledge', can_edit=False, can_approve=True, special_actions=['knowledge.publish_web'])
+            partial = await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            assert partial['state'] == 'PARTIAL' and partial['page_count'] == 1
+            pages = {p['page_key']: p for p in (await call(db, ids['viewer'], 'select hub.web_workspace()'))['pages'] if p['page_key'] in keys}
+            assert pages[keys[0]]['published_version_id'] and not pages[keys[1]]['published_version_id']
+            retained_version = pages[keys[0]]['published_version_id']
+            assert any(n.get('code') == 'page_config_changed_or_unapproved' for p in partial['outcomes'] for n in p.get('items', []))
+            batch = await prepare_web(db, ids, 'Fresh review')
+            await set_bit(ids['editor'], 'knowledge', can_edit=False, can_approve=True, special_actions=['knowledge.publish_web'], connection=db, manager=ids['admin'])
             assert not (await call(db, ids['editor'], "select hub.web_publication_read($1,'th')", UUID(batch['id'])))['can_publish']
+            conflict = await call(db, ids['editor'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            assert conflict['state'] == 'RETURNED' and conflict['page_count'] == 0
+            batch = await prepare_web(db, ids, 'Fresh independent review after contributor denial')
+            await set_bit(ids['viewer'], 'knowledge', special_actions=[], connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await call(db, ids['editor'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
-            await set_bit(ids['publisher'], 'knowledge', special_actions=[])
-            with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
-            assert (await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest']))['page_count'] == 2
+                await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            await publication_persona(ids, operator=db)
+            assert (await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest']))['page_count'] == 1
+            unchanged_page = next(page for page in (await call(db, ids['viewer'], 'select hub.web_workspace()'))['pages'] if page['page_key'] == keys[0])
+            assert unchanged_page['published_version_id'] == retained_version
+            assert len(await call(db, ids['viewer'], 'select hub.web_history($1)', keys[0])) == 1
             for key in keys:
                 output = await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", key)
                 assert not re.search(r'[0-9a-f]{8}-[0-9a-f-]{27}', json.dumps(output))
@@ -117,9 +128,9 @@ def test_web_publication_http_auth_cache_and_no_draft_substitution(permission_ac
             article, body = await approved_article(db, ids)
             key = 'article:' + body['slug']
             await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', key, config())
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'HTTP review')
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
-            await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            batch = await prepare_web(db, ids, 'HTTP review')
+            await publication_persona(ids, operator=db)
+            await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
             return key, article, body, batch
         finally:
             await db.close()
@@ -146,7 +157,7 @@ def test_web_publication_http_auth_cache_and_no_draft_substitution(permission_ac
         try:
             data = await call(db, ids['viewer'], 'select hub.article_read($1)', UUID(article['id']))
             if withdraw:
-                await call(db, ids['publisher'], "select hub.article_review($1,$2,'withdraw')", UUID(article['id']), data['revision'])
+                await decide_item(db, ids['publisher'], 'article', {'id': article['id']}, 'withdraw')
             else:
                 await call(db, ids['editor'], 'select hub.article_save($1,$2,$3)', UUID(article['id']), data['revision'], {**body, 'title': {'th': 'Unreviewed replacement'}})
         finally:
@@ -162,10 +173,12 @@ def test_web_publication_http_auth_cache_and_no_draft_substitution(permission_ac
     # Restore this synthetic source's approval so later composition tests do not
     # inherit an unrelated withdrawn source. Never change a frozen body.
     async def restore():
-        db = await disposable_operator()
+        db = await committed_runtime()
+        await db.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
         try:
-            await db.execute("update hub.article_versions set state='APPROVED' where id=$1", UUID(article['version_id']))
-            await db.execute('update hub.articles set approved_version_id=$2 where id=$1', UUID(article['id']), UUID(article['version_id']))
+            current = await review_english(db, ids, article['id'])
+            await call(db, ids['editor'], 'select hub.article_submit($1,$2)', UUID(article['id']), current['revision'])
+            await decide_item(db, ids['publisher'], 'article', {'id': article['id']}, 'approve')
         finally:
             await db.close()
     run(restore())
@@ -203,7 +216,7 @@ def test_web_publication_project_and_brand_composition_compile(permission_accoun
             brands = await call(db, ids['viewer'], 'select jsonb_agg(public_brand_id) from hub.brands where deleted_at is null')
             for brand in brands[:1]:
                 await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', 'brand:' + brand, config())
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Synthetic readiness')
+            batch = await prepare_web(db, ids, 'Synthetic readiness')
             preview = await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
             assert len(preview['pages']) == min(2, len(projects)) + min(1, len(brands))
             brand_page = next(p for p in preview['pages'] if p['page_key'].startswith('brand:'))
@@ -218,13 +231,14 @@ def test_web_publication_read_filters_sql():
     async def check():
         db = await disposable_operator()
         try:
+            await load_sql_fixture(db)
             await db.execute((ROOT / 'supabase/tests/web_publication.sql').read_text(encoding='utf-8'))
         finally:
             await db.close()
     run(check())
 
 
-def test_web_publication_publishes_submitted_narrative_and_corporate_faq(permission_accounts):
+def test_web_publication_publishes_only_approved_narrative_and_corporate_faq(permission_accounts):
     _, ids = permission_accounts
 
     async def check():
@@ -244,10 +258,14 @@ def test_web_publication_publishes_submitted_narrative_and_corporate_faq(permiss
             await call(db, ids['editor'], 'select hub.submit_faq($1,$2)', UUID(faq['id']), current['revision'])
             revision = await call(db, ids['editor'], "select revision from hub.content_sections where scope_type='corporate' and scope_id='sena' and section_key='section.corporate_intro'")
             await call(db, ids['editor'], "select hub.submit_content_section('corporate','sena','section.corporate_intro',$1)", revision)
+            section_id = await call(db, ids['editor'], "select id from hub.content_sections where scope_type='corporate' and scope_id='sena' and section_key='section.corporate_intro'")
+            assert (await call(db, ids['viewer'], 'select hub.content_workflow_read($1,$2)', 'faq', {'id': faq['id']}))['state'] == 'IN_REVIEW'
+            await decide_item(db, ids['publisher'], 'faq', {'id': faq['id']}, 'approve')
+            await decide_item(db, ids['publisher'], 'section', {'id': str(section_id)}, 'approve')
             await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', 'corporate:faq', config('/corporate/faq'))
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Corporate publication review')
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
-            await call(db, ids['publisher'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
+            batch = await prepare_web(db, ids, 'Corporate publication review')
+            await publication_persona(ids, operator=db)
+            await call(db, ids['viewer'], 'select hub.web_publish($1,$2)', UUID(batch['id']), batch['digest'])
             public = await call(db, ids['service_consumer'], "select hub.web_public_page('corporate:faq','en')")
             assert any(item['question_key'] == question for item in public['faq'])
             assert public['content']['sections'][0]['body'] == 'Synthetic corporate introduction'
@@ -272,9 +290,9 @@ def test_web_publication_concurrent_publish_has_one_winner(permission_accounts):
             _, body = await approved_article(db, ids)
             key = 'article:' + body['slug']
             await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', key, config())
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Concurrent publication')
-            for role in ('publisher', 'second'):
-                await set_bit(ids[role], 'knowledge', can_edit=False, can_approve=True, special_actions=['knowledge.publish_web'])
+            batch = await prepare_web(db, ids, 'Concurrent publication')
+            for role in ('viewer', 'second'):
+                await publication_persona(ids, role, operator=db)
 
             async def publish(role):
                 connection = await connect()
@@ -284,7 +302,7 @@ def test_web_publication_concurrent_publish_has_one_winner(permission_accounts):
                     return 'stale'
                 finally:
                     await connection.close()
-            results = await asyncio.gather(publish('publisher'), publish('second'))
+            results = await asyncio.gather(publish('viewer'), publish('second'))
             assert sum(result == 'stale' for result in results) == 1
             assert sum(isinstance(result, dict) and result['state'] == 'PUBLISHED' for result in results) == 1
             assert len(await call(db, ids['viewer'], 'select hub.web_history($1)', key)) == 1
@@ -303,6 +321,7 @@ def test_web_publication_composes_reviewed_types_prices_commercial_and_facility_
         db = await runtime()
         try:
             public_id = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
+            await confirm_demo_media(db, ids)
             project = await call(db, ids['editor'], 'select hub.project_detail($1)', public_id)
             unit = await create_type(db, ids['editor'], project)
             await unit_english(db, ids['editor'], public_id, unit['id'])
@@ -320,16 +339,28 @@ def test_web_publication_composes_reviewed_types_prices_commercial_and_facility_
             await call(db, ids['editor'], "select hub.c4_facility_save($1,'lobby',0,$2)", public_id, {'status': 'present', 'display_name': {'th': 'Synthetic lobby'}})
             asset = await upload(db, ids['editor'])
             asset = await call(db, ids['editor'], 'select hub.media_save_asset($1,$2,0,$3)', public_id, UUID(asset['id']), {'media_category': 'facility', 'metadata_state': 'confirmed', 'marketing_publication': True, 'ai_exposure': 'open', 'caption': {'th': 'Synthetic lobby photo'}, 'alt_text': {'th': 'Synthetic lobby'}})
-            await call(db, ids['editor'], 'select hub.media_link_save($1,$2,0,$3)', public_id, uuid4(), {'asset_id': asset['id'], 'target_type': 'facility', 'target_key': 'lobby', 'ai_exposure': 'open', 'is_primary': True})
+            media_link = await call(db, ids['editor'], 'select hub.media_link_save($1,$2,0,$3)', public_id, uuid4(), {'asset_id': asset['id'], 'target_type': 'facility', 'target_key': 'lobby', 'ai_exposure': 'open', 'is_primary': True})
             asset = await call(db, ids['publisher'], 'select hub.asset_detail($1)', UUID(asset['id']))
             await call(db, ids['publisher'], "select hub.review_asset($1,$2,'approved','Synthetic rights',null,null,'Synthetic review')", UUID(asset['id']), datetime.fromisoformat(asset['updated_at']))
-            await call(db, ids['editor'], 'select hub.media_clip_save($1,$2,0,$3)', public_id, uuid4(), {'provider': 'youtube', 'kind': 'review', 'url': 'https://www.youtube.com/watch?v=synthetic', 'title': {'th': 'Synthetic clip'}, 'owner_type': 'sena_owned', 'ai_exposure': 'open', 'targets': []})
+            clip = await call(db, ids['editor'], 'select hub.media_clip_save($1,$2,0,$3)', public_id, uuid4(), {'provider': 'youtube', 'kind': 'review', 'url': 'https://www.youtube.com/watch?v=synthetic', 'title': {'th': 'Synthetic clip'}, 'owner_type': 'sena_owned', 'ai_exposure': 'open', 'targets': []})
+            await complete_demo_content(db, ids, public_id)
+            await approve_entity(db, ids, 'project', project['id'])
+            for kind, identity in [('asset', {'id': asset['id']}), ('asset_context', {'id': media_link['id']}), ('media_link', {'id': clip['id']})]:
+                await approve_item(db, ids, kind, identity)
             await call(db, ids['editor'], 'select hub.web_page_save($1,0,$2)', 'project:synthetic-rich', config(project_ids=[public_id]))
-            batch = await call(db, ids['editor'], 'select hub.web_prepare($1)', 'Rich source review')
+            batch = await prepare_web(db, ids, 'Rich source review')
             data = await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
-            await set_bit(ids['publisher'], 'projects', can_approve=False)
-            assert not (await call(db, ids['publisher'], "select hub.web_publication_read($1,'th')", UUID(batch['id'])))['can_publish']
+            await publication_persona(ids, operator=db)
+            await set_bit(ids['viewer'], 'projects', can_approve=True, connection=db, manager=ids['admin'])
+            with_approve = await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
+            await set_bit(ids['viewer'], 'projects', can_approve=False, connection=db, manager=ids['admin'])
+            without_approve = await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
+            assert with_approve['can_publish'] is True, with_approve
+            assert without_approve['can_publish'] is True, without_approve
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
+            await set_bit(ids['viewer'], 'projects', can_view=True, connection=db, manager=ids['admin'])
             result = next(p for p in data['pages'] if p['page_key'] == 'project:synthetic-rich')['preview']['content']['phases'][0]
             assert result['unit_types'] and result['prices'] and result['disclosures'] and result['sales_terms'] and result['programmes'] and result['construction']
             from sena_hub_api.web_publication import reviewed_preview

@@ -1,6 +1,7 @@
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { workflowControl, workflowText, submitItem, approveItem } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
 async function persona(page: Page, role: string) { expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy(); }
@@ -80,13 +81,12 @@ for (const width of [1280, 390]) {
     await expect(wizard.getByRole('button', { name: 'เพิ่มคลิปหรือทัวร์', exact: true })).toBeVisible();
     await wizard.getByRole('button', { name: '6. ราคาและส่งตรวจ', exact: true }).click();
     await expect(wizard.getByRole('option', { name: /ราคา REM อัตโนมัติ/ })).toBeDisabled();
-    await expect(wizard.getByRole('button', { name: 'ส่งแบบขายให้ตรวจ', exact: true })).toBeEnabled();
-    await wizard.getByRole('button', { name: 'ส่งแบบขายให้ตรวจ', exact: true }).click();
+    await expect(workflowControl(wizard, 'unit_type').getByRole('button', { name: workflowText.submit, exact: true })).toBeEnabled();
+    await submitItem(wizard, 'unit_type');
     await expect(wizard.getByText('ฉบับที่ส่งตรวจแก้ไขไม่ได้ ผู้อนุมัติส่งกลับก่อนเริ่มแก้ไข')).toBeVisible();
     await persona(page, 'publisher'); await open(page, project.public_project_id, name);
     await wizard.getByRole('button', { name: '6. ราคาและส่งตรวจ', exact: true }).click();
-    await wizard.getByRole('button', { name: 'อนุมัติแบบขายฉบับนี้', exact: true }).click();
-    await expect(wizard.getByText('อนุมัติฉบับนี้แล้ว รอการจัดหน้าและเผยแพร่เว็บไซต์', { exact: true })).toBeVisible();
+    await approveItem(page, wizard, 'unit_type');
     await wizard.getByText('ประวัติแบบขาย 1 ฉบับ', { exact: true }).click();
     await expect(wizard.locator('.unit-snapshot')).toContainText('ประเภทแบบ');
     await expect(wizard.locator('.unit-snapshot')).toContainText('บ้านเดี่ยว');
@@ -122,10 +122,10 @@ for (const width of [1280, 390]) {
     expect(price.valid_to).toBe(end.toISOString().slice(0, 10)); expect(price.ai_exposure).toBe('web_only');
     await reviewEnglish(page, base, price.id); await open(page, project.public_project_id, name);
     await wizard.getByRole('button', { name: '6. ราคาและส่งตรวจ', exact: true }).click();
-    await wizard.getByRole('button', { name: 'ส่งราคาให้ตรวจ', exact: true }).click();
+    await submitItem(wizard, 'price');
     await expect(wizard.getByRole('button', { name: 'แก้ไขราคา', exact: true })).toHaveCount(0);
     await persona(page, 'publisher'); await open(page, project.public_project_id, name); await wizard.getByRole('button', { name: '6. ราคาและส่งตรวจ', exact: true }).click();
-    await wizard.getByRole('button', { name: 'อนุมัติราคา', exact: true }).click(); await expect(wizard.getByRole('button', { name: 'ถอนราคา', exact: true })).toBeVisible();
+    await approveItem(page, wizard, 'price'); await expect(wizard.getByRole('button', { name: 'ถอนราคา', exact: true })).toBeVisible();
     await persona(page, 'viewer'); await open(page, project.public_project_id, name); await wizard.getByRole('button', { name: '6. ราคาและส่งตรวจ', exact: true }).click();
     await expect(wizard.getByRole('button', { name: 'เพิ่มราคา Marketing', exact: true })).toHaveCount(0);
     await expect(wizard.getByRole('button', { name: 'ถอนราคา', exact: true })).toHaveCount(0); await fits(page);

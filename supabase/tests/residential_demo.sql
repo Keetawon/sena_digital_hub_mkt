@@ -27,7 +27,10 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic test rights',null,null,'Synthetic test fixture')
 from hub.assets where id in(current_setting('test.residential_hero')::uuid,current_setting('test.residential_thumbnail')::uuid);
-select set_config('test.residential_brand_version',hub.publish_brand(current_setting('test.residential_brand')::uuid,'Synthetic fixture')::text,true);
+select pg_temp.w4_confirm_media(current_setting('test.residential_hero')::uuid,'exterior','{"th":"Synthetic review intake"}');
+select pg_temp.w4_confirm_media(current_setting('test.residential_thumbnail')::uuid,'promotion_ad',alt_text)
+from hub.brand_assets where brand_id=current_setting('test.residential_brand')::uuid and asset_id=current_setting('test.residential_thumbnail')::uuid and deleted_at is null;
+select set_config('test.residential_brand_version',pg_temp.w4_publish('brand',current_setting('test.residential_brand')::uuid,'Synthetic fixture')::text,true);
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.residential_project',hub.create_project_from_rem('SQL-RESIDENTIAL-21')::text,true);
@@ -45,7 +48,7 @@ select hub.bind_project_asset(id,current_setting('test.residential_thumbnail')::
 from hub.projects where id=current_setting('test.residential_project')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.residential_project_version',hub.publish_project(current_setting('test.residential_project')::uuid,'Synthetic fixture')::text,true);
+select set_config('test.residential_project_version',pg_temp.w4_publish('project',current_setting('test.residential_project')::uuid,'Synthetic fixture')::text,true);
 reset role;
 
 -- Every new table has forced RLS; ordinary editorial roles get no source editing.
@@ -121,12 +124,12 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;bad jsonb;kind text;begin
  foreach bad in array array[null::jsonb,'null'::jsonb,'{}'::jsonb,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":""}'::jsonb] loop
- begin perform hub.promotion_command('publish',p,bad);assert false,'Malformed publish accepted';exception when invalid_parameter_value or check_violation or not_null_violation or serialization_failure then null;end;
+ begin perform pg_temp.w4_promotion('publish',p,bad);assert false,'Malformed publish accepted';exception when invalid_parameter_value or check_violation or not_null_violation or serialization_failure then null;end;
  end loop;
  perform hub.promotion_command('review',p,'{"expected_revision":1,"review_type":"DATA","decision":"APPROVED","evidence":"Synthetic data evidence","change_reason":"Test review"}');
- begin perform hub.promotion_command('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Legal missing"}');assert false,'Missing legal approval published';exception when check_violation then null;end;
+ begin perform pg_temp.w4_promotion('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Legal missing"}');assert false,'Missing legal approval published';exception when check_violation then null;end;
  perform hub.promotion_command('review',p,'{"expected_revision":1,"review_type":"LEGAL","decision":"APPROVED","evidence":"Synthetic legal evidence","change_reason":"Test review"}');
- perform hub.promotion_command('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Initial test publication"}');
+ perform pg_temp.w4_promotion('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Initial test publication"}');
  perform set_config('test.residential_first_version',hub.promotion_read(p)->>'published_version_id',true);
  perform set_config('test.residential_code',hub.promotion_read(p)->>'code',true);
 end $$;
@@ -139,16 +142,23 @@ do $$ begin
 end $$;
 reset role;
 
--- Immutable expired snapshot fixture proves read-time [start,end), without a scheduler.
-do $$ declare expired uuid;p uuid:=current_setting('test.residential_promo')::uuid;begin
- insert into hub.promotion_versions(promotion_id,version_no,draft_revision,payload,published_by,change_reason)
- select p,version_no+1,draft_revision,jsonb_set(payload,'{ends_at}',to_jsonb(now())),'00000000-0000-0000-0000-000000000002','Synthetic exact end boundary'
- from hub.promotion_versions where id=current_setting('test.residential_first_version')::uuid returning id into expired;
- update hub.public_promotions set published_version_id=expired where id=p;
- assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'End boundary remained eligible';
- update hub.public_promotions set published_version_id=current_setting('test.residential_first_version')::uuid where id=p;
- begin update hub.promotion_versions set payload='{}' where id=expired;assert false,'Published payload mutable';exception when check_violation then null;end;
- begin delete from hub.promotion_versions where id=expired;assert false,'Published version deletable';exception when check_violation then null;end;
+-- Exercise the actual public view at the genuine published end timestamp. Only
+-- its clock expression changes in this operator-only temporary read projection.
+-- The nested project view has no fixture expiry window; its normal checks remain.
+do $$ declare published uuid:=current_setting('test.residential_first_version')::uuid;
+ definition text;at_end timestamptz;clock_count integer;begin
+ select (payload->>'ends_at')::timestamptz into strict at_end from hub.promotion_versions where id=published;
+ definition:=pg_get_viewdef('public_api.promotions'::regclass,true);
+ clock_count:=(length(definition)-length(replace(definition,'now()','')))/length('now()');
+ assert clock_count=6 and strpos(definition,'promotion_approvals_ok')>0 and strpos(definition,'ends_at')>0,
+  'Public promotion boundary definition changed; review the fake-clock projection';
+ assert not exists(select 1 from hub.projects where id=current_setting('test.residential_project')::uuid and effective_to is not null),
+  'Fixture project expiry would confound the promotion boundary';
+ execute 'create temp view w4_promotions_at_end as '||replace(definition,'now()',quote_literal(at_end)||'::timestamptz');
+ assert not exists(select 1 from pg_temp.w4_promotions_at_end where code=current_setting('test.residential_code')),'End boundary remained eligible';
+ assert exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Fake clock changed live public output';
+ begin update hub.promotion_versions set payload='{}' where id=published;assert false,'Published payload mutable';exception when check_violation then null;end;
+ begin delete from hub.promotion_versions where id=published;assert false,'Published version deletable';exception when check_violation then null;end;
  update staging.source_offers set source_active=false where source_offer_key='SYNTHETIC:SQL:000021';
  assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Inactive source remained eligible';
  update staging.source_offers set source_active=true,source_deleted=true where source_offer_key='SYNTHETIC:SQL:000021';
@@ -172,33 +182,40 @@ set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin assert(select payload#>>'{title,th}'='โปรโมชั่นสังเคราะห์' from public_api.read_promotions() where code=current_setting('test.residential_code')),'Draft changed published snapshot';end $$;
 
--- A mixed set fails atomically across brand, project (with model draft), and promotions.
+-- A mixed set rejects only the unapproved item; approved neighbors publish independently.
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;members jsonb;before_count integer;begin
+do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;members jsonb;before_count integer;partial jsonb;begin
  foreach kind in array array['DATA','LEGAL'] loop
  perform hub.promotion_command('review',p,jsonb_build_object('expected_revision',2,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'));
  end loop;
+ perform pg_temp.w4_approve_entity('project',current_setting('test.residential_project')::uuid);
  select jsonb_agg(jsonb_build_object('entity_type',e->'entity_type','entity_id',e->'entity_id','expected_updated_at',e->'expected_updated_at','expected_revision',e->'expected_revision','expected_published_version_id',e->'expected_published_version_id')) into members from jsonb_array_elements(hub.release_candidates(false)->'items') e
  where(e->>'entity_type'='promotion' and e->>'entity_id' in(current_setting('test.residential_promo'),current_setting('test.residential_second')))
  or(e->>'entity_type'='brand' and e->>'entity_id'=current_setting('test.residential_brand'))
  or(e->>'entity_type'='project' and e->>'entity_id'=current_setting('test.residential_project'));
  assert jsonb_array_length(members)=4,'Mixed release candidate set incomplete';
  before_count:=(hub.release_read()->>'total')::integer;
- begin perform hub.release_publish(members,'Second member lacks approvals',false);assert false,'Invalid release published';exception when check_violation then null;end;
- assert hub.promotion_read(p)->>'published_version_id'=current_setting('test.residential_first_version'),'Partial release changed first pointer';
- assert hub.promotion_read(current_setting('test.residential_second')::uuid)->>'published_version_id' is null,'Partial release changed second pointer';
- assert(select published_version_id::text=current_setting('test.residential_brand_version') from hub.brands where id=current_setting('test.residential_brand')::uuid),'Partial release changed brand pointer';
- assert(select published_version_id::text=current_setting('test.residential_project_version') from hub.projects where id=current_setting('test.residential_project')::uuid),'Partial release changed project pointer';
+ partial:=pg_temp.w4_release(members,'Second member lacks approvals',false);
+ assert jsonb_array_length(partial->'rejected')=1 and partial#>>'{rejected,0,entity_id}'=current_setting('test.residential_second'),'Rejection was not item-local';
+ assert hub.promotion_read(p)->>'published_version_id'<>current_setting('test.residential_first_version'),'Allowed promotion neighbor did not publish';
+ assert hub.promotion_read(current_setting('test.residential_second')::uuid)->>'published_version_id' is null,'Rejected promotion changed its pointer';
+ assert(select published_version_id::text<>current_setting('test.residential_brand_version') from hub.brands where id=current_setting('test.residential_brand')::uuid),'Allowed brand neighbor did not publish';
+ assert(select published_version_id::text<>current_setting('test.residential_project_version') from hub.projects where id=current_setting('test.residential_project')::uuid),'Allowed project neighbor did not publish';
  assert(select payload#>>'{models,0,bedrooms}'='2' from hub.entity_versions where id=current_setting('test.residential_project_version')::uuid),'Model draft leaked into previous snapshot';
- assert(hub.release_read()->>'total')::integer=before_count,'Failed release left history';
+ assert(hub.release_read()->>'total')::integer=before_count+1,'Partial publication history missing';
+ perform pg_temp.w4_release_rollback((partial->>'id')::uuid,'Restore allowed neighbors before the complete-set test');
  foreach kind in array array['DATA','LEGAL'] loop
  perform hub.promotion_command('review',current_setting('test.residential_second')::uuid,jsonb_build_object('expected_revision',1,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'));
  end loop;
- perform set_config('test.residential_release',hub.release_publish(members,'Complete synthetic set',false)->>'id',true);
+ select jsonb_agg(jsonb_build_object('entity_type',e->'entity_type','entity_id',e->'entity_id','expected_updated_at',e->'expected_updated_at','expected_revision',e->'expected_revision','expected_published_version_id',e->'expected_published_version_id')) into members from jsonb_array_elements(hub.release_candidates(false)->'items') e
+ where(e->>'entity_type'='promotion' and e->>'entity_id' in(current_setting('test.residential_promo'),current_setting('test.residential_second')))
+ or(e->>'entity_type'='brand' and e->>'entity_id'=current_setting('test.residential_brand'))
+ or(e->>'entity_type'='project' and e->>'entity_id'=current_setting('test.residential_project'));
+ perform set_config('test.residential_release',pg_temp.w4_release(members,'Complete synthetic set',false)->>'id',true);
  assert jsonb_array_length(hub.release_read(current_setting('test.residential_release')::uuid)->'members')=4,'Release did not record the complete set';
  assert(select payload#>>'{models,0,bedrooms}'='3' from hub.entity_versions where id=(select published_version_id from hub.projects where id=current_setting('test.residential_project')::uuid)),'Project release omitted model draft';
- perform hub.release_rollback(current_setting('test.residential_release')::uuid,'Restore complete previous set');
+ perform pg_temp.w4_release_rollback(current_setting('test.residential_release')::uuid,'Restore complete previous set');
  assert hub.promotion_read(p)->>'published_version_id'=current_setting('test.residential_first_version'),'Rollback did not restore first';
  assert hub.promotion_read(current_setting('test.residential_second')::uuid)->>'published_version_id' is null,'Rollback did not withdraw previously unpublished member';
  assert(select published_version_id::text=current_setting('test.residential_brand_version') from hub.brands where id=current_setting('test.residential_brand')::uuid),'Rollback did not restore brand';
@@ -209,17 +226,18 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;
  where(e->>'entity_type'='promotion' and e->>'entity_id' in(current_setting('test.residential_promo'),current_setting('test.residential_second')))
  or(e->>'entity_type'='brand' and e->>'entity_id'=current_setting('test.residential_brand'))
  or(e->>'entity_type'='project' and e->>'entity_id'=current_setting('test.residential_project'));
- perform set_config('test.residential_release',hub.release_publish(members,'Second complete set',false)->>'id',true);
- perform hub.promotion_command('publish',p,jsonb_build_object('expected_revision',2,'expected_published_version_id',hub.promotion_read(p)->'published_version_id','change_reason','Independent newer publication'));
+ perform set_config('test.residential_release',pg_temp.w4_release(members,'Second complete set',false)->>'id',true);
+ perform pg_temp.w4_promotion('publish',p,jsonb_build_object('expected_revision',2,'expected_published_version_id',hub.promotion_read(p)->'published_version_id','change_reason','Independent newer publication'));
  perform set_config('test.residential_latest',hub.promotion_read(p)->>'published_version_id',true);
- begin perform hub.release_rollback(current_setting('test.residential_release')::uuid,'Must not overwrite newer publication');assert false,'Stale release rollback accepted';exception when serialization_failure then null;end;
+ begin perform pg_temp.w4_release_rollback(current_setting('test.residential_release')::uuid,'Must not overwrite newer publication');assert false,'Stale release rollback accepted';exception when serialization_failure then null;end;
  assert hub.promotion_read(p)->>'published_version_id'=current_setting('test.residential_latest'),'Stale rollback changed pointer';
  assert(select published_version_id::text<>current_setting('test.residential_brand_version') from hub.brands where id=current_setting('test.residential_brand')::uuid),'Stale rollback changed brand';
  assert(select published_version_id::text<>current_setting('test.residential_project_version') from hub.projects where id=current_setting('test.residential_project')::uuid),'Stale rollback changed project';
  -- Runtime publication cannot select unmarked media merely by passing demo_mode.
  select jsonb_agg(jsonb_build_object('entity_type',e->'entity_type','entity_id',e->'entity_id','expected_updated_at',e->'expected_updated_at','expected_revision',e->'expected_revision','expected_published_version_id',e->'expected_published_version_id')) into members from jsonb_array_elements(hub.release_candidates(false)->'items') e
  where e->>'entity_type'='project' and e->>'entity_id'=current_setting('test.residential_project');
- begin perform hub.release_publish(members,'No seeded demo selection',true);assert false,'Unmarked project used demo publication';exception when check_violation then null;end;
+ partial:=pg_temp.w4_release(members,'No seeded demo selection',true);
+ assert partial->>'status'='RETURNED' and jsonb_array_length(partial->'rejected')=1,'Unmarked project used demo publication';
 end $$;
 
 set local role editor;
@@ -232,5 +250,5 @@ set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin assert not exists(select 1 from public_api.read_promotions() where code=current_setting('test.residential_code')),'Revoked published review remained visible';end $$;
 reset role;
-select 'PASS: residential roles, exact money, expiry, source withdrawal, immutable snapshots, atomic release/rollback and synthetic selection guards' as result;
+select 'PASS: residential roles, exact money, expiry, source withdrawal, immutable snapshots, item-local release and atomic rollback and synthetic selection guards' as result;
 rollback;

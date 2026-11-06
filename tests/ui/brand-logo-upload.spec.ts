@@ -249,7 +249,7 @@ for (const viewport of viewports) {
 async function retryFixture(page: Page, failure: 'upload' | 'bind', existingMono = false) {
   const stamp = '2026-10-02T03:00:00Z', publicId = 'brd_synthetic_logo_retry';
   const brand = {
-    id: 'synthetic-logo-retry', public_brand_id: publicId, rem_brand_id: 'SYNTHETIC-LOGO-RETRY',
+    id: '76000000-0000-4000-8000-000000000010', public_brand_id: publicId, rem_brand_id: 'SYNTHETIC-LOGO-RETRY',
     public_name: { th: 'แบรนด์สมมติทดสอบการลองใหม่' }, description: { th: 'ข้อมูลทดสอบเท่านั้น' }, slug: 'synthetic-logo-retry',
     status: 'active', updated_at: stamp, published_version_id: null, publication_available: false,
     readiness: { ready: false, percent: 80, missing: [{ field: 'assets', message: 'รอตรวจสิทธิ์โลโก้' }] },
@@ -268,6 +268,25 @@ async function retryFixture(page: Page, failure: 'upload' | 'bind', existingMono
     const request = route.request(), path = new URL(request.url()).pathname.slice(`${api}/`.length);
     if (request.method() === 'GET') {
       if (path === 'content/fields') return route.continue();
+      // Only the workflow reads for this synthetic brand; real account switching stays live.
+      if (path === 'content-workflow/items') {
+        const query = new URL(request.url()).searchParams;
+        expect(query.get('level')).toBe('brand'); expect(query.get('id')).toBe(publicId);
+        expect(query.get('phase')).toBeNull();
+        return route.fulfill({ json: { data: { scope: { level: 'brand', id: publicId, phase: null }, items: [], next_cursor: null } } });
+      }
+      if (path === 'content-workflow') {
+        const query = new URL(request.url()).searchParams, kind = query.get('kind'), identity = JSON.parse(query.get('identity')!);
+        const owner = kind === 'brand' ? brand : kind === 'brand_asset' ? brand.assets.find(item => item.binding_id === identity.id)
+          : kind === 'asset' ? assets.find(item => item.id === identity.id) : null;
+        expect(owner, 'Workflow reads must belong to this finite fixture').toBeTruthy();
+        expect(identity).toEqual({ id: kind === 'brand_asset' ? owner!.binding_id : owner!.id });
+        return route.fulfill({ json: { data: { kind, identity, expected_hash: 'a'.repeat(64),
+          source_revision: null, source_updated_at: brand.updated_at, source_tab: 'brands', source_tabs: ['brands'], state: 'DRAFT',
+          version_id: null, version_no: null, approved_by: null, approved_at: null, decision_reason: null,
+          self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false, can_approve: false,
+          can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: false, history: [] } } });
+      }
       if (/^assets\/[^/]+\/file$/.test(path)) return route.fulfill({ contentType: 'image/png', body: png() });
       return route.fulfill({ json: { data: path === `brands/${publicId}` ? brand : path === 'brands' ? [brand] : path === 'assets' ? assets : path.startsWith('assets/') ? assets.find(asset => asset.id === path.slice('assets/'.length)) : [] } });
     }

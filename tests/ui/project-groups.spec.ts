@@ -1,3 +1,4 @@
+import { workflowText } from './content-workflow-fixtures';
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { progressFixture } from './progress-fixture';
@@ -5,6 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const stamp = '2026-10-05T00:00:00Z';
 const base = '/api/hub/v1/admin/';
+const nativeProjectIds: Record<string, string> = { P01: '66000000-0000-4000-8000-000000000002', P11: '66000000-0000-4000-8000-000000000012' };
 const gap = { field: 'latitude', message: 'ระบุพิกัดโครงการ' };
 const source = { status_raw: '2', status_label: 'พร้อมอยู่', default_scope: true, is_deleted: false, flags: [], exceptions: [] };
 const item = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -23,7 +25,7 @@ async function fixture(page: Page, role = 'publisher') {
     item('CLOSED', { source_review: { ...source, status_raw: '3', default_scope: false } }),
     item('NEW', { public_project_id: null, new_from_rem: true, filling: false })];
   const asset = { id: 'synthetic-image', original_filename: 'synthetic.png', mime_type: 'image/png', public_url: '/demo-assets/brand-logo.svg', rights_status: 'pending', rights_notes: null, updated_at: stamp, effective_from: null, effective_to: null };
-  const project = (id: string) => ({ public_project_id: id, public_name: { th: `โครงการ ${id}` }, slug: id, updated_at: stamp,
+  const project = (id: string) => ({ id: nativeProjectIds[id], public_project_id: id, public_name: { th: `โครงการ ${id}` }, slug: id, updated_at: stamp,
     published_version_id: null, publication_available: false, readiness: { ready: false, percent: 0, missing: [gap] },
     source: { rem_project_id: id, project_name_rem: id }, models: [],
     assets: [{ ...asset, binding_id: 'bound', asset_role: 'hero', alt_text: { th: 'ภาพจำลอง' }, display_order: 0 }] });
@@ -34,6 +36,24 @@ async function fixture(page: Page, role = 'publisher') {
     if (await fulfilWorkspaceProjection(route, project)) return;
     if(new URL(route.request().url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(route.request().url()).pathname.replace(base, '');
+    // Only the two saved projects opened by these tests, and their shared synthetic file/binding.
+    if (route.request().method() === 'GET') {
+      const url = new URL(route.request().url()), publicId = url.searchParams.get('id');
+      if (path === 'content-workflow/items' && url.searchParams.get('level') === 'project' && publicId && Object.hasOwn(nativeProjectIds, publicId)
+        && (!url.searchParams.has('phase') || url.searchParams.get('phase') === publicId)) {
+        return route.fulfill({ json: { data: { scope: { level: 'project', id: publicId, phase: publicId }, items: [], next_cursor: null } } });
+      }
+      const targets = [...Object.values(nativeProjectIds).map(id => ({ kind: 'project', id })), { kind: 'asset', id: asset.id }, { kind: 'project_asset', id: 'bound' }];
+      const target = targets.find(item => item.kind === url.searchParams.get('kind') && JSON.stringify({ id: item.id }) === url.searchParams.get('identity'));
+      if (path === 'content-workflow' && target) {
+        return route.fulfill({ json: { data: {
+          kind: target.kind, identity: { id: target.id }, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT', expected_hash: 'a'.repeat(64),
+          source_revision: null, source_updated_at: stamp, version_id: null, version_no: null, approved_by: null, approved_at: null,
+          decision_reason: null, self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false,
+          can_approve: false, can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: true, history: [],
+        } } });
+      }
+    }
     // The outer Media tab reads this workspace before canonical media is selected.
     // Keep this exact fixture projection separate from the existing native writers.
     if (route.request().method() === 'GET' && ['projects/P01/media', 'projects/P01/media/jobs', 'projects/P01/media/ai-state'].includes(path)) {
@@ -120,7 +140,10 @@ test('publisher approves an attached project file while content is incomplete, w
   expect(writes[0]).toMatchObject({ path: 'assets/synthetic-image/review', body: { decision: 'approved', updated_at: stamp, change_reason: 'อนุมัติใช้ไฟล์โดยผู้เผยแพร่' } });
   await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
   await openWorkspaceTab(page, 'history');
-  await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
+  // N6 centralizes publication; source history links to its filtered queue.
+  const queue = page.locator('.publication-actions').getByRole('link', { name: workflowText.queue, exact: true });
+  await expect(queue).toHaveAttribute('href', '/publish?source=project&id=P01');
+  expect(writes).toHaveLength(1);
 });
 
 test('project table has a sticky header, pagination and no mobile document overflow', async ({ page }) => {

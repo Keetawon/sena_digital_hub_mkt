@@ -5,9 +5,10 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import pg from 'pg';
+import { syntheticWorkflowActors, approveSyntheticEntity } from '../../scripts/seed-hub-content-contract.mjs';
 import { localTarget } from '../../scripts/provision-dw-reader.mjs';
 
-test('confirmed local intake: reasons, source flags, one audit per brand, safe replay, readiness counts and atomic publish', async () => {
+test('confirmed local intake: reasons, source flags, one audit per brand, safe replay, readiness counts and item-local publish', async () => {
   const config=JSON.parse(await readFile(new URL('../../.local/development.json',import.meta.url),'utf8'));
   const db=new pg.Client({...localTarget,user:'postgres',password:config.adminPassword});
   const hash=createHash('sha256').update('SYNTHETIC-BULK-BRAND-28').digest('hex');
@@ -15,6 +16,8 @@ test('confirmed local intake: reasons, source flags, one audit per brand, safe r
   await db.connect();
   try {
     await db.query('begin');
+    const actors = await syntheticWorkflowActors(db, '00000000-0000-0000-0000-000000000005');
+    const publisher = async () => { await db.query('reset role'); await db.query("select set_config('app.actor_id',$1,true)", [actors.publisher]); };
     await db.query('insert into staging.intake_batches(manifest_sha256,manifest,datasets) values($1,$2,$3)',[hash,{contract_version:'rem-brand-master-test-v1',synthetic_only:true},{brands:[],exceptions:[]}]);
     for(const [key,thai,english,status,count] of [
       ['a','แบรนด์สมมติ bulk ก','Synthetic Bulk Alpha',false,1],['b','แบรนด์สมมติ bulk ข',null,false,2],
@@ -68,15 +71,28 @@ test('confirmed local intake: reasons, source flags, one audit per brand, safe r
     await db.query('select hub.bind_brand_asset(id,$2,$3,$4,updated_at) from hub.brands where id=$1',[brands[0].id,asset,'logo_primary',{th:'โลโก้สมมติ'}]);
     await role('publisher');await db.query("select hub.review_asset(id,updated_at,'approved',$2,null,null,$2) from hub.assets where id=$1",[asset,'Synthetic bulk rights']);
     await db.query('reset role');
+    await db.query('set local role hub_app');
+    await db.query("select set_config('app.actor_id',$1,true)", [actors.author]);
+    await db.query(`select hub.media_save_asset(p.public_project_id,a.id,a.media_revision,
+      jsonb_build_object('media_category','promotion_ad','metadata_state','confirmed',
+        'marketing_publication',true,'ai_exposure','web_only','alt_text',b.alt_text))
+      from hub.projects p cross join hub.assets a join hub.brand_assets b on b.asset_id=a.id
+      where p.rem_project_id='DEMO-001' and a.id=$1 and b.brand_id=$2 and b.deleted_at is null`, [asset, brands[0].id]);
+    await approveSyntheticEntity(db, actors, 'brand', brands[0].id);
     let members=(await db.query("select jsonb_build_object('entity_type','brand','entity_id',id,'expected_updated_at',updated_at,'expected_published_version_id',published_version_id) m from hub.brands where id=any($1::uuid[]) order by id",[brands.map(b=>b.id)])).rows.map(r=>r.m);
     const releases=(await db.query('select count(*)::int n from hub.publication_releases')).rows[0].n;
-    await role('publisher');await denial('select hub.release_publish($1,$2,false)',[JSON.stringify(members),'Synthetic not-ready batch'],'23514');
-    await db.query('reset role');assert.equal((await db.query('select count(*)::int n from hub.publication_releases')).rows[0].n,releases);
+    await publisher();const partial=(await db.query('select hub.release_publish($1,$2,false) r',[JSON.stringify(members),'Synthetic not-ready batch'])).rows[0].r;
+    assert.equal(partial.rejected.length,1);assert.equal(partial.rejected[0].entity_id,brands[1].id);
+    assert.equal((await db.query('select count(*)::int n from hub.publication_releases')).rows[0].n,releases+1);
+    const partialRows=(await db.query('select id,published_version_id from hub.brands where id=any($1::uuid[])',[brands.map(b=>b.id)])).rows;
+    assert.ok(partialRows.find(b=>b.id===brands[0].id).published_version_id);assert.equal(partialRows.find(b=>b.id===brands[1].id).published_version_id,null);
+    await db.query('select hub.release_rollback($1,$2)',[partial.id,'Restore valid synthetic neighbor']);
     assert.ok((await db.query('select published_version_id from hub.brands where id=any($1::uuid[])',[brands.map(b=>b.id)])).rows.every(b=>b.published_version_id===null));
     await role('editor');await db.query('select hub.update_brand_draft(id,$2,updated_at) from hub.brands where id=$1',[brands[1].id,{description:{th:'รายละเอียดสมมติ ข'},slug:'synthetic-bulk-beta'}]);
     await db.query('select hub.bind_brand_asset(id,$2,$3,$4,updated_at) from hub.brands where id=$1',[brands[1].id,asset,'logo_primary',{th:'โลโก้สมมติ ข'}]);
+    await approveSyntheticEntity(db, actors, 'brand', brands[1].id);
     await db.query('reset role');members=(await db.query("select jsonb_build_object('entity_type','brand','entity_id',id,'expected_updated_at',updated_at,'expected_published_version_id',published_version_id) m from hub.brands where id=any($1::uuid[]) order by id",[brands.map(b=>b.id)])).rows.map(r=>r.m);
-    await role('publisher');const release=(await db.query('select hub.release_publish($1,$2,false) r',[JSON.stringify(members),'Synthetic ready batch'])).rows[0].r;
+    await publisher();const release=(await db.query('select hub.release_publish($1,$2,false) r',[JSON.stringify(members),'Synthetic ready batch'])).rows[0].r;
     assert.equal(release.members.length,2);assert.equal(release.demo_mode,false);
     await role('viewer');const final=(await db.query('select hub.brand_completeness() d')).rows[0].d;
     assert.ok(final.rows.filter(r=>r.rem_brand_id.startsWith(prefix)&&r.public_brand_id).every(r=>r.status==='published'&&r.readiness.percent===100));

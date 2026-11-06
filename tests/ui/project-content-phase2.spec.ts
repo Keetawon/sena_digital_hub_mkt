@@ -1,10 +1,22 @@
 import { workspaceHref, workspaceText } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
+import { submitItem, approveItem, workflowText } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
 async function persona(page: Page, role: string) { expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy(); }
 async function read(page: Page, path: string) { const response = await page.request.get(path); expect(response.ok(), path).toBeTruthy(); return (await response.json()).data; }
 async function fits(page: Page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy(); }
+
+async function returnSubmitted(page: Page, kind: 'section' | 'faq', id: string) {
+  await persona(page, 'publisher');
+  const target = { kind, identity: { id } };
+  const snapshot = await read(page, `${api}/content-workflow?` + new URLSearchParams({ kind, identity: JSON.stringify(target.identity) }));
+  expect(snapshot.state).toBe('IN_REVIEW');
+  const response = await page.request.post(`${api}/content-workflow/review`, { headers, data: { ...target, expected_hash: snapshot.expected_hash, decision: 'return', reason: 'Return synthetic submitted text for a new draft' } });
+  expect(response.ok()).toBeTruthy();
+  expect((await response.json()).data.state).toBe('RETURNED');
+  await persona(page, 'editor');
+}
 
 for (const width of [1280, 390]) {
   test(`Project core drafts, reviewed English and version conflicts at ${width}px`, async ({ page }) => {
@@ -63,7 +75,7 @@ for (const width of [1280, 390]) {
     await expect(translation.getByText('ตรวจภาษาอังกฤษแล้ว', { exact: true })).toBeVisible();
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/english-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'เนื้อหาและจุดขาย', exact: true }).click();
-    await page.getByRole('button', { name: 'ส่งตรวจ แนะนำโครงการ', exact: true }).click();
+    await submitItem(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'แนะนำโครงการ', exact: true }) }), 'section');
     await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'แนะนำโครงการ', exact: true }) })).toContainText(workspaceText.IN_REVIEW);
 
     await page.getByRole('button', { name: 'ช่องทางติดต่อ', exact: true }).click();
@@ -82,6 +94,10 @@ for (const width of [1280, 390]) {
     await expect(page.getByText('สิทธิ์ดูข้อมูลเท่านั้น', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'เพิ่มช่องทางติดต่อ', exact: true })).toHaveCount(0);
     expect((await page.request.post(`${base}/contacts`, { headers, data: { expected_revision: 0, changes: { channel: 'phone', value: '02-222-2222' } } })).status()).toBe(403);
+    await persona(page, 'editor');
+    const submitted = (await read(page, `${base}/content`)).sections.find((item: { section_key: string }) => item.section_key === 'section.project_intro');
+    expect(submitted).toBeTruthy();
+    await returnSubmitted(page, 'section', submitted.id);
   });
 
   test(`FAQ question approval, corporate editor, preview and submitted history at ${width}px`, async ({ page }) => {
@@ -96,13 +112,14 @@ for (const width of [1280, 390]) {
     await page.getByRole('button', { name: 'บันทึกข้อเสนอคำถาม', exact: true }).click();
     await expect(page.getByRole('heading', { name: question, exact: true })).toBeVisible();
     expect((await page.request.post(`${api}/faq/questions/${key}/approve`, { headers, data: { expected_revision: 1, decision: 'approved' } })).status()).toBe(403);
+    await submitItem(page.getByRole('article').filter({ has: page.getByRole('heading', { name: question, exact: true }) }), 'question');
     await persona(page, 'publisher'); await page.reload();
-    await page.getByRole('button', { name: `อนุมัติคำถาม ${key}`, exact: true }).click();
+    await approveItem(page, page.getByRole('article').filter({ has: page.getByRole('heading', { name: question, exact: true }) }), 'question');
     await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: question, exact: true }) })).toContainText('อนุมัติแล้ว');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/question-bank-${width}.png`, fullPage: true });
     await persona(page, 'editor'); await page.goto(workspaceHref({ level: 'corporate', id: 'sena', tab: 'faq', question_key: key }));
-    await page.locator(`[data-workspace-question="${key}"]`).getByRole('button', { name: 'เพิ่มคำตอบ FAQ', exact: true }).click();
-    await page.getByLabel('คำถามมาตรฐานที่อนุมัติแล้ว').selectOption(key);
+    await page.locator(`[data-workspace-question="${key}"]`).getByRole('button', { name: workspaceText.newFaq, exact: true }).click();
+    await expect(page.getByLabel('คำถามมาตรฐานที่อนุมัติแล้ว')).toHaveValue(key);
     await page.locator('#faq-short_answer-th').fill('SENA ให้ความสำคัญกับการอยู่อาศัยที่สะดวกสบาย');
     await page.locator('#faq-short_answer-en').fill('SENA focuses on comfortable living.');
     await page.locator('#faq-detail-th').fill('เนื้อหาสมมติสำหรับตรวจหน้าจอเท่านั้น');
@@ -125,14 +142,20 @@ for (const width of [1280, 390]) {
       await expect(item.getByText('ตรวจภาษาอังกฤษแล้ว', { exact: true })).toBeVisible();
     }
     await page.getByRole('button', { name: 'คำตอบและขอบเขต', exact: true }).click();
-    await page.getByRole('button', { name: 'ส่งตรวจคำตอบ', exact: true }).click();
-    await expect(page.getByText('ส่งตรวจแล้ว ฉบับนี้เก็บไว้ในประวัติ ยังไม่เผยแพร่เว็บไซต์', { exact: true })).toBeVisible();
+    await submitItem(page, 'faq');
+    await expect(page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true })).toBeDisabled();
+    const faqId = new URL(page.url()).searchParams.get('faq');
+    expect(faqId).toBeTruthy();
+    const submittedFaq = await read(page, `${api}/faq/${faqId}`);
+    expect((await page.request.put(`${api}/faq/${faqId}`, { headers, data: { expected_revision: submittedFaq.revision, changes: { detail: { th: 'Denied mutation of submitted text' } } } })).status()).toBe(422);
+    await returnSubmitted(page, 'faq', faqId!);
+    await page.reload();
     await page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true }).click();
     await page.locator('#faq-detail-th').fill('รายละเอียดฉบับใหม่ยังไม่เผยแพร่');
     await page.getByRole('button', { name: 'บันทึกคำตอบ', exact: true }).click();
     await expect(page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'ประวัติ', exact: true }).click();
-    await expect(page.getByText(new RegExp(`ฉบับ 1 · ${workspaceText.IN_REVIEW}`))).toBeVisible();
+    await expect(page.getByText(new RegExp(`ฉบับ 1 · ${workspaceText.RETURNED}`))).toBeVisible();
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/faq-history-${width}.png`, fullPage: true });
     await persona(page, 'viewer'); await page.reload();
     await expect(page.getByRole('button', { name: 'แก้ไขเป็นฉบับใหม่', exact: true })).toHaveCount(0);
@@ -148,8 +171,9 @@ for (const width of [1280, 390]) {
     await page.locator('#glossary-term-en').fill(`Synthetic name ${width}`);
     await page.getByRole('button', { name: 'บันทึกคำมาตรฐาน', exact: true }).click();
     await expect(page.getByRole('heading', { name: `ชื่อสมมติ ${width}`, exact: true })).toBeVisible();
+    await submitItem(page.getByRole('article').filter({ has: page.getByRole('heading', { name: `ชื่อสมมติ ${width}`, exact: true }) }), 'glossary');
     await persona(page, 'publisher'); await page.reload();
-    await page.getByRole('button', { name: `อนุมัติคำ ชื่อสมมติ ${width}`, exact: true }).click();
+    await approveItem(page, page.getByRole('article').filter({ has: page.getByRole('heading', { name: `ชื่อสมมติ ${width}`, exact: true }) }), 'glossary');
     await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: `ชื่อสมมติ ${width}`, exact: true }) })).toContainText('อนุมัติใช้แล้ว');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/glossary-${width}.png`, fullPage: true });
   });

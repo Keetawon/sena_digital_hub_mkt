@@ -55,6 +55,9 @@ export function pagePermission(path: string, query: URLSearchParams): { tab: str
   return operations ? { tab: operations[1], level: operations[2] === "new" ? "edit" : "view" } : null;
 }
 export function canOpenPage(account: HubAccount, path: string, query: URLSearchParams) {
+  if (path === "/publish" || path === "/releases" || path === "/faq" && query.get("tab") === "publication") {
+    return account.status === "ACTIVE" && (can(account.capabilities, "knowledge") || can(account.capabilities, "releases"));
+  }
   if (path === "/home") return account.status === "ACTIVE" && canWorkspace(account.capabilities);
   if (path === "/website") {
     const view = query.get("view");

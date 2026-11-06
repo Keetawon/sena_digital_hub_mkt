@@ -10,6 +10,7 @@ from fastapi.routing import APIRoute
 
 from sena_hub_api.content_permissions import CONTENT_RULES
 from sena_hub_api import knowledge
+from content_workflow_fixture import load_sql_fixture, publication_persona
 from test_permission_baseline import disposable_operator, ROOT
 from test_permission_db_baseline import runtime, PUBLICATION_TABLES, PUBLICATION_FUNCTIONS
 from test_permission_foundations import permission_accounts, h
@@ -92,8 +93,19 @@ def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_
             if role == 'hub_app' or tab == 'knowledge':
                 assert await call(db, ids['viewer'], f'select count(*) from {table}', role=role) == 0
             for entry in reads:
+                if tab == 'releases' and entry == rpc:
+                    # N6 preserves history through either entry permission. Raw
+                    # release rows and candidate authoring retain their own gate.
+                    history = await call(db, ids['viewer'], 'select ' + entry, role=role)
+                    history = json.loads(history) if isinstance(history, str) else history
+                    assert any(item['id'] == str(data['release']) for item in history['items'])
+                else:
+                    with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                        await call(db, ids['viewer'], 'select ' + entry, role=role)
+            if tab == 'releases':
+                await set_bit(ids['viewer'], 'knowledge', can_view=False)
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                    await call(db, ids['viewer'], 'select ' + entry, role=role)
+                    await call(db, ids['viewer'], 'select ' + rpc, role=role)
             await call(db, ids['viewer'], 'select hub.list_brands()', role=role)
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['admin'], f'delete from {table}', role=role)
@@ -105,10 +117,10 @@ def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_
     ('editor', 'promotions', 'can_edit', "hub.promotion_command('create',null,'{}')"),
     ('editor', 'promotions', 'can_edit', "hub.promotion_command('update',null,'{}')"),
     ('publisher', 'promotions', 'can_approve', "hub.promotion_command('review',null,'{}')"),
-    ('publisher', 'promotions', 'can_approve', "hub.promotion_command('publish',null,'{}')"),
-    ('publisher', 'promotions', 'can_approve', "hub.promotion_command('withdraw',null,'{}')"),
-    ('publisher', 'releases', 'can_approve', "hub.release_publish('[]','Synthetic',false)"),
-    ('publisher', 'releases', 'can_approve', "hub.release_rollback(null,'Synthetic')"),
+    ('viewer', 'promotions', 'publish', "hub.promotion_command('publish',null,'{}')"),
+    ('viewer', 'promotions', 'publish', "hub.promotion_command('withdraw',null,'{}')"),
+    ('viewer', 'releases', 'publish', "hub.release_publish('[]','Synthetic',false)"),
+    ('viewer', 'releases', 'publish', "hub.release_rollback(null,'Synthetic')"),
     ('editor', 'knowledge', 'can_edit', "hub.review_knowledge_candidate(null,0,'accepted','{}','Synthetic',false,null,null)"),
     ('editor', 'knowledge', 'can_edit', "hub.review_knowledge_question('synthetic-none',0,'verified','Synthetic','Synthetic')"),
     ('publisher', 'knowledge', 'can_approve', "hub.lock_knowledge_asset(null)"),
@@ -118,11 +130,29 @@ def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_
 def test_publication_one_mutation_bit_off_at_sd_entry(permission_accounts, account, tab, bit, entry, revoked):
     _, ids = permission_accounts
     async def check():
+        if bit == 'publish':
+            await publication_persona(ids)
         db = await runtime()
         try:
             with pytest.raises(asyncpg.PostgresError) as allowed:
                 await call(db, ids[account], 'select ' + entry)
             assert allowed.value.sqlstate != '42501'
+            if bit == 'publish':
+                source_tab = 'knowledge' if tab == 'releases' else tab
+                if revoked == 'view':
+                    # Releases V is history-only under N2. Its publication
+                    # command requires Knowledge V plus the existing special.
+                    if source_tab == 'knowledge':
+                        await set_bit(ids[account], source_tab, special_actions=[], can_view=False)
+                    else:
+                        await set_bit(ids[account], source_tab, can_view=False)
+                else:
+                    await set_bit(ids[account], 'knowledge', special_actions=[])
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await call(db, ids[account], 'select ' + entry)
+                assert await call(db, ids[account], "select hub.can($1,'view')", source_tab) is (revoked == 'action')
+                await call(db, ids[account], 'select hub.list_brands()')
+                return
             if revoked == 'view':
                 # Foundation storage is stricter than an ineffective stored bit:
                 # E/A without V is rejected atomically. Then revoke a valid row.
@@ -142,15 +172,17 @@ def test_publication_one_mutation_bit_off_at_sd_entry(permission_accounts, accou
 
 
 @pytest.mark.parametrize('tab', ['projects', 'brands', 'promotions'])
-def test_mixed_release_publish_and_rollback_require_every_member_approval(permission_accounts, tab):
+def test_mixed_release_publish_and_rollback_require_every_member_view(permission_accounts, tab):
     _, ids = permission_accounts
     async def check():
+        await publication_persona(ids)
         db = await disposable_operator()
         transaction = db.transaction()
         await transaction.start()
         try:
             # Reuse the existing complete synthetic brand/project/media fixture.
             fixture = (ROOT / 'supabase/tests/residential_demo.sql').read_text(encoding='utf-8').split('-- Every new table')[0]
+            await load_sql_fixture(db, ids['admin'])
             await db.execute(fixture.replace('begin;', '', 1))
             project = await db.fetchval("select current_setting('test.residential_project')::uuid")
             await db.execute("select set_config('app.actor_id',$1,true)", str(ids['editor']))
@@ -174,21 +206,22 @@ def test_mixed_release_publish_and_rollback_require_every_member_approval(permis
                 'promotions',(select jsonb_object_agg(id,published_version_id) from hub.public_promotions),
                 'release_count',(select count(*) from hub.publication_releases),
                 'promotion_versions',(select count(*) from hub.promotion_versions))"""
-            before = await call(db, ids['publisher'], snapshot)
-            await set_bit(ids['publisher'], tab, can_approve=False)
+            assert not await call(db, ids['viewer'], "select hub.can($1,'approve')", tab)
+            before = await call(db, ids['admin'], snapshot)
+            await set_bit(ids['viewer'], tab, can_view=False)
             for demo in (False, True):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                    await call(db, ids['publisher'], 'select hub.release_publish($1::jsonb,$2,$3)', json.dumps(members), 'Synthetic', demo)
-                assert await call(db, ids['publisher'], snapshot) == before
-            await set_bit(ids['publisher'], tab, can_approve=True)
-            result = json.loads(await call(db, ids['publisher'], 'select hub.release_publish($1::jsonb,$2,false)', json.dumps(members), 'Synthetic'))
-            published = await call(db, ids['publisher'], snapshot)
-            await set_bit(ids['publisher'], tab, can_approve=False)
+                    await call(db, ids['viewer'], 'select hub.release_publish($1::jsonb,$2,$3)', json.dumps(members), 'Synthetic', demo)
+                assert await call(db, ids['admin'], snapshot) == before
+            await set_bit(ids['viewer'], tab, can_view=True)
+            result = json.loads(await call(db, ids['viewer'], 'select hub.release_publish($1::jsonb,$2,false)', json.dumps(members), 'Synthetic'))
+            published = await call(db, ids['admin'], snapshot)
+            await set_bit(ids['viewer'], tab, can_view=False)
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await call(db, ids['publisher'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic')
-            assert await call(db, ids['publisher'], snapshot) == published
-            await set_bit(ids['publisher'], tab, can_approve=True)
-            restored = json.loads(await call(db, ids['publisher'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic'))
+                await call(db, ids['viewer'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic')
+            assert await call(db, ids['admin'], snapshot) == published
+            await set_bit(ids['viewer'], tab, can_view=True)
+            restored = json.loads(await call(db, ids['viewer'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic'))
             assert restored['status'] == 'ROLLED_BACK'
             # Release V alone cannot disclose members/candidates from a hidden tab.
             await set_bit(ids['viewer'], tab, can_view=False)

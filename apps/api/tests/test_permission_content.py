@@ -10,6 +10,7 @@ from fastapi.routing import APIRoute
 
 from sena_hub_api.content_permissions import CONTENT_RULES
 
+from content_workflow_fixture import load_sql_fixture, publication_persona
 from test_permission_baseline import disposable_operator, ROOT
 from test_permission_db_baseline import runtime, CONTENT_FUNCTIONS, CONTENT_TABLES
 from test_permission_foundations import permission_accounts, h
@@ -18,19 +19,69 @@ from test_permission_foundations import permission_accounts, h
 async def call(db, uid, query, *args, role='hub_app'):
     assert role in ('hub_app', 'admin', 'editor', 'publisher', 'viewer')
     async with db.transaction():
+        previous_role, previous_actor = await db.fetchrow(
+            "select current_setting('role'),current_setting('app.actor_id',true)")
         await db.execute(f'SET LOCAL ROLE {role}')
         await db.execute("select set_config('app.actor_id',$1,true)", str(uid))
-        return await db.fetchval(query, *args)
+        result = await db.fetchval(query, *args)
+        # A released savepoint retains SET LOCAL values in its outer transaction.
+        # Restore the caller after success; a failed transaction rolls them back.
+        await db.execute("select set_config('role',$1,true),set_config('app.actor_id',$2,true)",
+                         previous_role, previous_actor or '')
+        return result
 
 
-async def set_bit(uid, tab, **bits):
+async def set_bit(uid, tab, *, connection=None, manager=None, **bits):
     assert set(bits) <= {'can_view', 'can_edit', 'can_approve', 'special_actions'}
+    if connection is not None:
+        assert manager is not None
+        directory = await call(connection, manager, 'select hub.account_directory()')
+        row = next(item for item in directory['items'] if item['id'] == str(uid))
+        tabs = row['access']['tabs']
+        levels = set(tabs[tab])
+        for column, level in (('can_view', 'view'), ('can_edit', 'edit'), ('can_approve', 'approve')):
+            if column in bits:
+                levels.discard(level)
+                if bits[column]:
+                    levels.add(level)
+        if 'special_actions' in bits:
+            levels = (levels & {'view', 'edit', 'approve'}) | set(bits['special_actions'])
+        tabs[tab] = sorted(levels)
+        await call(connection, manager, 'select hub.save_account_permissions($1,$2,$3,$4)',
+                   uid, tabs, row['can_manage_users'], datetime.fromisoformat(row['updated_at']))
+        return
     db = await disposable_operator()
     try:
-        for column, value in bits.items():
-            await db.execute(f'update hub.account_permission set {column}=$1 where account_id=$2 and tab=$3', value, uid, tab)
+        assignments = ','.join(f'{column}=${index}' for index, column in enumerate(bits, 1))
+        if assignments:
+            await db.execute(f'update hub.account_permission set {assignments} where account_id=${len(bits)+1} and tab=${len(bits)+2}',
+                             *bits.values(), uid, tab)
     finally:
         await db.close()
+
+
+def test_content_project_list_skips_deleted_rows_and_keeps_live_neighbour(permission_accounts):
+    from test_website_content import project_fixture
+    client, ids = permission_accounts
+
+    async def seed():
+        operator = await disposable_operator()
+        await operator.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
+        try:
+            async with operator.transaction():
+                project = await project_fixture(operator, ids['editor'])
+                await operator.execute('update hub.projects set deleted_at=clock_timestamp() where id=$1', project['id'])
+            return project['public_project_id']
+        finally:
+            await operator.close()
+
+    deleted = asyncio.run(seed())
+    response = client.get('/v1/admin/projects', headers=h('viewer'))
+    assert response.status_code == 200, response.text
+    rows = response.json()['data']
+    assert rows and all(row['public_project_id'] != deleted for row in rows)
+    assert client.get('/v1/admin/projects/' + deleted, headers=h('viewer')).status_code == 404
+    assert client.get('/v1/admin/projects/' + rows[0]['public_project_id'], headers=h('viewer')).status_code == 200
 
 
 def test_content_populated_backfill_preserves_editor_and_records_migration_audit(permission_accounts):
@@ -186,14 +237,16 @@ def test_content_asset_uploader_exception_binding_and_revocation(permission_acco
 
 @pytest.mark.parametrize('tab,level,account,entry', [
     ('projects', 'can_edit', 'editor', "hub.patch_project(null,'{}',null)"),
-    ('projects', 'can_approve', 'publisher', "hub.publish_project(null,'synthetic')"),
+    ('projects', 'can_view', 'viewer', "hub.publish_project(null,'synthetic')"),
     ('brands', 'can_edit', 'editor', "hub.update_brand_draft(null,'{}',null)"),
-    ('brands', 'can_approve', 'publisher', "hub.publish_brand(null,'synthetic')"),
+    ('brands', 'can_view', 'viewer', "hub.publish_brand(null,'synthetic')"),
     ('knowledge', 'can_approve', 'publisher', "hub.review_asset('10000000-0000-0000-0000-000000000003',null,'approved','synthetic',null,null,'synthetic')"),
 ])
-def test_content_single_bit_off_denies_command_with_view_retained(permission_accounts, tab, level, account, entry):
+def test_content_single_bit_off_denies_command_and_preserves_neighbor(permission_accounts, tab, level, account, entry):
     _, ids = permission_accounts
     async def check():
+        if level == 'can_view':
+            await publication_persona(ids)
         db = await runtime()
         try:
             assert await call(db, ids[account], 'select hub.can($1,$2)', tab, level.removeprefix('can_'))
@@ -203,10 +256,10 @@ def test_content_single_bit_off_denies_command_with_view_retained(permission_acc
                 await call(db, ids[account], 'select ' + entry)
             assert allowed.value.sqlstate != '42501'
             await set_bit(ids[account], tab, **{level: False})
-            assert await call(db, ids[account], 'select hub.can($1,\'view\')', tab)
+            assert await call(db, ids[account], 'select hub.can($1,\'view\')', tab) is (level != 'can_view')
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids[account], 'select ' + entry)
-            await call(db, ids[account], 'select hub.list_brands()')
+            await call(db, ids[account], 'select count(*) from hub.projects' if tab == 'brands' else 'select hub.list_brands()')
         finally:
             await db.close()
     asyncio.run(check())
@@ -329,11 +382,12 @@ def test_content_project_history_keeps_numeric_order_and_limit(permission_accoun
         transaction = db.transaction()
         await transaction.start()
         try:
-            project = await db.fetchval("select id from hub.projects where rem_project_id='DEMO-001'")
+            await load_sql_fixture(db, ids['admin'])
+            fixture = (ROOT / 'supabase/tests/residential_demo.sql').read_text(encoding='utf-8').split('-- Every new table')[0].replace('begin;', '', 1)
+            await db.execute(fixture)
+            project = await db.fetchval("select current_setting('test.residential_project')::uuid")
             base = await db.fetchval('select coalesce(max(version_no),0) from hub.entity_versions where project_id=$1', project)
-            await db.execute("""insert into hub.entity_versions(project_id,version_no,payload,publisher,change_reason)
-                select $1,n,'{}',$2,'Synthetic history ordering' from generate_series($3::integer,$4::integer) n""",
-                project, ids['publisher'], base + 1, base + 105)
+            await db.execute("select pg_temp.w4_publish('project',$1,'Synthetic guarded history ordering') from generate_series(1,105)", project)
             await db.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
             await db.execute('SET LOCAL ROLE hub_app')
             assert await db.fetchval('select session_user') == 'hub_runtime'

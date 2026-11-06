@@ -29,6 +29,8 @@ from .articles import register_article_routes
 from .web_publication import register_web_routes
 from .workspace_home import register_workspace_home_routes
 from .content_workspace import register_content_workspace_routes
+from .content_workflow import register_content_workflow_routes
+from .publication_queue import register_publication_queue_routes
 from .ads import register_ads_routes
 from .finance import register_finance_routes
 from .questions import register_question_routes
@@ -236,7 +238,7 @@ async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     # Every app request uses the base role; SQL resolves table-backed authority.
     # Machine integrations outside this API keep their separate fixed principals.
     category = route_class(request.method, getattr(request.scope.get("route"), "path", None))
-    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation", "content_workspace"}:
+    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation", "content_workspace", "content_workflow"}:
         raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
@@ -518,7 +520,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/v1/admin/projects")
     async def projects(request: Request, actor: Actor = Depends(admin)):
         async with database(request, actor) as connection:
-            rows = await connection.fetch("SELECT hub.project_detail(public_project_id) AS detail FROM hub.projects ORDER BY public_project_id LIMIT 100")
+            rows = await connection.fetch("SELECT hub.project_detail(public_project_id) AS detail FROM hub.projects WHERE deleted_at IS NULL ORDER BY public_project_id LIMIT 100")
             return {"data": [row["detail"] for row in rows if row["detail"] is not None]}
 
     @app.get("/v1/admin/sources/projects")
@@ -919,6 +921,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_web_routes(app, authentication, database, consumer)
     register_workspace_home_routes(app, authentication, database)
     register_content_workspace_routes(app, authentication, database)
+    register_content_workflow_routes(app, authentication, database)
+    register_publication_queue_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

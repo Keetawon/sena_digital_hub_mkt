@@ -1,3 +1,6 @@
-import { ContentOperationsPage } from "@/components/content-operations-page";
+import { redirect } from "next/navigation";
+import { legacyWorkspaceHref, queryParameters } from "@/lib/unified-workspace";
 export const dynamic = "force-dynamic";
-export default function Page() { return <ContentOperationsPage screen="releases" />; }
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  redirect(legacyWorkspaceHref("/releases", queryParameters(await searchParams))!);
+}

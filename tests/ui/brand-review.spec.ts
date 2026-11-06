@@ -2,6 +2,7 @@ import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { mockWorkspaceProjection } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
+import { mockWorkflowReads, refreshSyntheticAuthority, sourceHistory, workflowText } from './content-workflow-fixtures';
 
 const api = '/api/hub/v1/admin';
 const origin = 'http://127.0.0.1:3000';
@@ -19,7 +20,7 @@ function attachPreview(row: Row) {
 }
 function brand(key: string, title: string): Row {
   return {
-    id: `synthetic-${key}`, public_brand_id: `brd_${key}`, rem_brand_id: `000-${key}`,
+    id: `77000000-0000-4000-8000-00000000000${['ready', 'changed', 'missing', 'same', 'stopped', 'withdrawn'].indexOf(key) + 1}`, public_brand_id: `brd_${key}`, rem_brand_id: `000-${key}`,
     public_name: { th: title, en: `Synthetic ${key}` }, description: { th: 'รายละเอียดแบรนด์สมมติสำหรับทดสอบเท่านั้น' },
     slug: `synthetic-${key}`, status: 'active', updated_at: stamp, published_version_id: null,
     publication_available: false, readiness: { ready: true, percent: 100, missing: [] }, assets: [{ ...logo }], projects: [],
@@ -34,7 +35,7 @@ async function fixture(page: Page, role = 'publisher') {
   for (const key of ['changed', 'same', 'stopped', 'withdrawn']) {
     const row = rows.find(item => item.public_brand_id === `brd_${key}`)!;
     const payload = structuredClone(row);
-    row.published_version_id = `version-${key}`; row.publication_available = !['stopped', 'withdrawn'].includes(key);
+    row.published_version_id = row.id.replace('77000000', '78000000'); row.publication_available = !['stopped', 'withdrawn'].includes(key);
     versions[row.public_brand_id] = [{ version_id: row.published_version_id, version_no: 1, published_at: stamp, publisher: 'ผู้เผยแพร่สมมติ', change_reason: 'ข้อมูลสังเคราะห์ทดสอบเท่านั้น', payload }];
   }
   rows[5].published_version_id = null;
@@ -67,6 +68,7 @@ async function fixture(page: Page, role = 'publisher') {
   });
   await page.route(`**${api}/brand-requests`, route => route.fulfill({ json: { data: [] } }));
   await mockWorkspaceProjection(page, rows);
+  await mockWorkflowReads(page, { role, publish: role === 'publisher' });
   return { rows, versions, writes, failVersions: (value: boolean) => { failVersions = value; } };
 }
 
@@ -78,12 +80,14 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     data.rows[2].readiness.missing.push({ field: 'assets.logo_primary', message: 'ตรวจสิทธิ์โลโก้หลักก่อนเผยแพร่' });
     await page.route(`**${api}/assets/${logo.id}`, route => route.fulfill({ json: { data: pendingLogo } }));
     await page.goto('/?view=brands');
+    await refreshSyntheticAuthority(page);
     await expect(page.getByRole('checkbox', { name: 'เลือกเผยแพร่ ยังขาดข้อมูล', exact: true })).toBeDisabled();
     await page.getByRole('link', { name: 'เปิดตรวจแบรนด์ ยังขาดข้อมูล', exact: true }).click();
     await expect(page).toHaveURL(/\/website\/brand\/brd_missing\?.*return_to=/);
     await expect(page.locator('.detail-heading')).toContainText('ยังขาดข้อมูล');
     await openWorkspaceTab(page, 'history');
-    await expect(page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true })).toBeDisabled();
+    await expect(page.locator('.brand-readiness')).toContainText('ตรวจสิทธิ์โลโก้หลักก่อนเผยแพร่');
+    await expect(page.getByRole('button', { name: workflowText.publish, exact: true })).toHaveCount(0);
     await page.locator('#workspace-tab-media').click();
     await page.getByRole('checkbox', { name: `เลือกอนุมัติ ${logo.original_filename}`, exact: true }).check();
     await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (1)', exact: true }).click();
@@ -96,6 +100,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
 
   test(`brand review queue has overlapping counts and publisher menu badge at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport); const data = await fixture(page); await page.goto('/?view=brands');
+    await refreshSyntheticAuthority(page);
     const filters: [string, number, string[]][] = [
       ['ทั้งหมด', 6, ['ยังขาดข้อมูล', 'เผยแพร่แล้วมีชื่อใหม่', 'รอเผยแพร่ครั้งแรก', 'ฉบับร่างตรงกับที่เผยแพร่', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
       ['พร้อมเผยแพร่', 4, ['เผยแพร่แล้วมีชื่อใหม่', 'รอเผยแพร่ครั้งแรก', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],
@@ -114,7 +119,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await openMobileMenu(page);
     const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
     const link = menu.locator('.hub-brand-count-link');
-    await expect(link).toHaveAttribute('href', '/?view=brands');
+    await expect(link).toHaveAttribute('href', '/website?view=brands');
     await expect(link).toHaveAttribute('title', 'รอเผยแพร่ 2 แบรนด์');
     await expect(link.locator('.hub-nav-count')).toHaveText('2');
     if (viewport.width === 390) { await page.keyboard.press('Escape'); await expect(page.getByRole('button', { name: 'เปิดเมนู', exact: true })).toBeFocused(); }
@@ -132,9 +137,8 @@ test('logo content changes count as edits while readonly metadata and ordering d
   await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toHaveCount(0);
   data.rows[3].assets[2].alt_text = { th: 'คำอธิบายโลโก้สีขาวรองที่แก้ไข' };
   await page.reload(); await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toBeVisible();
-  await openWorkspaceTab(page, 'history');
-  await page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true }).click();
-  const comparison = page.getByRole('dialog').getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์', exact: true });
+  const history = await sourceHistory(page, 'brand', 'brd_same');
+  const comparison = history.getByRole('region', { name: `${workflowText.before} / ${workflowText.after}`, exact: true });
   await expect(comparison.locator('[data-field="assets"]')).toHaveClass(/changed/);
   await expect(comparison.locator('[data-field="assets"]')).toContainText('คำอธิบายโลโก้สีขาวรองที่แก้ไข');
   await expect(comparison.locator('[data-field="assets"]')).toContainText('โลโก้สีขาวรองเดิม');
@@ -142,22 +146,24 @@ test('logo content changes count as edits while readonly metadata and ordering d
   expect(data.writes).toEqual([]);
 });
 
-test('unavailable version reads stay unknown and block publication until exact snapshots reload', async ({ page }) => {
+test('unavailable version reads stay unknown and exact retained actions wait for snapshots to reload', async ({ page }) => {
   const data = await fixture(page); data.failVersions(true); await page.goto('/?view=brands');
+  await refreshSyntheticAuthority(page);
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
   await openMobileMenu(page);
   await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).locator('.hub-nav-count')).toHaveText('…');
   await closeMobileMenu(page);
   data.failVersions(false); await page.reload();
   await expect(page.getByRole('button', { name: 'พร้อมเผยแพร่ 4', exact: true })).toBeVisible();
-  data.failVersions(true); await page.goto('/?brand=brd_changed');
-  await openWorkspaceTab(page, 'history');
-  const publish = page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true });
-  await expect(publish).toBeDisabled();
-  const versionRetry = page.getByRole('button', { name: 'ลองโหลดเวอร์ชันแบรนด์อีกครั้ง', exact: true });
-  await expect(page.getByRole('main').getByRole('alert').filter({ has: versionRetry })).toContainText('ยังเปรียบเทียบเวอร์ชันที่เผยแพร่ไม่ได้');
-  data.failVersions(false); await versionRetry.click();
-  await expect(publish).toBeEnabled();
-  await expect(page.locator('.detail-heading').getByText('มีการแก้ไขรอเผยแพร่', { exact: true })).toBeVisible();
+  data.failVersions(true); const history = await sourceHistory(page, 'brand', 'brd_changed');
+  await expect(history.getByRole('alert')).toBeVisible();
+  await expect(history.locator('[data-source-version]')).toHaveCount(0);
+  await expect(history.getByRole('button', { name: workflowText.restore_version, exact: true })).toHaveCount(0);
+  await expect(history).toContainText('เผยแพร่แล้วมีชื่อใหม่');
+  await expect(history).not.toContainText('ชื่อก่อนเผยแพร่');
+  data.failVersions(false); await history.getByRole('button', { name: workflowText.retry, exact: true }).click();
+  await expect(history.locator(`[data-source-version="${data.versions.brd_changed[0].version_id}"]`)).toBeVisible();
+  await expect(history.locator('[data-field="public_name"]')).toHaveClass(/changed/);
+  await expect(history).toContainText('ชื่อก่อนเผยแพร่');
   expect(data.writes).toEqual([]);
 });

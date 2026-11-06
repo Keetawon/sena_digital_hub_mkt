@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from sena_hub_api.project_commercial import SaveCommercial
+from content_workflow_fixture import decide_item
 from test_permission_baseline import disposable_operator
 from test_permission_content import call, set_bit
 from test_permission_foundations import permission_accounts, h
@@ -45,6 +46,9 @@ async def save(db, actor, key, kind, changes=None, record=None, stamp=None):
 
 
 async def review(db, actor, key, kind, record, decision):
+    if decision in ('return', 'withdraw'):
+        workflow_kind = {'disclosures': 'disclosure', 'sales-terms': 'sales_term', 'programmes': 'programme', 'construction': 'progress'}[kind]
+        return await decide_item(db, actor, workflow_kind, {'id': record}, decision)
     data = await workspace(db, actor, key)
     return await call(db, actor, 'select hub.review_project_commercial($1,$2,$3,$4,$5)', key, kind, UUID(record),
                       datetime.fromisoformat(data['project']['updated_at']), decision)

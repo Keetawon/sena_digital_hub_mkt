@@ -20,7 +20,7 @@ function NavLink({ item, current, count }: { item: Item; current: string; count?
     <NavIcon path={item.icon} /><span className="hub-nav-label">{item.label}</span><span className="hub-nav-tooltip" role="tooltip">{item.label}</span>
     {!separateQueue && count !== undefined && <span className="hub-nav-count" aria-label={countDescription} title={countDescription}>{count ?? "…"}</span>}
   </a>;
-  return separateQueue ? <div className="hub-nav-link-row">{link}<a className="hub-brand-count-link" href="/?view=brands" aria-label={countDescription} title={countDescription}><span className="hub-nav-count">{count ?? "…"}</span><span className="hub-nav-tooltip" role="tooltip">{countDescription}</span></a></div> : link;
+  return separateQueue ? <div className="hub-nav-link-row">{link}<a className="hub-brand-count-link" href="/website?view=brands" aria-label={countDescription} title={countDescription}><span className="hub-nav-count">{count ?? "…"}</span><span className="hub-nav-tooltip" role="tooltip">{countDescription}</span></a></div> : link;
 }
 
 function Disclosure({ name, label, icon, current, service = false, children }: { name: string; label: string; icon?: string; current: boolean; service?: boolean; children: ReactNode }) {

@@ -1,5 +1,6 @@
 -- Phase 1: exercise the production projection, frozen versions and ACLs.
 begin;
+select pg_temp.w4_confirm_seed_media();
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.boundary_project',id::text,true),set_config('test.boundary_public',public_project_id,true)
  from hub.projects where rem_project_id='DEMO-001';
@@ -19,7 +20,7 @@ begin
  assert hub.public_content_payload('project',d||'{"future_private_field":"DENY","public_name":{"th":"ไทย","en":"English","staff":"DENY"}}')
    =hub.public_content_payload('project',d||'{"public_name":{"th":"ไทย","en":"English"}}'),'Unknown keys or locale leaked';
  assert jsonb_array_length(preview->'assets')=jsonb_array_length(d->'assets'),'Legacy media disappeared';
- version:=hub.publish_project(p,'Phase 1 synthetic publication boundary test');
+ version:=pg_temp.w4_publish('project',p,'Phase 1 synthetic publication boundary test');
  select payload into live from public_api.read_projects() where public_project_id=current_setting('test.boundary_public');
  assert live=preview,'Review did not show the exact published payload';
  assert (hub.project_versions(p)->0#>'{payload,publication_preview}')=live,'History preview differs from public reader';

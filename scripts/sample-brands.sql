@@ -27,7 +27,38 @@ set local role admin;
 select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000003','logo_primary','{"th":"โลโก้แบรนด์สมมติสำหรับทดสอบเท่านั้น"}',updated_at)
 from hub.brands where rem_brand_id='DEMO-BRAND-01';
 reset role;
-select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
+-- Explicit local synthetic personas. Never change the eight default accounts.
+do $$ declare reviewer uuid:=gen_random_uuid();publisher uuid:=gen_random_uuid();target jsonb;current_item jsonb;brand uuid;binding uuid;begin
+ insert into hub.user_account(id,email,display_name_th,status,hub_role) values
+  (reviewer,'local-brand-review-'||reviewer::text||'@example.test','Synthetic local brand reviewer','ACTIVE','publisher'),
+  (publisher,'local-brand-publish-'||publisher::text||'@example.test','Synthetic local brand publisher','ACTIVE','viewer');
+ perform set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
+ perform hub.configure_account_access(reviewer,jsonb_build_object('updated_at',(select updated_at from hub.user_account where id=reviewer),
+  'tabs','{"brands":["view","approve"],"projects":["view","approve"],"knowledge":["view","approve"]}'::jsonb,'can_manage_users',false));
+ perform hub.configure_account_access(publisher,jsonb_build_object('updated_at',(select updated_at from hub.user_account where id=publisher),
+  'tabs','{"brands":["view"],"knowledge":["view","knowledge.publish_web"]}'::jsonb,'can_manage_users',false));
+ select id into strict brand from hub.brands where rem_brand_id='DEMO-BRAND-01';
+ select id into strict binding from hub.brand_assets where brand_id=brand and asset_id='10000000-0000-0000-0000-000000000003' and deleted_at is null;
+ -- Explicitly confirm this synthetic logo's metadata through the ordinary
+ -- writer before submitting it. The default internal/needs-review upload is
+ -- deliberately unavailable to publication until this separate choice.
+ perform hub.media_save_asset((select public_project_id from hub.projects where rem_project_id='DEMO-001'),
+  '10000000-0000-0000-0000-000000000003',(select media_revision from hub.assets where id='10000000-0000-0000-0000-000000000003'),
+  jsonb_build_object('media_category','promotion_ad','metadata_state','confirmed','marketing_publication',true,'ai_exposure','web_only',
+   'alt_text',(select alt_text from hub.brand_assets where id=binding)));
+ for target in select * from jsonb_array_elements(jsonb_build_array(
+  jsonb_build_object('kind','asset','identity',jsonb_build_object('id','10000000-0000-0000-0000-000000000003')),
+  jsonb_build_object('kind','brand_asset','identity',jsonb_build_object('id',binding)),
+  jsonb_build_object('kind','brand','identity',jsonb_build_object('id',brand)))) loop
+  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
+  current_item:=hub.content_workflow_read(target->>'kind',target->'identity');
+  perform hub.content_workflow_submit(target->>'kind',target->'identity',current_item->>'expected_hash');
+  perform set_config('app.actor_id',reviewer::text,true);
+  current_item:=hub.content_workflow_read(target->>'kind',target->'identity');
+  perform hub.content_workflow_review(target->>'kind',target->'identity',current_item->>'expected_hash','approve','Independent synthetic local seed review');
+ end loop;
+ perform set_config('app.actor_id',publisher::text,true);
+end $$;
 set local role publisher;
 select hub.publish_brand(id,'เตรียมแบรนด์สมมติที่พร้อมใช้สำหรับตัวอย่างในเครื่อง') from hub.brands where rem_brand_id='DEMO-BRAND-01';
 reset role;

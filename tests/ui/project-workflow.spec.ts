@@ -1,5 +1,6 @@
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
+import { approveLegacySource, confirmPublication, confirmSourceCommand, persona, preparePublication, publishingGrant, readData, sourceHistory, workflowText } from './content-workflow-fixtures';
 
 const origin = 'http://127.0.0.1:3000';
 
@@ -41,59 +42,68 @@ async function switchRole(page: Page, role: string) {
   await expect(page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)')).toBeVisible();
 }
 
-async function publish(page: Page, reason: string) {
-  await openWorkspaceTab(page, 'history');
-  await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
-  await page.getByLabel('เหตุผลในการดำเนินการ').fill(reason);
-  await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByText('เผยแพร่ข้อมูลแล้ว ผู้ใช้งาน API จะเห็นเวอร์ชันนี้', { exact: true })).toBeVisible();
+async function publish(page: Page, publicId: string, reason: string) {
+  const project = await approveLegacySource(page, 'project', publicId);
+  await persona(page, 'viewer');
+  const review = await preparePublication(page, [{ system: 'release', entity_type: 'project', entity_id: project.id }], reason);
+  await confirmPublication(page, review);
 }
 
 test('Thai draft → publish → isolated edit → rollback → withdrawal', async ({ page }) => {
+  test.setTimeout(120_000);
   const original = await enter(page, 'editor');
   const adminPath = `/api/hub/v1/admin/projects/${original.public_project_id}`;
   const publicPath = `/api/hub/v1/projects/${original.public_project_id}`;
+  const grant = await publishingGrant();
   try {
     const translated = await page.request.patch(adminPath, { headers: { Origin: origin }, data: {
       updated_at: original.updated_at,
       public_name: { ...original.public_name, en: 'Synthetic English translation to preserve' },
     } });
     expect(translated.ok()).toBeTruthy();
+    // Only the two named positive DEMO-001 images opt in for this publication.
+    for (const [id, assetRole] of [
+      ['10000000-0000-0000-0000-000000000001', 'hero'],
+      ['10000000-0000-0000-0000-000000000002', 'thumbnail'],
+    ]) {
+      const source = await readData(page, adminPath), media = await readData(page, `${adminPath}/media`);
+      const binding = source.assets.find((item: { id: string; asset_role: string }) => item.id === id && item.asset_role === assetRole);
+      const asset = media.assets.find((item: { id: string }) => item.id === id);
+      expect(binding).toBeTruthy(); expect(asset).toBeTruthy();
+      const confirmed = await page.request.put(`${adminPath}/media/assets/${id}`, { headers: { Origin: origin }, data: {
+        expected_revision: asset.media_revision,
+        changes: { media_category: 'exterior', alt_text: binding.alt_text, metadata_state: 'confirmed', marketing_publication: true, ai_exposure: 'web_only' },
+      } });
+      expect(confirmed.ok()).toBeTruthy();
+    }
     await page.reload();
     await page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)').fill('โครงการจำลอง — ทดสอบเวอร์ชันแรก');
     await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
     await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
-    await switchRole(page, 'publisher');
-    await publish(page, 'ทดสอบการเผยแพร่ข้อมูลจำลองครั้งแรก');
+    await publish(page, original.public_project_id, 'ทดสอบการเผยแพร่ข้อมูลจำลองครั้งแรก');
     const first = await (await page.request.get(publicPath)).json();
+    const firstVersion = (await readData(page, adminPath)).published_version_id;
     expect(first.data.public_name.th).toBe('โครงการจำลอง — ทดสอบเวอร์ชันแรก');
     expect(first.data.public_name.en).toBe('Synthetic English translation to preserve');
 
-    await switchRole(page, 'editor');
+    await persona(page, 'editor'); await page.goto(`/?project=${original.public_project_id}`);
     await page.getByLabel('ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)').fill('โครงการจำลอง — ทดสอบเวอร์ชันที่สอง');
     await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
     await expect(page.getByText('บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม', { exact: true })).toBeVisible();
     const unchanged = await (await page.request.get(publicPath)).json();
     expect(unchanged.data).toEqual(first.data);
-    await switchRole(page, 'publisher');
-    await publish(page, 'ทดสอบการเผยแพร่ข้อมูลจำลองครั้งที่สอง');
+    await publish(page, original.public_project_id, 'ทดสอบการเผยแพร่ข้อมูลจำลองครั้งที่สอง');
     expect((await (await page.request.get(publicPath)).json()).data.public_name.th).toBe('โครงการจำลอง — ทดสอบเวอร์ชันที่สอง');
 
-    await openWorkspaceTab(page, 'history');
-    const previous = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: `เวอร์ชัน ${first.meta.entity_version}`, exact: true }) });
-    await previous.getByRole('button', { name: 'คืนค่าเวอร์ชันนี้', exact: true }).click();
-    await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบคืนค่าเวอร์ชันข้อมูลจำลอง');
-    await page.getByRole('button', { name: 'ยืนยันคืนค่าเวอร์ชัน', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    let history = await sourceHistory(page, 'project', original.public_project_id);
+    await history.locator(`[data-source-version="${firstVersion}"]`).click();
+    await confirmSourceCommand(page, history.getByRole('button', { name: workflowText.restore_version, exact: true }), 'ทดสอบคืนค่าเวอร์ชันข้อมูลจำลอง');
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
-    await openWorkspaceTab(page, 'history');
-    await page.getByRole('button', { name: 'ถอนการเผยแพร่', exact: true }).click();
-    await page.getByLabel('เหตุผลในการดำเนินการ').fill('สิ้นสุดการทดสอบข้อมูลจำลอง');
-    await page.getByRole('button', { name: 'ยืนยันถอนการเผยแพร่', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    history = await sourceHistory(page, 'project', original.public_project_id);
+    await confirmSourceCommand(page, history.getByRole('button', { name: workflowText.withdraw_page, exact: true }), 'สิ้นสุดการทดสอบข้อมูลจำลอง');
     expect((await page.request.get(publicPath)).status()).toBe(404);
   } finally {
+    await grant.restore();
     // Restore editable sample values; keep the audit history as evidence.
     await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role: 'editor' } });
     const current = (await (await page.request.get(adminPath)).json()).data;
@@ -110,9 +120,12 @@ test('viewer cannot edit, editor cannot publish and source values stay read-only
   await expect(page.locator('.source-field input')).toHaveCount(0);
   await switchRole(page, 'editor');
   await openWorkspaceTab(page, 'history');
-  await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: workflowText.publish, exact: true })).toHaveCount(0);
   const denied = await page.request.post(`/api/hub/v1/admin/projects/${project.public_project_id}/publish`, { headers: { Origin: origin }, data: { change_reason: 'must fail as editor' } });
   expect(denied.status()).toBe(403);
+  await page.goto('/publish');
+  await expect(page.locator('.publication-workspace > form')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: workflowText.publish, exact: true })).toHaveCount(0);
   expect((await page.request.get('/api/hub/v1/admin/projects?unexpected=1')).status()).toBe(404);
 });
 

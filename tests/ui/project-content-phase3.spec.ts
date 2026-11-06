@@ -99,11 +99,11 @@ for (const width of [1280, 390]) {
       await page.getByRole('button', { name: 'อัปโหลดและบันทึกข้อมูล', exact: true }).click();
       await failedLink;
       await expect(first.getByRole('alert')).toContainText('ทดสอบข้อผิดพลาดการผูกไฟล์');
-      await expect(page.getByRole('article', { name: 'ไฟล์ 2', exact: true }).getByRole('status')).toHaveText('บันทึกแล้ว');
+      await expect(page.getByRole('article', { name: 'ไฟล์ 2', exact: true }).locator(':scope > [role="status"]')).toHaveText('บันทึกแล้ว');
       await expect(page.getByRole('article', { name: 'ไฟล์ 3', exact: true }).getByRole('alert')).toContainText('คำตอบหลังบันทึกข้อมูลสูญหาย');
       await page.getByRole('button', { name: 'ลองบันทึกไฟล์ที่ยังไม่สำเร็จอีกครั้ง' }).click();
-      await expect(first.getByRole('status')).toHaveText('บันทึกแล้ว');
-      await expect(page.getByRole('article', { name: 'ไฟล์ 3', exact: true }).getByRole('status')).toHaveText('บันทึกแล้ว');
+      await expect(first.locator(':scope > [role="status"]')).toHaveText('บันทึกแล้ว');
+      await expect(page.getByRole('article', { name: 'ไฟล์ 3', exact: true }).locator(':scope > [role="status"]')).toHaveText('บันทึกแล้ว');
       expect(uploaded).toEqual(names);
       expect(metadataWrites).toBe(3);
       const saved = await read(page, media);

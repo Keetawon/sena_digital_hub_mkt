@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from sena_hub_api import main
+from content_workflow_fixture import load_sql_fixture, unit_publication_persona
 from test_api import settings, TOKENS
 
 
@@ -19,11 +20,13 @@ def test_coordinate_readiness_and_publication_rejection(monkeypatch):
     config = json.loads((Path(__file__).resolve().parents[3] / ".local/development.json").read_text(encoding="utf-8"))
     connection = None
     public_id = None
+    actors = {}
+    unit_publication_persona(monkeypatch, identity=lambda: actors['publisher'])
 
     @asynccontextmanager
     async def database(request, actor):
         async with connection.transaction():
-            await connection.execute(f"SET LOCAL ROLE {actor.role}")
+            await connection.execute('SET LOCAL ROLE hub_app')
             await connection.execute("SELECT set_config('app.actor_id',$1,true)", str(actor.id))
             yield connection
 
@@ -36,6 +39,7 @@ def test_coordinate_readiness_and_publication_rejection(monkeypatch):
             transaction = connection.transaction()
             await transaction.start()
             try:
+                actors.update(await load_sql_fixture(connection))
                 key = "COORD-API-" + uuid4().hex
                 await connection.execute("INSERT INTO staging.rem_projects(rem_project_id,project_name_rem,source_fingerprint) VALUES($1,'Synthetic coordinate fixture',$1)", key)
                 await connection.execute("SET LOCAL ROLE editor")
@@ -65,6 +69,6 @@ def test_coordinate_readiness_and_publication_rejection(monkeypatch):
             assert len(gaps) == missing
             if missing and latitude is not None:
                 assert all(gap["message"] == "พิกัดอยู่นอกประเทศไทย ตรวจละติจูดและลองจิจูด" for gap in gaps)
-                rejected = client.post(path + "/publish", headers={"Authorization": "Bearer " + TOKENS["publisher"]}, json={"change_reason": "Synthetic coordinate rejection"})
+                rejected = client.post(path + "/publish", headers={"Authorization": "Bearer " + TOKENS["viewer"]}, json={"change_reason": "Synthetic coordinate rejection"})
                 assert rejected.status_code == 422
         assert client.get(path + "/versions", headers=headers).json()["data"] == []

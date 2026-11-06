@@ -229,7 +229,7 @@ def test_permission_foundation_next_request_reflects_status_and_permission_rows(
 
 
 @pytest.mark.parametrize('tab,changes', [
-    ('projects', 'can_approve=true'), ('brands', 'can_approve=true'),
+    ('projects', 'can_approve=true,can_view=false'), ('brands', 'can_approve=true,can_view=false'),
     ('promotions', 'can_approve=true'), ('releases', 'can_edit=true'),
     ('projects', 'can_view=false'), ('questions', 'can_edit=true'),
     ('brands', "special_actions='{archive.legal_hold}'"),

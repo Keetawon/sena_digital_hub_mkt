@@ -119,7 +119,9 @@ test('second manager sees audited custom boxes, self locks and the real Actuals 
     expect((await page.request.post(`${api}/accounts/${self.id}/permissions`, { headers, data: { tabs: self.access.tabs, template: self.access.template, can_manage_users: true, updated_at: self.updated_at } })).status()).toBe(403);
     await page.keyboard.press('Escape'); panel = await manage(page, 'uat-somchai@example.test');
     await expect(panel.getByRole('checkbox', { name: 'โครงการที่อยู่อาศัย แก้ไข', exact: true })).toBeChecked();
-    await expect(panel.getByRole('checkbox', { name: 'โครงการที่อยู่อาศัย อนุมัติ', exact: true })).toBeDisabled();
+    // N1 permits selecting Projects E/A together; existing grants remain unchanged.
+    await expect(panel.getByRole('checkbox', { name: 'โครงการที่อยู่อาศัย อนุมัติ', exact: true })).toBeEnabled();
+    await expect(panel.getByRole('checkbox', { name: 'โครงการที่อยู่อาศัย อนุมัติ', exact: true })).not.toBeChecked();
     await expect(panel.getByRole('checkbox', { name: 'แบรนด์ที่อยู่อาศัย แก้ไข', exact: true })).not.toBeChecked();
     await panel.getByRole('region', { name: 'ตารางสิทธิ์รายแท็บ', exact: true }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${shots}/second-admin-panel.png`, fullPage: false });

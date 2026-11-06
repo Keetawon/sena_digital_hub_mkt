@@ -10,6 +10,9 @@ import pytest
 from fastapi import HTTPException
 
 from sena_hub_api.project_amenities import CSV_FIELDS, reference_rows
+from content_workflow_fixture import approve_item, decide_item
+from test_faq_intake import app as operator_call
+from test_permission_baseline import disposable_operator
 from test_permission_content import call, set_bit
 from test_permission_foundations import permission_accounts, h
 from test_project_content_core import runtime
@@ -182,26 +185,56 @@ def test_solar_is_entered_scenario_with_manual_english_four_eyes_and_immutable_a
     _, ids = permission_accounts
 
     async def check():
-        db = await runtime()
+        db = await disposable_operator()
+        await db.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
+        scope = db.transaction()
+        await scope.start()
         try:
             public_id = await project(db, ids['editor'])
             body = {'system_kw': 5, 'battery_kwh': 10, 'usage_profile': {'th': 'รูปแบบการใช้สมมติ'},
                     'bill_before': 4000, 'bill_after': 2500, 'saving_pct': 17,
                     'assumptions': {'th': 'สมมติฐานที่ผู้กรอกกำหนด'}, 'source_note': {'th': 'หลักฐานสมมติ'}, 'as_of': '2026-10-21'}
-            saved = await call(db, ids['editor'], "select hub.c4_item_save($1,'solar',$2,0,$3)", public_id, uuid4(), body)
+            saved = await operator_call(db, ids['editor'], "select hub.c4_item_save($1,'solar',$2,0,$3)", public_id, uuid4(), body)
             assert saved['state'] == 'draft' and saved['saving_pct'] == 17  # Never recomputed from bills.
-            texts = await call(db, ids['editor'], 'select hub.content_translation_list($1,$2)', 'projects', public_id)
+            texts = await operator_call(db, ids['editor'], 'select hub.content_translation_list($1,$2)', 'projects', public_id)
             assert len([t for t in texts if t['owner_key'] == saved['id'] and t['job'] is None]) == 3
+            identity = {'id': saved['id']}
+            metadata = await operator_call(db, ids['editor'], 'select hub.content_workflow_read($1,$2)', 'solar', identity)
+            await operator_call(db, ids['editor'], 'select hub.content_workflow_submit($1,$2,$3)', 'solar', identity, metadata['expected_hash'])
             await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True)
-            with pytest.raises(asyncpg.InsufficientPrivilegeError, match='Another person'):
-                await call(db, ids['editor'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
-            approved = await call(db, ids['publisher'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
+            with pytest.raises(asyncpg.CheckViolationError, match='reason'):
+                await operator_call(db, ids['editor'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
+            approved = await operator_call(db, ids['publisher'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
             assert approved['approved_by'] == str(ids['publisher'])
-            with pytest.raises(asyncpg.CheckViolationError, match='new scenario'):
-                await call(db, ids['admin'], "select hub.c4_item_save($1,'solar',$2,$3,$4)", public_id, UUID(saved['id']), approved['revision'], {'saving_pct': 99})
-            withdrawn = await call(db, ids['publisher'], "select hub.c4_solar_review($1,$2,$3,'withdraw')", public_id, UUID(saved['id']), approved['revision'])
+            certificate = await operator_call(db, ids['viewer'], 'select hub.content_workflow_read($1,$2)', 'solar', identity)
+            with pytest.raises(asyncpg.CheckViolationError, match='immutable'):
+                async with db.transaction():
+                    await db.execute('update hub.solar_estimates set saving_pct=18 where id=$1', UUID(saved['id']))
+            # The retained ordinary route must carry a reason and withdraw the
+            # same approved scenario as the generic workflow command.
+            direct_route = db.transaction()
+            await direct_route.start()
+            try:
+                await db.execute("select set_config('app.content_review_reason',$1,true)", 'Withdraw the reviewed synthetic scenario')
+                direct = await operator_call(db, ids['publisher'], "select hub.c4_solar_review($1,$2,$3,'withdraw')", public_id, UUID(saved['id']), approved['revision'])
+                assert direct['state'] == 'withdrawn'
+                assert direct['decision_reason'] == 'Withdraw the reviewed synthetic scenario'
+                retained = await db.fetchval('select payload::text from hub.content_review_versions where id=$1', UUID(certificate['version_id']))
+                assert json.loads(retained)['saving_pct'] == 17
+            finally:
+                await direct_route.rollback()
+            await operator_call(db, ids['admin'], "select hub.c4_item_save($1,'solar',$2,$3,$4)", public_id, UUID(saved['id']), approved['revision'], {'saving_pct': 99})
+            current = await operator_call(db, ids['viewer'], 'select hub.content_workflow_read($1,$2)', 'solar', identity)
+            assert current['state'] == 'DRAFT' and current['version_id'] == certificate['version_id']
+            frozen = await db.fetchval('select payload::text from hub.content_review_versions where id=$1', UUID(certificate['version_id']))
+            assert json.loads(frozen)['saving_pct'] == 17, 'Editing a new draft rewrote the approved scenario'
+            assert current['can_withdraw'] is False
+            await approve_item(db, ids, 'solar', identity, author='admin')
+            await decide_item(db, ids['publisher'], 'solar', identity, 'withdraw')
+            withdrawn = await operator_call(db, ids['viewer'], "select (hub.c4_workspace($1)->'solar')->0", public_id)
             assert withdrawn['state'] == 'withdrawn' and withdrawn['bill_after'] == 2500
         finally:
+            await scope.rollback()
             await db.close()
     asyncio.run(check())
 

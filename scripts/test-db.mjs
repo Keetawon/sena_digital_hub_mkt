@@ -10,6 +10,11 @@ const config = JSON.parse(await readFile(new URL('../.local/development.json', i
 const connection = new pg.Client({ host: '127.0.0.1', user: 'postgres', password: config.adminPassword, port: 55432, database: 'sena_hub_local' });
 try {
   await connection.connect();
+  // Synthetic personas are installed only after the existing disposable guard.
+  // Temporary INVOKER helpers use ordinary content commands; no forged approvals.
+  await connection.query(await readFile(new URL('../supabase/tests/fixtures/content_workflow.sql', import.meta.url), 'utf8'));
+  await connection.query("select set_config('app.w4_fixture_scope','SYNTHETIC-W4-DISPOSABLE',false)");
+  await connection.query('select pg_temp.w4_setup()');
   // Fixture-only translation for the legacy UUID-based setup. Assertions below
   // exercise the real consumer text-ID endpoint with its unchanged rights gate.
   await connection.query(`create function pg_temp.public_asset_id(asset_uuid uuid) returns text
@@ -32,6 +37,9 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/workspace_home.sql', import.meta.url), 'utf8'));
   console.log('PASS: private read-only workspace helpers and external-principal denial');
   await connection.query(await readFile(new URL('../supabase/tests/content_workspace.sql', import.meta.url), 'utf8'));
+  await connection.query(await readFile(new URL('../supabase/tests/unified_content_workflow.sql', import.meta.url), 'utf8'));
+  await connection.query(await readFile(new URL('../supabase/tests/unified_publication.sql', import.meta.url), 'utf8'));
+  console.log('PASS: exact-item content review, independent publication and closed helper ACLs');
   console.log('PASS: entity workspace source authority, immutable evidence and N7 legacy FAQ closure');
   console.log('PASS: project content FORCE RLS/audit, closed workers, REM building prefill, stale facts, private readiness and immediate revocation');
   await connection.query(await readFile(new URL('../supabase/tests/project_media.sql', import.meta.url), 'utf8'));

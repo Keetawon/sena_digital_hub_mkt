@@ -8,6 +8,8 @@ from uuid import UUID
 
 import pytest
 
+from content_workflow_fixture import load_sql_fixture
+
 ROOT = Path(__file__).resolve().parents[3]
 spec = importlib.util.spec_from_file_location("residential_seed", ROOT / "scripts/seed-residential-demo.py")
 seed = importlib.util.module_from_spec(spec)
@@ -61,12 +63,16 @@ def test_seed_replay_preserves_originals_and_user_edits():
             # Rehearse the actual HYABC alternate snapshot, then roll back every
             # member. Existing originals remain outside the demo selection.
             identifiers = {UUID(first['project_id']), UUID(first['brand_id']), UUID(first['promotion_id'])}
+            await seed.role(db, 'none')
+            await load_sql_fixture(db)
+            await db.fetchval("select pg_temp.w4_approve_entity('brand',$1)", UUID(first['brand_id']))
+            await db.fetchval("select pg_temp.w4_approve_entity('project',$1)", UUID(first['project_id']))
             await seed.role(db, 'publisher')
             candidates = await db.fetchval("SELECT hub.release_candidates(true)")
             members = [{key: row[key] for key in ('entity_type', 'entity_id', 'expected_updated_at', 'expected_revision', 'expected_published_version_id') if key in row}
                        for row in candidates['items'] if UUID(row['entity_id']) in identifiers]
             assert len(members) == 3
-            release = await db.fetchval("SELECT hub.release_publish($1,$2,true)", members, seed.EVIDENCE)
+            release = await db.fetchval("SELECT pg_temp.w4_release($1,$2,true)", members, seed.EVIDENCE)
             await seed.role(db, 'none')
             payload = await db.fetchval("SELECT payload FROM public_api.projects WHERE public_project_id=(SELECT public_project_id FROM hub.projects WHERE rem_project_id='HYABC')")
             assert payload['demo_mode'] is True
@@ -75,7 +81,7 @@ def test_seed_replay_preserves_originals_and_user_edits():
             assert payload['demo_excluded_model_count'] == len(original_models)
             assert all(asset['demo_fields'] for asset in payload['assets'])
             await seed.role(db, 'publisher')
-            await db.fetchval("SELECT hub.release_rollback($1,$2)", UUID(release['id']), seed.EVIDENCE)
+            await db.fetchval("SELECT pg_temp.w4_release_rollback($1,$2)", UUID(release['id']), seed.EVIDENCE)
             await seed.role(db, 'none')
             # A saved edit is never reset to the seed's proposed text on replay.
             await db.execute("UPDATE hub.projects SET meta_title=$1 WHERE rem_project_id='HYABC'", {"th": "saved user edit"})

@@ -4,6 +4,7 @@ import asyncio
 import asyncpg
 import pytest
 
+from content_workflow_fixture import load_sql_fixture
 from sena_hub_api.workspace_home import workspace_href
 from urllib.parse import parse_qs, urlsplit
 from test_permission_baseline import ROOT, disposable_operator
@@ -126,6 +127,7 @@ def test_workspace_sql_projection_regressions():
     async def check():
         db = await disposable_operator()
         try:
+            await load_sql_fixture(db)
             await db.execute((ROOT / 'supabase/tests/workspace_home.sql').read_text(encoding='utf-8'))
         finally:
             await db.close()
@@ -152,3 +154,20 @@ def test_inherited_fact_answer_keeps_unit_specific_missing_price_task(permission
         finally:
             await db.close()
     asyncio.run(check())
+
+
+def test_page_configuration_task_opens_single_publishing_workspace():
+    from urllib.parse import parse_qs, urlsplit
+    from sena_hub_api.workspace_home import workspace_href
+
+    href = workspace_href('page_config', {
+        'tab': 'publication', 'page': 'project:W4+synthetic', 'field': 'page.url',
+        'item': 'exact-config-id', 'version': 'exact-review-id',
+        'href': 'https://untrusted.invalid/',
+    })
+    parsed = urlsplit(href)
+    assert not parsed.scheme and not parsed.netloc and parsed.path == '/publish'
+    assert parse_qs(parsed.query) == {
+        'tab': ['configuration'], 'page': ['project:W4+synthetic'],
+        'field': ['page.url'], 'item': ['exact-config-id'], 'version': ['exact-review-id'],
+    }

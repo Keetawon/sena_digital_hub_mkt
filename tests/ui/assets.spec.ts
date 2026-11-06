@@ -1,4 +1,5 @@
 import { openWorkspaceTab } from './unified-workspace-helpers';
+import { approveLegacySource, confirmPublication, persona, preparePublication, publishingGrant, workflowText } from './content-workflow-fixtures';
 import { expect, test, type Page } from '@playwright/test';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -101,6 +102,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
   const filename = `ภาพทดสอบ-${randomUUID()}.png`;
   const bytes = png();
   const base = `/api/hub/v1/admin/projects/${data.project.public_project_id}`;
+  const grant = await publishingGrant();
   try {
     await page.goto(`/?project=${data.project.public_project_id}`);
     await role(page, 'editor');
@@ -156,22 +158,37 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     expect(project.readiness.ready).toBe(false);
     await role(page, 'publisher');
     await openWorkspaceTab(page, 'history');
-    await expect(page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: workflowText.publish, exact: true })).toHaveCount(0);
+    expect((await page.request.get(base)).ok()).toBeTruthy();
+    await persona(page, 'viewer');
+    const queue = (await (await page.request.get('/api/hub/v1/admin/publication-queue')).json()).data;
+    expect(queue.items.some((item: { entity_id?: string }) => item.entity_id === project.id)).toBe(false);
+    await persona(page, 'publisher');
     await openWorkspaceTab(page, 'media');
     await approve(page, asset, 'approved');
     expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
-    await openWorkspaceTab(page, 'history');
-    await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
-    await page.getByLabel('เหตุผลในการดำเนินการ').fill('ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
-    await page.getByRole('button', { name: 'ยืนยันเผยแพร่ข้อมูล', exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await persona(page, 'editor');
+    const mediaResponse = await page.request.get(`${base}/media`); expect(mediaResponse.ok()).toBeTruthy();
+    const media = (await mediaResponse.json()).data.assets.find((item: { id: string }) => item.id === asset.id);
+    const sourceResponse = await page.request.get(base); expect(sourceResponse.ok()).toBeTruthy();
+    const binding = (await sourceResponse.json()).data.assets.find((item: { id: string; asset_role: string }) => item.id === asset.id && item.asset_role === 'hero');
+    expect(media).toBeTruthy(); expect(binding).toBeTruthy();
+    const metadata = await page.request.put(`${base}/media/assets/${asset.id}`, { headers, data: {
+      expected_revision: media.media_revision,
+      changes: { media_category: 'exterior', alt_text: binding.alt_text, metadata_state: 'confirmed', marketing_publication: true, ai_exposure: 'web_only' },
+    } });
+    expect(metadata.ok()).toBeTruthy();
+    project = await approveLegacySource(page, 'project', data.project.public_project_id);
+    await persona(page, 'viewer');
+    const review = await preparePublication(page, [{ system: 'release', entity_type: 'project', entity_id: project.id }], 'ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
+    await confirmPublication(page, review);
     const published = await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`);
     expect(published.status()).toBe(200); expect(await published.body()).toEqual(bytes);
     expect(published.headers()['cache-control']).toBe('no-store');
     expect(published.headers()['x-content-type-options']).toBe('nosniff');
 
     // A draft binding removal cannot change bytes referenced by the live snapshot.
-    await role(page, 'editor');
+    await persona(page, 'editor'); await page.goto(`/?project=${data.project.public_project_id}`);
     project = (await (await page.request.get(base)).json()).data;
     const hero = project.assets.find((item: Asset) => item.asset_role === 'hero' && item.id === asset.id);
     const removed = await page.request.post(`${base}/assets/${hero.binding_id}/remove`, { headers, data: { updated_at: project.updated_at } });
@@ -182,7 +199,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     await expect(page.getByText('หยุดแสดงผ่าน API', { exact: true })).toBeVisible();
     await page.screenshot({ path: 'artifacts/asset-rights-revoked.png', fullPage: true });
-  } finally { await data.cleanup(); }
+  } finally { try { await grant.restore(); } finally { await data.cleanup(); } }
 });
 
 test('PDF download, invalid file types, viewer permissions and binding conflicts', async ({ page }) => {

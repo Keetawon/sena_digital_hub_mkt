@@ -19,7 +19,7 @@ function fixture() {
     updated_at: null as string | null, updated_by: null,
   }));
   return {
-    public_project_id: 'facility-test', public_name: { th: 'โครงการจำลองสิ่งอำนวยความสะดวก' },
+    id: '66000000-0000-4000-8000-000000000005', public_project_id: 'facility-test', public_name: { th: 'โครงการจำลองสิ่งอำนวยความสะดวก' },
     address: { th: 'ที่อยู่จำลอง' }, slug: 'facility-test', latitude: null, longitude: null,
     updated_at: initialTime, published_version_id: null, publication_available: false,
     readiness: { ready: false, percent: 20, missing: [{ field: 'latitude', message: 'ระบุพิกัด' }] },
@@ -48,6 +48,24 @@ async function openFixture(page: Page, role: 'editor' | 'viewer' = 'editor') {
     const request = route.request();
     if(new URL(request.url()).pathname==='/api/hub/v1/me')return route.continue();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
+    // Workflow projections are limited to this project and its saved facility codes.
+    if (request.method() === 'GET' && path === 'content-workflow/items') {
+      const query = new URL(request.url()).searchParams;
+      expect(query.get('level')).toBe('project'); expect(query.get('id')).toBe(project.public_project_id);
+      expect(query.get('phase')).toBe(project.source.rem_project_id);
+      return route.fulfill({ json: { data: { scope: { level: 'project', id: project.public_project_id, phase: project.source.rem_project_id }, items: [], next_cursor: null } } });
+    }
+    if (request.method() === 'GET' && path === 'content-workflow') {
+      const query = new URL(request.url()).searchParams, kind = query.get('kind'), identity = JSON.parse(query.get('identity')!);
+      const facility = kind === 'facility' ? project.facilities.items.find(item => item.code === identity.facility_code && item.updated_at) : null;
+      expect(kind === 'project' || Boolean(facility), 'Only the project and saved known facilities have workflow snapshots').toBe(true);
+      expect(identity).toEqual(facility ? { project_id: project.id, facility_code: facility.code } : { id: project.id });
+      return route.fulfill({ json: { data: { kind, identity, expected_hash: 'a'.repeat(64),
+        source_revision: null, source_updated_at: facility?.updated_at ?? project.updated_at, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT',
+        version_id: null, version_no: null, approved_by: null, approved_at: null, decision_reason: null,
+        self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false, can_approve: false,
+        can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: false, history: [] } } });
+    }
     // The outer Media tab can load before its canonical-media button is chosen.
     // This fixture has no media; preserve all native facility writers below.
     if (request.method() === 'GET' && ['projects/facility-test/media', 'projects/facility-test/media/jobs', 'projects/facility-test/media/ai-state'].includes(path)) {
@@ -102,7 +120,7 @@ test('unknown and absent are distinct; saved status updates collection with revi
   await page.getByText('รายละเอียดและแหล่งข้อมูล (ถ้ามี)', { exact: true }).click();
   await page.getByLabel('รายละเอียดสระว่ายน้ำ', { exact: true }).fill('ตรวจสอบแล้ว โครงการไม่มีสระว่ายน้ำ');
   await section.getByRole('button', { name: 'บันทึกสิ่งอำนวยความสะดวก', exact: true }).click();
-  await expect(section.getByRole('status')).toHaveText('บันทึกสิ่งอำนวยความสะดวกเป็นร่างแล้ว');
+  await expect(section.locator('.notice.success[role="status"]')).toHaveText('บันทึกสิ่งอำนวยความสะดวกเป็นร่างแล้ว');
   await expect(pool.getByRole('radio', { name: 'ไม่มี', exact: true })).toBeChecked();
   await expect(section.locator('.count')).toHaveText('1/6');
   expect(writes[0]).toEqual({ code: 'pool', body: {

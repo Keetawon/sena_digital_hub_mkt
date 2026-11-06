@@ -5,6 +5,7 @@ import asyncpg
 import pytest
 
 from sena_hub_api.articles import render_blocks
+from content_workflow_fixture import decide_item
 from test_permission_baseline import disposable_operator
 from test_permission_content import call, set_bit
 from test_permission_foundations import permission_accounts, h
@@ -69,14 +70,14 @@ def test_article_version_review_stale_and_four_eyes_survive_role_change(permissi
             assert changed['version']['version_no'] == 2 and changed['approved_version_id'] == approved['approved_version_id']
             assert changed['history'][1]['blocks'] == frozen['version']['blocks']
             assert any(t['translation_state'] == 'stale' and t['reviewed_en'] == 'Synthetic article body' for t in changed['translations'])
-            await call(db, ids['publisher'], "select hub.article_review($1,$2,'withdraw')", UUID(article), changed['revision'])
+            await decide_item(db, ids['publisher'], 'article', {'id': article}, 'withdraw')
             withdrawn = await read(db, ids, article)
             assert withdrawn['approved_version_id'] is None and withdrawn['state'] == 'DRAFT'
             assert withdrawn['history'][1]['state'] == 'WITHDRAWN'
             data = await review_english(db, ids, article)
             await call(db, ids['editor'], 'select hub.article_submit($1,$2)', UUID(article), data['revision'])
             submitted = await read(db, ids, article)
-            await call(db, ids['publisher'], "select hub.article_review($1,$2,'return')", UUID(article), submitted['revision'])
+            await decide_item(db, ids['publisher'], 'article', {'id': article}, 'return')
             assert (await read(db, ids, article))['state'] == 'RETURNED'
         finally:
             await db.close()

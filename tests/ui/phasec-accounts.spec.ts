@@ -10,7 +10,7 @@ async function setup(page:Page,{last=false,newTab=false,stale=false,newVersion=f
   const items=[account(actor,'ผู้ดูแล สมมติ','admin',!last),account(target,'สมชาย ทดสอบ',last?'viewer':'editor',last),{...account(pending,'ผู้ขอ ทดสอบ'),status:'PENDING',hub_role:null,access:{tabs:{},template:null,customised:false,can_manage_users:false} as Access}];
   if(agencyHistory)items[1]={...items[1],hub_role:'agency',agency_code:'COMBAY',access:access('agency')};
   const permission_events=agencyHistory?[{id:'synthetic-agency-history',account_id:target,actor_id:actor,action:'AGENCY_CODE',created_at:'2026-10-09T01:00:00Z',before_value:{agency_code:'KIN'},after_value:{agency_code:'COMBAY',note:'แก้รหัสตามข้อมูลสมมติ'}}]:[];
-  const tabs=Object.entries(labels).map(([tab,label_th])=>({tab,label_th,nav_group:'content',levels:['questions','actuals'].includes(tab)?['view']:tab==='releases'?['view','approve']:['registry','documents','exceptions'].includes(tab)?['view','edit']:['view','edit','approve'],special_actions:tab==='brands'?['brands.manage_catalog']:tab==='finance'?['finance.review_identifiers_corrections']:tab==='archive'?['archive.legal_hold']:[],special_labels:{'brands.manage_catalog':'จัดการทะเบียนแบรนด์','finance.review_identifiers_corrections':'ตรวจเลขอ้างอิงและรายการแก้ไข','archive.legal_hold':'กำหนดการเก็บรักษาเอกสาร'},separate_edit_approve:['projects','brands','promotions','releases'].includes(tab),rollout_state:'MIGRATED',guards_ready:true,agency_visible:tab==='registry',sensitivity:'internal',new_for_actor:false}));
+  const tabs=Object.entries(labels).map(([tab,label_th])=>({tab,label_th,nav_group:'content',levels:['questions','actuals'].includes(tab)?['view']:tab==='releases'?['view','approve']:['registry','documents','exceptions'].includes(tab)?['view','edit']:['view','edit','approve'],special_actions:tab==='brands'?['brands.manage_catalog']:tab==='finance'?['finance.review_identifiers_corrections']:tab==='archive'?['archive.legal_hold']:[],special_labels:{'brands.manage_catalog':'จัดการทะเบียนแบรนด์','finance.review_identifiers_corrections':'ตรวจเลขอ้างอิงและรายการแก้ไข','archive.legal_hold':'กำหนดการเก็บรักษาเอกสาร'},separate_edit_approve:['promotions','releases'].includes(tab),rollout_state:'MIGRATED',guards_ready:true,agency_visible:tab==='registry',sensitivity:'internal',new_for_actor:false}));
   if(newTab)tabs.push({...tabs[0],tab:'synthetic_feature',label_th:'แท็บสมมติใหม่',levels:['view','edit'],special_actions:[],separate_edit_approve:false,new_for_actor:true});
   const names:Record<string,string>={viewer:'ผู้อ่านข้อมูล',editor:'ผู้แก้ไขข้อมูล',publisher:'Manager — อนุมัติและเผยแพร่',admin:'ผู้ดูแลระบบ',online_staff:'ทีมออนไลน์',agency:'เอเจนซี'};
   const catalog={tabs,templates:Object.entries(names).map(([code,label_th])=>({code,label_th,version:1,tabs:access(code).tabs})),catalog_digest:'synthetic-catalog-digest'};
@@ -38,13 +38,23 @@ async function setup(page:Page,{last=false,newTab=false,stale=false,newVersion=f
 }
 async function manage(page:Page,id=target){await page.getByRole('tab',{name:'ผู้ใช้ทั้งหมด'}).click();await page.getByRole('row').filter({hasText:`${id}@example.test`}).getByRole('button',{name:'จัดการ'}).click();return page.getByRole('dialog');}
 
-test('template copy stages boxes; special actions need view and editorial edit/approve exclude each other',async({page})=>{
+test('template copy stages boxes; projects and brands allow edit plus approve while promotions remain separate',async({page})=>{
   const state=await setup(page);const panel=await manage(page);
   await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
   await panel.locator('.permission-template-actions').scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/manage-normal-grid.png',fullPage:false});
   await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('publisher:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
-  await expect(panel.getByRole('checkbox',{name:'โครงการ อนุมัติ',exact:true})).toBeChecked();await expect(panel.getByRole('checkbox',{name:'โครงการ แก้ไข',exact:true})).toBeDisabled();
+  await expect(panel.getByRole('checkbox',{name:'โครงการ อนุมัติ',exact:true})).toBeChecked();await expect(panel.getByRole('checkbox',{name:'โครงการ แก้ไข',exact:true})).toBeEnabled();
   await expect(panel.getByLabel('ความแตกต่างของสิทธิ์').first()).toContainText('โครงการ: ดู · แก้ไข → ดู · อนุมัติ');expect(state.calls).toHaveLength(0);
+  for (const tab of ['projects', 'brands']) {
+    const boxes = panel.getByRole('checkbox', { name: new RegExp('^' + labels[tab] + ' ') });
+    await expect(boxes.nth(1)).not.toBeChecked(); await boxes.nth(1).check();
+    await expect(boxes.nth(1)).toBeChecked(); await expect(boxes.nth(2)).toBeChecked();
+    await boxes.nth(1).uncheck();
+  }
+  const promotion = panel.getByRole('checkbox', { name: new RegExp('^' + labels.promotions + ' ') });
+  await promotion.nth(0).check(); await promotion.nth(1).check(); await expect(promotion.nth(2)).toBeDisabled();
+  await promotion.nth(1).uncheck(); await promotion.nth(2).check(); await expect(promotion.nth(1)).toBeDisabled();
+  expect(state.calls).toHaveLength(0);
   await panel.getByLabel('ความแตกต่างของสิทธิ์').first().scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/template-diff.png'});
   await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('admin:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
   await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).not.toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการทะเบียนแบรนด์',exact:true})).toBeChecked();

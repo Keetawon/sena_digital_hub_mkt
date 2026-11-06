@@ -1,6 +1,7 @@
 import { initialiseDisposableDb } from '../scripts/initialise-disposable-db.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFile,readdir,mkdir,mkdtemp,realpath,rm} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
@@ -25,8 +26,11 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const migrations=path.join(root,'supabase/migrations');
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name<'202610090047_content_permissions.sql').sort())
       await db.query(await readFile(path.join(migrations,name),'utf8'));
-    for(const file of ['scripts/sample-accounts.sql','supabase/seed.sql','scripts/sample-intake.sql','scripts/sample-brands.sql'])
-      await db.query(await readFile(path.join(root,file),'utf8'));
+    for(const file of ['scripts/sample-accounts.sql','supabase/seed.sql','scripts/sample-intake.sql','tests/fixtures/pre-workspace/sample-brands.sql']) {
+      const source=await readFile(path.join(root,file));
+      if(file==='tests/fixtures/pre-workspace/sample-brands.sql')assert.equal(createHash('sha256').update(source).digest('hex'),'218b1b80a11b1dc04feca8812d8c8369f217636d5937224dc577262a071985ae');
+      await db.query(source.toString('utf8'));
+    }
     const accounts=async()=>(await db.query('select to_jsonb(a) row from hub.user_account a order by id')).rows;
     const editors=async()=>(await db.query('select id,updated_at,updated_by from hub.assets order by id')).rows;
     const beforeAccounts=await accounts(),beforeEditors=await editors();
@@ -36,9 +40,9 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     await db.query("select set_config('app.actor_id','',false),set_config('app.change_reason','',false)");
     const contentState=async()=>(await db.query(`select name,rows from (
       select 'projects' name,jsonb_agg(to_jsonb(t) order by id) rows from hub.projects t union all
-      select 'project_versions',jsonb_agg(to_jsonb(t)-array['entity_type','web_page_id','content_sha256'] order by id) from hub.entity_versions t union all
+      select 'project_versions',jsonb_agg(to_jsonb(t)-array['entity_type','web_page_id','content_sha256','review_evidence'] order by id) from hub.entity_versions t union all
       select 'brands',jsonb_agg(to_jsonb(t) order by id) from hub.brands t union all
-      select 'brand_versions',jsonb_agg(to_jsonb(t) order by id) from hub.brand_versions t union all
+      select 'brand_versions',jsonb_agg(to_jsonb(t)-'review_evidence' order by id) from hub.brand_versions t union all
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
@@ -93,6 +97,12 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
         assert.equal(Number((await db.query('select count(*) from hub.asset_links where not binding_confirmed')).rows[0].count),0,'Existing bindings retain their confirmation');
       }
       await afterPhase7(db,name,phase7State);
+      if(name==='202611040085_unified_publication.sql') {
+        // New nullable evidence columns must not invent historical approvals.
+        for(const table of ['entity_versions','brand_versions','promotion_versions'])
+          assert.equal(Number((await db.query(`select count(*) from hub.${table} where review_evidence is not null`)).rows[0].count),0,`${name} backfilled historical ${table} approval evidence`);
+        assert.equal(Number((await db.query('select count(*) from hub.content_review_versions')).rows[0].count),0,'Workspace upgrade must not manufacture content approvals');
+      }
       if(phase5State)assert.deepEqual(await unitState(),phase5State,`${name} rewrote commercial content or source references`);
       if(phase3State)assert.deepEqual(await mediaState(),phase3State,`${name} rewrote asset metadata, rights or bindings`);
       if(before)assert.deepEqual(await contentState(),before,'Phase 1 changed content, reviews or account permissions');

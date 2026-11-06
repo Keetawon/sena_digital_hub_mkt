@@ -11,6 +11,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validato
 from .auth import Actor
 from .commercial_types import LocalizedText
 from .content_permissions import require_content
+from .content_workflow import DecisionReason
 
 
 class UnitRevision(BaseModel):
@@ -20,6 +21,7 @@ class UnitRevision(BaseModel):
 
 class UnitDecision(UnitRevision):
     decision: Literal["approve", "return", "withdraw"]
+    reason: DecisionReason | None = None
 
 
 class MarketingPrice(UnitRevision):
@@ -54,8 +56,9 @@ def register_unit_type_routes(app, authentication, database):
         require_content(request)
         return actor
 
-    async def call(request, actor, sql, *args):
+    async def call(request, actor, sql, *args, reason=None):
         async with database(request, actor) as connection:
+            await connection.execute("select set_config('app.content_review_reason',$1,true)", reason or '')
             return {"data": await connection.fetchval(sql, *args)}
 
     @app.get(prefix + "/unit-types")
@@ -68,7 +71,7 @@ def register_unit_type_routes(app, authentication, database):
 
     @app.post(prefix + "/commercial-types/{commercial_id}/review")
     async def type_review(public_id: str, commercial_id: str, body: UnitDecision, request: Request, actor: Actor = Depends(staff)):
-        return await call(request, actor, "select hub.unit_type_review($1,$2,$3,$4)", public_id, commercial_id, body.updated_at, body.decision)
+        return await call(request, actor, "select hub.unit_type_review($1,$2,$3,$4)", public_id, commercial_id, body.updated_at, body.decision, reason=body.reason)
 
     @app.post(prefix + "/prices")
     async def price_create(public_id: str, body: MarketingPrice, request: Request, actor: Actor = Depends(staff)):
@@ -86,4 +89,4 @@ def register_unit_type_routes(app, authentication, database):
 
     @app.post(prefix + "/prices/{price_id}/review")
     async def price_review(public_id: str, price_id: UUID, body: UnitDecision, request: Request, actor: Actor = Depends(staff)):
-        return await call(request, actor, "select hub.project_price_review($1,$2,$3,$4)", public_id, price_id, body.updated_at, body.decision)
+        return await call(request, actor, "select hub.project_price_review($1,$2,$3,$4)", public_id, price_id, body.updated_at, body.decision, reason=body.reason)

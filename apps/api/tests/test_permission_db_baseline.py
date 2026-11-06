@@ -72,6 +72,95 @@ WORKSPACE_FUNCTIONS = {
     'hub.workspace_resolve', 'hub.workspace_target', 'hub.workspace_tree',
 }
 
+WORKFLOW_TABLES = {'hub.content_review_versions'}
+WORKFLOW_FUNCTIONS = {
+    'hub.content_decision_stamp',
+    'hub.content_definition_replace',
+    'hub.content_glossary_version',
+    'hub.content_native_authors',
+    'hub.content_native_freeze',
+    'hub.content_preview_compose',
+    'hub.content_preview_faqs',
+    'hub.content_preview_output',
+    'hub.content_preview_project',
+    'hub.content_preview_resolve',
+    'hub.content_preview_scope_faq',
+    'hub.content_preview_sections',
+    'hub.content_preview_source_available',
+    'hub.content_review_reason',
+    'hub.content_review_version_guard',
+    'hub.content_self_review',
+    'hub.content_staged_evidence',
+    'hub.content_staged_invalidation',
+    'hub.content_submission_freeze',
+    'hub.content_workflow_authors',
+    'hub.content_workflow_hash',
+    'hub.content_workflow_history_review',
+    'hub.content_workflow_history_staged',
+    'hub.content_workflow_identity',
+    'hub.content_workflow_items',
+    'hub.content_workflow_lock',
+    'hub.content_workflow_material',
+    'hub.content_workflow_payload',
+    'hub.content_workflow_read',
+    'hub.content_workflow_review',
+    'hub.content_workflow_save_approve',
+    'hub.content_workflow_source',
+    'hub.content_workflow_staged_values',
+    'hub.content_workflow_submit',
+    'hub.content_workflow_table',
+    'hub.content_workflow_version',
+    'hub.publication_actor',
+    'hub.publication_certificate',
+    'hub.publication_commercial',
+    'hub.publication_dependency_check',
+    'hub.publication_enrich',
+    'hub.publication_expiry_tasks',
+    'hub.publication_fact_dependencies',
+    'hub.publication_item_descriptor',
+    'hub.publication_item_key',
+    'hub.publication_legacy_certify',
+    'hub.publication_legacy_dependencies',
+    'hub.publication_page_visible',
+    'hub.publication_pinned_fact',
+    'hub.publication_pinned_source',
+    'hub.publication_prices',
+    'hub.publication_promotion_check',
+    'hub.publication_queue_prepare',
+    'hub.publication_queue_publish',
+    'hub.publication_queue_read',
+    'hub.publication_queue_return',
+    'hub.publication_release_candidates',
+    'hub.publication_release_core',
+    'hub.publication_release_prepared',
+    'hub.publication_replace',
+    'hub.publication_retained_reviewer_evidence',
+    'hub.publication_retained_media_source',
+    'hub.publication_compose_faq',
+    'hub.publication_rollback_check',
+    'hub.publication_sanitize',
+    'hub.publication_snapshot_guard',
+    'hub.publication_source_kind',
+    'hub.publication_task_context',
+    'hub.publication_task_native_ready',
+    'hub.publication_task_published',
+    'hub.publication_workflow_descriptor',
+    'hub.publication_write_lock',
+    'hub.translation_editable_before_workflow',
+    'hub.web_source_available_before_workflow',
+}
+WORKFLOW_APP_FUNCTIONS = {
+    'hub.content_workflow_items',
+    'hub.content_workflow_read',
+    'hub.content_workflow_review',
+    'hub.content_workflow_save_approve',
+    'hub.content_workflow_submit',
+    'hub.publication_queue_prepare',
+    'hub.publication_queue_publish',
+    'hub.publication_queue_read',
+    'hub.publication_queue_return',
+}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -188,10 +277,15 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 actual = [dict(row) for row in await db.fetch(sql, *args)]
                 if name in ('relations', 'functions'):
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
-                    additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS
+                    additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS | WORKFLOW_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    workflow = [r for r in actual if r['schema'] + '.' + r['table'] in WORKFLOW_TABLES]
+                    assert len(workflow) == 1 and workflow[0]['name'] == 'workflow_owner'
+                    assert workflow[0]['roles'] == ['postgres'] and workflow[0]['cmd'] == 'ALL'
+                    assert workflow[0]['qual'] == workflow[0]['with_check'] == 'true'
+                    actual = [r for r in actual if r not in workflow]
                     media_worker = [r for r in actual if r['schema'] + '.' + r['table'] in MEDIA_WORKER_TABLES]
                     assert {(r['table'], r['name']) for r in media_worker} == {
                         ('media_ai_settings', 'media_ai_owner'), ('media_worker_status', 'media_worker_status_owner')}
@@ -406,7 +500,7 @@ async def assert_reviewed_database_boundary(db):
     tables = {r['name']: r for r in rows if r['kind'] in ('r', 'p')}
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
-    classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES
+    classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -421,6 +515,7 @@ async def assert_reviewed_database_boundary(db):
     assert tables['staging.website_content_receipts']['grants'] == []
     assert all(tables[name]['grants'] == [] for name in MEDIA_WORKER_TABLES)
     assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
+    assert all(not tables[name]['grants'] for name in WORKFLOW_TABLES), 'Content review versions have no application table grants'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the
@@ -442,6 +537,24 @@ def test_every_base_relation_has_a_reviewed_force_rls_boundary():
         db = await runtime()
         try:
             await assert_reviewed_database_boundary(db)
+        finally:
+            await db.close()
+    asyncio.run(check())
+
+
+def test_workflow_function_inventory_has_only_nine_runtime_entry_points():
+    async def check():
+        db = await runtime()
+        try:
+            rows = [dict(row) for row in await db.fetch(FUNCTIONS_SQL, ['hub'], ROLES + ['hub_app'])
+                    if row['name'] in WORKFLOW_FUNCTIONS]
+            assert len(rows) == len(WORKFLOW_FUNCTIONS)
+            assert {row['name'] for row in rows} == WORKFLOW_FUNCTIONS
+            for row in rows:
+                assert row['config'] == ['search_path=pg_catalog, pg_temp'], row['name']
+                assert row['execute_roles'] == (['hub_app'] if row['name'] in WORKFLOW_APP_FUNCTIONS else []), row['name']
+                if row['name'] in WORKFLOW_APP_FUNCTIONS:
+                    assert row['security_definer'], row['name']
         finally:
             await db.close()
     asyncio.run(check())

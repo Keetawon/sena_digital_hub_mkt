@@ -5,6 +5,7 @@ import { ContentLabel, useFieldCatalog } from "./content-common";
 import { FormEvent, useEffect, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import type { Project } from "./hub-admin";
+import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
 import "./project-facilities.css";
 
@@ -22,21 +23,27 @@ export type Facilities = {
 const statusLabels = { present: "มี", absent: "ไม่มี", planned: "อยู่ในแผน", unknown: "ยังไม่ทราบ" };
 
 export function ProjectFacilities({ project, role, disabled, onDirtyChange, onProjectChanged }: {
-  project: Project; role: LocalRole; disabled: boolean;
+  project: Project & { id?: string }; role: LocalRole; disabled: boolean;
   onDirtyChange: (dirty: boolean) => void; onProjectChanged: (project: Project) => void;
 }) {
   const permissions = useHubPermissions();
   const { catalog } = useFieldCatalog();
   const [editing, setEditing] = useState<Facility | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set());
+  const workflowBusy = workflowOwners.size > 0;
+  const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
+  const [editStamp, setEditStamp] = useState(project.updated_at);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const data = project.facilities;
   const canEdit = permissions.can("projects", "edit");
-  useEffect(() => { onDirtyChange(Boolean(editing) || pending); return () => onDirtyChange(false); }, [editing, pending, onDirtyChange]);
+  useEffect(() => { onDirtyChange(Boolean(editing) || pending || workflowBusy); return () => onDirtyChange(false); }, [editing, pending, workflowBusy, onDirtyChange]);
 
   function edit(item: Facility, status = item.status, openDetails = false) {
+    if (disabled || pending || workflowBusy || !canEdit) return;
+    if (!editing) setEditStamp(project.updated_at);
     const draft = editing?.code === item.code ? editing : { ...item, description: { ...item.description } };
     setEditing({ ...draft, status, expected_open_date: status === "planned" ? draft.expected_open_date : null });
     if (!editing || openDetails) setDetailsOpen(openDetails);
@@ -45,11 +52,11 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!editing || disabled || pending || !canEdit) return;
+    if (!editing || disabled || pending || workflowBusy || !canEdit) return;
     setPending(true); setError(""); setNotice("");
     try {
       const next = await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}/facilities/${encodeURIComponent(editing.code)}`, "PUT", {
-        updated_at: project.updated_at, status: editing.status, description: editing.description,
+        updated_at: editStamp, status: editing.status, description: editing.description,
         location_note: editing.location_note, access_note: editing.access_note,
         evidence_note: editing.evidence_note, expected_open_date: editing.status === "planned" ? editing.expected_open_date || null : null,
       });
@@ -73,17 +80,17 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
           return <tbody className="facility-item" key={item.code} id={`facilities-${item.code}`} tabIndex={-1}>
           <tr><th scope="row"><h3>{item.name_th}</h3><p className="small-text muted">{item.required ? "รายการหลัก" : "ข้อมูลเพิ่มเติม"}</p></th><td>
           {!canEdit && <span>{statusLabels[status]}</span>}
-          {canEdit && <fieldset className="facility-status-options" disabled={disabled || pending || Boolean(editing && !active)}>
+          {canEdit && <fieldset className="facility-status-options" disabled={disabled || workflowBusy || pending || Boolean(editing && !active)}>
             <legend className="sr-only">สถานะ{item.name_th}</legend>
             {Object.entries(statusLabels).map(([value, label]) => <label key={value} className="facility-status-option">
               <input type="radio" name={`facility-status-${item.code}`} value={value} checked={status === value} onChange={() => edit(item, value as Facility["status"])} />
               <span>{label}</span>
             </label>)}
-          </fieldset>}</td><td>{canEdit && !active && <button type="button" className="button text-button" disabled={disabled || pending || Boolean(editing)} onClick={() => edit(item, item.status, true)}>รายละเอียด<span className="sr-only"> {item.name_th}</span></button>}</td></tr>
+          </fieldset>}</td><td>{canEdit && !active && <button type="button" className="button text-button" disabled={disabled || workflowBusy || pending || Boolean(editing)} onClick={() => edit(item, item.status, true)}>รายละเอียด<span className="sr-only"> {item.name_th}</span></button>}</td></tr>
           {(active || item.description.th || item.description.en || item.access_note || item.expected_open_date || item.evidence_note) && <tr><td colSpan={3}>
           {active ? <form onSubmit={save} className="facility-editor">
             <p className="field-help">ยังไม่บันทึก · บันทึกหรือยกเลิกรายการนี้ก่อนเลือกสิ่งอำนวยความสะดวกถัดไป</p>
-            <fieldset disabled={disabled || pending}><legend className="sr-only">แก้ไข{item.name_th}</legend>
+            <fieldset disabled={disabled || workflowBusy || pending}><legend className="sr-only">แก้ไข{item.name_th}</legend>
               {editing.status === "planned" && <div className="form-field"><label htmlFor={`facility-date-${item.code}`}>วันที่คาดว่าจะเปิดใช้ (ถ้าทราบ)</label><input id={`facility-date-${item.code}`} type="date" value={editing.expected_open_date ?? ""} onChange={event => setEditing({ ...editing, expected_open_date: event.target.value || null })} /></div>}
               <details className="facility-detail-fields" open={detailsOpen} onToggle={event => setDetailsOpen(event.currentTarget.open)}><summary>รายละเอียดและแหล่งข้อมูล (ถ้ามี)</summary>
               <div className="form-field"><ContentLabel htmlFor={`facility-description-${item.code}`} field={catalog?.items.find(field => field.field_key === "facility.description")}>รายละเอียด{item.name_th}</ContentLabel><textarea id={`facility-description-${item.code}`} rows={3} maxLength={4000} value={editing.description.th ?? ""} onChange={event => setEditing({ ...editing, description: { ...editing.description, th: event.target.value } })} /></div>
@@ -93,9 +100,10 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
               <div className="form-field"><label htmlFor={`facility-evidence-${item.code}`}>แหล่งข้อมูล / ผู้ให้ข้อมูล</label><textarea id={`facility-evidence-${item.code}`} rows={2} maxLength={2000} value={editing.evidence_note} onChange={event => setEditing({ ...editing, evidence_note: event.target.value })} /></div>
               </details>
             </fieldset>
-            <div className="facility-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setEditing(null); setError(""); }}>ยกเลิก</button><button className="button primary" type="submit" aria-busy={pending} disabled={disabled || pending}>{pending ? "กำลังบันทึก…" : "บันทึกสิ่งอำนวยความสะดวก"}</button></div>
+            <div className="facility-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setEditing(null); setError(""); }}>ยกเลิก</button><button className="button primary" type="submit" aria-busy={pending} disabled={disabled || workflowBusy || pending}>{pending ? "กำลังบันทึก…" : "บันทึกสิ่งอำนวยความสะดวก"}</button></div>
           </form> : <>{item.description.th && <p className="facility-description">{item.description.th}</p>}{item.description.en && <p className="facility-description" lang="en">{item.description.en}</p>}{item.access_note && <p className="small-text muted">เงื่อนไข: {item.access_note}</p>}{item.expected_open_date && <p className="small-text muted">คาดว่าจะเปิดใช้: {item.expected_open_date}</p>}{item.evidence_note && <details className="facility-evidence"><summary>แหล่งข้อมูลและประวัติบันทึก</summary><p>{item.evidence_note}</p>{item.updated_at && <p className="small-text muted">บันทึก {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(item.updated_at))}</p>}</details>}</>}
           </td></tr>}
+          {item.updated_at && project.id && <tr><td colSpan={3}><ContentWorkflow target={{ kind: "facility", identity: { project_id: project.id, facility_code: item.code } }} label={item.name_th} revision={item.updated_at} disabled={disabled || pending || Boolean(editing) || workflowOwners.size > 0 && !workflowOwners.has("facility:" + item.code)} onEditingChange={value => workflowEditing("facility:" + item.code, value)} onChanged={async () => { onProjectChanged(await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}`)); }} onReload={async () => { onProjectChanged(await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}`)); }} /></td></tr>}
         </tbody>; })}</table></div>
       </> : <p className="muted">ยังไม่มีรายการสิ่งอำนวยความสะดวกจากระบบ</p>}
     </div>

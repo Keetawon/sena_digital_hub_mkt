@@ -41,7 +41,9 @@ async function stableDrawer(page: Page) {
 async function reveal(page: Page, group: string) {
   await openMenu(page);
   const button = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('button', { name: group, exact: true });
-  if (await button.count() && await button.getAttribute('aria-expanded') === 'false') await button.click();
+  await expect(button).toBeVisible();
+  if (await button.getAttribute('aria-expanded') === 'false') await button.click();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
 }
 
 test('shared Hub menu connects projects, brands and every registry screen', async ({ page }) => {

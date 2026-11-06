@@ -39,7 +39,7 @@ export const hubServices: HubService[] = [
       { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/website" }, { section: "brands", href: "/website?view=brands" }, { section: "faq", href: "/website?intent=faq" }] },
       { key: "promotions", label: "โปรโมชั่น", targets: [{ section: "promotions", href: "/promotions" }] },
       { key: "articles", label: "บทความ", targets: [{ section: "articles", href: "/articles" }] },
-      { key: "publishing", label: "เผยแพร่", targets: [{ section: "releases", href: "/releases" }, { section: "faq", href: "/faq?tab=publication" }] },
+      { key: "publishing", icon: "M4 10v10h16V10M12 15V3M7 8l5-5 5 5", label: "เผยแพร่", targets: [{ section: "faq", href: "/publish" }, { section: "releases", href: "/publish" }] },
     ] },
     { key: "settings", label: "ตั้งค่า", icon: "M4 7h16M4 17h16M8 4v6M16 14v6", items: [
       { key: "question-bank", label: "คำถามมาตรฐาน", targets: [{ section: "faq", href: "/settings?section=bank" }] },
@@ -59,6 +59,7 @@ export const hubUtilities: HubMenuItem[] = hubPages.filter(page => page.group ==
 
 export function hubCurrentMenuKey(section: HubSection, location = "/") {
   const url = new URL(location, "https://hub.invalid");
+  if (url.pathname === "/publish" || url.pathname === "/releases" || url.pathname === "/faq" && url.searchParams.get("tab") === "publication") return "publishing";
   if (url.pathname === "/home") return "home";
   if (url.pathname === "/website" || url.pathname.startsWith("/website/")) return "website";
   if (url.pathname === "/settings/activity") return "activity";
@@ -87,7 +88,7 @@ export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);
   return page && "permissionTab" in page ? page.permissionTab : section;
 }
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/website", "/settings", "/settings/activity", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/publish", "/website", "/settings", "/settings/activity", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
 function entityPagePath(path: string) {
   const match = /^\/website\/(?:corporate|business|brand|project|programme|project_group|unit_type)\/([^/]+)$/.exec(path);
   if (!match) return false;

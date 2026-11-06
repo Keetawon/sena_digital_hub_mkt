@@ -23,6 +23,12 @@ function capabilities(account: any, tabs: Record<string, string[]>) {
 }
 async function syntheticProject(page: Page) {
   await mockWorkspaceProjection(page, project);
+  await page.route('**/api/hub/v1/admin/content-workflow/items?*', route => {
+    expect(route.request().method()).toBe('GET');
+    const query = new URL(route.request().url()).searchParams;
+    expect(Object.fromEntries(query)).toEqual({ level: 'project', id: 'CAPABILITY-UI', phase: 'CAPABILITY-UI', limit: '100' });
+    return route.fulfill({ json: { data: { scope: { level: 'project', id: 'CAPABILITY-UI', phase: 'CAPABILITY-UI' }, items: [], next_cursor: null } } });
+  });
   await page.route('**/api/hub/v1/admin/projects/CAPABILITY-UI', route => route.fulfill({ json: { data: project } }));
   await page.route('**/api/hub/v1/admin/projects/CAPABILITY-UI/versions', route => route.fulfill({ json: { data: [] } }));
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActorName, useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { workspaceApi, workspaceHref, workspaceName, workspaceText, type WorkspaceLevel, type WorkspaceTarget } from "@/lib/unified-workspace";
+import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
 import { useContentLocation } from "./content-operations-shared";
 import { ContentContacts, type Contact } from "./content-contacts";
@@ -28,7 +29,7 @@ function locales(value: Locales | unknown): Locales {
 }
 export type FixedFaqScope = { type: string; id: string; name?: string };
 export type FaqEntityContext = { level: WorkspaceLevel; id: string; phase?: string | null };
-export function FaqWorkspace({ embedded = false, scope, entity, initialSection, onEditingChange }: { embedded?: boolean; scope?: FixedFaqScope; entity?: FaqEntityContext; initialSection?: "contacts" | "bank" | "glossary"; onEditingChange?: (value: boolean) => void } = {}) {
+export function FaqWorkspace({ embedded = false, scope, entity, initialSection, onEditingChange, onWorkflowChanged }: { embedded?: boolean; scope?: FixedFaqScope; entity?: FaqEntityContext; initialSection?: "contacts" | "bank" | "glossary"; onEditingChange?: (value: boolean) => void; onWorkflowChanged?: () => void } = {}) {
   const permissions = useHubPermissions(), canEdit = permissions.can("knowledge", "edit");
   const { catalog, error: catalogError } = useFieldCatalog();
   const [bank, setBank] = useState<QuestionBank | null>(null), [references, setReferences] = useState<References | null>(null);
@@ -36,12 +37,17 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
   const [current, setCurrent] = useState<Faq | null>(null), [draft, setDraft] = useState<Draft | null>(null);
   const [editing, setEditing] = useState(false), [dirty, setDirty] = useState(false), [pending, setPending] = useState(false), [loading, setLoading] = useState(true);
   const [error, setError] = useState(""), [notice, setNotice] = useState(""), [search, setSearch] = useState("");
+  const form = useRef<HTMLFormElement>(null);
+  const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set()), [draftRevision, setDraftRevision] = useState(0);
+  const workflowBusy = workflowOwners.size > 0;
+  const frozen = current?.state.toUpperCase() === "IN_REVIEW";
+  const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
   const [editTab, setEditTab] = useState<keyof typeof editTabs>("answer"), [previewLocale, setPreviewLocale] = useState<"th" | "en">("th");
-  const location = useContentLocation(editing || dirty, !embedded);
+  const location = useContentLocation(editing || dirty || pending || workflowBusy, !embedded);
   const tabKeyQuery = embedded ? "faq_section" : "tab";
   const questionKey = location.params.get("question");
   const clusterId = embedded ? location.params.get("cluster") : null;
-  useEffect(() => { onEditingChange?.(editing || dirty); return () => onEditingChange?.(false); }, [editing, dirty, onEditingChange]);
+  useEffect(() => { onEditingChange?.(editing || dirty || pending || workflowBusy); return () => onEditingChange?.(false); }, [editing, dirty, pending, workflowBusy, onEditingChange]);
   const queryTab = location.params.get(tabKeyQuery) as keyof typeof tabs, tab = initialSection ?? (clusterId ? "intake" : queryTab in tabs ? queryTab : "drafts");
   const selected = location.params.get("faq");
   const draftBank = selected === "new" ? bank : null;
@@ -49,10 +55,11 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
     const [faqs, questions, refs, channels] = await Promise.all([embedded ? Promise.resolve({ items: [] as Faq[] }) : request<{ items: Faq[] }>("v1/admin/faq"), request<QuestionBank>("v1/admin/faq/questions"), request<References>("v1/admin/faq/references"), request<Contact[]>("v1/admin/faq/corporate-contacts")]);
     setItems(faqs.items); setBank(questions); setReferences(refs); setContacts(channels);
   }, [embedded]);
+  const changed = useCallback(async () => { await reload(); onWorkflowChanged?.(); }, [reload, onWorkflowChanged]);
   const reloadCurrent = useCallback(async () => {
     if (selected && selected !== "new") setCurrent(await request<Faq>(`v1/admin/faq/${selected}`));
-    await reload();
-  }, [selected, reload]);
+    await changed();
+  }, [selected, changed]);
   useEffect(() => { let active = true; reload().catch(error => { if (active) setError(errorMessage(error)); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [reload]);
   useEffect(() => {
     let active = true; setCurrent(null); setDraft(null); setDirty(false); setEditTab("answer"); setError("");
@@ -61,24 +68,19 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
     return () => { active = false; };
   }, [selected, canEdit, scope?.type, scope?.id, questionKey, draftBank]);
   function edit() {
-    if (!current || !canEdit) return;
+    if (!current || !canEdit || frozen || pending || workflowBusy || editing) return;
+    setDraftRevision(current.revision);
     const value = current.version;
     setDraft({ question_key: current.question_key ?? "", scope_type: current.scope_type, scope_id: current.scope_id, question: locales(value.question), alt_questions: locales(value.alt_questions), short_answer: locales(value.short_answer), detail: locales(value.detail), answer_kind: value.answer_kind, fact_keys: value.fact_keys, applies_to_project_ids: value.applies_to_project_ids, applicability_rule: value.applicability_rule ?? {}, review_due: value.review_due ?? "", effective_to: value.effective_to ?? "", ai_exposure: value.ai_exposure, source_ref: "", source_url: "" });
     setDirty(true); setEditTab("answer"); setError(""); setNotice("");
   }
   async function save() {
-    if (!draft || !canEdit || pending || scope && (draft.scope_type !== scope.type || draft.scope_id !== scope.id)) return;
+    if (!draft || !canEdit || frozen || pending || workflowBusy || scope && (draft.scope_type !== scope.type || draft.scope_id !== scope.id)) return;
     setPending(true); setError(""); setNotice("");
     try {
-      const value = await request<Faq>(current ? `v1/admin/faq/${current.id}` : "v1/admin/faq", current ? "PUT" : "POST", { expected_revision: current?.revision ?? 0, changes: { ...draft, review_due: draft.review_due || null, effective_to: draft.effective_to || null, source_url: draft.source_url || null } });
-      await reload(); setCurrent(await request<Faq>(`v1/admin/faq/${value.id}`)); setDraft(null); setDirty(false); location.navigate({ faq: value.id }, true); setNotice("บันทึกฉบับร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ");
+      const value = await request<Faq>(current ? `v1/admin/faq/${current.id}` : "v1/admin/faq", current ? "PUT" : "POST", { expected_revision: current ? draftRevision : 0, changes: { ...draft, review_due: draft.review_due || null, effective_to: draft.effective_to || null, source_url: draft.source_url || null } });
+      await changed(); setCurrent(await request<Faq>(`v1/admin/faq/${value.id}`)); setDraft(null); setDirty(false); location.navigate({ faq: value.id }, true); setNotice("บันทึกฉบับร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ");
     } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
-  }
-  async function submit() {
-    if (!current || !canEdit || pending) return;
-    setPending(true); setError("");
-    try { await request(`v1/admin/faq/${current.id}/submit`, "POST", { expected_revision: current.revision }); await reloadCurrent(); setNotice("ส่งตรวจแล้ว ฉบับนี้เก็บไว้ในประวัติ ยังไม่เผยแพร่เว็บไซต์"); }
-    catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
   }
   function scopeOptions(kind: string): Reference[] {
     if (!references) return [];
@@ -88,18 +90,18 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
   return <div className={`content-workspace${embedded ? " entity-embedded-faq" : ""}`}><header className="content-header"><h1>คลัง FAQ เว็บไซต์</h1><p>เตรียมคำตอบจากคำถามมาตรฐาน พร้อมที่มาและขอบเขตโครงการ</p><p className="content-state">{tab === "publication" ? "ตรวจหน้าเว็บก่อนเผยแพร่ โดยผู้อนุมัติคนละคน" : "ฉบับร่างภายใน Hub · ยังไม่เผยแพร่บนเว็บไซต์"}</p>{!canEdit && tab !== "publication" && <p>สิทธิ์ดูข้อมูลเท่านั้น</p>}</header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}{draft ? " ข้อความที่กรอกยังอยู่" : ""}</p>}{notice && <p className="notice success" role="status">{notice}</p>}
     {loading || !catalog || !bank || !references ? !error && !catalogError && <p role="status">กำลังโหลดคลัง FAQ…</p> : <>
-      {!embedded && tab !== "publication" && <nav className="content-tabs" aria-label="ส่วนคลัง FAQ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={(editing || dirty) && tab !== key} onClick={() => location.navigate({ [tabKeyQuery]: key, faq: null })}>{label}</button>)}</nav>}
+      {!embedded && tab !== "publication" && <nav className="content-tabs" aria-label="ส่วนคลัง FAQ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={pending || workflowBusy || (editing || dirty) && tab !== key} onClick={() => location.navigate({ [tabKeyQuery]: key, faq: null })}>{label}</button>)}</nav>}
       {tab === "coverage" && <FaqCoverage onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id })} />}
       {tab === "publication" && <WebPublication onEditingChange={setEditing} />}
-      {tab === "intake" && <>{embedded && <button className="button secondary" disabled={editing} onClick={() => location.navigate({ cluster: null, faq_section: null })}>{workspaceText.backFaq}</button>}<FaqIntake fixedScope={scope} initialCluster={clusterId ?? undefined} bank={bank} references={references} onChanged={reload} onEditingChange={setEditing} onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id, cluster: null })} /></>}
-      {tab === "bank" && <FaqBank bank={bank} fields={catalog.items} onChanged={reload} onEditingChange={setEditing} />}
-      {tab === "glossary" && <FaqGlossary onEditingChange={setEditing} />}
-      {tab === "contacts" && <ContentContacts items={contacts} catalog={catalog} apiBase="v1/admin/faq/corporate-contacts" canEdit={canEdit} onChanged={reload} onEditingChange={setEditing} />}
-      {tab === "drafts" && <section className="content-section"><div className="content-toolbar"><h2>{selected ? "รายละเอียดคำตอบ" : "คำตอบ FAQ"}</h2>{!selected && canEdit && <button className="button primary" onClick={() => location.navigate({ faq: "new" })}>เพิ่มคำตอบ FAQ</button>}{selected && <button className="button secondary" disabled={pending || editing} onClick={() => location.navigate({ faq: null })}>กลับรายการคำตอบ</button>}</div>
+      {tab === "intake" && <>{embedded && <button className="button secondary" disabled={editing} onClick={() => location.navigate({ cluster: null, faq_section: null })}>{workspaceText.backFaq}</button>}<FaqIntake fixedScope={scope} initialCluster={clusterId ?? undefined} bank={bank} references={references} onChanged={changed} onEditingChange={setEditing} onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id, cluster: null })} /></>}
+      {tab === "bank" && <FaqBank bank={bank} fields={catalog.items} onChanged={changed} onEditingChange={setEditing} />}
+      {tab === "glossary" && <FaqGlossary onChanged={changed} onEditingChange={setEditing} />}
+      {tab === "contacts" && <ContentContacts items={contacts} catalog={catalog} apiBase="v1/admin/faq/corporate-contacts" canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
+      {tab === "drafts" && <section className="content-section"><div className="content-toolbar"><h2>{selected ? "รายละเอียดคำตอบ" : "คำตอบ FAQ"}</h2>{!selected && canEdit && <button className="button primary" onClick={() => location.navigate({ faq: "new" })}>เพิ่มคำตอบ FAQ</button>}{selected && <button className="button secondary" disabled={pending || workflowBusy || editing} onClick={() => location.navigate({ faq: null })}>กลับรายการคำตอบ</button>}</div>
         {!selected ? embedded && scope && entity ? <EntityFaqQuestions scope={scope} entity={entity} questionKey={questionKey} onOpen={id => location.navigate({ faq: id })} onCreate={question => location.navigate({ faq: "new", question })} /> : <><label className="content-input">ค้นหาคำตอบ<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label><div className="content-card-list">{items.filter(item => `${item.question?.th} ${item.scope_id}`.includes(search)).map(item => <article className="content-card" key={item.id}><h3>{item.question?.th || "คำตอบจากข้อมูลเดิม"}</h3><p className="content-state">{stateLabel(item.state)} · {scopeLabels[item.scope_type]} {scopeOptions(item.scope_type).find(ref => ref.id === item.scope_id)?.name ?? item.scope_id}</p><p>{item.short_answer?.th}</p><button className="button secondary" onClick={() => location.navigate({ faq: item.id })}>เปิดคำตอบ {item.question?.th}</button></article>)}</div>{!items.length && <p className="content-empty">ยังไม่มีคำตอบ เริ่มจากอนุมัติคำถามมาตรฐานแล้วสร้างร่างคำตอบ</p>}</> : <>
           {current && <p className="content-state">{stateLabel(current.state)} · ฉบับ {current.version.version_no}</p>}
-          <nav className="content-tabs" aria-label="ส่วนคำตอบ">{Object.entries(editTabs).map(([key, label]) => <button key={key} aria-current={editTab === key ? "page" : undefined} disabled={editing || dirty && ["english", "history", "sources"].includes(key)} onClick={() => setEditTab(key as keyof typeof editTabs)}>{label}</button>)}</nav>
-          {editTab === "answer" && (draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={pending || !canEdit}>
+          <nav className="content-tabs" aria-label="ส่วนคำตอบ">{Object.entries(editTabs).map(([key, label]) => <button key={key} aria-current={editTab === key ? "page" : undefined} disabled={pending || workflowBusy || editing || dirty && ["english", "history", "sources"].includes(key)} onClick={() => setEditTab(key as keyof typeof editTabs)}>{label}</button>)}</nav>
+          {editTab === "answer" && (draft ? <form ref={form} inert={workflowBusy} onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={pending || !canEdit || frozen}>
             <label className="content-input">คำถามมาตรฐานที่อนุมัติแล้ว<select required value={draft.question_key} onChange={event => { const question = bank.items.find(item => item.question_key === event.target.value); if (question) setDraft({ ...draft, question_key: question.question_key, question: { ...question.question_template }, alt_questions: { ...question.alt_questions }, answer_kind: question.answer_kind, fact_keys: question.fact_keys }); }}><option value="">เลือกคำถาม</option>{bank.items.filter(item => item.status === "approved").map(item => <option key={item.question_key} value={item.question_key}>{item.question_template.th}</option>)}</select></label>
             {!bank.items.some(item => item.status === "approved") && <p className="inline-warning">ยังไม่มีคำถามที่อนุมัติ ให้ Manager ตรวจคำถามมาตรฐานก่อน</p>}
             {scope ? <p className="content-state">{scopeLabels[scope.type]} · {scope.name ?? scope.id}{scope.type === "project" && scope.name && <> · {scope.id}</>}</p> : <div className="content-two-columns"><label className="content-input">ระดับคำตอบ<select value={draft.scope_type} disabled={Boolean(current)} onChange={event => { const kind = event.target.value; setDraft({ ...draft, scope_type: kind, scope_id: kind === "corporate" ? "sena" : "", applies_to_project_ids: [], applicability_rule: {} }); }}>{Object.entries(scopeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
@@ -111,8 +113,9 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
             <label className="content-input">เฟส REM ที่คำตอบนี้ใช้<select multiple size={6} disabled={draft.scope_type === "project" || Object.keys(draft.applicability_rule).length > 0} value={draft.applies_to_project_ids} onChange={event => setDraft({ ...draft, applies_to_project_ids: Array.from(event.target.selectedOptions, option => option.value) })}>{references.projects.map(item => <option key={item.id} value={item.id}>{item.name} · {item.id}</option>)}</select><span className="field-help">เลือกเฟสที่เกี่ยวข้องโดยตรง สำหรับคำตอบระดับองค์กรสามารถเว้นว่างได้ เมื่อใช้เงื่อนไข รายการนี้มาจากผลตรวจเงื่อนไข</span></label>
             <div className="content-two-columns"><label className="content-input">กำหนดตรวจคำตอบ<input type="date" value={draft.review_due} onChange={event => setDraft({ ...draft, review_due: event.target.value })} /></label><label className="content-input">วันที่สิ้นสุดคำตอบ<input type="date" value={draft.effective_to} onChange={event => setDraft({ ...draft, effective_to: event.target.value })} /></label></div>
             <label className="content-input">แหล่งอ้างอิงใหม่<input maxLength={1000} value={draft.source_ref} onChange={event => setDraft({ ...draft, source_ref: event.target.value })} /></label><label className="content-input">ลิงก์แหล่งอ้างอิง<input type="url" placeholder="https://" maxLength={2000} value={draft.source_url} onChange={event => setDraft({ ...draft, source_url: event.target.value })} /></label><ExposureInput value={draft.ai_exposure} onChange={ai_exposure => setDraft({ ...draft, ai_exposure })} />
-          </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setDraft(null); setDirty(false); if (!current) location.navigate({ faq: null }, true); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || !draft.question_key || !draft.question.th?.trim() || !draft.short_answer.th?.trim()}>บันทึกคำตอบ</button></div></form> : current ? <><h3>{current.version.question.th}</h3><p className="content-preserve">{current.version.short_answer.th}</p><p className="content-preserve">{current.version.detail.th}</p><p>{kindLabels[current.version.answer_kind]} · {scopeLabels[current.scope_type]} {scopeOptions(current.scope_type).find(ref => ref.id === current.scope_id)?.name ?? current.scope_id}</p><p>เฟสที่ใช้: {current.version.applies_to_project_ids.join(", ") || "ระดับองค์กร"}</p>{canEdit && <div className="content-actions"><button className="button secondary" disabled={pending} onClick={edit}>แก้ไขเป็นฉบับใหม่</button>{current.state === "DRAFT" && <button className="button primary" disabled={pending} onClick={() => void submit()}>ส่งตรวจคำตอบ</button>}</div>}</> : <p role="status">กำลังโหลดคำตอบ…</p>)}
-          {editTab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog.items} canEdit={canEdit} onChanged={reloadCurrent} onEditingChange={setEditing} />}
+          </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setDraft(null); setDirty(false); if (!current) location.navigate({ faq: null }, true); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || frozen || !draft.question_key || !draft.question.th?.trim() || !draft.short_answer.th?.trim()}>บันทึกคำตอบ</button></div></form> : current ? <><h3>{current.version.question.th}</h3><p className="content-preserve">{current.version.short_answer.th}</p><p className="content-preserve">{current.version.detail.th}</p><p>{kindLabels[current.version.answer_kind]} · {scopeLabels[current.scope_type]} {scopeOptions(current.scope_type).find(ref => ref.id === current.scope_id)?.name ?? current.scope_id}</p><p>เฟสที่ใช้: {current.version.applies_to_project_ids.join(", ") || "ระดับองค์กร"}</p>{canEdit && <div className="content-actions"><button className="button secondary" disabled={pending || workflowBusy || frozen} onClick={edit}>แก้ไขเป็นฉบับใหม่</button></div>}</> : <p role="status">กำลังโหลดคำตอบ…</p>)}
+          {current && editTab === "answer" && <ContentWorkflow target={{ kind: "faq", identity: { id: current.id } }} label={current.version.question.th || current.question_key || current.id} revision={draft ? draftRevision : current.revision} disabled={pending || editing || workflowOwners.size > 0 && !workflowOwners.has("faq:" + current.id)} draft={draft ? { dirty: true, valid: canEdit && Boolean(draft.question_key && draft.question.th?.trim() && draft.short_answer.th?.trim()) && (!scope || draft.scope_type === scope.type && draft.scope_id === scope.id), sourceStamp: { revision: draftRevision }, getChanges: () => form.current?.reportValidity() ? { ...draft, review_due: draft.review_due || null, effective_to: draft.effective_to || null, source_url: draft.source_url || null } : null } : undefined} onEditingChange={value => workflowEditing("faq:" + current.id, value)} onChanged={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} onReload={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} />}
+          {editTab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog.items} canEdit={canEdit && !frozen && !pending && !workflowBusy} onChanged={reloadCurrent} onEditingChange={setEditing} />}
           {editTab === "sources" && current && <div><h3>แหล่งข้อมูลประกอบคำตอบ</h3>{current.sources.length ? current.sources.map(source => <article className="content-card" key={source.id}><p>{source.source_ref}</p><p>{source.source_url}</p><p>{contentDate(source.decided_at)}</p></article>) : <p>ยังไม่มีแหล่งอ้างอิงแนบกับคำตอบนี้</p>}</div>}
           {editTab === "preview" && preview && <section aria-label="ตัวอย่าง FAQ บนเว็บไซต์"><label className="content-input">ภาษาตัวอย่าง<select value={previewLocale} onChange={event => setPreviewLocale(event.target.value as "th" | "en")}><option value="th">ไทย</option><option value="en">อังกฤษ</option></select></label><p className="field-help">ตัวอย่างข้อความสำหรับตรวจร่าง ช่องข้อเท็จจริงจะแสดงเป็นเครื่องหมายแทนค่าจนกว่าจะเชื่อมการเผยแพร่</p><article className="content-card" lang={previewLocale}><h3>{preview.question[previewLocale] || "ยังไม่มีคำถามในภาษานี้"}</h3><p className="content-preserve">{preview.short_answer[previewLocale] || "ยังไม่มีคำตอบในภาษานี้"}</p><p className="content-preserve">{preview.detail[previewLocale]}</p></article></section>}
           {editTab === "history" && current && <div><h3>ประวัติคำตอบ</h3>{current.history.map(version => <details className="content-card" key={version.version_no}><summary>ฉบับ {version.version_no} · {stateLabel(version.state)} · {contentDate(version.created_at)}</summary><p>{version.editors?.map(id => <span key={id}><ActorName id={id} /> </span>)}{version.approved_by && <> · <ActorName id={version.approved_by} /></>}</p><h3>{version.question.th}</h3><p className="content-preserve">{version.short_answer.th}</p><p className="content-preserve">{version.detail.th}</p><p lang="en">{version.question.en}</p><p lang="en">{version.short_answer.en}</p><p>เฟสที่ใช้: {version.applies_to_project_ids.join(", ") || "ระดับองค์กร"}</p></details>)}</div>}

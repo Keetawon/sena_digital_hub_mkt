@@ -44,7 +44,9 @@ do $$ declare saved jsonb;article uuid;version uuid;item record;snapshot jsonb;r
  assert (select approved_version_id=version from hub.articles where id=article),'Approval pointer missing';
  assert (select state='APPROVED' from hub.article_versions where id=version),'Content not approved';
  assert to_regclass('public_api.articles') is null,'Private phase unexpectedly published articles';
+ perform set_config('app.content_review_reason','Synthetic article withdrawal',true);
  perform hub.article_review(article,(select revision from hub.articles where id=article),'withdraw');
+ perform set_config('app.content_review_reason','',true);
  assert (select approved_version_id is null from hub.articles where id=article),'Withdrawal retained approved pointer';
 end $$;
 rollback;

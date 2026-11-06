@@ -19,6 +19,8 @@ import { ProjectComparison, projectChanges } from "./project-review";
 import "./project-editor.css";
 import { ContentSource } from "./content-source";
 import { DemoFields } from "./demo-fields";
+import { ContentWorkflow } from "./content-workflow";
+import { workflowText } from "@/lib/content-workflow";
 import { ProjectAssets, type AssetBinding } from "./project-assets";
 import { ProjectFacilities, type Facilities } from "./project-facilities";
 import { CommercialTypes, type CommercialType } from "./commercial-types";
@@ -42,6 +44,7 @@ type SourceProject = SourceEvidence & ProjectGroupInfo & { rem_project_id: strin
 type SourceModel = SourceEvidence & { rem_model_id: string; model_name_rem: string; source_updated_at: string | null; public_model_id: string | null };
 type ModelAction = { type: "edit" | "review"; model: Model } | { type: "add" };
 export type Project = {
+  id?: string;
   demo_fields?: unknown;
   public_project_id: string; public_name: Localized; slug: string; updated_at: string;
   published_version_id: string | null; publication_available: boolean; readiness: Readiness;
@@ -58,8 +61,6 @@ export type Project = {
 type Version = { version_id: string; version_no: number; published_at: string; publisher: string; change_reason: string; payload: Project };
 type Draft = { public_name: string; public_name_en: string; slug: string; address: string; address_en: string; latitude: string; longitude: string; ad_disclaimer: string; ad_disclaimer_en: string; meta_title: string; meta_title_en: string; meta_description: string; meta_description_en: string; website_content: string };
 export type ProjectTab = "content" | "media" | "models" | "extra" | "versions";
-type Action = { type: "publish" | "withdraw" | "rollback"; version?: Version };
-const actionLabels = { publish: "เผยแพร่ข้อมูล", withdraw: "ถอนการเผยแพร่", rollback: "คืนค่าเวอร์ชัน" };
 const matchLabels = { SUGGESTED: "รอตรวจสอบ", CONFIRMED: "ยืนยันแล้ว", REJECTED: "ปฏิเสธการจับคู่" };
 const labels: Record<string, string> = { public_name: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (ไทย)", public_name_en: "ชื่อคอมเมอเชียลที่ใช้สื่อสาร (English)", slug: "รหัส URL (slug)", address: "ที่อยู่โครงการ (ไทย)", address_en: "Project address (English)", latitude: "ละติจูด", longitude: "ลองจิจูด", ad_disclaimer: "ข้อความกำกับโฆษณา", ad_disclaimer_en: "ข้อความกำกับโฆษณา (ภาษาอังกฤษ)", meta_title: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", meta_title_en: "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล (ภาษาอังกฤษ)", meta_description: "คำอธิบายย่อ", meta_description_en: "คำอธิบายย่อ (ภาษาอังกฤษ)", website_content: "เนื้อหาจากเว็บไซต์ (อ้างอิงภายใน)" };
 
@@ -211,18 +212,25 @@ function StatusBadge({ project }: { project: Project }) {
 function LoadingState() { return <div className="loading-state" role="status"><span className="spinner" />กำลังโหลดข้อมูล…</div>; }
 function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <div className="empty-state error-state" role="alert"><Icon name="alert" size={32} /><h2>ยังโหลดข้อมูลไม่ได้</h2><p>{message}</p><button className="button secondary" onClick={retry}>ลองอีกครั้ง</button></div>; }
 
-export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onRelatedEditingChange, onPendingChange, onEmbeddedTabChange, onRevealField }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void; embeddedTab?: ProjectTab; onRelatedEditingChange?: (busy: boolean) => void; onPendingChange?: (pending: boolean) => void; onEmbeddedTabChange?: (tab: ProjectTab) => void; onRevealField?: (field: string) => void }) {
+export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onRelatedEditingChange, onPendingChange, onEmbeddedTabChange, onRevealField, onWorkflowChanged }: { projectId: string; role: LocalRole; onDirtyChange: (dirty: boolean) => void; embeddedTab?: ProjectTab; onRelatedEditingChange?: (busy: boolean) => void; onPendingChange?: (pending: boolean) => void; onEmbeddedTabChange?: (tab: ProjectTab) => void; onRevealField?: (field: string) => void; onWorkflowChanged?: () => void }) {
   const { catalog: contentCatalog } = useFieldCatalog();
   const permissions = useHubPermissions();
   const [project, setProject] = useState<Project | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [draftUpdatedAt, setDraftUpdatedAt] = useState("");
+  const [workflowOwners, setWorkflowOwners] = useState<string[]>([]), [workflowRevision, setWorkflowRevision] = useState(0);
+  const workflowActive = workflowOwners.length > 0;
+  function workflowEditing(owner: string, active: boolean) {
+    setWorkflowOwners(owners => owners.includes(owner) === active ? owners : active ? [...owners, owner] : owners.filter(value => value !== owner));
+  }
+  const [projectMediaEditing, setProjectMediaEditing] = useState(false), [modelMediaEditing, setModelMediaEditing] = useState(false);
+  const mediaEditing = projectMediaEditing || modelMediaEditing;
   const [versions, setVersions] = useState<Version[]>([]);
   const [versionsError, setVersionsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
-  const [action, setAction] = useState<Action | null>(null);
   const [modelAction, setModelAction] = useState<ModelAction | null>(null);
   const [tab, setTab] = useState<ProjectTab>(embeddedTab ?? "content");
   useEffect(() => { if (embeddedTab) setTab(embeddedTab); }, [embeddedTab]);
@@ -235,19 +243,18 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
   const [conflict, setConflict] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
   const canEdit = permissions.can("projects", "edit");
-  const canPublish = permissions.can("projects", "approve");
   const dirty = Boolean(project && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(project)));
   const relatedDirty = commercialDirty || facilitiesDirty || modelDirty;
-  const anyDirty = dirty || relatedDirty;
+  const anyDirty = dirty || relatedDirty || mediaEditing || Boolean(workflowActive);
   useEffect(() => { onDirtyChange(anyDirty); return () => onDirtyChange(false); }, [anyDirty, onDirtyChange]);
-  useEffect(() => { onRelatedEditingChange?.(relatedDirty || saving); return () => onRelatedEditingChange?.(false); }, [relatedDirty, saving, onRelatedEditingChange]);
-  useEffect(() => { onPendingChange?.(saving); return () => onPendingChange?.(false); }, [saving, onPendingChange]);
+  useEffect(() => { onRelatedEditingChange?.(relatedDirty || mediaEditing || saving || Boolean(workflowActive)); return () => onRelatedEditingChange?.(false); }, [relatedDirty, mediaEditing, saving, workflowActive, onRelatedEditingChange]);
+  useEffect(() => { onPendingChange?.(saving || mediaEditing || Boolean(workflowActive)); return () => onPendingChange?.(false); }, [saving, mediaEditing, workflowActive, onPendingChange]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(""); setConflict(false);
     try {
       const data = await request<Project>(base);
-      setProject(data); setDraft(draftFrom(canEdit ? { ...data, ...data.gold_prefill_changes } : data));
+      setProject(data); setDraftUpdatedAt(data.updated_at); setDraft(draftFrom(canEdit ? { ...data, ...data.gold_prefill_changes } : data));
       try { setVersions(await request<Version[]>(`${base}/versions`)); setVersionsError(""); }
       catch (error) { setVersionsError(error instanceof Error ? error.message : "โหลดประวัติไม่สำเร็จ"); }
     } catch (error) { setError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ"); }
@@ -278,9 +285,18 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
     setNavigationTarget(null);
   }, [tab, navigationTarget]);
 
+  function projectChangesForSave() {
+    if (!project || !draft) return null;
+    return { public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer, en: draft.ad_disclaimer_en }, meta_title: { ...project.meta_title, th: draft.meta_title, en: draft.meta_title_en }, meta_description: { ...project.meta_description, th: draft.meta_description, en: draft.meta_description_en }, website_content: { ...project.website_content, th: draft.website_content } };
+  }
+  async function reloadWorkflow() {
+    const data = await request<Project>(base);
+    setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); setError(""); setConflict(false);
+    setWorkflowRevision(value => value + 1); onWorkflowChanged?.();
+  }
   async function save(event?: FormEvent, nextTab?: ProjectTab) {
     event?.preventDefault();
-    if (!draft || !project || !canEdit || relatedDirty) return;
+    if (!draft || !project || !canEdit || relatedDirty || mediaEditing || workflowActive || saving) return;
     const errors: Partial<Record<keyof Draft, string>> = {};
     if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) errors.slug = "ใช้ตัวอักษรอังกฤษตัวเล็ก ตัวเลข และขีดกลาง เช่น sena-example";
     for (const name of ["latitude", "longitude"] as const) {
@@ -291,9 +307,9 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
     if (Object.keys(errors).length) { revealField(Object.keys(errors)[0]); return; }
     setSaving(true); setError(""); setNotice("");
     try {
-      const payload = { updated_at: project.updated_at, public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer, en: draft.ad_disclaimer_en }, meta_title: { ...project.meta_title, th: draft.meta_title, en: draft.meta_title_en }, meta_description: { ...project.meta_description, th: draft.meta_description, en: draft.meta_description_en }, website_content: { ...project.website_content, th: draft.website_content } };
+      const payload = { updated_at: draftUpdatedAt, ...projectChangesForSave() };
       const data = await request<Project>(base, "PATCH", payload);
-      setProject(data); setDraft(draftFrom(data)); setNotice("บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม"); setConflict(false);
+      setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); setNotice("บันทึกข้อมูลร่างแล้ว ข้อมูลที่เผยแพร่ยังคงเป็นเวอร์ชันเดิม"); setConflict(false);
       if (nextTab) goToTab(nextTab);
     } catch (error) {
       setError(error instanceof Error ? error.message : "บันทึกไม่สำเร็จ");
@@ -302,6 +318,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
   }
 
   function goToTab(next: ProjectTab) {
+    if (workflowActive || mediaEditing) return;
     setTab(next);
     onEmbeddedTabChange?.(next);
     setNavigationTarget(`${next}-panel`);
@@ -316,15 +333,13 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
       return;
     }
     setProject(data);
+    // A verified media-only write advances the ordinary writer's guard while
+    // preserving typed text. Workflow metadata never enters this callback.
+    setDraftUpdatedAt(data.updated_at);
     if (!dirty) setDraft(draftFrom(data));
+    onWorkflowChanged?.();
   }
 
-  async function runAction(reason: string) {
-    if (!action) return;
-    await request(`${base}/${action.type}`, "POST", { change_reason: reason, ...(action.version ? { version_id: action.version.version_id } : {}) });
-    const success = action.type === "publish" ? "เผยแพร่ข้อมูลแล้ว ผู้ใช้งาน API จะเห็นเวอร์ชันนี้" : action.type === "withdraw" ? "ถอนการเผยแพร่แล้ว ผู้ใช้งาน API จะไม่เห็นโครงการนี้" : `คืนค่าการเผยแพร่เป็นเวอร์ชัน ${action.version?.version_no} แล้ว`;
-    setAction(null); await load(); setNotice(success);
-  }
 
   function revealField(name: string) {
     onRevealField?.(name);
@@ -403,7 +418,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
     <div data-project-assistant />
     <div className="project-workspace">
       <div id="content-panel" role="tabpanel" tabIndex={-1} aria-labelledby="content-tab" hidden={tab !== "content"}>
-        <form id="project-details-form" onSubmit={save} noValidate>
+        <form id="project-details-form" inert={Boolean(workflowActive) || mediaEditing} onSubmit={save} noValidate>
           <section className="panel project-details" aria-labelledby="project-details-title"><div className="panel-heading"><div><span className="section-chip">รายละเอียดโครงการ</span><h2 id="project-details-title">ชื่อและที่ตั้งโครงการ</h2><p>ตรวจข้อมูลอ้างอิงจาก DW แล้วปรับชื่อและที่อยู่สำหรับการสื่อสาร</p></div><span className="language-chip">ไทย · English</span></div><div className="panel-body">
             {!canEdit && <p className="read-only-note"><Icon name="shield" size={16} />บัญชีนี้อ่านข้อมูลได้ การแก้ไขเป็นหน้าที่ของผู้แก้ไขข้อมูล</p>}
             <ProjectSourceReview value={project.source?.source_review} />
@@ -431,10 +446,10 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
             </div>
           </div></section>
         </form>
-        <ProjectBrandCard project={project} role={role} disabled={anyDirty || saving} onChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+        <ProjectBrandCard project={project} role={role} disabled={anyDirty || saving} onChanged={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); }} />
       </div>
       <div id="media-panel" role="tabpanel" tabIndex={-1} aria-labelledby="media-tab" hidden={tab !== "media"}>
-        <ProjectAssets project={project} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} />
+        <ProjectAssets project={project} role={role} disabled={relatedDirty || saving || workflowActive || modelMediaEditing} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} {...{ onEditingChange: setProjectMediaEditing }} />
 
 
       </div>
@@ -444,7 +459,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
 
     <section className="panel" id="models" tabIndex={-1}><div className="panel-heading"><div><span className="section-chip">ข้อมูลอ้างอิง</span><h2>รายละเอียดรหัสแบบ REM</h2><p>{canEdit ? "คลิกแถวเพื่อแก้ไขรายละเอียด ตรวจการจับคู่ และเตรียมแปลนก่อนเผยแพร่" : "คลิกแถวเพื่อตรวจรายละเอียดและแปลน"}</p></div><span className="count">{project.models?.length ?? 0}</span></div><div className="panel-body">
       {canEdit && <><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "add" })}>เลือกแบบเพิ่มเติมจากต้นทาง</button>{dirty && <p className="field-help">บันทึกข้อมูลโครงการก่อนจัดการแบบที่อยู่อาศัย</p>}</>}
-      {Boolean(sortedModels.length) && <div className="table-scroll"><table className="rem-model-table"><caption className="sr-only">แบบบ้านจาก REM</caption><thead><tr><th>ชื่อแบบ</th><th>ModelID</th><th>ยืนยัน</th><th>ข้อมูลครบ</th><th>แปลน</th></tr></thead><tbody>{sortedModels.map(model => <tr key={model.public_model_id} data-model-id={model.public_model_id} aria-selected={mediaModel?.public_model_id === model.public_model_id} onClick={() => { if (modelDirty || saving) return; setMediaModelId(model.public_model_id); setModelAction(canEdit && !anyDirty ? { type: "edit", model } : null); }}><td><button className="button text-button" disabled={modelDirty || saving}>{model.public_name.th || model.model_name_rem}</button></td><td>{model.rem_model_id}</td><td>{matchLabels[model.match_status]}</td><td>{model.public_name.th?.trim() && model.bedrooms != null && model.bathrooms != null && (model.usable_area_sqm ?? 0) > 0 ? "✓" : "ยังขาด"}</td><td>{project.assets?.filter(asset => asset.public_model_id === model.public_model_id && ["floor_plan", "structural_plan"].includes(asset.asset_role)).length ?? 0}</td></tr>)}</tbody></table></div>}
+      {Boolean(sortedModels.length) && <div className="table-scroll"><table className="rem-model-table"><caption className="sr-only">แบบบ้านจาก REM</caption><thead><tr><th>ชื่อแบบ</th><th>ModelID</th><th>ยืนยัน</th><th>ข้อมูลครบ</th><th>แปลน</th></tr></thead><tbody>{sortedModels.map(model => <tr key={model.public_model_id} data-model-id={model.public_model_id} aria-selected={mediaModel?.public_model_id === model.public_model_id} onClick={() => { if (modelDirty || saving || workflowActive || mediaEditing) return; setMediaModelId(model.public_model_id); setModelAction(canEdit && !anyDirty ? { type: "edit", model } : null); }}><td><button className="button text-button" disabled={modelDirty || saving || Boolean(workflowActive) || mediaEditing}>{model.public_name.th || model.model_name_rem}</button></td><td>{model.rem_model_id}</td><td>{matchLabels[model.match_status]}</td><td>{model.public_name.th?.trim() && model.bedrooms != null && model.bathrooms != null && (model.usable_area_sqm ?? 0) > 0 ? "✓" : "ยังขาด"}</td><td>{project.assets?.filter(asset => asset.public_model_id === model.public_model_id && ["floor_plan", "structural_plan"].includes(asset.asset_role)).length ?? 0}</td></tr>)}</tbody></table></div>}
 
       {!project.models?.length ? <p className="muted">ยังไม่มีข้อมูลแบบที่อยู่อาศัย</p> : project.models.filter(model => model.public_model_id === mediaModel?.public_model_id).map(model => <article className={`model-card ${mediaModel?.public_model_id === model.public_model_id ? "selected-model" : ""}`} key={model.public_model_id} aria-label={model.public_name.th || model.rem_model_id}>
         <DemoFields fields={model.demo_fields} /><div className="model-card-heading"><h3>{model.public_name.th || "แบบที่ยังไม่ระบุชื่อ"}</h3><span className={`match-status ${model.match_status.toLowerCase()}`}>{matchLabels[model.match_status]}</span></div>
@@ -456,34 +471,39 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
         {model.verified_at && <p className="small-text muted review-evidence">ยืนยันเมื่อ {formatDate(model.verified_at)}<br />โดย <ActorName id={model.verified_by} /></p>}
         <div className="model-actions"><button className="button secondary" onClick={() => { setMediaModelId(model.public_model_id); requestAnimationFrame(() => document.getElementById("model-media")?.scrollIntoView({ block: "start" })); }}>รูปภาพและแปลนของแบบนี้</button></div>
         {canEdit && <div className="model-actions"><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "edit", model })}>แก้ไขรายละเอียดแบบ</button><button className="button secondary" disabled={anyDirty || saving} onClick={() => setModelAction({ type: "review", model })}>ตรวจสอบการจับคู่</button></div>}
-        {modelAction?.type === "edit" && modelAction.model.public_model_id === model.public_model_id && <ModelDialog key={model.public_model_id} inline action={modelAction} project={project} onDirtyChange={setModelDirty} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว"); }} onReload={() => { setModelAction(null); void load(); }} />}
+        {!(modelAction?.type === "edit" && modelAction.model.id === model.id) && <ContentWorkflow key={`${model.id}:${workflowRevision}`} target={{ kind: "model", identity: { id: model.id } }} label={model.public_name.th || model.rem_model_id} revision={project.updated_at}
+          disabled={saving || dirty || relatedDirty || mediaEditing || workflowOwners.some(owner => owner !== model.id)} onChanged={reloadWorkflow} onReload={reloadWorkflow} onEditingChange={value => workflowEditing(model.id, value)} />}
+        {modelAction?.type === "edit" && modelAction.model.public_model_id === model.public_model_id && <ModelDialog key={model.public_model_id} inline action={modelAction} project={project} onDirtyChange={setModelDirty} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว"); }} onReload={() => { setModelAction(null); void load(); }} />}
       </article>)}
     </div></section>
 
-        {mediaModel && <div id="model-media" className="model-media" tabIndex={-1}><div className="model-media-context"><span className="section-chip">สื่อของแบบที่เลือก</span><h2>{mediaModel.public_name.th || mediaModel.rem_model_id} · {project.source?.rem_project_id}</h2><p className="field-help">ไฟล์ผูกกับโครงการและรหัสแบบนี้ หากมีแปลนต่างกันตามอาคารหรือชั้น ให้ระบุอาคารและชั้นในคำอธิบายไฟล์ การกำหนดขอบเขตอาคาร/ชั้นแบบโครงสร้างจะเพิ่มภายหลัง</p></div><ProjectAssets key={mediaModel.public_model_id} project={project} model={{ public_model_id: mediaModel.public_model_id, name: mediaModel.public_name.th || mediaModel.rem_model_id }} role={role} disabled={relatedDirty || saving} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} /></div>}
+        {mediaModel && <div id="model-media" className="model-media" tabIndex={-1}><div className="model-media-context"><span className="section-chip">สื่อของแบบที่เลือก</span><h2>{mediaModel.public_name.th || mediaModel.rem_model_id} · {project.source?.rem_project_id}</h2><p className="field-help">ไฟล์ผูกกับโครงการและรหัสแบบนี้ หากมีแปลนต่างกันตามอาคารหรือชั้น ให้ระบุอาคารและชั้นในคำอธิบายไฟล์ การกำหนดขอบเขตอาคาร/ชั้นแบบโครงสร้างจะเพิ่มภายหลัง</p></div><ProjectAssets key={mediaModel.public_model_id} project={project} model={{ public_model_id: mediaModel.public_model_id, name: mediaModel.public_name.th || mediaModel.rem_model_id }} role={role} disabled={relatedDirty || saving || workflowActive || projectMediaEditing} unsavedProjectDetails={dirty} onProjectChanged={acceptMediaUpdate} {...{ onEditingChange: setModelMediaEditing }} /></div>}
         <p className="read-only-note">แบบขายของ Marketing · ยังไม่ออก API</p>
-        <CommercialTypes project={project} role={role} disabled={dirty || facilitiesDirty || saving} onDirtyChange={setCommercialDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
+        <CommercialTypes project={project} role={role} disabled={dirty || facilitiesDirty || saving || mediaEditing || Boolean(workflowActive)} onDirtyChange={setCommercialDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); }} />
       </div>
       <div id="extra-panel" role="tabpanel" tabIndex={-1} aria-labelledby="extra-tab" hidden={tab !== "extra"}>
         <p className="read-only-note">ข้อมูลเสริมเป็นทางเลือก ไม่กีดกันการเผยแพร่</p>
-        <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); }} />
-        <section className="panel"><div className="panel-body">{field("meta_title")}{field("meta_title_en")}{field("meta_description", true)}{field("meta_description_en", true)}<PublicWebsiteSource sources={project.website_sources} />{field("website_content", true, "ข้อความอ้างอิงภายใน Hub สำหรับตรวจและเรียบเรียง ไม่ส่งออกเว็บไซต์หรือ AI")}</div></section>
+        <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving || mediaEditing || Boolean(workflowActive)} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); }} />
+        <section className="panel" inert={Boolean(workflowActive) || mediaEditing}><div className="panel-body">{field("meta_title")}{field("meta_title_en")}{field("meta_description", true)}{field("meta_description_en", true)}<PublicWebsiteSource sources={project.website_sources} />{field("website_content", true, "ข้อความอ้างอิงภายใน Hub สำหรับตรวจและเรียบเรียง ไม่ส่งออกเว็บไซต์หรือ AI")}</div></section>
       </div>
       <div id="versions-panel" role="tabpanel" tabIndex={-1} aria-labelledby="versions-tab" hidden={tab !== "versions"}>
-        <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : `${readiness.missing.length} รายการ`}</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><p className="small-text muted">{canPublish ? "การเผยแพร่จะบันทึกข้อมูลเป็นเวอร์ชันพร้อมเหตุผล" : "ผู้เผยแพร่เป็นผู้ยืนยันก่อนส่งข้อมูลออกผ่าน API"}</p>{canPublish && <div><button className="button primary" disabled={!readiness.ready || anyDirty || saving || Boolean(versionsError) || Boolean(project.published_version_id && !live)} onClick={() => setAction({ type: "publish" })}>เผยแพร่ข้อมูล<Icon name="arrow" size={18} /></button>{project.published_version_id && <button className="button text-button" onClick={() => setAction({ type: "withdraw" })}>ถอนการเผยแพร่</button>}</div>}</div></div></section>
-<section className="panel" id="publication-history"><div className="panel-heading"><div><h2>ประวัติการเผยแพร่</h2><p>ทุกเวอร์ชันเก็บข้อมูล ณ เวลาที่เผยแพร่ไว้สำหรับตรวจสอบ</p></div></div><div className="panel-body">{versionsError ? <ErrorState message={versionsError} retry={load} /> : !versions.length ? <div className="empty-state compact"><Icon name="clock" size={32} /><h3>ยังไม่มีเวอร์ชันที่เผยแพร่</h3><p>เมื่อเผยแพร่ครั้งแรก ประวัติจะปรากฏที่นี่</p></div> : <ol className="version-list">{versions.map(version => <li key={version.version_id}><div className="version-marker">{version.version_no}</div><div className="version-content"><div className="version-heading"><h3>เวอร์ชัน {version.version_no}</h3>{version.version_id === project.published_version_id && <span className="status-badge published">เวอร์ชันที่เลือก</span>}</div><p>{version.change_reason || "ไม่ได้ระบุเหตุผล"}</p><p className="small-text muted">{formatDate(version.published_at)} · <ActorName id={version.publisher} /></p><details><summary>ดูข้อมูลที่บันทึกในเวอร์ชันนี้</summary><dl className="snapshot-list"><div><dt>ชื่อโครงการ</dt><dd>{version.payload?.public_name?.th ?? "—"}</dd></div><div><dt>ที่อยู่</dt><dd>{version.payload?.address?.th ?? "—"}</dd></div><div><dt>ข้อความกำกับโฆษณา</dt><dd>{version.payload?.ad_disclaimer?.th ?? "—"}</dd></div></dl></details>{canPublish && version.version_id !== project.published_version_id && <button className="button secondary" onClick={() => setAction({ type: "rollback", version })}>คืนค่าเวอร์ชันนี้</button>}</div></li>)}</ol>}</div></section>
+        <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : `${readiness.missing.length} รายการ`}</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><a className="button primary" href={`/publish?source=project&id=${encodeURIComponent(project.public_project_id)}`} aria-disabled={anyDirty || saving} onClick={event => { if (anyDirty || saving) event.preventDefault(); }}>{workflowText.queue}</a></div></div></section>
+<section className="panel" id="publication-history"><div className="panel-heading"><div><h2>ประวัติการเผยแพร่</h2><p>ทุกเวอร์ชันเก็บข้อมูล ณ เวลาที่เผยแพร่ไว้สำหรับตรวจสอบ</p></div></div><div className="panel-body">{versionsError ? <ErrorState message={versionsError} retry={load} /> : !versions.length ? <div className="empty-state compact"><Icon name="clock" size={32} /><h3>ยังไม่มีเวอร์ชันที่เผยแพร่</h3><p>เมื่อเผยแพร่ครั้งแรก ประวัติจะปรากฏที่นี่</p></div> : <ol className="version-list">{versions.map(version => <li key={version.version_id}><div className="version-marker">{version.version_no}</div><div className="version-content"><div className="version-heading"><h3>เวอร์ชัน {version.version_no}</h3>{version.version_id === project.published_version_id && <span className="status-badge published">เวอร์ชันที่เลือก</span>}</div><p>{version.change_reason || "ไม่ได้ระบุเหตุผล"}</p><p className="small-text muted">{formatDate(version.published_at)} · <ActorName id={version.publisher} /></p><details><summary>ดูข้อมูลที่บันทึกในเวอร์ชันนี้</summary><dl className="snapshot-list"><div><dt>ชื่อโครงการ</dt><dd>{version.payload?.public_name?.th ?? "—"}</dd></div><div><dt>ที่อยู่</dt><dd>{version.payload?.address?.th ?? "—"}</dd></div><div><dt>ข้อความกำกับโฆษณา</dt><dd>{version.payload?.ad_disclaimer?.th ?? "—"}</dd></div></dl>{version.payload && <ProjectComparison target={version.payload} />}</details></div></li>)}</ol>}</div></section>
       </div>
+      {(tab === "content" || tab === "extra") && <ContentWorkflow key={`project:${workflowRevision}`} target={project.id ? { kind: "project", identity: { id: project.id } } : null} label={project.public_name.th || project.public_project_id} revision={dirty ? draftUpdatedAt : project.updated_at}
+        disabled={saving || relatedDirty || mediaEditing || workflowOwners.some(owner => owner !== "project")}
+        draft={{ dirty, valid: canEdit && (!draft.slug || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) && !coordinateError("latitude", draft.latitude) && !coordinateError("longitude", draft.longitude), sourceStamp: { updated_at: draftUpdatedAt }, getChanges: projectChangesForSave }}
+        onChanged={reloadWorkflow} onReload={reloadWorkflow} onEditingChange={value => workflowEditing("project", value)} />}
       {tab !== "versions" && <div className="save-bar project-save-bar">
         <div className="workflow-feedback" role="status"><span className={`save-dot ${anyDirty ? "unsaved" : ""}`} /><span>{saving ? "กำลังบันทึก…" : error ? "บันทึกไม่สำเร็จ กรุณาตรวจข้อความแจ้งเตือน" : relatedDirty ? "บันทึกหรือยกเลิกรายการที่กำลังแก้ไขก่อนทำขั้นตอนถัดไป" : dirty ? "มีข้อมูลที่ยังไม่ได้บันทึก" : tab === "content" ? "ข้อมูลร่างโครงการเป็นปัจจุบัน · ถัดไปจัดเตรียมแบบที่อยู่อาศัย" : tab === "models" ? "ถัดไปตรวจความพร้อมของข้อมูลที่บันทึกแล้ว" : "การบันทึกร่างยังไม่ใช่การเผยแพร่"}</span></div>
         <div className="workflow-actions">
           {tab !== "content" && <button className="button secondary" onClick={() => goToTab(tabs[tabs.findIndex(item => item.id === tab) - 1].id)}>ย้อนกลับ</button>}
-          {canEdit && <button type="submit" form="project-details-form" className="button secondary" aria-label={saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"} disabled={!dirty || relatedDirty || saving}><Icon name="save" /><span className="save-label">{saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"}</span><span className="save-label-short" aria-hidden="true">บันทึก</span></button>}
-          <button className="button primary" disabled={relatedDirty || saving} onClick={() => { const next = tabs[tabs.findIndex(item => item.id === tab) + 1].id; if (dirty && canEdit) void save(undefined, next); else goToTab(next); }}>{dirty && canEdit ? "บันทึกและไปต่อ" : "ถัดไป"}<Icon name="arrow" size={18} /></button>
+          {canEdit && <button type="submit" form="project-details-form" className="button secondary" aria-label={saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"} disabled={!dirty || relatedDirty || saving || mediaEditing || Boolean(workflowActive)}><Icon name="save" /><span className="save-label">{saving ? "กำลังบันทึก…" : "บันทึกข้อมูลร่าง"}</span><span className="save-label-short" aria-hidden="true">บันทึก</span></button>}
+          <button className="button primary" disabled={relatedDirty || saving || mediaEditing || Boolean(workflowActive)} onClick={() => { const next = tabs[tabs.findIndex(item => item.id === tab) + 1].id; if (dirty && canEdit) void save(undefined, next); else goToTab(next); }}>{dirty && canEdit ? "บันทึกและไปต่อ" : "ถัดไป"}<Icon name="arrow" size={18} /></button>
         </div>
       </div>}
     </div>
-    {modelAction && modelAction.type !== "edit" && <ModelDialog action={modelAction} project={project} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
-    {action && <ActionDialog action={action} project={project} live={live} projectName={project.public_name.th ?? "โครงการนี้"} onCancel={() => setAction(null)} onConfirm={runAction} />}
+    {modelAction && modelAction.type !== "edit" && <ModelDialog action={modelAction} project={project} onDirtyChange={setModelDirty} onCancel={() => setModelAction(null)} onSaved={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); setModelAction(null); setNotice("บันทึกข้อมูลแบบแล้ว กรุณาตรวจความพร้อมก่อนเผยแพร่"); }} onReload={() => { setModelAction(null); void load(); }} />}
   </div>;
 }
 
@@ -494,6 +514,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
   const dialog = useRef<HTMLDialogElement>(null);
   const summary = useRef<HTMLDivElement>(null);
   const model = action.type === "add" ? null : action.model;
+  const [loadedUpdatedAt] = useState(project.updated_at), [workflowBusy, setWorkflowBusy] = useState(false);
   const initial = { public_name: model?.public_name.th ?? "", bedrooms: model?.bedrooms?.toString() ?? "", bathrooms: model?.bathrooms?.toString() ?? "", usable_area_sqm: model?.usable_area_sqm?.toString() ?? "", parking_spaces: model?.parking_spaces?.toString() ?? "" };
   const [values, setValues] = useState(initial);
   const [sources, setSources] = useState<SourceModel[]>([]);
@@ -509,7 +530,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
   const dirty = JSON.stringify(initial) !== JSON.stringify(values) || Boolean(reason || sourceId);
   const base = `v1/admin/projects/${encodeURIComponent(project.public_project_id)}`;
   useEffect(() => { if (!inline) dialog.current?.showModal(); }, [inline]);
-  useEffect(() => { onDirtyChange?.(dirty); return () => onDirtyChange?.(false); }, [dirty, onDirtyChange]);
+  useEffect(() => { onDirtyChange?.(dirty || pending || workflowBusy); return () => onDirtyChange?.(false); }, [dirty, pending, workflowBusy, onDirtyChange]);
   useEffect(() => {
     if (action.type !== "add") return;
     let active = true;
@@ -527,7 +548,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
   function cancel() { if (!pending && canDiscard()) onCancel(); }
   const fieldLabels = { public_name: "ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)", bedrooms: "จำนวนห้องนอน", bathrooms: "จำนวนห้องน้ำ", usable_area_sqm: "พื้นที่ใช้สอย (ตร.ม.)", parking_spaces: "จำนวนที่จอดรถ" };
   async function submit(event: FormEvent) {
-    event.preventDefault(); setError(""); setConflict(false);
+    event.preventDefault(); if (pending || workflowBusy) return; setError(""); setConflict(false);
     const errors: Record<string, string> = {};
     if (action.type === "edit") {
       for (const name of ["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"] as const) {
@@ -545,11 +566,11 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
       let data: Project;
       if (action.type === "edit" && model) {
         const numbers = Object.fromEntries((["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"] as const).map(key => [key, values[key].trim() ? Number(values[key]) : null]));
-        data = await request<Project>(`${base}/models/${model.public_model_id}`, "PATCH", { updated_at: project.updated_at, public_name: { ...model.public_name, th: values.public_name }, ...numbers });
+        data = await request<Project>(`${base}/models/${model.public_model_id}`, "PATCH", { updated_at: loadedUpdatedAt, public_name: { ...model.public_name, th: values.public_name }, ...numbers });
       } else if (action.type === "review" && model) {
-        data = await request<Project>(`${base}/models/${model.public_model_id}/review`, "POST", { updated_at: project.updated_at, decision, change_reason: reason.trim() });
+        data = await request<Project>(`${base}/models/${model.public_model_id}/review`, "POST", { updated_at: loadedUpdatedAt, decision, change_reason: reason.trim() });
       } else {
-        data = await request<Project>(`${base}/models`, "POST", { rem_model_id: sourceId, updated_at: project.updated_at });
+        data = await request<Project>(`${base}/models`, "POST", { rem_model_id: sourceId, updated_at: loadedUpdatedAt });
       }
       onSaved(data);
     } catch (error) {
@@ -559,7 +580,7 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
     }
   }
   const title = action.type === "edit" ? "แก้ไขรายละเอียดแบบ" : action.type === "review" ? "ตรวจสอบการจับคู่แบบ" : "เลือกแบบจากต้นทาง";
-  const form = <form onSubmit={submit} noValidate><h2 id="model-dialog-title">{title}</h2>
+  const form = <><form inert={workflowBusy} onSubmit={submit} noValidate><h2 id="model-dialog-title">{title}</h2>
       {(error || Object.keys(fieldErrors).length > 0) && <div className="notice error model-error-summary" role="alert" tabIndex={-1} ref={summary}><strong>{error || "กรุณาตรวจข้อมูลที่ระบุ"}</strong>{Object.keys(fieldErrors).length > 0 && <ul>{Object.entries(fieldErrors).map(([field, message]) => <li key={field}><a href={`#model-${field}`}>{message}</a></li>)}</ul>}{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" onClick={() => { if (canDiscard()) onReload(); }}>โหลดข้อมูลล่าสุด</button></>}</div>}
       {model && <dl className="snapshot-list"><div><dt>โครงการต้นทาง</dt><dd>{project.source?.project_name_rem} · {project.source?.rem_project_id}</dd></div><div><dt>ชื่อแบบต้นทาง (อ่านอย่างเดียว)</dt><dd>{model.model_name_rem}</dd></div><div><dt>รหัสแบบ REM</dt><dd>{model.rem_model_id}</dd></div><div><dt>แหล่งข้อมูล</dt><dd>{sourceProvenance(model)}</dd></div><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(model.source_updated_at)}</dd></div><div><dt>เวลาสกัดสำเนาต้นทาง</dt><dd>{formatDate(model.source_snapshot_at)}</dd></div><RawModelEvidence source={model} />{action.type === "review" && <div><dt>ชื่อแบบที่ใช้เผยแพร่</dt><dd>{model.public_name.th || "ยังไม่ระบุชื่อ"}</dd></div>}</dl>}
       {action.type === "edit" && <><p className="field-help">เว้นข้อมูลที่ยังไม่ทราบไว้ได้ การเผยแพร่ต้องมีชื่อไทย ห้องนอน ห้องน้ำ และพื้นที่ใช้สอยครบถ้วน</p><div className="model-edit-fields">{(Object.keys(fieldLabels) as (keyof typeof values)[]).map(name => <div className="form-field" key={name}>
@@ -572,7 +593,11 @@ function ModelDialog({ action, project, onCancel, onSaved, onReload, inline = fa
       </>}
       {action.type === "add" && (loading ? <LoadingState /> : sources.length ? <div className="form-field"><label htmlFor="model-source">แบบที่ยังไม่ได้เลือกในโครงการนี้</label><select id="model-source" disabled={pending} value={sourceId} aria-invalid={Boolean(fieldErrors.source)} aria-describedby={fieldErrors.source ? "model-source-error" : undefined} onChange={event => setSourceId(event.target.value)}><option value="">เลือกแบบ</option>{sources.map(source => <option key={source.rem_model_id} value={source.rem_model_id}>{source.model_name_rem} · {source.rem_model_id}</option>)}</select>{fieldErrors.source && <p id="model-source-error" className="field-error">{fieldErrors.source}</p>}<p className="field-help">แบบที่เลือกจะอยู่ในสถานะรอตรวจสอบ</p>{sources.filter(source => source.rem_model_id === sourceId).map(source => <div key={source.rem_model_id}><p className="field-help">{sourceProvenance(source)}</p><dl className="snapshot-list"><div><dt>ปรับปรุงต้นทาง</dt><dd>{sourceDate(source.source_updated_at)}</dd></div><RawModelEvidence source={source} /></dl></div>)}</div> : !error && <p className="muted">ไม่มีแบบใหม่จากต้นทาง แบบที่เลือกแล้วแสดงอยู่ในรายการโครงการ</p>)}
       <div className="dialog-actions"><button type="button" className="button secondary" disabled={pending} onClick={cancel}>ยกเลิก</button><button type="submit" className="button primary" aria-busy={pending} disabled={pending || loading || (action.type === "add" && !sourceId)}>{pending ? "กำลังบันทึก…" : action.type === "edit" ? "บันทึกรายละเอียดแบบ" : action.type === "review" ? "บันทึกผลตรวจสอบ" : "เพิ่มแบบที่เลือก"}</button></div>
-    </form>;
+    </form>
+      {model && action.type === "edit" && <ContentWorkflow target={{ kind: "model", identity: { id: model.id } }} label={model.public_name.th || model.rem_model_id} revision={loadedUpdatedAt} disabled={pending}
+        draft={{ dirty, valid: ["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"].every(key => { const raw = values[key as keyof typeof values].trim(), value = Number(raw); return !raw || Number.isFinite(value) && value >= 0 && (key !== "usable_area_sqm" || value > 0) && (key !== "parking_spaces" || Number.isInteger(value)); }), sourceStamp: { updated_at: loadedUpdatedAt }, getChanges: () => ({ public_name: { ...model.public_name, th: values.public_name }, ...Object.fromEntries((["bedrooms", "bathrooms", "usable_area_sqm", "parking_spaces"] as const).map(key => [key, values[key].trim() ? Number(values[key]) : null])) }) }}
+        onChanged={async () => onSaved(await request<Project>(base))} onReload={async () => onSaved(await request<Project>(base))} onEditingChange={setWorkflowBusy} />}
+    </>;
   return inline ? <section className="inline-model-editor" aria-label="แก้ไขรายละเอียดแบบ">{form}</section> : <dialog ref={dialog} className="action-dialog model-dialog" aria-labelledby="model-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}>{form}</dialog>;
 }
 
@@ -584,23 +609,4 @@ function missingAnchor(field: string) {
   if (/hero|thumbnail|asset/i.test(field)) return "assets";
   if (/rem|source|crosswalk/i.test(field)) return "source";
   return root in labels ? root : "content-panel";
-}
-
-function ActionDialog({ action, projectName, project, live, onCancel, onConfirm }: { project: Project; live?: Project; action: Action; projectName: string; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [reason, setReason] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    dialog.current?.showModal();
-    if (action.type !== "withdraw") dialog.current?.querySelector<HTMLElement>("#action-title")?.focus();
-  }, [action.type]);
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!reason.trim()) { setError("กรุณาระบุเหตุผลเพื่อเก็บไว้ในประวัติ"); return; }
-    setPending(true); setError("");
-    try { await onConfirm(reason.trim()); }
-    catch (error) { setError(error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ"); setPending(false); }
-  }
-  return <dialog ref={dialog} className="action-dialog" aria-labelledby="action-title" aria-describedby="action-description" onCancel={event => { event.preventDefault(); if (!pending) onCancel(); }}><form onSubmit={submit}><div className="section-icon"><Icon name={action.type === "withdraw" ? "alert" : "shield"} size={26} /></div><h2 id="action-title" tabIndex={-1}>{actionLabels[action.type]}{action.version ? ` ${action.version.version_no}` : ""}</h2><p id="action-description">{action.type === "publish" ? `เผยแพร่ข้อมูลโครงการชุดปัจจุบันของ “${projectName}” โดยยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวกฉบับร่าง` : action.type === "withdraw" ? `“${projectName}” จะไม่แสดงผ่าน API จนกว่าจะเผยแพร่อีกครั้ง ข้อมูลร่างและประวัติยังอยู่` : `ผู้ใช้งาน API จะเห็นข้อมูลเวอร์ชัน ${action.version?.version_no} โดยข้อมูลร่างยังคงเดิม`}</p>{action.type !== "withdraw" && <ProjectComparison current={live} target={action.type === "rollback" ? action.version?.payload : project} />}{action.type === "publish" && <><section aria-label="ไม่รวมในการเผยแพร่"><h3>ไม่รวมในการเผยแพร่</h3>{project.readiness.excluded_models?.length ? <ul>{project.readiness.excluded_models.map(model => <li key={model.rem_model_id}>{model.name} · {model.rem_model_id} — {model.reason}</li>)}</ul> : <p>ไม่มีแบบที่ต้องตัดออก</p>}<p>แบบที่ยังไม่ยืนยันหรือข้อมูลจำเป็นไม่ครบไม่กีดกันการเผยแพร่โครงการ</p></section></>}<div className="form-field"><label htmlFor="change-reason">เหตุผลในการดำเนินการ</label><textarea id="change-reason" rows={3} value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} disabled={pending} required autoFocus={action.type === "withdraw"} /></div>{error && <div className="notice error" role="alert">{error}</div>}<div className="dialog-actions"><button type="button" className="button secondary" onClick={onCancel} disabled={pending}>ยกเลิก</button><button type="submit" className={`button ${action.type === "withdraw" ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || !reason.trim() || action.type !== "withdraw" && (!(action.type === "rollback" ? action.version?.payload : project)?.publication_preview || (action.type === "rollback" ? action.version?.payload : project)?.publication_preview_redacted || live?.publication_preview_redacted)}>{pending ? "กำลังดำเนินการ…" : `ยืนยัน${actionLabels[action.type]}`}</button></div></form></dialog>;
 }

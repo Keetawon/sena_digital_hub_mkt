@@ -25,7 +25,8 @@ select hub.bind_brand_asset(id,'90900000-0000-0000-0000-000000000001','logo_prim
 from hub.brands where id=current_setting('test.mm_brand')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_brand(current_setting('test.mm_brand')::uuid,'Synthetic brand only');
+select pg_temp.w4_confirm_media('90900000-0000-0000-0000-000000000001','exterior','{"th":"Synthetic logo"}');
+select pg_temp.w4_publish('brand',current_setting('test.mm_brand')::uuid,'Synthetic brand only');
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.mm_project',hub.create_project_from_rem('MODEL-MEDIA-P1')::text,true);
@@ -83,7 +84,8 @@ end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic test PDF',null,null,'Synthetic review') from hub.assets where id='90900000-0000-0000-0000-000000000002';
-select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic project with model media');
+select pg_temp.w4_confirm_media('90900000-0000-0000-0000-000000000002','floor_plan','{"th":"Synthetic layout PDF"}');
+select pg_temp.w4_publish('project',current_setting('test.mm_project')::uuid,'Synthetic project with model media');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.mm_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.mm_public');
@@ -107,7 +109,7 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_project(current_setting('test.mm_project')::uuid,'Synthetic release excludes rejected model');
+select pg_temp.w4_publish('project',current_setting('test.mm_project')::uuid,'Synthetic release excludes rejected model');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin

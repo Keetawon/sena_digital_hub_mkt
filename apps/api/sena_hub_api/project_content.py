@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .auth import Actor, failure
 from .content_permissions import require_content, route_class
+from .content_workflow import DecisionReason
 
 
 class Input(BaseModel):
@@ -38,10 +39,12 @@ class Revision(Input):
 
 class QuestionDecision(Revision):
     decision: Literal['approved', 'retired']
+    reason: DecisionReason | None = None
 
 
 class GlossaryDecision(Revision):
     decision: Literal['active', 'retired']
+    reason: DecisionReason | None = None
 
 
 class Domain(Input):
@@ -66,8 +69,9 @@ def register_project_content_routes(app, authentication, database):
             return actor
         raise failure(403, 'content_permission', 'ไม่มีสิทธิ์เข้าถึงข้อมูลส่วนนี้')
 
-    async def read(request, actor, sql, *args):
+    async def read(request, actor, sql, *args, reason=None):
         async with database(request, actor) as db:
+            await db.execute("select set_config('app.content_review_reason',$1,true)", reason or '')
             return {'data': await db.fetchval(sql, *args)}
 
     @app.get('/v1/admin/content/fields')
@@ -100,7 +104,7 @@ def register_project_content_routes(app, authentication, database):
 
     @app.post('/v1/admin/content/glossary/{term_key}/approve')
     async def glossary_approve(term_key: str, body: GlossaryDecision, request: Request, actor: Actor = Depends(staff)):
-        return await read(request, actor, 'select hub.approve_glossary($1,$2,$3)', term_key, body.expected_revision, body.decision)
+        return await read(request, actor, 'select hub.approve_glossary($1,$2,$3)', term_key, body.expected_revision, body.decision, reason=body.reason)
 
     @app.get('/v1/admin/projects/{public_id}/content')
     async def project_content(public_id: str, request: Request, actor: Actor = Depends(staff)):
@@ -172,7 +176,7 @@ def register_project_content_routes(app, authentication, database):
 
     @app.post('/v1/admin/faq/questions/{question_key}/approve')
     async def question_approve(question_key: str, body: QuestionDecision, request: Request, actor: Actor = Depends(staff)):
-        return await read(request, actor, 'select hub.approve_faq_question($1,$2,$3)', question_key, body.expected_revision, body.decision)
+        return await read(request, actor, 'select hub.approve_faq_question($1,$2,$3)', question_key, body.expected_revision, body.decision, reason=body.reason)
 
     @app.get('/v1/admin/faq')
     async def faq_list(request: Request, actor: Actor = Depends(staff)):

@@ -16,7 +16,7 @@ const asset = (id: string, name: string): CommercialAsset => ({ id, binding_id: 
 
 async function openFixture(page: Page, initial: CommercialType[] = [], role = 'editor') {
   const project = {
-    public_project_id: 'commercial-test', public_name: { th: 'โครงการจำลองแบบขาย' }, address: { th: 'ที่อยู่จำลอง' }, slug: 'commercial-test', latitude: null, longitude: null, updated_at: time, published_version_id: null, publication_available: false,
+    id: '76000000-0000-4000-8000-000000000011', public_project_id: 'commercial-test', public_name: { th: 'โครงการจำลองแบบขาย' }, address: { th: 'ที่อยู่จำลอง' }, slug: 'commercial-test', latitude: null, longitude: null, updated_at: time, published_version_id: null, publication_available: false,
     readiness: { ready: false, percent: 0, missing: [] }, gold_source: null, source: { rem_project_id: 'TEST-COMMERCIAL', project_name_rem: 'โครงการจำลอง', source_record: null, source_snapshot_at: time, source_updated_at: null, intake_manifest_sha256: null },
     models, assets: [], commercial_types: initial,
   };
@@ -29,6 +29,25 @@ async function openFixture(page: Page, initial: CommercialType[] = [], role = 'e
     if (await fulfilWorkspaceProjection(route, project)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
+    // Finite read-only workflow projections; persona and existing mutation fixtures stay live.
+    if (request.method() === 'GET' && path === 'content-workflow/items') {
+      const query = new URL(request.url()).searchParams;
+      expect(query.get('level')).toBe('project'); expect(query.get('id')).toBe(project.public_project_id);
+      expect(query.get('phase')).toBe(project.source.rem_project_id);
+      return route.fulfill({ json: { data: { scope: { level: 'project', id: project.public_project_id, phase: project.source.rem_project_id }, items: [], next_cursor: null } } });
+    }
+    if (request.method() === 'GET' && path === 'content-workflow') {
+      const query = new URL(request.url()).searchParams, kind = query.get('kind'), identity = JSON.parse(query.get('identity')!);
+      const owner = kind === 'project' ? project : kind === 'model' ? project.models.find(item => item.id === identity.id) : kind === 'unit_type' ? project.commercial_types.find(item => item.id === identity.id)
+        : kind === 'type_asset' ? project.commercial_types.flatMap(item => item.assets).find(item => item.binding_id === identity.id) : null;
+      expect(owner, 'Workflow reads must belong to this finite fixture').toBeTruthy();
+      expect(identity).toEqual({ id: kind === 'type_asset' ? (owner as CommercialAsset).binding_id : owner!.id });
+      return route.fulfill({ json: { data: { kind, identity, expected_hash: 'a'.repeat(64),
+        source_revision: null, source_updated_at: project.updated_at, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT',
+        version_id: null, version_no: null, approved_by: null, approved_at: null, decision_reason: null,
+        self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false, can_approve: false,
+        can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: false, history: [] } } });
+    }
     if (path === 'assets' && request.method() === 'POST') {
       const uploaded = asset(`asset-${library.length}`, decodeURIComponent(request.headers()['x-filename']));
       library.push(uploaded); await route.fulfill({ json: { data: uploaded } }); return;
@@ -74,7 +93,7 @@ test('one atomic set supports multiple REM references, shared codes and an unmat
   await panel.getByRole('button', { name: 'เพิ่มอีกแถว', exact: true }).click();
   await panel.getByRole('region', { name: 'แบบขายรายการ 3', exact: true }).getByLabel('ชื่อแบบขาย (ไทย)').fill('Corner');
   await panel.getByRole('button', { name: 'บันทึกแบบขาย', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('เพิ่มแบบขายฉบับร่าง 3 รายการแล้ว');
+  await expect(panel.locator('.notice.success[role="status"]')).toContainText('เพิ่มแบบขายฉบับร่าง 3 รายการแล้ว');
   expect(writes).toHaveLength(1);
   expect((writes[0].body.types as { source_model_ids: string[] }[]).map(item => item.source_model_ids)).toEqual([[models[0].public_model_id, models[1].public_model_id, models[2].public_model_id], [models[2].public_model_id], []]);
   expect(project.commercial_types).toHaveLength(3);
@@ -116,7 +135,7 @@ test('multiple uploads are separate library files and plans retain house floor a
     { name: 'floor-two.pdf', mimeType: 'application/pdf', buffer: Buffer.from('synthetic fixture two') },
   ]);
   await panel.getByRole('button', { name: 'อัปโหลด 2 ไฟล์เข้าคลัง', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('อัปโหลดเข้าคลังสำเร็จ 2 ไฟล์');
+  await expect(panel.locator('.notice.success[role="status"]')).toContainText('อัปโหลดเข้าคลังสำเร็จ 2 ไฟล์');
   expect(library).toHaveLength(2);
   expect(project.commercial_types[0].assets).toHaveLength(0);
   await panel.getByRole('button', { name: 'ใช้ไฟล์ floor-one.pdf', exact: true }).click();
@@ -126,7 +145,7 @@ test('multiple uploads are separate library files and plans retain house floor a
   await panel.getByLabel('คำอธิบายไฟล์ (ไทย)').fill('แปลนบ้าน Garden ชั้นล่าง');
   await panel.getByRole('checkbox', { name: 'LEGACY-01', exact: true }).check();
   await panel.getByRole('button', { name: 'ผูกไฟล์กับแบบขาย', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('ผูกไฟล์กับแบบขายฉบับร่างแล้ว');
+  await expect(panel.locator('.notice.success[role="status"]')).toContainText('ผูกไฟล์กับแบบขายฉบับร่างแล้ว');
   expect(writes[0].path).toContain(`/commercial-types/${type().public_commercial_type_id}/assets`);
   expect(writes[0].body).toMatchObject({ updated_at: time, floor_label: 'ชั้น 1', plan_revision: 'R2', applicability_model_ids: [models[2].public_model_id] });
   expect(project.commercial_types[0].assets).toHaveLength(1);

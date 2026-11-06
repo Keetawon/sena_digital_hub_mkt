@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSONContent } from "@tiptap/core";
 import { ArticleEditor, type ArticleReferences } from "./article-editor";
 import { useHubPermissions } from "./accounts";
+import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
 import { ErrorSummary, useContentLocation } from "./content-operations-shared";
 import { BilingualInput, ExposureInput, TranslationReviewPanel, contentDate, errorMessage, useFieldCatalog, type Exposure, type Locales, type Translation } from "./content-common";
@@ -29,11 +30,15 @@ export function ArticlesWorkspace() {
   const { catalog, error: catalogError } = useFieldCatalog();
   const [references, setReferences] = useState<ArticleReferences | null>(null), [list, setList] = useState<ArticleList | null>(null);
   const [current, setCurrent] = useState<Article | null>(null), [draft, setDraft] = useState<Draft | null>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const [draftRevision, setDraftRevision] = useState(0), [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set());
+  const workflowBusy = workflowOwners.size > 0;
+  const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
   const [dirty, setDirty] = useState(false), [translationDirty, setTranslationDirty] = useState(false), [pending, setPending] = useState(false);
   const [error, setError] = useState(""), [notice, setNotice] = useState(""), [search, setSearch] = useState("");
   const [tab, setTab] = useState<keyof typeof tabs>("content"), [locale, setLocale] = useState<"th" | "en">("th"), [preview, setPreview] = useState<Preview | null>(null);
   const [linkKind, setLinkKind] = useState<Link["kind"]>("project"), [linkRef, setLinkRef] = useState("");
-  const location = useContentLocation(dirty || translationDirty);
+  const location = useContentLocation(dirty || translationDirty || pending || workflowBusy);
   const selected = location.params.get("article"), query = location.params.get("q") ?? "";
   const offset = Math.min(100000, Math.max(0, Number(location.params.get("offset")) || 0));
   const loadList = useCallback(async () => {
@@ -61,22 +66,23 @@ export function ArticlesWorkspace() {
   }, [selected, loadList]);
   function change(patch: Partial<Draft>) { if (draft && canEdit) { setDraft({ ...draft, ...patch }); setDirty(true); } }
   function edit() {
-    if (!current || !canEdit) return;
+    if (!current || !canEdit || pending || workflowBusy || translationDirty) return;
+    setDraftRevision(current.revision);
     const v = current.version;
     setDraft({ ...v.metadata, title: v.title, excerpt: v.excerpt, seo_title: v.seo_title, seo_description: v.seo_description, blocks: v.blocks.th, links: current.links });
     setDirty(false); setTab("content"); setError(""); setNotice("");
   }
   async function save() {
-    if (!draft || !canEdit || pending) return;
+    if (!draft || !canEdit || pending || workflowBusy) return;
     setPending(true); setError(""); setNotice("");
     try {
-      const saved = await request<{ id: string }>(current ? `v1/admin/articles/${current.id}` : "v1/admin/articles", current ? "PUT" : "POST", current ? { expected_revision: current.revision, content: draft } : draft);
+      const saved = await request<{ id: string }>(current ? `v1/admin/articles/${current.id}` : "v1/admin/articles", current ? "PUT" : "POST", current ? { expected_revision: draftRevision, content: draft } : draft);
       setCurrent(await request<Article>(`v1/admin/articles/${saved.id}`)); setDraft(null); setDirty(false);
       location.navigate({ article: saved.id }, true); await loadList(); setNotice("บันทึกฉบับร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ");
     } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
   }
   async function review(decision: "submit" | "approve" | "return" | "withdraw") {
-    if (!current || pending || draft || translationDirty || (decision === "submit" ? !canEdit : !canApprove)) return;
+    if (!current || pending || workflowBusy || draft || translationDirty || (decision === "submit" ? !canEdit : !canApprove)) return;
     setPending(true); setError(""); setNotice("");
     try {
       await request(`v1/admin/articles/${current.id}/${decision === "submit" ? "submit" : "review"}`, "POST", { expected_revision: current.revision, ...(decision === "submit" ? {} : { decision }) });
@@ -85,7 +91,6 @@ export function ArticlesWorkspace() {
   }
   function options(kind: Link["kind"]) { return references?.[kind === "project" ? "projects" : kind === "brand" ? "brands" : "programmes"] ?? []; }
   function linkLabel(link: Link) { return options(link.kind).find(row => row.ref === link.ref)?.label.th || link.ref; }
-  const ownEdit = current?.version.editors.includes(permissions.account?.id ?? "");
   const ownApproved = current?.history.find(version => version.id === current.approved_version_id)?.editors.includes(permissions.account?.id ?? "");
   return <div className="content-workspace articles-workspace">
     <header className="content-header"><h1>บทความ</h1><p>เขียนเนื้อหาไทย ตรวจภาษาอังกฤษ และส่งให้ผู้อนุมัติคนอื่นตรวจ</p><p className="content-state">อนุมัติเนื้อหาและเผยแพร่เว็บไซต์เป็นคนละขั้นตอน</p>{!canEdit && !canApprove && <p>สิทธิ์ดูข้อมูลเท่านั้น</p>}</header>
@@ -94,14 +99,14 @@ export function ArticlesWorkspace() {
       <form className="content-actions" onSubmit={event => { event.preventDefault(); location.navigate({ q: search || null, offset: null }); }}><label className="content-input">ค้นหาบทความ<input value={search} maxLength={120} onChange={event => setSearch(event.target.value)} /></label><button className="button secondary">ค้นหา</button></form>
       {!list ? <p role="status">กำลังโหลดบทความ…</p> : <><p>ทั้งหมด {list.total} บทความ</p>{list.items.length === 0 && <p>ยังไม่มีบทความในรายการนี้</p>}<div className="content-card-list">{list.items.map(item => <article className="content-card" key={item.id}><h3>{item.title.th || "ยังไม่มีชื่อ"}</h3><p className="content-state">{states[item.state]} · ฉบับ {item.version_no}</p><p>{item.excerpt.th}</p><p>แก้ไข {contentDate(item.updated_at)}</p><button className="button secondary" onClick={() => location.navigate({ article: item.id })}>เปิดบทความ</button></article>)}</div>
         <div className="content-actions"><button className="button secondary" disabled={offset === 0} onClick={() => location.navigate({ offset: String(Math.max(0, offset - 25)) })}>หน้าก่อน</button><button className="button secondary" disabled={offset + list.items.length >= list.total} onClick={() => location.navigate({ offset: String(offset + 25) })}>หน้าถัดไป</button></div></>}
-    </section> : <section className="content-section"><div className="content-toolbar"><h2>{selected === "new" ? "บทความใหม่" : current?.version.title.th || "รายละเอียดบทความ"}</h2><button className="button secondary" disabled={pending} onClick={() => location.navigate({ article: null })}>กลับรายการบทความ</button></div>
+    </section> : <section className="content-section"><div className="content-toolbar"><h2>{selected === "new" ? "บทความใหม่" : current?.version.title.th || "รายละเอียดบทความ"}</h2><button className="button secondary" disabled={pending || workflowBusy} onClick={() => location.navigate({ article: null })}>กลับรายการบทความ</button></div>
       {current && <p className="content-state">{states[current.version.state]} · ฉบับ {current.version.version_no}{current.approved_version_id ? " · มีฉบับที่อนุมัติแล้ว" : ""}</p>}
-      <nav className="content-tabs" aria-label="ส่วนบทความ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={pending || (Boolean(draft) || translationDirty) && tab !== key || !current && key !== "content"} onClick={() => setTab(key as keyof typeof tabs)}>{label}</button>)}</nav>
-      {tab === "content" && (draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={!canEdit || pending} className="content-form">
+      <nav className="content-tabs" aria-label="ส่วนบทความ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={pending || workflowBusy || (Boolean(draft) || translationDirty) && tab !== key || !current && key !== "content"} onClick={() => setTab(key as keyof typeof tabs)}>{label}</button>)}</nav>
+      {tab === "content" && (draft ? <form ref={form} inert={workflowBusy} onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={!canEdit || pending} className="content-form">
         <label className="content-input">ชื่อในที่อยู่เว็บ<input required value={draft.slug} maxLength={120} pattern="[a-z0-9][a-z0-9\-]{0,119}" onChange={event => change({ slug: event.target.value })} /><span className="field-help">ใช้ตัวอักษรอังกฤษเล็ก ตัวเลข และขีดกลาง</span></label>
         <label className="content-input">หมวดบทความ<select value={draft.category} onChange={event => change({ category: event.target.value })}>{references?.categories.map(row => <option key={row.code} value={row.code}>{row.label.th || row.code}</option>)}</select></label>
         {Object.entries(textFields).map(([key, field]) => <BilingualInput key={key} id={`article-${key}`} label={field.label} field={catalog?.items.find(item => item.field_key === `article.${key}`)} value={draft[key as keyof TextFields]} maxLength={field.max} rows={key === "excerpt" ? 3 : 2} onChange={value => change({ [key]: value })} />)}
-        <ArticleEditor value={draft.blocks} onChange={blocks => change({ blocks })} disabled={!canEdit || pending} references={references} canReadProjects={canProjects} />
+        <ArticleEditor value={draft.blocks} onChange={blocks => change({ blocks })} disabled={!canEdit || pending || workflowBusy} references={references} canReadProjects={canProjects} />
         <label className="content-input">ภาพปก<select value={draft.cover_asset_id ?? ""} onChange={event => change({ cover_asset_id: event.target.value || null })}><option value="">ยังไม่เลือกภาพปก</option>{draft.cover_asset_id && !references?.images.some(row => row.id === draft.cover_asset_id) && <option value={draft.cover_asset_id}>ภาพที่เลือกไว้ · ตรวจสิทธิ์อีกครั้งก่อนส่งตรวจ</option>}{references?.images.map(row => <option key={row.id} value={row.id}>{row.alt_text.th || row.caption.th || row.original_filename}</option>)}</select></label>
         <BilingualInput id="article-author" label="ผู้เขียน" value={draft.author} maxLength={200} rows={1} onChange={author => change({ author })} />
         <section aria-label="ป้ายกำกับบทความ"><h3>ป้ายกำกับ</h3>{draft.tags.map((tag, index) => <div className="article-tag" key={index}><BilingualInput id={`article-tag-${index}`} label={`ป้ายกำกับ ${index + 1}`} value={tag} maxLength={100} rows={1} onChange={value => change({ tags: draft.tags.map((item, at) => at === index ? value : item) })} /><button type="button" className="button secondary" onClick={() => change({ tags: draft.tags.filter((_, at) => at !== index) })}>ลบป้ายกำกับ {index + 1}</button></div>)}<button type="button" className="button secondary" disabled={draft.tags.length >= 20} onClick={() => change({ tags: [...draft.tags, {}] })}>เพิ่มป้ายกำกับ</button></section>
@@ -114,13 +119,12 @@ export function ArticlesWorkspace() {
       </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { if (!dirty || window.confirm("ละทิ้งการแก้ไขที่ยังไม่บันทึกหรือไม่")) { setDraft(null); setDirty(false); if (!current) location.navigate({ article: null }, true); } }}>ยกเลิกการแก้ไข</button><button className="button primary" disabled={!canEdit || pending || !draft.slug || !draft.title.th?.trim()}>{pending ? "กำลังบันทึก…" : "บันทึกบทความ"}</button></div></form> : current ? <>
         <h3>{current.version.title.th}</h3><p className="content-preserve">{current.version.excerpt.th}</p><p className="content-preserve">{plainText(current.version.blocks.th)}</p>
         <div className="content-readiness"><strong>{current.readiness.length ? "ยังมีรายการที่ต้องตรวจ" : current.version.state === "DRAFT" ? "พร้อมส่งตรวจเนื้อหา" : states[current.version.state]}</strong>{current.readiness.length > 0 && <ul>{current.readiness.map((issue, index) => <li key={`${issue.code}-${index}`}>{issue.label}</li>)}</ul>}</div>
-        {ownEdit && canApprove && <p className="inline-warning">คุณเคยแก้ไขฉบับนี้ ให้ผู้อนุมัติคนอื่นตรวจ</p>}
-        <div className="content-actions">{canEdit && <><button className="button secondary" disabled={pending} onClick={edit}>แก้ไขบทความ</button>{current.version.state === "DRAFT" && <button className="button primary" disabled={pending || current.readiness.length > 0} onClick={() => void review("submit")}>ส่งตรวจบทความ</button>}</>}
-          {canApprove && current.version.state === "IN_REVIEW" && <><button className="button primary" disabled={pending || ownEdit} onClick={() => void review("approve")}>อนุมัติเนื้อหา</button><button className="button secondary" disabled={pending || ownEdit} onClick={() => void review("return")}>ส่งกลับแก้ไข</button></>}
-          {canApprove && current.approved_version_id && <button className="button secondary" disabled={pending || ownApproved} onClick={() => void review("withdraw")}>ถอนการอนุมัติ</button>}
+        <div className="content-actions">{canEdit && <><button className="button secondary" disabled={pending || workflowBusy} onClick={edit}>แก้ไขบทความ</button></>}
+          {canApprove && current.approved_version_id && <button className="button secondary" disabled={pending || workflowBusy || ownApproved} onClick={() => void review("withdraw")}>ถอนการอนุมัติ</button>}
         </div>
       </> : !error && <p role="status">กำลังโหลดบทความ…</p>)}
-      {tab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog?.items ?? []} canEdit={canEdit && !pending} onChanged={reloadCurrent} onEditingChange={setTranslationDirty} />}
+      {current && tab === "content" && <ContentWorkflow target={{ kind: "article", identity: { id: current.id } }} label={current.version.title.th || current.slug} revision={draft ? draftRevision : current.revision} submitDisabled={current.readiness.length > 0} disabled={pending || translationDirty || workflowOwners.size > 0 && !workflowOwners.has("article:" + current.id)} draft={draft ? { dirty: true, valid: canEdit && Boolean(draft.slug && draft.title.th?.trim()), sourceStamp: { revision: draftRevision }, getChanges: () => form.current?.reportValidity() ? draft : null } : undefined} onEditingChange={value => workflowEditing("article:" + current.id, value)} onChanged={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} onReload={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} />}
+      {tab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog?.items ?? []} canEdit={canEdit && !pending && !workflowBusy} onChanged={reloadCurrent} onEditingChange={setTranslationDirty} />}
       {tab === "preview" && current && <section aria-label="ตัวอย่างบทความภายใน"><label className="content-input">ภาษาตัวอย่าง<select value={locale} onChange={event => setLocale(event.target.value as "th" | "en")}><option value="th">ไทย</option><option value="en">อังกฤษ</option></select></label><p className="field-help">ตัวอย่างสำหรับตรวจเนื้อหาใน Hub อ้างอิงข้อมูลปัจจุบันที่คุณมีสิทธิ์อ่าน</p>{preview ? <div className="article-preview" dangerouslySetInnerHTML={{ __html: preview.html }} /> : <p role="status">กำลังเตรียมตัวอย่าง…</p>}</section>}
       {tab === "history" && current && <section aria-label="ประวัติบทความ"><h3>ประวัติฉบับที่บันทึก</h3><p className="field-help">แสดง 30 ฉบับล่าสุด</p>{current.history.map(version => <details className="content-card" key={version.id}><summary>ฉบับ {version.version_no} · {states[version.state]} · {contentDate(version.created_at)}</summary><h4>{version.title.th}</h4><p>{version.excerpt.th}</p><p className="content-preserve">{plainText(version.blocks.th)}</p><h4 lang="en">{version.title.en}</h4><p lang="en" className="content-preserve">{plainText(version.blocks.en)}</p><p>ผู้เขียน: {version.metadata.author.th || "ยังไม่ระบุ"}</p><p>ลิงก์ที่บันทึก: {version.links?.map(linkLabel).join(" · ") || "ไม่มี"}</p></details>)}</section>}
     </section>}

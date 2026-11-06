@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 import asyncpg
 import pytest
 
+from content_workflow_fixture import approve_item, load_sql_fixture, publication_persona
 from test_permission_baseline import disposable_operator, ROOT
 from test_permission_content import call, set_bit
 from test_permission_foundations import permission_accounts, h
@@ -91,9 +92,11 @@ def test_real_promotion_public_targets_banners_frozen_drafts_and_revoked_rights(
     _, ids = permission_accounts
 
     async def check():
+        await publication_persona(ids)
         db = await disposable_operator(); transaction = db.transaction(); await transaction.start()
         try:
             fixture = (ROOT / 'supabase/tests/residential_demo.sql').read_text(encoding='utf-8').split('-- Every new table')[0].replace('begin;', '', 1)
+            await load_sql_fixture(db, ids['admin'])
             await db.execute(fixture)
             first = await db.fetchrow("select id,public_project_id,brand_id from hub.projects where id=current_setting('test.residential_project')::uuid")
             await db.execute(fixture.replace('SQL-RESIDENTIAL-21', 'SQL-RESIDENTIAL-21B').replace('sql-residential', 'sql-residential-b').replace('SYNTHETIC:SQL:000021', 'SYNTHETIC:SQL:000021B'))
@@ -111,7 +114,7 @@ def test_real_promotion_public_targets_banners_frozen_drafts_and_revoked_rights(
                 'media_category': 'promotion_ad', 'metadata_state': 'confirmed', 'marketing_publication': True, 'ai_exposure': 'web_only',
                 'caption': {'th': 'Synthetic banner', 'en': 'Synthetic banner'}, 'alt_text': {'th': 'Synthetic banner', 'en': 'Synthetic banner'},
                 'image_kind': 'render', 'people': 'absent', 'third_party_marks': 'absent'})
-            await call(db, ids['editor'], 'select hub.media_link_save($1,$2,0,$3)', first['public_project_id'], uuid4(), {
+            binding = await call(db, ids['editor'], 'select hub.media_link_save($1,$2,0,$3)', first['public_project_id'], uuid4(), {
                 'asset_id': str(asset), 'target_type': 'promotion', 'target_key': row['id'], 'usage': 'banner', 'ai_exposure': 'open'})
             approved_asset = await call(db, ids['publisher'], "select hub.review_asset(id,updated_at,'approved','Synthetic rights',null,null,'Synthetic') from hub.assets where id=$1", asset)
             assert approved_asset['rights_status'] == 'approved'
@@ -129,7 +132,9 @@ def test_real_promotion_public_targets_banners_frozen_drafts_and_revoked_rights(
             for review_type in ('DATA', 'LEGAL'):
                 row = await command(db, ids['publisher'], 'review', row, review_type=review_type, decision='APPROVED', evidence='Synthetic evidence', change_reason='Synthetic')
             assert row['readiness']['ready']
-            row = await command(db, ids['publisher'], 'publish', row, expected_published_version_id=None, change_reason='Synthetic')
+            await approve_item(db, ids, 'asset', {'id': str(asset)})
+            await approve_item(db, ids, 'asset_context', {'id': binding['id']})
+            row = await command(db, ids['viewer'], 'publish', row, expected_published_version_id=None, change_reason='Synthetic')
             assert row['published']['payload']['banners'][0]['ai_exposure'] == 'web_only'
             public = await call(db, ids['viewer'], "select jsonb_agg(payload order by public_project_id) from public_api.read_promotions() where code=$1", row['code'])
             assert {p['public_project_id'] for p in public} == {first['public_project_id'], second['public_project_id']}

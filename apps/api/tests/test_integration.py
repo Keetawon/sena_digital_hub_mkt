@@ -1,4 +1,9 @@
 import os
+import asyncio
+from contextlib import nullcontext
+
+from content_workflow_fixture import approve_fixture_entity, publication_persona, confirm_fixture_demo_media
+from test_permission_foundations import permission_accounts, h
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,11 +14,12 @@ from sena_hub_api.main import create_app
 
 @pytest.mark.integration
 @pytest.mark.skipif(not os.getenv("HUB_TEST_DATABASE_URL"), reason="Requires seeded local PostgreSQL and runtime login")
-def test_real_postgres_draft_publish_conflict_withdraw_and_rollback():
-    tokens = {role: f"integration-{role}-" + "x" * 40 for role in ROLES}
-    config = Settings(os.environ["HUB_TEST_DATABASE_URL"], "demo", "local", tokens)
-    headers = {role: {"Authorization": f"Bearer {token}"} for role, token in tokens.items()}
-    with TestClient(create_app(config), client=("127.0.0.1", 50000)) as client:
+def test_real_postgres_draft_publish_conflict_withdraw_and_rollback(permission_accounts):
+    client, ids = permission_accounts
+    asyncio.run(publication_persona(ids))
+    asyncio.run(confirm_fixture_demo_media(ids))
+    headers = {role: h(role) for role in ROLES}
+    with nullcontext(client):
         projects = client.get("/v1/admin/projects", headers=headers["editor"])
         assert projects.status_code == 200, projects.text
         original = next(project for project in projects.json()["data"] if project["source"]["rem_project_id"] == "DEMO-001")
@@ -26,7 +32,9 @@ def test_real_postgres_draft_publish_conflict_withdraw_and_rollback():
             return response.json()["data"]
 
         def action(name, **body):
-            response = client.post(f"{admin_path}/{name}", headers=headers["publisher"], json={"change_reason": "ตรวจ API กับฐานข้อมูลจริง", **body})
+            if name == 'publish':
+                asyncio.run(approve_fixture_entity(ids, 'project', original['id']))
+            response = client.post(f"{admin_path}/{name}", headers=headers["viewer"], json={"change_reason": "ตรวจ API กับฐานข้อมูลจริง", **body})
             assert response.status_code == 200, response.text
             return response.json()["data"]
 
@@ -65,11 +73,11 @@ def test_real_postgres_draft_publish_conflict_withdraw_and_rollback():
             blank_slug = patch({"slug": ""})
             assert blank_slug.status_code == 200, blank_slug.text
             assert any(missing["field"] == "slug" for missing in blank_slug.json()["data"]["readiness"]["missing"])
-            slug_blocked = client.post(f"{admin_path}/publish", headers=headers["publisher"], json={"change_reason": "ชื่อเส้นทางยังไม่ครบ"})
+            slug_blocked = client.post(f"{admin_path}/publish", headers=headers["viewer"], json={"change_reason": "ชื่อเส้นทางยังไม่ครบ"})
             assert slug_blocked.status_code == 422, slug_blocked.text
             assert patch({"slug": original["slug"]}).status_code == 200
             assert patch({"ad_disclaimer": {"th": ""}}).status_code == 200
-            blocked = client.post(f"{admin_path}/publish", headers=headers["publisher"], json={"change_reason": "ต้องไม่ผ่าน gate"})
+            blocked = client.post(f"{admin_path}/publish", headers=headers["viewer"], json={"change_reason": "ต้องไม่ผ่าน gate"})
             assert blocked.status_code == 422, blocked.text
         finally:
             result = patch({name: original[name] for name in (

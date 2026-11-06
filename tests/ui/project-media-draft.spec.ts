@@ -20,7 +20,7 @@ const binding = (image: ReturnType<typeof asset>, role: string, owner: string | 
 
 async function openFixture(page: Page) {
   const project = {
-    public_project_id: projectId, public_name: { th: 'โครงการจำลอง', en: 'Saved name', zh: '保留名称' },
+    id: '66000000-0000-4000-8000-000000000003', public_project_id: projectId, public_name: { th: 'โครงการจำลอง', en: 'Saved name', zh: '保留名称' },
     address: { th: 'ที่อยู่เดิม', en: 'Saved address', zh: '保留地址' },
     slug: projectId, latitude: null, longitude: null, updated_at: initialRevision,
     ad_disclaimer: { th: 'เงื่อนไขจำลอง', en: 'Keep disclaimer' },
@@ -46,6 +46,25 @@ async function openFixture(page: Page) {
     const path = new URL(request.url()).pathname.replace('/api/hub/v1/admin/', '');
     const method = request.method();
     if (method === 'GET') {
+      // Only workflow reads for the current synthetic source objects; no authority or write mocks.
+      if (path === 'content-workflow/items') {
+        const query = new URL(request.url()).searchParams;
+        expect(query.get('level')).toBe('project'); expect(query.get('id')).toBe(projectId);
+        expect(query.get('phase')).toBe(project.source.rem_project_id);
+        return route.fulfill({ json: { data: { scope: { level: 'project', id: projectId, phase: project.source.rem_project_id }, items: [], next_cursor: null } } });
+      }
+      if (path === 'content-workflow') {
+        const query = new URL(request.url()).searchParams, kind = query.get('kind'), identity = JSON.parse(query.get('identity')!);
+        const owner = kind === 'project' ? project : kind === 'model' ? project.models.find(item => item.id === identity.id) : kind === 'project_asset' ? project.assets.find(item => item.binding_id === identity.id)
+          : kind === 'asset' ? library.find(item => item.id === identity.id) : null;
+        expect(owner, 'Workflow reads must belong to this finite fixture').toBeTruthy();
+        expect(identity).toEqual({ id: kind === 'project_asset' ? (owner as ReturnType<typeof binding>).binding_id : owner!.id });
+        return route.fulfill({ json: { data: { kind, identity, expected_hash: 'a'.repeat(64),
+          source_revision: kind === 'asset' ? 1 : null, source_updated_at: project.updated_at, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT',
+          version_id: null, version_no: null, approved_by: null, approved_at: null, decision_reason: null,
+          self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false, can_approve: false,
+          can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: false, history: [] } } });
+      }
       // Exact read-only companion responses; canonical binding writers below stay unchanged.
       if ([`${projectPath}/media`, `${projectPath}/media/jobs`, `${projectPath}/media/ai-state`].includes(path)) {
         const data = path.endsWith('/jobs') ? [] : path.endsWith('/ai-state')

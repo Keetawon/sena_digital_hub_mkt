@@ -9,13 +9,18 @@ from fastapi import Request
 from .auth import failure
 
 CONTENT_RULES = {
+    ('GET', '/v1/admin/publication-queue'): ('knowledge', 'view'),
+    ('POST', '/v1/admin/publication-queue/prepare'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/publication-queue/publish'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/publication-queue/return'): ('knowledge', 'knowledge.publish_web'),
+
     ('POST', '/v1/admin/projects/{public_id}/content/website/{candidate_id}/decision'): ('projects', 'edit'),
     ('GET', '/v1/admin/web'): ('knowledge', 'view'),
     ('PUT', '/v1/admin/web/pages/{page_key}'): ('knowledge', 'edit'),
     ('GET', '/v1/admin/web/pages/{page_key}/history'): ('knowledge', 'view'),
     ('GET', '/v1/admin/web/pages/{page_key}/versions/{version_id}'): ('knowledge', 'view'),
     ('POST', '/v1/admin/web/pages/{page_key}/pointer'): ('knowledge', 'knowledge.publish_web'),
-    ('POST', '/v1/admin/web/publications'): ('knowledge', 'edit'),
+    ('POST', '/v1/admin/web/publications'): ('knowledge', 'knowledge.publish_web'),
     ('GET', '/v1/admin/web/publications/{publication_id}'): ('knowledge', 'view'),
     ('GET', '/v1/admin/web/publications/{publication_id}/preview'): ('knowledge', 'view'),
     ('POST', '/v1/admin/web/publications/{publication_id}/publish'): ('knowledge', 'knowledge.publish_web'),
@@ -135,9 +140,9 @@ CONTENT_RULES = {
     ('GET', '/v1/admin/brands/{public_id}'): ('brands', 'view'),
     ('PATCH', '/v1/admin/brands/{public_id}'): ('brands', 'edit'),
     ('GET', '/v1/admin/brands/{public_id}/versions'): ('brands', 'view'),
-    ('POST', '/v1/admin/brands/{public_id}/publish'): ('brands', 'approve'),
-    ('POST', '/v1/admin/brands/{public_id}/withdraw'): ('brands', 'approve'),
-    ('POST', '/v1/admin/brands/{public_id}/rollback'): ('brands', 'approve'),
+    ('POST', '/v1/admin/brands/{public_id}/publish'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/brands/{public_id}/withdraw'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/brands/{public_id}/rollback'): ('knowledge', 'knowledge.publish_web'),
     ('POST', '/v1/admin/brands/{public_id}/assets'): ('brands', 'edit'),
     ('POST', '/v1/admin/brands/{public_id}/assets/{binding_id}/remove'): ('brands', 'edit'),
     ('GET', '/v1/admin/brand-requests'): ('brands', 'view'),
@@ -157,21 +162,21 @@ CONTENT_RULES = {
     ('POST', '/v1/admin/projects/{public_id}/assets/{binding_id}/remove'): ('projects', 'edit'),
     ('POST', '/v1/admin/projects/{public_id}/models/{public_model_id}/assets'): ('projects', 'edit'),
     ('POST', '/v1/admin/projects/{public_id}/models/{public_model_id}/assets/{binding_id}/remove'): ('projects', 'edit'),
-    ('POST', '/v1/admin/projects/{public_id}/publish'): ('projects', 'approve'),
-    ('POST', '/v1/admin/projects/{public_id}/withdraw'): ('projects', 'approve'),
-    ('POST', '/v1/admin/projects/{public_id}/rollback'): ('projects', 'approve'),
+    ('POST', '/v1/admin/projects/{public_id}/publish'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/projects/{public_id}/withdraw'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/projects/{public_id}/rollback'): ('knowledge', 'knowledge.publish_web'),
     ('GET', '/v1/admin/promotions'): ('promotions', 'view'),
     ('GET', '/v1/admin/promotions/{promotion_id}'): ('promotions', 'view'),
     ('POST', '/v1/admin/promotions'): ('promotions', 'edit'),
     ('PATCH', '/v1/admin/promotions/{promotion_id}'): ('promotions', 'edit'),
     ('POST', '/v1/admin/promotions/{promotion_id}/review'): ('promotions', 'approve'),
-    ('POST', '/v1/admin/promotions/{promotion_id}/publish'): ('promotions', 'approve'),
-    ('POST', '/v1/admin/promotions/{promotion_id}/withdraw'): ('promotions', 'approve'),
+    ('POST', '/v1/admin/promotions/{promotion_id}/publish'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/promotions/{promotion_id}/withdraw'): ('knowledge', 'knowledge.publish_web'),
     ('GET', '/v1/admin/releases/candidates'): ('releases', 'view'),
     ('GET', '/v1/admin/releases'): ('releases', 'view'),
     ('GET', '/v1/admin/releases/{release_id}'): ('releases', 'view'),
-    ('POST', '/v1/admin/releases/publish'): ('releases', 'approve'),
-    ('POST', '/v1/admin/releases/{release_id}/rollback'): ('releases', 'approve'),
+    ('POST', '/v1/admin/releases/publish'): ('knowledge', 'knowledge.publish_web'),
+    ('POST', '/v1/admin/releases/{release_id}/rollback'): ('knowledge', 'knowledge.publish_web'),
     ('GET', '/v1/admin/knowledge/projects'): ('knowledge', 'view'),
     ('GET', '/v1/admin/knowledge/projects/{project_id}'): ('knowledge', 'view'),
     ('POST', '/v1/admin/knowledge/questions/{question_id}/review'): ('knowledge', 'edit'),
@@ -282,6 +287,12 @@ CONTENT_RULES = {
 # These surfaces have SQL identity/ownership or fixed technical boundaries rather
 # than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
 SHARED_RULES = {
+    ('GET', '/v1/admin/content-workflow'): 'content_workflow',
+    ('GET', '/v1/admin/content-workflow/items'): 'content_workflow',
+    ('POST', '/v1/admin/content-workflow/submit'): 'content_workflow',
+    ('POST', '/v1/admin/content-workflow/review'): 'content_workflow',
+    ('POST', '/v1/admin/content-workflow/save-approve'): 'content_workflow',
+
     ('GET', '/v1/admin/content/search'): 'content_workspace',
     ('GET', '/v1/admin/content/home'): 'content_workspace',
     ('GET', '/v1/admin/content/workspace/tree'): 'content_workspace',
@@ -377,6 +388,17 @@ def require_content(request: Request, *, error_code: str = "forbidden") -> bool:
         # SQL separately checks the target registration's canonical agency.
         allowed = level == "view" or rule == ('registry', 'edit') and getattr(
             request.scope.get('route'), 'path', None) == '/v1/admin/ads/registrations/{code}/bindings'
+    key = (request.method, getattr(request.scope.get('route'), 'path', None))
+    if rule == ('knowledge', 'knowledge.publish_web'):
+        allowed = allowed and caps.get('tabs', {}).get('knowledge', {}).get('view') is True
+        # N2: exact source V plus the existing special; SQL resolves every
+        # included version and independently rechecks publisher separation.
+        source_tabs = {('POST', '/v1/admin/projects/{public_id}/publish'): 'projects', ('POST', '/v1/admin/projects/{public_id}/withdraw'): 'projects', ('POST', '/v1/admin/projects/{public_id}/rollback'): 'projects', ('POST', '/v1/admin/brands/{public_id}/publish'): 'brands', ('POST', '/v1/admin/brands/{public_id}/withdraw'): 'brands', ('POST', '/v1/admin/brands/{public_id}/rollback'): 'brands', ('POST', '/v1/admin/promotions/{promotion_id}/publish'): 'promotions', ('POST', '/v1/admin/promotions/{promotion_id}/withdraw'): 'promotions'}
+        source_tab = source_tabs.get(key)
+        if source_tab:
+            allowed = allowed and caps.get('tabs', {}).get(source_tab, {}).get('view') is True
+    if key in {('GET', '/v1/admin/releases'), ('GET', '/v1/admin/releases/{release_id}')}:
+        allowed = allowed or caps.get('tabs', {}).get('knowledge', {}).get('view') is True
     if rule == ('archive', 'approve'):
         allowed = allowed and caps.get('tabs', {}).get('finance', {}).get('edit') is True
     if not allowed:

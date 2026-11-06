@@ -2,13 +2,15 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { FIXTURE_SOURCE, syntheticAssets } from './hosted-test-fixtures.mjs';
 import {operatorTransaction} from './hosted-write-attestation.mjs';
+import { syntheticWorkflowActors, approveSyntheticEntity, approveSyntheticItem } from './seed-hub-content-contract.mjs';
 
 // Caller supplies an already-verified connection. This module never opens a connection,
 // reads cloud credentials, provisions users, or enables issuance.
 export async function applyH1Seed(client,attestation) {
   const sql = await readFile(new URL('../supabase/hosted-test/h1-seed.sql', import.meta.url), 'utf8');
   const assets = syntheticAssets().map(({ bytes, ...metadata }) => metadata);
-  const checksum = createHash('sha256').update(sql).update(JSON.stringify(assets)).digest('hex');
+  const checksum = createHash('sha256').update(sql).update(JSON.stringify(assets))
+    .update(syntheticWorkflowActors.toString()).update(approveSyntheticEntity.toString()).update(approveSyntheticItem.toString()).digest('hex');
   const quote = text => `"${text.replaceAll('"', '""')}"`;
   const proof=await operatorTransaction(client,attestation,async client=>{
     await client.query("select pg_advisory_xact_lock(hashtextextended('hosted-h1-seed-v1',0))");
@@ -47,7 +49,21 @@ export async function applyH1Seed(client,attestation) {
     await client.query('create temporary table h1_seed_assets(payload jsonb) on commit drop; create temporary table h1_seed_codes(code text,sequence_no integer,agency text) on commit drop');
     for (const asset of assets) await client.query('insert into h1_seed_assets values($1)', [asset]);
     for (const row of codes) await client.query('insert into h1_seed_codes values($1,$2,$3)', [row.code,row.sequence_no,row.agency]);
-    await client.query(sql);
+    const pieces = sql.split('-- W4 guarded approval boundary');
+    if (pieces.length !== 2) throw new Error('H1 guarded approval boundary changed.');
+    const actors = await syntheticWorkflowActors(client, '70000000-0000-0000-0000-000000000004');
+    actors.author = '70000000-0000-0000-0000-000000000001';
+    await client.query("select set_config('app.h1_reviewer',$1,true),set_config('app.h1_publisher',$2,true)", [actors.reviewer, actors.publisher]);
+    await client.query(pieces[0]);
+    await approveSyntheticEntity(client, actors, 'brand', '71000000-0000-0000-0000-000000000001');
+    await approveSyntheticEntity(client, actors, 'project', '71000000-0000-0000-0000-000000000002');
+    await client.query(pieces[1]);
+    const published = (await client.query(`select
+      (select count(*)::int from hub.brands where published_version_id is not null) brands,
+      (select count(*)::int from hub.projects where published_version_id is not null) projects,
+      (select count(*)::int from hub.public_promotions where published_version_id is not null) promotions,
+      (select count(*)::int from hub.publication_release_members) members`)).rows[0];
+    if (published.brands !== 1 || published.projects !== 1 || published.promotions !== 1 || published.members !== 3) throw new Error('H1 seed did not publish its complete approved fixture set.');
     for (const table of temporaryPolicies) await client.query(`drop policy h1_seed_operator on ads.${table}`);
     const counts = (await client.query(`select (select count(*)::int from hub.brands) brands,(select count(*)::int from hub.projects) projects,
       (select count(*)::int from hub.model_types) models,(select count(*)::int from hub.public_promotions) promotions,

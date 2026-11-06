@@ -136,13 +136,17 @@ export function workspaceHref(target: WorkspaceTarget, extra: Record<string, str
 }
 export function queryParameters(value: Record<string, string | string[] | undefined>) {
   const query = new URLSearchParams();
-  for (const [key, item] of Object.entries(value)) if (typeof item === "string") query.set(key, item);
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === "string") query.append(key, item);
+    else if (Array.isArray(item)) for (const entry of item) query.append(key, entry);
+  }
   return query;
 }
 // Temporary legacy redirects preserve every query before replacing only routing keys.
 export function legacyWorkspaceHref(path: string, query: URLSearchParams): string | null {
   const copy = new URLSearchParams(query);
   const project = query.get("project"), brand = query.get("brand"), tab = query.get("tab");
+  if (path === "/releases" || path === "/faq" && tab === "publication") return `/publish${copy.size ? "?" + copy : ""}`;
   let target: WorkspaceTarget | null = null;
   if (path === "/" && (project || brand)) {
     const field = query.get("field") ?? "", history = query.has("version") || query.has("draft_at");
@@ -171,7 +175,6 @@ export function legacyWorkspaceHref(path: string, query: URLSearchParams): strin
   if (path === "/media" && tab === "rules") { copy.set("section", "media-rules"); copy.delete("tab"); return `/settings?${copy}`; }
   if (path === "/faq" && (tab === "bank" || tab === "glossary")) { copy.set("section", tab); copy.delete("tab"); return `/settings?${copy}`; }
   if (path === "/faq" && tab === "coverage") { copy.delete("tab"); copy.set("section", "coverage"); return `/home?${copy}`; }
-  if (path === "/faq" && tab === "publication") return null; // W4 owns the publication alias.
   if (["/", "/content", "/media", "/faq"].includes(path)) {
     if (path === "/faq") copy.set("intent", "faq");
     if (path === "/media") copy.set("intent", "media");

@@ -1,5 +1,6 @@
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
+import { sourceHistory, workflowText } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' };
 const api = '/api/hub/v1/admin';
@@ -57,7 +58,7 @@ for (const width of [1280, 390]) {
       await page.getByLabel('รายละเอียดสระว่ายน้ำ (ภาษาอังกฤษ)', { exact: true }).fill(`${suffix} pool`);
       expect(await page.locator('#facilities .table-scroll').evaluate(element => element.scrollWidth <= element.clientWidth)).toBeTruthy();
       await page.getByRole('button', { name: 'บันทึกสิ่งอำนวยความสะดวก', exact: true }).click();
-      await expect(page.locator('#facilities').getByRole('status')).toHaveText('บันทึกสิ่งอำนวยความสะดวกเป็นร่างแล้ว');
+      await expect(page.locator('#facilities .notice.success[role=status]')).toHaveText('บันทึกสิ่งอำนวยความสะดวกเป็นร่างแล้ว');
       await expect(page.getByText(`${suffix} pool`, { exact: true })).toBeVisible();
       expect((await read(page, base)).facilities.items.find((item: { code: string }) => item.code === 'pool').description.en).toBe(`${suffix} pool`);
       await fits(page);
@@ -72,24 +73,18 @@ for (const width of [1280, 390]) {
       await page.screenshot({ path: `artifacts/project-content-phase1/brand-english-${width}.png`, fullPage: true });
 
       await persona(page, 'publisher');
-      await page.reload();
-      await openWorkspaceTab(page, 'history');
-      await page.getByRole('button', { name: 'เผยแพร่แบรนด์', exact: true }).click();
-      await expect(page.getByRole('dialog').getByRole('heading', { name: 'เผยแพร่แบรนด์', exact: true })).toBeInViewport();
-      const brandPreview = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลแบรนด์' });
+      const brandHistory = await sourceHistory(page, 'brand', brand.public_brand_id);
+      await expect(brandHistory).toBeInViewport();
+      const brandPreview = brandHistory.getByRole('region', { name: `${workflowText.before} / ${workflowText.after}`, exact: true });
       const brandDraft = await read(page, brandBase);
       expect(brandDraft.publication_preview_redacted).toBe(false);
       for (const key of Object.keys(brandDraft.publication_preview)) await expect(brandPreview.locator(`[data-field="${key}"]`)).toHaveCount(1);
       await expect(brandPreview).toContainText(`${suffix} brand`);
       await fits(page);
       await page.screenshot({ path: `artifacts/project-content-phase1/brand-review-${width}.png`, fullPage: false });
-      await page.keyboard.press('Escape');
-
-      await page.goto(`/?project=${project.public_project_id}`);
-      await openWorkspaceTab(page, 'history');
-      await page.getByRole('button', { name: 'เผยแพร่ข้อมูล', exact: true }).click();
-      await expect(page.getByRole('dialog').getByRole('heading', { name: 'เผยแพร่ข้อมูล', exact: true })).toBeInViewport();
-      const comparison = page.getByRole('region', { name: 'เปรียบเทียบข้อมูลโครงการ' });
+      const projectHistory = await sourceHistory(page, 'project', project.public_project_id);
+      await expect(projectHistory).toBeInViewport();
+      const comparison = projectHistory.getByRole('region', { name: `${workflowText.before} / ${workflowText.after}`, exact: true });
       const draft = await read(page, base);
       expect(draft.publication_preview_redacted).toBe(false);
       for (const key of Object.keys(draft.publication_preview)) await expect(comparison.locator(`[data-field="${key}"]`)).toHaveCount(1);
@@ -97,9 +92,8 @@ for (const width of [1280, 390]) {
       await expect(comparison).not.toContainText('website_content');
       await expect(comparison).not.toContainText('[object Object]');
       await fits(page);
-      expect(await page.getByRole('dialog').evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth)).toBeTruthy();
+      expect(await projectHistory.evaluate(region => region.scrollWidth <= region.clientWidth)).toBeTruthy();
       await page.screenshot({ path: `artifacts/project-content-phase1/project-review-${width}.png`, fullPage: false });
-      await page.keyboard.press('Escape');
 
       await persona(page, 'viewer');
       await page.goto(`/?project=${project.public_project_id}`);

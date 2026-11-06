@@ -1,6 +1,7 @@
 "use client";
 import { PromotionCommercialFields, type CommercialPromotion } from "./promotion-commercial-fields";
 import { useHubPermissions } from "./accounts";
+import { workflowText } from "@/lib/content-workflow";
 import { ActorName } from "./accounts";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -71,12 +72,11 @@ function PromotionDraft({ promotion, projects, defaultProject, onSaved, onDirty,
 function PublisherActions({ row, onSaved, onDirty }: { row: Promotion; onSaved: (value: Promotion) => void; onDirty: (value: boolean) => void }) {
   const [reviewType, setReviewType] = useState<"DATA" | "LEGAL">("DATA"); const [decision, setDecision] = useState("APPROVED");
   const [revision, setRevision] = useState(String(row.draft_revision)); const [evidence, setEvidence] = useState(""); const [reason, setReason] = useState("");
-  const [confirmed, setConfirmed] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
-  async function act(action: "review" | "publish" | "withdraw") {
-    if (!reason.trim() || action === "review" && !evidence.trim()) { setError("กรุณาระบุหลักฐานและเหตุผลให้ครบก่อนดำเนินการ"); return; }
-    if (action !== "review" && !confirmed) { setError("กรุณายืนยันรายการที่จะเปลี่ยนสถานะเผยแพร่"); return; }
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  async function act() {
+    if (!reason.trim() || !evidence.trim()) { setError("กรุณาระบุหลักฐานและเหตุผลให้ครบก่อนดำเนินการ"); return; }
     setBusy(true); setError("");
-    try { const result = await request<Promotion>(`${base}/${row.id}/${action}`, "POST", action === "review" ? { expected_revision: row.draft_revision, review_type: reviewType, decision, evidence, change_reason: reason, ...(decision === "REVOKED" ? { review_revision: Number(revision) } : {}) } : { expected_revision: row.draft_revision, expected_published_version_id: row.published_version_id, change_reason: reason }); onSaved(result); setConfirmed(false); setEvidence(""); setReason(""); }
+    try { const result = await request<Promotion>(`${base}/${row.id}/review`, "POST", { expected_revision: row.draft_revision, review_type: reviewType, decision, evidence, change_reason: reason, ...(decision === "REVOKED" ? { review_revision: Number(revision) } : {}) }); onSaved(result); setEvidence(""); setReason(""); }
     catch (err) { setError(err instanceof Error ? err.message : "ดำเนินการไม่สำเร็จ"); } finally { setBusy(false); }
   }
   return <section className="registry-panel"><h3>การตรวจและเผยแพร่โดยผู้เผยแพร่</h3><p>{row.synthetic === false ? "ยืนยันหลักฐาน DATA และ LEGAL ของรุ่นนี้ ผู้แก้ไขฉบับนี้อนุมัติเองไม่ได้" : "หลักฐานตัวอย่างใช้สาธิตเท่านั้น ไม่ใช่การอนุมัติจากฝ่ายกฎหมายจริง"}</p><ErrorSummary message={error} /><fieldset className="content-form" disabled={busy} onChange={() => onDirty(true)}><div className="content-grid">
@@ -85,8 +85,8 @@ function PublisherActions({ row, onSaved, onDirty }: { row: Promotion; onSaved: 
     {decision === "REVOKED" && <Field id="review-revision" label="รุ่นร่างที่จะถอนผลการตรวจ"><input id="review-revision" className="registry-input" inputMode="numeric" value={revision} onChange={event => setRevision(event.target.value)} /></Field>}
     <Field id="review-evidence" label="หลักฐานการตรวจ"><textarea id="review-evidence" className="registry-input" value={evidence} onChange={event => setEvidence(event.target.value)} /></Field>
     <Field id="promotion-reason" label="เหตุผลการดำเนินการ"><textarea id="promotion-reason" className="registry-input" value={reason} onChange={event => setReason(event.target.value)} /></Field>
-  </div><div className="content-actions"><button className="registry-button" onClick={() => void act("review")} disabled={busy}>{decision === "REVOKED" ? "ถอนผลการตรวจ" : "บันทึกผลการตรวจ"}</button></div>
-  <Ready value={row.readiness} /><label className="registry-check"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />ยืนยันการเปลี่ยนสถานะโปรโมชันนี้ในระบบทดสอบ</label><div className="content-actions"><button className="registry-button primary" disabled={busy || !row.readiness?.ready || !confirmed} onClick={() => void act("publish")}>เผยแพร่โปรโมชันนี้</button><button className="registry-button" disabled={busy || !row.published_version_id || !confirmed} onClick={() => void act("withdraw")}>ถอนการเผยแพร่โปรโมชันนี้</button><a className="registry-button" href="/releases">รวมในชุดเผยแพร่</a></div></fieldset></section>;
+  </div><div className="content-actions"><button className="registry-button" onClick={() => void act()} disabled={busy}>{decision === "REVOKED" ? "ถอนผลการตรวจ" : "บันทึกผลการตรวจ"}</button></div>
+</fieldset></section>;
 }
 
 export function PromotionsWorkspace({ role }: { role: LocalRole }) {
@@ -112,6 +112,7 @@ export function PromotionsWorkspace({ role }: { role: LocalRole }) {
       <PromotionCommercialFields key={`commercial-${row.id}-${row.draft_revision}`} row={row} disabled={draftDirty} onSaved={saved} onDirty={setCommercialDirty} />
       <section className="content-review"><h3>ผลการตรวจแยกตามรุ่นร่าง</h3>{row.reviews?.length ? row.reviews.map((review, index) => <details key={index}><summary>{typeLabel(review.review_type)} · รุ่น {review.review_revision} · {review.decision === "APPROVED" ? "ตรวจผ่าน" : "ถอนผลการตรวจ"}{review.review_revision !== row.draft_revision ? " · ไม่ใช่ผลตรวจของร่างปัจจุบัน" : ""}</summary><p className="content-copy">{review.evidence}</p><p>{dateTime(review.reviewed_at)} · <ActorName id={review.reviewed_by} /></p></details>) : <p>ยังไม่มีผลการตรวจ</p>}</section>
       {permissions.can("promotions", "approve") && <PublisherActions key={`${row.id}-${row.draft_revision}`} row={row} onSaved={saved} onDirty={setReviewDirty} />}
+      <p><a className="button secondary" href={`/publish?source=promotion&id=${encodeURIComponent(row.id)}`}>{workflowText.queue}</a></p>
       <section className="registry-panel"><h3>ฉบับเผยแพร่ที่แยกจากร่าง</h3><p>{publicationLabel(row)}</p>{row.published ? <><p>ฉบับ {row.published.version_no} · เผยแพร่เมื่อ {dateTime(row.published.published_at)}</p><p>สถานะตามช่วงเวลา: {Date.now() < new Date(row.published.payload.starts_at).getTime() ? "ยังไม่เริ่มใช้สิทธิ์" : Date.now() >= new Date(row.published.payload.ends_at).getTime() ? "หมดอายุแล้ว" : "อยู่ในช่วงใช้สิทธิ์"} · การให้สิทธิ์จริงยังต้องผ่านการตรวจโครงการ ต้นทาง และผลการตรวจจากเซิร์ฟเวอร์ทุกครั้ง</p><PromotionText promotion={row.published.payload} /></> : <p>ยังไม่มีฉบับเผยแพร่</p>}</section>
       <section className="content-history"><h3>ประวัติฉบับเผยแพร่</h3>{row.versions?.length ? <ul>{row.versions.map(version => <li key={version.id}>ฉบับ {version.version_no} · {dateTime(version.published_at)} · <code>{version.id}</code></li>)}</ul> : <p>ยังไม่มีประวัติ</p>}</section>
     </>}</DetailDialog>}

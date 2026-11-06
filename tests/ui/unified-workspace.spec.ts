@@ -62,7 +62,7 @@ test('all temporary legacy aliases retain exact context and separate REM/public 
     expect(destination.pathname).toBe(pathname);
     if (tab) expect(destination.searchParams.get('tab')).toBe(tab);
   }
-  expect(legacyWorkspaceHref('/faq', new URLSearchParams('tab=publication'))).toBeNull();
+  expect(legacyWorkspaceHref('/faq', new URLSearchParams('tab=publication'))).toBe('/publish?tab=publication');
   for (const level of ['project', 'brand']) {
     const faq = new URL(legacyWorkspaceHref('/', new URLSearchParams({ [level]: level + '_exact', tab: 'faq', phase: 'REM-EXACT', question_key: 'approved-question' }))!, origin);
     expect(faq.pathname).toBe('/website/' + level + '/' + level + '_exact');

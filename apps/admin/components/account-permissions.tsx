@@ -28,7 +28,6 @@ export function PermissionGrid({ catalog, tabs, onChange, disabled = false }: { 
     const selected = new Set(tabs[tab.tab] || []);
     if (checked) selected.add(level); else selected.delete(level);
     if (level === "view" && !checked) selected.clear();
-    if (tab.tab === "knowledge" && level === "approve" && !checked) selected.delete("knowledge.publish_web");
     onChange({ ...tabs, [tab.tab]: [...selected] });
   }
   return <div>{catalog.web_publisher_count !== undefined && catalog.web_publisher_count < 2 && <p className="notice warning" role="status">ผู้มีสิทธิ์เผยแพร่ขึ้นเว็บที่ใช้งานได้มี {catalog.web_publisher_count} คน ควรมีอย่างน้อย 2 คนเพื่อแยกผู้จัดทำกับผู้อนุมัติ</p>}<div className="permission-grid-scroll" tabIndex={0} role="region" aria-label="ตารางสิทธิ์รายแท็บ"><table className="permission-grid"><thead><tr><th scope="col">แท็บ</th>{Object.entries(levelLabels).map(([code, label]) => <th scope="col" key={code}>{label}</th>)}</tr></thead><tbody>{catalog.tabs.map(tab => {
@@ -44,7 +43,7 @@ function PermissionRows({ tab, values, hasView, separated, locked, disabled, id,
     const conflict = tab.separate_edit_approve && (level === "edit" && values.includes("approve") || level === "approve" && values.includes("edit"));
     const reason = conflict ? "เลือกแก้ไขหรืออนุมัติได้อย่างใดอย่างหนึ่ง" : level !== "view" && !hasView ? "ต้องเลือกดูก่อน" : "";
     return <td key={level}><label className="permission-cell" title={reason}><input type="checkbox" aria-label={`${tab.label_th} ${levelLabels[level]}`} aria-describedby={conflict ? `${id}-separation` : undefined} checked={values.includes(level)} disabled={disabled || locked || !!reason} onChange={event => onToggle(level, event.target.checked)} /><span className="sr-only">{levelLabels[level]}</span></label></td>;
-  })}</tr>{tab.special_actions.map(action => <tr key={action} className="permission-special"><td colSpan={4}><label><input type="checkbox" aria-label={tab.special_labels?.[action] || action} checked={values.includes(action)} disabled={disabled || locked || !hasView || action === "knowledge.publish_web" && !values.includes("approve")} onChange={event => onToggle(action, event.target.checked)} /><span>{tab.special_labels?.[action] || action}{!hasView && <small>ต้องเลือกดูแท็บนี้ก่อน</small>}{action === "knowledge.publish_web" && !values.includes("approve") && <small>ต้องมีสิทธิ์อนุมัติคลังความรู้ก่อน</small>}</span></label></td></tr>)}</>;
+  })}</tr>{tab.special_actions.map(action => <tr key={action} className="permission-special"><td colSpan={4}><label><input type="checkbox" aria-label={tab.special_labels?.[action] || action} checked={values.includes(action)} disabled={disabled || locked || !hasView} onChange={event => onToggle(action, event.target.checked)} /><span>{tab.special_labels?.[action] || action}{!hasView && <small>ต้องเลือกดูแท็บนี้ก่อน</small>}</span></label></td></tr>)}</>;
 }
 function describe(values: string[], tab?: PermissionCatalogTab) { return values.length ? values.map(value => levelLabels[value] || tab?.special_labels?.[value] || value).join(" · ") : "ไม่มีสิทธิ์"; }
 export function PermissionDiff({ before, after, catalog }: { before: AccountAccess; after: AccountAccess; catalog: Catalog }) {

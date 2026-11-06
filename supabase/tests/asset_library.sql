@@ -1,5 +1,6 @@
 -- Registry/access tests only: API tests validate file bytes. All fixtures roll back.
 begin;
+select pg_temp.w4_confirm_seed_media();
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('app.change_reason','SQL asset-library fixture',true);
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) values
@@ -26,7 +27,7 @@ select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_prim
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic asset fixture brand');
+select pg_temp.w4_publish('brand',current_setting('test.fixture_brand')::uuid,'Publish synthetic asset fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-ASSET-BRAND' where rem_project_id in ('SQL-ASSET-A','SQL-ASSET-B');
 
@@ -159,9 +160,11 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.asset_version',hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publish asset test A')::text,true);
+select pg_temp.w4_confirm_media(current_setting('test.image_id')::uuid,'exterior','{"th":"Synthetic hero"}');
+select pg_temp.w4_confirm_media(current_setting('test.pdf_id')::uuid,'brochure','{"th":"Synthetic brochure"}');
+select set_config('test.asset_version',pg_temp.w4_publish('project',current_setting('test.asset_project_a')::uuid,'Publish asset test A')::text,true);
 select set_config('test.asset_payload_raw',payload::text,true) from hub.entity_versions where id=current_setting('test.asset_version')::uuid;
-select hub.publish_project(current_setting('test.asset_project_b')::uuid,'Publish reused asset test B');
+select pg_temp.w4_publish('project',current_setting('test.asset_project_b')::uuid,'Publish reused asset test B');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.asset_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.asset_public_a');
@@ -200,7 +203,7 @@ select hub.review_asset(current_setting('test.image_id')::uuid,(select updated_a
 do $$ begin
   assert hub.project_detail(current_setting('test.asset_public_a'))->'publication_available'='false'::jsonb
     and hub.project_detail(current_setting('test.asset_public_b'))->'publication_available'='false'::jsonb, 'Shared revocation did not invalidate both projects';
-  begin perform hub.rollback_project(current_setting('test.asset_project_a')::uuid,current_setting('test.asset_version')::uuid,'Attempt revoked asset rollback');
+  begin perform pg_temp.w4_rollback('project',current_setting('test.asset_project_a')::uuid,current_setting('test.asset_version')::uuid,'Attempt revoked asset rollback');
     raise exception 'Rollback revived revoked asset'; exception when check_violation then null; end;
 end $$;
 set local role service_consumer;
@@ -221,7 +224,8 @@ do $$ begin
 end $$;
 select hub.review_asset(current_setting('test.image_id')::uuid,(select updated_at from hub.assets where id=current_setting('test.image_id')::uuid),
   'approved','Original synthetic content',null,null,'Restore current rights');
-select hub.publish_project(current_setting('test.asset_project_a')::uuid,'Publish replacement without brochure');
+select pg_temp.w4_confirm_media(current_setting('test.second_id')::uuid,'exterior','{"th":"Replacement"}');
+select pg_temp.w4_publish('project',current_setting('test.asset_project_a')::uuid,'Publish replacement without brochure');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -231,7 +235,7 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.withdraw_project(current_setting('test.asset_project_a')::uuid,'Withdraw replacement');
+select pg_temp.w4_withdraw('project',current_setting('test.asset_project_a')::uuid,'Withdraw replacement');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin

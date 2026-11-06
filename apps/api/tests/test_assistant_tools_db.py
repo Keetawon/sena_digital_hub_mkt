@@ -4,6 +4,8 @@ No provider calls, REM/DW writes, or live-model quality claim. Synthetic financi
 and publication records exercise available branches, not only empty results.
 """
 import asyncio
+from content_workflow_fixture import approve_entity, publication_persona
+
 from contextlib import asynccontextmanager
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
@@ -94,7 +96,9 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
                 project_id, brand_id = project["public_project_id"], brand["public_brand_id"]
                 detail = await rpc("SELECT hub.project_detail($1)", project_id)
                 assert detail["readiness"]["ready"], "Synthetic DEMO-001 must satisfy the unchanged normal publication gates"
-                published_version = await rpc("SELECT hub.publish_project($1,$2)", project["id"], marker, role="publisher")
+                await publication_persona(account_ids, operator=db)
+                await approve_entity(db, account_ids, 'project', project['id'])
+                published_version = await rpc("SELECT hub.publish_project($1,$2)", project["id"], marker, role="viewer")
                 promo = await rpc("SELECT hub.promotion_command('create',NULL,$1::jsonb)", {
                     "project_id": str(project["id"]), "code": "READERS-" + uuid4().hex.upper(),
                     **{key: {"th": text} for key, text in {
@@ -108,7 +112,7 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
                         "expected_revision": 1, "review_revision": 1, "review_type": review,
                         "decision": "APPROVED", "evidence": marker, "change_reason": marker}, role="publisher")
                 await rpc("SELECT hub.promotion_command('publish',$1,$2::jsonb)", UUID(promo["id"]), {
-                    "expected_revision": 1, "expected_published_version_id": None, "change_reason": marker}, role="publisher")
+                    "expected_revision": 1, "expected_published_version_id": None, "change_reason": marker}, role="viewer")
 
                 # Guarded P1/P2 fixture: exact phase source ID, one current typed monthly line.
                 scope = UUID("30000000-0000-0000-0000-000000000001")

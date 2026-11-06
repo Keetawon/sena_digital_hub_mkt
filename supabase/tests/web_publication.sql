@@ -1,18 +1,18 @@
--- Disposable-only publication projection fixtures. The direct snapshot below
--- isolates read-time filtering; command readiness/four-eyes use API tests.
+-- Retained synthetic historical web-page evidence, with genuine guarded
+-- current source approvals. This is not a newly authorized incomplete page.
 begin;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
-do $$ declare p hub.projects;page hub.web_pages;snapshot jsonb;version uuid;result jsonb;node jsonb;faq uuid;t record;count_before integer;begin
+do $$ declare p hub.projects;page hub.web_pages;snapshot jsonb;version uuid;result jsonb;node jsonb;faq uuid;t record;count_before integer;batch jsonb;begin
  select * into p from hub.projects where rem_project_id='DEMO-001' and deleted_at is null;
  assert p.id is not null,'Missing synthetic project';
  assert (select count(*)=3 from pg_class where oid in ('hub.web_pages'::regclass,'hub.web_publications'::regclass,'hub.web_changes'::regclass) and relrowsecurity and relforcerowsecurity);
  assert not has_table_privilege('hub_app','hub.web_publications','SELECT');
  assert not has_function_privilege('hub_app','hub.web_resolve(jsonb,text,boolean,boolean)','EXECUTE');
- assert not exists(select 1 from hub.account_permission where 'knowledge.publish_web'=any(special_actions)),'Migration silently granted publication';
+ assert not exists(select 1 from hub.account_permission where 'knowledge.publish_web'=any(special_actions) and account_id::text like '00000000-0000-0000-0000-00000000000_'),'Migration silently granted publication';
  begin
-  update hub.account_permission set special_actions=array_append(special_actions,'knowledge.publish_web')
-   where account_id='00000000-0000-0000-0000-000000000001' and tab='knowledge';
-  raise exception 'Editor obtained a publication special without approval';
+  update hub.account_permission set can_view=false,special_actions=array_append(special_actions,'knowledge.publish_web')
+   where account_id='00000000-0000-0000-0000-000000000003' and tab='knowledge';
+  raise exception 'Publication special survived without Knowledge View';
  exception when check_violation then null;end;
  perform hub.save_project_fact(p.public_project_id,'project.common_fee','project',0,jsonb_build_object('value_number',0,'unit','THB/sqm/month','as_of',current_date,'ai_exposure','open'));
  perform hub.save_faq_question('synthetic_web_fee',0,'{"topic":"design","default_level":"project","question_template":{"th":"{project} fee?"},"answer_kind":"fact","fact_keys":["project.common_fee"],"is_core":true,"show_on_project_pages":true}');
@@ -26,14 +26,23 @@ do $$ declare p hub.projects;page hub.web_pages;snapshot jsonb;version uuid;resu
  for t in select * from hub.content_translations where owner_type='faq' and owner_key=faq::text and btrim(th_text)<>'' loop
   perform hub.review_content_translation(t.id,t.revision,t.th_version,t.th_text);end loop;
  perform hub.submit_faq(faq,(select revision from hub.faqs where id=faq));
+ perform pg_temp.w4_approve('faq',jsonb_build_object('id',faq));
+ perform pg_temp.w4_approve('fact',jsonb_build_object('id',(select id from hub.project_facts where project_id=p.id and fact_key='project.common_fee' and grain='project')));
+ perform pg_temp.w4_approve_entity('project',p.id);
  result:=hub.web_page_save('project:synthetic-web',0,jsonb_build_object('url','/synthetic-web','locales',array['th','en'],'project_ids',array[p.public_project_id],'ai_policy','open','max_faq_items',20));
- select * into page from hub.web_pages where page_key='project:synthetic-web';snapshot:=hub.web_compose(page);
- result:=hub.web_prepare('Verify explicit FAQ applicability');
- result:=hub.web_publication_read((result->>'id')::uuid,'th');
+ select * into page from hub.web_pages where page_key='project:synthetic-web';
+ perform pg_temp.w4_approve('page_config',jsonb_build_object('id',page.id));
+ snapshot:=hub.web_compose(page);
+ perform set_config('app.actor_id',pg_temp.w4_actor('publisher')::text,true);
+ batch:=hub.publication_queue_prepare(jsonb_build_array(jsonb_build_object('system','web','page_key',page.page_key)),'Verify explicit FAQ applicability');
+ result:=hub.web_publication_read((batch->>'id')::uuid,'th');
  assert result#>'{pages,0,resolved_applicability,0,rem_project_ids}' ? p.rem_project_id,'Staff review omitted the resolved REM phases';
  assert jsonb_array_length(hub.web_issues(snapshot))>0,'Synthetic incomplete project unexpectedly ready';
+ result:=hub.web_publish((batch->>'id')::uuid,batch->>'digest');
+ assert result->>'state'='RETURNED' and result->>'page_count'='0','Incomplete historical root entered normal publication';
+ assert (select published_version_id is null from hub.web_pages where id=page.id),'Incomplete publication changed the page pointer';
  insert into hub.entity_versions(entity_type,web_page_id,version_no,payload,content_sha256,publisher,change_reason)
- values('web_page',page.id,1,snapshot,hub.web_hash(snapshot),'00000000-0000-0000-0000-000000000002','Disposable read-filter fixture') returning id into version;
+ values('web_page',page.id,1,snapshot,hub.web_hash(snapshot),pg_temp.w4_actor('publisher'),'Retained synthetic pre-governance read-filter evidence') returning id into version;
  update hub.web_pages set published_version_id=version where id=page.id;
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
  result:=hub.web_public_page(page.page_key,'th');

@@ -1,7 +1,10 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
+import { ContentWorkflow } from "./content-workflow";
+import { workflowText, type WorkflowTarget } from "@/lib/content-workflow";
+import { DetailDialog } from "./registry-motion";
 import { request } from "./hub-request";
 import { errorMessage, ExposureInput, TranslationReviewPanel, type ContentField, type Exposure, type Locales, type Translation } from "./content-common";
 import { AmenityDate, AmenityField, AmenityNumber, AmenitySelect, AmenityText, FeatureMetrics, localized, placeCategories, placeStatus, presence, stringValue, type AmenityRow, type References } from "./amenity-fields";
@@ -11,7 +14,7 @@ import { FacilityIcon, facilityGroups } from "./facility-taxonomy";
 import "./project-amenities.css";
 
 type Kind = "facilities" | "features" | "solar" | "places";
-type Workspace = { project: { name: Locales }; facilities: AmenityRow[]; features: AmenityRow[]; solar: AmenityRow[]; places: AmenityRow[]; references: References;
+type Workspace = { project: { id: string; name: Locales }; facilities: AmenityRow[]; features: AmenityRow[]; solar: AmenityRow[]; places: AmenityRow[]; references: References;
   unit_types: { id: string; name: Locales }[]; phases: { id: string; name: string }[]; translations: Translation[]; nearest_stations: AmenityRow[]; media: AmenityMedia };
 const entityFor: Record<Kind, string> = { facilities: "facility", features: "feature", solar: "solar_estimate", places: "place" };
 const titles: Record<Kind, string> = { facilities: "สิ่งอำนวยความสะดวก", features: "คุณสมบัติโครงการ", solar: "สถานการณ์ประมาณการโซลาร์", places: "สถานที่ใกล้เคียง" };
@@ -33,15 +36,21 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
   const canView = permissions.can("projects"), canEdit = permissions.can("projects", "edit"), canApprove = permissions.can("projects", "approve");
   const [data, setData] = useState<Workspace | null>(null), [editing, setEditing] = useState<{ kind: Kind; row: AmenityRow } | null>(null), [photos, setPhotos] = useState<string | null>(null);
   const [busy, setBusy] = useState(false), [childDirty, setChildDirty] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const form = useRef<HTMLFormElement>(null);
+  const withdrawalId = useId();
+  const [withdrawal, setWithdrawal] = useState<AmenityRow | null>(null), [withdrawalReason, setWithdrawalReason] = useState("");
+  const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set());
+  const workflowBusy = workflowOwners.size > 0;
+  const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
   const previousIdentity = useRef(identity), base = `v1/admin/projects/${encodeURIComponent(projectId)}/amenities`;
   const reload = useCallback(async () => { setData(await request<Workspace>(base)); await onChanged(); }, [base, onChanged]);
   useEffect(() => { let active = true;setData(null);setError("");
-    if (previousIdentity.current !== identity) { setEditing(null);setPhotos(null);previousIdentity.current = identity; }
+    if (previousIdentity.current !== identity) { setEditing(null);setPhotos(null);setWithdrawal(null);setWithdrawalReason("");previousIdentity.current = identity; }
     if (canView) request<Workspace>(base).then(value => { if (active) setData(value); }).catch(e => { if (active) setError(errorMessage(e)); });
     return () => { active = false; };
   }, [base, permissionKey, identity, canView]);
-  useEffect(() => { onEditingChange(Boolean(editing) || busy || childDirty);return () => onEditingChange(false); }, [editing, busy, childDirty, onEditingChange]);
-  function edit(kind: Kind, row?: AmenityRow) { setEditing({ kind, row: structuredClone(row ?? emptyRow(kind)) });setPhotos(null);setError("");setNotice(""); }
+  useEffect(() => { onEditingChange(Boolean(editing || withdrawal) || busy || childDirty || workflowBusy);return () => onEditingChange(false); }, [editing, withdrawal, busy, childDirty, workflowBusy, onEditingChange]);
+  function edit(kind: Kind, row?: AmenityRow) { if (!canEdit || busy || workflowBusy || childDirty) return; setEditing({ kind, row: structuredClone(row ?? emptyRow(kind)) });setPhotos(null);setError("");setNotice(""); }
   function change(key: string, value: unknown) { setEditing(current => {
     if (!current) return current;
     const next = { ...current.row, [key]: value };
@@ -51,28 +60,39 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
     return { ...current, row: next };
   }); }
   async function save() {
-    if (!editing || !canEdit || busy) return;setBusy(true);setError("");setNotice("");
+    if (!editing || !canEdit || busy || workflowBusy || childDirty) return;setBusy(true);setError("");setNotice("");
     const { kind, row } = editing;
     try { await request(`${base}/${kind}/${encodeURIComponent(kind === "facilities" ? row.code! : row.id!)}`, "PUT", { expected_revision: row.revision,
       changes: Object.fromEntries(keys[kind].filter(k => row[k] !== undefined).map(k => [k, row[k]])) });
       await reload();setEditing(null);setNotice(`บันทึก${titles[kind]}แล้ว`);
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
   }
-  async function decide(row: AmenityRow, decision: "approve" | "withdraw") {
-    if (!canApprove || busy) return;setBusy(true);setError("");
-    try { await request(`${base}/solar/${row.id}/review`, "POST", { expected_revision: row.revision, decision });await reload();setNotice(decision === "approve" ? "อนุมัติสถานการณ์ประมาณการแล้ว" : "ถอนสถานการณ์ประมาณการแล้ว"); }
+  async function withdraw() {
+    if (!withdrawal || !withdrawalReason.trim() || !canApprove || busy || workflowBusy || editing || childDirty) return;setBusy(true);setError("");
+    try { await request(`${base}/solar/${withdrawal.id}/review`, "POST", { expected_revision: withdrawal.revision, decision: "withdraw", reason: withdrawalReason.trim() });await reload();setWithdrawal(null);setWithdrawalReason("");setNotice("ถอนสถานการณ์ประมาณการแล้ว"); }
     catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+  }
+  function workflowTarget(kind: Kind, item: AmenityRow): WorkflowTarget | null {
+    if (!data || !item.revision) return null;
+    return kind === "facilities" ? { kind: "facility", identity: { project_id: data.project.id, facility_code: item.code! } } : { kind: ({ features: "feature", solar: "solar", places: "place" } as const)[kind], identity: { id: item.id! } };
   }
   const entity = editing ? entityFor[editing.kind] : "", row = editing?.row;
   const props = row ? { row, entity, fields, change } : null;
-  const disabled = busy || Boolean(editing) || childDirty;
+  const disabled = busy || workflowBusy || Boolean(editing || withdrawal) || childDirty;
   function name(item: AmenityRow, kind: Kind) { return kind === "facilities" ? localized(item, "display_name").th || String(item.name_th)
     : kind === "features" ? data?.references.features.find(f => f.code === item.feature_code)?.label.th || "คุณสมบัติ" : kind === "solar" ? `ข้อมูล ณ ${item.as_of}` : localized(item, "name").th || "สถานที่"; }
   return <div className="c4-workspace">
+    {withdrawal && <DetailDialog dialogId={withdrawalId} title={`${workflowText.confirm} · ${titles.solar}`} onClose={() => { if (!busy) setWithdrawal(null); }}>
+      <form onSubmit={event => { event.preventDefault(); void withdraw(); }}>
+        {error && <p className="notice error" role="alert">{error}</p>}
+        <label className="content-input">{workflowText.reason}<textarea required maxLength={2000} rows={3} value={withdrawalReason} disabled={busy} onChange={event => setWithdrawalReason(event.target.value)} /></label>
+        <div className="content-actions"><button type="button" className="button secondary" disabled={busy} onClick={() => setWithdrawal(null)}>{workflowText.cancel}</button><button className="button primary" disabled={busy || !canApprove || !withdrawalReason.trim()}>{workflowText.confirm}</button></div>
+      </form>
+    </DetailDialog>}
     {error && <p className="notice error" role="alert">{error}{editing && " ข้อมูลที่กรอกยังอยู่ กรุณาตรวจข้อมูลล่าสุดก่อนบันทึกอีกครั้ง"}</p>}{notice && <p className="notice success" role="status">{notice}</p>}
     {!canView ? <p>ไม่มีสิทธิ์ดูข้อมูลส่วนนี้</p> : !data ? !error && <p role="status">กำลังโหลดข้อมูล…</p> : <>
       {editing && props && row && <section className="content-section"><h2>แก้ไข{titles[editing.kind]}</h2>{!canEdit && <p role="status">สิทธิ์แก้ไขเปลี่ยนแล้ว ข้อมูลที่กรอกยังอยู่ แต่บันทึกไม่ได้</p>}
-        <form onSubmit={e => { e.preventDefault();void save(); }}><fieldset disabled={busy || !canEdit}>
+        <form ref={form} inert={workflowBusy} onSubmit={e => { e.preventDefault();void save(); }}><fieldset disabled={busy || !canEdit}>
           {editing.kind === "facilities" && <>
             <h3>{String(row.name_th)}</h3><AmenitySelect {...props} name="status" choices={presence} required />
             <AmenityText {...props} name="display_name" /><AmenityText {...props} name="description" />
@@ -88,7 +108,7 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
             <AmenitySelect {...props} name="commercial_type_id" choices={Object.fromEntries(data.unit_types.map(t => [t.id, t.name.th ?? t.id]))} />
             <AmenityText {...props} name="source_note" manual />
           </>}
-          {editing.kind === "solar" && <><p className="read-only-note">กรอกสถานการณ์ที่มีแหล่งอ้างอิง ระบบไม่คำนวณค่าไฟหรือผลประหยัด และต้องให้ผู้ตรวจคนละคนอนุมัติ ข้อมูลนี้ไม่ส่งไป AI</p>
+          {editing.kind === "solar" && <><p className="read-only-note">กรอกสถานการณ์ที่มีแหล่งอ้างอิง ระบบไม่คำนวณค่าไฟหรือผลประหยัด ข้อมูลนี้ไม่ส่งไป AI</p>
             <div className="content-two-columns"><AmenityNumber {...props} name="system_kw" min={0.001} required /><AmenityNumber {...props} name="battery_kwh" /></div>
             <AmenityText {...props} name="usage_profile" manual /><div className="content-two-columns"><AmenityNumber {...props} name="bill_before" required /><AmenityNumber {...props} name="bill_after" required /></div>
             <AmenityNumber {...props} name="saving_pct" max={100} required /><AmenityText {...props} name="assumptions" manual /><AmenityText {...props} name="source_note" manual /><AmenityDate {...props} name="as_of" required />
@@ -106,7 +126,8 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
           </>}
           {editing.kind === "solar" ? <AmenitySelect {...props} name="ai_exposure" choices={{ web_only: "เว็บไซต์เท่านั้น", internal: "ภายใน Hub" }} required />
             : <ExposureInput value={(row.ai_exposure ?? "open") as Exposure} onChange={value => change("ai_exposure", value)} />}
-        </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={busy} onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary" disabled={busy || !canEdit}>{busy ? "กำลังบันทึก…" : "บันทึกข้อมูล"}</button></div></form>
+        </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={busy} onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary" disabled={busy || workflowBusy || !canEdit}>{busy ? "กำลังบันทึก…" : "บันทึกข้อมูล"}</button></div></form>
+        <ContentWorkflow target={workflowTarget(editing.kind, row)} label={name(row, editing.kind)} revision={row.revision} disabled={busy || childDirty || workflowOwners.size > 0 && !workflowOwners.has(editing.kind + ":" + (row.code ?? row.id))} draft={{ dirty: true, valid: canEdit, sourceStamp: { revision: row.revision }, getChanges: () => form.current?.reportValidity() ? Object.fromEntries(keys[editing.kind].filter(key => row[key] !== undefined).map(key => [key, row[key]])) : null }} onEditingChange={value => workflowEditing(editing.kind + ":" + (row.code ?? row.id), value)} onChanged={async () => { await reload(); setEditing(null); }} onReload={async () => { await reload(); setEditing(null); }} />
       </section>}
       {(tab === "features" ? ["features", "solar"] as Kind[] : [tab]).map(kind => <section className="content-section" key={kind}><div className="content-toolbar"><h2>{titles[kind]}</h2>{kind !== "facilities" && canEdit && <button className="button secondary" disabled={disabled} onClick={() => edit(kind)}>เพิ่ม{titles[kind]}</button>}</div>
         {kind === "facilities" && <p>ค่าว่างหรือยังไม่ตอบคือ “ยังไม่ทราบ” ส่วนกลางที่อยู่ในแผนยังไม่ถือว่าเปิดใช้งาน</p>}
@@ -122,15 +143,14 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
           {kind === "places" && <><p>{item.distance_m == null ? "ยังไม่ทราบระยะทาง" : `${item.distance_m} เมตร · ${item.distance_method === "road" ? "ตามถนน" : "เส้นตรง"}`}</p><p>ข้อมูล ณ {String(item.as_of)} · {item.show_on_web ? "เลือกให้แสดงบนเว็บเมื่อเผยแพร่" : "ไม่แสดงบนเว็บ"}</p></>}
           <div className="content-actions">{canEdit && (kind !== "solar" || item.state === "draft") && <button className="button secondary" disabled={disabled} onClick={() => edit(kind, item)}>แก้ไข {name(item, kind)}</button>}
             {kind === "facilities" && ['present', 'planned'].includes(String(item.status)) && <button className="button secondary" disabled={disabled} aria-expanded={photos === item.code} onClick={() => setPhotos(photos === item.code ? null : item.code!)}>ภาพ {name(item, kind)}</button>}
-            {kind === "solar" && canApprove && item.state === "draft" && <button className="button primary" disabled={disabled} onClick={() => void decide(item, "approve")}>อนุมัติสถานการณ์</button>}
-            {kind === "solar" && canApprove && item.state === "approved" && <button className="button secondary" disabled={disabled} onClick={() => void decide(item, "withdraw")}>ถอนสถานการณ์</button>}
-          </div>{kind === "facilities" && photos === item.code && <FacilityPhotos projectId={projectId} code={item.code!} media={data.media} fields={fields} canEdit={canEdit} onChanged={reload} onEditingChange={setChildDirty} />}
+            {kind === "solar" && canApprove && item.state === "approved" && <button className="button secondary" disabled={disabled} onClick={() => { setWithdrawal(item); setWithdrawalReason(""); setError(""); }}>ถอนสถานการณ์</button>}
+          </div>{!editing && <ContentWorkflow target={workflowTarget(kind, item)} label={name(item, kind)} revision={item.revision} disabled={busy || childDirty || workflowOwners.size > 0 && !workflowOwners.has(kind + ":" + (item.code ?? item.id))} onEditingChange={value => workflowEditing(kind + ":" + (item.code ?? item.id), value)} onChanged={reload} onReload={reload} />}{kind === "facilities" && photos === item.code && <FacilityPhotos projectId={projectId} code={item.code!} media={data.media} fields={fields} canEdit={canEdit && !busy && !workflowBusy} onChanged={reload} onEditingChange={setChildDirty} />}
         </article>)}</div>
       </section>)}
       {tab === "places" && <section className="content-section"><h2>สถานีใกล้เคียงที่แนะนำ</h2><p className="field-help">ระยะเส้นตรงจากพิกัดอ้างอิง ไม่ใช่ระยะถนนหรือเวลาเดินทาง ต้องตรวจสถานะและวันที่ข้อมูลก่อนบันทึก</p>
         {!data.nearest_stations.length && <p>ยังไม่มีพิกัดโครงการหรือพิกัดสถานีอ้างอิง จึงยังแนะนำสถานีไม่ได้</p>}{data.nearest_stations.map(station => <article key={station.code}><p>{localized(station, "name").th} · {String(station.distance_m)} เมตร · {placeStatus[String(station.status) as keyof typeof placeStatus]}</p>{canEdit && <button className="button secondary" disabled={disabled} onClick={() => edit("places", { ...emptyRow("places"), category: "rail", ref_id: station.code, name: station.name, distance_m: station.distance_m, distance_method: "straight_line", status: station.status, expected_open: station.expected_open, as_of: station.as_of })}>เลือกสถานี {localized(station, "name").th}</button>}</article>)}
       </section>}
-      {!editing && !photos && <details><summary>ตรวจภาษาอังกฤษของข้อมูลส่วนนี้</summary><TranslationReviewPanel items={data.translations.filter(t => tab === "facilities" ? t.owner_type === "facility" : tab === "features" ? ['feature', 'solar_estimate'].includes(t.owner_type) : t.owner_type === "place")} fields={fields} canEdit={canEdit} onChanged={reload} onEditingChange={setChildDirty} /></details>}
+      {!editing && !photos && <details><summary>ตรวจภาษาอังกฤษของข้อมูลส่วนนี้</summary><TranslationReviewPanel items={data.translations.filter(t => tab === "facilities" ? t.owner_type === "facility" : tab === "features" ? ['feature', 'solar_estimate'].includes(t.owner_type) : t.owner_type === "place")} fields={fields} canEdit={canEdit && !busy && !workflowBusy} onChanged={reload} onEditingChange={setChildDirty} /></details>}
       {!editing && !photos && <PlaceReferences references={data.references} group={tab} fields={fields} canApprove={canApprove} onChanged={reload} onEditingChange={setChildDirty} />}
     </>}
   </div>;

@@ -36,6 +36,9 @@ test('empty default view offers other source statuses without inventing active s
 });
 
 async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
+  const project = responses['projects/project-test'] as { id?: string; updated_at: string; models: { id: string }[] } | undefined;
+  if (project) responses['projects/project-test'] = { ...project, id: '67000000-0000-4000-8000-000000000001',
+    models: project.models.map(model => ({ ...model, id: '67000000-0000-4000-8000-000000000002' })) };
   responses['brands/completeness'] = { rows: [], counts: { total: 0, missing_data: 0, ready: 0, published: 0, published_changes: 0, not_created: 0 } };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
@@ -43,6 +46,21 @@ async function mockStaffReads(page: Page, responses: Record<string, unknown>) {
     if (await fulfilWorkspaceProjection(route, id => (responses[`projects/${id}`] ?? responses[`brands/${id}`]) as any)) return;
     expect(route.request().method()).toBe('GET');
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
+    const url = new URL(route.request().url());
+    if (project && path === 'content-workflow/items' && url.searchParams.get('level') === 'project' && url.searchParams.get('id') === 'project-test'
+      && (!url.searchParams.has('phase') || url.searchParams.get('phase') === source.rem_project_id)) {
+      return route.fulfill({ json: { data: { scope: { level: 'project', id: 'project-test', phase: source.rem_project_id }, items: [], next_cursor: null } } });
+    }
+    const kind = url.searchParams.get('kind'), identity = url.searchParams.get('identity');
+    const targetId = kind === 'project' ? '67000000-0000-4000-8000-000000000001' : kind === 'model' ? '67000000-0000-4000-8000-000000000002' : null;
+    if (project && path === 'content-workflow' && targetId && identity === JSON.stringify({ id: targetId })) {
+      return route.fulfill({ json: { data: {
+        kind, identity: { id: targetId }, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT', expected_hash: 'a'.repeat(64),
+        source_revision: null, source_updated_at: project.updated_at, version_id: null, version_no: null, approved_by: null, approved_at: null,
+        decision_reason: null, self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false,
+        can_approve: false, can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: true, history: [],
+      } } });
+    }
     await route.fulfill({ json: { data: responses[path] ?? [] } });
   });
 }

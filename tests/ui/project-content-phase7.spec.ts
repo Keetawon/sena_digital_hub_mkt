@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { submitItem, approveItem, workflowText } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
 async function persona(page: Page, role: string) { expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy(); }
@@ -115,12 +116,19 @@ for (const width of [1280, 390]) {
     const saved = (await read(page, base)).solar.find((s: { usage_profile: { th: string } }) => s.usage_profile.th === profile);
     expect(saved.saving_pct).toBe(17);expect(saved.state).toBe('draft');expect(saved.ai_exposure).toBe('web_only');
     expect((await page.request.post(`${base}/solar/${saved.id}/review`, { headers, data: { expected_revision: saved.revision, decision: 'approve' } })).status()).toBe(403);
+    const submittedCard = page.getByRole('article').filter({ has: page.getByRole('heading', { name: `ข้อมูล ณ ${saved.as_of}`, exact: true }) }).filter({ has: page.getByText(profile, { exact: true }) });
+    await submitItem(submittedCard, 'solar');
     await persona(page, 'publisher');await page.reload();
     const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: `ข้อมูล ณ ${saved.as_of}`, exact: true }) }).filter({ has: page.getByText(profile, { exact: true }) });
-    await card.getByRole('button', { name: 'อนุมัติสถานการณ์', exact: true }).click();await expect(card).toContainText('อนุมัติสถานการณ์แล้ว');
+    await approveItem(page, card, 'solar'); await expect(card).toContainText('อนุมัติสถานการณ์แล้ว');
     await expect(page.getByRole('button', { name: 'ทำเล', exact: true })).toBeEnabled();
     await fits(page, `solar-approved-${width}`);
-    await card.getByRole('button', { name: 'ถอนสถานการณ์', exact: true }).click();await expect(card).toContainText('ถอนแล้ว');
+    await card.getByRole('button', { name: 'ถอนสถานการณ์', exact: true }).click();
+    await expect(page.getByRole('dialog').getByRole('button', { name: workflowText.confirm, exact: true })).toBeDisabled();
+    await page.getByRole('dialog').getByRole('textbox', { name: workflowText.reason, exact: true }).fill('Withdraw synthetic scenario after independent review');
+    await page.getByRole('dialog').getByRole('button', { name: workflowText.confirm, exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(card).toContainText('ถอนแล้ว');
     await page.getByRole('button', { name: 'ทำเล', exact: true }).click();
     await page.getByText('จัดการข้อมูลอ้างอิง', { exact: true }).click();
     await expect(page.getByRole('combobox', { name: 'ประเภทข้อมูลอ้างอิง', exact: true })).toHaveValue('rail_lines');

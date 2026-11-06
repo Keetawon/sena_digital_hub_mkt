@@ -30,7 +30,7 @@ def test_media_metadata_vocabulary_links_coverage_and_revision(permission_accoun
     async def check():
         db = await runtime()
         try:
-            public_id = await call(db, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            public_id = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             workspace = await call(db, ids['editor'], 'select hub.project_media($1)', public_id)
             assert workspace['tags'] and len(workspace['requirements']) == 17
             assert {r['rule_key'] for r in workspace['requirements'] if r['blocks_publish']} == {'hero', 'thumbnail'}
@@ -70,7 +70,7 @@ def test_media_tag_approval_rules_and_facility_cover(permission_accounts):
     async def check():
         db = await runtime()
         try:
-            project = await call(db, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             workspace = await call(db, ids['editor'], 'select hub.project_media($1)', project)
             code = 'media_' + uuid4().hex[:12]
             proposed = await call(db, ids['editor'], 'select hub.media_tag_save($1,0,$2)', code,
@@ -103,7 +103,7 @@ def test_legal_media_private_and_never_sent_to_worker_or_legacy_binding(permissi
     async def check():
         db = await runtime()
         try:
-            project = await call(db, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             workspace = await call(db, ids['editor'], 'select hub.project_media($1)', project)
             asset = await upload(db, ids['editor'])
             asset_id = UUID(asset['id'])
@@ -132,7 +132,7 @@ def test_media_clips_preserve_editor_text_hide_broken_and_validate_targets(permi
     async def check():
         db = await runtime()
         try:
-            project = await call(db, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             clip_id = uuid4()
             body = {'provider': 'tiktok', 'kind': 'walkthrough', 'url': 'https://www.tiktok.com/@synthetic/video/1234567890123456789',
                     'title': {'th': 'คลิปทดสอบ'}, 'owner_type': 'sena_owned', 'ai_exposure': 'open'}
@@ -201,7 +201,7 @@ def test_competing_new_clips_cannot_overwrite_revision_zero(permission_accounts)
         try:
             for db in (first, second):
                 await db.set_type_codec('jsonb', schema='pg_catalog', encoder=json.dumps, decoder=json.loads)
-            project = await call(first, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(first, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             body = {'provider': 'youtube', 'kind': 'walkthrough', 'url': 'https://youtu.be/abcdefghijk', 'owner_type': 'sena_owned'}
             tx = first.transaction()
             await tx.start()
@@ -236,7 +236,7 @@ def test_promotion_media_clamps_dates_and_requires_every_source_edit(permission_
         tx = db.transaction()
         await tx.start()
         try:
-            project = await db.fetchrow('select id,public_project_id from hub.projects order by id limit 1')
+            project = await db.fetchrow("select id,public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             promo = await db.fetchrow("insert into hub.public_promotions(project_id,code,benefit_type,starts_at,ends_at,created_by,updated_by) values($1,$2,'gift',now()-interval '1 day',now()+interval '10 days',$3,$3) returning id,starts_at,ends_at", project['id'], 'MEDIA_' + uuid4().hex.upper(), ids['editor'])
             asset = await upload(db, ids['editor'])
             link = await call(db, ids['editor'], 'select hub.media_link_save($1,$2,0,$3)', project['public_project_id'], uuid4(),

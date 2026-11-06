@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { workflowControl, workflowText, submitItem, approveItem } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, base = '/api/hub/v1/admin';
 async function persona(page: Page, role: string) { expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy(); }
@@ -44,7 +45,7 @@ for (const width of [1280, 390]) {
     const id = new URL(page.url()).searchParams.get('article')!;
     const saved = await read(page, `${base}/articles/${id}`);
     expect(saved.version.blocks.th.content.some((node: { type: string }) => node.type === 'table')).toBeTruthy();
-    await expect(page.getByRole('button', { name: 'ส่งตรวจบทความ', exact: true })).toBeDisabled();
+    await expect(workflowControl(page, 'article').getByRole('button', { name: workflowText.submit, exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'ตรวจภาษาอังกฤษ', exact: true }).click();
     await page.getByRole('button', { name: 'ตรวจคำแปล', exact: true }).first().click();
     await page.getByRole('textbox', { name: 'คำแปลภาษาอังกฤษที่ยืนยัน', exact: true }).fill('Marketing team');
@@ -58,11 +59,9 @@ for (const width of [1280, 390]) {
     await expect(page.locator('.article-preview h1')).toHaveText('A home for family life');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-articles/preview-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'เนื้อหาบทความ', exact: true }).click();
-    await page.getByRole('button', { name: 'ส่งตรวจบทความ', exact: true }).click();
-    await expect(page.getByText('ส่งตรวจแล้ว ผู้อนุมัติคนอื่นจะตรวจเนื้อหาฉบับนี้', { exact: true })).toBeVisible();
+    await submitItem(page, 'article');
     await persona(page, 'publisher'); await page.reload();
-    await page.getByRole('button', { name: 'อนุมัติเนื้อหา', exact: true }).click();
-    await expect(page.getByText('อนุมัติเนื้อหาแล้ว ยังไม่เผยแพร่เว็บไซต์', { exact: true })).toBeVisible();
+    await approveItem(page, page, 'article');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-articles/approved-${width}.png`, fullPage: true });
     await persona(page, 'editor'); await page.reload();
     await page.getByRole('button', { name: 'แก้ไขบทความ', exact: true }).click();

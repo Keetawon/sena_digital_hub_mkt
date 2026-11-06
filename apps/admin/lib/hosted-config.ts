@@ -1,3 +1,4 @@
+import { workflowAllowsApi } from './content-workflow-routes';
 import type { LocalRole } from "./local-session";
 import { workspaceAllowsApi } from './workspace-api-routes';
 import { amenityAllowsApi } from './amenity-routes';
@@ -38,6 +39,7 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
   if (/^v1\/admin\/content\/(?:workspace|activity)(?:\/|$)/.test(path) || /^v1\/admin\/projects\/[^/]+\/content\/website\/[^/]+\/decision(?:\/|$)/.test(path)) return workspaceAllowsApi(path, method);
   if (/^v1\/admin\/content\/(search|home)$/.test(path)) return method === "GET";
   if (/^v1\/admin\/web(?:\/|$)/.test(path)) return webAllowsApi(path, method);

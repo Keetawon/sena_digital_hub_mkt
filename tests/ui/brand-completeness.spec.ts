@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { confirmPublication, mockReleaseQueue, mockWorkflowReads, refreshSyntheticAuthority, workflowText } from './content-workflow-fixtures';
 
 const origin='http://127.0.0.1:3000',api='/api/hub/v1/admin';
 const stamp='2026-10-02T00:00:00Z';
@@ -19,13 +20,15 @@ async function fixture(page:Page,role='publisher',extraCount=0) {
     return route.fulfill({json:{data:[]}});
   });
   await page.route(`**${api}/brand-requests`,route=>route.fulfill({json:{data:[]}}));
-  await page.route(`**${api}/releases/publish`,route=>{writes.push({path:`${api}/releases/publish`,body:route.request().postDataJSON()});return route.fulfill({json:{data:{id:'28000000-0000-4000-8000-000000000010'}}});});
-  return {rows,writes,a,b};
+  await mockWorkflowReads(page, { role, publish: role === 'publisher' });
+  const queue = await mockReleaseQueue(page, [a,b,...extraRows].map(row => ({ entity_type: 'brand', entity_id: row.id, public_id: row.public_brand_id, title: { th: row.name_th }, expected_updated_at: stamp })), writes);
+  return {rows,writes,a,b,queue};
 }
 
 for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
   test(`brand pages retain selection and reset after filtering at ${viewport.width}x${viewport.height}`,async({page})=>{
     await page.setViewportSize(viewport);const f=await fixture(page,'publisher',20);await page.goto('/?view=brands');
+    await refreshSyntheticAuthority(page);
     const top=page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านบน',exact:true});
     const bottom=page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านล่าง',exact:true});
     const rows=page.locator('.brand-table-row');
@@ -51,6 +54,8 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
     await top.getByLabel('หน้า',{exact:true}).selectOption('3');
     await page.getByLabel('ค้นหาชื่อหรือรหัสแบรนด์',{exact:true}).fill('แบรนด์สมมติพร้อม ก');
     await expect(rows).toHaveCount(1);await expect(top.getByLabel('หน้า',{exact:true})).toHaveValue('1');
+    await expect(page.getByRole('checkbox',{name:'เลือกเผยแพร่ แบรนด์สมมติพร้อม ก',exact:true})).not.toBeChecked();
+    await expect(page.locator('.brand-dashboard-actions').getByRole('button',{name:`${workflowText.queue} (0)`,exact:true})).toBeDisabled();
     const csv=page.getByRole('link',{name:'ดาวน์โหลด CSV ตามตัวกรอง',exact:true});
     const query=new URL(await csv.getAttribute('href') ?? '',origin).searchParams;
     expect(query.get('search')).toBe('แบรนด์สมมติพร้อม ก');expect(query.has('page')).toBe(false);
@@ -71,8 +76,10 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
     await expect(rows).toHaveCount(24);await expect(bottom.getByLabel('รายการต่อหน้า',{exact:true})).toHaveValue('25');
     await top.getByLabel('รายการต่อหน้า',{exact:true}).selectOption('50');
     await expect(rows).toHaveCount(24);await expect(top.getByRole('button',{name:'หน้าถัดไป',exact:true})).toBeDisabled();
+    await page.getByRole('checkbox',{name:'เลือกเผยแพร่ แบรนด์สมมติพร้อม ก',exact:true}).check();
+    await expect(page.locator('.brand-dashboard-actions').getByRole('button',{name:`${workflowText.queue} (1)`,exact:true})).toBeEnabled();
     await page.getByRole('button',{name:'ล้างรายการที่เลือก',exact:true}).click();
-    await expect(page.getByRole('button',{name:'เผยแพร่แบรนด์ที่เลือก (0)',exact:true})).toBeDisabled();
+    await expect(page.locator('.brand-dashboard-actions').getByRole('button',{name:`${workflowText.queue} (0)`,exact:true})).toBeDisabled();
     await top.getByLabel('รายการต่อหน้า',{exact:true}).selectOption('10');
     await top.scrollIntoViewIfNeeded();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -80,8 +87,9 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
     expect(f.writes).toEqual([]);
   });
 
-  test(`completeness reasons, checks, filter and atomic ready-only selection at ${viewport.width}x${viewport.height}`,async({page})=>{
+  test(`completeness reasons, checks, filter and exact ready-only queue handoff at ${viewport.width}x${viewport.height}`,async({page})=>{
     await page.setViewportSize(viewport);const f=await fixture(page);await page.goto('/?view=brands');
+    await refreshSyntheticAuthority(page);
     await expect(page.getByRole('button',{name:'ทั้งหมด 4',exact:true})).toBeVisible();
     await expect(page.locator('.brand-table-row td[data-label="ชื่อแบรนด์"]')).toHaveCount(4);
     await expect(page.locator('.brand-table-row').first()).toContainText('ชื่อซ้ำ ต้องตรวจตามรหัส');
@@ -97,14 +105,22 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
     await page.getByRole('button',{name:'พร้อมเผยแพร่ 2',exact:true}).click();
     await expect(page.locator('.brand-table-row')).toHaveCount(2);
     for(const name of ['แบรนด์สมมติพร้อม ก','แบรนด์สมมติพร้อม ข'])await page.getByLabel(`เลือกเผยแพร่ ${name}`,{exact:true}).check();
-    await page.getByRole('button',{name:'เผยแพร่แบรนด์ที่เลือก (2)',exact:true}).click();
-    const dialog=page.getByRole('dialog',{name:'ตรวจชุดเผยแพร่แบรนด์',exact:true});
-    const confirm=dialog.getByRole('button',{name:'ยืนยันเผยแพร่แบรนด์ทั้งชุด',exact:true});
-    await expect(confirm).toBeDisabled();await dialog.getByLabel('เหตุผลเผยแพร่แบรนด์ทั้งชุด',{exact:true}).fill('ทดสอบชุดแบรนด์สมมติ');
-    await expect(confirm).toBeDisabled();await dialog.getByLabel('ยืนยันเผยแพร่แบรนด์ที่เลือกเป็นชุดเดียว',{exact:true}).check();
-    await confirm.click();await expect(dialog).toHaveCount(0);
-    expect(f.writes).toHaveLength(1);expect(f.writes[0].path).toBe(`${api}/releases/publish`);expect(f.writes[0].body.demo_mode).toBe(false);
-    expect(f.writes[0].body.members.map((r:any)=>r.entity_id)).toEqual([f.a.id,f.b.id]);expect(f.writes[0].body.members.every((r:any)=>r.expected_updated_at===stamp&&r.expected_published_version_id===null)).toBe(true);
+    await page.locator('.brand-dashboard-actions').getByRole('button',{name:`${workflowText.queue} (2)`,exact:true}).click();
+    await expect(page).toHaveURL(/\/publish\?/);
+    await refreshSyntheticAuthority(page);
+    expect(new URL(page.url()).searchParams.getAll('brand')).toEqual([f.a.public_brand_id, f.b.public_brand_id]);
+    expect(f.writes).toEqual([]);
+    for (const row of [f.a,f.b]) await expect(page.locator(`[data-publication-target="release:brand:${row.id}"]`).getByRole('checkbox')).toBeChecked();
+    const form=page.locator('.publication-workspace > form'), prepare=form.getByRole('button',{name:`${workflowText.prepare_review} (2)`,exact:true});
+    await expect(prepare).toBeDisabled();await form.getByLabel(workflowText.reason,{exact:true}).fill('ทดสอบชุดแบรนด์สมมติ');
+    await prepare.click();
+    const review=page.getByRole('region',{name:workflowText.review_publication,exact:true});
+    await expect(review.locator('.publication-reviewed-page')).toHaveCount(2);
+    expect(f.writes).toHaveLength(1);
+    expect(f.writes[0]).toEqual({path:'publication-queue/prepare',body:{selections:[f.a,f.b].map(row=>({system:'release',entity_type:'brand',entity_id:row.id})),reason:'ทดสอบชุดแบรนด์สมมติ'}});
+    await confirmPublication(page,review);
+    expect(f.writes).toHaveLength(2);
+    expect(f.writes[1]).toEqual({path:'publication-queue/publish',body:{publication_id:f.queue.publicationId,expected_digest:f.queue.digest}});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:`artifacts/brand-completeness-${viewport.width}.png`});
   });
@@ -113,6 +129,7 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
 for(const viewport of [{width:1366,height:768},{width:844,height:390}]) {
   test(`brand headers stay visible inside the scrolling table at ${viewport.width}x${viewport.height}`,async({page})=>{
     await page.setViewportSize(viewport);await page.emulateMedia({reducedMotion:'reduce'});await fixture(page,'publisher',20);await page.goto('/?view=brands');
+    await refreshSyntheticAuthority(page);
     const table=page.getByRole('region',{name:'ตารางความครบถ้วนของแบรนด์',exact:true});
     await expect(page.locator('.brand-table-row')).toHaveCount(10);
     await table.scrollIntoViewIfNeeded();
@@ -134,10 +151,11 @@ for(const viewport of [{width:1366,height:768},{width:844,height:390}]) {
 
 test('viewer can page through brands without publication controls',async({page})=>{
   const f=await fixture(page,'viewer',20);await page.goto('/?view=brands');
+  await refreshSyntheticAuthority(page);
   await page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านบน',exact:true}).getByRole('button',{name:'หน้าถัดไป',exact:true}).click();
   await expect(page.locator('#brand-page-range')).toContainText('แสดง 11–20 จาก 24 รายการ');
   await expect(page.locator('.brand-table-row').getByRole('checkbox')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:/เผยแพร่แบรนด์ที่เลือก/})).toHaveCount(0);
+  await expect(page.locator('.brand-dashboard-actions').getByRole('button',{name:new RegExp(`^${workflowText.queue} \\(`)})).toHaveCount(0);
   expect(f.writes).toEqual([]);
 });
 

@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_vali
 from .auth import Actor
 from .commercial_types import LocalizedText
 from .content_permissions import require_content
+from .content_workflow import DecisionReason
 
 Reference = Annotated[str, StringConstraints(strict=True, pattern=r'^[A-Za-z0-9_-]{1,128}$')]
 
@@ -60,6 +61,7 @@ class ArticleSave(ArticleRevision):
 
 class ArticleReview(ArticleRevision):
     decision: Literal['approve', 'return', 'withdraw']
+    reason: DecisionReason | None = None
 
 
 def reference_key(kind: str, attrs: dict) -> str:
@@ -196,8 +198,9 @@ def register_article_routes(app, authentication, database):
         require_content(request)
         return actor
 
-    async def call(request, actor, sql, *args):
+    async def call(request, actor, sql, *args, reason=None):
         async with database(request, actor) as connection:
+            await connection.execute("select set_config('app.content_review_reason',$1,true)", reason or '')
             return {'data': await connection.fetchval(sql, *args)}
 
     @app.get('/v1/admin/articles')
@@ -232,4 +235,4 @@ def register_article_routes(app, authentication, database):
 
     @app.post('/v1/admin/articles/{article_id}/review')
     async def review(article_id: UUID, body: ArticleReview, request: Request, actor: Actor = Depends(staff)):
-        return await call(request, actor, 'select hub.article_review($1,$2,$3)', article_id, body.expected_revision, body.decision)
+        return await call(request, actor, 'select hub.article_review($1,$2,$3)', article_id, body.expected_revision, body.decision, reason=body.reason)

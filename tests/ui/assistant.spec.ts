@@ -296,6 +296,14 @@ test('real assistant proxy streams a local fake run and denies extra route/query
 
 test('residential source links show the exact frozen version and never substitute a changed draft', async ({ page }) => {
   await mocked(page); const version = '65000000-0000-4000-8000-000000000005';
+  // This test's PROJECT-DEMO is synthetic. Give its new shell inventory the
+  // same finite read fixture; it must never fall through to a real missing row.
+  await page.route('**/api/hub/v1/admin/content-workflow/items?*', route => {
+    expect(route.request().method()).toBe('GET');
+    const query = new URL(route.request().url()).searchParams;
+    expect(Object.fromEntries(query)).toEqual({ level: 'project', id: 'PROJECT-DEMO', phase: 'PROJECT-DEMO', limit: '100' });
+    return route.fulfill({ json: { data: { scope: { level: 'project', id: 'PROJECT-DEMO', phase: 'PROJECT-DEMO' }, items: [], next_cursor: null } } });
+  });
   await mockWorkspaceProjection(page, { public_project_id: 'PROJECT-DEMO', source: { rem_project_id: 'PROJECT-DEMO' } });
   await page.route('**/api/hub/v1/admin/projects/PROJECT-DEMO/versions', route => route.fulfill({ json: { data: [{ version_id: version, version_no: 1, published_at: '2026-09-30T03:00:00Z', payload: { public_name: { th: 'ชื่อโครงการในฉบับเผยแพร่' }, meta_title: { th: 'ชื่อเรื่องที่เผยแพร่แล้ว' }, models: [{ public_model_id: 'MODEL-01', public_name: { th: 'แบบในรุ่นที่อ้างอิง' }, bedrooms: 3 }] } }] } }));
   await page.goto(`/?project=PROJECT-DEMO&version=${version}`); await expect(page.getByRole('heading', { name: 'แหล่งข้อมูลที่อ้างอิง', exact: true })).toBeVisible(); await expect(page.getByRole('main')).toContainText('ชื่อโครงการในฉบับเผยแพร่'); await expect(page.getByRole('main')).toContainText('ฉบับย้อนหลังที่อ้างอิง'); await expect(page.getByRole('main')).toContainText('แบบในรุ่นที่อ้างอิง'); await expect(page.getByRole('main').locator('input,textarea')).toHaveCount(0);

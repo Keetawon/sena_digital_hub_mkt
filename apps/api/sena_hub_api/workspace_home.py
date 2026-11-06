@@ -21,6 +21,9 @@ def workspace_href(kind: str, context: dict) -> str:
                  'promotion', 'page', 'term', 'section', 'kind', 'revision', 'binding'}}
     if 'gap' in query:
         path = '/home'
+    elif kind == 'page_config':
+        path = '/publish'
+        query['tab'] = 'configuration'
     elif kind in ('faq', 'question', 'glossary') or query.get('tab') in ('bank', 'glossary'):
         path = '/faq'
     elif kind == 'article':

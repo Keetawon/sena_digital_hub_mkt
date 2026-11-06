@@ -9,6 +9,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
+from content_workflow_fixture import unit_publication_persona
 from sena_hub_api.auth import Authentication, DEMO_ACTORS, ROLES, Settings
 from sena_hub_api import main
 from sena_hub_api.main import AddModel, CreateProject, PatchModel, PatchProject, create_app
@@ -183,8 +184,9 @@ def test_patch_rejects_unsafe_or_unversioned_changes(client, body):
     assert "input" not in response.text
 
 
-def test_publish_requires_nonblank_reason(client):
-    response = client.post("/v1/admin/projects/demo/publish", json={"change_reason": "  "}, headers={"Authorization": f"Bearer {TOKENS['publisher']}"})
+def test_publish_requires_nonblank_reason(client, monkeypatch):
+    unit_publication_persona(monkeypatch)
+    response = client.post("/v1/admin/projects/demo/publish", json={"change_reason": "  "}, headers={"Authorization": f"Bearer {TOKENS['viewer']}"})
     assert response.status_code == 422
 
 

@@ -10,6 +10,7 @@ import asyncpg
 from fastapi.testclient import TestClient
 import pytest
 
+from content_workflow_fixture import load_sql_fixture, unit_publication_persona
 from sena_hub_api import main
 from sena_hub_api.auth import DEMO_ROLES, Settings
 
@@ -26,9 +27,12 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
     connection = None
     outer = None
     fixture = None
+    actors = {}
+    unit_publication_persona(monkeypatch, identity=lambda: actors['publisher'])
 
     async def seed_fixture():
         """All identities and metadata are new synthetic rows in the outer rollback."""
+        actors.update(await load_sql_fixture(connection))
         key = "PROMO-API-" + uuid4().hex.upper()
         await connection.execute("SELECT set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true)")
         await connection.execute("INSERT INTO staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,source_fingerprint) VALUES($1,'Synthetic API brand',now(),$1)", key)
@@ -50,7 +54,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
         await connection.execute("SET LOCAL ROLE publisher")
         for asset_id in assets:
             await connection.fetchval("SELECT hub.review_asset(id,updated_at,'approved','Synthetic API rights',null,null,'Synthetic API fixture') FROM hub.assets WHERE id=$1::uuid", asset_id)
-        await connection.fetchval("SELECT hub.publish_brand($1,'Synthetic API fixture')", brand)
+        await connection.fetchval("SELECT pg_temp.w4_publish('brand',$1,'Synthetic API fixture')", brand)
         await connection.execute("SET LOCAL ROLE editor")
         project_id = await connection.fetchval("SELECT hub.create_project_from_rem($1)", key)
         await connection.fetchval("SELECT hub.assign_project_brand(id,$2,updated_at) FROM hub.projects WHERE id=$1", project_id, brand)
@@ -64,7 +68,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
             await connection.fetchval("SELECT hub.bind_project_asset(id,$2::uuid,$3,$4::jsonb,updated_at) FROM hub.projects WHERE id=$1",
                                       project_id, asset_id, name, {"th": "ภาพสังเคราะห์สำหรับทดสอบ"})
         await connection.execute("SET LOCAL ROLE publisher")
-        await connection.fetchval("SELECT hub.publish_project($1,'Synthetic API fixture')", project_id)
+        await connection.fetchval("SELECT pg_temp.w4_publish('project',$1,'Synthetic API fixture')", project_id)
         project = await connection.fetchval("SELECT hub.project_detail(public_project_id) FROM hub.projects WHERE id=$1", project_id)
         await connection.execute("RESET ROLE")
         return project
@@ -132,7 +136,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
             current = detail(promotion)
             return request("POST", base + "/" + promotion["id"] + "/publish", {
                 "expected_revision": current["draft_revision"], "expected_published_version_id": current["published_version_id"],
-                "change_reason": "เผยแพร่ตัวอย่าง API"}, status=status)
+                "change_reason": "เผยแพร่ตัวอย่าง API"}, role="viewer", status=status)
 
         def public():
             return request("GET", "/v1/promotions?project_id=" + public_id, role="service_consumer")
@@ -146,7 +150,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
         def release(*promotions, status=200):
             members = selected(*promotions)
             assert len(members) == len(promotions)
-            return request("POST", "/v1/admin/releases/publish", {"members": members, "change_reason": "ทดสอบชุดเผยแพร่"}, status=status)
+            return request("POST", "/v1/admin/releases/publish", {"members": members, "change_reason": "ทดสอบชุดเผยแพร่"}, role="viewer", status=status)
 
         first = create()
         review(first, "DATA")
@@ -167,22 +171,25 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
 
         second = create()
         before = detail(first)["published_version_id"]
-        release(first, second, status=422)
-        assert detail(first)["published_version_id"] == before
+        partial = release(first, second)
+        assert len(partial['rejected']) == 1 and partial['rejected'][0]['entity_id'] == second['id']
+        assert detail(first)["published_version_id"] != before
         assert detail(second)["published_version_id"] is None
+        request("POST", "/v1/admin/releases/" + partial["id"] + "/rollback", {"change_reason": "Restore approved neighbor before complete set"}, role="viewer")
+        assert detail(first)["published_version_id"] == before
         review(second, "DATA")
         review(second, "LEGAL")
         published = release(first, second)
         assert detail(first)["published_version_id"] != before
         assert detail(second)["published_version_id"] is not None
-        request("POST", "/v1/admin/releases/" + published["id"] + "/rollback", {"change_reason": "ย้อนชุดตัวอย่างทั้งหมด"})
+        request("POST", "/v1/admin/releases/" + published["id"] + "/rollback", {"change_reason": "ย้อนชุดตัวอย่างทั้งหมด"}, role="viewer")
         assert detail(first)["published_version_id"] == before
         assert detail(second)["published_version_id"] is None
 
         newer = release(first, second)
         publish(first)
         latest = detail(first)["published_version_id"]
-        request("POST", "/v1/admin/releases/" + newer["id"] + "/rollback", {"change_reason": "ต้องไม่เขียนทับรุ่นใหม่"}, status=409)
+        request("POST", "/v1/admin/releases/" + newer["id"] + "/rollback", {"change_reason": "ต้องไม่เขียนทับรุ่นใหม่"}, status=409, role="viewer")
         assert detail(first)["published_version_id"] == latest
         assert detail(second)["published_version_id"] is not None
 

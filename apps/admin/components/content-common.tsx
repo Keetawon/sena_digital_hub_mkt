@@ -93,7 +93,7 @@ export function TranslationReviewPanel({ items, fields, canEdit, onChanged, onEd
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  useEffect(() => { onEditingChange?.(Boolean(selected)); return () => onEditingChange?.(false); }, [selected, onEditingChange]);
+  useEffect(() => { onEditingChange?.(Boolean(selected) || pending); return () => onEditingChange?.(false); }, [selected, pending, onEditingChange]);
   const labels = { missing: "รอคำแปลและการตรวจ", machine: "มีร่างภาษาอังกฤษรอตรวจ", reviewed: "ตรวจภาษาอังกฤษแล้ว", stale: "ภาษาไทยเปลี่ยน ต้องตรวจใหม่" };
   async function save() {
     if (!selected || !canEdit || pending) return;
@@ -104,6 +104,7 @@ export function TranslationReviewPanel({ items, fields, canEdit, onChanged, onEd
     } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
   }
   async function retry(item: Translation) {
+    if (pending || !canEdit || !item.editable) return;
     setPending(true); setError("");
     try { await request(`v1/admin/content/translations/${item.id}/retry`, "POST", { expected_revision: item.revision }); await onChanged(); setNotice("ส่งคำขอร่างภาษาอังกฤษใหม่แล้ว"); }
     catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
@@ -122,7 +123,7 @@ export function TranslationReviewPanel({ items, fields, canEdit, onChanged, onEd
         {canEdit && item.editable && item.job?.status === "failed" && <button className="button secondary" disabled={pending || Boolean(selected)} onClick={() => void retry(item)}>ขอร่างภาษาอังกฤษอีกครั้ง</button>}
         {selected?.id === item.id ? <form onSubmit={event => { event.preventDefault(); void save(); }}><label className="content-input">คำแปลภาษาอังกฤษที่ยืนยัน<textarea lang="en" rows={4} required maxLength={field?.validation.max_length ?? 12000} value={english} onChange={event => setEnglish(event.target.value)} disabled={pending || !canEdit} /></label>
           <div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setSelected(null); setError(""); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit}>{pending ? "กำลังบันทึก…" : "ยืนยันตรวจภาษาอังกฤษ"}</button></div></form>
-          : canEdit && item.editable && <button className="button secondary" disabled={Boolean(selected)} onClick={() => { setSelected(item); setEnglish(item.entered_en && item.entered_en !== item.reviewed_en ? item.entered_en : item.machine_en ?? item.entered_en ?? item.reviewed_en ?? ""); setError(""); setNotice(""); }}>ตรวจคำแปล</button>}
+          : canEdit && item.editable && <button className="button secondary" disabled={pending || Boolean(selected)} onClick={() => { setSelected(item); setEnglish(item.entered_en && item.entered_en !== item.reviewed_en ? item.entered_en : item.machine_en ?? item.entered_en ?? item.reviewed_en ?? ""); setError(""); setNotice(""); }}>ตรวจคำแปล</button>}
         {!item.editable && <p className="field-help">ฉบับนี้ส่งตรวจแล้ว เปิดร่างใหม่เพื่อแก้ข้อความ</p>}
       </article>;
     })}</div>

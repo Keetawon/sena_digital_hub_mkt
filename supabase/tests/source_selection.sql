@@ -1,5 +1,6 @@
 -- Run after all migrations as migration owner. Synthetic fixtures roll back.
 begin;
+select pg_temp.w4_confirm_seed_media();
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('app.change_reason','SQL source-selection fixture',true);
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) values
@@ -21,7 +22,7 @@ select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_prim
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic source fixture brand');
+select pg_temp.w4_publish('brand',current_setting('test.fixture_brand')::uuid,'Publish synthetic source fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-SOURCE-BRAND' where rem_project_id in ('SQL-SOURCE-A','SQL-SOURCE-B','SQL-SOURCE-C');
 
@@ -208,7 +209,7 @@ end $$;
 
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_project(current_setting('test.source_a')::uuid,'Publish confirmed model only');
+select pg_temp.w4_publish('project',current_setting('test.source_a')::uuid,'Publish confirmed model only');
 do $$ begin
   assert hub.project_detail(current_setting('test.source_public'))->'publication_available'='true'::jsonb,
     'Published release excluding rejected model reported unavailable';
@@ -251,7 +252,7 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
-    perform hub.publish_project(current_setting('test.source_a')::uuid,'Synthetic publication with no eligible models');
+    perform pg_temp.w4_publish('project',current_setting('test.source_a')::uuid,'Synthetic publication with no eligible models');
     assert (select jsonb_array_length(v.payload->'models')=0 and v.payload->>'model_catalogue_complete'='false' from hub.entity_versions v join hub.projects p on p.published_version_id=v.id where p.public_project_id=current_setting('test.source_public'));
     raise exception 'rollback test publication' using errcode='P0004';
   exception when assert_failure then if SQLERRM<>'rollback test publication' then raise; end if; end;

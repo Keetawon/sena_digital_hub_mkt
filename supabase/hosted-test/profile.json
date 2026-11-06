@@ -418,6 +418,16 @@
       "name": "202611040083_unified_content_workspace.sql",
       "canonical_sha256": "2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f",
       "executed_sha256": "2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f"
+    },
+    {
+      "name": "202611040084_content_workflow.sql",
+      "canonical_sha256": "899ad50272191c1e0f1daab09a111b303f920576144a511e182966ff6a19dd8c",
+      "executed_sha256": "899ad50272191c1e0f1daab09a111b303f920576144a511e182966ff6a19dd8c"
+    },
+    {
+      "name": "202611040085_unified_publication.sql",
+      "canonical_sha256": "c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817",
+      "executed_sha256": "c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817"
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { workflowControl, workflowText, submitItem, approveItem } from './content-workflow-fixtures';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
 const today = new Date().toISOString().slice(0, 10);
@@ -35,7 +36,7 @@ for (const width of [1280, 390]) {
     expect(saved.title_deeds).toEqual(['0007', '0010']); expect(saved.registered_capital).toBeNull();
     expect(saved.legal_document_asset_id).toBeTruthy();
     await expect(page.getByRole('link', { name: 'เปิดเอกสารส่วนตัว', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'ส่งตรวจฉบับ', exact: true })).toBeDisabled();
+    await expect(workflowControl(page, 'disclosure').getByRole('button', { name: workflowText.submit, exact: true })).toBeDisabled();
     await persona(page, 'viewer'); await open(page);
     await expect(page.getByRole('link', { name: 'เปิดเอกสารส่วนตัว', exact: true })).toHaveCount(0);
     const viewer = await read(page, base);
@@ -67,11 +68,9 @@ for (const width of [1280, 390]) {
     await translation.getByRole('button', { name: 'ยืนยันตรวจภาษาอังกฤษ', exact: true }).click();
     await expect(page.getByText('ตรวจยืนยันภาษาอังกฤษแล้ว', { exact: true })).toBeVisible();
     const card = page.getByRole('article').filter({ has: page.getByText(key, { exact: true }) });
-    await card.getByRole('button', { name: 'ส่งตรวจฉบับ', exact: true }).click();
-    await expect(page.getByText('ส่งตรวจฉบับแล้ว', { exact: true })).toBeVisible();
+    await submitItem(card, 'programme');
     await persona(page, 'publisher'); await open(page); await page.getByRole('button', { name: 'โครงการบริการ', exact: true }).click();
-    await card.getByRole('button', { name: 'ยืนยันอนุมัติฉบับ', exact: true }).click();
-    await expect(page.getByText('อนุมัติฉบับแล้ว', { exact: true })).toBeVisible();
+    await approveItem(page, card, 'programme');
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase9/programme-approved-${width}.png`, fullPage: true });
     await persona(page, 'editor'); await open(page); await page.getByRole('button', { name: 'ความคืบหน้าก่อสร้าง', exact: true }).click();
     await page.getByRole('button', { name: 'เพิ่มความคืบหน้าก่อสร้าง', exact: true }).click();

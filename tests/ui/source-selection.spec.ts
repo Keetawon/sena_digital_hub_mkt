@@ -131,7 +131,7 @@ test('staged project intake, model enrichment and explicit mapping decisions', a
     await selectModel(page, first.public_model_id);
     await modelCard(page, 'แบบต้นทาง เอ').getByRole('button', { name: 'แก้ไขรายละเอียดแบบ', exact: true }).click();
     let dialog = page.locator('.inline-model-editor, dialog[open]');
-    await expect(dialog.getByText('แบบต้นทาง เอ', { exact: true })).toBeVisible();
+    await expect(dialog.locator('.snapshot-list').getByText('แบบต้นทาง เอ', { exact: true })).toBeVisible();
     await dialog.getByLabel('ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)', { exact: true }).fill('บ้านตัวอย่างสำหรับทดสอบ');
     await dialog.getByLabel('จำนวนห้องนอน', { exact: true }).fill('2.5');
     await dialog.getByLabel('จำนวนห้องน้ำ', { exact: true }).fill('2');
@@ -223,7 +223,7 @@ test('model changes preserve unsaved project edits and retain stale-dialog input
     await expect(dialog.getByLabel('ชื่อแบบที่ใช้เผยแพร่ (ภาษาไทย)', { exact: true })).toHaveValue('ข้อความที่ต้องเก็บเมื่อเกิดข้อขัดแย้ง');
     await expect(dialog.getByRole('alert')).toBeFocused();
     page.once('dialog', confirmation => confirmation.accept());
-    await dialog.getByRole('button', { name: 'โหลดข้อมูลล่าสุด', exact: true }).click();
+    await dialog.locator('.model-error-summary').getByRole('button', { name: 'โหลดข้อมูลล่าสุด', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await openWorkspaceTab(page, 'supplementary');
     await expect(page.getByLabel('ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล', { exact: true })).toHaveValue('ข้อมูลจากอีกหน้าต่าง');

@@ -9,6 +9,7 @@ import asyncpg
 from fastapi.testclient import TestClient
 import pytest
 
+from content_workflow_fixture import unit_publication_persona
 from sena_hub_api import main
 from sena_hub_api.auth import ALL_DEMO_ACTORS, DEMO_ROLES, Settings
 
@@ -182,16 +183,18 @@ def test_unknown_or_ambiguous_staff_filters_never_query_sql(boundary, path):
                                   {**RELEASE, "demo_mode": "true"}, {**RELEASE, "members": [{**MEMBER, "entity_type": "model"}]},
                                   {**RELEASE, "members": [{**MEMBER, "entity_type": "project"}]},
                                   {**RELEASE, "members": [{key: value for key, value in MEMBER.items() if key != "expected_published_version_id"}]}])
-def test_release_requires_explicit_complete_unique_entity_set(boundary, body):
+def test_release_requires_explicit_complete_unique_entity_set(boundary, body, monkeypatch):
+    unit_publication_persona(monkeypatch)
     client, store = boundary
-    assert client.post(PREFIX + "/releases/publish", headers=headers("publisher"), json=body).status_code == 422
+    assert client.post(PREFIX + "/releases/publish", headers=headers("viewer"), json=body).status_code == 422
     assert not store.calls
 
 
-def test_atomic_release_is_one_guarded_call_and_stale_errors_do_not_leak_data(boundary):
+def test_atomic_release_is_one_guarded_call_and_stale_errors_do_not_leak_data(boundary, monkeypatch):
+    unit_publication_persona(monkeypatch)
     client, store = boundary
     store.error = asyncpg.SerializationError("private-version-detail")
-    response = client.post(PREFIX + "/releases/publish", headers=headers("publisher"), json={**RELEASE, "demo_mode": True})
+    response = client.post(PREFIX + "/releases/publish", headers=headers("viewer"), json={**RELEASE, "demo_mode": True})
     assert response.status_code == 409
     assert "private-version-detail" not in response.text
     assert len(store.calls) == 1 and "hub.release_publish(" in store.calls[0][0]

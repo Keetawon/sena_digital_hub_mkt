@@ -36,7 +36,8 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_brand(current_setting('test.pc_brand')::uuid,'Synthetic collection brand');
+select pg_temp.w4_confirm_media('91300000-0000-0000-0000-000000000001','exterior','{"th":"Current logo"}');
+select pg_temp.w4_publish('brand',current_setting('test.pc_brand')::uuid,'Synthetic collection brand');
 set local role editor;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 select set_config('test.pc_project',hub.create_project_from_rem('MEDIA-COLLECTION-P1')::text,true);
@@ -126,7 +127,10 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select hub.review_asset(id,updated_at,'approved','Synthetic image rights',null,null,'Synthetic collection review')
 from hub.assets where id='91300000-0000-0000-0000-000000000002';
-select hub.publish_project(current_setting('test.pc_project')::uuid,'Synthetic media collections release');
+select pg_temp.w4_confirm_media('91300000-0000-0000-0000-000000000002','exterior','{"th":"Second original caption"}');
+select pg_temp.w4_confirm_media('91300000-0000-0000-0000-000000000003','brochure','{"th":"First original caption"}');
+select pg_temp.w4_confirm_media('91300000-0000-0000-0000-000000000004','brochure','{"th":"Second original caption"}');
+select pg_temp.w4_publish('project',current_setting('test.pc_project')::uuid,'Synthetic media collections release');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.pc_payload',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.pc_public');

@@ -1,5 +1,6 @@
 -- Synthetic brand/company identity, role and immutable publication contracts.
 begin;
+select pg_temp.w4_confirm_seed_media();
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000005',true);
 select set_config('app.change_reason','SQL brand fixture',true);
 insert into staging.rem_brands(rem_brand_id,brand_name_rem,brand_name_en_rem,source_updated_at,source_fingerprint) values
@@ -68,7 +69,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin perform hub.update_brand_draft(current_setting('test.brand_a')::uuid,'{"slug":"publisher-edit"}',
     (select updated_at from hub.brands where id=current_setting('test.brand_a')::uuid)); raise exception 'Publisher edited brand draft'; exception when insufficient_privilege then null; end;
-  begin perform hub.publish_brand(current_setting('test.brand_a')::uuid,'Pending logo'); raise exception 'Brand published pending logo'; exception when check_violation then null; end;
+  begin perform pg_temp.w4_publish('brand',current_setting('test.brand_a')::uuid,'Pending logo'); raise exception 'Brand published pending logo'; exception when check_violation then null; end;
 end $$;
 select hub.review_asset(id,updated_at,'approved','Original synthetic logo',null,null,'Publisher checked logo rights')
 from hub.assets where id in(current_setting('test.brand_logo')::uuid,current_setting('test.brand_logo_2')::uuid);
@@ -81,7 +82,8 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.brand_v1',hub.publish_brand(current_setting('test.brand_a')::uuid,'Publish synthetic brand one')::text,true);
+select pg_temp.w4_confirm_media(current_setting('test.brand_logo')::uuid,'promotion_ad','{"th":"Synthetic logo"}');
+select set_config('test.brand_v1',pg_temp.w4_publish('brand',current_setting('test.brand_a')::uuid,'Publish synthetic brand one')::text,true);
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -142,7 +144,7 @@ from hub.projects where id=current_setting('test.brand_project')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
-  begin perform hub.publish_project(current_setting('test.brand_project')::uuid,'Missing brand'); raise exception 'Otherwise-complete project published without brand';
+  begin perform pg_temp.w4_publish('project',current_setting('test.brand_project')::uuid,'Missing brand'); raise exception 'Otherwise-complete project published without brand';
     exception when check_violation then null; end;
 end $$;
 set local role editor;
@@ -158,7 +160,7 @@ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.branded_project_v1',hub.publish_project(current_setting('test.brand_project')::uuid,'Publish branded project')::text,true);
+select set_config('test.branded_project_v1',pg_temp.w4_publish('project',current_setting('test.brand_project')::uuid,'Publish branded project')::text,true);
 select set_config('test.branded_payload_raw',payload::text,true) from hub.entity_versions where id=current_setting('test.branded_project_v1')::uuid;
 do $$ begin assert (hub.project_versions(current_setting('test.brand_project')::uuid)->0#>>'{payload,source,company_name_rem}')='Synthetic company A','Staff company provenance lost'; end $$;
 set local role service_consumer;
@@ -184,7 +186,8 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.brand_v2',hub.publish_brand(current_setting('test.brand_a')::uuid,'Publish changed brand')::text,true);
+select pg_temp.w4_confirm_media(current_setting('test.brand_logo_2')::uuid,'promotion_ad','{"th":"New synthetic logo"}');
+select set_config('test.brand_v2',pg_temp.w4_publish('brand',current_setting('test.brand_a')::uuid,'Publish changed brand')::text,true);
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -206,11 +209,11 @@ end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
-  begin perform hub.rollback_project(current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Invalid old logo rollback');
+  begin perform pg_temp.w4_rollback('project',current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Invalid old logo rollback');
     raise exception 'Project rollback revived invalid frozen logo'; exception when check_violation then null; end;
 end $$;
 select hub.review_asset(id,updated_at,'approved','Original synthetic permission',null,null,'Restore old logo') from hub.assets where id=current_setting('test.brand_logo')::uuid;
-select hub.publish_project(current_setting('test.brand_project')::uuid,'Adopt current published brand');
+select pg_temp.w4_publish('project',current_setting('test.brand_project')::uuid,'Adopt current published brand');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -219,7 +222,7 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.withdraw_brand(current_setting('test.brand_a')::uuid,'Withdraw dependent brand');
+select pg_temp.w4_withdraw('brand',current_setting('test.brand_a')::uuid,'Withdraw dependent brand');
 do $$ begin
   assert hub.project_detail(current_setting('test.brand_project_public'))->'publication_available'='false'::jsonb, 'Withdrawn brand did not invalidate project';
 end $$;
@@ -230,7 +233,11 @@ do $$ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.rollback_brand(current_setting('test.brand_a')::uuid,current_setting('test.brand_v1')::uuid,'Restore brand v1');
+do $$ begin
+ assert not hub.can_read_asset(current_setting('test.brand_logo')::uuid),
+  'Fixture must exercise a retained logo without any current draft or published binding';
+end $$;
+select pg_temp.w4_rollback('brand',current_setting('test.brand_a')::uuid,current_setting('test.brand_v1')::uuid,'Restore brand v1');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -240,6 +247,19 @@ end $$;
 reset role;
 -- Draft reassignment cannot change a frozen publication. Current source changes,
 -- however, invalidate an old brand mapping until the mismatch is resolved.
+do $$ declare dependency jsonb;original text:=current_setting('app.actor_id',true);begin
+ select d into strict dependency from hub.brand_versions v
+  cross join lateral jsonb_array_elements(v.review_evidence->'dependencies') d
+  where v.id=current_setting('test.brand_v1')::uuid and d->>'table'='assets'
+   and d#>>'{identity,id}'=current_setting('test.brand_logo');
+ perform set_config('app.actor_id',pg_temp.w4_actor('publisher')::text,true);
+ assert hub.publication_retained_media_source(dependency),'Exact approved retained asset lost its source authority';
+ assert not hub.publication_retained_media_source(dependency||jsonb_build_object('hash',repeat('0',64))),
+  'Altered retained certificate gained source authority';
+ perform set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
+ assert not hub.publication_retained_media_source(dependency),'Retained asset authority bypassed source View';
+ perform set_config('app.actor_id',coalesce(original,''),true);
+end $$;
 update hub.projects set brand_id=current_setting('test.brand_b')::uuid where id=current_setting('test.brand_project')::uuid;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
@@ -258,7 +278,7 @@ end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
-  begin perform hub.rollback_project(current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Source mismatch rollback');
+  begin perform pg_temp.w4_rollback('project',current_setting('test.brand_project')::uuid,current_setting('test.branded_project_v1')::uuid,'Source mismatch rollback');
     raise exception 'Rollback accepted changed source brand'; exception when check_violation then null; end;
 end $$;
 reset role;
@@ -301,7 +321,8 @@ do $$ begin
   begin update hub.brand_versions set payload='{}' where id=current_setting('test.brand_v1')::uuid; raise exception 'Brand version mutated'; exception when check_violation then null; end;
   begin delete from hub.brand_versions where id=current_setting('test.brand_v2')::uuid; raise exception 'Brand version deleted'; exception when check_violation then null; end;
   assert exists(select 1 from audit.change_log where table_name='hub.brands' and after_row->>'id'=current_setting('test.brand_a')
-    and reason='Withdraw dependent brand' and database_role='publisher'), 'Brand publication audit missing';
+    and reason='Withdraw dependent brand' and database_role='hub_app'
+    and actor=pg_temp.w4_actor('publisher')), 'Brand publication audit missing';
   assert (select payload=current_setting('test.branded_payload_raw')::jsonb from hub.entity_versions where id=current_setting('test.branded_project_v1')::uuid), 'Historical project snapshot changed';
 end $$;
 rollback;

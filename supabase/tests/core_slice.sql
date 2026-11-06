@@ -1,6 +1,7 @@
 -- Run as migration owner with ON_ERROR_STOP. Every test change is rolled back.
 -- These are SQL contract checks for a local slice, not seven-project MVP acceptance.
 begin;
+select pg_temp.w4_confirm_seed_media();
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 select set_config('app.change_reason','SQL integration test fixture',true);
 insert into staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint)
@@ -19,7 +20,7 @@ select hub.bind_brand_asset(id,'10000000-0000-0000-0000-000000000002','logo_prim
 from hub.brands where id=current_setting('test.fixture_brand')::uuid;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.publish_brand(current_setting('test.fixture_brand')::uuid,'Publish synthetic core fixture brand');
+select pg_temp.w4_publish('brand',current_setting('test.fixture_brand')::uuid,'Publish synthetic core fixture brand');
 reset role;
 update staging.rem_projects set rem_brand_id='SQL-CORE-BRAND' where rem_project_id in ('SQL-TEST-CORE');
 
@@ -59,7 +60,7 @@ select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$
 begin
   begin
-    perform hub.publish_project(current_setting('test.project_id')::uuid,'Incomplete draft');
+    perform pg_temp.w4_publish('project',current_setting('test.project_id')::uuid,'Incomplete draft');
     raise exception 'Readiness gate allowed incomplete draft';
   exception when check_violation then null; end;
   assert not exists(select 1 from hub.entity_versions where project_id=current_setting('test.project_id')::uuid), 'Failed publish left a version';
@@ -109,7 +110,7 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
-    perform hub.publish_project(current_setting('test.project_id')::uuid,'Must reject zero coordinates');
+    perform pg_temp.w4_publish('project',current_setting('test.project_id')::uuid,'Must reject zero coordinates');
     raise exception 'Zero coordinates passed the publication gate';
   exception when check_violation then null; end;
   assert not exists(select 1 from hub.entity_versions where project_id=current_setting('test.project_id')::uuid),
@@ -121,8 +122,8 @@ select hub.patch_project(current_setting('test.project_id')::uuid,'{"latitude":1
   (select updated_at from hub.projects where id=current_setting('test.project_id')::uuid));
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.version_1',hub.publish_project(current_setting('test.project_id')::uuid,'First SQL test publish')::text,true);
-do $$ begin assert (hub.project_versions(current_setting('test.project_id')::uuid)->0->>'publisher')='00000000-0000-0000-0000-000000000002','Staff audit attribution missing'; end $$;
+select set_config('test.version_1',pg_temp.w4_publish('project',current_setting('test.project_id')::uuid,'First SQL test publish')::text,true);
+do $$ begin assert (hub.project_versions(current_setting('test.project_id')::uuid)->0->>'publisher')=pg_temp.w4_actor('publisher')::text,'Staff audit attribution missing'; end $$;
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 select set_config('test.payload_1',payload::text,true) from public_api.read_projects() where public_project_id=current_setting('test.public_id');
@@ -154,7 +155,7 @@ end $$;
 
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select set_config('test.version_2',hub.publish_project(current_setting('test.project_id')::uuid,'Second SQL test publish')::text,true);
+select set_config('test.version_2',pg_temp.w4_publish('project',current_setting('test.project_id')::uuid,'Second SQL test publish')::text,true);
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
@@ -165,7 +166,7 @@ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore version one');
+select pg_temp.w4_rollback('project',current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore version one');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$
@@ -174,7 +175,7 @@ begin
 end $$;
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.withdraw_project(current_setting('test.project_id')::uuid,'SQL test withdrawal');
+select pg_temp.w4_withdraw('project',current_setting('test.project_id')::uuid,'SQL test withdrawal');
 set local role service_consumer;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
 do $$ begin
@@ -189,7 +190,7 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
-    perform hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt revoked asset');
+    perform pg_temp.w4_rollback('project',current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt revoked asset');
     raise exception 'Rollback restored revoked asset';
   exception when check_violation then null; end;
 end $$;
@@ -197,7 +198,7 @@ reset role;
 update hub.assets set rights_status='approved' where id='10000000-0000-0000-0000-000000000001';
 set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
-select hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore eligible asset');
+select pg_temp.w4_rollback('project',current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Restore eligible asset');
 reset role;
 update hub.assets set effective_to=now()-interval '1 second' where id='10000000-0000-0000-0000-000000000001';
 set local role service_consumer;
@@ -217,7 +218,7 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ begin
   begin
-    perform hub.rollback_project(current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt rejected mapping');
+    perform pg_temp.w4_rollback('project',current_setting('test.project_id')::uuid,current_setting('test.version_1')::uuid,'Attempt rejected mapping');
     raise exception 'Rollback restored rejected mapping';
   exception when check_violation then null; end;
 end $$;
@@ -245,7 +246,7 @@ do $$ begin
   exception when check_violation then null; end;
   assert exists(select 1 from audit.change_log where table_name='hub.projects'
     and after_row->>'id'=current_setting('test.project_id') and reason='SQL test withdrawal'
-    and actor='00000000-0000-0000-0000-000000000002'::uuid), 'Publication audit missing actor/reason';
+    and actor=pg_temp.w4_actor('publisher')), 'Publication audit missing actor/reason';
 end $$;
 rollback;
 select 'PASS: core SQL role, readiness, immutable publication, rollback, revocation and audit checks' as result;

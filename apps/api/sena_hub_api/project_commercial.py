@@ -108,8 +108,9 @@ def register_project_commercial_routes(app, authentication, database):
         require_content(request)
         return actor
 
-    async def call(request, actor, sql, *args):
+    async def call(request, actor, sql, *args, reason=None):
         async with database(request, actor) as connection:
+            await connection.execute("select set_config('app.content_review_reason',$1,true)", reason or '')
             return {"data": await connection.fetchval(sql, *args)}
 
     async def save(public_id, kind, record_id, body, request, actor):
@@ -147,4 +148,4 @@ def register_project_commercial_routes(app, authentication, database):
 
     @app.post(prefix + "/{kind}/{record_id}/review")
     async def review(public_id: str, kind: Kind, record_id: UUID, body: UnitDecision, request: Request, actor: Actor = Depends(staff)):
-        return await call(request, actor, "select hub.review_project_commercial($1,$2,$3,$4,$5)", public_id, kind, record_id, body.updated_at, body.decision)
+        return await call(request, actor, "select hub.review_project_commercial($1,$2,$3,$4,$5)", public_id, kind, record_id, body.updated_at, body.decision, reason=body.reason)

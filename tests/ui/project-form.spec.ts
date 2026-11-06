@@ -1,11 +1,12 @@
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 
 const time = '2026-09-18T08:00:00Z';
-const model = (id: string) => ({ id, public_model_id: id, rem_model_id: id, model_name_rem: id, public_name: { th: `แบบ ${id}` }, bedrooms: null, bathrooms: null, usable_area_sqm: null, parking_spaces: null, match_status: 'SUGGESTED', source_updated_at: null, source_snapshot_at: time, source_record: null, intake_manifest_sha256: 'a'.repeat(64) });
-const binding = (id: string, owner: string | null, role: string) => ({ id, binding_id: id, public_model_id: owner, asset_role: role, original_filename: `${id}.pdf`, mime_type: 'application/pdf', rights_status: 'pending', public_url: null, alt_text: { th: id }, display_order: 0 });
+const model = (id: string) => ({ id: '66000000-0000-4000-8000-' + String(['model-A', 'model-A2', 'model-A10', 'model-B'].indexOf(id) + 2).padStart(12, '0'), public_model_id: id, rem_model_id: id, model_name_rem: id, public_name: { th: `แบบ ${id}` }, bedrooms: null, bathrooms: null, usable_area_sqm: null, parking_spaces: null, match_status: 'SUGGESTED', source_updated_at: null, source_snapshot_at: time, source_record: null, intake_manifest_sha256: 'a'.repeat(64) });
+const binding = (id: string, owner: string | null, role: string) => ({ id, binding_id: '66000000-0000-4000-8000-' + String(['project-plan', 'model-a-plan', 'model-b-plan', 'additional-plan'].indexOf(id) + 10).padStart(12, '0'), public_model_id: owner, asset_role: role, original_filename: `${id}.pdf`, mime_type: 'application/pdf', rights_status: 'pending', public_url: null, alt_text: { th: id }, display_order: 0 });
 const fixture = () => ({
+  id: '66000000-0000-4000-8000-000000000001',
   public_project_id: 'form-test', public_name: { th: 'ชื่อที่ทีมงานแก้แล้ว', en: 'Edited name', zh: '保留名称' }, address: { th: 'ที่อยู่ที่แก้แล้ว', en: 'Edited address', zh: '保留地址' }, slug: 'form-test', latitude: null, longitude: null,
   updated_at: time, published_version_id: null, publication_available: false,
   readiness: { ready: false, percent: 25, missing: [{ field: 'slug', message: 'กรอกรหัส URL' }, { field: 'models.model-A', message: 'ตรวจสอบแบบ A' }] },
@@ -14,12 +15,37 @@ const fixture = () => ({
   models: [{ ...model('model-B'), public_name: { th: 'model-B' } }, model('model-A10'), model('model-A'), model('model-A2')], assets: [binding('project-plan', null, 'master_plan'), binding('model-a-plan', 'model-A', 'floor_plan'), binding('model-b-plan', 'model-B', 'floor_plan')],
 });
 
+// Only the saved synthetic sources used here; workflow commands keep their original routes.
+async function fulfilFixtureWorkflow(route: Route, project: ReturnType<typeof fixture>) {
+  if (route.request().method() !== 'GET') return false;
+  const url = new URL(route.request().url());
+  if (url.pathname === '/api/hub/v1/admin/content-workflow/items'
+    && url.searchParams.get('level') === 'project' && url.searchParams.get('id') === project.public_project_id
+    && (!url.searchParams.has('phase') || url.searchParams.get('phase') === project.source.rem_project_id)) {
+    await route.fulfill({ json: { data: { scope: { level: 'project', id: project.public_project_id, phase: project.source.rem_project_id }, items: [], next_cursor: null } } });
+    return true;
+  }
+  if (url.pathname !== '/api/hub/v1/admin/content-workflow') return false;
+  const targets = [{ kind: 'project', id: project.id }, ...project.models.map(item => ({ kind: 'model', id: item.id })),
+    ...project.assets.flatMap(item => [{ kind: 'project_asset', id: item.binding_id }, { kind: 'asset', id: item.id }])];
+  const target = targets.find(item => item.kind === url.searchParams.get('kind') && JSON.stringify({ id: item.id }) === url.searchParams.get('identity'));
+  if (!target) return false;
+  await route.fulfill({ json: { data: {
+    kind: target.kind, identity: { id: target.id }, source_tab: 'projects', source_tabs: ['projects'], state: 'DRAFT', expected_hash: 'a'.repeat(64),
+    source_revision: null, source_updated_at: project.updated_at, version_id: null, version_no: null, approved_by: null, approved_at: null,
+    decision_reason: null, self_approval: false, needs_reapproval: false, can_edit: false, can_submit: false,
+    can_approve: false, can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: true, history: [],
+  } } });
+  return true;
+}
+
 async function openFixture(page: Page, gold = true, extra: Record<string, unknown> = {}) {
   const project = { ...fixture(), ...extra };
   await page.context().addCookies([{ name: 'sena_local_persona', value: 'editor', url: 'http://127.0.0.1:3000' }]);
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if (await fulfilWorkspaceProjection(route, project)) return;
+    if (await fulfilFixtureWorkflow(route, project)) return;
     const path = new URL(route.request().url()).pathname.replace('/api/hub/v1/admin/', '');
     // The outer Media tab reads this workspace before canonical media is selected.
     // Keep this exact fixture projection separate from the existing native writers.
@@ -186,6 +212,7 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   await page.route('**/api/hub/v1/admin/**', async route => {
     if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/hub/v1/admin/content/fields') return route.continue();
     if (await fulfilWorkspaceProjection(route, project)) return;
+    if (await fulfilFixtureWorkflow(route, project)) return;
     if (route.request().method() !== 'GET') {
       writes++;
       if (failSave) return route.fulfill({ status: 409, json: { error: { message: 'ข้อมูลเปลี่ยนแปลง กรุณาตรวจสอบ' } } });

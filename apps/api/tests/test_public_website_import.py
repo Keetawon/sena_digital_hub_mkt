@@ -118,7 +118,7 @@ def test_website_draft_real_sql_edit_check_stale_guard_and_immutable_source(perm
             # Table policy must also deny direct writes, not merely the RPC.
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], "UPDATE hub.projects SET website_content='{}' WHERE id=$1 RETURNING id", row['id'])
-            assert not await db.fetchval("SELECT has_function_privilege('hub_app','hub.draft_payload(uuid)','execute')")
+            assert not await call(db, ids['viewer'], "SELECT has_function_privilege('hub_app','hub.draft_payload(uuid)','execute')")
             with pytest.raises(asyncpg.CheckViolationError):
                 await call(db, ids['editor'], 'SELECT hub.patch_project($1,$2,$3)', row['id'],
                            {'website_content': {'th': {'nested': 'invalid'}}},

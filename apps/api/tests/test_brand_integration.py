@@ -1,4 +1,9 @@
 import os
+import asyncio
+from contextlib import nullcontext
+
+from content_workflow_fixture import approve_fixture_entity, publication_persona, confirm_fixture_demo_media
+from test_permission_foundations import permission_accounts, h
 import re
 
 from fastapi.testclient import TestClient
@@ -10,11 +15,12 @@ from sena_hub_api.main import create_app
 
 @pytest.mark.integration
 @pytest.mark.skipif(not os.getenv("HUB_TEST_DATABASE_URL"), reason="Requires seeded local PostgreSQL with a published demo brand")
-def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
-    tokens = {role: f"brand-integration-{role}-" + "x" * 40 for role in ROLES}
-    config = Settings(os.environ["HUB_TEST_DATABASE_URL"], "demo", "local", tokens)
-    headers = {role: {"Authorization": f"Bearer {token}"} for role, token in tokens.items()}
-    with TestClient(create_app(config), client=("127.0.0.1", 50000)) as client:
+def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights(permission_accounts):
+    client, ids = permission_accounts
+    asyncio.run(publication_persona(ids))
+    asyncio.run(confirm_fixture_demo_media(ids))
+    headers = {role: h(role) for role in ROLES}
+    with nullcontext(client):
         def get(path, role="admin"):
             response = client.get(path, headers=headers[role])
             assert response.status_code == 200, response.text
@@ -38,7 +44,9 @@ def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
         public_logo = next(item for item in original_public.json()["data"]["assets"] if item["asset_role"] == "logo_primary")
 
         def action(path, name, **body):
-            response = client.post(f"{path}/{name}", headers=headers["publisher"],
+            if name == 'publish':
+                asyncio.run(approve_fixture_entity(ids, 'project' if path == project_path else 'brand', project['id'] if path == project_path else original['id']))
+            response = client.post(f"{path}/{name}", headers=headers["viewer"],
                                    json={"change_reason": "ทดสอบแบรนด์กับฐานข้อมูลภายในเครื่อง", **body})
             assert response.status_code == 200, response.text
             return response.json()["data"]
@@ -126,7 +134,7 @@ def test_brand_draft_snapshot_project_filter_withdrawal_and_logo_rights():
 
             blank = patch({"description": {"th": ""}, "slug": ""})
             assert blank.status_code == 200 and not blank.json()["data"]["readiness"]["ready"]
-            blocked = client.post(f"{brand_path}/publish", headers=headers["publisher"], json={"change_reason": "ข้อมูลแบรนด์ยังไม่ครบ"})
+            blocked = client.post(f"{brand_path}/publish", headers=headers["viewer"], json={"change_reason": "ข้อมูลแบรนด์ยังไม่ครบ"})
             assert blocked.status_code == 422, blocked.text
         finally:
             review_logo(logo_original["rights_status"])

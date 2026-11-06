@@ -1,7 +1,8 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHubPermissions } from "./accounts";
+import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
 import { uploadAsset } from "./project-assets";
 import { newMetadata, type MediaAsset } from "./media-common";
@@ -44,34 +45,44 @@ const stateLabels: Record<string, string> = { draft: "ร่าง", in_review: 
 const privateFields = new Set(["legal_document_asset_id", "legal_doc_ref", "legal_doc_date", "legal_reviewed_by", "legal_reviewed_at", "override_reason"]);
 const valueText = (value: unknown, spec: FieldSpec) => value == null || value === "" ? "ยังไม่ทราบ" : spec.type === "locale" ? [(value as Locales).th, (value as Locales).en].filter(Boolean).join(" · ") || "ยังไม่ทราบ" : Array.isArray(value) ? value.join(", ") || "ยังไม่ทราบ" : spec.type === "bool" ? value ? "เข้าร่วม" : "ไม่เข้าร่วม" : spec.options?.[String(value)] ?? String(value);
 
-export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange }: { projectId: string; fields: ContentField[]; onEditingChange: (value: boolean) => void }) {
+export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange, onWorkflowChanged }: { projectId: string; fields: ContentField[]; onEditingChange: (value: boolean) => void; onWorkflowChanged?: () => void }) {
   const permissions = useHubPermissions(), canView = permissions.can("projects"), canEdit = permissions.can("projects", "edit"), canApprove = permissions.can("projects", "approve");
   const query = useSearchParams(), targetField = query.get("field") ?? "";
   const requestedKind = (Object.entries(groups).find(([, group]) => targetField.startsWith(group.entity + "."))?.[0] ?? "disclosures") as Kind;
   const permissionKey = JSON.stringify(permissions.capabilities.tabs);
   const [data, setData] = useState<Workspace | null>(null), [kind, setKind] = useState<Kind>(requestedKind), [editing, setEditing] = useState<{ id?: string; values: Values; stamp: string } | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const form = useRef<HTMLFormElement>(null);
+  const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set());
+  const workflowBusy = workflowOwners.size > 0;
+  const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
   const [translationEditing, setTranslationEditing] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/commercial`;
-  const reload = useCallback(async () => { setData(await request<Workspace>(base)); }, [base]);
+  const reload = useCallback(async () => { setData(await request<Workspace>(base)); onWorkflowChanged?.(); }, [base, onWorkflowChanged]);
   useEffect(() => { let active = true; setData(null);
     if (canView) request<Workspace>(base).then(value => { if (active) setData(value); }).catch(error => { if (active) setError(errorMessage(error)); });
     return () => { active = false; };
   }, [base, permissionKey, canView]);
-  useEffect(() => { onEditingChange(Boolean(editing) || translationEditing); return () => onEditingChange(false); }, [editing, translationEditing, onEditingChange]);
+  useEffect(() => { onEditingChange(Boolean(editing) || translationEditing || busy || workflowBusy); return () => onEditingChange(false); }, [editing, translationEditing, busy, workflowBusy, onEditingChange]);
   const group = groups[kind], label = (spec: FieldSpec) => fields.find(field => field.field_key === `${group.entity}.${spec.key}`);
   const specs = group.fields.filter(spec => !privateFields.has(spec.key) || canEdit || canApprove);
   function edit(item?: Item) {
-    if (!data || !canEdit) return;
+    if (!data || !canEdit || busy || workflowBusy || translationEditing) return;
     const values: Values = { ai_exposure: item?.ai_exposure ?? "web_only" };
     for (const spec of group.fields) values[spec.key] = item?.[spec.key] ?? (spec.type === "locale" ? {} : spec.type === "list" ? [] : spec.key === "basis" && kind === "disclosures" ? "mkt_entered" : null);
     setEditing({ id: item?.id, values, stamp: data.project.updated_at }); setError(""); setNotice("");
   }
   function change(key: string, value: unknown) { setEditing(prior => prior && ({ ...prior, values: { ...prior.values, [key]: value } })); }
   async function act(work: () => Promise<unknown>, message: string) {
-    if (busy) return; setBusy(true); setError(""); setNotice("");
+    if (busy || workflowBusy || translationEditing) return; setBusy(true); setError(""); setNotice("");
     try { await work(); await reload(); setNotice(message); return true; }
     catch (error) { setError(errorMessage(error)); return false; } finally { setBusy(false); }
+  }
+  function draftChanges() {
+    if (!editing || !form.current?.reportValidity()) return null;
+    const values = { ...editing.values };
+    for (const spec of group.fields.filter(field => field.type === "list")) values[spec.key] = (values[spec.key] as string[]).map(value => value.trim()).filter(Boolean);
+    return values;
   }
   async function save() {
     if (!editing || !canEdit) return;
@@ -89,17 +100,17 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange 
     }, "อัปโหลดเอกสารส่วนตัวแล้ว กดบันทึกร่างเพื่อแนบกับฉบับนี้");
   }
   if (!canView) return <p>สิทธิ์ดูข้อมูลส่วนนี้ถูกเปลี่ยน ข้อมูลที่กำลังกรอกยังเก็บไว้ในแบบฟอร์ม</p>;
-  return <section className="content-section" aria-label="ข้อมูลขายและกฎหมาย"><h2>ข้อมูลขายและกฎหมายของเฟสนี้</h2><p>ค่าว่างหมายถึงยังไม่ทราบ · ทุกฉบับต้องให้ผู้อนุมัติคนอื่นตรวจ ก่อนนำไปใช้ในหน้าเว็บไซต์</p>
+  return <section className="content-section" aria-label="ข้อมูลขายและกฎหมาย"><h2>ข้อมูลขายและกฎหมายของเฟสนี้</h2><p>ค่าว่างหมายถึงยังไม่ทราบ</p>
     <p><a href={`/content?project=${encodeURIComponent(projectId)}&tab=investor`}>ข้อมูลสำหรับผู้ลงทุนและประมาณการผลตอบแทน</a></p>
-    <nav className="content-tabs" aria-label="ประเภทข้อมูลขาย">{(Object.entries(groups) as [Kind, typeof group][]).map(([key, info]) => <button key={key} disabled={busy || Boolean(editing) || translationEditing} aria-current={kind === key ? "page" : undefined} onClick={() => { setKind(key); setError(""); setNotice(""); }}>{info.title}</button>)}</nav>
+    <nav className="content-tabs" aria-label="ประเภทข้อมูลขาย">{(Object.entries(groups) as [Kind, typeof group][]).map(([key, info]) => <button key={key} disabled={busy || workflowBusy || Boolean(editing) || translationEditing} aria-current={kind === key ? "page" : undefined} onClick={() => { setKind(key); setError(""); setNotice(""); }}>{info.title}</button>)}</nav>
     {error && <p role="alert" className="notice error">{error} ข้อมูลที่กรอกยังอยู่ หากข้อมูลเปลี่ยน ให้ยกเลิกแล้วเปิดฉบับล่าสุด</p>}{notice && <p role="status" className="notice success">{notice}</p>}
     {!data ? <p role="status">กำลังโหลดข้อมูล…</p> : <>
       {kind === "disclosures" && <aside className="content-machine"><strong>ข้อมูลสำหรับตรวจเทียบ</strong><p>พื้นที่ {String(data.comparison.land_area_sqwah ?? "ยังไม่ทราบ")} ตร.ว. · อาคาร {String(data.comparison.building_count ?? "ยังไม่ทราบ")} · ยูนิต {String(data.comparison.unit_total ?? "ยังไม่ทราบ")}</p><p>รายละเอียดอาคารและจำนวนต้องตรงกับทะเบียน หากใช้ค่าต่างต้องระบุเหตุผลให้ผู้อนุมัติตรวจ</p><p>เอกสาร Legal เห็นเฉพาะผู้แก้ไข/ผู้อนุมัติโครงการ ไม่ส่งไปเว็บไซต์หรือ AI · ปีใช้ ค.ศ.</p></aside>}
       {kind === "programmes" && <p className="inline-warning">ยูนิตที่เสนอจาก REM: ยังไม่มีข้อมูล · รอ IT ยืนยัน ห้ามกรอกเอง</p>}
       {kind === "construction" && <p className="field-help">รายงานงานก่อสร้าง ไม่เกี่ยวกับคะแนนความพร้อมของเนื้อหา</p>}
-      {!editing && canEdit && (!data.records[kind].length || ["programmes", "construction"].includes(kind)) && <button className="button primary" disabled={busy || translationEditing} onClick={() => edit()}>เพิ่ม{group.title}</button>}
+      {!editing && canEdit && (!data.records[kind].length || ["programmes", "construction"].includes(kind)) && <button className="button primary" disabled={busy || workflowBusy || translationEditing} onClick={() => edit()}>เพิ่ม{group.title}</button>}
       {!editing && !data.records[kind].length && <p>ยังไม่มี{group.title}ของเฟสนี้</p>}
-      {editing && <form onSubmit={event => { event.preventDefault(); void save(); }}><h3>{editing.id ? "แก้ไข" : "เพิ่ม"}{group.title}</h3><fieldset disabled={busy || !canEdit}>
+      {editing && <form ref={form} inert={workflowBusy} onSubmit={event => { event.preventDefault(); void save(); }}><h3>{editing.id ? "แก้ไข" : "เพิ่ม"}{group.title}</h3><fieldset disabled={busy || !canEdit}>
         {specs.map(spec => {
           const field = label(spec), id = `commercial-${spec.key}`, value = editing.values[spec.key];
           if (spec.type === "locale") return <BilingualInput key={spec.key} id={id} field={field} value={(value ?? {}) as Locales} onChange={value => change(spec.key, value)} rows={2} maxLength={4000} />;
@@ -116,16 +127,15 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange 
         <p className="field-help">คำแปลข้อมูลกฎหมายและเงื่อนไขขายต้องกรอกและตรวจเอง ไม่ส่งให้ AI</p>
         <div className="content-actions"><button type="button" className="button secondary" onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary">บันทึกร่าง</button></div>
       </fieldset>{!canEdit && <button type="button" className="button secondary" onClick={() => setEditing(null)}>ปิดแบบฟอร์ม</button>}</form>}
+      {editing?.id && <ContentWorkflow target={{ kind: ({ disclosures: "disclosure", "sales-terms": "sales_term", programmes: "programme", construction: "progress" } as const)[kind], identity: { id: editing.id } }} label={group.title} revision={editing.stamp} disabled={busy || translationEditing || workflowOwners.size > 0 && !workflowOwners.has("record:" + editing.id)} draft={{ dirty: true, valid: canEdit, sourceStamp: { updated_at: editing.stamp }, getChanges: draftChanges }} onEditingChange={value => workflowEditing("record:" + editing.id, value)} onChanged={async () => { await reload(); setEditing(null); }} onReload={async () => { await reload(); setEditing(null); }} />}
       {!editing && data.records[kind].map(item => <article className="content-card" key={item.id} data-workspace-item={item.id} tabIndex={-1}><h3>{group.title} · ฉบับ {item.revision}</h3><p className="content-state">{stateLabels[item.state]} · การอนุมัติข้อมูลยังไม่ใช่การเผยแพร่หน้าเว็บไซต์</p>
         <dl className="commercial-record-values">{specs.map(spec => <div key={spec.key} data-workspace-field={`${group.entity}.${spec.key}`} tabIndex={-1}><dt>{label(spec)?.label.th}</dt><dd className="content-preserve">{spec.type === "asset" && item[spec.key] ? <a href={`/api/hub/v1/admin/assets/${item[spec.key]}/file`}>เปิดเอกสารส่วนตัว</a> : valueText(item[spec.key], spec)}</dd></div>)}</dl>
         <ul className="content-checklist">{item.readiness.items.map(check => <li key={check.field_key}>{check.complete ? "✓" : "○"} {check.label.th}{check.mismatch ? " · ค่าต่างหรือยังไม่มีข้อเท็จจริงอ้างอิง" : ""}</li>)}</ul>
-        <div className="content-actions">{canEdit && item.state !== "in_review" && <button className="button secondary" disabled={busy || translationEditing} onClick={() => edit(item)}>แก้ไขฉบับ</button>}
-          {canEdit && item.state === "draft" && <button className="button primary" disabled={busy || translationEditing || !item.readiness.ready} onClick={() => void act(() => request(`${base}/${kind}/${item.id}/submit`, "POST", { updated_at: data.project.updated_at }), "ส่งตรวจฉบับแล้ว")}>ส่งตรวจฉบับ</button>}
-          {canApprove && item.state === "in_review" && ["approve", "return"].map(decision => <button className={`button ${decision === "approve" ? "primary" : "secondary"}`} key={decision} disabled={busy} onClick={() => void act(() => request(`${base}/${kind}/${item.id}/review`, "POST", { updated_at: data.project.updated_at, decision }), decision === "approve" ? "อนุมัติฉบับแล้ว" : "ส่งกลับแก้ไขแล้ว")}>{decision === "approve" ? "ยืนยันอนุมัติฉบับ" : "ส่งกลับแก้ไข"}</button>)}
-          {canApprove && item.state === "approved" && <button className="button secondary" disabled={busy} onClick={() => void act(() => request(`${base}/${kind}/${item.id}/review`, "POST", { updated_at: data.project.updated_at, decision: "withdraw" }), "ถอนฉบับแล้ว")}>ถอนการอนุมัติ</button>}
-        </div><details><summary>ประวัติฉบับที่ส่งตรวจ</summary>{!item.history.length ? <p>ยังไม่เคยส่งตรวจ</p> : item.history.map(version => <section key={version.id}><h4>ฉบับ {version.revision} · {stateLabels[version.state]}</h4><dl className="commercial-record-values">{specs.map(spec => <div key={spec.key}><dt>{label(spec)?.label.th}</dt><dd>{spec.type === "asset" ? version.payload[spec.key] ? <a href={`/api/hub/v1/admin/assets/${version.payload[spec.key]}/file`}>{label(spec)?.label.th}</a> : "?" : valueText(version.payload[spec.key], spec)}</dd></div>)}</dl></section>)}</details>
+        <div className="content-actions">{canEdit && item.state !== "in_review" && <button className="button secondary" disabled={busy || workflowBusy || translationEditing} onClick={() => edit(item)}>แก้ไขฉบับ</button>}
+          {canApprove && item.state === "approved" && <button className="button secondary" disabled={busy || workflowBusy || translationEditing} onClick={() => void act(() => request(`${base}/${kind}/${item.id}/review`, "POST", { updated_at: data.project.updated_at, decision: "withdraw" }), "ถอนฉบับแล้ว")}>ถอนการอนุมัติ</button>}
+        </div><ContentWorkflow target={{ kind: ({ disclosures: "disclosure", "sales-terms": "sales_term", programmes: "programme", construction: "progress" } as const)[kind], identity: { id: item.id } }} label={group.title} revision={`${item.revision}:${data.project.updated_at}`} submitDisabled={!item.readiness.ready} disabled={busy || translationEditing || workflowOwners.size > 0 && !workflowOwners.has("record:" + item.id)} onEditingChange={value => workflowEditing("record:" + item.id, value)} onChanged={reload} onReload={reload} /><details><summary>ประวัติฉบับที่ส่งตรวจ</summary>{!item.history.length ? <p>ยังไม่เคยส่งตรวจ</p> : item.history.map(version => <section key={version.id}><h4>ฉบับ {version.revision} · {stateLabels[version.state]}</h4><dl className="commercial-record-values">{specs.map(spec => <div key={spec.key}><dt>{label(spec)?.label.th}</dt><dd>{spec.type === "asset" ? version.payload[spec.key] ? <a href={`/api/hub/v1/admin/assets/${version.payload[spec.key]}/file`}>{label(spec)?.label.th}</a> : "?" : valueText(version.payload[spec.key], spec)}</dd></div>)}</dl></section>)}</details>
       </article>)}
-      {!editing && <TranslationReviewPanel items={data.translations.filter(item => item.owner_type === group.entity)} fields={fields} canEdit={canEdit} onChanged={reload} onEditingChange={setTranslationEditing} />}
+      {!editing && <TranslationReviewPanel items={data.translations.filter(item => item.owner_type === group.entity)} fields={fields} canEdit={canEdit && !busy && !workflowBusy} onChanged={reload} onEditingChange={setTranslationEditing} />}
     </>}
   </section>;
 }

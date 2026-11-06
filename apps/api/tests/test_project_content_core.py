@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 import asyncpg
 import pytest
 
+from content_workflow_fixture import decide_item
 from test_permission_baseline import disposable_operator
 from test_permission_content import call, set_bit
 from test_permission_db_baseline import runtime as base_runtime
@@ -43,7 +44,7 @@ def test_core_facts_buildings_sources_and_stale_writes(permission_accounts):
         operator = await disposable_operator()
         db = await runtime()
         try:
-            project = await operator.fetchrow("select id,public_project_id,rem_project_id from hub.projects order by id limit 1")
+            project = await operator.fetchrow("select id,public_project_id,rem_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             original_source = await operator.fetchval('select source_record from staging.dw_projects where rem_project_id=$1', project['rem_project_id'])
             public_id = project['public_project_id']
             async with operator.transaction():
@@ -142,7 +143,7 @@ def test_translation_queue_masks_stale_source_and_keeps_reviewed_text(permission
         db = await runtime(probe=True)
         await operator.execute('grant hub_translation_worker to hub_permission_probe with admin false, inherit false, set true')
         try:
-            project = await operator.fetchrow('select id,public_project_id from hub.projects order by id limit 1')
+            project = await operator.fetchrow("select id,public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             public_id = project['public_project_id']
             await call(db, ids['editor'], "select hub.save_content_section('project',$1,'section.project_intro',0,$2)", public_id,
                        {'body': {'th': 'โครงการตัวอย่างมีพื้นที่สีเขียว 20 ไร่ {project}', 'en': 'Previous English'}})
@@ -199,7 +200,7 @@ def test_translation_retry_rejects_stale_lease_and_revoked_author(permission_acc
                 return await db.fetchval(query, *args)
 
         try:
-            public_id = await operator.fetchval('select public_project_id from hub.projects order by id limit 1')
+            public_id = await operator.fetchval("select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             await call(db, ids['editor'], "select hub.save_content_section('project',$1,'section.project_intro',0,$2)",
                        public_id, {'body': {'th': 'พื้นที่สีเขียว 20 ไร่'}})
             translations = await call(db, ids['editor'], "select hub.content_translation_list('projects',$1)", public_id)
@@ -357,7 +358,7 @@ def test_selling_point_english_review_advances_revision_and_preserves_old_text(p
     async def check():
         db = await runtime()
         try:
-            project = await call(db, ids['editor'], 'select public_project_id from hub.projects order by id limit 1')
+            project = await call(db, ids['editor'], "select public_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             body = {'title': {'th': 'พื้นที่พักผ่อน'}, 'detail': {'th': 'สวนสำหรับทุกคน'}}
             point = await call(db, ids['editor'], 'select hub.save_selling_point($1,null,0,$2)', project, body)
             translations = await call(db, ids['editor'], "select hub.content_translation_list('projects',$1)", project)
@@ -403,8 +404,11 @@ def test_submitted_faq_is_immutable_and_financial_topics_never_queue_ai(permissi
             t = next(row for row in translations if row['field_key'] == 'faq.question')
             with pytest.raises(asyncpg.CheckViolationError, match='immutable'):
                 await call(db, ids['editor'], 'select hub.review_content_translation($1,$2,$3,$4)', UUID(t['id']), t['revision'], t['th_version'], 'Changed title')
-            newer = await call(db, ids['editor'], 'select hub.save_faq($1,$2,$3)', faq, submitted['revision'], {**body, 'detail': {'th': 'ฉบับใหม่'}})
-            assert newer['history'][1]['state'] == 'IN_REVIEW'
+            with pytest.raises(asyncpg.CheckViolationError, match='frozen'):
+                await call(db, ids['editor'], 'select hub.save_faq($1,$2,$3)', faq, submitted['revision'], body)
+            returned = await decide_item(db, ids['publisher'], 'faq', {'id': str(faq)}, 'return')
+            newer = await call(db, ids['editor'], 'select hub.save_faq($1,$2,$3)', faq, returned['source_revision'], {**body, 'detail': {'th': 'ฉบับใหม่'}})
+            assert newer['history'][1]['state'] == 'RETURNED'
             assert newer['history'][1]['short_answer']['en'] == 'Contact SENA Sales to confirm the terms.'
         finally:
             await db.close()
@@ -418,7 +422,7 @@ def test_legacy_faq_is_read_only_and_section_rejection_withdraws_versions(permis
         operator = await disposable_operator()
         db = await runtime()
         try:
-            project = await operator.fetchval('select rem_project_id from hub.projects order by id limit 1')
+            project = await operator.fetchval("select rem_project_id from hub.projects where rem_project_id='DEMO-001' and deleted_at is null")
             batch = uuid4().hex * 2
             await operator.execute("insert into staging.knowledge_batches(manifest_sha256,manifest) values($1,'{}')", batch)
             candidates = []

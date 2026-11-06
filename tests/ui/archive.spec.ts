@@ -170,7 +170,11 @@ test('memo search returns sanitized cited text and validated P2 money, with no s
   const { reads } = await fixture(page); await page.goto('/ads/archive?view=search'); await expect(page.getByLabel('ประเภทเอกสาร', { exact: true })).toHaveCount(0); await page.getByLabel('ข้อความหรือเลขบันทึกข้อความ').fill('MO2610901'); await page.getByRole('button', { name: 'ค้นหาบันทึกข้อความ', exact: true }).click();
   await expect(page.locator('.archive-result')).toContainText('12,000.01 บาท'); await expect(page.locator('.archive-result mark')).toHaveText('MO2610901'); await page.getByRole('button', { name: 'เปิดหลักฐาน หน้า 1 รุ่น 1', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`version=${memoVersion}`)); await expect(page.getByRole('dialog').locator('iframe')).toHaveAttribute('src', new RegExp(`version_id=${memoVersion}&page=1&download=false#page=1`));
-  await page.keyboard.press('Escape'); await page.getByLabel('ข้อความหรือเลขบันทึกข้อความ').fill('LINEPAY'); await page.getByRole('button', { name: 'ค้นหาบันทึกข้อความ', exact: true }).click(); await expect(page.getByText('ไม่พบบันทึกข้อความที่มีสิทธิ์เข้าถึงและตรงกับคำค้น', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page).toHaveURL(`${origin}/ads/archive?view=search&q=MO2610901`);
+  await page.getByLabel('ข้อความหรือเลขบันทึกข้อความ').fill('LINEPAY'); await expect(page.locator('#archive-search')).toHaveValue('LINEPAY'); await page.getByRole('button', { name: 'ค้นหาบันทึกข้อความ', exact: true }).click(); await expect(page.getByText('ไม่พบบันทึกข้อความที่มีสิทธิ์เข้าถึงและตรงกับคำค้น', { exact: true })).toBeVisible();
+  expect(reads.some(path => new URL(path, origin).searchParams.get('q') === 'LINEPAY')).toBe(true);
   expect(reads.filter(path => path.includes('/search?')).every(path => !path.includes('CARD_STATEMENT'))).toBe(true);
 });
 

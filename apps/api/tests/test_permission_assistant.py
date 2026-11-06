@@ -6,7 +6,8 @@ from uuid import UUID, uuid4
 import asyncpg
 import pytest
 
-from test_permission_baseline import disposable_operator
+from content_workflow_fixture import load_sql_fixture
+from test_permission_baseline import disposable_operator, ROOT
 from test_permission_db_baseline import runtime
 from test_permission_foundations import permission_accounts, h
 from test_permission_content import call, set_bit
@@ -94,15 +95,19 @@ def test_assistant_exact_old_version_projects_hidden_brand_and_assets(permission
         transaction = db.transaction()
         await transaction.start()
         try:
-            project = await db.fetchrow("select id,public_project_id from hub.projects where rem_project_id='DEMO-001'")
+            await load_sql_fixture(db, ids['admin'])
+            fixture = (ROOT / 'supabase/tests/residential_demo.sql').read_text(encoding='utf-8').split('-- Every new table')[0].replace('begin;', '', 1)
+            await db.execute(fixture)
+            project = await db.fetchrow("select id,public_project_id from hub.projects where id=current_setting('test.residential_project')::uuid")
             base = await db.fetchval('select coalesce(max(version_no),0) from hub.entity_versions where project_id=$1', project['id'])
-            payload = {'public_name': {'th': 'Synthetic history'},
-                       'brand': {'public_name': {'th': 'Synthetic brand'}, 'description': 'Hidden brand detail'},
-                       'brand_version_id': str(uuid4()), 'assets': [{'id': str(uuid4()), 'storage_path': 'hidden-synthetic.png'}]}
-            await db.execute("""insert into hub.entity_versions(project_id,version_no,payload,publisher,change_reason)
-                select $1,n,$2::jsonb,$3,'Synthetic citation history' from generate_series($4::integer,$5::integer) n""",
-                project['id'], json.dumps(payload), ids['publisher'], base + 1, base + 105)
+            await db.execute("select pg_temp.w4_publish('project',$1,'Synthetic guarded citation history') from generate_series(1,105)", project['id'])
             oldest = await db.fetchval('select id from hub.entity_versions where project_id=$1 and version_no=$2', project['id'], base + 1)
+            payload = json.loads(await db.fetchval('select payload::text from hub.entity_versions where id=$1', oldest))
+            assert payload['assets'] and payload['brand']['description'], 'Fixture must contain real private source evidence'
+            await db.fetchval("select pg_temp.w4_withdraw('project',$1,'Synthetic historical source access check')", project['id'])
+            await db.execute("select set_config('app.actor_id',$1,true)", str(ids['editor']))
+            for binding in await db.fetch('select id from hub.entity_assets where project_id=$1 and deleted_at is null', project['id']):
+                await db.fetchval('select hub.unbind_project_asset(id,$2,updated_at) from hub.projects where id=$1', project['id'], binding['id'])
             await db.execute('SET LOCAL SESSION AUTHORIZATION hub_runtime')
             await db.execute('SET LOCAL ROLE hub_app')
             assert await db.fetchval('select session_user') == 'hub_runtime'
@@ -110,7 +115,7 @@ def test_assistant_exact_old_version_projects_hidden_brand_and_assets(permission
             await db.execute("select set_config('app.actor_id',$1,true)", str(ids['viewer']))
             result = json.loads(await db.fetchval("select internal.assistant_content_version('project',$1,$2)::text", project['public_project_id'], oldest))
             assert result['payload']['public_name'] == payload['public_name']
-            assert result['payload']['brand'] == {'public_name': {'th': 'Synthetic brand'}}
+            assert result['payload']['brand'] == {'public_name': payload['brand']['public_name']}
             assert result['payload']['assets'] == [] and 'brand_version_id' not in result['payload']
             assert await db.fetchval("select internal.assistant_content_version('project','different-synthetic-project',$1)", oldest) is None
         finally:

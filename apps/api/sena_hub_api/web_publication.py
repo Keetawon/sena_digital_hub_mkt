@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from .articles import render_blocks, reference_key
 from .auth import Actor
 from .content_permissions import require_content
+from .content_workflow import publication_targets
 
 PageKey = Annotated[str, StringConstraints(pattern=r'^(project|brand|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}$')]
 Digest = Annotated[str, StringConstraints(pattern=r'^[a-f0-9]{64}$')]
@@ -138,8 +139,15 @@ def preview_html(page: dict, assets: dict | None = None) -> str:
 
 def reviewed_preview(data: dict) -> dict:
     for page in data['pages']:
-        page['html'] = preview_html(page['preview'], page.pop('preview_assets', {}))
-    return data
+        if page.get('system') == 'release':
+            label = page.get('label') or {}
+            title = label.get('th') or label.get('en') or page['member']['entity_type']
+            page['html'] = '<article><h1>' + escape(title) + '</h1><pre>' + escape(json.dumps(page['preview'], ensure_ascii=False, indent=2)) + '</pre></article>'
+        else:
+            page['html'] = preview_html(page['preview'], page.pop('preview_assets', {}))
+            if page.get('previous'):
+                page['previous_html'] = preview_html(page['previous'], page.pop('previous_assets', {}))
+    return publication_targets(data)
 
 
 def cached(request: Request, data, *, text: bool = False):
@@ -198,7 +206,7 @@ def register_web_routes(app, authentication, database, consumer):
 
     @app.post('/v1/admin/web/publications/{publication_id}/publish')
     async def publish(publication_id: UUID, body: Publish, request: Request, actor: Actor = Depends(staff)):
-        return {'data': await call(request, actor, 'select hub.web_publish($1,$2)', publication_id, body.expected_digest)}
+        return {'data': publication_targets(await call(request, actor, 'select hub.web_publish($1,$2)', publication_id, body.expected_digest))}
 
     @app.get('/v1/web/pages/{page_key}')
     async def page(page_key: PageKey, request: Request, locale: Locale = 'th', actor: Actor = Depends(consumer)):

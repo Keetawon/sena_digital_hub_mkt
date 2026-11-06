@@ -9,6 +9,7 @@ from pydantic import Field
 
 from .auth import Actor, failure
 from .content_permissions import require_content
+from .content_workflow import DecisionReason
 from .project_content import Draft, Input, Revision
 
 ReferenceKind = Literal['rail_lines', 'rail_stations', 'expressways', 'expressway_ramps', 'features', 'facilities']
@@ -18,7 +19,8 @@ PLACE_KINDS = {'rail_lines', 'rail_stations', 'expressways', 'expressway_ramps'}
 
 
 class SolarDecision(Revision):
-    decision: Literal['approve', 'withdraw']
+    decision: Literal['approve', 'return', 'withdraw']
+    reason: DecisionReason | None = None
 
 
 class Cover(Revision):
@@ -74,8 +76,9 @@ def register_project_amenity_routes(app, authentication, database):
         require_content(request)
         return actor
 
-    async def call(request, actor, sql, *args):
+    async def call(request, actor, sql, *args, reason=None):
         async with database(request, actor) as db:
+            await db.execute("select set_config('app.content_review_reason',$1,true)", reason or '')
             return {'data': await db.fetchval(sql, *args)}
 
     @app.get('/v1/admin/projects/{public_id}/amenities')
@@ -100,7 +103,7 @@ def register_project_amenity_routes(app, authentication, database):
 
     @app.post('/v1/admin/projects/{public_id}/amenities/solar/{item_id}/review')
     async def review(public_id: str, item_id: UUID, body: SolarDecision, request: Request, actor: Actor = Depends(staff)):
-        return await call(request, actor, 'select hub.c4_solar_review($1,$2,$3,$4)', public_id, item_id, body.expected_revision, body.decision)
+        return await call(request, actor, 'select hub.c4_solar_review($1,$2,$3,$4)', public_id, item_id, body.expected_revision, body.decision, reason=body.reason)
 
     @app.post('/v1/admin/projects/{public_id}/amenities/facilities/{code}/cover')
     async def cover(public_id: str, code: str, body: Cover, request: Request, actor: Actor = Depends(staff)):

@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import pg from 'pg';
 import { localTarget, hubExportViews, readerFile, verifyReader } from '../../scripts/provision-dw-reader.mjs';
-import { contentFixture, seedHubContentContract } from '../../scripts/seed-hub-content-contract.mjs';
+import { contentFixture, seedHubContentContract, syntheticWorkflowActors, approveSyntheticEntity } from '../../scripts/seed-hub-content-contract.mjs';
 
 const folder = new URL('./fixtures/hub_export/', import.meta.url);
 const sha256 = value => createHash('sha256').update(value).digest('hex');
@@ -42,7 +42,12 @@ test('published fixtures freeze both exact projections, text IDs, null English a
     if (identity === 'rem_project_id') assert.equal(rows[0].public_name_en, null);
   }
   for (const entry of [...manifest.migration_checksums, ...manifest.generator_checksums]) {
-    const bytes = await readFile(new URL(`../../${entry.file}`, import.meta.url));
+    if (entry.archived_file) {
+      assert.equal(entry.file, 'scripts/seed-hub-content-contract.mjs');
+      assert.equal(entry.archived_file, 'supabase/tests/fixtures/hub_export/generators/seed-hub-content-contract.mjs');
+      assert.equal(entry.archived_from_commit, 'd3ec1d61df7188624f3afb15a8f3e67522e79ce4');
+    }
+    const bytes = await readFile(new URL(`../../${entry.archived_file ?? entry.file}`, import.meta.url));
     assert.equal(sha256(bytes.toString('utf8').replace(/\r\n/g, '\n')), entry.normalized_lf_sha256, entry.file);
   }
 });
@@ -57,6 +62,8 @@ test('DW sees frozen publications, original project logo roles and eligibility; 
   try {
     await db.query('begin');
     const fixture = await seedHubContentContract(db);
+    const actors = await syntheticWorkflowActors(db, '00000000-0000-0000-0000-000000000005');
+    const publisher = async () => { await db.query('reset role'); await db.query("select set_config('app.actor_id',$1,true)", [actors.publisher]); };
     const role = async name => {
       await db.query(`set local role ${name}`);
       const actor = { admin: '00000000-0000-0000-0000-000000000005', editor: '00000000-0000-0000-0000-000000000001', publisher: '00000000-0000-0000-0000-000000000002' }[name];
@@ -90,23 +97,24 @@ test('DW sees frozen publications, original project logo roles and eligibility; 
     await db.query('select hub.patch_project(id,$2,updated_at) from hub.projects where id=$1', [fixture.project_id, { public_name: { th: 'โครงการฉบับร่างสมมติ' }, slug: 'synthetic-hub-export-project-changed' }]);
     await db.query("select hub.unbind_brand_asset(b.id,a.id,b.updated_at) from hub.brands b join hub.brand_assets a on a.brand_id=b.id and a.asset_role='logo_white' and a.deleted_at is null where b.id=$1", [fixture.id]);
     assert.deepEqual(await published(), before);
-    await role('publisher');
+    await approveSyntheticEntity(db, actors, 'brand', fixture.id);
+    await publisher();
     await db.query('select hub.publish_brand($1,$2)', [fixture.id, f.marker]);
     const next = await published();
     assert.equal(next.brands[0].public_name_th, 'ฉบับร่างสมมติเปลี่ยนแล้ว');
     assert.notEqual(next.brands[0].published_version_id, before.brands[0].published_version_id);
     assert.deepEqual(next.brands[0].logo_roles_present, ['favicon', 'logo_mono', 'logo_primary']);
     assert.deepEqual(next.projects, before.projects);
-    await role('publisher');
+    await publisher();
     await db.query('select hub.withdraw_brand($1,$2)', [fixture.id, f.marker]);
     assert.deepEqual(await published(), { brands: [], projects: [] });
-    await role('publisher');
+    await publisher();
     await db.query('select hub.rollback_brand($1,$2,$3)', [fixture.id, fixture.published_version_id, f.marker]);
     assert.deepEqual(await published(), before);
-    await role('publisher');
+    await publisher();
     await db.query('select hub.withdraw_project($1,$2)', [fixture.project_id, f.marker]);
     assert.deepEqual((await published()).projects, []);
-    await role('publisher');
+    await publisher();
     await db.query('select hub.rollback_project($1,$2,$3)', [fixture.project_id, fixture.project_version, f.marker]);
     assert.deepEqual(await published(), before);
     await db.query('update staging.rem_brands set is_deleted=null where rem_brand_id=$1', [f.brand]);
