@@ -4296,3 +4296,27 @@ The final staged whitespace check identified CRLF endings in migration 0086.
 `.gitattributes` explicitly marks migrations `-text` to preserve exact checksum
 bytes. The CRLF-aware check retains blank-at-EOL, blank-at-EOF and space-before-tab
 checks and passes. No SQL bytes or profile checksum changed after the full gate.
+
+### W3.1 delivery and worktree cleanup
+
+Committed all 34 explicit paths as
+`375d7c955d722093275fd1c686f7d5a0f9561fa3` (Refine content exposure and workspace
+summaries), and pushed to origin/main. The remote hash matched that commit;
+main was clean afterward. All five protected configuration paths passed
+`git check-ignore` before the commit. The full-gate and screenshot receipts
+above apply to this delivery; only this log's evidence was added after the
+verified source freeze.
+
+Removed the clean, finished `w3.1-review-inventory` worktree with normal
+`git worktree remove` and its merged branch with `git branch -d`. All three
+reports were hash-verified against their archived copies first. No force
+removal or unmerged branch deletion occurred.
+
+Remaining: main, the unrelated facilities worktree, and 55 programme worktrees:
+W2: 1; W3: 6; W3.2: 1; W4: 15; W5: 4; W6: 14; W7: 6; W8: 3; W9: 5.
+The 22 older W2/W3/W4 variants remain preserved under the earlier reconciliation
+record; they are not claimed merged. The remaining workstreams retain their
+prepared source/reports. Neutral worktree identities and bases are recorded in
+`artifacts/unified-workspace/w3.1/worktrees-after-delivery.txt`; Git retains the
+exact current checkout inventory. Next: finalize the W3.2 lease and implement
+contextual Promotions. Hosted rollout remains separately authorized work.
