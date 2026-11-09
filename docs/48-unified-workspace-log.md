@@ -4678,3 +4678,28 @@ will be inventoried again after the W3.2 cleanup.
 Next: commit and push the explicit 36 W3.2 paths, record the delivery hash,
 remove its two finished worktrees normally, then integrate W5. Its 44-path
 preview and assistant design remain preparation, not a passed implementation.
+
+### W3.2 delivered — 9 November 2026
+
+Product commit `7ceed6f6e649b35304908660c011a9782a147a25` was pushed to
+`origin/main`; `git ls-remote origin refs/heads/main` returned that exact hash.
+It contains the 36 explicit reviewed paths and the final-gate evidence above.
+All five credential/config paths passed `git check-ignore` before commit.
+The final product source is unchanged from the successful frozen gate; only
+the evidence log was updated afterwards. Source/browser scans again found zero
+credential matches. This receipt is a documentation-only follow-up.
+
+Both completed W3.2 worktrees and branches were removed normally after exact
+path, branch-ancestry, status and archive-hash checks. No force operation was
+used; the draft browser file and editor inventory remain archived under
+`artifacts/unified-workspace/w3.2/`. Removal receipt: `w3.2/cleanup-result.json`.
+
+Remaining worktrees (55 total): main; one unrelated facilities worktree;
+20 earlier programme variants awaiting reconciliation (W2: 1, W3: 6, W4: 13);
+and prepared future work (W5: 5, W6: 14, W7: 6, W8: 3, W9: 5). Earlier variant
+details remain in `artifacts/unified-workspace/finished-worktree-inventory.json`
+and `delivered-worktree-reconciliation.json`; the two completed fixture trees
+and both W3.2 trees have now been removed. Unreconciled work was preserved.
+
+Next workstream: W5 business level, including its assistant retrieval and
+permission checks. W6, W7 and W9 follow; W8 and the final main gate remain last.
