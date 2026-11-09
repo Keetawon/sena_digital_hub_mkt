@@ -22,7 +22,7 @@ DRAFT = {"project_id": PROJECT, "code": "DEMO-OFFER", "title": {"th": "โปร
          "disclaimer": {"th": "ข้อมูลตัวอย่าง ไม่ใช่ข้อเสนอขายจริง"}, "benefit_type": "discount_amount",
          "benefit_value": "100000000000.01", "benefit_unit": "THB", "starts_at": STAMP,
          "ends_at": "2026-11-01T00:00:00+07:00"}
-REVIEW = {"expected_revision": 1, "review_type": "DATA", "decision": "APPROVED", "evidence": "หลักฐานตัวอย่าง",
+REVIEW = {"expected_scope_hash": "a" * 64, "expected_revision": 1, "review_type": "DATA", "decision": "APPROVED", "evidence": "หลักฐานตัวอย่าง",
           "change_reason": "ทดสอบขั้นตอนตรวจสอบ"}
 ACTION = {"expected_revision": 1, "expected_published_version_id": None, "change_reason": "เผยแพร่ข้อมูลตัวอย่าง"}
 MEMBER = {"entity_type": "promotion", "entity_id": ID, "expected_revision": 1, "expected_published_version_id": None}

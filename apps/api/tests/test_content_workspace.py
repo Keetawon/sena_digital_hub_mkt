@@ -118,6 +118,8 @@ def test_workspace_tree_page_and_faq_gets_are_read_only_and_bounded(permission_a
         f"/v1/admin/content/workspace/project/{p['public_project_id']}",
         f"/v1/admin/content/workspace/project/{p['public_project_id']}/faq",
         f"/v1/admin/content/workspace/project/{p['public_project_id']}/history",
+        f"/v1/admin/content/workspace/project/{p['public_project_id']}/promotions?limit=1",
+        f"/v1/admin/content/workspace/project/{p['public_project_id']}/promotions/suggestions?limit=1",
     ]
     for path in paths:
         response = client.get(path, headers=h('viewer'))
@@ -132,7 +134,7 @@ def test_workspace_tree_page_and_faq_gets_are_read_only_and_bounded(permission_a
     assert all(item['kind'] == 'programme' for item in roots['programmes'])
     searched = client.get('/v1/admin/content/workspace/tree', params={'q': p['public_project_id']}, headers=h('viewer')).json()['data']
     assert any(item['ref'] == p['public_project_id'] for item in searched['items'])
-    assert page['tabs'] == ['overview', 'data', 'unit-types', 'media', 'faq', 'history']
+    assert page['tabs'] == ['overview', 'data', 'unit-types', 'promotions', 'media', 'faq', 'history']
     for entry in page['overview']['readiness']['required'] + page['overview']['readiness']['recommended']:
         assert entry['target']['field'] if entry['target']['tab'] != 'media' else entry['target']['media_slot']['rule_key']
     assert client.get('/v1/admin/content/workspace/tree?limit=101', headers=h('viewer')).status_code == 422

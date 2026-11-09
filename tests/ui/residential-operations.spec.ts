@@ -24,10 +24,14 @@ async function fixture(page: Page, role = 'editor') {
     { entity_type: 'promotion', entity_id: promotionId, public_id: promotion.code, title: promotion.title, expected_updated_at: null, expected_revision: 4, expected_published_version_id: null, demo_fields: ['title.th'], readiness: { ready: false, missing: [{ field: 'project', message: 'โครงการยังไม่เผยแพร่' }] } },
   ];
   const releases: Row[] = [];
+  promotion.scope = { scope_hash: 'a'.repeat(64), count: 1, items: [{ id: projectId, public_id: promotion.public_project_id, label: { th: 'Synthetic project' } }] };
+  promotion.excluded_project_ids = [];
   await page.route(`**${api}/**`, async route => {
     const path = new URL(route.request().url()).pathname.slice(api.length + 1);
     if (path === 'projects') return route.fulfill({ json: { data: [{ id: projectId, public_project_id: 'SYNTH-HYABC', public_name: { th: 'โครงการตัวอย่าง' } }] } });
     if (!/^(promotions|releases)(\/|$)/.test(path)) return route.continue();
+    if (path === 'promotions/references') return route.fulfill({ json: { data: { projects: promotion.scope.items, brands: [], commercial_types: [] } } });
+    if (path === 'promotions/resolve') return route.fulfill({ json: { data: promotion.scope } });
     const method = route.request().method();
     if (method !== 'GET') {
       const body = route.request().postDataJSON(); posts.push({ path, method, body });
@@ -37,6 +41,7 @@ async function fixture(page: Page, role = 'editor') {
         return route.fulfill({ json: { data: promotion } });
       }
       if (path.endsWith('/review')) {
+        if (body.decision === 'APPROVED') expect(body.expected_scope_hash).toBe(promotion.scope.scope_hash);
         promotion.reviews.push({ review_type: body.review_type, review_revision: body.review_revision ?? body.expected_revision, decision: body.decision, evidence: body.evidence, reviewed_at: '2026-10-01T06:00:00Z', reviewed_by: 'synthetic-publisher' });
         promotion.readiness = { ready: true, missing: [] }; return route.fulfill({ json: { data: promotion } });
       }

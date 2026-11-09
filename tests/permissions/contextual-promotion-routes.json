@@ -1,0 +1,32 @@
+{
+  "phase": "Unified workspace W3.2",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/workspace/{kind}/{ref}/promotions",
+      "tab": "promotions",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_workspace.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/workspace/{kind}/{ref}/promotions/suggestions",
+      "tab": "promotions",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_workspace.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/promotions/resolve",
+      "tab": "promotions",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/promotions.py"
+    }
+  ]
+}

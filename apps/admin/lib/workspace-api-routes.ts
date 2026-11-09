@@ -22,6 +22,10 @@ function route(path: string, method: string) {
   if (!kinds.has(parts[0]) || !reference.test(parts[1] ?? "")) return null;
   if (parts.length === 2) return "page";
   if (parts.length === 3 && ["faq", "preview", "history"].includes(parts[2])) return parts[2];
+  if (["project", "brand"].includes(parts[0]) && parts[2] === "promotions") {
+    if (parts.length === 3) return "promotions";
+    if (parts.length === 4 && parts[3] === "suggestions") return "promotion_suggestions";
+  }
   if (parts.length === 4 && parts[2] === "history" && validCursor(parts[3])) return "event";
   return null;
 }
@@ -39,6 +43,8 @@ export function workspaceAllowsQuery(path: string, method: string, query: URLSea
     case "resolve": filters = { faq: uuid, cluster: uuid, phase: reference }; break;
     case "page": filters = { phase: reference }; break;
     case "faq": filters = { phase: reference, q: boundedText(200), after: boundedText(120), limit: count, locale: /^(?:th|en)$/, question_key: /^[a-z][a-z0-9_]{1,100}$/ }; break;
+    case "promotions": filters = { phase: reference, filter: /^(?:all|active|in_review|draft|expired|ending_soon|banner_missing)$/, limit: count, offset: /^(?:\d{1,5}|100000)$/, item: uuid }; break;
+    case "promotion_suggestions": filters = { phase: reference, limit: count, offset: /^(?:\d{1,5}|100000)$/, item: uuid, source: /^(?:website|km)$/ }; break;
     case "preview": filters = { phase: reference, locale: /^(?:th|en)$/ }; break;
     case "history": filters = { before: cursor, limit: count }; break;
     case "activity": filters = { actor_id: uuid, project: reference, rem_bu_id: reference, date_from: date, date_to: date, before: cursor, limit: count }; break;
@@ -49,6 +55,7 @@ export function workspaceAllowsQuery(path: string, method: string, query: URLSea
   if (selected === "tree" && query.has("parent_kind") !== query.has("parent_ref")) return false;
   if (selected === "resolve" && query.has("faq") === query.has("cluster")) return false;
   if (selected === "faq" && query.has("question_key") && (query.has("q") || query.has("after"))) return false;
+  if (["promotions", "promotion_suggestions"].includes(selected) && path.startsWith(`${base}/brand/`) && query.has("phase")) return false;
   for (const key of ["date_from", "date_to"]) if (query.has(key) && !Number.isFinite(Date.parse(query.get(key)!))) return false;
   if (query.has("date_from") && query.has("date_to") && Date.parse(query.get("date_from")!) > Date.parse(query.get("date_to")!)) return false;
   return true;

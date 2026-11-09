@@ -46,14 +46,18 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState;
-    const workspaceRows=async()=>{
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState,promotionState;
+    const workspaceRows=async(normalizePromotions=false)=>{
       const tables=(await db.query("select schemaname,tablename from pg_tables where schemaname in ('hub','staging','audit') order by schemaname,tablename")).rows;
       const result=[];
       for(const table of tables){
         const quote=value=>'"'+value.replaceAll('"','""')+'"';
         const relation=quote(table.schemaname)+'.'+quote(table.tablename);
-        const row=(await db.query(`select count(*)::integer count,md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text),'')) digest from ${relation} t`)).rows[0];
+        const removed=normalizePromotions&&table.schemaname==='hub' ? {
+          public_promotions:"-array['owning_brand_id','excluded_project_ids']",promotion_reviews:"-'resolved_project_ids'"
+        }[table.tablename]??'' : '';
+        const value=`(to_jsonb(t)${removed})::text`;
+        const row=(await db.query(`select count(*)::integer count,md5(coalesce(string_agg(${value},E'\\n' order by ${value}),'')) digest from ${relation} t`)).rows[0];
         result.push({relation,...row});
       }
       return result;
@@ -71,6 +75,11 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id','website_source'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
+      if(name==='202611060087_contextual_promotions.sql'){
+        promotionState=await workspaceRows(true);
+        for(const table of ['public_promotions','promotion_reviews','promotion_versions'])
+          assert.ok(promotionState.find(row=>row.relation==='"hub"."'+table+'"')?.count>0,'Populated W3.2 preservation fixture: '+table);
+      }
       if(name==='202611060086_workspace_summary_exposure.sql'){
         workspaceState=await workspaceRows();
         for(const table of ['content_section_versions','faq_versions','assets','user_account','account_permission'])
@@ -106,6 +115,25 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       }
       phase7State=await beforePhase7(db,name,phase7State);
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(name==='202610220070_real_promotions.sql'){
+        const actor='00000000-0000-0000-0000-000000000001';
+        const reviewer='00000000-0000-0000-0000-000000000002';
+        await db.query("select set_config('app.actor_id',$1,false)",[actor]);
+        const project=(await db.query('select id,public_project_id from hub.projects order by id limit 1')).rows[0];
+        const promotion=(await db.query(`insert into hub.public_promotions(project_id,code,benefit_type,starts_at,ends_at,created_by,updated_by)
+          values($1,'SYNTHETIC-W32-UPGRADE','other',now()-interval '1 day',now()+interval '30 days',$2,$2) returning id`,[project.id,actor])).rows[0].id;
+        await db.query(`insert into hub.promotion_reviews(promotion_id,review_revision,review_type,decision,evidence,change_reason,reviewed_by)
+          select $1,1,lane,'APPROVED','Existing synthetic evidence','Existing synthetic reason',$2 from unnest(array['DATA','LEGAL']) lane`,[promotion,reviewer]);
+        const version=(await db.query(`insert into hub.promotion_versions(promotion_id,version_no,draft_revision,payload,published_by,change_reason)
+          values($1,1,1,jsonb_build_object('public_project_id',$2::text,'target_project_ids',jsonb_build_array($2::text),'title',jsonb_build_object('en','Existing campaign')),$3,'Existing synthetic publication') returning id`,[promotion,project.public_project_id,reviewer])).rows[0].id;
+        await db.query('update hub.public_promotions set published_version_id=$1 where id=$2',[version,promotion]);
+        await db.query("select set_config('app.actor_id','',false)");
+      }
+      if(name==='202611060087_contextual_promotions.sql'){
+        assert.deepEqual(await workspaceRows(true),promotionState,'W3.2 must preserve all pre-existing values and histories');
+        assert.equal(Number((await db.query('select count(*) from hub.promotion_reviews where resolved_project_ids is not null')).rows[0].count),0);
+        assert.equal(Number((await db.query("select count(*) from hub.public_promotions where owning_brand_id is not null or excluded_project_ids<>'{}'")).rows[0].count),0);
+      }
       if(name==='202611060086_workspace_summary_exposure.sql')
         assert.deepEqual(await workspaceRows(),workspaceState,'W3.1 must preserve every Hub, staging and audit row exactly');
       if(name==='202610270078_website_content_suggestions.sql') {

@@ -67,10 +67,10 @@ test('SQL scanner preserves quoted bodies and strips only the outer transaction'
   for (const bad of ['begin; create table a(x int);', 'begin; commit; commit;', 'begin; rollback; commit;', 'create table a(x int);', "begin; select 'unterminated; commit;"]) assert.throws(() => migrationBody(bad));
 });
 
-test('all 86 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
+test('all 87 canonical migrations and explicit variant parse and foreign/modified/gapped history fails', async () => {
   const migrations = await loadMigrations();
-  assert.equal(migrations.length,86);
-  assert.equal(migrations.at(-1).name,'202611060086_workspace_summary_exposure.sql');
+  assert.equal(migrations.length,87);
+  assert.equal(migrations.at(-1).name,'202611060087_contextual_promotions.sql');
   assert.notEqual(migrations[13].checksum,migrations[13].executedChecksum);
   assert.equal(migrations.filter(m=>m.checksum!==m.executedChecksum).length,1);
   const rows = migrations.map(m => ({ name: m.name, checksum:m.checksum,executed_checksum:m.executedChecksum,project_ref:ref,source:'sena-hub-supabase-test-v2',profile:'hosted-test-settings-v1',environment:'hosted-test' }));

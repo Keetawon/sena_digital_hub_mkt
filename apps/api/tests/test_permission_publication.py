@@ -62,7 +62,8 @@ def test_publication_routes_have_complete_mapping(permission_accounts):
               and route.path.startswith(prefixes) for method in route.methods}
     assert actual == {key for key in CONTENT_RULES if key[1].startswith(prefixes)}
     assert ('GET', '/v1/admin/promotions/references') in actual
-    assert len(actual) == 21
+    assert ('POST', '/v1/admin/promotions/resolve') in actual
+    assert len(actual) == 22
 
 
 @pytest.mark.parametrize('tab,table,rpc', [
@@ -194,6 +195,7 @@ def test_mixed_release_publish_and_rollback_require_every_member_view(permission
             await db.execute("select set_config('app.actor_id',$1,true)", str(ids['publisher']))
             for kind in ('DATA', 'LEGAL'):
                 await db.fetchval("""select hub.promotion_command('review',$1,jsonb_build_object('expected_revision',1,
+                    'expected_scope_hash',hub.promotion_read($1)#>>'{scope,scope_hash}',
                     'review_type',$2::text,'decision','APPROVED','evidence','Synthetic','change_reason','Synthetic'))""", UUID(promotion['id']), kind)
             candidates = json.loads(await db.fetchval('select hub.release_candidates(false)'))['items']
             selected = {str(project), promotion['id'], await db.fetchval("select current_setting('test.residential_brand')")}

@@ -60,6 +60,7 @@ values('71000000-0000-0000-0000-000000000004','71000000-0000-0000-0000-000000000
 select set_config('app.actor_id',current_setting('app.h1_reviewer'),true);
 set local role publisher;
 select hub.promotion_command('review','71000000-0000-0000-0000-000000000004',jsonb_build_object('expected_revision',1,'review_revision',1,'review_type',kind,'decision','APPROVED',
+ 'expected_scope_hash',hub.promotion_read('71000000-0000-0000-0000-000000000004')#>>'{scope,scope_hash}',
  'evidence','SYNTHETIC-HOSTED-H1-v1: simulation review only','change_reason','ข้อมูลตัวอย่าง ไม่ใช่การอนุมัติจริง'))
 from unnest(array['DATA','LEGAL']) kind;
 reset role;

@@ -63,3 +63,12 @@ Suggestion decisions resolve the active field's default exposure server-side,
 and broader forged values are rejected. The owner decision and permission card
 are recorded in docs/47 section 4.5 and docs/48 W3.1.
 The historical fixture JSON files above remain unchanged.
+
+W3.2 adds `contextual-promotion-routes.json`: two contextual read projections
+and one read-only POST scope resolver. All require Promotions View; SQL also
+requires the actual Projects/Brands source View, plus Knowledge View for KM
+suggestions. The three application functions and seven private helpers are
+listed in the DB baseline inventory. No new permission bit or default grant.
+New approval evidence captures the displayed resolved project IDs/hash;
+publication checks current resolution while existing live versions keep their
+frozen scope. Existing DATA/LEGAL and editor/approver separation remain.

@@ -39,6 +39,30 @@ test('workspace query bounds preserve exact filters and reject unknown or ambigu
   expect(check(`${root}/project/prj_example/history/1`, 'phase=0001')).toBe(false);
 });
 
+test('contextual Promotions transport preserves the exact local and H1 boundary', () => {
+  const resolve = 'v1/admin/promotions/resolve';
+  expect(contentAllowsApi(resolve, 'POST')).toBe(true);
+  expect(h1AllowsApi(resolve, 'POST')).toBe(true);
+  for (const method of ['GET', 'PUT', 'PATCH', 'DELETE']) expect(contentAllowsApi(resolve, method)).toBe(false);
+  expect(contentAllowsQuery(resolve, 'POST', new URLSearchParams('unexpected=1'))).toBe(false);
+  for (const kind of ['project', 'brand']) for (const suffix of ['promotions', 'promotions/suggestions']) {
+    const path = `${root}/${kind}/example/${suffix}`;
+    expect(contentAllowsApi(path, 'GET')).toBe(true);
+    expect(h1AllowsApi(path, 'GET')).toBe(true);
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) expect(contentAllowsApi(path, method)).toBe(false);
+    const query = suffix.endsWith('suggestions') ? `item=${id}&source=website&limit=50&offset=0` : 'filter=ending_soon&limit=50&offset=0';
+    expect(contentAllowsQuery(path, 'GET', new URLSearchParams(query))).toBe(true);
+    for (const invalid of ['limit=101', 'offset=-1', 'source=secret', 'phase=a&phase=b', 'item=no', 'unknown=1'])
+      expect(contentAllowsQuery(path, 'GET', new URLSearchParams(invalid)), `${path}?${invalid}`).toBe(false);
+    expect(contentAllowsQuery(path, 'GET', new URLSearchParams('phase=0001'))).toBe(kind === 'project');
+  }
+  for (const path of [`${root}/corporate/sena/promotions`, `${root}/project/example/promotions/extra`, `${resolve}/extra`]) {
+    expect(contentAllowsApi(path, 'GET')).toBe(false);
+    expect(contentAllowsApi(path, 'POST')).toBe(false);
+    expect(h1AllowsApi(path, 'GET'), path).toBe(false);
+  }
+});
+
 test('login return paths preserve entity context without admitting foreign or nested destinations', () => {
   for (const path of ['/website', '/settings?section=bank&question=project_intro', '/settings/activity', '/website/project/prj_example?tab=faq&phase=0001&question=project_intro#answer']) expect(safeNext(path)).toBe(path);
   for (const path of ['//example.test/website', '/website/project/a/extra', '/website/unknown/a', '/website/project/%2Foutside', '/website/project/%5Coutside', '/website/project/%00', '/website/project/%', '/website/project/' + 'x'.repeat(201)]) expect(safeNext(path)).toBe('/');

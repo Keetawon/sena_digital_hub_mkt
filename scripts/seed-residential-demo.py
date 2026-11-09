@@ -181,6 +181,7 @@ async def seed(db) -> dict:
         for review in ("DATA", "LEGAL"):
             await db.fetchval("SELECT hub.promotion_command('review',$1,$2)", promotion_id, {
                 "expected_revision": 1, "review_revision": 1, "review_type": review,
+                "expected_scope_hash": result["scope"]["scope_hash"],
                 "decision": "APPROVED", "evidence": EVIDENCE, "change_reason": EVIDENCE,
             })
         await role(db, "none")

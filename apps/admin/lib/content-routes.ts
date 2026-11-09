@@ -14,6 +14,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (path === "v1/admin/promotions/resolve") return method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
   if (workspaceAllowsApi(path, method) || amenityAllowsApi(path, method)) return true;
   return (routes[method]?.test(path) ?? false) || mediaAllowsApi(path, method) || unitAllowsApi(path, method) || commercialAllowsApi(path, method) || faqCoverageAllowsApi(path, method) || articleAllowsApi(path, method) || webAllowsApi(path, method);

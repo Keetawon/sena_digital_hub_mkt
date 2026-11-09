@@ -319,6 +319,27 @@ extend this card and the permission inventories. Migration allocation stays
 with the lead and must follow committed dependencies without renumbering a
 committed migration.
 
+Implementation refinement, 6 November 2026: migration 0087 keeps the existing
+globally unique promotion code. Add nullable owning_brand_id, bounded explicit
+excluded_project_ids, and nullable resolved_project_ids on review evidence.
+Existing reviews retain their stored interpretation and existing published
+payloads are not rewritten. New approvals capture the resolved projects and
+check the resolution hash shown to the reviewer; a later membership change
+requires new DATA/LEGAL evidence before a new publication. Already published
+versions continue using their frozen scope. Revoking an old review retains its
+existing command and does not require the current draft's resolution hash.
+
+The contextual tab opens the existing standalone editor through ordinary links.
+Only source identities travel in suggestion links; the editor reads the bounded
+suggestion projection again. This projection exposes only promotion text and
+source-page/capture/flag evidence under Promotions V plus the page source V,
+and Knowledge V for KM text. It does not expose raw candidate files, filesystem
+locations or general intake evidence; those existing Admin-only routes remain
+closed to other accounts. The verified older KM promotion evidence has no capture
+timestamp, so show unknown rather than its import, OCR validity or review date.
+Creating from a suggestion records its validated identity in the ordinary audit
+reason. No candidate acceptance or new logging table is introduced.
+
 ## 5. Lifecycle and governance (N1, N2, N6)
 
 States for every content kind that reaches the website:
@@ -637,6 +658,37 @@ editors retain their existing copy unless a label above supersedes it.
 | promotion_transfer_window | ช่วงโอน |
 | promotion_banner_rights | สิทธิ์ภาพแบนเนอร์ |
 | promotion_audience | กลุ่มผู้รับสิทธิ์ |
+| promotion_scope_changed | ขอบเขตโครงการเปลี่ยนแล้ว กรุณาตรวจรายชื่อโครงการอีกครั้ง |
+| promotion_scope_empty | กรุณาเลือกอย่างน้อยหนึ่งโครงการที่ใช้โปรโมชั่นนี้ |
+| promotion_scope_unavailable | ขอบเขตโครงการยังไม่พร้อมเผยแพร่ |
+| promotion_capture_unknown | ไม่ทราบวันที่เก็บข้อมูล |
+| promotion_withdrawn | ถอนการเผยแพร่แล้ว |
+| promotion_unavailable | งดแสดงบนเว็บไซต์ |
+| promotion_owner | ระดับของโปรโมชั่น |
+| promotion_owner_project | โครงการ |
+| promotion_owner_brand | แบรนด์ |
+| promotion_draft_scope | ขอบเขตฉบับร่าง |
+| promotion_published_scope | ขอบเขตที่เผยแพร่ |
+| promotion_scope_refresh | ตรวจขอบเขตโครงการ |
+| promotion_open_editor | เปิดตัวแก้ไขโปรโมชั่น |
+| promotion_context_return | กลับไปยังหน้าต้นทาง |
+| promotion_no_items | ยังไม่มีโปรโมชั่นสำหรับหน้านี้ |
+| promotion_banner_missing | ยังไม่มีภาพแบนเนอร์ |
+| promotion_banner_approved | อนุมัติสิทธิ์แล้ว |
+| promotion_banner_unapproved | ยังไม่ได้อนุมัติสิทธิ์ |
+| promotion_review_data | ตรวจข้อมูล |
+| promotion_review_legal | ตรวจกฎหมาย |
+| promotion_review_approved | ตรวจผ่าน |
+| promotion_review_revoked | ถอนผลการตรวจ |
+| promotion_review_waiting | ยังไม่ตรวจผ่าน |
+| promotion_read_only | บัญชีนี้อ่านข้อมูลได้ แต่สร้างร่างไม่ได้ |
+| promotion_access_denied | บัญชีนี้ไม่มีสิทธิ์ดูโปรโมชั่นและข้อมูลต้นทาง |
+
+| promotion_audience_general | ลูกค้าทั่วไป |
+
+| promotion_audience_investor | ผู้ลงทุน |
+
+| promotion_audience_livnex | LivNex |
 
 W9 upload copy (owner decision, 6 November 2026):
 

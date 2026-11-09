@@ -126,9 +126,9 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;bad jsonb;
  foreach bad in array array[null::jsonb,'null'::jsonb,'{}'::jsonb,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":""}'::jsonb] loop
  begin perform pg_temp.w4_promotion('publish',p,bad);assert false,'Malformed publish accepted';exception when invalid_parameter_value or check_violation or not_null_violation or serialization_failure then null;end;
  end loop;
- perform hub.promotion_command('review',p,'{"expected_revision":1,"review_type":"DATA","decision":"APPROVED","evidence":"Synthetic data evidence","change_reason":"Test review"}');
+ perform hub.promotion_command('review',p,('{"expected_revision":1,"review_type":"DATA","decision":"APPROVED","evidence":"Synthetic data evidence","change_reason":"Test review"}')::jsonb||jsonb_build_object('expected_scope_hash',hub.promotion_read(p)#>>'{scope,scope_hash}'));
  begin perform pg_temp.w4_promotion('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Legal missing"}');assert false,'Missing legal approval published';exception when check_violation then null;end;
- perform hub.promotion_command('review',p,'{"expected_revision":1,"review_type":"LEGAL","decision":"APPROVED","evidence":"Synthetic legal evidence","change_reason":"Test review"}');
+ perform hub.promotion_command('review',p,('{"expected_revision":1,"review_type":"LEGAL","decision":"APPROVED","evidence":"Synthetic legal evidence","change_reason":"Test review"}')::jsonb||jsonb_build_object('expected_scope_hash',hub.promotion_read(p)#>>'{scope,scope_hash}'));
  perform pg_temp.w4_promotion('publish',p,'{"expected_revision":1,"expected_published_version_id":null,"change_reason":"Initial test publication"}');
  perform set_config('test.residential_first_version',hub.promotion_read(p)->>'published_version_id',true);
  perform set_config('test.residential_code',hub.promotion_read(p)->>'code',true);
@@ -187,7 +187,7 @@ set local role publisher;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000002',true);
 do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;members jsonb;before_count integer;partial jsonb;begin
  foreach kind in array array['DATA','LEGAL'] loop
- perform hub.promotion_command('review',p,jsonb_build_object('expected_revision',2,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'));
+ perform hub.promotion_command('review',p,(jsonb_build_object('expected_revision',2,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'))::jsonb||jsonb_build_object('expected_scope_hash',hub.promotion_read(p)#>>'{scope,scope_hash}'));
  end loop;
  perform pg_temp.w4_approve_entity('project',current_setting('test.residential_project')::uuid);
  select jsonb_agg(jsonb_build_object('entity_type',e->'entity_type','entity_id',e->'entity_id','expected_updated_at',e->'expected_updated_at','expected_revision',e->'expected_revision','expected_published_version_id',e->'expected_published_version_id')) into members from jsonb_array_elements(hub.release_candidates(false)->'items') e
@@ -206,7 +206,7 @@ do $$ declare p uuid:=current_setting('test.residential_promo')::uuid;kind text;
  assert(hub.release_read()->>'total')::integer=before_count+1,'Partial publication history missing';
  perform pg_temp.w4_release_rollback((partial->>'id')::uuid,'Restore allowed neighbors before the complete-set test');
  foreach kind in array array['DATA','LEGAL'] loop
- perform hub.promotion_command('review',current_setting('test.residential_second')::uuid,jsonb_build_object('expected_revision',1,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'));
+ perform hub.promotion_command('review',current_setting('test.residential_second')::uuid,(jsonb_build_object('expected_revision',1,'review_type',kind,'decision','APPROVED','evidence','Synthetic evidence','change_reason','Test review'))::jsonb||jsonb_build_object('expected_scope_hash',hub.promotion_read(current_setting('test.residential_second')::uuid)#>>'{scope,scope_hash}'));
  end loop;
  select jsonb_agg(jsonb_build_object('entity_type',e->'entity_type','entity_id',e->'entity_id','expected_updated_at',e->'expected_updated_at','expected_revision',e->'expected_revision','expected_published_version_id',e->'expected_published_version_id')) into members from jsonb_array_elements(hub.release_candidates(false)->'items') e
  where(e->>'entity_type'='promotion' and e->>'entity_id' in(current_setting('test.residential_promo'),current_setting('test.residential_second')))

@@ -67,6 +67,7 @@ try {
     await setup.query("select set_config('app.actor_id',$1,true)",[actors.reviewer]);
     for (const review_type of ['DATA', 'LEGAL']) await rpc(setup, 'review', promotion.id, {
       expected_revision: 1, review_type, decision: 'APPROVED', evidence: key, change_reason: key,
+      expected_scope_hash: promotion.scope.scope_hash,
     });
     await setup.query("select set_config('app.actor_id',$1,true)",[actors.publisher]);
     await rpc(setup, 'publish', promotion.id, { expected_revision: 1, expected_published_version_id: null, change_reason: key });

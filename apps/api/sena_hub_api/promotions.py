@@ -45,9 +45,23 @@ class PromotionTarget(Input):
     id: UUID
 
 
-class DraftFields(Input):
-    audience: Literal["general", "investor", "livnex"] = "general"
+class PromotionScope(Input):
+    project_id: UUID | None = None
+    owning_brand_id: UUID | None = None
     targets: list[PromotionTarget] = Field(default_factory=list, max_length=100)
+    excluded_project_ids: list[UUID] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def exact_owner(self):
+        if (self.project_id is None) == (self.owning_brand_id is None):
+            raise ValueError("Exactly one promotion owner is required")
+        if len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
+            raise ValueError("Excluded projects must be distinct")
+        return self
+
+
+class DraftFields(PromotionScope):
+    audience: Literal["general", "investor", "livnex"] = "general"
     booking_from: date | None = None
     booking_to: date | None = None
     transfer_from: date | None = None
@@ -75,9 +89,17 @@ class DraftFields(Input):
         return self
 
 
+class PromotionSuggestion(Input):
+    kind: Literal['project', 'brand']
+    ref: Annotated[str, StringConstraints(strict=True, min_length=1, max_length=200, pattern=r'^[^\x00-\x1f/\\]+$')]
+    phase: SourceId | None = None
+    candidate_id: UUID
+    source: Literal['website', 'km']
+
+
 class CreatePromotion(DraftFields):
     synthetic: Annotated[bool, Field(strict=True)] = True
-    project_id: UUID
+    suggestion: PromotionSuggestion | None = None
     code: Annotated[str, StringConstraints(strict=True, pattern=r"^[A-Z0-9][A-Z0-9_-]{0,79}$")]
 
 
@@ -85,6 +107,7 @@ class PatchPromotion(Input):
     expected_revision: Revision
     audience: Literal["general", "investor", "livnex"] | None = None
     targets: list[PromotionTarget] | None = Field(default=None, max_length=100)
+    excluded_project_ids: list[UUID] | None = Field(default=None, max_length=100)
     booking_from: date | None = None
     booking_to: date | None = None
     transfer_from: date | None = None
@@ -106,6 +129,8 @@ class PatchPromotion(Input):
     @model_validator(mode="after")
     def explicit_change(self):
         changed = self.model_fields_set - {"expected_revision"}
+        if self.excluded_project_ids and len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
+            raise ValueError("Excluded projects must be distinct")
         nullable = {"benefit_value", "benefit_unit", "source_offer_key", "booking_from", "booking_to", "transfer_from", "transfer_to"}
         if not changed or any(getattr(self, key) is None for key in changed - nullable):
             raise ValueError("ระบุฟิลด์ที่ต้องการแก้ไข ข้อความว่างให้ใช้แผนที่ภาษาแทน null")
@@ -121,11 +146,14 @@ class ReviewPromotion(Input):
     review_revision: Revision | None = None
     review_type: Literal["DATA", "LEGAL"]
     decision: Literal["APPROVED", "REVOKED"]
+    expected_scope_hash: Annotated[str, StringConstraints(strict=True, pattern=r"^[0-9a-f]{64}$")] | None = None
     evidence: Annotated[str, StringConstraints(strict=True, min_length=1, max_length=4000), AfterValidator(nonblank)]
     change_reason: Reason
 
     @model_validator(mode="after")
     def current_approval(self):
+        if self.decision == "APPROVED" and self.expected_scope_hash is None:
+            raise ValueError("The displayed project scope is required for approval")
         if self.decision == "APPROVED" and self.review_revision not in (None, self.expected_revision):
             raise ValueError("อนุมัติได้เฉพาะฉบับร่างปัจจุบัน")
         return self
@@ -209,6 +237,11 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
     async def promotion_references(request: Request, actor: Actor = Depends(admin)):
         query(request)
         return await rpc(request, actor, "SELECT hub.promotion_references()::text")
+
+    @app.post(prefix + "/promotions/resolve")
+    async def promotion_resolve(body: PromotionScope, request: Request, actor: Actor = Depends(admin)):
+        query(request)
+        return await rpc(request, actor, "SELECT hub.promotion_resolve($1::jsonb)::text", body.model_dump(mode="json"))
 
     @app.get(prefix + "/promotions")
     async def promotion_list(request: Request, filters: Annotated[PromotionFilters, Query()], actor: Actor = Depends(admin)):

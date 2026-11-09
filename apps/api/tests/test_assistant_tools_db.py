@@ -110,6 +110,7 @@ def test_all_thirteen_readers_real_rls_exact_evidence_and_domain_boundaries():
                 for review in ("DATA", "LEGAL"):
                     await rpc("SELECT hub.promotion_command('review',$1,$2::jsonb)", UUID(promo["id"]), {
                         "expected_revision": 1, "review_revision": 1, "review_type": review,
+                        "expected_scope_hash": promo["scope"]["scope_hash"],
                         "decision": "APPROVED", "evidence": marker, "change_reason": marker}, role="publisher")
                 await rpc("SELECT hub.promotion_command('publish',$1,$2::jsonb)", UUID(promo["id"]), {
                     "expected_revision": 1, "expected_published_version_id": None, "change_reason": marker}, role="viewer")

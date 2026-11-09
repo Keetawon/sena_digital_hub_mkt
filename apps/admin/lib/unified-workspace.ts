@@ -1,5 +1,64 @@
 // Labels are copied from docs/47 and existing editor UI, never translated here.
 export const workspaceText = {
+  "promotion_review_data": "ตรวจข้อมูล",
+  "promotion_review_legal": "ตรวจกฎหมาย",
+  "promotion_review_approved": "ตรวจผ่าน",
+  "promotion_review_revoked": "ถอนผลการตรวจ",
+  "promotion_review_waiting": "ยังไม่ตรวจผ่าน",
+  "promotion_read_only": "บัญชีนี้อ่านข้อมูลได้ แต่สร้างร่างไม่ได้",
+  "promotion_access_denied": "บัญชีนี้ไม่มีสิทธิ์ดูโปรโมชั่นและข้อมูลต้นทาง",
+  "promotion_tab": "โปรโมชั่น",
+  "promotion_active": "กำลังใช้งาน",
+  "promotion_review": "รอตรวจข้อมูลหรือกฎหมาย",
+  "promotion_draft": "ร่าง",
+  "promotion_expired": "หมดอายุแล้ว",
+  "promotion_scheduled": "ยังไม่เริ่มใช้สิทธิ์",
+  "promotion_this_project": "เฉพาะโครงการนี้",
+  "promotion_from_brand": "จากแบรนด์ {brand}",
+  "promotion_shared": "ใช้ร่วมกับ {count} โครงการ",
+  "promotion_exclude_project": "ไม่ใช้กับโครงการนี้",
+  "promotion_create_project": "สร้างโปรโมชั่นสำหรับโครงการนี้",
+  "promotion_create_brand": "สร้างโปรโมชั่นสำหรับแบรนด์นี้",
+  "promotion_shared_edit": "การแก้ไขนี้มีผลกับ {count} โครงการ",
+  "promotion_create_suggestion": "สร้างจากข้อเสนอนี้",
+  "promotion_suggestion_source": "ข้อเสนอจากเว็บเดิม",
+  "promotion_source_page": "ดูหน้าอ้างอิง",
+  "promotion_captured_at": "วันที่เก็บข้อมูล",
+  "promotion_likely_expired": "น่าจะหมดอายุแล้ว",
+  "promotion_undated": "ไม่ระบุวันที่",
+  "promotion_not_offer": "ไม่ใช่โปรโมชั่น",
+  "promotion_confirm_numbers": "กรุณากรอกวันที่ จำนวนเงิน ราคา และช่วงใช้สิทธิ์ที่ยืนยันแล้วด้วยตนเอง",
+  "promotion_ending_seven_days": "โปรโมชั่นที่จะสิ้นสุดภายใน 7 วัน",
+  "promotion_missing_banner_rights": "โปรโมชั่นที่กำลังใช้งานแต่ยังไม่มีภาพแบนเนอร์ที่อนุมัติสิทธิ์แล้ว",
+  "promotion_invalid_starting_price": "ราคาเริ่มต้นอ้างอิงโปรโมชั่นที่หมดอายุหรือถอนแล้ว",
+  "promotion_resolved_projects": "โครงการที่ใช้โปรโมชั่นนี้",
+  "promotion_excluded_projects": "โครงการที่ไม่ใช้โปรโมชั่นนี้",
+  "promotion_scope_pending": "ขอบเขตฉบับร่างยังไม่เปลี่ยนข้อมูลบนเว็บไซต์",
+  "promotion_booking_window": "ช่วงจอง",
+  "promotion_transfer_window": "ช่วงโอน",
+  "promotion_banner_rights": "สิทธิ์ภาพแบนเนอร์",
+  "promotion_audience": "กลุ่มผู้รับสิทธิ์",
+  "promotion_scope_changed": "ขอบเขตโครงการเปลี่ยนแล้ว กรุณาตรวจรายชื่อโครงการอีกครั้ง",
+  "promotion_scope_empty": "กรุณาเลือกอย่างน้อยหนึ่งโครงการที่ใช้โปรโมชั่นนี้",
+  "promotion_scope_unavailable": "ขอบเขตโครงการยังไม่พร้อมเผยแพร่",
+  "promotion_capture_unknown": "ไม่ทราบวันที่เก็บข้อมูล",
+  "promotion_withdrawn": "ถอนการเผยแพร่แล้ว",
+  "promotion_unavailable": "งดแสดงบนเว็บไซต์",
+  "promotion_owner": "ระดับของโปรโมชั่น",
+  "promotion_owner_project": "โครงการ",
+  "promotion_owner_brand": "แบรนด์",
+  "promotion_draft_scope": "ขอบเขตฉบับร่าง",
+  "promotion_published_scope": "ขอบเขตที่เผยแพร่",
+  "promotion_scope_refresh": "ตรวจขอบเขตโครงการ",
+  "promotion_open_editor": "เปิดตัวแก้ไขโปรโมชั่น",
+  "promotion_context_return": "กลับไปยังหน้าต้นทาง",
+  "promotion_no_items": "ยังไม่มีโปรโมชั่นสำหรับหน้านี้",
+  "promotion_banner_missing": "ยังไม่มีภาพแบนเนอร์",
+  "promotion_banner_approved": "อนุมัติสิทธิ์แล้ว",
+  "promotion_banner_unapproved": "ยังไม่ได้อนุมัติสิทธิ์",
+  "promotion_audience_general": "ลูกค้าทั่วไป",
+  "promotion_audience_investor": "ผู้ลงทุน",
+  "promotion_audience_livnex": "LivNex",
   "exposure_source": "ตามนโยบายของเนื้อหา",
   "exposure_draft_notice": "บันทึกเป็นร่าง ต้องผ่านการอนุมัติและเผยแพร่ก่อนเปลี่ยนข้อมูลบนเว็บไซต์หรือใน AI",
   "section_commercial": "กฎหมายและการขาย",
@@ -113,7 +172,7 @@ export const workspaceText = {
   "assistant_disabled": "ผู้ช่วยยังไม่เปิดใช้งาน",
   "load_error": "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่"
 } as const;
-export const workspaceTabs = ["overview", "data", "unit-types", "media", "faq", "history"] as const;
+export const workspaceTabs = ["overview", "data", "unit-types", "promotions", "media", "faq", "history"] as const;
 export type WorkspaceTab = (typeof workspaceTabs)[number];
 export type WorkspaceLevel = "corporate" | "business" | "brand" | "project" | "programme" | "project_group" | "unit_type";
 export type LocalizedName = { th?: string; en?: string };
@@ -129,11 +188,11 @@ export type WorkspaceEntity = {
   phases: { rem_project_id: string; public_project_id: string; name: LocalizedName }[];
   selected_phase: string | null; tabs: WorkspaceTab[];
   sections: { ai_exposure?: "open" | "web_only" | "internal" | null; key: string; label?: LocalizedName | string; tab: WorkspaceTab; state: string; revision: number; target: WorkspaceTarget; suggestion_count: number }[];
-  overview: { readiness: { required: WorkspaceItem[]; recommended: WorkspaceItem[] }; tasks: WorkspaceItem[]; changes_since_publication: import("../components/content-history").ContentEvent[]; preview_target: WorkspaceTarget | null };
+  overview: { promotions?: import("../components/contextual-promotions").PromotionSummary | null; readiness: { required: WorkspaceItem[]; recommended: WorkspaceItem[] }; tasks: WorkspaceItem[]; changes_since_publication: import("../components/content-history").ContentEvent[]; preview_target: WorkspaceTarget | null };
 };
 export const tabLabels: Record<WorkspaceTab, string> = {
   overview: workspaceText.overview, data: workspaceText.data, "unit-types": workspaceText.unitTypes,
-  media: workspaceText.media, faq: workspaceText.faq, history: workspaceText.history,
+  promotions: workspaceText.promotion_tab, media: workspaceText.media, faq: workspaceText.faq, history: workspaceText.history,
 };
 export function workspaceName(value: LocalizedName | string | null | undefined) {
   return typeof value === "string" ? value : value?.th || value?.en || "\u2014";

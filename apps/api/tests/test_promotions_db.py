@@ -129,6 +129,7 @@ def test_real_promotion_snapshots_approvals_atomic_release_and_stale_rollback(mo
         def review(promotion, review_type, **extra):
             current = detail(promotion)
             return request("POST", base + "/" + promotion["id"] + "/review", {
+                "expected_scope_hash": current["scope"]["scope_hash"],
                 "expected_revision": current["draft_revision"], "review_type": review_type,
                 "decision": "APPROVED", "evidence": "หลักฐานตัวอย่าง API", "change_reason": "ทดสอบการตรวจสอบ", **extra})
 

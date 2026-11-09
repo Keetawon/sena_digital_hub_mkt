@@ -39,7 +39,8 @@ ROUTES = [r for r in MANIFEST['routes'] if not r['conditional_h1']] + FOUNDATION
 ROLES = ('viewer', 'editor', 'publisher', 'admin', 'online_staff', 'agency_kin', 'agency_combay', 'service_consumer')
 ENTITY_WORKSPACE = json.loads((ROOT / 'tests/permissions/content-workspace-routes.json').read_text(encoding='utf-8'))
 WORKFLOW = json.loads((ROOT / 'tests/permissions/content-workflow-routes.json').read_text(encoding='utf-8'))
-ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes'] + WORKFLOW['routes']
+CONTEXTUAL_PROMOTIONS = json.loads((ROOT / 'tests/permissions/contextual-promotion-routes.json').read_text(encoding='utf-8'))
+ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes'] + WORKFLOW['routes'] + CONTEXTUAL_PROMOTIONS['routes']
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
 
@@ -123,13 +124,14 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     assert len(PROJECT_CONTENT['routes']) == 32
     assert len(MEDIA['routes']) == 18  # H5e adds the projects/view AI-state read.
     assert len(COMMERCIAL['routes']) == 6
+    assert len(CONTEXTUAL_PROMOTIONS['routes']) == 3
     assert len(UNITS['routes']) == 7
     assert len(FAQ_INTAKE['routes']) == 3
     assert len(FAQ_COVERAGE['routes']) == 5
     assert len(ARTICLES['routes']) == 8
     assert len(WEB['routes']) == 14
     assert len(AMENITIES['routes']) == 11
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes']) + len(WORKFLOW['routes'])
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes']) + len(WORKFLOW['routes']) + len(CONTEXTUAL_PROMOTIONS['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 

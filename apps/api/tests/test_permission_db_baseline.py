@@ -195,7 +195,10 @@ COMMERCIAL_FUNCTIONS = {'hub.' + name for name in (
     'project_commercial_snapshot', 'project_disclosure_comparison', 'project_commercial_readiness', 'save_project_commercial',
     'review_project_commercial', 'project_current_commercial', 'project_commercial_workspace', 'track_project_commercial_translation',
     'promotion_references', 'validate_promotion_targets', 'promotion_target_projects', 'promotion_banners',
-    'promotion_banner_changed', 'track_promotion_translation')}
+    'promotion_banner_changed', 'track_promotion_translation', 'promotion_owner_guard',
+    'promotion_scope_projects', 'validate_promotion_scope', 'promotion_scope_snapshot',
+    'promotion_scope_access', 'promotion_scope_visible', 'promotion_resolve',
+    'workspace_promotion_rows', 'workspace_promotions', 'workspace_promotion_suggestions')}
 UNIT_TABLES = {'hub.' + name for name in ('commercial_type_versions', 'project_prices', 'project_price_versions')}
 UNIT_FUNCTIONS = {'hub.' + name for name in (
     'unit_version_guard', 'unit_type_changed', 'unit_type_content_guard', 'unit_type_asset_guard',

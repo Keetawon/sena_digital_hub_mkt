@@ -4320,3 +4320,361 @@ prepared source/reports. Neutral worktree identities and bases are recorded in
 `artifacts/unified-workspace/w3.1/worktrees-after-delivery.txt`; Git retains the
 exact current checkout inventory. Next: finalize the W3.2 lease and implement
 contextual Promotions. Hosted rollout remains separately authorized work.
+
+### W3.2 implementation lease — before code, 6 November 2026
+
+Prerequisite delivered: W3.1 product `375d7c9`; delivery receipt `5dcdbae`, both
+pushed and remote-verified. Lead allocates
+`202611060087_contextual_promotions.sql`. The docs/36 permission card in docs/47
+section 4.7 applies, with the implementation refinement recorded there. No new
+catalog bit, special, default, account, grant or template change is planned.
+
+Lead owns the schema, permissions, API, UI integration and tests. The bounded
+editor inventory agent owns its report only; no concurrent source-file owner.
+W9 remains isolated. The lead's explicit W3.2 file lease is:
+
+- `docs/47-unified-content-workspace.md`, this log and the allocated migration;
+  `supabase/hosted-test/profile.json` for the local replay checksum registry.
+- API: `sena_hub_api/promotions.py`, `content_workspace.py`,
+  `content_permissions.py` under `apps/api/`; main.py is not needed.
+- Admin: `components/promotions-workspace.tsx`, `promotion-commercial-fields.tsx`,
+  new `contextual-promotions.tsx`, `entity-workspace.tsx`, `unified-workspace.css`;
+  `lib/unified-workspace.ts`, `workspace-copy.ts`, `workspace-api-routes.ts`,
+  `content-routes.ts`; `app/api/hub/[...path]/route.ts`.
+- Checks: new `apps/api/tests/test_contextual_promotions.py`, existing
+  `test_promotions.py`, `test_real_promotions.py`, `test_content_workspace.py`,
+  `test_permission_baseline.py`, `test_permission_shared.py`,
+  `test_permission_db_baseline.py`, `content_workflow_fixture.py`, and the
+  affected review-call fixtures in API tests (enumerate any added exact file
+  before editing). New `tests/permissions/contextual-promotion-routes.json`,
+  existing permission README; historical legacy manifests stay unchanged.
+- Browser: new `tests/ui/unified-promotions.spec.ts`, existing
+  `unified-workspace.spec.ts`, `unified-workspace-helpers.ts`,
+  `residential-operations.spec.ts`, `project-content-phase9.spec.ts` and affected
+  proxy specs after exact inventory. Migration preservation/replay registration:
+  `tests/content-upgrade.test.mjs`, `tests/supabase-test-migrations.test.mjs`.
+
+New exact API entries are POST `/v1/admin/promotions/resolve` (read-only,
+Promotions V), GET `/v1/admin/content/workspace/{kind}/{ref}/promotions`, and GET
+the same path plus `/suggestions` (Promotions V and exact project/brand source V;
+Knowledge V additionally gates KM text). Project phase selection uses the
+existing exact workspace phase resolver. Queries use bounded limit/offset,
+explicit filters and optional exact item selection; no arbitrary query pass-through.
+Every new entry is registered in API, proxy, H1 simulation and permission tests
+before runtime. Existing create/update/review/queue paths remain their only
+mutation routes.
+
+New SQL application entries, all SECURITY DEFINER with fixed safe search path,
+closed PUBLIC execution and only hub_app EXECUTE:
+`promotion_resolve(jsonb)`,
+`workspace_promotions(text,text,text,text,integer,integer,uuid)`, and
+`workspace_promotion_suggestions(text,text,text,integer,integer,uuid,text)`.
+New private helpers, with no runtime execution grant:
+`promotion_scope_projects(uuid,uuid,jsonb,uuid[])`,
+`validate_promotion_scope(uuid,uuid,jsonb,uuid[])`, `promotion_owner_guard()`,
+`promotion_scope_snapshot(uuid)`, `promotion_scope_access(uuid,text)`, and
+`workspace_promotion_rows(text,text,text)`.
+
+Existing replacements/dispatcher branches: promotion_target_projects,
+promotion_payload, promotion_read, promotion_command, promotion_readiness,
+promotion_approvals_ok, publication_promotion_check, workspace_page,
+workspace_context, workspace_native_rows, workspace_history_contexts,
+track_promotion_translation and the promotion translation-review branch.
+Review all primary-project assumptions in workflow/publication descriptors,
+release candidates and banner bindings; extend this lease before introducing
+another helper or entry. Preserve current FORCE RLS policies and public readers;
+the latter already expand frozen project IDs and sanitize outgoing payloads.
+
+New brand-owned rows have no primary project; exactly one owning project/brand
+is required and ownership cannot be reassigned. Exclusions are at most 100
+distinct non-null project UUIDs, validated like existing targets. New review
+approval commands require the displayed scope hash and capture the resolved
+public project IDs in the existing immutable review table. Current readiness
+and publication compare that evidence with current scope. Historical null
+scope evidence remains historical; no backfill or published-scope reinterpretation.
+
+The project list includes the union of current draft scope and the current
+published version's frozen scope. A pending exclusion never erases the live
+row. Status groups retain exact scheduled/withdrawn details. Overview counts
+use the same server clock/eligibility and deep-link to the relevant filter and
+price field. Suggestions contain only title, benefit/summary and public
+conditions text; structured numeric/date fields stay empty. Validated suggestion
+identity is appended to the normal audit reason on create. The source text is
+never put in URLs or browser storage. New Thai copy is added to docs/47 first.
+
+Quick gate after each code change; SQL/permission changes include the documented
+DB and permission selections. Final W3.2 gate is the full programme gate, both
+widths, local H1, fresh/populated replay and source/browser credential scans.
+Screenshot destination: `artifacts/unified-workspace/w3.2/`. All tests and the
+W3.2 implementation are currently NOT RUN/not started; no commit is claimed.
+
+W3.2 foundation checkpoint: the disposable baseline inspection passed one
+diagnostic check (one existing warning); its runner disposed the database.
+The first invocation used an invalid test path and was refused before startup.
+Evidence: `artifacts/unified-workspace/w3.2/baseline-inspection-2.log`.
+Migration 0087 is now being implemented, not delivered. Extend the replacement
+lease to `lock_release_members(jsonb)` so promotion commands and releases lock
+owning/target brands, resolved projects and then promotions in the existing
+parent-first order. `promotion_approvals_ok` remains unchanged because public
+readers use it for frozen historical versions; current-scope evidence checks
+belong in draft readiness and new publication checks only.
+
+Review-call compatibility lease extension: `apps/api/tests/test_promotions_db.py`,
+`apps/api/tests/test_permission_publication.py`, `supabase/tests/residential_demo.sql`
+and `scripts/seed-residential-demo.py`. Existing positive approval fixtures now
+supply the displayed resolution hash. Revocation and negative authorization
+checks retain their intent. No harness configuration loading changes.
+
+Private helper lease refinement: `promotion_scope_visible(uuid)` centralizes the
+Promotions/Projects/Brands View conjunction for lists and shared projections.
+It has no runtime execution grant. Mutation validation remains separate, so an
+editor can remove a stale target instead of being locked out of its draft.
+
+Foundation quick gate: 95 API tests passed, zero skipped/failed, one existing
+warning (`foundation-quick-3.log`). Earlier attempts found a missing second
+synthetic project in the test and an empty resolved scope serialized as null;
+both were corrected without weakening assertions. The first DB gate stopped
+in the new populated-upgrade fixture because its inserted historical promotion
+omitted required author fields. That fixture is corrected and its focused
+preservation rerun is in progress. No W3.2 full gate or commit is claimed.
+
+The focused populated preservation/migration registry rerun passed 16 checks.
+The next full DB quick run reached the residential concurrency fixture, which
+also needs its explicit displayed hash on approval. Extend the fixture lease to
+`supabase/tests/concurrent_residential_release.mjs` and
+`apps/api/tests/test_assistant_tools_db.py`; their scenario assertions remain.
+Extend the SQL replacement lease to `save_project_price` so a price reference can
+select an applicable brand/shared promotion through the same resolved project
+set, with Promotions V, instead of requiring its primary project to match.
+
+Further inspection confirms migration 0070 already changed the price reference,
+unit-type choices and media bindings to `promotion_target_projects`. Its new
+implementation therefore supplies brand ownership/exclusions automatically;
+no separate `save_project_price` replacement is needed. Removed the draft
+replacement after its migration contract assertion stopped replay before tests.
+
+W3.2 browser-check delegation: one bounded sub-agent owns only the new
+`tests/ui/unified-promotions.spec.ts` in the isolated
+`D:/Personal/workspace/sena_hub_wt/w3.2-browser-checks` worktree,
+branch `ws/w3.2-browser-checks`, based on main `5dcdbae`. It may read the lead's
+in-progress components to match their contracts, but may not edit main, other
+files, migrations, credentials, existing fixtures or shared files. It runs no
+port-bound command and does not commit or push. Lead retains source, security,
+integration and all runtime verification. Done criteria: meaningful mocked
+browser checks of contextual lists, editor prefill/exclusion, permissions,
+overview links, responsive/theme screenshots; no weakening existing tests.
+The lead additionally leases `tests/ui/unified-workspace-proxy.spec.ts` for
+exact new local/H1 route and query-boundary assertions.
+
+Quick-gate checkpoint: the full permission selection returned 409 passed and
+11 failed (one existing warning). Two route-count assertions omitted the new
+entries; nine cases exposed one ambiguous `kind` reference in the overview SQL.
+The focused correction run passed all 42 cases, zero skipped/failed. An earlier
+invalid test path was refused before startup; restricted execution then failed
+embedded-database account lookup, so the documented harness ran with the local
+process permission it requires. No configuration loader changed.
+
+Admin typecheck and the offline webpack build passed. Browser quick gate:
+48 passed, two failed, zero skipped. The brand assertion checked before data
+loaded; it now waits for the tab. The new H1 resolver-prefix negative check
+exposed its generic legacy transport fallback. Extend the lead's lease to
+`apps/admin/lib/hosted-config.ts` for an exact resolver-prefix guard only.
+No hosted setting changes. Four provisional screenshots were captured; visual
+review and final gates remain. New browser spec was reviewed and integrated
+from the bounded sub-agent; runtime is owned by the lead.
+
+The second browser quick gate passed 50 checks, zero skipped/failed. Its native
+runner reported PASS and disposed its own stack; the shell's redirected stderr
+status is not used as a test count. Subsequent orchestration explicitly checks
+the native exit code. Lead reviewed all four provisional screenshots after
+fixing the synthetic workflow-read fixture and resetting scroll before capture.
+They show valid thumbnails and readable wrapping in both themes, without page
+overflow. Existing palette/focus/reduced-motion navigation checks passed.
+
+The publication quick gate passed 28 cases, zero skipped/failed, one existing
+warning. It covers brand ownership without a primary project, new-version
+exclusion after both reviews, frozen historical versions, displayed scope hashes,
+review history, exact function grants, tab order/denial, seven-day and banner
+counts, and withdrawn-promotion price links. An unpublished draft is explicitly
+not counted as a withdrawn promotion. Website suggestions use the verified
+importer's heading/text object, retaining compatibility with earlier text values.
+
+Final review keeps active-row thumbnails on their readable frozen published
+banner instead of a later draft binding. The source chip also keeps the frozen
+shared count while an exclusion is pending. Added a regression for a draft
+banner unlink and assertions that internal ownership/exclusion/review IDs never
+reach the public projection. The wider permission quick rerun and focused
+banner regression are still running/pending. No new question or requirement
+deviation; no W3.2 full-gate pass, commit or push is claimed yet.
+
+### W3.2 final quick checks and full-gate start — 7 November 2026
+
+Final quick evidence: admin typecheck (`typecheck-5.log`) and offline webpack
+build (`build-quick-3.log`) passed; browser selection (`ui-quick-3.log`) passed
+50, skipped 0, failed 0; complete DB quick gate (`db-quick-2.log`) passed 95
+Node checks, 41 SQL suites and 23 concurrency scenarios, skipped/failed 0;
+the wider permission selection (`permission-quick-final.log`) passed 421,
+skipped/failed 0, one existing warning. Final contextual publication checks
+(`publication-quick-3.log`) passed 28, skipped/failed 0, one existing warning,
+including expired grouping, the frozen banner and public ID redaction.
+
+Origin/main is still `5dcdbae8954f9249cb84d0c0f830b4b2946a5fb3`, verified by
+`git ls-remote`. Lead freezes the 34 explicit W3.2 paths at that base in
+`artifacts/unified-workspace/w3.2/full-start-source-hashes.json`. The serial
+full gate now runs typecheck, offline webpack, production, API, DB, local H1,
+all UI at 1280 and 390, then credential scans and whitespace checks. Every
+port-bound suite uses its own disposable database and owns only its processes.
+No product/test change is planned during this gate. Full-gate result and delivery
+remain pending; the previous section's screenshot review is provisional until
+the final screenshots are checked. No requirement deviation or new question.
+
+### W3.2 resumed full gate and correction — 8 November 2026
+
+The previous run had no completion result after production installation. No
+earlier test process or occupied working port remained, and all 34 frozen source
+hashes matched. Its evidence is preserved in `w3.2/interrupted-full-20261107/`.
+Lead restarted the unchanged serial gate from main; no harness configuration
+loading changed and no owner's process was stopped.
+
+Full attempt 1: typecheck and offline webpack passed; production passed 4,
+skipped/failed 0. API finished with 2,368 passed, 11 existing skips, one failure
+and six existing warnings. The single failure was the existing workspace-page
+test's old tab-list expectation, which omitted the required Promotions tab.
+The runner exited 1 before DB, local H1 and browser suites; those stages were
+not run in this attempt. Evidence and the unchanged source manifest are in
+`artifacts/unified-workspace/w3.2/failed-full-1/`.
+
+Within the existing `test_content_workspace.py` lease, update the exact expected
+tab order and extend its no-audit-write GET checks to both contextual Promotions
+read endpoints. No application or SQL correction is required by this failure.
+The complete affected file's 40 cases form the correction quick gate; the full
+gate follows after it passes. No tests are skipped, quarantined or weakened.
+Collection-only diagnosis confirmed 2,380 API cases; an initial overly broad
+collection also discovered ignored review copies and reported import errors,
+so it was corrected to the harness's exact `apps/api/tests` selection. That
+diagnostic ran no tests and is not a gate result.
+
+During the frozen gate, lead prepared only ignored review artifacts for W5:
+43 paths reconciled with W3.1/W3.2, five exact route registrations and migration
+`202611080088_business_level.sql` in the reserved 0088 lane. No W5 source is
+integrated or runtime-tested. Assistant business retrieval and populated replay
+remain explicit integration checks. W9's original-checksum/context/privacy
+design notes are also preparation only; its processor remains isolated.
+
+The completed bounded browser draft is archived with its hash and reviewed
+delta under `w3.2/completed-browser-*`. Its worktree and the clean editor-inventory
+worktree remain until W3.2 delivery, then receive normal removal and branch -d.
+No new pending question or requirement deviation. W3.2 commit/push and final
+screenshots remain pending; W5 follows delivery.
+
+Correction quick gate passed all 40 workspace cases, skipped/failed 0, one
+existing warning, exit 0. The disposable runner confirmed its working-database
+and file-store isolation. Evidence: `w3.2/workspace-correction-quick.log`.
+The application/SQL bytes remain those reviewed before attempt 1; only the
+workspace regression and this log changed. Lead now freezes 35 explicit paths
+and starts full attempt 2 with the same complete serial gate. No full pass,
+commit or push is claimed until that run and screenshot review finish.
+
+### W3.2 local H1 fixture correction — 8 November 2026
+
+Full attempt 2 passed typecheck, offline webpack and production (4 passed,
+zero skipped/failed). API passed 2,369, skipped 11 existing cases, failed 0,
+with six existing warnings. DB passed 95 Node checks, 41 SQL suites and 23
+concurrency scenarios, skipped/failed 0. Both disposable runners confirmed
+isolation and teardown. Local H1 then failed during synthetic seeding with
+SQLSTATE 40001, after successful migration attestation/replay. The runner exited
+1 before either full browser width. Evidence and the unchanged 35-path manifest
+are preserved in `artifacts/unified-workspace/w3.2/failed-full-2/`.
+
+The H1 promotion seed still omitted the newly required reviewed-scope hash.
+Extend the lead's fixture lease to `supabase/hosted-test/h1-seed.sql` and supply
+the hash from the normal guarded promotion reader for both DATA and LEGAL lanes.
+Do not bypass the review guard or change harness configuration loading. This
+changes only synthetic fixture input; application and migration bytes remain
+unchanged. The H1 correction quick gate precedes a new complete serial gate.
+No hosted seed, migration, deployment or credential access is performed.
+
+Independent preparation while attempt 2 ran: the bounded assistant-context
+sub-agent delivered its read-only report from `ws/w5-assistant-context`, owning
+only `artifacts/w5-assistant-context-review.md` in its separate worktree. Lead
+archived it under `artifacts/unified-workspace/w5/assistant-context-review.md`.
+It identified missing business context/pinning/retrieval; lead retains design,
+security and implementation. No sub-agent runtime check or product edit ran.
+The W5 preview now contains 44 paths, including a syntax-checked populated
+preservation regression; database verification is pending. Lead's W6 contract
+review identifies dated membership intervals as a remaining integration check.
+W9's metadata decision is already recorded verbatim in docs/47; its application
+integration remains pending. These preparations are not delivered workstreams.
+
+No new pending question or requirement deviation. W3.2 delivery and cleanup
+remain next after a successful full gate; W5 follows its commit.
+
+H1 correction quick gate completed with exit 0: 69 Node checks, 10 smoke tests
+and 66 browser checks passed, skipped/failed 0. Evidence is
+`w3.2/h1-correction-quick.log` and its parsed receipt. The one-line synthetic
+fixture change preserves the normal DATA/LEGAL review checks and its replay.
+Origin/main was reverified at `5dcdbae8954f9249cb84d0c0f830b4b2946a5fb3`.
+Lead now freezes 36 explicit paths for full attempt 3. Migration 0087 retains
+SHA-256 `cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c`.
+No workstream commit or final full-gate pass is claimed yet.
+
+### W3.2 final gate and delivery preparation — 9 November 2026
+
+Full attempt 3 completed successfully with native exit 0. All 36 frozen source
+hashes matched before this evidence-only log update. The receipt is
+`artifacts/unified-workspace/w3.2/full-gate-receipt.json`; individual logs and
+their hashes are retained beside it. Lead released the serial test lock after
+the disposable runners completed their isolation and teardown checks.
+
+| Suite | Passed | Skipped | Failed |
+|---|---|---|---|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production | 4 | 0 | 0 |
+| API | 2,369 | 11 existing | 0 |
+| DB | 95 Node checks, 41 SQL suites, 23 concurrency scenarios | 0 | 0 |
+| Local H1 | 69 Node checks, 10 smoke tests, 66 browser checks | 0 | 0 |
+| Browser at 1280 px | 449 | 0 | 0 |
+| Browser at 390 px | 449 | 0 | 0 |
+
+API reported six existing warnings. Fresh migration replay and the populated
+preservation check passed within the DB gate. Source/browser credential scans
+reported zero matches and read no credential files. Whitespace checks passed.
+No test was skipped additionally, quarantined or weakened.
+
+Delivered implementation: contextual Promotions tabs on project and brand
+pages; additive brand ownership and reviewed exclusions; resolved-scope review
+evidence; source chips and frozen publication scope; reuse of the existing
+editor; text-only legacy suggestion prefill; and expiry, banner-rights and
+invalid price-reference overview links. DATA/LEGAL separation and the single
+publication queue remain enforced. Migration added:
+`202611060087_contextual_promotions.sql`, SHA-256
+`cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c`.
+Existing promotions, versions, grants and publication history are not rewritten.
+
+All four final screenshots are byte-identical to the images already visually
+reviewed by the lead. The final hash receipt is `w3.2/screenshot-review-final.json`.
+Paths under `artifacts/unified-workspace/w3.2/`:
+
+- `promotions-light-1280.png` and `promotions-dark-1280.png` (1280 x 3206).
+- `promotions-light-390.png` and `promotions-dark-390.png` (390 x 4819).
+
+The reviewed images show readable Thai, valid thumbnails, wrapped details and
+no horizontal page overflow in either theme. Existing keyboard-focus,
+reduced-motion and palette checks passed. Requirement deviations: none. New
+pending questions: none. Bounded sub-agents delivered the editor inventory and
+browser-check draft; the lead reviewed their diffs, integrated the changes and
+ran every runtime gate. No hosted action or live provider call occurred.
+
+Two finished bounded W4 fixture worktrees were removed with normal worktree
+removal and branch deletion after archiving all eight owned draft files and
+their review notes. Byte hashes, reviewed differences and the removal receipt
+are under `artifacts/unified-workspace/completed-fixture-archives/`. No force
+operation was used. There are currently 57 worktrees, including the two W3.2
+worktrees awaiting this delivery, 20 older programme variants retained for
+review, future programme work, main and one unrelated worktree. Remaining paths
+will be inventoried again after the W3.2 cleanup.
+
+Next: commit and push the explicit 36 W3.2 paths, record the delivery hash,
+remove its two finished worktrees normally, then integrate W5. Its 44-path
+preview and assistant design remain preparation, not a passed implementation.

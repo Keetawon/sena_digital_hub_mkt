@@ -433,6 +433,11 @@
       "name": "202611060086_workspace_summary_exposure.sql",
       "canonical_sha256": "8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b",
       "executed_sha256": "8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b"
+    },
+    {
+      "name": "202611060087_contextual_promotions.sql",
+      "canonical_sha256": "cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c",
+      "executed_sha256": "cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c"
     }
   ]
 }

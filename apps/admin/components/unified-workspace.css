@@ -65,3 +65,15 @@
   .workspace-filters label { width: 100%; }
 }
 
+.workspace-promotion-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: 1rem; }
+.workspace-promotion-filters a[aria-current="page"] { background: var(--action); color: var(--surface); }
+.workspace-promotion-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.workspace-promotion-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75rem; }
+.workspace-promotion-heading h4 { flex: 1 1 16rem; margin: 0; overflow-wrap: anywhere; }
+.workspace-promotion-source { color: var(--ink); background: var(--surface-warm); border: 1px solid var(--line-strong); border-radius: .5rem; padding: .25rem .5rem; }
+.workspace-promotion-banner { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-block: .75rem; }
+.workspace-promotion-banner img { max-width: 100%; object-fit: contain; background: var(--surface-warm); }
+.workspace-promotion-dates { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,14rem),1fr)); gap: .75rem; }
+.workspace-promotion-dates dd { margin: .25rem 0; overflow-wrap: anywhere; }
+.contextual-promotions details { border-top: 1px solid var(--line-strong); padding-block: .75rem; overflow-wrap: anywhere; }
+.contextual-promotions a, .contextual-promotions button { min-height: 44px; }
