@@ -1,0 +1,69 @@
+{
+  "phase": "Unified workspace W5",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/businesses",
+      "tab": "business_content",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/business_content.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/businesses/{code}/content",
+      "tab": "business_content",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/business_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/content/businesses/{code}/sections/{section_key}",
+      "tab": "business_content",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/business_content.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/content/businesses/{code}/contacts",
+      "tab": "business_content",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/business_content.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/content/businesses/{code}/contacts/{contact_id}",
+      "tab": "business_content",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/business_content.py"
+    }
+  ]
+}

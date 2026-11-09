@@ -1,0 +1,155 @@
+{
+  "migration": "supabase/migrations/202611080088_business_level.sql",
+  "reviewed_migration_sha256": "f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94",
+  "meaning": "W5 additive fixed business catalogue: new relations, policies and functions only. Existing dispatcher replacements retain their prior inventory and business behavior tests. No account, grant, template or historical content rewrite.",
+  "relations": [
+    {
+      "name": "hub.brand_business",
+      "kind": "r",
+      "rls": true,
+      "force_rls": true,
+      "grants": []
+    },
+    {
+      "name": "hub.businesses",
+      "kind": "r",
+      "rls": true,
+      "force_rls": true,
+      "grants": []
+    }
+  ],
+  "policies": [
+    {
+      "schema": "hub",
+      "table": "brand_business",
+      "name": "business_owner",
+      "permissive": "PERMISSIVE",
+      "roles": [
+        "postgres"
+      ],
+      "cmd": "ALL",
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "hub",
+      "table": "businesses",
+      "name": "business_owner",
+      "permissive": "PERMISSIVE",
+      "roles": [
+        "postgres"
+      ],
+      "cmd": "ALL",
+      "qual": "true",
+      "with_check": "true"
+    }
+  ],
+  "functions": [
+    {
+      "name": "hub.business_assign_brand",
+      "arguments": "",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "hub.business_cluster_matches",
+      "arguments": "code text, projects text[], brands text[]",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "hub.business_content",
+      "arguments": "code text",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [
+        "hub_app"
+      ],
+      "public_execute": false
+    },
+    {
+      "name": "hub.business_project_matches",
+      "arguments": "code text, rem_id text",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "hub.business_references",
+      "arguments": "",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [
+        "hub_app"
+      ],
+      "public_execute": false
+    },
+    {
+      "name": "hub.business_scope_faq_rows",
+      "arguments": "kind text, ref text, approved_only boolean",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "hub.faq_scope_rank",
+      "arguments": "kind text",
+      "security_definer": false,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "internal.assistant_business_search",
+      "arguments": "code text, visibility text",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [
+        "hub_app"
+      ],
+      "public_execute": false
+    },
+    {
+      "name": "internal.assistant_saved_source",
+      "arguments": "kind text, ref text, version text",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    {
+      "name": "internal.assistant_saved_source_visible",
+      "arguments": "kind text, ref text, version text",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    }
+  ]
+}

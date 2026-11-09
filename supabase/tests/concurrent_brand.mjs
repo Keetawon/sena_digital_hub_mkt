@@ -59,6 +59,7 @@ try {
   await setup.query('rollback').catch(() => {});
   await setup.query('begin');
   await setup.query("select set_config('app.actor_id',$1,true),set_config('app.change_reason',$2,true)", [actor, sourceId]);
+  await setup.query('delete from hub.brand_business where brand_id in(select id from hub.brands where rem_brand_id=$1)', [sourceId]);
   await setup.query('delete from hub.brands where rem_brand_id=$1', [sourceId]);
   await setup.query('delete from staging.rem_brands where rem_brand_id=$1', [sourceId]);
   await setup.query('delete from audit.change_log where reason=$1', [sourceId]);

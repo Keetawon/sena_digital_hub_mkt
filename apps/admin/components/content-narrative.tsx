@@ -11,8 +11,8 @@ export type SellingPoint = { point_key: string; revision: number; title: Locales
 const features: Record<string, string> = { vmove: "VMOVE", joint_venture: "พันธมิตร", fresh_air: "อากาศบริสุทธิ์", pm25_filter: "กรอง PM2.5", universal_design: "การออกแบบเพื่อทุกคน", low_carbon: "ลดคาร์บอน", non_dee: "นอนดี", smart_camera: "กล้องอัจฉริยะ", smart_app: "แอปอัจฉริยะ", smart_home: "บ้านอัจฉริยะ", smart_parking: "ที่จอดรถอัจฉริยะ", bms: "ระบบจัดการอาคาร", solar_rooftop: "โซลาร์รูฟท็อป", ev_charger: "ชาร์จรถไฟฟ้า", cctv: "กล้องวงจรปิด", key_card: "คีย์การ์ด", guard_24h: "เจ้าหน้าที่รักษาความปลอดภัย", easy_pass: "ทางเข้าอัตโนมัติ", lift_lock: "ลิฟต์ล็อกชั้น" };
 export const stateLabel = (state: string) => ({ DRAFT: workspaceText.DRAFT, IN_REVIEW: workspaceText.IN_REVIEW, APPROVED: workspaceText.APPROVED, PUBLISHED: workspaceText.PUBLISHED, RETURNED: workspaceText.RETURNED, WITHDRAWN: "ถอนฉบับแล้ว" }[state] ?? workspaceText.DRAFT);
 
-export function ContentNarrative({ projectId, projectRowId, sections, points, fields, canEdit, onChanged, onEditingChange, showPoints = true }: {
-  showPoints?: boolean; projectId: string; projectRowId?: string; sections: NarrativeSection[]; points: SellingPoint[]; fields: ContentField[]; canEdit: boolean;
+export function ContentNarrative({ projectId = "", projectRowId, apiBase, heading, sections, points, fields, canEdit, onChanged, onEditingChange, showPoints = true }: {
+  showPoints?: boolean; projectId?: string; projectRowId?: string; apiBase?: string; heading?: string; sections: NarrativeSection[]; points: SellingPoint[]; fields: ContentField[]; canEdit: boolean;
   onChanged: () => Promise<void>; onEditingChange: (value: boolean) => void;
 }) {
   const [section, setSection] = useState<{ id?: string; key: string; revision: number; body: Locales; source: string; exposure: Exposure } | null>(null);
@@ -25,7 +25,7 @@ export function ContentNarrative({ projectId, projectRowId, sections, points, fi
   const [point, setPoint] = useState<SellingPoint | null>(null);
   const [pending, setPending] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
   useEffect(() => { onEditingChange(Boolean(section || point || pending || workflowActive)); return () => onEditingChange(false); }, [section, point, pending, workflowActive, onEditingChange]);
-  const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
+  const base = apiBase ?? `v1/admin/projects/${encodeURIComponent(projectId)}`;
   const field = (key: string) => fields.find(item => item.field_key === key);
   const sectionChanges = () => section ? { body: section.body, source_ref: section.source || null, ai_exposure: section.exposure } : null;
   const pointChanges = () => point ? { title: point.title, detail: point.detail, icon_code: point.icon_code, linked_feature_code: point.linked_feature_code, linked_fact_keys: point.linked_fact_keys, sort: point.sort, state: point.state, ai_exposure: point.ai_exposure } : null;
@@ -38,7 +38,7 @@ export function ContentNarrative({ projectId, projectRowId, sections, points, fi
   }
   const editing = Boolean(section || point);
   const pointFrozen = Boolean(point && points.some(item => item.point_key === point.point_key && item.state.toUpperCase() === "IN_REVIEW"));
-  return <section className="content-section"><h2>เนื้อหาและจุดขาย</h2><p className="field-help">ทุกครั้งที่บันทึกจะมีฉบับใหม่ ตรวจภาษาอังกฤษก่อนส่งตรวจ ฉบับที่ส่งตรวจแล้วเก็บไว้ในประวัติ</p>
+  return <section className="content-section"><h2>{heading ?? "เนื้อหาและจุดขาย"}</h2><p className="field-help">ทุกครั้งที่บันทึกจะมีฉบับใหม่ ตรวจภาษาอังกฤษก่อนส่งตรวจ ฉบับที่ส่งตรวจแล้วเก็บไว้ในประวัติ</p>
     {error && <p className="notice error" role="alert">{error} ข้อความที่กรอกยังอยู่</p>}{notice && <p className="notice success" role="status">{notice}</p>}
     <div className="content-card-list">{fields.filter(item => item.entity === "section" && item.status === "active" && !item.field_key.startsWith("section.corporate_")).map(item => {
       const current = sections.find(value => value.section_key === item.field_key);

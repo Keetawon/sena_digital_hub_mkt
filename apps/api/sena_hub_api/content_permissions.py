@@ -290,6 +290,12 @@ CONTENT_RULES = {
 # These surfaces have SQL identity/ownership or fixed technical boundaries rather
 # than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
 SHARED_RULES = {
+    ('GET', '/v1/admin/content/businesses'): 'business_content',
+    ('GET', '/v1/admin/content/businesses/{code}/content'): 'business_content',
+    ('PUT', '/v1/admin/content/businesses/{code}/sections/{section_key}'): 'business_content',
+    ('POST', '/v1/admin/content/businesses/{code}/contacts'): 'business_content',
+    ('PUT', '/v1/admin/content/businesses/{code}/contacts/{contact_id}'): 'business_content',
+
     ('GET', '/v1/admin/content-workflow'): 'content_workflow',
     ('GET', '/v1/admin/content-workflow/items'): 'content_workflow',
     ('POST', '/v1/admin/content-workflow/submit'): 'content_workflow',

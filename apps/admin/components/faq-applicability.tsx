@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { request } from "./hub-request";
 import { errorMessage, type Locales } from "./content-common";
 
@@ -12,16 +12,27 @@ export function FaqApplicability({ rule, scope, reference, brands, groups, disab
 }) {
   const [result, setResult] = useState<{ fingerprint: string; data: Resolution } | null>(null), [error, setError] = useState(""), [pending, setPending] = useState(false);
   const fingerprint = JSON.stringify([rule, scope, reference]);
+  const current = useRef({ fingerprint, disabled }), sequence = useRef(0);
+  current.current = { fingerprint, disabled };
   const active = Object.keys(rule).length > 0, visible = !disabled && result?.fingerprint === fingerprint ? result.data : null;
-  useEffect(() => { if (disabled) setResult(null); }, [disabled]);
+  useEffect(() => {
+    sequence.current += 1; setResult(null); setError(""); setPending(false);
+    return () => { sequence.current += 1; };
+  }, [fingerprint, disabled]);
   function change(key: keyof FaqRule, values: string[]) {
     const next = { ...rule }; if (values.length) next[key] = values; else delete next[key];
     setResult(null); setError(""); onChange(next);
   }
   async function preview() {
+    if (disabled || pending || !active || !reference) return;
+    const revision = ++sequence.current;
+    const valid = () => revision === sequence.current && current.current.fingerprint === fingerprint && !current.current.disabled;
     setPending(true); setError("");
-    try { const data = await request<Resolution>("v1/admin/faq-applicability", "POST", { rule, scope_type: scope, scope_id: reference }); setResult({ fingerprint, data }); onResolve(data.project_ids); }
-    catch (error) { setResult(null); setError(errorMessage(error)); } finally { setPending(false); }
+    try {
+      const data = await request<Resolution>("v1/admin/faq-applicability", "POST", { rule, scope_type: scope, scope_id: reference });
+      if (valid()) { setResult({ fingerprint, data }); onResolve(data.project_ids); }
+    } catch (error) { if (valid()) { setResult(null); setError(errorMessage(error)); } }
+    finally { if (valid()) setPending(false); }
   }
   return <details className="content-card" open={active || undefined}><summary>เลือกโครงการด้วยเงื่อนไข</summary>
     <p className="field-help">เลือกได้หลายค่าในแต่ละเงื่อนไข โครงการต้องตรงทุกเงื่อนไขที่เลือก เว้นว่างทั้งหมดเพื่อเลือกเฟสเอง รายชื่อจะยืนยันอีกครั้งก่อนเผยแพร่</p>

@@ -1,7 +1,7 @@
 """Private read-only cross-content search and personal work projections."""
 import json
 from typing import Literal
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from uuid import UUID
 
 from fastapi import Depends, Query, Request, Response
@@ -24,6 +24,14 @@ def workspace_href(kind: str, context: dict) -> str:
     elif kind == 'page_config':
         path = '/publish'
         query['tab'] = 'configuration'
+        query.setdefault('field', 'page.url')
+        query.pop('scope_type', None)
+        query.pop('scope_id', None)
+    elif query.get('scope_type') == 'business' and query.get('scope_id'):
+        path = '/website/business/' + quote(query['scope_id'], safe='')
+        if query.get('tab') in ('narrative', 'contacts'):
+            query.setdefault('section', query['tab'])
+            query['tab'] = 'data'
     elif kind in ('faq', 'question', 'glossary') or query.get('tab') in ('bank', 'glossary'):
         path = '/faq'
     elif kind == 'article':

@@ -18,7 +18,7 @@ ALGORITHM = 'faq-clusters-v1'
 QUESTION_THRESHOLD = 0.72
 BANK_THRESHOLD = 0.55
 ANSWER_THRESHOLD = 0.9
-LEVELS = ('corporate', 'brand', 'programme', 'project_group', 'project', 'unit_type')
+LEVELS = ('corporate', 'business', 'brand', 'programme', 'project_group', 'project', 'unit_type')
 HOLDS = ('numeric', 'commercial', 'programme_terms', 'phase_decision', 'mapping_conflict', 'prompt_injection', 'closed_project')
 HOLD_MAP = {
     'numeric_claim': 'numeric', 'commercial_text': 'commercial', 'prompt_injection': 'prompt_injection',

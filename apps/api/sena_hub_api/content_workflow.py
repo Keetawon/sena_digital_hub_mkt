@@ -108,7 +108,12 @@ def publication_targets(value: dict) -> dict:
             path, context = '/articles', {'article': identity.get('id'), 'version': target.get('version')}
         elif kind == 'promotion':
             path, context = '/promotions', {'promotion': identity.get('id')}
-        elif target.get('level') in {'corporate', 'brand', 'project', 'programme', 'project_group', 'unit_type'} and isinstance(target.get('id'), str):
+        elif kind == 'page_config':
+            page = target.get('web_page') or target.get('page')
+            if isinstance(page, str) and page and identity.get('id'):
+                path, context = '/publish', {'tab': 'configuration', 'page': page,
+                                             'item': identity['id'], 'field': 'page.url'}
+        elif target.get('level') in {'corporate', 'business', 'brand', 'project', 'programme', 'project_group', 'unit_type'} and isinstance(target.get('id'), str):
             path = '/website/' + quote(target['level'], safe='') + '/' + quote(target['id'], safe='')
             for source_key, query_key in {'question_key': 'question', 'media_category': 'category',
                                           'rule_key': 'rule', 'asset_id': 'asset'}.items():
@@ -140,7 +145,7 @@ def register_content_workflow_routes(app, authentication, database):
 
     @app.get('/v1/admin/content-workflow/items')
     async def items(request: Request,
-                    level: Literal['corporate', 'brand', 'project', 'programme', 'project_group', 'unit_type'],
+                    level: Literal['corporate', 'business', 'brand', 'project', 'programme', 'project_group', 'unit_type'],
                     ref: str = Query(alias='id', min_length=1, max_length=200),
                     phase: str | None = Query(default=None, min_length=1, max_length=200),
                     after: str | None = Query(default=None, min_length=1, max_length=8192),

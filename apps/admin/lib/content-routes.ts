@@ -1,3 +1,4 @@
+import { businessAllowsApi, businessAllowsQuery } from './business-api-routes';
 import { workflowAllowsApi, workflowAllowsQuery } from './content-workflow-routes';
 // Exact private draft routes; source-specific authority is rechecked in SQL.
 import { workspaceAllowsApi, workspaceAllowsQuery } from './workspace-api-routes';
@@ -14,6 +15,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
   if (path === "v1/admin/promotions/resolve") return method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
   if (workspaceAllowsApi(path, method) || amenityAllowsApi(path, method)) return true;
@@ -35,12 +37,13 @@ const units: Record<string, RegExp> = {
 export function unitAllowsApi(path: string, method: string) { return units[method]?.test(path) ?? false; }
 // FAQ intake list filters; values are re-validated by the API and SQL.
 const intakeFilters: Record<string, RegExp> = {
-  level: /^(?:corporate|brand|programme|project_group|project|unit_type)$/, kind: /^(?:text|fact|handoff|auto)$/,
+  level: /^(?:corporate|business|brand|programme|project_group|project|unit_type)$/, kind: /^(?:text|fact|handoff|auto)$/,
   hold: /^(?:none|numeric|commercial|programme_terms|phase_decision|mapping_conflict|prompt_injection|closed_project)$/,
   brand: /^[A-Za-z0-9_-]{1,64}$/, state: /^(?:open|held|question_proposed|decided)$/, after: /^\d{1,6}$/, limit: /^(?:[1-9]\d?|100)$/,
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsQuery(path, method, query);
   if (workspaceAllowsApi(path, method)) return workspaceAllowsQuery(path, method, query);
   if (method === "GET") {
@@ -60,7 +63,7 @@ export function contentAllowsQuery(path: string, method: string, query: URLSearc
     if (filters) return [...query.keys()].every(key => filters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
   }
   return method === "GET" && path === "v1/admin/faq-intake/clusters"
-    && [...query.keys()].every(key => intakeFilters[key]?.test(query.get(key) ?? "") && query.getAll(key).length === 1);
+    && [...query.keys()].every(key => Object.hasOwn(intakeFilters, key) && intakeFilters[key].exec(query.get(key) ?? "")?.[0] === query.get(key) && query.getAll(key).length === 1);
 }
 
 const commercialKind = "(?:disclosures|sales-terms|programmes|construction)";

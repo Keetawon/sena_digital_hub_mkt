@@ -21,7 +21,7 @@ class Rule(BaseModel):
 class Applicability(BaseModel):
     model_config = ConfigDict(extra='forbid')
     rule: Rule
-    scope_type: Literal['corporate', 'brand', 'project_group', 'programme']
+    scope_type: Literal['corporate', 'business', 'brand', 'project_group', 'programme']
     scope_id: Reference
 
 

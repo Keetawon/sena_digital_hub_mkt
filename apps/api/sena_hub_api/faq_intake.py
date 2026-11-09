@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .auth import Actor, failure
 from .content_permissions import require_content
 
-LEVELS = Literal['corporate', 'brand', 'programme', 'project_group', 'project', 'unit_type']
+LEVELS = Literal['corporate', 'business', 'brand', 'programme', 'project_group', 'project', 'unit_type']
 KINDS = Literal['text', 'fact', 'handoff', 'auto']
 HOLDS = Literal['none', 'numeric', 'commercial', 'programme_terms', 'phase_decision', 'mapping_conflict', 'prompt_injection', 'closed_project']
 STATES = Literal['open', 'held', 'question_proposed', 'decided']

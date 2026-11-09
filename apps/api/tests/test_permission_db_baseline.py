@@ -165,6 +165,20 @@ WORKFLOW_APP_FUNCTIONS = {
     'hub.publication_queue_return',
 }
 
+BUSINESS_TABLES = {'hub.businesses', 'hub.brand_business'}
+BUSINESS_FUNCTIONS = {
+    'internal.assistant_business_search',
+    'hub.business_assign_brand',
+    'hub.business_cluster_matches',
+    'hub.business_content',
+    'hub.business_project_matches',
+    'hub.business_references',
+    'hub.business_scope_faq_rows',
+    'hub.faq_scope_rank',
+    'internal.assistant_saved_source',
+    'internal.assistant_saved_source_visible',
+}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -285,9 +299,15 @@ def test_live_catalog_matches_reviewed_local_baseline():
                 if name in ('relations', 'functions'):
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
                     additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS | WORKFLOW_FUNCTIONS
+                    additions |= BUSINESS_TABLES if name == 'relations' else BUSINESS_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    business = [r for r in actual if r['schema'] + '.' + r['table'] in BUSINESS_TABLES]
+                    assert len(business) == 2
+                    assert all(r['name'] == 'business_owner' and r['roles'] == ['postgres']
+                        and r['cmd'] == 'ALL' and r['qual'] == r['with_check'] == 'true' for r in business)
+                    actual = [r for r in actual if r not in business]
                     workflow = [r for r in actual if r['schema'] + '.' + r['table'] in WORKFLOW_TABLES]
                     assert len(workflow) == 1 and workflow[0]['name'] == 'workflow_owner'
                     assert workflow[0]['roles'] == ['postgres'] and workflow[0]['cmd'] == 'ALL'
@@ -508,6 +528,7 @@ async def assert_reviewed_database_boundary(db):
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
+    classified |= BUSINESS_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -523,6 +544,7 @@ async def assert_reviewed_database_boundary(db):
     assert all(tables[name]['grants'] == [] for name in MEDIA_WORKER_TABLES)
     assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
     assert all(not tables[name]['grants'] for name in WORKFLOW_TABLES), 'Content review versions have no application table grants'
+    assert all(not tables[name]['grants'] for name in BUSINESS_TABLES), 'Business catalog uses guarded commands only'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

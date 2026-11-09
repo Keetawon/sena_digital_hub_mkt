@@ -1,11 +1,12 @@
 "use client";
+import { workspaceText } from "@/lib/unified-workspace";
 import { useEffect, useRef, useState } from "react";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
 import { useHubPermissions } from "./accounts";
 import { BilingualInput, ExposureInput, TranslationReviewPanel, errorMessage, type ContentField, type Exposure, type Locales, type Translation } from "./content-common";
 
-export const scopeLabels: Record<string, string> = { corporate: "องค์กร", brand: "แบรนด์", programme: "โครงการบริการ", project_group: "กลุ่มโครงการ", project: "โครงการ / เฟส", unit_type: "แบบห้องหรือแบบบ้าน" };
+export const scopeLabels: Record<string, string> = { corporate: "องค์กร", business: workspaceText.business, brand: "แบรนด์", programme: "โครงการบริการ", project_group: "กลุ่มโครงการ", project: "โครงการ / เฟส", unit_type: "แบบห้องหรือแบบบ้าน" };
 export const kindLabels: Record<string, string> = { text: "ข้อความ", fact: "ข้อเท็จจริง", handoff: "ส่งต่อฝ่ายขาย", auto: "จากข้อมูลที่อนุมัติ" };
 export type BankQuestion = { question_key: string; topic: string; default_level: string; question_template: Locales; alt_questions: Locales; answer_kind: string; fact_keys: string[]; property_types: string[]; is_core: boolean; show_on_project_pages: boolean; web_sort: number; status: string; revision: number; version_author: string | null; ai_exposure: Exposure };
 export type QuestionBank = { items: BankQuestion[]; topics: { code: string; label: Locales }[]; translations?: Translation[] };

@@ -18,7 +18,7 @@ export function workflowAllowsQuery(path: string, method: string, query: URLSear
   if (path === queue) return query.size === 0;
   if (path.endsWith('/items')) {
     const rules: Record<string, (value: string | null) => boolean> = {
-      level: value => ['corporate','brand','project','programme','project_group','unit_type'].includes(value ?? ''),
+      level: value => ['corporate','business','brand','project','programme','project_group','unit_type'].includes(value ?? ''),
       id: value => bounded(value, 200), phase: value => bounded(value, 200),
       after: value => bounded(value, 8192), limit: value => /^(?:[1-9]\d?|100)$/.exec(value ?? '')?.[0] === value,
     };

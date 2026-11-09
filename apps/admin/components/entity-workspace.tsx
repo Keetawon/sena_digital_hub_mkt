@@ -13,6 +13,7 @@ import { ProjectContentWorkspace } from "./project-content-workspace";
 import { ProjectMediaWorkspace } from "./project-media-workspace";
 import { WebsiteContentSources } from "./website-content-sources";
 import { FaqWorkspace } from "./faq-workspace";
+import { BusinessWorkspace } from "./business-workspace";
 import { ExposureChip } from "./content-exposure";
 import { SavedContentSubmission } from "./content-workflow";
 import type { SubmissionOutcome } from "@/lib/content-workflow";
@@ -62,6 +63,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
   const [data, setData] = useState<WorkspaceEntity | null>(null), [error, setError] = useState(""), [editing, setEditing] = useState(false), [primaryDirty, setPrimaryDirty] = useState(false), [primaryBusy, setPrimaryBusy] = useState(false), [primaryPending, setPrimaryPending] = useState(false), [retry, setRetry] = useState(0);
   const [suggestionEditing, setSuggestionEditing] = useState(false);
   const [headerBusy, setHeaderBusy] = useState(false), [inventoryRevision, setInventoryRevision] = useState(0), [editorRevision, setEditorRevision] = useState(0);
+  const businessEditing = useCallback((value: boolean) => { setEditing(value); setPrimaryBusy(value); setPrimaryPending(value); }, []);
   const location = useContentLocation(primaryDirty || editing || suggestionEditing || headerBusy), root = useRef<HTMLDivElement>(null);
   const [legacyHistoryOpen, setLegacyHistoryOpen] = useState(false);
   const phase = location.params.get("phase"), section = location.params.get("section"), queryTab = location.params.get("tab");
@@ -146,7 +148,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
   return <div className="unified-workspace" ref={root}>
     <header className="workspace-heading"><div><WorkspaceBack fallback="/website" label={text.website} /><h1>{workspaceName(data.entity.name)}</h1></div>
       {data.phases.length > 1 && <label className="content-input">{text.phase}<select disabled={primaryBusy || suggestionEditing || headerBusy} value={data.selected_phase ?? ""} onChange={event => location.navigate({ phase: event.target.value, field: null, item: null, faq: null, cluster: null, unit_type: null })}>{data.phases.map(item => <option key={item.rem_project_id} value={item.rem_project_id}>{workspaceName(item.name)} · {item.rem_project_id}</option>)}</select></label>}
-      <SavedContentSubmission scope={level === "business" ? null : { level, id, phase: level === "project" || level === "unit_type" ? data.selected_phase : null }} revision={inventoryRevision}
+      <SavedContentSubmission scope={{ level, id, phase: level === "project" || level === "unit_type" ? data.selected_phase : null }} revision={inventoryRevision}
         disabled={primaryDirty || primaryBusy || editing || suggestionEditing} onBusyChange={setHeaderBusy} onChanged={submitted}
         onExposureChanged={() => { setEditorRevision(value => value + 1); onWorkflowChanged(); }} />
     </header>
@@ -167,6 +169,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
       {tab === "data" && <><nav className="workspace-section-states" aria-label={text.data}>{data.sections.filter(item => item.tab === "data").map(item => <a key={item.key} href={workspaceHref(item.target)}>{workspaceName(item.label ?? sectionLabel(item.key))} <ExposureChip exposure={item.ai_exposure} /> · {text[item.state as keyof typeof text] ?? item.state}{item.suggestion_count > 0 && <> · {text.suggestions} {item.suggestion_count}</>}</a>)}</nav>
         {publicProject ? <ProjectContentWorkspace projectId={publicProject} embedded primary={primary} supplementary={primary} navigationBlocked={primaryBusy} navigationPending={primaryPending} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />
           : level === "brand" ? <ProjectContentWorkspace brandId={id} embedded primary={primary} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />
+          : level === "business" && permissions.can("knowledge") ? <BusinessWorkspace code={id} onEditingChange={businessEditing} onWorkflowChanged={onWorkflowChanged} />
           : level === "corporate" ? <FaqWorkspace embedded initialSection="contacts" scope={scope} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} /> : null}
       </>}
       {tab === "media" && projectSource && <div inert={suggestionEditing}><nav className="content-tabs"><button className="button secondary" disabled={primaryPending} onClick={() => location.navigate({ section: "canonical" }, !editing && !primaryPending)}>{text.canonicalMedia}</button><button className="button secondary" disabled={primaryBusy} onClick={() => location.navigate({ section: "library" }, !editing && !primaryBusy)}>{text.media}</button></nav>{section !== "canonical" && <ProjectMediaWorkspace projectId={publicProject!} embedded onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />}</div>}

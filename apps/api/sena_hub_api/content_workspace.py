@@ -13,7 +13,7 @@ from .auth import Actor
 from .content_permissions import require_content
 from .web_publication import preview_html
 
-Kind = Literal['project', 'brand', 'corporate', 'programme', 'project_group', 'unit_type']
+Kind = Literal['project', 'brand', 'business', 'corporate', 'programme', 'project_group', 'unit_type']
 Reference = Annotated[str, StringConstraints(min_length=1, max_length=200, pattern=r'^[^\x00-\x1f/\\]+$')]
 Cursor = Annotated[str, StringConstraints(pattern=r'^[1-9][0-9]{0,18}$')]
 QuestionKey = Annotated[str, StringConstraints(pattern=r'^[a-z][a-z0-9_]{1,100}$')]

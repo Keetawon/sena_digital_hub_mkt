@@ -72,6 +72,11 @@ export function canOpenPage(account: HubAccount, path: string, query: URLSearchP
     if (["fields", "media-tags", "media-rules"].includes(section ?? "")) return can(account.capabilities, "projects");
     return can(account.capabilities, "projects") || can(account.capabilities, "knowledge");
   }
+  if (path === "/website/business" || path.startsWith("/website/business/")) {
+    const internal = ["viewer", "editor", "publisher", "admin", "online_staff"].includes(account.hub_role ?? account.role ?? "");
+    return /^\/website\/business\/[a-z][a-z0-9_]{1,63}$/.exec(path)?.[0] === path && account.status === "ACTIVE" && internal
+      && !account.agency_code && !account.agency && can(account.capabilities, "knowledge");
+  }
   const entity = /^\/website\/(corporate|business|brand|project|programme|project_group|unit_type)\/[^/]+$/.exec(path);
   if (entity) return account.status === "ACTIVE" && canWorkspace(account.capabilities) && (can(account.capabilities, "knowledge") || can(account.capabilities, entity[1] === "brand" ? "brands" : "projects"));
   if (path === "/" && query.get("tab") === "faq" && (query.has("project") || query.has("brand"))) return can(account.capabilities, "knowledge");

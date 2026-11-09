@@ -493,7 +493,8 @@ def test_knowledge_only_faq_text_editor_targets_and_history_keep_source_tabs_clo
                 node = next(row for row in tree.json()['data']['items'] if row['kind'] == discovery_kind and row['ref'] == discovery_ref)
                 assert node['name'] == {'th': minimal_name} and node['faq_only'] is True
                 assert node['target'] == {'level': discovery_kind, 'id': discovery_ref, 'tab': 'faq'}
-                assert node['parent'] is None and node['has_children'] is False and node['visible_phase_count'] == 0
+                expected_parent = {'kind': 'business', 'ref': 'residential'} if discovery_kind == 'brand' else None
+                assert node['parent'] == expected_parent and node['has_children'] is False and node['visible_phase_count'] == 0
                 assert node['grouping']['review_href'] is None
                 search = client.get('/v1/admin/content/search', params={'q': discovery_ref}, headers=h('viewer'))
                 assert search.status_code == 200, search.text

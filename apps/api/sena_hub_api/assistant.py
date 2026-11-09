@@ -20,6 +20,7 @@ from starlette.exceptions import HTTPException
 from .auth import Actor, failure
 from .provider_budget import spend_limit_code
 from .provider_messages import MESSAGES
+from .content_workflow import publication_targets
 from .assistant_tools import Input, Identifier, Month, STAFF_ROLES, TOOL_SCHEMAS, TOOL_LABELS, TOOL_INPUTS, ToolReader, campaign_version, decode, finance_filters
 
 BANGKOK = timezone(timedelta(hours=7), "Asia/Bangkok")
@@ -28,6 +29,7 @@ BANGKOK = timezone(timedelta(hours=7), "Asia/Bangkok")
 class Context(Input):
     project_id: Identifier | None = None
     brand_id: Identifier | None = None
+    business_id: Annotated[str, StringConstraints(strict=True, pattern=r"^[a-z][a-z0-9_]{1,63}$")] | None = None
     rem_project_id: Identifier | None = None
     line_id: UUID | None = None
     month: Month | None = None
@@ -38,7 +40,7 @@ class Context(Input):
 
     @model_validator(mode="after")
     def one_scope(self):
-        if sum(bool(getattr(self, key)) for key in ("project_id", "brand_id", "rem_project_id", "line_id", "code", "name")) > 1:
+        if sum(bool(getattr(self, key)) for key in ("project_id", "brand_id", "business_id", "rem_project_id", "line_id", "code", "name")) > 1:
             raise ValueError("กรุณาเลือกบริบทหลักเพียงหนึ่งรายการ")
         return self
 
@@ -185,9 +187,22 @@ def register_assistant_routes(app, authentication, database, settings):
             await asyncio.gather(task, return_exceptions=True)
         return {"data": await rpc(request, actor, "SELECT internal.assistant_run_read($1)::text", run_id)}
 
-    async def citation_source(request, actor, source):
+    async def citation_source(request, actor, source, run_id):
         reader = ToolReader(request, actor, database)
         kind, identity, version = source["entity_type"], source["entity_id"], source["version"]
+        if kind in {"business", "faq", "section"}:
+            # Reopen only this saved source through its current canonical guard.
+            # A business reference never authorizes descendant content.
+            current = await rpc(request, actor, "SELECT internal.assistant_citation_read($1,$2)::text", run_id, UUID(source["id"]))
+            evidence = current.get("evidence")
+            if not isinstance(evidence, dict) or any(evidence.get(key) != source.get(key)
+                    for key in ("entity_type", "entity_id", "version")):
+                raise HTTPException(409, detail={"code": "assistant_source_changed"})
+            target = publication_targets({"target": evidence["target"]})
+            if target.get("href"):
+                return {"source_href": target["href"], "metadata": {
+                    "visibility": evidence["visibility"], "version": evidence["version"],
+                    "as_of": evidence.get("as_of"), "environment": "local-test", "synthetic": False}}
         if kind in {"project", "brand"}:
             current = await reader.content(kind, identity, "draft" if version.startswith("draft:") else "published", None if version.startswith("draft:") else UUID(version))
             if not current or current[1] != version: raise failure(409, "assistant_source_changed", "ฉบับร่างเปลี่ยนแล้ว กรุณาถามใหม่จากข้อมูลล่าสุด")
@@ -233,7 +248,7 @@ def register_assistant_routes(app, authentication, database, settings):
     @app.get(prefix + "/runs/{run_id}/citations/{citation_id}")
     async def citation(run_id: UUID, citation_id: UUID, request: Request, actor: Actor = Depends(staff)):
         source = await rpc(request, actor, "SELECT internal.assistant_citation_read($1,$2)::text", run_id, citation_id)
-        return {"data": {"id": str(citation_id), "source": source, **await citation_source(request, actor, source)}}
+        return {"data": {"id": str(citation_id), "source": source, **await citation_source(request, actor, source, run_id)}}
 
     @app.post(prefix + "/runs")
     async def runs(body: RunInput, request: Request, actor: Actor = Depends(staff)):
@@ -321,7 +336,7 @@ def register_assistant_routes(app, authentication, database, settings):
                         raise ValueError("Expired evidence")
                     # No unsupported block is released before source/version checks complete.
                     await rpc(request, actor, "SELECT internal.assistant_citation_read($1,$2)::text", run_id, UUID(citations[source_id]["id"]))
-                    checked = await citation_source(request, actor, citations[source_id])
+                    checked = await citation_source(request, actor, citations[source_id], run_id)
                     if checked["metadata"].get("visibility", source["visibility"]) != source["visibility"]:
                         raise ValueError("Publication state changed")
                 if not chosen:

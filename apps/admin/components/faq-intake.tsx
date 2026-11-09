@@ -7,7 +7,7 @@ import { kindLabels, scopeLabels, type QuestionBank } from "./faq-bank";
 import "./faq-intake.css";
 
 type Reference = { id: string; name: string; project_id?: string };
-export type IntakeReferences = { projects: Reference[]; brands: Reference[]; groups: Reference[]; unit_types: Reference[] };
+export type IntakeReferences = { businesses?: Reference[]; projects: Reference[]; brands: Reference[]; groups: Reference[]; unit_types: Reference[] };
 type Status = { state: "open" | "held" | "question_proposed" | "decided"; decision?: string; hold_code?: string | null; faq_id?: string | null; question_key?: string | null; decided_at?: string };
 type Summary = { id: string; sort_key: number; revision: number; template: string; question: string; variant_count: number; answer_group_count: number; project_ids: string[]; brand_ids: string[]; holds: string[]; suggested_question_key: string | null; suggested_level: string; suggested_kind: string; suggestion_basis: string; status: Status };
 type Listing = { items: Summary[]; next_after: number | null; filtered_total: number; counts: Record<"total" | "decided" | "held" | "question_proposed" | "open", number>; brands: { id: string; name: string; count: number }[]; generation: { generation_sha256: string; generated_at: string } | null };
@@ -95,7 +95,7 @@ export function FaqIntake({ bank, references, onChanged, onEditingChange, onOpen
     } catch (e) { setError(errorMessage(e)); } finally { setPending(false); }
   }
   function scopeOptions(kind: string): Reference[] {
-    return kind === "corporate" ? [{ id: "sena", name: "SENA" }] : kind === "brand" ? references.brands : kind === "project" ? references.projects : kind === "project_group" ? references.groups : kind === "unit_type" ? references.unit_types : ["LIVNEX", "LIVNEX_GOLD", "RENTNEX", "RENTNEX_BENEFIT", "RENTNEX_INVEST"].map(id => ({ id, name: id }));
+    return kind === "corporate" ? [{ id: "sena", name: "SENA" }] : kind === "business" ? references.businesses ?? [] : kind === "brand" ? references.brands : kind === "project" ? references.projects : kind === "project_group" ? references.groups : kind === "unit_type" ? references.unit_types : ["LIVNEX", "LIVNEX_GOLD", "RENTNEX", "RENTNEX_BENEFIT", "RENTNEX_INVEST"].map(id => ({ id, name: id }));
   }
   const counts = listing?.counts;
   const canSubmit = choice === "create" ? Boolean(answer?.question_key && answer.scope_id && answer.question.trim() && answer.short_answer.trim() && answer.short_answer.length <= 300 && (answer.scope_type === "corporate" || answer.applies_to_project_ids.length) && !unchanged && (!existing || answer.append))

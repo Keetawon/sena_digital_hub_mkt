@@ -32,7 +32,7 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
     shared = {key for key, value in SHARED_RULES.items() if value != 'unavailable'}
     assert not CONTENT_RULES.keys() & SHARED_RULES.keys()
     assert actual == CONTENT_RULES.keys() | shared
-    assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable', 'content_registry', 'content_translation', 'content_workspace', 'content_workflow'}
+    assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable', 'content_registry', 'content_translation', 'content_workspace', 'content_workflow', 'business_content'}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_workspace'} == {
         ('GET', '/v1/admin/content/search'), ('GET', '/v1/admin/content/home'),
         ('GET', '/v1/admin/content/workspace/tree'),
@@ -47,6 +47,7 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
         ('GET', '/v1/admin/content-workflow/items'), ('POST', '/v1/admin/content-workflow/review'),
         ('POST', '/v1/admin/content-workflow/save-approve'), ('POST', '/v1/admin/content-workflow/submit'),
         ('POST', '/v1/admin/content-workflow/exposure'), ('GET', '/v1/admin/content-workflow')}
+    assert {key for key, value in SHARED_RULES.items() if value == 'business_content'} == {('PUT', '/v1/admin/content/businesses/{code}/contacts/{contact_id}'), ('POST', '/v1/admin/content/businesses/{code}/contacts'), ('GET', '/v1/admin/content/businesses/{code}/content'), ('PUT', '/v1/admin/content/businesses/{code}/sections/{section_key}'), ('GET', '/v1/admin/content/businesses')}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_registry'} == {('GET', '/v1/admin/content/fields')}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_translation'} == {
         ('POST', '/v1/admin/content/translations/{translation_id}/review'), ('POST', '/v1/admin/content/translations/{translation_id}/retry')}

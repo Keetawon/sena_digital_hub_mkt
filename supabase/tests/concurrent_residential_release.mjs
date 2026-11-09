@@ -116,6 +116,7 @@ try {
   await setup.query('delete from hub.projects where rem_project_id=$1', [key]);
   await setup.query('delete from hub.brand_assets where brand_id in(select id from hub.brands where rem_brand_id=$1)', [key]);
   await setup.query('delete from hub.brand_versions where brand_id in(select id from hub.brands where rem_brand_id=$1)', [key]);
+  await setup.query('delete from hub.brand_business where brand_id in(select id from hub.brands where rem_brand_id=$1)', [key]);
   await setup.query('delete from hub.brands where rem_brand_id=$1', [key]);
   await setup.query('delete from hub.assets where created_by=$1', [actor]);
   await setup.query('delete from staging.source_offers where source_offer_key=$1', [key]);

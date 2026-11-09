@@ -2,13 +2,15 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { createPortal } from "react-dom";
+import { workspaceText } from "@/lib/unified-workspace";
+import { useHubPermissions } from "./accounts";
 import { request } from "./hub-request";
 import { PendingQuestion } from "./pending-question";
 import { dateTime } from "./content-operations-shared";
 import "./hub-assistant.css";
 
 const base = "v1/admin/assistant";
-type Context = { project_id?: string; brand_id?: string; rem_project_id?: string; line_id?: string; month?: string; code?: string; visibility?: "draft" | "published" };
+type Context = { project_id?: string; brand_id?: string; business_id?: string; rem_project_id?: string; line_id?: string; month?: string; code?: string; visibility?: "draft" | "published" };
 type Config = { session_key: string; mode: "fake"; live_available: boolean; allowed_tools: string[]; message_th: string; live_questions: { id: string; label_th: string }[]; proposal_fields: { project?: string[]; brand?: string[] } };
 type Metadata = { visibility?: string; version?: string | number | null; environment?: string; synthetic?: boolean; contains_synthetic?: boolean; as_of?: string | null; freshness?: Record<string, unknown> };
 type Block = { id: string; text: string; metadata: Metadata; citation_ids: string[] };
@@ -16,8 +18,12 @@ type Citation = { id: string; label_th: string };
 type Turn = { key: string; question: string; mode: "fake" | "live"; run_id: string | null; blocks: Block[]; citations: Citation[]; status: string; error: string };
 type TypedDraft = { text: string; rationale: string };
 type Proposal = { id: string; entity_type: "project" | "brand"; entity_id: string; field_path: string; old_text: string | null; new_text: string; expected_updated_at: string; status: string; digest: string };
-const contextLabels = { project_id: "โครงการ", brand_id: "แบรนด์", rem_project_id: "รหัสโครงการ REM", code: "รหัสแคมเปญ SN", line_id: "รายการสื่อ" } as const;
+const contextLabels = { project_id: "โครงการ", brand_id: "แบรนด์", business_id: workspaceText.business, rem_project_id: "รหัสโครงการ REM", code: "รหัสแคมเปญ SN", line_id: "รายการสื่อ" } as const;
 type ContextKind = keyof typeof contextLabels;
+function contextKinds(config: Config | null, knowledgeView: boolean) {
+  const tools: Record<ContextKind, string> = { project_id: "get_project", brand_id: "get_brand", business_id: "search_content", rem_project_id: "get_project_marketing", line_id: "get_line_actuals", code: "get_campaign" };
+  return (Object.keys(contextLabels) as ContextKind[]).filter(key => config?.allowed_tools.includes(tools[key]) && (key !== "business_id" || knowledgeView));
+}
 // Opening a suggestion fills the composer only. Sending remains an explicit
 // action in the existing permission-checked assistant.
 export function openWorkspaceAssistant(text = "", context?: Context, source?: HTMLElement) {
@@ -28,8 +34,10 @@ const messageOf = (error: unknown) => error instanceof TypeError ? "เชื่
 const sourceLink = (href: unknown): href is string => typeof href === "string" && /^\/(?!\/)[^\\\u0000-\u001f\u007f]*$/.test(href);
 function pageContext(): Context {
   const query = new URLSearchParams(window.location.search);
-  const entity = /^\/website\/(project|brand)\/([^/]+)$/.exec(window.location.pathname);
-  if (entity) return { [entity[1] === "project" ? "project_id" : "brand_id"]: decodeURIComponent(entity[2]) };
+  const entity = /^\/website\/(project|brand|business)\/([^/]+)$/.exec(window.location.pathname);
+  if (entity) {
+    try { return cleanContext({ [`${entity[1]}_id`]: decodeURIComponent(entity[2]) }); } catch { return {}; }
+  }
   if (query.get("project")) return { project_id: query.get("project")! };
   if (query.get("brand")) return { brand_id: query.get("brand")! };
   if (query.get("registration")) return { code: query.get("registration")! };
@@ -37,10 +45,19 @@ function pageContext(): Context {
 }
 function cleanContext(value: unknown): Context {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const input = value as Record<string, unknown>;
+  const kinds = Object.keys(contextLabels);
+  if ([...kinds, "name"].filter(key => input[key] != null).length > 1 || input.name != null) return {};
   const result: Record<string, string> = {};
-  for (const key of [...Object.keys(contextLabels), "month", "visibility"]) {
-    const entry = (value as Record<string, unknown>)[key];
-    if (typeof entry === "string" && entry.length <= 200) result[key] = entry;
+  for (const key of [...kinds, "month", "visibility"]) {
+    const entry = input[key];
+    if (entry == null) continue;
+    if (typeof entry !== "string" || !entry.trim() || entry.length > 100 || /[\u0000-\u001f\u007f]/.test(entry)) return {};
+    if (key === "business_id" && !/^[a-z][a-z0-9_]{1,63}$/.test(entry)) return {};
+    if (key === "line_id" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry)) return {};
+    if (key === "visibility" && entry !== "draft" && entry !== "published") return {};
+    if (key === "month" && !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(entry)) return {};
+    result[key] = entry;
   }
   return result as Context;
 }
@@ -101,6 +118,7 @@ function DraftProposal({ context, config, draft, onDraft, onDenied }: { context:
 }
 
 export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigationTarget: HTMLElement | null; onNavigationOpen: () => HTMLElement | null }) {
+  const permissions = useHubPermissions(), knowledgeView = permissions.can("knowledge");
   const [open, setOpen] = useState(false); const [config, setConfig] = useState<Config | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const configKey = useRef<string | null>(null); const checkingConfig = useRef(false);
   const launchContext = useRef<Context | null>(null);
@@ -154,7 +172,8 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
   }, [open]);
   useEffect(() => { if (open && config && tab === "chat") (mode === "fake" ? composer.current : goldenInput.current)?.focus({ preventScroll: true }); }, [open, config, mode]);
   function contextSaved(next: Context, value = config) {
-    setContext(next); const key = (Object.keys(contextLabels) as ContextKind[]).find(key => next[key]); setContextKind(key ?? "project_id"); setContextId(key ? next[key]! : ""); setMonth(next.month?.slice(0, 7) ?? ""); setVisibility(next.visibility ?? "draft");
+    next = cleanContext(next);
+    setContext(next); const key = (Object.keys(contextLabels) as ContextKind[]).find(key => next[key]); setContextKind(key ?? contextKinds(value, knowledgeView)[0] ?? "project_id"); setContextId(key ? next[key]! : ""); setMonth(next.month?.slice(0, 7) ?? ""); setVisibility(next.visibility ?? "draft");
     if (value) try { sessionStorage.setItem(`hub-assistant-context:${value.session_key}`, JSON.stringify(next)); } catch { /* Context still remains available in this mounted session. */ }
   }
   useEffect(() => {
@@ -247,7 +266,7 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     } finally { if (controller.current === abort) { controller.current = null; setBusy(false); } }
   }
   const contextText = (Object.keys(contextLabels) as ContextKind[]).filter(key => context[key]).map(key => `${contextLabels[key]}: ${context[key]}`).join(" · ");
-  const availableKinds = (Object.keys(contextLabels) as ContextKind[]).filter(key => key === "project_id" ? config?.allowed_tools.includes("get_project") : key === "brand_id" ? config?.allowed_tools.includes("get_brand") : key === "rem_project_id" ? config?.allowed_tools.includes("get_project_marketing") : key === "line_id" ? config?.allowed_tools.includes("get_line_actuals") : config?.allowed_tools.includes("get_campaign"));
+  const availableKinds = contextKinds(config, knowledgeView);
   const quickQuestions = ["โครงการนี้พร้อมเผยแพร่หรือยัง", "งบโฆษณาของโครงการนี้เดือนนี้", "อธิบายชื่อแคมเปญนี้", "โครงการนี้มีโปรโมชันอะไร"];
   const draftAllowed = Boolean(config && (config.proposal_fields.project?.length || config.proposal_fields.brand?.length));
   const draftContextAllowed = Boolean(config && (context.project_id ? config.proposal_fields.project?.length : context.brand_id ? config.proposal_fields.brand?.length : false));
@@ -296,9 +315,9 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
       <div ref={contextPopover} id={contextPopoverId} className="question-popover assistant-context-popover" popover="auto" role="dialog" aria-labelledby="assistant-context-title" onToggle={event => { if (event.newState === "open") contextHeading.current?.focus(); }} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeContext(); } }}>
         <div className="assistant-heading"><h2 ref={contextHeading} tabIndex={-1} id="assistant-context-title">บริบทผู้ช่วย</h2><button className="button secondary" type="button" onClick={closeContext}>ปิดบริบท</button></div>
         <p><strong>บริบทที่เลือก:</strong> {contextText || "ยังไม่เลือกบริบท"}{context.month && ` · เดือน ${context.month}`}</p><p>คงบริบทนี้ไว้จนกว่าจะเปลี่ยนเอง การเปลี่ยนหน้าไม่เปลี่ยนโครงการในบทสนทนา</p>
-        <form onSubmit={event => { event.preventDefault(); contextSaved(contextId.trim() ? { [contextKind]: contextId.trim(), ...(month ? { month: `${month}-01` } : {}), visibility } : {}); closeContext(); }}>
-          <div className="assistant-fields"><div className="form-field"><label htmlFor="assistant-context-kind">ประเภทบริบท</label><select id="assistant-context-kind" value={contextKind} onChange={event => setContextKind(event.target.value as ContextKind)} disabled={busy}>{availableKinds.map(kind => <option key={kind} value={kind}>{contextLabels[kind]}</option>)}</select></div><div className="form-field"><label htmlFor="assistant-context-id">รหัสบริบทตามต้นทาง</label><input id="assistant-context-id" value={contextId} maxLength={128} disabled={busy} onChange={event => setContextId(event.target.value)} /></div><div className="form-field"><label htmlFor="assistant-context-month">เดือนตามเวลาประเทศไทย</label><input id="assistant-context-month" type="month" value={month} disabled={busy} onChange={event => setMonth(event.target.value)} /></div><div className="form-field"><label htmlFor="assistant-context-version">ฉบับข้อมูลที่ต้องการ</label><select id="assistant-context-version" value={visibility} disabled={busy} onChange={event => setVisibility(event.target.value as typeof visibility)}><option value="draft">ฉบับร่าง</option><option value="published">ฉบับเผยแพร่</option></select></div></div>
-          <div className="assistant-actions"><button className="button secondary" disabled={busy} type="submit">ใช้บริบทนี้</button><button className="button secondary" type="button" disabled={busy} onClick={() => { contextSaved(pageContext()); closeContext(); }}>ใช้บริบทของหน้าปัจจุบัน</button><button className="button secondary" type="button" disabled={busy} onClick={() => { contextSaved({}); closeContext(); }}>ล้างบริบท</button></div>
+        <form onSubmit={event => { event.preventDefault(); if (!availableKinds.includes(contextKind)) return; contextSaved(contextId.trim() ? { [contextKind]: contextId.trim(), ...(month ? { month: `${month}-01` } : {}), visibility } : {}); closeContext(); }}>
+          <div className="assistant-fields"><div className="form-field"><label htmlFor="assistant-context-kind">ประเภทบริบท</label><select id="assistant-context-kind" value={availableKinds.includes(contextKind) ? contextKind : ""} onChange={event => setContextKind(event.target.value as ContextKind)} disabled={busy}>{!availableKinds.includes(contextKind) && <option value="" disabled>เลือกบริบท</option>}{availableKinds.map(kind => <option key={kind} value={kind}>{contextLabels[kind]}</option>)}</select></div><div className="form-field"><label htmlFor="assistant-context-id">รหัสบริบทตามต้นทาง</label><input id="assistant-context-id" value={contextId} maxLength={128} disabled={busy} onChange={event => setContextId(event.target.value)} /></div><div className="form-field"><label htmlFor="assistant-context-month">เดือนตามเวลาประเทศไทย</label><input id="assistant-context-month" type="month" value={month} disabled={busy} onChange={event => setMonth(event.target.value)} /></div><div className="form-field"><label htmlFor="assistant-context-version">ฉบับข้อมูลที่ต้องการ</label><select id="assistant-context-version" value={visibility} disabled={busy} onChange={event => setVisibility(event.target.value as typeof visibility)}><option value="draft">ฉบับร่าง</option><option value="published">ฉบับเผยแพร่</option></select></div></div>
+          <div className="assistant-actions"><button className="button secondary" disabled={busy || !availableKinds.includes(contextKind)} type="submit">ใช้บริบทนี้</button><button className="button secondary" type="button" disabled={busy} onClick={() => { contextSaved(pageContext()); closeContext(); }}>ใช้บริบทของหน้าปัจจุบัน</button><button className="button secondary" type="button" disabled={busy} onClick={() => { contextSaved({}); closeContext(); }}>ล้างบริบท</button></div>
         </form>
       </div>
     </dialog>

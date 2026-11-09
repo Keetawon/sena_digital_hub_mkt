@@ -539,6 +539,7 @@ editors retain their existing copy unless a label above supersedes it.
 
 | Key | Thai label |
 | --- | --- |
+| assistant_context_choose | เลือกบริบท |
 | local_testing | พื้นที่ทดสอบในเครื่อง |
 | local_testing_note |  · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด |
 | local_persona_discard | มีข้อมูลร่างที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขและเปลี่ยนบัญชีทดสอบหรือไม่? |
@@ -552,6 +553,9 @@ editors retain their existing copy unless a label above supersedes it.
 | next | ถัดไป |
 | project | โครงการ |
 | brand | แบรนด์ |
+| business_narrative | เนื้อหาธุรกิจ |
+| business_contacts | ช่องทางติดต่อ |
+| business_no_applicable_phases | ยังไม่ได้ระบุโครงการหรือเฟสที่ใช้คำตอบนี้ |
 | readiness | ความพร้อมของข้อมูล |
 | required_missing | ข้อมูลจำเป็นที่ยังขาด |
 | returned_task | ถูกส่งกลับให้ฉัน |

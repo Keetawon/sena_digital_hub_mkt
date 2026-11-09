@@ -57,13 +57,13 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 | W1 | Service shell, logo, theme, collapse, overflow fix; assistant leaves sidebar | None | Complete: `93b04cc`, pushed to origin/main |
 | W2 | Global search, floating assistant, home greeting and read-only personal tasks | W1 merged | Complete: `b5dc456`, pushed; receipt `d3ec1d6` |
 | W3 | Entity tree/pages, reused sections, readiness deep links, FAQ, inline suggestions/N7, media, history, Admin activity, redirects | W1 merged | Complete: `487e090`, pushed to origin/main |
-| W3.1 | Registry-default suggestion exposure, exposure chips/notices and compact contextual overview | W4 committed | Owner scope received 6 November; design and permission card below; implementation/gates pending |
-| W3.2 | Contextual Promotions tabs, owning brand, reviewed exclusions and legacy suggestions | W3.1 committed | Lead design recorded; implementation/gates pending |
-| W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Full gate passed; 0084/0085; final review checkpoint and delivery receipt below |
-| W5 | Fixed business level and composition order | W4 merged | Prepared; 31-file preview refreshed against current W4; integration and runtime gates pending |
+| W3.1 | Registry-default suggestion exposure, exposure chips/notices and compact contextual overview | W4 committed | Complete: `375d7c9`, pushed; receipt `5dcdbae` |
+| W3.2 | Contextual Promotions tabs, owning brand, reviewed exclusions and legacy suggestions | W3.1 committed | Complete: `7ceed6f`, pushed; receipt `cdfeb42` |
+| W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Complete: `16b38cd`, pushed; receipt `5a59e13`; migrations 0084/0085 |
+| W5 | Fixed business level and composition order | W4 merged | Integrated with migration 0088 and business assistant retrieval; quick checks clean; final full gate pending on 55 frozen paths |
 | W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Prepared design and implementation slices; lead integration/runtime gates pending |
 | W7 | Stub-only writing aid, registry flag, budget and diff UI | Backend independent; UI after W3 | Backend/UI prepared; lead integration/runtime gates after W6 |
-| W9 | Optimize future uploads, retain only stored result, allowlisted private file metadata suggestions | Bounded preparation parallel; shared adapters serialized; before W8 | Decision/card recorded; isolated processor has 34 small preparation checks passing; integration/full gate pending |
+| W9 | Optimize future uploads, retain only stored result, allowlisted private file metadata suggestions | Bounded preparation parallel; shared adapters serialized; before W8 | Decision/card recorded; isolated processor has 49 preparation checks passing; integration/full gate pending |
 | W8 | Thai UAT pack covering all docs/47 flows; final full gate | W1–W7, W3.2 and W9 | Fifty-four-case draft including Promotions and W9 amendments reviewed; fixtures, rehearsal and final programme gate pending |
 
 Current owner-ordered merge sequence: W1 → W2 → W3 → W4 → W3.1 → W3.2
@@ -4703,3 +4703,294 @@ and both W3.2 trees have now been removed. Unreconciled work was preserved.
 
 Next workstream: W5 business level, including its assistant retrieval and
 permission checks. W6, W7 and W9 follow; W8 and the final main gate remain last.
+
+### W5 lead integration lease — 9 November 2026, before code
+
+Integrate the reviewed 44-path `w5/merge-preview-w32/registered-receipt.json`
+candidate onto delivered main after verifying every predecessor and incoming
+hash. The exact paths are recorded below before transfer. The migration lane is
+`202611080088_business_level.sql`; obsolete prepared numbers remain isolated.
+Keep W3.1 summaries/exposure and W3.2 Promotions behavior unchanged. The fixed
+business catalog and brand associations are additive; no old content, versions,
+reviews, publications, accounts, grants or templates are rewritten.
+
+W5 permission-card refinement: extend the existing `search_content` tool with
+one optional `business_id`, mutually exclusive with project/brand. Require
+Knowledge V and exact business scope access before retrieval; this grants no
+descendant access. Existing assistant entry and source permissions still apply.
+Add only `internal.assistant_business_search(code text, visibility text)` as a
+bounded read entry point for `hub_app`, fixed search path and no PUBLIC execute.
+Existing private saved-source helpers stay closed. Register its exact inventory
+before runtime checks. No additional tool, endpoint, permission bit or write
+authority is introduced.
+
+Business retrieval returns only authorized narrative sections and text FAQs;
+contacts, automatic/fact answers and volatile numeric content are excluded.
+Require AI-eligible source and registry/question exposure. Draft mode pins the
+current version. Published mode uses the current frozen business-page snapshot
+and existing AI eligibility without a draft fallback. Saved published citations
+pin publication and source version together in the existing version string.
+Recheck exact source access, exposure, validity and current page publication at
+recording, citation-open and saved-run reads. Keep permitted neighbours readable.
+
+Lead additionally owns `apps/api/sena_hub_api/{assistant_tools,assistant_model}.py`,
+`apps/admin/components/hub-assistant.tsx`, the existing assistant tool/context/UI
+tests and new retrieval checks within `test_business_assistant.py`. The prepared
+`assistant.py`, migration and business permission inventory are reopened only
+for these reviewed read surfaces. Business context must reject conflicting
+project/brand/finance/document tool requests before domain queries. Keep thirteen
+tools, stub-only execution and the pending production retrieval decision Q42.
+
+Quick checks include typecheck, focused business/assistant/browser tests, the
+full API suite for shared registration changes, DB/permission inventory and
+populated preservation replay. The complete serial programme gate follows on
+final W5 code, including both widths, local H1 and credential scans. Current W5
+runtime status: NOT RUN. Lead retains all security decisions and port commands.
+
+Explicit prepared W5 integration paths:
+
+- supabase/tests/business_level.sql
+- apps/api/sena_hub_api/business_content.py
+- apps/api/tests/test_business_content.py
+- apps/api/sena_hub_api/content_workspace.py
+- apps/api/sena_hub_api/content_workflow.py
+- apps/api/sena_hub_api/faq_coverage.py
+- apps/api/sena_hub_api/faq_intake.py
+- apps/api/sena_hub_api/faq_clusters.py
+- apps/api/sena_hub_api/web_publication.py
+- apps/api/sena_hub_api/publication_queue.py
+- apps/api/sena_hub_api/workspace_home.py
+- apps/admin/components/business-workspace.tsx
+- apps/admin/components/content-narrative.tsx
+- apps/admin/components/entity-workspace.tsx
+- apps/admin/components/faq-applicability.tsx
+- apps/admin/components/faq-bank.tsx
+- apps/admin/components/faq-intake.tsx
+- apps/admin/components/faq-workspace.tsx
+- apps/admin/lib/business-workspace-text.ts
+- apps/admin/lib/content-workflow.ts
+- tests/ui/business-workspace-h1.spec.ts
+- tests/ui/business-workspace.spec.ts
+- apps/admin/lib/hub-permissions.ts
+- apps/admin/lib/workspace-api-routes.ts
+- apps/admin/lib/business-api-routes.ts
+- tests/ui/business-proxy.spec.ts
+- tests/permissions/content-business-db.json
+- apps/api/tests/test_content_business_inventory.py
+- apps/api/sena_hub_api/assistant.py
+- apps/api/tests/test_business_assistant.py
+- supabase/migrations/202611080088_business_level.sql
+- apps/admin/lib/content-routes.ts
+- apps/admin/lib/hosted-config.ts
+- apps/api/sena_hub_api/content_permissions.py
+- apps/api/sena_hub_api/main.py
+- apps/api/tests/test_permission_baseline.py
+- apps/api/tests/test_permission_db_baseline.py
+- apps/api/tests/test_permission_shared.py
+- scripts/run-hosted-h1.mjs
+- scripts/test-db.mjs
+- supabase/hosted-test/profile.json
+- tests/permissions/business-content-routes.json
+- tests/supabase-test-migrations.test.mjs
+- tests/content-upgrade.test.mjs
+
+Bounded W5 UI assignment: `ws/w5-context-browser` in its matching external
+worktree, cut from delivered main `cdfeb42`. It owns only
+`apps/admin/components/hub-assistant.tsx` and new
+`tests/ui/business-assistant-context.spec.ts`. Written brief:
+`artifacts/unified-workspace/w5/context-browser-brief.md`. It adds the business
+context parser, label, permission-based picker and focused browser regressions;
+all other files are read-only. It may run only non-port checks, never commits
+or pushes. Lead retains API/SQL security, integration and runtime gates.
+
+### W5 integration and foundation checks — 9 November 2026
+
+The 44 prepared paths were verified against delivered main and integrated.
+Lead completed business assistant Context/SearchContent validation, exact scope
+pinning before domain reads, bounded Knowledge-owned retrieval and saved-source
+checks. Published evidence retains the page/source version pair and reads the
+frozen eligible snapshot; new drafts do not replace it. Non-AI exposure, expired
+answers and overdue reviews are excluded from retrieval and citation recording.
+The inventory now has two owner-only FORCE RLS tables, ten new functions and
+three guarded runtime reads. Seven helpers remain private. No tool was added.
+
+The bounded UI sub-agent delivered its two owned files. Lead reviewed the diff
+and ten collected browser cases, archived them under `w5/context-browser-reviewed/`
+and integrated them. Its checks used shared dependencies without credential
+copies or ports; lead admin typecheck passed after integration. Lead added a
+business-form permission-recovery regression using the existing recovery panel.
+
+Quick-gate failure loop: the first invocation refused an outdated checksum for
+uncommitted 0088 before startup. Attempts 2/3 stopped during replay at exact
+multiline anchors. Older stored function bodies preserve CRLF; the new migration
+now normalizes those replacement inputs and keeps its own anchors LF, retaining
+every exact-match assertion. No committed migration or harness loader changed.
+Attempt 4 reached tests: 20 passed, 15 failed, 11 fixture errors. Corrections
+keep synthetic actor context in its transaction, provide the existing synthetic
+demo settings, and align the normal page-configuration link. Attempt 5 returned
+40 passed and six failures; lead corrected the remaining synthetic update,
+removed a nonexistent FAQ start-date field from the new reader, and supplied
+canonical evidence in the HTTP double. Attempt 6 returned 46 passed and one
+failure: the new publication fixture lacked its required explicit applicability.
+That fixture now supplies its synthetic project; the submission guard stays.
+
+Foundation quick attempt 7 passed all 53 cases, skipped 0, failed 0, one existing
+warning, native exit 0. It includes business composition/publication, runtime
+inventory, mixed-context denial, question-to-citation stub flow, source exposure,
+expiry, positive neighbours, frozen publication and withdrawal. Migration 0088
+replayed successfully; the disposable runner confirmed working DB/file-store
+isolation and teardown. Evidence: `w5/foundation-quick-7.log` and earlier logs.
+Admin typecheck also passed (`w5/typecheck-2.log`).
+
+Next quick checks: full DB and populated preservation, full API for shared
+registration changes, affected browser suites at both widths and local H1.
+The W5 final full gate, screenshots, commit and push remain pending. No new
+question or requirement deviation; no live provider/hosted operation occurred.
+
+### W5 integration quick failure and bounded correction — 9 November 2026
+
+The integration quick chain passed admin typecheck and the offline webpack
+build. DB checks reached the brand concurrency case and its assertions passed,
+then fixture cleanup failed because the new `hub.brand_business` row still
+referenced the synthetic brand. The runner stopped; API/browser/H1 stages did
+not run. Native exit was 1 and the serial port lock was released. Evidence:
+`w5/db-integration-quick.log`.
+
+Lead adds ownership of `supabase/tests/concurrent_brand.mjs` and
+`supabase/tests/concurrent_residential_release.mjs` solely to remove each
+fixture's new business membership before its existing synthetic-brand cleanup.
+Production foreign keys and test assertions remain intact. The bounded UI
+sub-agent retains its same two-file lease to require Knowledge View for the
+business context picker even when another domain enables `search_content`.
+Backend source checks remain authoritative; browser denial and allowed-neighbour
+cases will verify this narrower display rule before the next quick run.
+
+The DB retry passed, including replay, preservation, all SQL suites and
+concurrency scenarios. The subsequent full API quick run completed with 2,410
+passed, 12 failed, 11 existing skips and six existing warnings (1,581.92 seconds).
+Evidence: `w5/db-integration-quick-2.log`, `w5/api-integration-quick-2.log`.
+The native runner exited 1 and released the port lock. No browser or H1 result
+is claimed yet.
+
+Lead correction scope adds `apps/api/tests/test_assistant_model.py` and
+`apps/api/tests/test_content_workspace.py`. The golden tool fixture supplies
+both project and brand to a now single-scope search DTO; use a valid project
+context for that case while retaining every typed-tool and citation assertion.
+Three existing minimal-reference cases must expect the readable fixed business
+parent for brands, preserving zero descendant counts and every denial check.
+The business HTTP fixture also creates an unapproved corporate contact for its
+foreign-object check; later corporate publication tests correctly reject it.
+Use a unique synthetic brand contact as the foreign object and assert that the
+corporate contact collection stays unchanged. Publication guards are not relaxed.
+The failure report did not support the earlier tentative section-revision
+diagnosis; no revision assertion is being changed for that hypothesis.
+
+Lead reviewed the bounded UI follow-up: Knowledge View plus search permission
+is required for the business choice, while an unavailable explicit context is
+preserved until the user changes it. The existing placeholder wording is now
+registered in docs/47. Eleven cases were collected and non-port typechecking
+reported zero diagnostics; runtime verification remains with the lead.
+Existing `.gitattributes` already disables migration newline conversion, so
+the successful LF 0088 replay needs no additional portability change.
+
+Correction quick 3 passed typecheck/build and 183 API cases, with one existing
+skip and one failure in the rich project-publication regression. The new
+committed inheritance fixture used a global corporate FAQ although it only
+needed its synthetic project; that answer could enter later project fixtures.
+Scope its corporate fallback explicitly to the same synthetic project, retaining
+the business/brand/corporate preview and frozen approved-graph assertions.
+The runner stopped before browsers/H1, native exit 1. Evidence:
+`w5/api-integration-quick-3.log`. The next check runs the business and website
+publication files together before continuing browsers and local H1.
+
+### W5 browser correction quick 4 — 9 November 2026
+
+Business and website-publication API checks passed together: 31 passed, zero
+skipped or failed, one existing warning; disposable isolation and teardown passed.
+Desktop browser checks returned 138 passed and four failed, with no skips. The
+chain stopped before 390px/H1 and released the serial port lock. Evidence:
+`w5/api-integration-quick-4.log`, `w5/ui-1280-integration-quick-4.log`.
+
+Lead fixes two product issues: business editing/approval now carries its busy
+state to the outer tab guard; FAQ creation waits for its question bank instead
+of requesting the reserved `new` route as a saved FAQ and redirecting during
+initial load. The new browser regression explicitly checks that `faq/new` is
+never read. The source-conflict test now checks both visible language copies
+instead of using an ambiguous single-element locator. All original assertions
+remain. Quick 5 reruns typecheck/build, the affected shared browser selection at
+both widths and local H1; no API rerun is needed for these browser-only changes.
+
+A bounded sub-agent audited six W5 worktrees read-only. All committed heads are
+ancestors of main; only business-design is immediately clean. Assistant-context
+has an ignored review note already preserved in the main artifacts directory.
+Business-level (152 changed/untracked paths), transport (10) and UI (199) contain
+older snapshots or future W6 preparation and require reconciliation. Context
+browser's two owned files match current main exactly but remain uncommitted in
+that worktree. No worktree or branch was removed during the audit; the pending
+W5 delivery must preserve unresolved preparation before normal cleanup.
+
+### W5 visual review and transport correction lease — 9 November 2026
+
+Quick 5 passed typecheck, offline build, all 142 selected browser cases at each
+width, and local H1 (69 Node checks, ten smoke checks and 69 browser checks).
+No suite skipped or failed; the native chain exited zero and released the port
+lock. Evidence is in `w5/*-integration-quick-5.log`.
+
+Visual review nevertheless found an unsupported-filter banner in the real H1
+business header. The workflow inventory proxy still omits `business` from its
+level allowlist. Lead adds `apps/admin/lib/content-workflow-routes.ts` to the
+explicit W5 lease and corrects that finite list. The already-owned intake
+transport filter needs the same supported business level. Add positive and
+malformed-neighbour transport assertions and real H1 requests/header checks;
+passing old assertions alone did not establish a clean page.
+
+Local 390px preview screenshots also omitted the iframe content below the
+viewport. The screenshot test will scroll that content into view and assert
+viewport visibility before capture, and explicitly focus the history summary.
+No UI is hidden or image edited. Quick 6 reruns typecheck/build, the affected
+shared browser selection at both widths and local H1 before the full gate.
+
+The same bounded sub-agent completed a read-only W9 fixture inventory. Required
+metadata kinds have processor assertions; downstream database, public/provider
+and rights/UI integration remain unverified. The lead preserved its report at
+`w9/metadata-coverage-review.md`. No W9 source was integrated or declared done.
+
+Quick 6 passed typecheck/build and all 143 desktop browser cases. Mobile returned
+141 passed and two failures, both new screenshot checks timing out while waiting
+for the off-screen iframe's text to stabilize. The chain stopped before H1 and
+released the port lock. Scroll the outer iframe into view before its inner text,
+then capture the actual viewport; this avoids relying on an off-screen subframe
+paint in a full-page screenshot. Preserve the sandbox, exact content and
+no-horizontal-overflow assertions. Quick 7 repeats the business/browser proxy
+and shared navigation cases at both widths, followed by local H1. Product source
+is unchanged since the passing quick-6 typecheck/build and transport cases.
+
+Quick 7 passed all 47 business, proxy and navigation cases at each width, plus
+local H1 (69 Node, ten smoke, 69 browser), with zero skips/failures and native
+exit zero. The actual H1 business inventory and intake requests now return 200;
+the malformed level remains denied. The unsupported-filter banner is gone.
+Mobile preview captures now show the sandboxed content. Full-page history/H1
+captures normalize scroll to the top so fixed elements outside the viewport are
+not included at a misleading document offset. A final screenshot-only quick
+check precedes source freezing; the full gate also repeats H1 on these captures.
+
+During the serial run, the bounded reviewer inventoried W6 overlaps read-only.
+Lead checked the current promotion and business-assistant call chains and
+recorded pending integration work in `w6/current-integration-deltas.md`.
+No W6 source was integrated, no new migration was applied and no source system
+was contacted. All security/design decisions remain with the lead.
+
+### W5 final source and gate preparation — 9 November 2026
+
+Screenshot quick 8 passed both theme cases at both widths (two tests per run,
+zero skipped/failed). Lead visually verified the mobile preview text and the
+history capture without the off-screen fixed-link artifact. Product code is
+unchanged from quick 7. H1 full-page capture scroll normalization is also in the
+final test source and will run again in the full gate.
+
+Freeze 55 explicitly owned paths at delivered main `cdfeb42`. The complete
+serial gate runs typecheck, offline webpack build, production import checks,
+full API, full DB/replay/preservation/concurrency, local H1, all local browser
+specs separately at 1280 and 390, and changed-source/browser credential scans.
+No source changes are allowed during that run. No final result, commit or push
+is claimed in this pre-run entry; the delivery receipt will record exact totals.

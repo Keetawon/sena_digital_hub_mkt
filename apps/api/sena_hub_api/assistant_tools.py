@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 import asyncpg
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from . import naming
 from .auth import Actor, failure
@@ -54,8 +54,15 @@ class SearchContent(Input):
     query: Text
     project_id: Identifier | None = None
     brand_id: Identifier | None = None
+    business_id: Annotated[str, StringConstraints(strict=True, pattern=r"^[a-z][a-z0-9_]{1,63}$")] | None = None
     visibility: Literal["draft", "published"] = "draft"
     limit: Limit = 5
+
+    @model_validator(mode="after")
+    def one_scope(self):
+        if sum(bool(getattr(self, key)) for key in ("project_id", "brand_id", "business_id")) > 1:
+            raise ValueError("Choose one content scope")
+        return self
 
 
 class PromotionsInput(Input):
@@ -124,6 +131,8 @@ def demo_fields(value):
 def tool_source_kind(name, inputs=None, context=None):
     if name == "check_publish_readiness": return inputs.entity_type
     if name == "search_content":
+        if inputs.business_id or (context or {}).get("business_id"):
+            return "business"
         return "project" if inputs.project_id or (context or {}).get("project_id") else "brand"
     return {"get_project": "project", "find_projects": "project", "get_models": "project", "get_brand": "brand",
             "get_promotions": "promotion", "get_project_marketing": "media_line", "get_campaign": "campaign",
@@ -225,6 +234,13 @@ class ToolReader:
         if name not in TOOL_INPUTS:
             raise failure(403, "assistant_tool_forbidden", "บัญชีนี้ไม่มีสิทธิ์อ่านข้อมูลส่วนนี้")
         inputs = TOOL_INPUTS[name].model_validate(arguments)
+        business = self.context.get("business_id")
+        requested_business = getattr(inputs, "business_id", None)
+        other_context = any(self.context.get(key) for key in ("project_id", "brand_id", "rem_project_id", "line_id", "code", "name"))
+        if (business and (other_context or name != "search_content" or inputs.project_id or inputs.brand_id
+                          or requested_business and requested_business != business)
+                or requested_business and other_context):
+            raise failure(403, "assistant_scope_conflict", "กรุณาเปลี่ยนบริบทก่อนอ่านข้อมูลอีกส่วน")
         try:
             await self.access(name, tool_source_kind(name, inputs, self.context), finance_filters(name, inputs))
         except Exception:
@@ -375,6 +391,26 @@ class ToolReader:
         return e.result if e.result["facts"] else e.unavailable()
 
     async def search_content(self, p, e):
+        business_id = p.business_id or self.context.get("business_id")
+        if business_id:
+            rows = await self.query("SELECT internal.assistant_business_search($1,$2)::text", business_id, p.visibility)
+            for row in rows:
+                matches = []
+                for field in ("question", "short_answer", "detail") if row["entity_type"] == "faq" else ("title", "body", "summary"):
+                    value = row["fields"].get(field)
+                    text = narrative(value.get("th") if isinstance(value, dict) else value)
+                    if text and p.query.casefold() in text.casefold():
+                        matches.append((field, text))
+                if not matches:
+                    continue
+                source = e.source("internal_content", row["entity_type"], row["entity_id"], row["version"],
+                                  row["visibility"], as_of=row.get("as_of"), scope={"business_id": business_id})
+                for field, text in matches:
+                    e.fact(source, field + ".th", TOOL_LABELS["search_content"], text)
+                if len(e.result["sources"]) >= p.limit:
+                    break
+            e.result["pending_question_ids"] = ["Q42"]
+            return e.result if e.result["facts"] else e.unavailable()
         project_id = p.project_id or self.context.get("project_id")
         brand_id = p.brand_id or self.context.get("brand_id")
         if bool(project_id) == bool(brand_id): return e.unavailable("กรุณาระบุโครงการหรือแบรนด์หนึ่งรายการก่อนค้นหา")

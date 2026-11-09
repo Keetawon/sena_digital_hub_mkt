@@ -130,6 +130,8 @@ def test_every_golden_sdk_call_uses_the_real_typed_tool_schema(case):
         'project_id':model.LIVE_PROJECT_ID,'brand_id':'brd_synthetic','rem_project_id':'00001',
         'month':'2026-10-01','line_id':'00000000-0000-4000-8000-00000000a502',
         'code':'SN26000012','name':'DEMO__LEAD__SYNTHETIC__KIN__SN26000012','query':'สมมติ'}}
+    if case['tool'] == 'search_content':
+        context['scope'] = {key: context['scope'][key] for key in ('project_id', 'query')}
     calls=[]; results=[]
     async def invoke(name,args):
         TOOL_INPUTS[name].model_validate(args)

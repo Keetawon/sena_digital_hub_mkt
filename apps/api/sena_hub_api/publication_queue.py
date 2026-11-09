@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 from .auth import Actor, failure
 from .content_workflow import ContentHash, DecisionReason, WorkflowRevision, publication_targets
 
-PageKey = Annotated[str, StringConstraints(pattern=r'^(project|brand|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}$')]
+PageKey = Annotated[str, StringConstraints(pattern=r'^(project|brand|business|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}$')]
 
 
 class WebSelection(BaseModel):

@@ -16,7 +16,7 @@ from .auth import Actor
 from .content_permissions import require_content
 from .content_workflow import publication_targets
 
-PageKey = Annotated[str, StringConstraints(pattern=r'^(project|brand|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}$')]
+PageKey = Annotated[str, StringConstraints(pattern=r'^(project|brand|business|programme|corporate|article|location):[A-Za-z0-9][A-Za-z0-9_-]{0,127}$')]
 Digest = Annotated[str, StringConstraints(pattern=r'^[a-f0-9]{64}$')]
 Locale = Literal['th', 'en']
 

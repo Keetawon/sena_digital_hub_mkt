@@ -72,3 +72,13 @@ listed in the DB baseline inventory. No new permission bit or default grant.
 New approval evidence captures the displayed resolved project IDs/hash;
 publication checks current resolution while existing live versions keep their
 frozen scope. Existing DATA/LEGAL and editor/approver separation remain.
+
+W5 adds `business-content-routes.json` for the five exact fixed-reference and
+Knowledge-owned content routes, plus `content-business-db.json` for two
+owner-only FORCE RLS tables and ten functions. The three guarded runtime reads
+are `hub.business_references`, `hub.business_content` and
+`internal.assistant_business_search`. The seven private helpers remain closed.
+Business references never grant descendant access. Assistant retrieval keeps
+thirteen tools, requires Knowledge View and exact source access, and excludes
+non-AI exposure; saved published citations pin both page and source versions.
+No account, grant, template, permission-bit or historical manifest rewrite.

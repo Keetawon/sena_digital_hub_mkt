@@ -46,8 +46,8 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState,promotionState;
-    const workspaceRows=async(normalizePromotions=false)=>{
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState,promotionState,businessState,businessAuditId;
+    const workspaceRows=async(normalizePromotions=false,auditThrough=null)=>{
       const tables=(await db.query("select schemaname,tablename from pg_tables where schemaname in ('hub','staging','audit') order by schemaname,tablename")).rows;
       const result=[];
       for(const table of tables){
@@ -57,7 +57,9 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
           public_promotions:"-array['owning_brand_id','excluded_project_ids']",promotion_reviews:"-'resolved_project_ids'"
         }[table.tablename]??'' : '';
         const value=`(to_jsonb(t)${removed})::text`;
-        const row=(await db.query(`select count(*)::integer count,md5(coalesce(string_agg(${value},E'\\n' order by ${value}),'')) digest from ${relation} t`)).rows[0];
+        const auditFilter=auditThrough!==null&&table.schemaname==='audit'&&table.tablename==='change_log'
+          ? ` where id<=${BigInt(auditThrough)}` : '';
+        const row=(await db.query(`select count(*)::integer count,md5(coalesce(string_agg(${value},E'\\n' order by ${value}),'')) digest from ${relation} t${auditFilter}`)).rows[0];
         result.push({relation,...row});
       }
       return result;
@@ -75,6 +77,12 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id','website_source'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
+      if(name==='202611080088_business_level.sql'){
+        businessAuditId=(await db.query('select coalesce(max(id),0)::text id from audit.change_log')).rows[0].id;
+        businessState=await workspaceRows(false,businessAuditId);
+        for(const table of ['brands','public_promotions','promotion_reviews','promotion_versions','content_section_versions','faq_versions','user_account','account_permission'])
+          assert.ok(businessState.find(row=>row.relation==='"hub"."'+table+'"')?.count>0,'Populated W5 preservation fixture: '+table);
+      }
       if(name==='202611060087_contextual_promotions.sql'){
         promotionState=await workspaceRows(true);
         for(const table of ['public_promotions','promotion_reviews','promotion_versions'])
@@ -128,6 +136,16 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
           values($1,1,1,jsonb_build_object('public_project_id',$2::text,'target_project_ids',jsonb_build_array($2::text),'title',jsonb_build_object('en','Existing campaign')),$3,'Existing synthetic publication') returning id`,[promotion,project.public_project_id,reviewer])).rows[0].id;
         await db.query('update hub.public_promotions set published_version_id=$1 where id=$2',[version,promotion]);
         await db.query("select set_config('app.actor_id','',false)");
+      }
+      if(name==='202611080088_business_level.sql'){
+        const beforeRelations=new Set(businessState.map(row=>row.relation));
+        const after=(await workspaceRows(false,businessAuditId)).filter(row=>beforeRelations.has(row.relation));
+        assert.deepEqual(after,businessState,'W5 must preserve every pre-existing Hub, staging and audit row exactly');
+        assert.equal(Number((await db.query('select count(*) from hub.businesses')).rows[0].count),1);
+        assert.equal(Number((await db.query("select count(*) from hub.brand_business where business_code='residential'")).rows[0].count),
+          Number((await db.query('select count(*) from hub.brands where deleted_at is null')).rows[0].count));
+        assert.equal(Number((await db.query("select count(*) from audit.change_log where id>$1 and (table_name not in ('hub.businesses','hub.brand_business') or operation<>'INSERT')",[businessAuditId])).rows[0].count),0,
+          'W5 migration may audit only its additive catalog and brand relationship inserts');
       }
       if(name==='202611060087_contextual_promotions.sql'){
         assert.deepEqual(await workspaceRows(true),promotionState,'W3.2 must preserve all pre-existing values and histories');

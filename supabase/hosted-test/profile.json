@@ -438,6 +438,11 @@
       "name": "202611060087_contextual_promotions.sql",
       "canonical_sha256": "cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c",
       "executed_sha256": "cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c"
+    },
+    {
+      "name": "202611080088_business_level.sql",
+      "canonical_sha256": "f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94",
+      "executed_sha256": "f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94"
     }
   ]
 }
