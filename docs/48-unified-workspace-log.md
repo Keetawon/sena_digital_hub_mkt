@@ -60,7 +60,7 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 | W3.1 | Registry-default suggestion exposure, exposure chips/notices and compact contextual overview | W4 committed | Complete: `375d7c9`, pushed; receipt `5dcdbae` |
 | W3.2 | Contextual Promotions tabs, owning brand, reviewed exclusions and legacy suggestions | W3.1 committed | Complete: `7ceed6f`, pushed; receipt `cdfeb42` |
 | W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Complete: `16b38cd`, pushed; receipt `5a59e13`; migrations 0084/0085 |
-| W5 | Fixed business level and composition order | W4 merged | Integrated with migration 0088 and business assistant retrieval; quick checks clean; final full gate pending on 55 frozen paths |
+| W5 | Fixed business level and composition order | W4 merged | Complete: `9ac800c`, pushed to origin/main; migration 0088; full gate passed |
 | W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Prepared design and implementation slices; lead integration/runtime gates pending |
 | W7 | Stub-only writing aid, registry flag, budget and diff UI | Backend independent; UI after W3 | Backend/UI prepared; lead integration/runtime gates after W6 |
 | W9 | Optimize future uploads, retain only stored result, allowlisted private file metadata suggestions | Bounded preparation parallel; shared adapters serialized; before W8 | Decision/card recorded; isolated processor has 49 preparation checks passing; integration/full gate pending |
@@ -4994,3 +4994,145 @@ full API, full DB/replay/preservation/concurrency, local H1, all local browser
 specs separately at 1280 and 390, and changed-source/browser credential scans.
 No source changes are allowed during that run. No final result, commit or push
 is claimed in this pre-run entry; the delivery receipt will record exact totals.
+
+
+## W5 delivered — 9 November 2026
+
+Product commit `9ac800c7b22318be3fbec6a3a408eab6650076c3` was pushed to origin/main and the remote
+head was verified. The product commit contains 55 explicitly owned paths. This
+receipt-only documentation update records the completed results; source stayed
+frozen throughout the full run. No hosted action, live provider call, source
+connection or credential-file inspection occurred.
+
+Built the fixed Residential business level, existing/future brand associations,
+Knowledge-owned narrative/contacts/FAQ, explicit applicability and composition
+order, the reused page/preview/history interface, exact proxy/API boundaries,
+and business context/retrieval in the existing assistant tools. Business scope
+adds no proposal/write tool. Saved citations retain exact approved/published
+evidence and enforce current visibility. Existing content, versions, reviews,
+publications, accounts, grants and templates were preserved.
+
+Migration: `supabase/migrations/202611080088_business_level.sql`.
+SHA-256: `f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94`. Fresh and populated disposable replay,
+runtime ACL classification, preservation and concurrency checks passed. No
+existing migration was edited or renumbered.
+
+| Final suite | Passed | Skipped | Failed |
+|---|---:|---:|---:|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production import/install/isolation | 4 | 0 | 0 |
+| API | 2422 | 11 existing | 0 |
+| DB | 95 Node; 42 SQL suites; 23 concurrency scenarios | 0 | 0 |
+| Local H1 | 69 Node; 10 smoke; 69 browser | 0 | 0 |
+| UI 1280px | 490 | 0 | 0 |
+| UI 390px | 490 | 0 | 0 |
+| Changed-source/browser credential scans | zero matches; no credential files read | 0 | 0 |
+| Diff/source-freeze verification | pass | 0 | 0 |
+
+API reported 6 existing dependency deprecations. No skips were added
+and no existing test was quarantined or weakened. Earlier failing quick runs
+and their fixes remain recorded above. Evidence:
+`artifacts/unified-workspace/w5/full-gate-receipt.json`,
+`full-start-source-hashes.json`, `*-full.log`, `credential-scan-broad.json` and
+`visual-review-receipt.json` in the same directory.
+
+Screenshots under `artifacts/unified-workspace/w5/`:
+
+- `local-{light,dark}-{1280,390}-{preview,history}.png` (eight).
+- `h1-{data,faq,history}-{1280,390}.png` (six; desktop light/mobile dark).
+- `h1-{faq,history}-settled-{light,dark}-{1280,390}.png` (eight).
+
+Lead reviewed final visual evidence. The ordinary H1 FAQ/history captures can precede
+their loaded body; the supplemental eight captures wait for the real successful
+response and settled DOM. They came from a separately owned loopback
+H1 review session after the serial full gate, with no source changes. No UI was
+hidden and no screenshot was edited.
+
+The first supplemental capture attempt counted lazy loading placeholders inside
+closed history detail elements. Its artifact-only selector was corrected to
+check visible loading/error states; all eight supplemental captures then passed.
+No product source or full-gate test was changed by that capture correction.
+
+Bounded sub-agents supplied the fixed business foundation, API/proxy and
+permission inventory, reused business UI, and assistant context browser cases.
+The lead reviewed their diffs, reconciled W3.2 and later fixes, implemented the
+saved-evidence/assistant safeguards, and ran every port-bound gate. Read-only
+bounded reviews also inventoried cleanup, W6 compatibility and W9 fixture gaps.
+
+Removed completed worktrees/branches normally, with delivered/archive hashes
+checked: `ws/w5-business-design, ws/w5-assistant-context, ws/w5-context-browser`.
+No force removal or unmerged branch deletion was used. Remaining registered
+worktrees: 53, including main. The older W5 business-level, transport
+and UI preparation trees remain pending full provenance reconciliation; the UI
+tree includes future W6 work. Their uncommitted files were not cleared.
+
+Requirement deviations: none. Supplemental settled screenshots add visual
+evidence without changing the frozen gate. No new pending owner question.
+Next: W6 integration on the reserved 0089/0090 lane. Its prepared source overlap
+review, dated membership addition, owner-rule replacement, scope/job regression
+cases and zero-diagnostic UI compiler overlay are preparation only; no W6
+migration or runtime gate has yet run. W7, W9 and W8/final UAT remain pending.
+
+
+### Remaining worktrees after W5 delivery
+
+Recorded by work purpose and branch base. Bounded-task labels identify their
+retained preparation trees. Older trees remain until their uncommitted files
+have complete delivery/archive provenance; future slices remain in progress.
+
+| Worktree / work purpose | Base commit |
+|---|---|
+| `main` | `9ac800c` |
+| `parallel/c4-facilities-places` | `47d912b` |
+| `ws/w2-home-projection` | `2387dd3` |
+| `ws/w3-browser-recovery` | `d3ec1d6` |
+| `ws/w3-entity-ui` | `2387dd3` |
+| `ws/w3-lead-integration` | `2387dd3` |
+| `ws/w3-legacy-tests` | `2387dd3` |
+| `ws/w3-navigation-tests` | `2387dd3` |
+| `ws/w3-workspace-api` | `2387dd3` |
+| `ws/w4-browser-regressions` | `d3ec1d6` |
+| `ws/w4-disclosure-evidence` | `d3ec1d6` |
+| `ws/w4-governance` | `5a087ea` |
+| `ws/w4-http-gates` | `d3ec1d6` |
+| `ws/w4-lead-integration` | `2387dd3` |
+| `ws/w4-lifecycle-tests` | `d3ec1d6` |
+| `ws/w4-primary-forms` | `2387dd3` |
+| `ws/w4-publication-navigation` | `d3ec1d6` |
+| `ws/w4-publication-recheck` | `d3ec1d6` |
+| `ws/w4-record-forms` | `2387dd3` |
+| `ws/w4-bounded-fixture-confirmation` | `9c6beb7` |
+| `ws/w4-bounded-ui-fixtures` | `9c6beb7` |
+| `ws/w4-workflow-ui` | `2387dd3` |
+| `ws/w5-business-level` | `2387dd3` |
+| `ws/w5-business-transport` | `d3ec1d6` |
+| `ws/w5-business-ui` | `d3ec1d6` |
+| `ws/w6-account-ui` | `d3ec1d6` |
+| `ws/w6-asset-delivery` | `d3ec1d6` |
+| `ws/w6-assistant-scope` | `d3ec1d6` |
+| `ws/w6-bu-import` | `d3ec1d6` |
+| `ws/w6-client-boundaries` | `d3ec1d6` |
+| `ws/w6-client-callers` | `d3ec1d6` |
+| `ws/w6-notice-ui` | `d3ec1d6` |
+| `ws/w6-permission-inventory` | `d3ec1d6` |
+| `ws/w6-read-boundaries` | `d3ec1d6` |
+| `ws/w6-review` | `2387dd3` |
+| `ws/w6-route-transport` | `d3ec1d6` |
+| `ws/w6-scope-audit-fixes` | `d3ec1d6` |
+| `ws/w6-scope-design` | `2387dd3` |
+| `ws/w6-scopes` | `d3ec1d6` |
+| `ws/w7-admission-order` | `d3ec1d6` |
+| `ws/w7-field-bindings` | `d3ec1d6` |
+| `ws/w7-h1-catalog-fixture` | `d3ec1d6` |
+| `ws/w7-proxy-transport` | `d3ec1d6` |
+| `ws/w7-writing-aid` | `5a087ea` |
+| `ws/w7-writing-ui` | `2387dd3` |
+| `ws/w8-promotion-uat` | `9c6beb7` |
+| `ws/w8-bounded-doc-checks` | `d3ec1d6` |
+| `ws/w8-uat-draft` | `2387dd3` |
+| `ws/w9-metadata-fixture-cases` | `5a59e13` |
+| `ws/w9-metadata-verification` | `5a59e13` |
+| `ws/w9-upload-fixtures` | `9c6beb7` |
+| `ws/w9-upload-inventory` | `9c6beb7` |
+| `ws/w9-upload-processing` | `9c6beb7` |
