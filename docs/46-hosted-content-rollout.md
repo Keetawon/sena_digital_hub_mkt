@@ -3633,3 +3633,181 @@ contains the indexed `receipt.json` with its verification result.
 | `h5e-production-vps-build-20261030T100313200600Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |
 | `h5e-production-vps-promote-20261030T100924554373Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |
 | `h5e-production-vps-stage-20261030T100012043494Z/protected-configuration.tar.gz` | 2938 | `7d12c41cec1215dd2d39888472a5618386f9754372c28bb4c259c10d3bd3c4c0` |
+
+## W1-W5 hosted TEST demo release - 11 November 2026
+
+**Live with owner-approved performance limitations.** Release
+`4b00099-media-00f0f23e0fe3` replaces `0240315-media-ee2fbf04e1e9`.
+Source is exactly `4b0009972b2fa660f8c0b30fca348bdb127ea407`, materialized
+from its commit archive, never main's dirty tree. The canonical 270-file
+source-manifest SHA-256 is
+`00f0f23e0fe39ef248b3ecce02ea9682a9b52cdb636d01527ec6c051ccb7456d`.
+The pinned W5 full-gate receipt SHA-256 is
+`eac925d4bfd1e2b76ade92e603422e50773b6e15d22e4dbaf266adb493c8f381`.
+W6/W7/W9 and migrations 0089 onward are absent from this release.
+
+### Migration and preservation
+
+Preflight confirmed exact prefix 81, 264 catalog preconditions, fingerprints,
+Auth/identity checks, health and protected configuration. The old application
+is not fully compatible with schema 88: legacy FAQ mutations, promotion-review
+evidence/reasons and publication behavior differ. API/admin therefore entered
+maintenance for migration; the worker remained running.
+
+Exact migrations 82–88 committed together at 09:13:58 UTC. **Prefix is now 88.**
+All 163 pre-existing application tables compared using their original columns
+retained identical row counts and fingerprints. The intended write set was
+33 brand-business inserts, one business insert, 34 audit inserts, seven history
+inserts and two permission-catalog row updates (plus two HOT-update counters).
+No account, grant, content, import, approval, publication or protected setting
+was changed by an operator.
+
+| Migration | SHA-256 |
+|---|---|
+| 0082 | `ada4f2cde77322389dd45d6868effc7c8e3467d773a168483cf3ecf53cbe5c29` |
+| 0083 | `2172d2acbfd93e540d1069965cd4e53cbee1963de7a698a3b16880a61ed3e65f` |
+| 0084 | `899ad50272191c1e0f1daab09a111b303f920576144a511e182966ff6a19dd8c` |
+| 0085 | `c5963feac4f7b61e6e54e8bba496c038a734bfc860d8239f57d94dba94be5817` |
+| 0086 | `8b3af3e6f6f19baa84e2b476e80dd2ec7e87606a0951756e0c3fc7cd47af8e9b` |
+| 0087 | `cbdc3cd60d9cf9660d0b4ebc34ddb60db883120473fad89cb1253322da91bb4c` |
+| 0088 | `f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94` |
+
+The initial admission STOP found that saved rehearsals omitted the 33-row
+`hub.brand_business` backfill. Those receipts were preserved. Following the
+owner's later instruction to proceed, a new populated disposable rehearsal used
+33 synthetic brands and one project, proved preservation/rollback/commit,
+and pinned the actual five-relation allowlist and 21 operator sources.
+It ran only after W6's runner naturally exited; local test leases did not overlap.
+The batched executor retains the committed migration bodies and history hashes.
+
+The first migration attempt rolled back before writes after a preservation-reader
+column-array decoding error. A read-only check reconfirmed prefix 81; the corrected
+reader passed before retry. After successful migration, FLEXI timed out and the
+required post-commit STOP was observed. The owner then explicitly approved the
+switch subject to cancellation/health checks and read-only diagnosis. This pause
+extended maintenance beyond the planned immediate promotion. No restore occurred.
+
+### Build, backups and postflight
+
+Linux frozen production installation/imports, type generation, typecheck, offline
+webpack build and dependency audit passed; two native broker checks passed.
+API/worker self-checks passed with zero network calls, database connections,
+provider calls or writes. Deployed scans found zero credential matches in
+95 browser files and 495 source/build files.
+
+All backup paths below are relative to `.local/hosted-content-rollout/`.
+Each archive was fully read back and verified. Prefix 81 was fresh before
+migration; a separate fresh prefix-88 backup preceded promotion after the STOP.
+
+| Protected backup | Bytes | SHA-256 |
+|---|---:|---|
+| `protected-backup-2026-11-11T09-00-14-041Z/database-prefix-81.dump` | 17054560 | `b753b877f3dd6dbe06fd065a0d7bb9668bfe62ca635f3e3e86b1ed17d27ed1fa` |
+| `protected-backup-2026-11-11T09-30-09-769Z/database-prefix-88.dump` | 17577154 | `867866f6db939a6145f4d701fe0fe7eee893158232a9f8e368d0bfeb8ef6c040` |
+| `protected-vps-20261111T090334Z/protected-configuration.tar.gz` | 6410 | `6bb9b2913c7eb09d37df1c8fc0dd82797853d7e4428d92db6078b74ff2595683` |
+
+Seven trusted HTTPS probes passed: health/login 200; anonymous projects, brands,
+admin projects, content home and publication queue 401, all with no-store.
+R2 remained 4,221 objects / 1,216,545,739 bytes, inventory SHA-256
+`9d4f64941aa97ecd7e3868e3c1e451e640110ad47df537b3626a88cb97b2335a`.
+Protected environment, CA, object-store and proxy hashes match. Worker PID 44002
+and final worker/broker states match the baseline. API RuntimeDirectory cleanup
+removed the Unix socket pathname, requiring stop API, restart the existing broker
+socket, start API. No socket configuration changed and the worker was not restarted.
+The earlier failed application recovery and successful socket recovery are retained.
+Only release references in API/admin units and their cache drop-in changed.
+
+### Requested checks and demo limitation
+
+The established non-listening ASGI operator called exact deployed handlers using
+the real non-bypass `hub_runtime`, read-only connections on every checkout, the
+existing account's capabilities and the production 15-second command timeout.
+No token or signed-in hosted browser session was created. Each requested heavy
+route was called once after the switch. Project overview was also checked after
+FLEXI and at the end to verify recovery.
+
+| Read | Result | Seconds |
+|---|---|---:|
+| FLEXI brand, seven projects | Cancelled at time limit | 15.992 |
+| BNA7 project immediately afterward | 200 | 3.833 |
+| Residential business | 200 | 0.844 |
+| Sena Kith brand, 18 projects | Cancelled at time limit | 15.815 |
+| BNA7 FAQ | 200 | 0.899 |
+| Publishing queue | Cancelled at time limit | 15.889 |
+| Approvals list | Cancelled at time limit | 15.847 |
+| Home | Cancelled at time limit | 15.843 |
+| BNA7 promotions | 200 | 0.819 |
+| BNA7 history | Cancelled at time limit | 15.808 |
+| BNA7 project at end | 200 | 3.592 |
+| BNA7 data | 200 | 4.832 |
+| BNA7 submit-all header inventory | Cancelled at time limit | 15.793 |
+| Residential header inventory | 200 | 0.609 |
+
+After every request, live API health returned 200, the connection was reusable,
+and pg_stat_activity showed no active runtime query, idle-in-transaction session
+or lock wait. The final independent session check was empty. Cancellation and
+serial recovery passed; this is not a concurrent-load certification. The owner's
+conditions for returning to maintenance were not observed.
+
+Project content reads pass but the shared submit-all header shows an error.
+Accordingly, project pages join home, brands, publishing, approvals and history
+outside the clean demo URL list. Existing account **`entz357@gmail.com`** can open:
+
+- [Login](https://72.62.253.205/login)
+- [Residential business overview](https://72.62.253.205/website/business/residential?tab=overview)
+
+Open the direct Residential link after login because the default home route times
+out. The account's content approvals and `knowledge.publish_web` remain false.
+No accounts or grants were created or changed. Project route identifiers and
+individual passing tab checks remain in the receipts for diagnosis, not as claims
+of an error-free page demo.
+
+### Read-only diagnosis and options
+
+Live `hub.faq_rule_projects` definition SHA-256:
+`3f9355e6f2750ad99c90b33f032f41feb4cf6e6fd63f4d4bfa4f1c14247afc91`.
+It contains the 0088 business-membership predicate, ordinary AND clauses for
+`faq_project_form` and `business_project_matches`, and no 0089 cheap-predicate
+CASE guard. Ordinary AND clauses do not require cheap brand/group exclusions
+to run first. W6's measured local fixture recorded 612 rule resolutions,
+216,924 business lookups (3.95 seconds), 193,692 form lookups (1.83 seconds),
+and 7.48 seconds total FAQ composition in
+`artifacts/unified-workspace/w6/api-home-profile-4.log`.
+The 0089 CASE rewrite forces cheap exclusions first; its regression proves zero
+expensive calls for unrelated brands and correct positive/lost-membership results.
+
+This confirms the same unoptimized function is deployed and strongly supports
+the brand-cost diagnosis. Hosted function-level execution was not instrumented,
+so exclusive attribution of every timeout is not claimed; home/history may have
+additional aggregate costs. No function, source, setting or schema was changed
+to diagnose or fix performance.
+
+Options: deliver the optimization with W6 after its gates and DW BUD feed are
+ready, or separately review/test/attest a minimal resolver hotfix. Do not edit
+applied 0088. A separate CASE rewrite removes current 0089's exact replacement
+anchor; coordinate numbering or add an exact prepatched-body guard, then renew
+0089 canonical/profile hashes and rehearsal/gate evidence. No hotfix was implemented.
+
+### Rollback and receipts
+
+Application rollback release is
+`/srv/sena-hub-test/releases/0240315-media-ee2fbf04e1e9`; protected unit backup is
+`/srv/sena-hub-test/backups/4b00099-media-00f0f23e0fe3-w1-w5-units-20261111-demo`.
+The reviewed `w1-w5-switch.py rollback` restores application references only.
+Keep API/admin in maintenance if the old application is restored against schema
+88. Any database restore requires a further owner decision.
+
+Primary receipts under `.local/hosted-content-rollout/`:
+`w1-w5-vps-candidate.json`, `w1-w5-vps-source-manifest.json`,
+`w1-w5-populated-proof.json`, `w1-w5-populated-attestation.json`,
+`w1-w5-migrate-1794388437985.json`, `w1-w5-promotion-promote.json`,
+`w1-w5-https-postflight.json`, `w1-w5-20261111-postflight/vps-r2-02.json`,
+`w1-w5-preservation-postflight.json`, `w1-w5-heavy-check-1794389700568.json`,
+`w1-w5-support-check-1794389822249.json`, `w1-w5-function-diagnosis-corrected.json`,
+and `w1-w5-socket-recovery.json`. Earlier STOP receipts remain intact. The deployment
+index pins final evidence; this entry supersedes the earlier staged-only handoff.
+
+W6 naturally stopped with six H1 browser failures after API/DB passed. It remains
+local and undeployed while those failures are repaired. This rollout did not edit
+any of W6's 101 frozen source paths. The extracted release source was moved outside
+the repo after W6's operator inventory detected it; that failure/resume is logged
+separately in docs/48.
