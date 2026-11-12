@@ -21,6 +21,7 @@ export type HubAccount = {
   id: string; status: string; role?: string; hub_role?: string | null; agency?: string | null;
   agency_code?: string | null; display_name_th?: string; can_manage_users?: boolean;
   capabilities?: CapabilityProjection; pending_count?: number; updated_at?: string;
+  content_scope?: { fingerprint: string; expires_at: string | null } | null;
 };
 export const emptyCapabilities: CapabilityProjection = { tabs: {}, special_actions: {}, can_manage_users: false,
   agency_registry: false, published_consumer: false, locked_tabs: [], template: null, template_version: null, catalog: [] };
@@ -35,7 +36,12 @@ export function isContentAdmin(account: HubAccount | null | undefined) {
   return account?.status === "ACTIVE" && (account.hub_role ?? account.role) === "admin";
 }
 export function capabilityKey(account: HubAccount | null) {
-  return JSON.stringify([account?.id, account?.status, account?.hub_role ?? account?.role, account?.capabilities ?? null]);
+  return JSON.stringify([account?.id, account?.status, account?.hub_role ?? account?.role, account?.agency_code ?? account?.agency,
+    account?.capabilities ?? null, account?.content_scope?.fingerprint ?? null, account?.content_scope?.expires_at ?? null]);
+}
+export function contentScopeExpired(account: HubAccount | null | undefined, now = Date.now()) {
+  const deadline = account?.content_scope?.expires_at;
+  return deadline != null && (!Number.isFinite(Date.parse(deadline)) || Date.parse(deadline) <= now);
 }
 export function canWorkspace(caps: CapabilityProjection | null | undefined) {
   return caps?.published_consumer === true && ["projects", "brands", "knowledge", "promotions", "releases"].some(tab => can(caps, tab));

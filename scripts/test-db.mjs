@@ -40,6 +40,9 @@ try {
   await connection.query(await readFile(new URL('../supabase/tests/unified_content_workflow.sql', import.meta.url), 'utf8'));
   await connection.query(await readFile(new URL('../supabase/tests/unified_publication.sql', import.meta.url), 'utf8'));
   await connection.query(await readFile(new URL('../supabase/tests/business_level.sql', import.meta.url), 'utf8'));
+  await connection.query(await readFile(new URL('../supabase/tests/content_scopes.sql', import.meta.url), 'utf8'));
+  await connection.query(await readFile(new URL('../supabase/tests/bu_membership.sql', import.meta.url), 'utf8'));
+  console.log('PASS: object scopes, BU snapshot acceptance and exact grace expiry');
   console.log('PASS: business catalog, scope precedence and closed business authority');
   console.log('PASS: exact-item content review, independent publication and closed helper ACLs');
   console.log('PASS: entity workspace source authority, immutable evidence and N7 legacy FAQ closure');

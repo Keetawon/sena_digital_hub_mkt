@@ -264,7 +264,7 @@ def test_business_publication_uses_approved_faq_keeps_new_draft_private_and_enfo
                               {'url': '/w5/' + uuid4().hex, 'locales': ['th'], 'ai_policy': 'no_ai', 'max_faq_items': 20, 'project_ids': []})
             await approve_item(db, ids, 'page_config', {'id': page['id']})
             batch = await prepare(db, ids, page_key)
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
+            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'], connection=db, manager=ids['admin'])
             denied = await call(db, ids['publisher'], 'select hub.publication_queue_publish($1,$2)', UUID(batch['id']), batch['digest'])
             assert denied['page_count'] == 0
             batch = await prepare(db, ids, page_key)
@@ -278,7 +278,7 @@ def test_business_publication_uses_approved_faq_keeps_new_draft_private_and_enfo
             private = await call(db, ids['editor'], "select hub.workspace_preview('business','residential',null,'th')")
             assert next(item for item in private['preview']['faq'] if item['question_key'] == key)['short_answer'] == 'Unreviewed business replacement'
             assert await call(db, ids['viewer'], 'select hub.web_history($1)', page_key) == history_before
-            await set_bit(ids['viewer'], 'knowledge', can_view=False, special_actions=[])
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, special_actions=[], connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await prepare(db, ids, page_key)
         finally:
@@ -473,8 +473,8 @@ def test_business_tree_keeps_knowledge_only_brand_references_minimal(permission_
             tree = await call(db, ids['viewer'], "select hub.workspace_tree('corporate','sena','',null,100)")
             business = next(item for item in tree['items'] if item['kind'] == 'business')
             assert business['ref'] == 'residential' and business['parent'] == {'kind': 'corporate', 'ref': 'sena'}
-            await set_bit(ids['viewer'], 'brands', can_view=False)
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'brands', can_view=False, connection=db, manager=ids['admin'])
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             children = await call(db, ids['viewer'], "select hub.workspace_tree('business','residential',$1,null,100)", brand['public_brand_id'])
             reference = next(item for item in children['items'] if item['ref'] == brand['public_brand_id'])
             assert reference['faq_only'] is True and reference['target']['tab'] == 'faq'
@@ -521,7 +521,7 @@ def test_assistant_saved_business_faq_and_section_evidence_rechecks_exact_source
                 await call(db, ids['viewer'], 'select internal.assistant_citation_read($1,$2)', UUID(session['id']), UUID(evidence[1]['id']))
             history = await call(db, ids['viewer'], 'select internal.assistant_run_read($1)', UUID(session['id']))
             assert all(item['id'] != evidence[1]['id'] for item in history['citations'])
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             for item in (evidence[0], evidence[2]):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['viewer'], 'select internal.assistant_citation_read($1,$2)', UUID(session['id']), UUID(item['id']))

@@ -41,6 +41,22 @@ def test_brand_owner_and_read_only_resolution_use_existing_boundary(boundary):
     assert store.calls[-1][1][-1]['project_id'] is None
 
 
+def test_saved_scope_resolver_derives_owner_without_widening_create_dto(boundary):
+    client, store = boundary
+    body = {'promotion_id': ID, 'expected_revision': 2, 'targets': [], 'excluded_project_ids': []}
+    response = client.post('/v1/admin/promotions/resolve', headers=headers('viewer'), json=body)
+    assert response.status_code == 200
+    assert store.calls[-1] == ('SELECT hub.promotion_resolve($1::jsonb)::text', (body,))
+    for changes in ({'project_id': PROJECT}, {'owning_brand_id': PROJECT}, {'expected_revision': True},
+                    {'expected_revision': 0}, {'excluded_project_ids': [PROJECT, PROJECT]}):
+        before = len(store.calls)
+        assert client.post('/v1/admin/promotions/resolve', headers=headers('viewer'), json=body | changes).status_code == 422
+        assert len(store.calls) == before
+    before = len(store.calls)
+    assert client.post('/v1/admin/promotions', headers=headers('editor'), json={**DRAFT, **body}).status_code == 422
+    assert len(store.calls) == before
+
+
 def test_review_requires_scope_hash_but_old_revocation_does_not(boundary):
     client, store = boundary
     body = {'expected_revision': 1, 'review_type': 'DATA', 'decision': 'APPROVED',

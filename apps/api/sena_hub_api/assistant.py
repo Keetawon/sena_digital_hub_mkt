@@ -168,6 +168,7 @@ def register_assistant_routes(app, authentication, database, settings):
         access = await ToolReader(request, actor, database).access()
         fields = access["proposal_fields"]
         return {"data": {"session_key": hashlib.sha256(f"{access['fingerprint']}:{provider['config_version']}".encode()).hexdigest(),
+            "scope_expires_at": (access.get("scope") or {}).get("expires_at"),
             "mode": "fake", "live_available": provider["live_available"] and "get_project" in access["allowed_tools"],
             "allowed_tools": access["allowed_tools"], "proposal_fields": fields,
             "message_th": "ยังไม่ได้ตั้งค่าโมเดลจริง ใช้ข้อมูลสาธิต" if not provider["live_available"] else "โหมดจริงใช้ได้เฉพาะคำถามข้อมูลสมมติที่กำหนด",
@@ -268,16 +269,55 @@ def register_assistant_routes(app, authentication, database, settings):
             **({"scope_project_id": scope["project_id"]} if scope.get("project_id") else {})})
         run_id = UUID(row["id"]); queue = asyncio.Queue(maxsize=128)
         facts, sources, citations, notices = {}, {}, {}, []
+        delivery_denied = False
+        delivered_citations = set()
         started = time.monotonic()
         reader = ToolReader(request, actor, database, scope)
 
         async def emit(event, data):
-            await queue.put((event, {"run_id": str(run_id), **data}))
+            if not delivery_denied:
+                await queue.put((event, {"run_id": str(run_id), **data}))
 
         async def unchanged_access():
             current = await reader.access()
             if current["fingerprint"] != access["fingerprint"]:
                 raise failure(403, "assistant_permissions_changed", "สิทธิ์เปลี่ยนแล้ว กรุณาเริ่มคำถามใหม่ ข้อความที่ยังไม่ส่งยังอยู่")
+
+        async def current_delivery(event, data):
+            # The producer may have finished long before a slow client consumes
+            # its queue. Reopen the saved evidence at this final delivery boundary.
+            if await authentication(request) != actor:
+                raise HTTPException(403, detail={"code": "assistant_actor_changed"})
+            await unchanged_access()
+            identities = ([data["id"]] if event == "citation" else data.get("citation_ids", [])
+                          if event == "answer_delta" else list(delivered_citations))
+            if event == "answer_delta" and not identities and data.get("block_id") != "no-answer":
+                raise ValueError("Missing saved source")
+            by_citation = {str(value["id"]): key for key, value in citations.items()}
+            for identity in identities:
+                source_id = by_citation.get(str(identity))
+                if source_id is None:
+                    raise ValueError("Unknown saved source")
+                source = sources[source_id]
+                if source.get("valid_until") and datetime.fromisoformat(source["valid_until"]) <= datetime.now(timezone.utc):
+                    raise ValueError("Expired evidence")
+                saved = await rpc(request, actor, "SELECT internal.assistant_citation_read($1,$2)::text", run_id, UUID(str(identity)))
+                if any(saved.get(key) != citations[source_id].get(key)
+                       for key in ("namespace", "entity_type", "entity_id", "version", "page")):
+                    raise ValueError("Saved source identity changed")
+                checked = await citation_source(request, actor, saved, run_id)
+                if checked["metadata"].get("visibility", source["visibility"]) != source["visibility"]:
+                    raise ValueError("Publication state changed")
+            # Source reads also await. Catch a scope deadline/revocation during
+            # those reads before releasing any previously prepared text.
+            if await authentication(request) != actor:
+                raise HTTPException(403, detail={"code": "assistant_actor_changed"})
+            await unchanged_access()
+            for identity in identities:
+                source = sources[by_citation[str(identity)]]
+                if source.get("valid_until") and datetime.fromisoformat(source["valid_until"]) <= datetime.now(timezone.utc):
+                    raise ValueError("Expired evidence")
+            delivered_citations.update(str(identity) for identity in identities)
 
         async def invoke(name, arguments):
             if name not in access["allowed_tools"]: raise failure(403, "assistant_tool_forbidden", "ไม่มีสิทธิ์ใช้เครื่องมือนี้")
@@ -385,6 +425,7 @@ def register_assistant_routes(app, authentication, database, settings):
                     with suppress(asyncio.QueueFull): queue.put_nowait(None)
 
         async def stream():
+            nonlocal delivery_denied
             task = asyncio.create_task(execute()); active[str(run_id)] = task
             try:
                 yield "event: status\ndata: " + json.dumps({"run_id": str(run_id), "state": "running", "message_th": "กำลังตรวจข้อมูลตามสิทธิ์ของคุณ", "mode": body.mode}, ensure_ascii=False) + "\n\n"
@@ -392,6 +433,23 @@ def register_assistant_routes(app, authentication, database, settings):
                     item = await queue.get()
                     if item is None: break
                     event, data = item
+                    if event in {"citation", "answer_delta", "done"}:
+                        try:
+                            await current_delivery(event, data)
+                        except Exception as error:
+                            delivery_denied = True
+                            while not queue.empty():
+                                queue.get_nowait()
+                            if not task.done(): task.cancel()
+                            with anyio.CancelScope(shield=True):
+                                await asyncio.gather(task, return_exceptions=True)
+                            detail = error.detail if isinstance(error, HTTPException) and isinstance(error.detail, dict) else {}
+                            # No denied source fields, provider text or SQL error
+                            # details are returned. The client clears prior frames.
+                            yield "event: error\ndata: " + json.dumps({"run_id": str(run_id),
+                                "code": detail.get("code", "UNVERIFIED_ANSWER"), "invalidate_access": True,
+                                **({"message_th": detail["message"]} if detail.get("message") else {})}, ensure_ascii=False) + "\n\n"
+                            break
                     yield "event: " + event + "\ndata: " + json.dumps(data, ensure_ascii=False) + "\n\n"
             finally:
                 if not task.done(): task.cancel()

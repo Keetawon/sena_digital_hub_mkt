@@ -14,6 +14,7 @@ import { ProjectMediaWorkspace } from "./project-media-workspace";
 import { WebsiteContentSources } from "./website-content-sources";
 import { FaqWorkspace } from "./faq-workspace";
 import { BusinessWorkspace } from "./business-workspace";
+import { ContentBuNotices } from "./content-bu-notices";
 import { ExposureChip } from "./content-exposure";
 import { SavedContentSubmission } from "./content-workflow";
 import type { SubmissionOutcome } from "@/lib/content-workflow";
@@ -152,6 +153,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
         disabled={primaryDirty || primaryBusy || editing || suggestionEditing} onBusyChange={setHeaderBusy} onChanged={submitted}
         onExposureChanged={() => { setEditorRevision(value => value + 1); onWorkflowChanged(); }} />
     </header>
+    {publicProject && <ContentBuNotices key={publicProject} project={publicProject} />}
     {error && <p className="notice error" role="alert">{error}</p>}
     {data.entity.grouping?.review_href && <p><a href={data.entity.grouping.review_href}>{text.groups} · {text.settings}</a></p>}
     <nav className="workspace-tabs" role="tablist" aria-label={text.website}>{tabs.map((value, index) => <button type="button" role="tab" id={`workspace-tab-${value}`} aria-controls={`workspace-panel-${value}`} aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} key={value} disabled={(primaryPending || suggestionEditing || headerBusy) && tab !== value} onClick={() => chooseTab(value)} onKeyDown={event => {

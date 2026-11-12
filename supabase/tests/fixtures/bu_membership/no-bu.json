@@ -1,0 +1,24 @@
+{
+  "rows": [
+    {
+      "project_id": "00001",
+      "rem_bu_id": null,
+      "rem_bu_code": null,
+      "rem_bu_name": null,
+      "rem_bu_is_active": false,
+      "rem_bu_is_deleted": true,
+      "source_snapshot_at": "2031-01-03T00:00:00.000000Z",
+      "project_status_code": "3"
+    },
+    {
+      "project_id": "00003",
+      "rem_bu_id": null,
+      "rem_bu_code": null,
+      "rem_bu_name": null,
+      "rem_bu_is_active": null,
+      "rem_bu_is_deleted": null,
+      "source_snapshot_at": "2031-01-03T00:00:00.000000Z",
+      "project_status_code": "3"
+    }
+  ]
+}

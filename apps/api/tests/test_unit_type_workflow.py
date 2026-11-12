@@ -91,7 +91,7 @@ def test_type_translation_submission_immutable_version_and_separate_approver(per
             assert current['category'] == '1br' and current['special_rooms'] == ['walk_in_closet']
             with pytest.raises(asyncpg.CheckViolationError):
                 await type_action(db, ids['editor'], key, item, 'submit')
-            await set_bit(ids['second'], 'projects', can_approve=False, can_edit=True)
+            await set_bit(ids['second'], 'projects', can_approve=False, can_edit=True, connection=db, manager=ids['admin'])
             await call(db, ids['second'], 'select hub.media_clip_save($1,$2,0,$3)', key, uuid4(), {
                 'provider': 'matterport', 'kind': 'tour_360', 'url': 'https://my.matterport.com/show/?m=synthetic',
                 'title': {'th': 'Tour text', 'en': 'Tour text'}, 'targets': [{'target_type': 'commercial_type', 'target_key': item['id']}],
@@ -102,17 +102,17 @@ def test_type_translation_submission_immutable_version_and_separate_approver(per
             current = next(t for t in data['types'] if t['id'] == item['id'])
             version = current['history'][0]
             assert version['state'] == 'in_review' and str(ids['editor']) in version['editors'] and str(ids['second']) in version['editors']
-            await set_bit(ids['second'], 'projects', can_edit=False, can_approve=True)
+            await set_bit(ids['second'], 'projects', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError, match='Another person'):
                 await type_action(db, ids['second'], key, item, 'approve')
             assert not {'id', 'rem_model_id', 'source_notes', 'source_model_ids', 'updated_by', 'comparison'} & version['payload'].keys()
             with pytest.raises(asyncpg.CheckViolationError):
                 await call(db, ids['editor'], 'select hub.update_commercial_type($1,$2,$3,$4)', UUID(p['id']), item['public_commercial_type_id'],
                            {'description': {'th': 'Changed'}}, datetime.fromisoformat(data['project']['updated_at']))
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError, match='Another person'):
                 await type_action(db, ids['editor'], key, item, 'approve')
-            await set_bit(ids['editor'], 'projects', can_approve=False, can_edit=True)
+            await set_bit(ids['editor'], 'projects', can_approve=False, can_edit=True, connection=db, manager=ids['admin'])
             await type_action(db, ids['publisher'], key, item, 'approve')
             data = await workspace(db, ids['editor'], key)
             current = next(t for t in data['types'] if t['id'] == item['id'])
@@ -177,7 +177,7 @@ def test_type_and_price_runtime_permission_denial_neighbors_and_stale(permission
             with pytest.raises(asyncpg.SerializationError):
                 await call(db, ids['editor'], 'select hub.save_project_price($1,null,$2,$3)', key,
                            datetime.fromisoformat(p['updated_at']), price_body(item))
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False, connection=db, manager=ids['admin'])
             for sql, args in [('select hub.unit_type_workspace($1)', (key,)),
                               ('select hub.unit_type_review($1,$2,$3,$4)', (key, item['public_commercial_type_id'], datetime.fromisoformat(p['updated_at']), 'submit')),
                               ('select hub.save_project_price($1,null,$2,$3)', (key, datetime.fromisoformat(p['updated_at']), price_body(item)))]:

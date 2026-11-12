@@ -199,10 +199,10 @@ test('refreshing a media conflict preserves local text without allowing it to ov
   await dialog.getByRole('button', { name: 'โหลดข้อมูลล่าสุด', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expectLocalText(page);
-  await expect(page.locator('.notice.error[role="alert"]')).toContainText('ข้อมูลโครงการถูกแก้ไขจากที่อื่น');
+  await expect(page.locator('.entity-embedded-editor > .notice.error[role="alert"]')).toContainText('ข้อมูลโครงการถูกแก้ไขจากที่อื่น');
 
   await page.getByRole('button', { name: 'บันทึกข้อมูลร่าง', exact: true }).click();
-  await expect(page.locator('.notice.error[role="alert"]')).toContainText('ข้อมูลโครงการเปลี่ยนแปลงแล้ว');
+  await expect(page.locator('.entity-embedded-editor > .notice.error[role="alert"]')).toContainText('ข้อมูลโครงการเปลี่ยนแปลงแล้ว');
   await expectLocalText(page);
   const attemptedSave = fixture.writes.at(-1)!;
   expect(attemptedSave.method).toBe('PATCH');

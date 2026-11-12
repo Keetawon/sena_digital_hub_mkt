@@ -80,7 +80,7 @@ def test_commercial_frozen_review_four_eyes_return_withdraw_and_no_provider_jobs
             assert frozen['state'] == 'in_review'
             with pytest.raises(asyncpg.CheckViolationError):
                 await save(db, ids['editor'], key, kind, record=record)
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await review(db, ids['editor'], key, kind, record, 'approve')
             await review(db, ids['publisher'], key, kind, record, 'approve')
@@ -176,7 +176,7 @@ def test_commercial_stale_revision_private_helpers_and_revocation(permission_acc
             for table in ('project_disclosures', 'project_sales_terms', 'project_programmes', 'project_progress', 'project_commercial_versions'):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['editor'], f'delete from hub.{table}')
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await workspace(db, ids['editor'], key)
             assert await call(db, ids['editor'], "select hub.can('brands','view')")

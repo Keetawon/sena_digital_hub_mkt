@@ -440,6 +440,7 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
 export async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {
   const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
   const body = await response.json().catch(() => null);
+  if (!response.ok && body?.error?.invalidate_access === true) window.dispatchEvent(new Event("hub-content-access-invalidated"));
   if (!response.ok || !body?.data?.id) throw new Error(body?.error?.message ?? "อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
   return { asset: body.data, reused: Boolean(body.meta?.reused) };
 }

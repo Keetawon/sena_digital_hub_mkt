@@ -22,6 +22,7 @@ select hub.patch_project(id,'{"meta_title":{"th":"ชื่อตัวอย่
 reset role;
 select hub.mark_demo_fields('project',current_setting('test.assistant_project')::uuid,array['meta_title.th','meta_description.th']);
 select hub.mark_demo_fields('brand',current_setting('test.assistant_brand')::uuid,array['description.th']);
+select set_config('test.assistant_public',(select public_project_id from hub.projects where id=current_setting('test.assistant_project')::uuid),true);
 
 set local session authorization hub_runtime;
 set local role hub_app;
@@ -47,12 +48,13 @@ do $$ declare table_name regclass;role_name text;actor_uuid uuid;begin
 end $$;
 set local role hub_app;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000091',true);
-select set_config('test.assistant_run',internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1","scope_project_id":"prj_synthetic"}')->>'id',true);
+select set_config('test.assistant_run',internal.assistant_run_create(jsonb_build_object('mode','SYNTHETIC','config_version','sql-v1','scope_project_id',current_setting('test.assistant_public')))->>'id',true);
 do $$ declare r jsonb;t jsonb;begin
+ begin perform internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1","scope_project_id":"prj_synthetic"}');assert false,'Missing project scope accepted';exception when no_data_found then null;end;
  begin perform internal.assistant_run_create('{"mode":"SYNTHETIC","config_version":"sql-v1","prompt":"must not store"}');assert false,'Raw prompt accepted';exception when invalid_parameter_value then null;end;
- t:=internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,'{"tool_name":"get_project","outcome":"SUCCESS","duration_ms":1,"sources":[{"namespace":"internal_content","entity_type":"project","entity_id":"prj_synthetic","version":"2026-10-01T10:00:00+07:00"}]}');
+ t:=internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,jsonb_build_object('tool_name','get_project','outcome','SUCCESS','duration_ms',1,'sources',jsonb_build_array(jsonb_build_object('namespace','internal_content','entity_type','project','entity_id',current_setting('test.assistant_public'),'version',(select updated_at::text from hub.projects where id=current_setting('test.assistant_project')::uuid)))));
  perform set_config('test.assistant_citation',t#>>'{citations,0,id}',true);
- assert t#>>'{citations,0,entity_id}'='prj_synthetic','Source identity changed';
+ assert t#>>'{citations,0,entity_id}'=current_setting('test.assistant_public'),'Source identity changed';
  begin perform internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,'{"tool_name":"get_line_actuals","outcome":"SUCCESS","duration_ms":1,"sources":[{"namespace":"internal_ads","entity_type":"media_line","entity_id":"private","version":"1"}]}');assert false,'Content editor obtained finance source metadata';exception when insufficient_privilege then null;end;
  begin perform internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,'{"tool_name":"search_content","outcome":"SUCCESS","duration_ms":1,"sources":[{"namespace":"internal_memo","entity_type":"memo","entity_id":"private","version":"1"}]}');assert false,'Namespace crossed';exception when invalid_parameter_value then null;end;
  begin perform internal.assistant_tool_record(current_setting('test.assistant_run')::uuid,'{"tool_name":"search_content","outcome":"SUCCESS","duration_ms":1,"sources":[{"namespace":"internal_content","entity_type":"project","entity_id":"prj_synthetic","version":"1","text":"secret"}]}');assert false,'Raw source text accepted';exception when invalid_parameter_value then null;end;

@@ -186,7 +186,7 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
     path = f'/v1/admin/knowledge/candidates/{UUID(int=900)}/file'
     response = client.get(path,headers=headers)
     assert response.status_code == 200 and response.content == content
-    assert 'hub.knowledge_candidate_rows()' in calls[0]
+    assert calls == ["SELECT evidence FROM hub.knowledge_candidate_rows() WHERE id=$1 AND kind='asset'"] * 2
     assert response.headers['content-type'] == 'application/octet-stream'
     assert response.headers['content-disposition'].startswith('attachment;')
     assert response.headers['cache-control'] == 'no-store'
@@ -194,7 +194,7 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
         other, other_headers = signed_client(signing_key, role=role, settings=settings)
         before = len(s3.calls)
         assert other.get(path, headers=other_headers).status_code == 403
-        assert len(calls) == 1 and len(s3.calls) == before
+        assert len(calls) == 2 and len(s3.calls) == before
     original = Authentication.load_account
     async def hidden(self,request,claims):
         account = await original(self,request,claims)
@@ -203,7 +203,7 @@ def test_hosted_knowledge_file_checks_db_and_uses_attachment(configured, signing
     monkeypatch.setattr(Authentication,'load_account',hidden)
     before = len(s3.calls)
     assert client.get(path,headers=headers).status_code == 403
-    assert len(calls) == 1 and len(s3.calls) == before
+    assert len(calls) == 2 and len(s3.calls) == before
 
 
 @pytest.mark.parametrize('path,body', [('preview',{'question':'test'}),

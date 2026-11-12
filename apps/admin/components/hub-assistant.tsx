@@ -3,15 +3,17 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { workspaceText } from "@/lib/unified-workspace";
-import { useHubPermissions } from "./accounts";
 import { request } from "./hub-request";
 import { PendingQuestion } from "./pending-question";
 import { dateTime } from "./content-operations-shared";
+import { useHubPermissions } from "./accounts";
+import { capabilityKey } from "@/lib/hub-permissions";
+import { contentScopeText } from "@/lib/content-scope-text";
 import "./hub-assistant.css";
 
 const base = "v1/admin/assistant";
 type Context = { project_id?: string; brand_id?: string; business_id?: string; rem_project_id?: string; line_id?: string; month?: string; code?: string; visibility?: "draft" | "published" };
-type Config = { session_key: string; mode: "fake"; live_available: boolean; allowed_tools: string[]; message_th: string; live_questions: { id: string; label_th: string }[]; proposal_fields: { project?: string[]; brand?: string[] } };
+type Config = { session_key: string; scope_expires_at?: string | null; mode: "fake"; live_available: boolean; allowed_tools: string[]; message_th: string; live_questions: { id: string; label_th: string }[]; proposal_fields: { project?: string[]; brand?: string[] } };
 type Metadata = { visibility?: string; version?: string | number | null; environment?: string; synthetic?: boolean; contains_synthetic?: boolean; as_of?: string | null; freshness?: Record<string, unknown> };
 type Block = { id: string; text: string; metadata: Metadata; citation_ids: string[] };
 type Citation = { id: string; label_th: string };
@@ -32,6 +34,19 @@ export function openWorkspaceAssistant(text = "", context?: Context, source?: HT
 const fieldLabels: Record<string, string> = { "meta_title.th": "ชื่อเรื่องสำหรับผู้ใช้งานข้อมูล", "meta_description.th": "คำอธิบายย่อโครงการ", "description.th": "คำอธิบายแบรนด์" };
 const messageOf = (error: unknown) => error instanceof TypeError ? "เชื่อมต่อผู้ช่วยไม่ได้ กรุณาตรวจการเชื่อมต่อแล้วลองอีกครั้ง" : error instanceof Error ? error.message : "ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง";
 const sourceLink = (href: unknown): href is string => typeof href === "string" && /^\/(?!\/)[^\\\u0000-\u001f\u007f]*$/.test(href);
+// Ignore completions for another source, authority, request or unmounted view.
+function deadlinePassed(deadline?: string | null) {
+  return deadline != null && (!Number.isFinite(Date.parse(deadline)) || Date.parse(deadline) <= Date.now());
+}
+function useAsyncScope(key: string, deadline?: string | null) {
+  const state = useRef({ key, generation: 0 });
+  if (state.current.key !== key) { state.current.key = key; state.current.generation++; }
+  useEffect(() => () => { state.current.generation++; }, []);
+  return () => {
+    const generation = ++state.current.generation;
+    return () => state.current.key === key && state.current.generation === generation && !deadlinePassed(deadline);
+  };
+}
 function pageContext(): Context {
   const query = new URLSearchParams(window.location.search);
   const entity = /^\/website\/(project|brand|business)\/([^/]+)$/.exec(window.location.pathname);
@@ -68,24 +83,28 @@ function MetadataView({ value }: { value: Metadata }) {
   const watermarks: [string, unknown][] = freshness ? [["รอบข้อมูล DW", freshness.snapshot_at ?? freshness.source_snapshot_at], ["ข้อมูลแพลตฟอร์ม ณ", sources?.platform_source_snapshot_at ?? freshness.platform_data_through], ["ข้อมูล Hub ณ", sources?.hub_source_snapshot_at], ["ข้อมูล REM ณ", sources?.rem_source_snapshot_at]] : [];
   return <div className="assistant-meta"><p>{visibility}{value.version != null && <> · รุ่น <code>{value.version}</code></>} · {value.synthetic ? "ข้อมูลตัวอย่าง" : value.contains_synthetic ? "มีข้อมูลตัวอย่างบางส่วน" : "ข้อมูลภายใน"}{value.environment && <> · <code>{value.environment}</code></>}</p><p>ข้อมูล ณ {value.as_of ? dateTime(value.as_of) : "ยังไม่ยืนยันเวลาต้นทาง"}</p>{freshness && <><p>{freshness.stale === true || String(freshness.status).toUpperCase() === "STALE" ? "ข้อมูลยังไม่เป็นปัจจุบัน กรุณาตรวจรอบข้อมูลก่อนใช้" : "ความสดของข้อมูลต้องพิจารณาจากเวลาต้นทาง"}</p><dl>{watermarks.filter(([, date]) => typeof date === "string").map(([label, date]) => <div key={label}><dt>{label}</dt><dd>{dateTime(String(date))}</dd></div>)}</dl></>}</div>;
 }
-function CitationButton({ citation, run }: { citation: Citation; run: string }) {
+function CitationButton({ citation, run, authority, deadline, onDenied }: { citation: Citation; run: string; authority: string; deadline?: string | null; onDenied: (error: unknown) => void }) {
   const [source, setSource] = useState<{ source_href: string; metadata: Metadata; source?: { version?: string; page?: number } } | null>(null);
   const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
+  const begin = useAsyncScope(JSON.stringify([authority, run, citation.id]), deadline);
+  useEffect(() => { setSource(null); setError(""); setBusy(false); }, [authority, run, citation.id]);
   async function check() {
+    const current = begin();
     setBusy(true); setError(""); setSource(null);
-    try { const result = await request<NonNullable<typeof source>>(`${base}/runs/${run}/citations/${citation.id}`); if (!sourceLink(result.source_href)) throw new Error("ไม่พบลิงก์ต้นทางที่มีสิทธิ์เข้าถึง"); setSource(result); }
-    catch (error) { setError(messageOf(error)); } finally { setBusy(false); }
+    try { const result = await request<NonNullable<typeof source>>(`${base}/runs/${run}/citations/${citation.id}`); if (!current()) return; if (!sourceLink(result.source_href)) throw new Error("ไม่พบลิงก์ต้นทางที่มีสิทธิ์เข้าถึง"); setSource(result); }
+    catch (error) { if (current()) { setError(messageOf(error)); if ([401, 403].includes((error as { status?: number }).status ?? 0)) onDenied(error); } } finally { if (current()) setBusy(false); }
   }
   return <div><button type="button" className="button secondary" disabled={busy} aria-busy={busy} onClick={() => void check()}>{citation.label_th}</button>{error && <p role="alert" className="notice error">{error}</p>}{source && <><a className="assistant-citation-link" href={source.source_href} target="_blank" rel="noopener noreferrer">เปิดต้นทางที่ตรวจสิทธิ์แล้ว{source.source?.page != null && ` · หน้า ${source.source.page}`}</a><MetadataView value={source.metadata ?? {}} /></>}</div>;
 }
-function DraftProposal({ context, config, draft, onDraft, onDenied }: { context: Context; config: Config; draft: TypedDraft; onDraft: (value: TypedDraft) => void; onDenied: (error: unknown) => void }) {
+function DraftProposal({ context, config, authority, draft, onDraft, onDenied }: { context: Context; config: Config; authority: string; draft: TypedDraft; onDraft: (value: TypedDraft) => void; onDenied: (error: unknown) => void }) {
   const entityType = context.project_id ? "project" : context.brand_id ? "brand" : null;
   const publicId = context.project_id ?? context.brand_id;
   const fields = entityType ? config.proposal_fields?.[entityType] ?? [] : [];
   const [target, setTarget] = useState<Record<string, unknown> | null>(null); const [field, setField] = useState(fields[0] ?? "");
   const { text, rationale } = draft; const setText = (text: string) => onDraft({ ...draft, text }); const setRationale = (rationale: string) => onDraft({ ...draft, rationale }); const [proposal, setProposal] = useState<Proposal | null>(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [saved, setSaved] = useState(false); const [stale, setStale] = useState(false);
-  useEffect(() => { setTarget(null); setProposal(null); setSaved(false); setStale(false); }, [config.session_key]);
+  const begin = useAsyncScope(JSON.stringify([authority, context, config.session_key]), config.scope_expires_at);
+  useEffect(() => { setTarget(null); setProposal(null); setSaved(false); setStale(false); setBusy(false); setError(""); }, [authority, config.session_key]);
   if (!entityType || !publicId || !fields.length) return null;
   function failed(error: unknown) {
     setError(messageOf(error));
@@ -94,24 +113,28 @@ function DraftProposal({ context, config, draft, onDraft, onDenied }: { context:
     if (status === 409) setStale(true);
   }
   async function load() {
+    const current = begin();
     setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
-    try { setTarget(await request<Record<string, unknown>>(`v1/admin/${entityType === "project" ? "projects" : "brands"}/${encodeURIComponent(publicId!)}`)); }
-    catch (error) { failed(error); } finally { setBusy(false); }
+    try { const result = await request<Record<string, unknown>>(`v1/admin/${entityType === "project" ? "projects" : "brands"}/${encodeURIComponent(publicId!)}`); if (current()) setTarget(result); }
+    catch (error) { if (current()) failed(error); } finally { if (current()) setBusy(false); }
   }
   async function propose(event: FormEvent) {
+    const current = begin();
     event.preventDefault(); if (!target) return; setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
-    try { setProposal(await request<Proposal>(`${base}/proposals`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, new_text: text, expected_updated_at: target.updated_at, rationale })); }
-    catch (error) { failed(error); } finally { setBusy(false); }
+    try { const result = await request<Proposal>(`${base}/proposals`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, new_text: text, expected_updated_at: target.updated_at, rationale }); if (current()) setProposal(result); }
+    catch (error) { if (current()) failed(error); } finally { if (current()) setBusy(false); }
   }
   async function suggest() {
+    const current = begin();
     if (!target) return; setBusy(true); setError(""); setProposal(null); setSaved(false); setStale(false);
-    try { setProposal(await request<Proposal>(`${base}/proposals/suggest`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, expected_updated_at: target.updated_at })); }
-    catch (error) { failed(error); } finally { setBusy(false); }
+    try { const result = await request<Proposal>(`${base}/proposals/suggest`, "POST", { entity_type: entityType, entity_id: target.id, field_path: field, expected_updated_at: target.updated_at }); if (current()) setProposal(result); }
+    catch (error) { if (current()) failed(error); } finally { if (current()) setBusy(false); }
   }
   async function confirm() {
+    const current = begin();
     if (!proposal || stale) return; setBusy(true); setError("");
-    try { const result = await request<{ proposal: Proposal }>(`${base}/proposals/${proposal.id}/confirm`, "POST", { digest: proposal.digest, confirmed: true }); setProposal(result.proposal); setSaved(true); }
-    catch (error) { failed(error); } finally { setBusy(false); }
+    try { const result = await request<{ proposal: Proposal }>(`${base}/proposals/${proposal.id}/confirm`, "POST", { digest: proposal.digest, confirmed: true }); if (current()) { setProposal(result.proposal); setSaved(true); } }
+    catch (error) { if (current()) failed(error); } finally { if (current()) setBusy(false); }
   }
   const oldValue = target ? (target[field.split(".")[0]] as Record<string, unknown> | undefined)?.th : null;
   return <section className="assistant-proposal"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>แก้ได้เฉพาะช่องข้อความตัวอย่างที่ระบบอนุญาต การส่งแชตไม่ใช่คำสั่งบันทึก และไม่เปลี่ยนฉบับเผยแพร่</p><button className="button secondary" type="button" onClick={() => void load()} disabled={busy}>{target ? "โหลดฉบับร่างล่าสุดเพื่อทบทวนใหม่" : "โหลดข้อความฉบับร่างที่มีสิทธิ์แก้"}</button>{error && <p role="alert" className="notice error">{error}</p>}{target && <form onSubmit={propose}><div className="form-field"><label htmlFor="assistant-draft-field">ช่องข้อความ</label><select id="assistant-draft-field" value={field} onChange={event => { setField(event.target.value); setProposal(null); setSaved(false); }} disabled={busy}>{fields.map(path => <option key={path} value={path}>{fieldLabels[path] ?? "ข้อความที่ระบบอนุญาต"}</option>)}</select></div><p>ข้อความปัจจุบัน: {typeof oldValue === "string" && oldValue ? oldValue : "ยังไม่มีข้อความ"}</p><button className="button secondary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void suggest()}>ให้ผู้ช่วยเสนอข้อความ</button><p className="assistant-meta">ผู้ช่วยจำลองในเครื่องเสนอจากข้อความเดิม ไม่ได้เรียกโมเดลจริง หรือกรอกข้อความที่คุณเขียนเองด้านล่างเพื่อสร้างข้อเสนอ</p><div className="form-field"><label htmlFor="assistant-draft-new">ข้อความที่เสนอ</label><textarea id="assistant-draft-new" rows={4} maxLength={4000} value={text} disabled={busy} onChange={event => { setText(event.target.value); setProposal(null); setSaved(false); }} required /></div><div className="form-field"><label htmlFor="assistant-draft-reason">เหตุผลที่เสนอ</label><textarea id="assistant-draft-reason" rows={2} maxLength={1000} value={rationale} disabled={busy} onChange={event => { setRationale(event.target.value); setProposal(null); setSaved(false); }} /></div><button className="button secondary" type="submit" disabled={busy || !text.trim() || stale} aria-busy={busy}>สร้างข้อเสนอเพื่อดูความแตกต่าง</button></form>}{proposal && <section aria-label="ความแตกต่างของข้อความที่เสนอ"><dl className="assistant-diff"><div><dt>ก่อนแก้ไข</dt><dd>{proposal.old_text || "ยังไม่มีข้อความ"}</dd></div><div><dt>หลังแก้ไข</dt><dd>{proposal.new_text}</dd></div></dl><p className="assistant-meta">รุ่นข้อมูลอ้างอิง <code>{proposal.expected_updated_at}</code></p>{saved ? <p role="status" className="notice success">บันทึกฉบับร่างแล้ว · ฉบับเผยแพร่ยังไม่เปลี่ยน</p> : <button className="button primary" type="button" disabled={busy || stale} aria-busy={busy} onClick={() => void confirm()}>ยืนยันบันทึกเป็นฉบับร่าง</button>}</section>}</section>;
@@ -119,7 +142,15 @@ function DraftProposal({ context, config, draft, onDraft, onDenied }: { context:
 
 export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigationTarget: HTMLElement | null; onNavigationOpen: () => HTMLElement | null }) {
   const permissions = useHubPermissions(), knowledgeView = permissions.can("knowledge");
+  const scopeIdentity = (permissions.account as (typeof permissions.account & { content_scope?: { fingerprint: string; expires_at: string | null } }))?.content_scope;
+  const authority = JSON.stringify([capabilityKey(permissions.account), scopeIdentity?.fingerprint, scopeIdentity?.expires_at]);
+  const authorityRef = useRef(authority); authorityRef.current = authority;
+  const scopeExpiryRef = useRef(scopeIdentity?.expires_at); scopeExpiryRef.current = scopeIdentity?.expires_at;
+  const priorAuthority = useRef(authority), priorActor = useRef(permissions.account?.id);
+  const generation = useRef(0), alive = useRef(true), openRef = useRef(false);
+  const configRequest = useRef(0), refreshQueued = useRef(false);
   const [open, setOpen] = useState(false); const [config, setConfig] = useState<Config | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
+  openRef.current = open;
   const configKey = useRef<string | null>(null); const checkingConfig = useRef(false);
   const launchContext = useRef<Context | null>(null);
   const [drafts, setDrafts] = useState<Record<string, TypedDraft>>({});
@@ -130,6 +161,9 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
   const trigger = useRef<HTMLButtonElement>(null); const floatingTrigger = useRef<HTMLButtonElement>(null); const opener = useRef<HTMLElement | null>(null); const dialog = useRef<HTMLDialogElement>(null); const latest = useRef<HTMLDivElement>(null); const controller = useRef<AbortController | null>(null); const runId = useRef<string | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null); const goldenInput = useRef<HTMLSelectElement>(null); const shown = useRef(false);
   const contextButton = useRef<HTMLButtonElement>(null); const contextPopover = useRef<HTMLDivElement>(null); const contextHeading = useRef<HTMLHeadingElement>(null); const contextPopoverId = useId();
+  const scopeDeadline = [config?.scope_expires_at, scopeIdentity?.expires_at].filter((value): value is string => typeof value === "string").sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null;
+  const viewAuthority = JSON.stringify([authority, config?.session_key, generation.current]);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; generation.current++; configRequest.current++; controller.current?.abort(); }; }, []);
   useEffect(() => { const update = () => { const next = new URLSearchParams(window.location.search).get("assistant") === "open"; if (next) setTab("chat"); setOpen(next); }; update(); window.addEventListener("popstate", update); return () => { window.removeEventListener("popstate", update); controller.current?.abort(); }; }, []);
   useEffect(() => {
     const main = document.getElementById("main-content"); if (!main) return;
@@ -164,12 +198,30 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
   }, []);
   useEffect(() => { if (open) { shown.current = true; dialog.current?.showModal(); } else { contextPopover.current?.hidePopover(); dialog.current?.close(); if (shown.current) (opener.current?.isConnected && opener.current.getClientRects().length ? opener.current : trigger.current?.getClientRects().length ? trigger.current : floatingTrigger.current)?.focus(); } }, [open]);
   useEffect(() => {
+    if (priorAuthority.current !== authority) {
+      const switchedActor = priorActor.current && permissions.account?.id && priorActor.current !== permissions.account.id;
+      priorAuthority.current = authority; priorActor.current = permissions.account?.id ?? priorActor.current;
+      invalidateAccess(new Error(contentScopeText.scope_loss));
+      if (switchedActor) { setQuestion(""); setDrafts({}); }
+    }
     if (open) void loadConfig();
     const refresh = () => { if (open && document.visibilityState === "visible") void loadConfig(); };
     window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
     window.addEventListener("hub-accounts-changed", refresh);
     return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); window.removeEventListener("hub-accounts-changed", refresh); };
-  }, [open]);
+  }, [open, authority]);
+  useEffect(() => {
+    if (!scopeDeadline) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      if (deadlinePassed(scopeDeadline)) {
+        invalidateAccess(new Error(contentScopeText.scope_loss));
+        if (openRef.current) void loadConfig();
+      } else timer = setTimeout(expire, Math.min(Date.parse(scopeDeadline) - Date.now(), 2_147_483_647));
+    };
+    expire();
+    return () => clearTimeout(timer);
+  }, [scopeDeadline]);
   useEffect(() => { if (open && config && tab === "chat") (mode === "fake" ? composer.current : goldenInput.current)?.focus({ preventScroll: true }); }, [open, config, mode]);
   function contextSaved(next: Context, value = config) {
     next = cleanContext(next);
@@ -189,17 +241,25 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     return () => window.removeEventListener("hub-assistant-open", launch);
   }, [config]);
   function invalidateAccess(error: unknown) {
+    generation.current++; configRequest.current++;
+    launchContext.current = null;
     stop(); setTurns([]); setConfig(null); contextSaved({}, null);
     try { if (configKey.current) sessionStorage.removeItem(`hub-assistant-context:${configKey.current}`); } catch { /* Browser storage is optional. */ }
     configKey.current = null; setError(messageOf(error));
   }
   async function loadConfig() {
-    if (checkingConfig.current) return; checkingConfig.current = true;
+    const requestId = ++configRequest.current;
+    if (checkingConfig.current) { refreshQueued.current = true; return; } checkingConfig.current = true;
+    const expectedAuthority = authorityRef.current, expectedGeneration = generation.current;
+    const current = () => alive.current && openRef.current && configRequest.current === requestId && authorityRef.current === expectedAuthority && generation.current === expectedGeneration;
     setLoading(true); setError("");
     try {
       const value = await request<Config>(`${base}/config`);
+      if (!current()) return;
+      if (deadlinePassed(value.scope_expires_at) || deadlinePassed(scopeExpiryRef.current)) { invalidateAccess(new Error(contentScopeText.scope_loss)); return; }
       const changed = configKey.current !== null && configKey.current !== value.session_key;
       if (changed) {
+        generation.current++;
         stop(); setTurns([]); setStatus("สิทธิ์เปลี่ยนแล้ว ล้างคำตอบเดิมเพื่อป้องกันข้อมูลที่ไม่เปิดให้ดู ข้อความที่ยังไม่ส่งและร่างที่พิมพ์เองยังอยู่");
         try { sessionStorage.removeItem(`hub-assistant-context:${configKey.current}`); } catch { /* Browser storage is optional. */ }
       }
@@ -210,8 +270,14 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
       }
       if (launchContext.current !== null) { contextSaved(launchContext.current, value); launchContext.current = null; }
       configKey.current = value.session_key; setConfig(value); setGolden(current => current || value.live_questions[0]?.id || "");
-    } catch (error) { invalidateAccess(error); }
-    finally { checkingConfig.current = false; setLoading(false); }
+    } catch (error) { if (current()) invalidateAccess(error); }
+    finally {
+      checkingConfig.current = false;
+      if (alive.current) {
+        if (refreshQueued.current && openRef.current) { refreshQueued.current = false; void loadConfig(); }
+        else { refreshQueued.current = false; setLoading(false); }
+      }
+    }
   }
   function toggle(next: boolean, source?: HTMLElement) {
     if (next && source) {
@@ -236,20 +302,26 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
     event.preventDefault(); if (!config || busy || mode === "fake" && !question.trim() || mode === "live" && (!config.live_available || !golden)) return;
     const abort = new AbortController(); controller.current = abort; runId.current = null; setBusy(true); setError(""); setStatus("กำลังตรวจสิทธิ์และค้นข้อมูลที่อนุญาต");
     const key = crypto.randomUUID(); const sentQuestion = mode === "fake" ? question : config.live_questions.find(item => item.id === golden)?.label_th ?? "คำถามสาธิต";
+    const expectedAuthority = authorityRef.current, expectedGeneration = generation.current, expectedSession = config.session_key;
+    const current = () => alive.current && !abort.signal.aborted && authorityRef.current === expectedAuthority && generation.current === expectedGeneration && configKey.current === expectedSession && !deadlinePassed(scopeDeadline);
     setTurns(items => [...items, { key, question: sentQuestion, mode, run_id: null, blocks: [], citations: [], status: "RUNNING", error: "" }]);
     let finished = false;
     try {
       const response = await fetch(`/api/hub/${base}/runs`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mode === "fake" ? { mode, message: question, context } : { mode, golden_id: golden }), signal: abort.signal, cache: "no-store" });
-      if (!response.ok) { const body = await response.json().catch(() => null); throw new Error(body?.error?.message ?? "เริ่มการตอบไม่สำเร็จ กรุณาลองอีกครั้ง"); }
+      if (!current()) { await response.body?.cancel().catch(() => {}); return; }
+      if (!response.ok) { const body = await response.json().catch(() => null); if (!current()) return; if ([401, 403].includes(response.status)) { invalidateAccess(new Error(body?.error?.message || contentScopeText.scope_loss)); return; } throw new Error(body?.error?.message ?? "เริ่มการตอบไม่สำเร็จ กรุณาลองอีกครั้ง"); }
       if (!response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) throw new Error("ไม่ได้รับข้อมูลคำตอบในรูปแบบที่รองรับ");
       const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let received = 0;
       try {
         while (true) {
           const chunk = await reader.read(); if (chunk.done) break; received += chunk.value.length; if (received > 1_000_000) throw new Error("คำตอบยาวเกินกำหนด กรุณาถามให้เฉพาะเจาะจงขึ้น");
+          if (!current()) return;
           buffer = (buffer + decoder.decode(chunk.value, { stream: true })).replace(/\r\n/g, "\n"); let boundary: number;
           while ((boundary = buffer.indexOf("\n\n")) >= 0) {
+            if (!current()) return;
             const frame = buffer.slice(0, boundary); buffer = buffer.slice(boundary + 2); const lines = frame.split("\n"); const event = lines.find(line => line.startsWith("event:"))?.slice(6).trim(); const data = lines.filter(line => line.startsWith("data:")).map(line => line.slice(5).trimStart()).join("\n"); if (!data) continue;
             let value; try { value = JSON.parse(data); } catch { throw new Error("ข้อมูลคำตอบไม่สมบูรณ์ กรุณาลองเป็นคำถามใหม่"); }
+            if (event === "error" && value.invalidate_access === true) { invalidateAccess(new Error(value.message_th || contentScopeText.scope_loss)); return; }
             if (typeof value.run_id === "string") { runId.current = value.run_id; updateTurn(key, turn => ({ ...turn, run_id: value.run_id })); }
             if (event === "status") setStatus(value.message_th || "กำลังประมวลผลคำถาม");
             if (event === "tool_start" || event === "tool_end") setStatus(value.label_th || "กำลังตรวจข้อมูลตามสิทธิ์");
@@ -262,6 +334,7 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
       } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
       if (!finished) throw new Error("การเชื่อมต่อสิ้นสุดก่อนยืนยันคำตอบ กรุณาลองเป็นคำถามใหม่");
     } catch (error) {
+      if (!alive.current || authorityRef.current !== expectedAuthority || generation.current !== expectedGeneration || configKey.current !== expectedSession) return;
       const cancelled = abort.signal.aborted; const message = cancelled ? "หยุดการตอบแล้ว" : messageOf(error); updateTurn(key, turn => ({ ...turn, status: cancelled ? "CANCELLED" : "ERROR", error: message })); if (controller.current === abort || !controller.current) setStatus(message);
     } finally { if (controller.current === abort) { controller.current = null; setBusy(false); } }
   }
@@ -296,11 +369,11 @@ export function HubAssistant({ navigationTarget, onNavigationOpen }: { navigatio
         {error && <div role="alert" className="notice error"><p>{error}</p><button className="button secondary" onClick={() => void loadConfig()}>ลองโหลดผู้ช่วยอีกครั้ง</button></div>}
         <section id="assistant-chat" role="tabpanel" aria-labelledby="assistant-tab-chat" hidden={tab !== "chat"}>
           {config && !turns.length && <div className="assistant-empty"><h3>วันนี้ให้ช่วยเรื่องอะไร</h3><p>ถามจากบริบทที่เลือก พร้อมตรวจแหล่งข้อมูลตามสิทธิ์</p>{mode === "fake" ? <div className="assistant-quick-questions" aria-label="ตัวอย่างคำถาม">{quickQuestions.map(text => <button key={text} className="button secondary" type="button" onClick={() => { setQuestion(text); composer.current?.focus({ preventScroll: true }); }}>{text}</button>)}</div> : <p>เลือกคำถามข้อมูลสมมติที่อนุญาตด้านล่างเพื่อเริ่มต้น</p>}</div>}
-          <div aria-label="บทสนทนาผู้ช่วย">{turns.map(turn => <article key={turn.key} className="assistant-turn"><h3>คุณ: {turn.question}</h3><p className="assistant-meta">{turn.mode === "fake" ? "คำตอบจากโหมดจำลองในเครื่อง" : "คำตอบจากโมเดลจริงด้วยข้อมูลสมมติ"}</p>{turn.blocks.map(block => <section key={block.id} className="assistant-answer-block"><p className="assistant-answer">{block.text}</p><MetadataView value={block.metadata} />{turn.run_id && <div className="assistant-citations">{turn.citations.filter(citation => block.citation_ids.includes(citation.id)).map(citation => <CitationButton key={citation.id} citation={citation} run={turn.run_id!} />)}</div>}</section>)}{turn.error && <p role="alert" className="notice error">{turn.error}</p>}{!turn.blocks.length && turn.status !== "RUNNING" && !turn.error && <p>ยังไม่มีข้อมูลที่ยืนยันได้สำหรับคำถามนี้</p>}</article>)}</div>
+          <div aria-label="บทสนทนาผู้ช่วย">{turns.map(turn => <article key={turn.key} className="assistant-turn"><h3>คุณ: {turn.question}</h3><p className="assistant-meta">{turn.mode === "fake" ? "คำตอบจากโหมดจำลองในเครื่อง" : "คำตอบจากโมเดลจริงด้วยข้อมูลสมมติ"}</p>{turn.blocks.map(block => <section key={block.id} className="assistant-answer-block"><p className="assistant-answer">{block.text}</p><MetadataView value={block.metadata} />{turn.run_id && <div className="assistant-citations">{turn.citations.filter(citation => block.citation_ids.includes(citation.id)).map(citation => <CitationButton key={citation.id} citation={citation} run={turn.run_id!} authority={viewAuthority} deadline={scopeDeadline} onDenied={invalidateAccess} />)}</div>}</section>)}{turn.error && <p role="alert" className="notice error">{turn.error}</p>}{!turn.blocks.length && turn.status !== "RUNNING" && !turn.error && <p>ยังไม่มีข้อมูลที่ยืนยันได้สำหรับคำถามนี้</p>}</article>)}</div>
           <div ref={latest} tabIndex={-1} />
         </section>
         <section id="assistant-draft" role="tabpanel" aria-labelledby="assistant-tab-draft" hidden={tab !== "draft"}>
-          {config && (draftContextAllowed ? <DraftProposal key={JSON.stringify(context)} context={context} config={config} draft={drafts[JSON.stringify(context)] ?? { text: "", rationale: "" }} onDraft={draft => setDrafts(previous => ({ ...previous, [JSON.stringify(context)]: draft }))} onDenied={invalidateAccess} /> : <div className="assistant-empty"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>{draftAllowed ? "เลือกบริบทโครงการหรือแบรนด์ที่มีสิทธิ์แก้ไข เพื่อดูข้อเสนอและตรวจความแตกต่างก่อนยืนยัน" : "บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง อ่านข้อมูลผ่านแชทได้ตามสิทธิ์เดิม"}</p>{draftAllowed && <button className="button secondary" type="button" onClick={() => contextPopover.current?.showPopover()}>เลือกบริบทสำหรับร่าง</button>}</div>)}
+          {config && (draftContextAllowed ? <DraftProposal key={JSON.stringify(context)} context={context} config={config} authority={viewAuthority} draft={drafts[JSON.stringify(context)] ?? { text: "", rationale: "" }} onDraft={draft => setDrafts(previous => ({ ...previous, [JSON.stringify(context)]: draft }))} onDenied={invalidateAccess} /> : <div className="assistant-empty"><h3>เสนอแก้ข้อความฉบับร่าง</h3><p>{draftAllowed ? "เลือกบริบทโครงการหรือแบรนด์ที่มีสิทธิ์แก้ไข เพื่อดูข้อเสนอและตรวจความแตกต่างก่อนยืนยัน" : "บัญชีนี้ไม่มีสิทธิ์เสนอแก้ข้อความฉบับร่าง อ่านข้อมูลผ่านแชทได้ตามสิทธิ์เดิม"}</p>{draftAllowed && <button className="button secondary" type="button" onClick={() => contextPopover.current?.showPopover()}>เลือกบริบทสำหรับร่าง</button>}</div>)}
         </section>
         {!draftContextAllowed && Object.values(drafts).some(draft => draft.text || draft.rationale) && <details><summary>ข้อความร่างที่คุณพิมพ์ไว้และยังไม่ได้บันทึก</summary>{Object.values(drafts).filter(draft => draft.text || draft.rationale).map((draft, index) => <div key={index}><label className="form-field">ข้อความที่พิมพ์ไว้<textarea readOnly value={draft.text} /></label><label className="form-field">เหตุผลที่พิมพ์ไว้<textarea readOnly value={draft.rationale} /></label></div>)}</details>}
       </div>

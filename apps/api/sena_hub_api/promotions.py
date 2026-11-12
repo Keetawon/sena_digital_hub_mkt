@@ -60,6 +60,19 @@ class PromotionScope(Input):
         return self
 
 
+class SavedPromotionScope(Input):
+    promotion_id: UUID
+    expected_revision: Revision
+    targets: list[PromotionTarget] = Field(default_factory=list, max_length=100)
+    excluded_project_ids: list[UUID] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def distinct_exclusions(self):
+        if len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
+            raise ValueError("Excluded projects must be distinct")
+        return self
+
+
 class DraftFields(PromotionScope):
     audience: Literal["general", "investor", "livnex"] = "general"
     booking_from: date | None = None
@@ -239,7 +252,7 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
         return await rpc(request, actor, "SELECT hub.promotion_references()::text")
 
     @app.post(prefix + "/promotions/resolve")
-    async def promotion_resolve(body: PromotionScope, request: Request, actor: Actor = Depends(admin)):
+    async def promotion_resolve(body: PromotionScope | SavedPromotionScope, request: Request, actor: Actor = Depends(admin)):
         query(request)
         return await rpc(request, actor, "SELECT hub.promotion_resolve($1::jsonb)::text", body.model_dump(mode="json"))
 

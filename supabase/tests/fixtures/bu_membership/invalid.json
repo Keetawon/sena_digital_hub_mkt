@@ -1,0 +1,25 @@
+{
+  "failure_code": "duplicate_project",
+  "rows": [
+    {
+      "project_id": "00001",
+      "rem_bu_id": " BU A ",
+      "rem_bu_code": " Shared code ",
+      "rem_bu_name": " Exact BU name ",
+      "rem_bu_is_active": false,
+      "rem_bu_is_deleted": true,
+      "source_snapshot_at": "2031-01-01T00:00:00.000000Z",
+      "project_status_code": "3"
+    },
+    {
+      "project_id": "00001",
+      "rem_bu_id": " BU A ",
+      "rem_bu_code": " Shared code ",
+      "rem_bu_name": " Exact BU name ",
+      "rem_bu_is_active": false,
+      "rem_bu_is_deleted": true,
+      "source_snapshot_at": "2031-01-01T00:00:00.000000Z",
+      "project_status_code": "3"
+    }
+  ]
+}

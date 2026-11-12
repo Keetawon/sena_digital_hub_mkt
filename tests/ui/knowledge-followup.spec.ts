@@ -33,6 +33,7 @@ test('Admin editor sees split draft labels and explicitly verifies expected answ
  await page.getByRole('button',{name:'ตรวจคำตอบที่คาดหวัง'}).first().click();
  await page.getByLabel('คำตอบที่ MKT ตรวจแล้ว').fill('มีสวนส่วนกลางสำหรับพักผ่อน');await page.getByLabel('เหตุผลตรวจคำถาม').fill('ตรวจแหล่งข้อมูลสมมติแล้ว');
  await page.getByRole('button',{name:'บันทึกผลตรวจคำถาม'}).click();
+ await expect.poll(() => calls.length).toBe(1);
  expect(calls[0].body).toMatchObject({expected_revision:0,decision:'verified',expected_answer:'มีสวนส่วนกลางสำหรับพักผ่อน'});
 });
 test('hero suggestions start as gallery and promotions separate expired and non-offers',async({page})=>{

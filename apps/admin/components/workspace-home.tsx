@@ -1,4 +1,5 @@
 "use client";
+import { ContentBuNotices } from "./content-bu-notices";
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,8 +51,9 @@ function HomeContent({ hosted }: { hosted: boolean }) {
     (async () => {
       try {
         const response = await fetch(`/api/hub/v1/admin/content/home?${query}`, { cache: "no-store", signal: controller.signal });
-        if (!response.ok) throw new Error();
         const body = await response.json();
+        if (!response.ok && body.error?.invalidate_access === true && !controller.signal.aborted) window.dispatchEvent(new Event("hub-content-access-invalidated"));
+        if (!response.ok) throw new Error();
         if (!controller.signal.aborted) setData(body.data);
       } catch { if (!controller.signal.aborted) setError(true); }
     })();
@@ -75,6 +77,7 @@ function HomeContent({ hosted }: { hosted: boolean }) {
       {coverageError && <p role="alert">{copy.load_error}</p>}
       {coverage && <FaqCoverage onOpenFaq={id => void openFaq(id)} />}
     </section>}
+    <ContentBuNotices />
     {error ? <p role="alert">{copy.load_error} <button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{copy.retry}</button></p> : !data ? <p role="status">{copy.loading}</p> : <>
       {data.selected_gap && <section className="workspace-home-card workspace-home-gap" id={`selected-${data.selected_gap.id}`} tabIndex={-1} aria-label={copy.unanswered_task}><h2>{copy.unanswered_task}</h2><h3>{workspaceLabel(data.selected_gap.label)}</h3><p>{copy.unanswered_note}</p>{data.selected_gap.last_seen && <p className="workspace-home-meta">{copy.date}: {date(data.selected_gap.last_seen)}</p>}{data.selected_gap.context.project && <a href={`/?project=${encodeURIComponent(data.selected_gap.context.project)}`}>{copy.project}</a>}</section>}
       <div className="workspace-home-filters">

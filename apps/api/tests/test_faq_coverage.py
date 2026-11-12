@@ -77,7 +77,7 @@ def test_faq_coverage_missing_expired_zero_and_gap_lifecycle(permission_accounts
             coverage = await call(db, ids['viewer'], 'select hub.faq_coverage($1,0,10)', p['public_project_id'])
             assert coverage['total'] == 1 and coverage['rows'][0]['project']['public_id'] == p['public_project_id']
             assert await call(db, ids['viewer'], 'select count(*) from hub.content_gaps where question_key=$1', key) == 1
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             assert await call(db, ids['viewer'], 'select count(*) from hub.content_gaps where question_key=$1', key) == 0
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select hub.faq_gaps($1)', p['public_project_id'])

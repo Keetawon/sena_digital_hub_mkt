@@ -32,6 +32,9 @@ from .content_workspace import register_content_workspace_routes
 from .content_workflow import register_content_workflow_routes
 from .publication_queue import register_publication_queue_routes
 from .business_content import register_business_content_routes
+from .content_scopes import register_content_scope_routes
+from .bu_membership import register_bu_membership_routes
+from .content_asset_delivery import staff_asset_response
 from .ads import register_ads_routes
 from .finance import register_finance_routes
 from .questions import register_question_routes
@@ -484,21 +487,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/v1/admin/assets/{asset_id}/file")
     async def staff_asset_file(asset_id: UUID, request: Request, actor: Actor = Depends(admin)):
-        return await asset_file_response(asset_id, request, actor, public=False)
+        require_local_assets()
+        return await staff_asset_response(asset_id, request, actor, authentication=authentication,
+                                          database=database, authorize=admin, hosted_assets=hosted_assets)
 
     @app.get("/v1/admin/assets/{asset_id}/thumbnail")
     async def staff_asset_thumbnail(asset_id: UUID, request: Request, actor: Actor = Depends(admin)):
         require_local_assets()
-        async with database(request, actor) as connection:
-            metadata = await connection.fetchval("SELECT hub.asset_file($1)", asset_id)
-        if metadata is None:
-            raise failure(404, 'file_not_found', 'ไม่พบภาพย่อที่มีสิทธิ์เข้าถึง')
-        if hosted_assets and not asset_files.thumbnail_path(metadata).is_file():
-            content = await asyncio.to_thread(hosted_assets.read, metadata)
-            await asyncio.to_thread(asset_files.install_thumbnail, content, metadata)
-        path = await asyncio.to_thread(asset_files.readable_thumbnail, metadata)
-        return FileResponse(path, media_type='image/webp', headers={'Cache-Control': 'no-store',
-                            'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'"})
+        return await staff_asset_response(asset_id, request, actor, authentication=authentication,
+                                          database=database, authorize=admin, hosted_assets=hosted_assets,
+                                          thumbnail=True)
 
     @app.get("/v1/assets/{asset_id}/file")
     async def published_asset_file(asset_id: Annotated[str, StringConstraints(pattern=r"^ast_[a-f0-9]{64}$")], request: Request, actor: Actor = Depends(consumer)):
@@ -925,6 +923,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_content_workflow_routes(app, authentication, database)
     register_publication_queue_routes(app, authentication, database)
     register_business_content_routes(app, authentication, database)
+    register_content_scope_routes(app, authentication, database)
+    register_bu_membership_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

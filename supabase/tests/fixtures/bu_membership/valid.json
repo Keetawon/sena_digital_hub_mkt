@@ -1,0 +1,2827 @@
+{
+  "fixture": "synthetic exact eight-column contract",
+  "rows": [
+    {
+      "project_id": "00001",
+      "rem_bu_id": " BU A ",
+      "rem_bu_code": " Shared code ",
+      "rem_bu_name": " Exact BU name ",
+      "rem_bu_is_active": false,
+      "rem_bu_is_deleted": true,
+      "source_snapshot_at": "2031-01-01T00:00:00.000000Z",
+      "project_status_code": "3"
+    },
+    {
+      "project_id": "00002",
+      "rem_bu_id": "bu-b",
+      "rem_bu_code": " Shared code ",
+      "rem_bu_name": " Exact BU name ",
+      "rem_bu_is_active": null,
+      "rem_bu_is_deleted": null,
+      "source_snapshot_at": "2031-01-01T00:00:00.000000Z",
+      "project_status_code": "3"
+    },
+    {
+      "project_id": "00003",
+      "rem_bu_id": null,
+      "rem_bu_code": null,
+      "rem_bu_name": null,
+      "rem_bu_is_active": null,
+      "rem_bu_is_deleted": null,
+      "source_snapshot_at": "2031-01-01T00:00:00.000000Z",
+      "project_status_code": "3"
+    }
+  ],
+  "historical": {
+    "source": "Owner-authorized offline 5 October package; legacy gold projection, not the production serving view",
+    "manifest_sha256": "6251c4663d85303caeb5bb7469d79bd00b022f64f470486afcf14db050955ed3",
+    "gold_projects_sha256": "46d44700de5f3f289adda71ffd4a167dd5564ef1e1556b263a9562a388547151",
+    "gold_projects_bytes": 1414248,
+    "row_count": 278,
+    "mapping": "project_id from outer row; rem_bu_id/code/name, project_status_code and source_snapshot_at copied exactly from gold; unavailable flags remain null",
+    "source_minimum": "2026-10-03T18:06:28.930549+07:00",
+    "source_maximum": "2026-10-03T18:07:51.923220+07:00",
+    "rows": [
+      {
+        "project_id": "RAP",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PR2D",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PR2F",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BGBP",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPSK2",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPSK1",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "80102",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:32.122082+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "SK1SD",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "SOM13",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "4"
+      },
+      {
+        "project_id": "K2P48",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "K1CD",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "K1EF",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "ONUT2",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "F9/3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "F9S2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00101",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70502",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "LADKB",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01401C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00300",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "SV70",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SLYA",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "LIFK6",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BGHBK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "20100",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "20201",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "LIFIS",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "K9BK4",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "RAMK",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K9",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CBDB1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BN",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "80101",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BGKBK",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K9BK1",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "113SB",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00412",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPHGH",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "70503",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "K2KH2",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "ISARA",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "10301",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01501C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K4LPT",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K9BK3",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "RAPB",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SKWG1",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K9BK2",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "TPRAK",
+        "rem_bu_id": "6b668fac-f9ed-4608-b9ba-80c8fe2c6106",
+        "rem_bu_code": "BUD31",
+        "rem_bu_name": "BUD31",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "RTF6",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K2K_5",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K2K_4",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "113SC",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "B1/5",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "F9S3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "20202",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CBDC1",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BN3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "RAM9A",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CBDF3",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "HY2DE",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BGCBK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K1P48",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SV50A",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SYC",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "VIVA",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "B_PO",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K1AB",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CHOMT",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "00407",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPU",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SKWG2",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "AQ",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "LP107",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "HYABC",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "LADK2",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SRKIT",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "LADK1",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "FISUK",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PH50",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K2KH3",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PTSN",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "01301",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CHANK",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00500",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PCHAO",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70101",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "EKAMI",
+        "rem_bu_id": "fcf508fe-428f-4a52-95ee-bbef1eebbb0b",
+        "rem_bu_code": "BUD Premium",
+        "rem_bu_name": "BUD Premium",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "SAMRG",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00402",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SNHP2",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "80201",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "ONUT1",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "PETBR",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01401",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9SV5",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "F9SV4",
+        "rem_bu_id": "6b668fac-f9ed-4608-b9ba-80c8fe2c6106",
+        "rem_bu_code": "BUD31",
+        "rem_bu_name": "BUD31",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "FGL70",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "KBDF4",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "TAOP",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SKHPT",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PH7/4",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PH7/2",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PH7/3",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BBA1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "BNA6",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BNA7",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PH7/1",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "SKN",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "KUBON",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "FR189",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "00401",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SRONG",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "CHA14",
+        "rem_bu_id": "ae248407-17cd-4324-ac9a-4b5a1699a21c",
+        "rem_bu_code": "BUD C3",
+        "rem_bu_name": "BUD C3",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BUNVI",
+        "rem_bu_id": "fcf508fe-428f-4a52-95ee-bbef1eebbb0b",
+        "rem_bu_code": "BUD Premium",
+        "rem_bu_name": "BUD Premium",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00406",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPCD",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:32.122082+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "000000",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "K9BK",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "2020",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "ฺฺBBB1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "BPSN1",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00403",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SKNA4",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA7",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SNA11",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SNA10",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BBB1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "PTSN1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PR2A",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "PR2B",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "PR2C",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "S113F",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K9BK5",
+        "rem_bu_id": "6b668fac-f9ed-4608-b9ba-80c8fe2c6106",
+        "rem_bu_code": "BUD31",
+        "rem_bu_name": "BUD31",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "70504C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70503C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00404",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "RTHAP",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01120C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00412C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00414C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00415C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00418C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00419C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00418",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00419",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00414",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00415",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00408C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00409C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00410C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00411C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:06:28.930549+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00409",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00408",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00410",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00411",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "55012",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00207",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K9_Demo",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9/2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00417C",
+        "rem_bu_id": "04876f1d-35c7-4fbd-b3b1-3cddf1832841",
+        "rem_bu_code": "BUD12",
+        "rem_bu_name": "BUD12",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00601",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SK2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "20202C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "NK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CHANK_Demo",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9/5",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "55014A",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01501",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BNC",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00416C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "TAR",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "70401C",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K2KH",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K2KC2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K2KC1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K2KB2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "20100C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00300C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00405C",
+        "rem_bu_id": "04876f1d-35c7-4fbd-b3b1-3cddf1832841",
+        "rem_bu_code": "BUD12",
+        "rem_bu_name": "BUD12",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "55011",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "RM",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "01301C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00406C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9/4",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BND",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00202",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00205",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00203",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00401C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00500C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00602",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CBDA2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CBDA1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CBDB2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00201",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BNB",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00204",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "55013A",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "55013B",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00402C",
+        "rem_bu_id": "04876f1d-35c7-4fbd-b3b1-3cddf1832841",
+        "rem_bu_code": "BUD12",
+        "rem_bu_name": "BUD12",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00206",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "113SA",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "K9PG",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "K4GV",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00407C",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BGBBK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BGABK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SYBK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00416",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70101C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SYB",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "70103C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "B1/2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "B1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00404C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9-3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "10200",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70504",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9SV3",
+        "rem_bu_id": "6b668fac-f9ed-4608-b9ba-80c8fe2c6106",
+        "rem_bu_code": "BUD31",
+        "rem_bu_name": "BUD31",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "F9-3D",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "55014B",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "30301",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SK2TR",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "55012C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01800",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "30100",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "10100",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00405",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "RAMA9",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "30200",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BGTHT",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70103",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00602C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01120",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "BPEF",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "VELAP",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9/6",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "70401",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CKL1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "00601C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "01800C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "VELA",
+        "rem_bu_id": "45225263-a22f-440e-b740-85283a405f86",
+        "rem_bu_code": "BUD H1",
+        "rem_bu_name": "BUD H1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPSN",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "F9BK",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BGKH2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00417",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "BPHF3",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "SK1TR",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "0"
+      },
+      {
+        "project_id": "NUSA",
+        "rem_bu_id": "04c79383-d741-439f-9f49-6057c2428c2d",
+        "rem_bu_code": "BUD C2",
+        "rem_bu_name": "BUD C2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "CKL2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "B1/4",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "B1/7",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "1"
+      },
+      {
+        "project_id": "RM2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "10301C",
+        "rem_bu_id": "d67ec992-2b0c-426d-923c-d0fff0bcbee4",
+        "rem_bu_code": "BUD51",
+        "rem_bu_name": "BUD51",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9-3B",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CKLB6",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CKLB7",
+        "rem_bu_id": "800745d3-04da-46a6-97a2-8dfaadfbea97",
+        "rem_bu_code": "BUD11",
+        "rem_bu_name": "BUD11",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CKLB8",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "CKLB5",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA2",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "70201",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00701",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "SKNA5",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA8",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA9",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA1",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "SKNA6",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "BUNVI_Demo",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "TRAK1",
+        "rem_bu_id": "eb6b5db3-95b1-46d8-9f94-3ec724fe38c6",
+        "rem_bu_code": "BUD H2",
+        "rem_bu_name": "BUD H2",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "NM8H",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "LIFIS_Demo",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "70502C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00207C",
+        "rem_bu_id": null,
+        "rem_bu_code": null,
+        "rem_bu_name": null,
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "00101C",
+        "rem_bu_id": "87aaf20f-549c-49f6-b939-1f1bfbe6420e",
+        "rem_bu_code": "BUD C1",
+        "rem_bu_name": "BUD C1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      },
+      {
+        "project_id": "F9-3C",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "3"
+      },
+      {
+        "project_id": "B1/3",
+        "rem_bu_id": "10dbec01-3f3e-46c1-afb6-808b5da643c3",
+        "rem_bu_code": "BusinessUnit1",
+        "rem_bu_name": "BusinessUnit1",
+        "rem_bu_is_active": null,
+        "rem_bu_is_deleted": null,
+        "source_snapshot_at": "2026-10-03T18:07:51.923220+07:00",
+        "project_status_code": "2"
+      }
+    ]
+  }
+}

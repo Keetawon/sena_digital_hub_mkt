@@ -105,7 +105,7 @@ def test_business_runtime_search_excludes_hidden_sources_and_rechecks_saved_expo
                                 {'body': {'th': 'secret sunlit garden'}, 'ai_exposure': 'internal'})
             faq, body = await answer(db, ids, await question(db, ids), 'business', 'residential', [], text='sunlit answer')
             for tab in ('projects', 'brands'):
-                await set_bit(ids['viewer'], tab, can_view=False, can_edit=False, can_approve=False)
+                await set_bit(ids['viewer'], tab, can_view=False, can_edit=False, can_approve=False, connection=db, manager=ids['admin'])
             rows = await call(db, ids['viewer'], "select internal.assistant_business_search('residential','draft')")
             found = {row['entity_id']: row for row in rows}
             assert section['id'] in found and faq['id'] in found and hidden['id'] not in found
@@ -125,7 +125,7 @@ def test_business_runtime_search_excludes_hidden_sources_and_rechecks_saved_expo
             assert [row['entity_id'] for row in history['citations']] == [faq['id']]
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select internal.assistant_citation_read($1,$2)', UUID(run['id']), UUID(saved['citations'][0]['id']))
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], "select internal.assistant_business_search('residential','draft')")
         finally:

@@ -1,0 +1,75 @@
+{
+  "phase": "Unified workspace W6",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/content-scopes",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/bu-sync-runs",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/content-scope-settings",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/accounts/content-scope-settings/preview",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/accounts/content-scope-settings/apply",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/bu-notices",
+      "tab": "content_workspace",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin",
+        "online_staff"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/bu_membership.py"
+    }
+  ]
+}

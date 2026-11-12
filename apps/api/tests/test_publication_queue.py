@@ -18,9 +18,10 @@ from test_permission_foundations import permission_accounts
 from test_project_content_core import runtime
 
 
-async def online(ids, role='viewer'):
+async def online(ids, role='viewer', *, connection=None):
     await set_bit(ids[role], 'knowledge', can_view=True, can_edit=False, can_approve=False,
-                  special_actions=['knowledge.publish_web'])
+                  special_actions=['knowledge.publish_web'], connection=connection,
+                  manager=ids['second'] if role == 'admin' else ids['admin'])
 
 
 async def corporate_page(db, ids):
@@ -54,7 +55,7 @@ def test_publisher_has_view_and_special_but_cannot_publish_own_approval(permissi
             await approve_item(db, ids, 'contact', {'id': row['id']})
             key = await corporate_page(db, ids)
             batch = await prepare(db, ids, key)
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
+            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'], connection=db, manager=ids['admin'])
             denied = await call(db, ids['publisher'], 'select hub.publication_queue_publish($1,$2)', UUID(batch['id']), batch['digest'])
             assert denied['state'] == 'RETURNED' and denied['page_count'] == 0
             batch = await prepare(db, ids, key)
@@ -62,7 +63,7 @@ def test_publisher_has_view_and_special_but_cannot_publish_own_approval(permissi
             assert published['state'] == 'PUBLISHED' and published['page_count'] == 1
             public = await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", key)
             assert any(contact['value'] == row['value'] for contact in public['content']['contacts'])
-            await set_bit(ids['viewer'], 'knowledge', special_actions=[])
+            await set_bit(ids['viewer'], 'knowledge', special_actions=[], connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await prepare(db, ids, key)
         finally:
@@ -169,7 +170,7 @@ def test_superseded_revision_editor_is_not_permanently_excluded(permission_accou
             await call(db, ids['second'], "select hub.save_content_contact('corporate','sena',$1,1,$2)", UUID(row['id']), contact_body('022222222'))
             await approve_item(db, ids, 'contact', {'id': row['id']}, editor='second')
             key = await corporate_page(db, {**ids, 'editor': ids['second']})
-            await online(ids, 'editor')
+            await online(ids, 'editor', connection=db)
             batch = await prepare(db, ids, key, role='editor')
             result = await call(db, ids['editor'], 'select hub.publication_queue_publish($1,$2)', UUID(batch['id']), batch['digest'])
             assert result['state'] == 'PUBLISHED'
@@ -356,7 +357,7 @@ def test_private_first_draft_preview_survives_approved_only_publication(permissi
             assert await db.fetchval('select state from hub.content_section_versions where id=$1', UUID(saved['version']['id'])) == 'DRAFT'
             with pytest.raises(asyncpg.NoDataFoundError):
                 await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", 'brand:' + ref)
-            await set_bit(ids['viewer'], 'brands', can_view=False)
+            await set_bit(ids['viewer'], 'brands', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], "select hub.workspace_preview('brand',$1,null,'th')", ref)
         finally:
@@ -404,10 +405,10 @@ def test_retained_translation_requires_exact_published_approval_and_frozen_contr
             await db.execute('update hub.web_pages set published_version_id=$2 where id=$1', page_id, version_id)
             current = await call(db, ids['editor'], 'select hub.faq_read($1)', UUID(faq['id']))
             await call(db, ids['editor'], 'select hub.save_faq($1,$2,$3)', UUID(faq['id']), current['revision'], {**body, 'short_answer': {'th': 'New unrelated draft answer'}})
-            await set_bit(ids['viewer'], 'knowledge', can_edit=True)
+            await set_bit(ids['viewer'], 'knowledge', can_edit=True, connection=db, manager=ids['admin'])
             newer = next(t for t in await call(db, ids['viewer'], "select hub.content_translation_list('knowledge',$1)", faq['id']) if t['field_key'] == 'faq.short_answer')
             await call(db, ids['viewer'], 'select hub.review_content_translation($1,$2,$3,$4)', UUID(newer['id']), newer['revision'], newer['th_version'], newer['th_text'])
-            await set_bit(ids['viewer'], 'knowledge', can_edit=False)
+            await set_bit(ids['viewer'], 'knowledge', can_edit=False, connection=db, manager=ids['admin'])
             await db.execute("select set_config('app.actor_id',$1,true)", str(ids['viewer']))
             assert await db.fetchval('select hub.publication_retained_reviewer_evidence($1,$2)', old, ids['viewer']) is True
             await db.execute('select hub.publication_dependency_check($1,true,false)', old)
@@ -536,7 +537,7 @@ def test_mixed_release_review_pins_child_hash_and_preserves_other_targets(permis
             assert (await call(db, ids['service_consumer'], "select hub.web_public_page($1,'th')", key))['content']['contacts']
             locked = await db.fetchval("select count(*)=4 from pg_locks where pid=pg_backend_pid() and granted and mode='ShareRowExclusiveLock' and relation=any(array['hub.assets'::regclass,'hub.brand_assets'::regclass,'hub.brands'::regclass,'hub.content_review_versions'::regclass])")
             assert locked, 'Snapshot hash check and writes must share locks against child/approval mutation'
-            await set_bit(ids['viewer'], 'brands', can_view=False)
+            await set_bit(ids['viewer'], 'brands', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], "select hub.web_publication_read($1,'th')", UUID(batch['id']))
         finally:

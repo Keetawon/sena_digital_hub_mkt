@@ -1,3 +1,4 @@
+import { contentScopeAllowsApi } from './content-scope-routes';
 import { businessAllowsApi } from './business-api-routes';
 import { workflowAllowsApi } from './content-workflow-routes';
 import type { LocalRole } from "./local-session";
@@ -40,6 +41,7 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsApi(path, method);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
   if (/^v1\/admin\/promotions\/resolve(?:\/|$)/.test(path)) return path === "v1/admin/promotions/resolve" && method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);

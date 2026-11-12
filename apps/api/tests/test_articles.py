@@ -57,13 +57,13 @@ def test_article_version_review_stale_and_four_eyes_survive_role_change(permissi
             t = next(t for t in frozen['translations'] if t['th_text'])
             with pytest.raises(asyncpg.CheckViolationError):
                 await call(db, ids['editor'], 'select hub.review_content_translation($1,$2,$3,$4)', UUID(t['id']), t['revision'], t['th_version'], t['th_text'])
-            await set_bit(ids['editor'], 'knowledge', can_edit=False, can_approve=True)
+            await set_bit(ids['editor'], 'knowledge', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], "select hub.article_review($1,$2,'approve')", UUID(article), frozen['revision'])
             await call(db, ids['publisher'], "select hub.article_review($1,$2,'approve')", UUID(article), frozen['revision'])
             approved = await read(db, ids, article)
             assert approved['approved_version_id'] == frozen['version']['id'] and approved['state'] == 'APPROVED'
-            await set_bit(ids['editor'], 'knowledge', can_edit=True, can_approve=False)
+            await set_bit(ids['editor'], 'knowledge', can_edit=True, can_approve=False, connection=db, manager=ids['admin'])
             body['blocks'] = {'type': 'doc', 'content': [paragraph('Changed source')]}
             await call(db, ids['editor'], 'select hub.article_save($1,$2,$3)', UUID(article), approved['revision'], body)
             changed = await read(db, ids, article)
@@ -201,9 +201,10 @@ def test_article_faq_embed_resolves_current_answer_and_hides_missing_facts(permi
             after = await call(db, ids['viewer'], 'select hub.article_preview($1)', article)
             assert '0 ' in after['references'][ref]['short_answer'] and after['references'][ref]['as_of_label']
             assert 'facts' not in after['references'][ref]
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             hidden = await call(db, ids['viewer'], 'select hub.article_preview($1)', article)
-            assert hidden['references'][ref] is None
+            assert ref not in hidden['references']
+            assert hidden['blocks']['content'][-1] == {'type': 'faqEmbed', 'attrs': {'project_id': '', 'question_key': ''}}
         finally:
             await db.close()
     run(check())
@@ -279,7 +280,7 @@ def test_article_api_and_direct_sql_reject_unknown_oversized_and_cross_scope_inp
                 with pytest.raises(asyncpg.CheckViolationError):
                     await call(db, ids['editor'], 'select hub.article_save(null,0,$1)', content(blocks={'type': 'doc', 'content': [node]}))
             p = await call(db, ids['viewer'], 'select public_project_id from hub.projects where deleted_at is null limit 1')
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], 'select hub.article_save(null,0,$1)', content(blocks={'type': 'doc', 'content': [paragraph(), {'type': 'projectCard', 'attrs': {'project_id': p}}]}))
             created = await call(db, ids['editor'], 'select hub.article_save(null,0,$1)', content())
@@ -290,7 +291,7 @@ def test_article_api_and_direct_sql_reject_unknown_oversized_and_cross_scope_inp
                 await call(db, ids['publisher'], 'select hub.article_review($1,$2,null)', UUID(created['id']), created['revision'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], "update hub.article_versions set state='APPROVED' where article_id=$1", UUID(created['id']))
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             for table in ('articles', 'article_versions', 'article_links'):
                 assert await call(db, ids['viewer'], f'select count(*) from hub.{table}') == 0
             assert await call(db, ids['viewer'], 'select count(*) from hub.brands') > 0

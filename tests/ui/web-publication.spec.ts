@@ -54,7 +54,10 @@ for (const width of [1280, 390]) {
       const first = (await read(page, `${base}/web`)).pages.find((p: { page_key: string }) => p.page_key === key).published_version_id;
       expect(first).toBeTruthy();
       await page.screenshot({ path: `artifacts/project-content-phase8/published-${width}.png`, fullPage: true });
-      await page.getByRole('button', { name: `${workflowText.web_history} · ${key}`, exact: true }).click();
+      const historyButton = page.getByRole('button', { name: `${workflowText.web_history} · ${key}`, exact: true });
+      await historyButton.scrollIntoViewIfNeeded();
+      await expect(historyButton).toBeInViewport({ ratio: 1 });
+      await historyButton.click();
       const history = page.locator('.publication-history-panel').filter({ has: page.getByRole('heading', { name: `${workflowText.web_history} · ${key}`, exact: true }) });
       await history.getByRole('button', { name: `${workflowText.version} 1`, exact: true }).click();
       await expect(history.frameLocator('.publication-preview').locator('body')).toContainText('บ้านและพื้นที่ร่วมกัน');

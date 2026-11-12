@@ -421,7 +421,7 @@ def test_corporate_faq_impact_requires_explicit_global_opt_in_and_preserves_manu
             assert cells[cases['none'][0]].get('faq_id') is None
             expected_global = await call(db, ids['viewer'], """select count(*) from hub.projects p where p.deleted_at is null
                 and exists(select 1 from jsonb_array_elements(hub.faq_references()->'projects') x where x->>'id'=p.rem_project_id)""")
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             before = await audit_count()
             data = await call(db, ids['viewer'], 'select hub.workspace_faq($1,$2,null,$3,null,50,$4)', 'corporate', 'sena', prefix, 'th')
             rows = {row['question_key']: row for row in data['items']}
@@ -654,7 +654,7 @@ def test_history_omits_account_legal_and_hidden_batch_members(permission_account
             for table, value in entries.items():
                 events[table] = await operator.fetchval('''insert into audit.change_log(actor,database_role,table_name,operation,after_row)
                     values($1,'hub_app',$2,'INSERT',$3) returning id''', ids['editor'], table, value)
-            await set_bit(ids['viewer'], 'brands', can_view=False)
+            await set_bit(ids['viewer'], 'brands', can_view=False, connection=operator, manager=ids['admin'])
             history = await operator_call(operator, ids['viewer'], 'select hub.content_history($1,$2,null,100)', 'project', p['public_project_id'])
             visible = {int(x['audit_id']) for x in history['items']}
             assert events['hub.account_permission'] not in visible and events['hub.project_disclosures'] not in visible
@@ -697,9 +697,9 @@ def test_cluster_resolver_uses_exact_rem_brand_mapping_and_rechecks_view(permiss
             assert controls[str(candidate)] == {'read_only': True, 'cluster_ids': [str(cluster)]}
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await operator_call(operator, ids['viewer'], 'select hub.workspace_legacy_faq_candidates($1)', [candidate])
-            await set_bit(ids['viewer'], 'brands', can_view=False)
+            await set_bit(ids['viewer'], 'brands', can_view=False, connection=operator, manager=ids['admin'])
             assert (await operator_call(operator, ids['viewer'], 'select hub.workspace_resolve(null,$1,$2)', cluster, p['rem_project_id']))['id'] == brand['public_brand_id']
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=operator, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await operator_call(operator, ids['viewer'], 'select hub.workspace_resolve(null,$1,$2)', cluster, p['rem_project_id'])
             neighbour = await operator_call(operator, ids['editor'], 'select hub.workspace_resolve(null,$1,$2)', cluster, p['rem_project_id'])
@@ -734,7 +734,7 @@ def test_unmatched_clusters_preserve_scoped_hold_propose_reject_and_pagination(p
             await operator_call(operator, ids['editor'], "select hub.decide_faq_cluster($1,1,'propose_question',$2)", clusters[1], {
                 'question_key': proposed_key, 'note': 'Synthetic new question proposal',
                 'question': {'topic': 'design', 'default_level': 'project', 'question_template': {'th': 'Synthetic proposed question'}, 'answer_kind': 'text'}})
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=operator, manager=ids['admin'])
             sql = 'select hub.workspace_faq($1,$2,null,$3,$4,1,$5)'
             before = await operator.fetchval('select count(*) from audit.change_log')
             first = await operator_call(operator, ids['viewer'], sql, 'project', p['public_project_id'], 'Synthetic unmatched', None, 'th')
@@ -755,7 +755,7 @@ def test_unmatched_clusters_preserve_scoped_hold_propose_reject_and_pagination(p
             await operator_call(operator, ids['editor'], "select hub.decide_faq_cluster($1,$2,'reject',$3)", clusters[0], held['revision'], {'note': 'Synthetic source rejected'})
             visible = await operator_call(operator, ids['viewer'], sql, 'project', p['public_project_id'], 'Synthetic unmatched', None, 'th')
             assert [x['id'] for x in visible['unmatched_clusters']] == [str(clusters[1])]
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=operator, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await operator_call(operator, ids['viewer'], sql, 'project', p['public_project_id'], 'Synthetic unmatched', None, 'th')
             assert (await operator_call(operator, ids['editor'], sql, 'project', p['public_project_id'], 'Synthetic unmatched', None, 'th'))['unmatched_clusters']

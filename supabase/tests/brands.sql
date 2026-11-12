@@ -256,6 +256,13 @@ do $$ declare dependency jsonb;original text:=current_setting('app.actor_id',tru
  assert hub.publication_retained_media_source(dependency),'Exact approved retained asset lost its source authority';
  assert not hub.publication_retained_media_source(dependency||jsonb_build_object('hash',repeat('0',64))),
   'Altered retained certificate gained source authority';
+ assert not exists(select 1 from hub.account_content_scope where account_id=pg_temp.w4_actor('publisher'));
+ insert into hub.account_content_scope(account_id,tab,level) values(pg_temp.w4_actor('publisher'),'brands','view');
+ assert not hub.publication_retained_media_source(dependency),'Retained asset bypassed its source-tab object scope';
+ begin perform hub.publication_dependency_check(dependency,true,false);
+  raise exception 'Retained dependency bypassed excluded brand scope';exception when insufficient_privilege then null;end;
+ delete from hub.account_content_scope where account_id=pg_temp.w4_actor('publisher') and tab='brands' and level='view';
+ assert hub.publication_retained_media_source(dependency),'Restored source scope did not restore the exact retained dependency';
  perform set_config('app.actor_id','00000000-0000-0000-0000-000000000004',true);
  assert not hub.publication_retained_media_source(dependency),'Retained asset authority bypassed source View';
  perform set_config('app.actor_id',coalesce(original,''),true);

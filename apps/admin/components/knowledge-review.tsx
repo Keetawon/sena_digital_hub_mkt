@@ -15,7 +15,9 @@ const roles: Record<string, string> = { hero: "ภาพหลัก", gallery: 
 const holds: Record<string, string> = { needs_phase_decision: "รอ MKT ระบุระยะโครงการ", numeric_claim: "ตัวเลขรอตรวจในข้อมูลโครงสร้าง", commercial_text: "เงื่อนไขการขายรอเจ้าของข้อมูล", mapping_conflict: "การจับคู่ข้อมูลขัดแย้ง", prompt_injection: "ข้อความคำสั่งแปลกปลอมถูกแยกไว้", undated_promotion: "ยังไม่มีช่วงวันที่โปรโมชั่น", invalid_promotion: "กักไว้: ตัวเลขหรือเงื่อนไขยังไม่ชัดเจน" };
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api/hub/v1/admin/knowledge/${path}`, body === undefined ? { cache: "no-store" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const json = await response.json(); if (!response.ok) throw new Error(json.error?.message || "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่"); return json.data;
+  const json = await response.json();
+  if (!response.ok && json.error?.invalidate_access === true) window.dispatchEvent(new Event("hub-content-access-invalidated"));
+  if (!response.ok) throw new Error(json.error?.message || "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่"); return json.data;
 }
 function text(value: unknown): string {
   if (typeof value === "string") return value;

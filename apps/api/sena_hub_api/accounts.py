@@ -5,6 +5,7 @@ from fastapi import Depends, Request, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, StrictBool, field_validator, model_validator
 
 from .auth import Actor, failure
+from .content_scopes import ContentScopeAssignment
 
 ACCESS_FIELD_MESSAGES = {
     'display_name_th': 'กรอกชื่อและนามสกุลภาษาไทย ไม่เกิน 200 ตัวอักษร',
@@ -157,7 +158,7 @@ class TabAssignment(BaseModel):
 class PermissionBatch(BaseModel):
     model_config = ConfigDict(extra='forbid')
     selection: Annotated[AccountsSelection | TemplateSelection | TeamSelection, Field(discriminator='kind')]
-    change: Annotated[TemplateAssignment | TabAssignment, Field(discriminator='kind')]
+    change: Annotated[TemplateAssignment | TabAssignment | ContentScopeAssignment, Field(discriminator='kind')]
     note: str = Field(default='', max_length=2000)
 
 
@@ -174,7 +175,9 @@ class PermissionNoticeAck(BaseModel):
 def register_account_routes(app, authentication, database):
     @app.get('/v1/me')
     async def me(request: Request, actor: Actor = Depends(authentication)):
-        return {'data': request.state.account}
+        async with database(request, actor) as db:
+            scope = await db.fetchval('select hub.content_scope_identity()')
+        return {'data': {**request.state.account, 'content_scope': scope}}
 
     @app.post('/v1/me/access-request')
     @app.patch('/v1/me/access-request')

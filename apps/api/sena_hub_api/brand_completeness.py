@@ -12,7 +12,12 @@ from fastapi.responses import Response
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictBool, field_validator
 
 from .auth import Actor, failure
-from .staff_media import thumbnails
+from .staff_media import THUMBNAILS_SQL
+
+DASHBOARD_SQL = f"""WITH media AS ({THUMBNAILS_SQL})
+    SELECT hub.brand_completeness() || jsonb_build_object('_media',
+      coalesce(jsonb_object_agg(source_id,image) FILTER (WHERE kind='brand'),'{{}}'))
+    FROM media"""
 
 MANIFEST = "1512ac0bac74f5356617458b30bf2079896cce18db54393b5244c136ae54f877"
 REASONS = {"deleted": "ต้นทางถูกลบ", "unknown_status": "ยังไม่ทราบสถานะต้นทาง", "blank_name": "ไม่มีชื่อภาษาไทย",
@@ -92,10 +97,12 @@ def register_brand_completeness_routes(app, admin, administrator, writer, databa
     async def dashboard(request, actor, filters):
         query(request, ("status", "missing", "search"))
         async with database(request, actor) as db:
-            data = await db.fetchval("SELECT hub.brand_completeness()")
-            media = await thumbnails(db)
+            # One current source snapshot: counts and media cannot retain rows
+            # that became hidden while a second query was awaited.
+            data = await db.fetchval(DASHBOARD_SQL)
         data = json.loads(data) if isinstance(data, str) else data
-        return {**data, "rows": [{**r, 'thumbnail': media['brand'].get(r['rem_brand_id'])} for r in filter_rows(data["rows"], filters)]}
+        media = data.pop('_media', {})
+        return {**data, "rows": [{**r, 'thumbnail': media.get(r['rem_brand_id'])} for r in filter_rows(data["rows"], filters)]}
 
     # Registered before the generic /brands/{public_id} route.
     @app.get("/v1/admin/brands/completeness")

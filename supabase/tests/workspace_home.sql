@@ -28,6 +28,16 @@ insert into staging.rem_brands(rem_brand_id,brand_name_rem,source_updated_at,sou
  values('W2-BRAND','W2 synthetic brand',now(),'w2-brand');
 insert into hub.brands(public_brand_id,rem_brand_id,public_name,slug) values('w2_brand','W2-BRAND','{"th":"W2 brand","en":"W2 brand"}','w2-brand');
 
+-- BUD references come from the accepted membership snapshot, never DW staging.
+do $$ declare token jsonb;accepted jsonb;begin
+ token:=hub.content_bu_capture();
+ accepted:=hub.content_bu_accept(jsonb_build_array(jsonb_build_object(
+  'project_id','W2-SQL','rem_bu_id','  001-REM  ','rem_bu_code','BU-001','rem_bu_name','Fixture BU',
+  'rem_bu_is_active',true,'rem_bu_is_deleted',false,'source_snapshot_at',clock_timestamp(),'project_status_code',null)),
+  (token->>'accepted_run_id')::uuid,(token->>'acceptance_epoch')::bigint);
+ assert accepted->>'status'='ACCEPTED';
+end $$;
+
 set local role hub_app;
 select set_config('test.w2_project',hub.create_project_from_rem('W2-SQL')::text,true);
 select hub.create_project_from_rem('W2-SQL-2');
@@ -152,6 +162,7 @@ reset role;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000001',true);
 do $$ declare data jsonb;begin
  data:=hub.workspace_project_readiness(current_setting('test.w2_public'));
+ assert data-'items'=hub.project_content_readiness(current_setting('test.w2_public'))-'items','Home readiness summary differs from the canonical readiness';
  assert exists(select 1 from jsonb_array_elements(data->'items') i where i#>>'{context,target_type}'='building_floor'
   and i#>>'{context,building}'='W2-TOWER' and i#>>'{context,floor_from}'='1' and i#>>'{context,tab}'='media'),'Building-floor media slot lost';
  assert exists(select 1 from jsonb_array_elements(data->'items') i where i#>>'{context,unit_type}'=current_setting('test.w2_type_public') and i#>>'{context,target_key}'=current_setting('test.w2_type') and i#>>'{context,tab}'='media'),'Unit media slot lost its public selection or internal binding target';

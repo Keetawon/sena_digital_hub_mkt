@@ -443,6 +443,16 @@
       "name": "202611080088_business_level.sql",
       "canonical_sha256": "f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94",
       "executed_sha256": "f9dcb86198f599a917819976af62f2c0635fbd18b7f322f20c106990bdcbae94"
+    },
+    {
+      "name": "202611090089_content_scopes.sql",
+      "canonical_sha256": "523522f6dc0cb89b6d77e70480637aad2022429f0b7f6aab6949b8ef205d5e2e",
+      "executed_sha256": "523522f6dc0cb89b6d77e70480637aad2022429f0b7f6aab6949b8ef205d5e2e"
+    },
+    {
+      "name": "202611090090_bu_membership.sql",
+      "canonical_sha256": "5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4",
+      "executed_sha256": "5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4"
     }
   ]
 }

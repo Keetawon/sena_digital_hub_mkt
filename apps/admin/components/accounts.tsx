@@ -1,11 +1,13 @@
 "use client";
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { hubPages, workspaceLanding } from "./hub-navigation-data";
-import { workspaceText } from "@/lib/unified-workspace";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { AuthLayout } from "./auth-layout";
 import { roleLabels, localPersonas, type LocalRole } from "@/lib/roles";
-import { can, canOpenPage, canSpecial, capabilityKey, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
+import { can, canOpenPage, canSpecial, capabilityKey, contentScopeExpired, emptyCapabilities, type AccountAccess, type CapabilityProjection, type HubAccount, type TemplateRef } from "@/lib/hub-permissions";
+import { contentScopeText } from "@/lib/content-scope-text";
+import { unavailableMessage } from "@/lib/hub-account";
+import { workspaceText } from "@/lib/unified-workspace";
 
 export const taskLabels: Record<string, string> = { read: "อ่านข้อมูลโครงการ", edit: "แก้ไขข้อมูลและสื่อ", publish: "อนุมัติและเผยแพร่ข้อมูล", online: "ดูแลงานโฆษณาและงบ", agency: "ทำงานในนามเอเจนซี" };
 export const statuses: Record<string, string> = { PENDING: "รออนุมัติ", ACTIVE: "ใช้งานอยู่", SUSPENDED: "ระงับ", REJECTED: "ปฏิเสธ" };
@@ -21,6 +23,7 @@ export const phonePattern = String.raw`^\+?[0-9 \(\)\-]{8,30}$`;
 export async function accountApi(path: string, body?: unknown, method = "POST") {
   const response = await fetch(`/api/hub/${path}`, body === undefined ? { cache: "no-store" } : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const result = await response.json();
+  if (result.error?.invalidate_access === true && typeof window !== "undefined") window.dispatchEvent(new Event("hub-content-access-invalidated"));
   if (!response.ok) throw Object.assign(new Error(result.error?.message || "ไม่สามารถโหลดข้อมูลได้"), { ...result.error, status: response.status });
   return result.data;
 }
@@ -36,34 +39,79 @@ export function AccountDirectory({ children, enabled, initialAccount = null }: {
     // Login/request pages don't query the staff directory or the admin queue.
     if (/^\/(login|signup|auth|account)(\/|$)/.test(location.pathname)) return;
     let alive = true, loading = false, activated = enabled, refreshQueued = false;
+    let generation = 0, expiryTimer: ReturnType<typeof setTimeout> | undefined;
     // The server just verified this projection for this page. Consume it once
     // after hydration; every later poll/focus/change still reads fresh /me.
     let firstAccount = initialAccount;
     function preserveTyped() { setRecovery(Array.from(edits.current.values())); }
-    async function refresh() {
-      if (!activated || !alive || document.visibilityState === "hidden") return;
+    function closeContent(account: HubAccount) {
+      if (!alive) return;
+      generation++; firstAccount = null; clearTimeout(expiryTimer); preserveTyped();
+      // This is a temporary UI restriction, never a grant or a BUD calculation.
+      // A fresh /me projection is the only way to reopen protected content.
+      const original = account.capabilities ?? emptyCapabilities;
+      const tabs = { ...original.tabs };
+      for (const tab of ["projects", "brands", "knowledge", "promotions", "releases"]) tabs[tab] = { view: false, edit: false, approve: false };
+      const caps = { ...original, tabs };
+      setValue(previous => ({ ...previous, names: {}, account: { ...account, capabilities: caps }, capabilities: caps,
+        admin: caps.can_manage_users === true, ready: true, signedOut: false, error: contentScopeText.scope_loss }));
+    }
+    function scheduleExpiry(account: HubAccount) {
+      clearTimeout(expiryTimer);
+      const deadline = account.content_scope?.expires_at;
+      if (deadline == null) return;
+      const expire = () => {
+        if (!alive || current.current !== account) return;
+        if (contentScopeExpired(account)) { closeContent(account); void refresh(true); }
+        else expiryTimer = setTimeout(expire, Math.min(Date.parse(deadline) - Date.now(), 2_147_483_647));
+      };
+      expire();
+    }
+    function failed(error: unknown, stamp: number) {
+      if (!alive || stamp !== generation) return;
+      if ([401, 403].includes((error as AccountApiError).status ?? 0)) {
+        generation++; clearTimeout(expiryTimer); preserveTyped();
+        setValue({ ...emptyDirectory, ready: true, signedOut: true });
+      } else {
+        if (contentScopeExpired(current.current) && current.current) closeContent(current.current);
+        setValue(previous => ({ ...previous, ready: true, error: unavailableMessage }));
+      }
+    }
+    async function refreshNames(account: HubAccount, stamp: number) {
+      try {
+        const names = await accountApi("v1/accounts/display-names");
+        if (alive && stamp === generation && current.current === account && !contentScopeExpired(account)) {
+          setValue(previous => ({ ...previous, names: Object.fromEntries(names.map((r: Account) => [r.id, r.display_name_th])) }));
+        }
+      } catch (error) { failed(error, stamp); }
+    }
+    async function refresh(force = false) {
+      if (!activated || !alive || !force && document.visibilityState === "hidden") return;
+      if (current.current && contentScopeExpired(current.current)) closeContent(current.current);
+      const stamp = ++generation;
       if (loading) { refreshQueued = true; return; }
       loading = true;
       try {
         const initial = firstAccount; firstAccount = null;
         const me: HubAccount = initial ?? await accountApi("v1/me");
+        if (!alive || stamp !== generation) return;
         const prior = current.current;
         if (prior?.id && prior.id !== me.id) { edits.current.clear(); setRecovery([]); }
-        else if (prior && capabilityKey(prior) !== capabilityKey(me)) preserveTyped();
+        else if (prior && (location.pathname === "/admin/accounts" ? accountManagementKey(prior) !== accountManagementKey(me) : capabilityKey(prior) !== capabilityKey(me))) preserveTyped();
         current.current = me;
+        if (contentScopeExpired(me)) { closeContent(me); return; }
         const caps = me.status === "ACTIVE" ? me.capabilities ?? emptyCapabilities : emptyCapabilities;
         const admin = caps.can_manage_users === true;
-        if (alive) setValue(previous => ({ ...previous, account: me, capabilities: caps, admin, pending: admin ? me.pending_count ?? null : null, ready: true, signedOut: false, error: "" }));
+        setValue(previous => ({ ...previous, names: prior && capabilityKey(prior) === capabilityKey(me) ? previous.names : {}, account: me, capabilities: caps, admin, pending: admin ? me.pending_count ?? null : null, ready: true, signedOut: false, error: "" }));
+        scheduleExpiry(me);
         const staff = me.status === "ACTIVE" && caps.published_consumer;
-        const names = staff ? await accountApi("v1/accounts/display-names") : [];
-        if (alive) setValue(previous => ({ ...previous, names: Object.fromEntries(names.map((r: Account) => [r.id, r.display_name_th])) }));
-      } catch (error) {
-        if ([401, 403].includes((error as AccountApiError).status ?? 0)) { preserveTyped(); if (alive) setValue({ ...emptyDirectory, ready: true, signedOut: true }); }
-        else if (alive) setValue(previous => ({ ...previous, ready: true, error: "ระบบขัดข้องชั่วคราว กรุณาลองใหม่" }));
-      } finally {
+        if (staff) void refreshNames(me, stamp);
+        else setValue(previous => ({ ...previous, names: {} }));
+      } catch (error) { failed(error, stamp); } finally {
         loading = false;
-        // A focus/identity event during the names request must not be dropped.
-        if (refreshQueued && alive) { refreshQueued = false; void refresh(); }
+        // A focus/identity event during /me must not be dropped. Names load
+        // independently, so a slow old directory cannot delay newer authority.
+        if (refreshQueued && alive) { refreshQueued = false; void refresh(true); }
       }
     }
     const capture = (event: Event) => {
@@ -88,10 +136,13 @@ export function AccountDirectory({ children, enabled, initialAccount = null }: {
     };
     if (enabled) void refresh(); else setValue({ ...emptyDirectory, ready: true });
     const changed = () => { activated = true; void refresh(); };
-    const timer = window.setInterval(refresh, 30000);
-    window.addEventListener("hub-accounts-changed", changed); window.addEventListener("focus", refresh); document.addEventListener("visibilitychange", refresh);
+    const invalidated = () => { activated = true; if (current.current) closeContent(current.current); void refresh(true); };
+    const visibleRefresh = () => { void refresh(); };
+    const timer = window.setInterval(visibleRefresh, 30000);
+    window.addEventListener("hub-accounts-changed", changed); window.addEventListener("focus", visibleRefresh); document.addEventListener("visibilitychange", visibleRefresh);
+    window.addEventListener("hub-content-access-invalidated", invalidated);
     document.addEventListener("input", capture); document.addEventListener("change", capture);
-    return () => { alive = false; clearInterval(timer); window.removeEventListener("hub-accounts-changed", changed); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); document.removeEventListener("input", capture); document.removeEventListener("change", capture); };
+    return () => { alive = false; generation++; clearTimeout(expiryTimer); clearInterval(timer); window.removeEventListener("hub-accounts-changed", changed); window.removeEventListener("hub-content-access-invalidated", invalidated); window.removeEventListener("focus", visibleRefresh); document.removeEventListener("visibilitychange", visibleRefresh); document.removeEventListener("input", capture); document.removeEventListener("change", capture); };
   }, [enabled]);
   return <Directory value={value}>{value.error && value.account && <p role="alert">{value.error}</p>}{children}{recovery.length > 0 && <aside className="registry-panel" aria-label="ข้อความที่คุณกรอก"><h2>สิทธิ์เปลี่ยนแล้ว ข้อความที่คุณกรอกยังอยู่</h2><p>ข้อมูลต้นทางที่ไม่มีสิทธิ์ดูถูกปิดแล้ว คัดลอกข้อความที่ต้องการเก็บก่อนเปลี่ยนหน้า</p>{recovery.map((item, index) => <div className="form-field" key={index}><label htmlFor={`hub-recovered-${index}`}>{item.label}</label><textarea id={`hub-recovered-${index}`} readOnly value={item.value} /></div>)}<button type="button" className="button secondary" onClick={() => { setRecovery([]); edits.current.clear(); }}>เก็บข้อความแล้ว ปิดรายการนี้</button></aside>}</Directory>;
 }
@@ -102,13 +153,20 @@ export function useHubPermissions() {
     special: (action: string) => canSpecial(directory.capabilities, action) };
 }
 
+// Account management follows its own manager/Admin authority. A temporary
+// content-read restriction must not discard its open manager dialog or input.
+export function accountManagementKey(account: HubAccount | null) {
+  return JSON.stringify([account?.id, account?.status, account?.hub_role ?? account?.role,
+    account?.agency_code ?? account?.agency, account?.capabilities?.can_manage_users === true]);
+}
+
 // Mount the owning workspace only while its source tab remains readable. This is
 // outside components that own caches; revocation discards their server data.
 export function PermissionBoundary({ tab, children, localMode = false, initialRole = null }: { tab: string; children: ReactNode; localMode?: boolean; initialRole?: LocalRole | null }) {
   const permissions = useHubPermissions();
   if (!permissions.ready) return <p role="status">กำลังตรวจสิทธิ์การใช้งาน…</p>;
   if (permissions.error && !permissions.account) return <p role="alert">{permissions.error}</p>;
-  if (!permissions.signedOut && !permissions.account || permissions.account?.status === "ACTIVE" && (tab === "accounts" ? permissions.admin : permissions.can(tab))) return <Fragment key={capabilityKey(permissions.account)}>{children}</Fragment>;
+  if (!permissions.signedOut && !permissions.account || permissions.account?.status === "ACTIVE" && (tab === "accounts" ? permissions.admin : permissions.can(tab))) return <Fragment key={tab === "accounts" ? accountManagementKey(permissions.account) : capabilityKey(permissions.account)}>{children}</Fragment>;
   return <main className="account-page"><section className="registry-panel"><h1>ไม่มีสิทธิ์เข้าถึงหน้านี้</h1>{localMode && <LocalPersonaPicker initialRole={initialRole} />}<p>ข้อมูลต้นทางถูกปิดแล้ว ข้อความที่คุณกรอกเก็บไว้ด้านล่าง</p>{permissions.signedOut ? <a href={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}>เข้าสู่ระบบอีกครั้ง</a> : permissions.account?.status !== "ACTIVE" ? <a href="/account/request">ตรวจสถานะบัญชี</a> : <nav aria-label="หน้าที่คุณมีสิทธิ์">{hubPages.filter(page => page.id === "accounts" ? permissions.admin : permissions.can(page.id)).map(page => <p key={page.id}><a href={page.href}>{permissions.capabilities.catalog?.find(tab => tab.tab === page.id)?.label_th ?? page.label}</a></p>)}</nav>}</section></main>;
 }
 

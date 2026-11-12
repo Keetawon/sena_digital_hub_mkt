@@ -35,6 +35,7 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
     assert set(SHARED_RULES.values()) <= {'own_account', 'accounts', 'internal', 'assistant', 'public', 'environment', 'health', 'unavailable', 'content_registry', 'content_translation', 'content_workspace', 'content_workflow', 'business_content'}
     assert {key for key, value in SHARED_RULES.items() if value == 'content_workspace'} == {
         ('GET', '/v1/admin/content/search'), ('GET', '/v1/admin/content/home'),
+        ('GET', '/v1/admin/content/bu-notices'),
         ('GET', '/v1/admin/content/workspace/tree'),
         ('GET', '/v1/admin/content/workspace/resolve'),
         ('GET', '/v1/admin/content/workspace/{kind}/{ref}'),
@@ -53,6 +54,11 @@ def test_every_api_route_has_exact_capability_or_shared_classification(permissio
         ('POST', '/v1/admin/content/translations/{translation_id}/review'), ('POST', '/v1/admin/content/translations/{translation_id}/retry')}
     for key in actual:
         assert route_class(*key) == ('capability' if key in CONTENT_RULES else SHARED_RULES[key])
+    assert SHARED_RULES[('GET', '/v1/admin/accounts/content-scopes')] == 'accounts'
+    assert SHARED_RULES[('GET', '/v1/admin/accounts/bu-sync-runs')] == 'accounts'
+    assert SHARED_RULES[('GET', '/v1/admin/accounts/content-scope-settings')] == 'accounts'
+    assert SHARED_RULES[('POST', '/v1/admin/accounts/content-scope-settings/preview')] == 'accounts'
+    assert SHARED_RULES[('POST', '/v1/admin/accounts/content-scope-settings/apply')] == 'accounts'
     # Prefixes must never silently authorize a newly added endpoint.
     for method, path in [('GET', '/v1/admin/projects/new-unmapped-route'), ('POST', '/v1/admin/accounts'),
                          ('GET', '/v1/new-public-feed'), ('POST', '/v1/admin/questions')]:

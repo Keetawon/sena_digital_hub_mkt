@@ -6,19 +6,78 @@ from pathlib import Path
 from typing import Annotated,Literal
 from uuid import UUID
 from fastapi import Depends,Request,HTTPException
-from fastapi.responses import FileResponse,Response
+from fastapi.responses import Response
 from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
 from .provider_budget import ProviderBudgetExceeded
 from .provider_messages import MESSAGES
 from . import assets
 from .knowledge_retrieval import embed,rank,route_question,answer_from_ranked,normalize
-from .knowledge_progress import read_summaries
-from .staff_media import thumbnails
+from .knowledge_progress import summarize
+from .staff_media import THUMBNAILS_SQL
+from .r2_assets import KNOWLEDGE_MAX_BYTES
 from .content_permissions import require_content
 
 ROOT=Path(__file__).resolve().parents[3]
 PROGRAMMES={'LIVNEX':'LivNex','LIVNEX_GOLD':'LivNex Gold','RENTNEX':'RentNex','RENTNEX_BENEFIT':'RentNex Benefit','RENTNEX_INVEST':'RentNex Invest'}
+PROJECTS_SQL=f'''WITH cards AS MATERIALIZED (
+    SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload
+    FROM rag.project_fact_cards), candidates AS MATERIALIZED (
+    SELECT c.project_ids,c.programme_ids,c.kind,c.holds,c.source_ref,
+      CASE WHEN r.decision IS NOT NULL THEN jsonb_build_object('decision',r.decision,'reviewed_at',r.reviewed_at,'reviewed_by',r.reviewed_by) END AS review
+    FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id),
+    media AS MATERIALIZED ({THUMBNAILS_SQL})
+    SELECT 0 AS category,p.rem_project_id AS project_id,p.payload AS card,
+      (SELECT count(*) FROM candidates c CROSS JOIN LATERAL unnest(c.project_ids) id WHERE id=p.rem_project_id) AS candidates,
+      coalesce((SELECT jsonb_agg(to_jsonb(c)) FROM candidates c WHERE p.rem_project_id=ANY(c.project_ids)),'[]') AS progress_candidates,
+      (SELECT count(*) FROM hub.content_gaps g WHERE g.project_id=p.rem_project_id AND g.candidate_id IS NULL
+        AND g.gap_code<>'NO_ANSWER' AND (g.question_key IS NULL OR g.state<>'resolved')) AS gaps,
+      (SELECT jsonb_object_agg(source_id,image) FROM media WHERE kind='project')->p.rem_project_id AS thumbnail,
+      (SELECT jsonb_object_agg(source_id,image) FROM media WHERE kind='brand')->(p.payload->>'brand_id') AS brand_logo
+    FROM cards p
+    UNION ALL SELECT 1,id,NULL,count(*),'[]',0,NULL,NULL FROM candidates c CROSS JOIN LATERAL unnest(c.programme_ids) id GROUP BY id
+    UNION ALL SELECT 2,'KNOWLEDGE_TERMS',NULL,(SELECT count(*) FROM candidates WHERE kind='alias' AND cardinality(project_ids)=0),'[]',0,NULL,NULL
+      WHERE EXISTS(SELECT 1 FROM cards)
+    ORDER BY category,project_id'''
+
+PACK_SQL='''WITH card AS MATERIALIZED (
+    SELECT payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload
+    FROM rag.project_fact_cards WHERE rem_project_id=$1), candidates AS MATERIALIZED (
+    SELECT c.*,to_jsonb(r) AS review,
+      coalesce(a.rights_status='approved' AND a.deleted_at IS NULL AND l.review_revision=r.revision
+        AND (a.effective_from IS NULL OR a.effective_from<=now()) AND (a.effective_to IS NULL OR a.effective_to>now()),false) AS rights_approved
+    FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
+    LEFT JOIN hub.knowledge_asset_links l ON l.candidate_id=c.id LEFT JOIN hub.assets a ON a.id=l.asset_id
+    WHERE $1=ANY(c.project_ids) OR $1=ANY(c.programme_ids)
+      OR ($1='KNOWLEDGE_TERMS' AND c.kind='alias' AND cardinality(c.project_ids)=0)),
+    faq_batches AS (SELECT array_agg(id) AS ids FROM (
+      SELECT id,(row_number() OVER (ORDER BY id)-1)/500 AS batch FROM candidates WHERE kind='faq') numbered GROUP BY batch),
+    faq_controls AS (SELECT control.* FROM faq_batches b CROSS JOIN LATERAL jsonb_each(hub.workspace_legacy_faq_candidates(b.ids)) control)
+    SELECT CASE WHEN EXISTS(SELECT 1 FROM card) OR $1=ANY($2::text[]) THEN jsonb_build_object(
+      'card',(SELECT payload FROM card),'items',coalesce((SELECT jsonb_agg(to_jsonb(c) ORDER BY c.kind,c.source_key) FROM candidates c),'[]'),
+      'followup',coalesce(hub.knowledge_followup($1),'{}'),
+      'faq_controls',coalesce((SELECT jsonb_object_agg(key,value) FROM faq_controls),'{}')) END'''
+
+PREVIEW_CARDS_SQL='''WITH aliases AS MATERIALIZED (
+    SELECT coalesce(r.applies_to_project_ids,c.project_ids) AS project_ids,c.evidence,
+      public.similarity($1,c.evidence->>'normalized_alias') AS similarity
+    FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
+    WHERE c.kind='alias' AND cardinality(c.project_ids)>0 AND (r.candidate_id IS NULL OR r.decision='accepted')
+      AND (strpos($1,c.evidence->>'normalized_alias')>0 OR public.similarity($1,c.evidence->>'normalized_alias')>.6))
+    SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload,
+      coalesce((SELECT jsonb_agg(to_jsonb(a)) FROM aliases a),'[]') AS aliases FROM rag.project_fact_cards'''
+
+PREVIEW_SOURCE_SQL='''SELECT jsonb_build_object(
+    'fact_card',p.payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(p.rem_project_id)),
+    'chunks',coalesce((SELECT jsonb_agg(to_jsonb(k)||jsonb_build_object('kind',c.kind,'evidence',c.evidence,
+      'source_url',c.source_url,'source_ref',c.source_ref,'batch_sha256',c.batch_sha256))
+    FROM rag.knowledge_preview_chunks k JOIN hub.knowledge_candidate_rows() c ON c.id=k.candidate_id
+    LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
+    WHERE $1=ANY(k.project_ids) AND k.locale='th'
+      AND (cardinality(c.holds)=0 OR (c.holds <@ ARRAY['needs_phase_decision']::text[] AND r.decision='accepted'))
+      AND (r.candidate_id IS NULL OR (r.decision='accepted' AND $1=ANY(r.applies_to_project_ids)))),'[]'))
+    FROM rag.project_fact_cards p WHERE p.rem_project_id=$1'''
+
 class Input(BaseModel):model_config=ConfigDict(extra='forbid')
 class Review(Input):
     expected_revision:int=Field(ge=0)
@@ -67,6 +126,23 @@ def bulk_eligible(row):
         and bool(review.get('applies_to_project_ids')) and all(flags.get(k)=='absent' for k in ('people','third_party_marks','stock_imagery'))
         and not evidence.get('file_validation_error') and evidence.get('validated_metadata') is not None)
 
+def local_candidate_bytes(evidence):
+    # Buffer a bounded original before the final authorization read. FileResponse
+    # would open/stream the private file after the route had already returned.
+    path=file_path(evidence)
+    if not path.is_file():raise HTTPException(404)
+    try:
+        with path.open('rb') as source:return source.read(KNOWLEDGE_MAX_BYTES+1)
+    except OSError:raise HTTPException(503) from None
+
+def checked_candidate_bytes(content,evidence):
+    expected_size=evidence.get('bytes',(evidence.get('validated_metadata') or {}).get('file_size'))
+    if (not isinstance(content,bytes) or not 0<len(content)<=KNOWLEDGE_MAX_BYTES
+        or hashlib.sha256(content).hexdigest()!=evidence.get('sha256')
+        or expected_size is not None and (type(expected_size) is not int or len(content)!=expected_size)):
+        raise HTTPException(503)
+    return content
+
 def private_thumbnail(content,evidence):
     metadata=evidence.get('validated_metadata') or {}
     if metadata.get('mime_type') not in {'image/png','image/jpeg','image/webp'}:
@@ -95,14 +171,17 @@ def register_knowledge_routes(app,authentication,database,settings):
 
     @app.get('/v1/admin/knowledge/projects')
     async def projects(request:Request,actor:Actor=Depends(staff)):
+        actor=await staff(request,await authentication(request))
         async with database(request,actor) as db:
-            rows=await db.fetch("SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload FROM rag.project_fact_cards ORDER BY rem_project_id")
-            counts=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.project_ids) p GROUP BY p")
-            programmes=await db.fetch("SELECT p,count(*) AS count FROM hub.knowledge_candidate_rows() c CROSS JOIN LATERAL unnest(c.programme_ids) p GROUP BY p")
-            vocabulary_count=await db.fetchval("SELECT count(*) FROM hub.knowledge_candidate_rows() WHERE kind='alias' AND cardinality(project_ids)=0")
-            summaries=await read_summaries(db,[r['rem_project_id'] for r in rows])
-            media=await thumbnails(db)
-        totals={r['p']:r['count'] for r in counts}
+            projection=await db.fetch(PROJECTS_SQL)
+        # All counts, progress and media come from the same guarded read.
+        rows=[{'rem_project_id':r['project_id'],'payload':r['card']} for r in projection if r['category']==0]
+        totals={r['project_id']:r['candidates'] for r in projection}
+        summaries={r['project_id']:summarize(r['project_id'],r['progress_candidates'],r['gaps']) for r in projection if r['category']==0}
+        media={'project':{r['project_id']:r['thumbnail'] for r in projection if r['category']==0},
+               'brand':{r['card'].get('brand_id'):r['brand_logo'] for r in projection if r['category']==0}}
+        programmes=[{'p':r['project_id'],'count':r['candidates']} for r in projection if r['category']==1]
+        vocabulary_count=totals.get('KNOWLEDGE_TERMS',0)
         return {'data':[{'project_id':r['rem_project_id'],'card':r['payload'],'candidates':totals.get(r['rem_project_id'],0),'progress':summaries[r['rem_project_id']],
             'thumbnail':media['project'].get(r['rem_project_id']),'brand_logo':media['brand'].get(r['payload'].get('brand_id'))} for r in rows]+
             [{'project_id':r['p'],'card':{'name':{'th':PROGRAMMES.get(r['p'],r['p'])},'status':{'raw':None,'label':'เนื้อหาโปรแกรม รอตรวจขอบเขต'},'mode':'DRAFT_PREVIEW'},'candidates':r['count']} for r in programmes]+
@@ -110,22 +189,13 @@ def register_knowledge_routes(app,authentication,database,settings):
 
     @app.get('/v1/admin/knowledge/projects/{project_id}')
     async def pack(project_id:str,request:Request,actor:Actor=Depends(staff)):
+        actor=await staff(request,await authentication(request))
         async with database(request,actor) as db:
-            card=await db.fetchval("SELECT payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) FROM rag.project_fact_cards WHERE rem_project_id=$1",project_id)
-            if card is None and project_id not in {*PROGRAMMES,'KNOWLEDGE_TERMS'}:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
-            card=card or {'name':{'th':PROGRAMMES.get(project_id,'คำศัพท์และชื่อเรียกกลาง')},'status':{'raw':None,'label':'รอตรวจขอบเขตการใช้'},'mode':'DRAFT_PREVIEW'}
-            rows=await db.fetch('''SELECT c.*,to_jsonb(r) AS review,
-                coalesce(a.rights_status='approved' AND a.deleted_at IS NULL AND l.review_revision=r.revision
-                  AND (a.effective_from IS NULL OR a.effective_from<=now()) AND (a.effective_to IS NULL OR a.effective_to>now()),false) AS rights_approved
-                FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
-                LEFT JOIN hub.knowledge_asset_links l ON l.candidate_id=c.id LEFT JOIN hub.assets a ON a.id=l.asset_id
-                WHERE $1=ANY(c.project_ids) OR $1=ANY(c.programme_ids)
-                  OR ($1='KNOWLEDGE_TERMS' AND c.kind='alias' AND cardinality(c.project_ids)=0) ORDER BY c.kind,c.source_key''',project_id)
-            followup=await db.fetchval('SELECT hub.knowledge_followup($1)',project_id) or {}
-            faq_ids=[row['id'] for row in rows if row['kind']=='faq']
-            faq_controls={}
-            for offset in range(0,len(faq_ids),500):
-                faq_controls.update(await db.fetchval('SELECT hub.workspace_legacy_faq_candidates($1)',faq_ids[offset:offset+500]))
+            projection=await db.fetchval(PACK_SQL,project_id,[*PROGRAMMES,'KNOWLEDGE_TERMS'])
+        card=projection['card'] if projection else None
+        if card is None and project_id not in {*PROGRAMMES,'KNOWLEDGE_TERMS'}:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
+        card=card or {'name':{'th':PROGRAMMES.get(project_id,'คำศัพท์และชื่อเรียกกลาง')},'status':{'raw':None,'label':'รอตรวจขอบเขตการใช้'},'mode':'DRAFT_PREVIEW'}
+        rows=projection['items'];followup=projection['followup'];faq_controls=projection['faq_controls']
         data=[]
         for record in rows:
             row=dict(record);row['bulk_rights_eligible']=bulk_eligible(row)
@@ -156,28 +226,28 @@ def register_knowledge_routes(app,authentication,database,settings):
 
     @app.get('/v1/admin/knowledge/candidates/{candidate_id}/file')
     async def candidate_file(candidate_id:UUID,request:Request,thumbnail:bool=False,actor:Actor=Depends(staff)):
+        query="SELECT evidence FROM hub.knowledge_candidate_rows() WHERE id=$1 AND kind='asset'"
         async with database(request,actor) as db:
-            evidence=await db.fetchval("SELECT evidence FROM hub.knowledge_candidate_rows() WHERE id=$1 AND kind='asset'",candidate_id)
+            evidence=await db.fetchval(query,candidate_id)
         if not evidence:raise failure(404,'knowledge_file_not_found','ไม่พบไฟล์ที่ร้องขอ')
-        if settings.environment=='hosted-test':
-            data=await asyncio.to_thread(request.app.state.hosted_assets.read_knowledge,evidence)
-            if thumbnail:
-                preview=await asyncio.to_thread(private_thumbnail,data,evidence)
-                return Response(preview,media_type='image/webp',headers={'Cache-Control':'no-store',
-                    'Content-Security-Policy':"default-src 'none'",'X-Content-Type-Options':'nosniff'})
-            # Unreviewed originals may contain SVG/HTML/PDF active content. Never
-            # render hosted candidate bytes inline, including misleading MIME data.
-            return Response(data,media_type='application/octet-stream',headers={
-                'Content-Disposition':f'attachment; filename="{evidence["sha256"]}"',
-                'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; sandbox",
-                'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'})
-        path=file_path(evidence)
-        if not path.is_file():raise failure(404,'knowledge_file_not_found','ไม่พบไฟล์ต้นฉบับในเครื่อง')
-        # SVG/HTML/PDF originals are attachments, never executable inline content.
+        hosted=settings.environment=='hosted-test'
+        data=await asyncio.to_thread(request.app.state.hosted_assets.read_knowledge if hosted else local_candidate_bytes,evidence)
+        data=checked_candidate_bytes(data,evidence)
+        output=await asyncio.to_thread(private_thumbnail,data,evidence) if hosted and thumbnail else data
+        actor=await staff(request,await authentication(request))
+        async with database(request,actor) as db:
+            current=await db.fetchval(query,candidate_id)
+        if not current:raise HTTPException(404)
+        if current!=evidence:raise HTTPException(409)
+        headers={'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; sandbox",'X-Content-Type-Options':'nosniff'}
+        if hosted and thumbnail:
+            headers['Content-Security-Policy']="default-src 'none'"
+            return Response(output,media_type='image/webp',headers=headers)
         mime=evidence.get('mime','application/octet-stream')
-        inline=mime in {'image/jpeg','image/png','image/webp','image/gif'}
-        return FileResponse(path,media_type=mime if inline else 'application/octet-stream',
-            filename=None if inline else evidence['sha256'],headers={'Content-Security-Policy':"default-src 'none'; sandbox",'X-Content-Type-Options':'nosniff'})
+        inline=not hosted and mime in {'image/jpeg','image/png','image/webp','image/gif'}
+        if not inline:headers['Content-Disposition']=f'attachment; filename="{evidence["sha256"]}"'
+        if hosted:headers['X-Frame-Options']='DENY'
+        return Response(output,media_type=mime if inline else 'application/octet-stream',headers=headers)
 
     @app.post('/v1/admin/knowledge/rights/approve')
     async def rights(body:Rights,request:Request,actor:Actor=Depends(staff)):
@@ -221,15 +291,12 @@ def register_knowledge_routes(app,authentication,database,settings):
             routed=global_route or ('owner_review_handoff','เนื้อหาและกติกาโปรแกรมยังรอเจ้าของข้อมูลตรวจขอบเขตและช่วงใช้ได้ กรุณาติดต่อเจ้าหน้าที่')
             return {'data':{'route':routed[0],'answer':routed[1],'citations':[],'mode':'DRAFT_PREVIEW'}}
         async with database(request,actor) as db:
-            cards={r['rem_project_id']:r['payload'] for r in await db.fetch("SELECT rem_project_id,payload||jsonb_build_object('model_catalogue_complete',hub.knowledge_model_catalogue(rem_project_id)) AS payload FROM rag.project_fact_cards")}
+            records=await db.fetch(PREVIEW_CARDS_SQL,normalize(body.question))
+            cards={r['rem_project_id']:r['payload'] for r in records}
             if body.project_id and body.project_id not in cards:raise failure(404,'knowledge_not_found','ไม่พบโครงการนำร่องนี้')
             project=body.project_id
             if not project:
-                aliases=await db.fetch('''SELECT coalesce(r.applies_to_project_ids,c.project_ids) AS project_ids,c.evidence,
-                  public.similarity($1,c.evidence->>'normalized_alias') AS similarity
-                  FROM hub.knowledge_candidate_rows() c LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
-                  WHERE c.kind='alias' AND cardinality(c.project_ids)>0 AND (r.candidate_id IS NULL OR r.decision='accepted')
-                  AND (strpos($1,c.evidence->>'normalized_alias')>0 OR public.similarity($1,c.evidence->>'normalized_alias')>.6)''',normalize(body.question))
+                aliases=records[0].get('aliases',[]) if records else []
                 normalized=normalize(body.question);matches=set()
                 for row in aliases:
                     alias=normalize(row['evidence'].get('alias',''))
@@ -244,25 +311,38 @@ def register_knowledge_routes(app,authentication,database,settings):
                 if release is None:raise failure(404,'preview_release_not_found','ไม่พบชุดพรีวิวของโครงการนี้')
             card=release['fact_card'] if release else cards[project]
             routed=route_question(body.question,card)
+
+        async def current_source():
+            nonlocal actor
+            actor=await staff(request,await authentication(request))
+            async with database(request,actor) as db:
+                source=await db.fetchval('SELECT hub.knowledge_preview_read($1,$2)',body.release_id,project) if body.release_id else await db.fetchval(PREVIEW_SOURCE_SQL,project)
+            if body.release_id:
+                if source is None:raise failure(404,'preview_release_not_found','ไม่พบชุดพรีวิวของโครงการนี้')
+            elif source is None:raise HTTPException(404)
+            return source
+
+        def response(source,vector):
+            card=source['fact_card'];release=body.release_id is not None
+            routed=route_question(body.question,card)
             if routed:return {'data':{'route':routed[0],'answer':routed[1],'project_id':project,'fact_card':card,'citations':[{'source_ref':card['status']['source_ref'],'source_url':None}] if routed[0]=='closed' else [],'release_id':str(body.release_id) if release else None,'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW'}}
+            result=answer_from_ranked(rank([dict(r) for r in source['chunks']],vector,body.question))
+            return {'data':{**result,'project_id':project,'fact_card':card,'release_id':str(body.release_id) if body.release_id else None,
+                'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW','warning':'ตัวอย่างส่วนตัว ยังไม่เผยแพร่สู่ผู้บริโภค'}}
+
+        if routed:
+            source=await current_source()
+            if route_question(body.question,source['fact_card']):return response(source,None)
         try:query_vector=(await embed([body.question]))[0]
         except ProviderBudgetExceeded as error:
             async with database(request,actor) as db:
                 await db.fetchval("SELECT hub.provider_budget_event('knowledge',$1)",error.code)
             raise failure(503,'knowledge_budget',MESSAGES['knowledge_budget']) from None
         except Exception:raise failure(503,'knowledge_embedding_unavailable','บริการค้นหาความหมายยังไม่พร้อม กรุณาลองใหม่') from None
-        if release:
-            rows=release['chunks']
-        else:
-          async with database(request,actor) as db:
-            rows=await db.fetch('''SELECT k.*,c.kind,c.evidence,c.source_url,c.source_ref,c.batch_sha256 FROM rag.knowledge_preview_chunks k
-              JOIN hub.knowledge_candidate_rows() c ON c.id=k.candidate_id LEFT JOIN hub.knowledge_reviews r ON r.candidate_id=c.id
-              WHERE $1=ANY(k.project_ids) AND k.locale='th'
-                AND (cardinality(c.holds)=0 OR (c.holds <@ ARRAY['needs_phase_decision']::text[] AND r.decision='accepted'))
-                AND (r.candidate_id IS NULL OR (r.decision='accepted' AND $1=ANY(r.applies_to_project_ids)))''',project)
-        result=answer_from_ranked(rank([dict(r) for r in rows],query_vector,body.question))
-        if result['route']=='no_answer':
+        # Only a newly authorized projection may populate the response.
+        result=response(await current_source(),query_vector)
+        if result['data']['route']=='no_answer':
             async with database(request,actor) as db:
                 await db.execute("SELECT hub.record_knowledge_gap($1,'NO_ANSWER',$2)",project,hashlib.sha256(normalize(body.question).encode()).hexdigest())
-        return {'data':{**result,'project_id':project,'fact_card':card,'release_id':str(body.release_id) if body.release_id else None,
-            'mode':'PRIVATE_PREVIEW' if release else 'DRAFT_PREVIEW','warning':'ตัวอย่างส่วนตัว ยังไม่เผยแพร่สู่ผู้บริโภค'}}
+            result=response(await current_source(),query_vector)
+        return result

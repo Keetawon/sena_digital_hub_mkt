@@ -78,7 +78,7 @@ def test_core_facts_buildings_sources_and_stale_writes(permission_accounts):
             assert building['rem_project_id'] == project['rem_project_id']
             result = await call(db, ids['viewer'], 'select hub.project_content_facts($1)', public_id)
             assert result['computed']['building_count'] == 1 and result['computed']['floors_max'] == 20
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select hub.project_content_facts($1)', public_id)
             assert await call(db, ids['viewer'], 'select hub.list_brands()') is not None
@@ -121,10 +121,10 @@ def test_registry_admin_is_explicit_not_manage_users(permission_accounts):
         try:
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['admin'], "select hub.save_content_field('project.common_fee',1,'{}')")
-            await set_bit(ids['admin'], 'projects', special_actions=['projects.manage_field_catalog'])
+            await set_bit(ids['admin'], 'projects', special_actions=['projects.manage_field_catalog'], connection=db, manager=ids['second'])
             result = await call(db, ids['admin'], "select hub.save_content_field('project.common_fee',1,$1)", {'help': {'th': 'ทดสอบคำแนะนำ'}})
             assert result['revision'] == 2
-            await set_bit(ids['editor'], 'projects', special_actions=['projects.manage_field_catalog'])
+            await set_bit(ids['editor'], 'projects', special_actions=['projects.manage_field_catalog'], connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], "select hub.save_content_field('project.common_fee',2,'{}')")
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
@@ -218,7 +218,7 @@ def test_translation_retry_rejects_stale_lease_and_revoked_author(permission_acc
             assert second['lease_token'] != first['lease_token']
             with pytest.raises(asyncpg.SerializationError):
                 await worker(finish, UUID(first['id']), UUID(first['lease_token']), 'Green space 20 rai', 'stub', None)
-            await set_bit(ids['editor'], 'projects', can_edit=False)
+            await set_bit(ids['editor'], 'projects', can_edit=False, connection=db, manager=ids['admin'])
             assert await worker(finish, UUID(second['id']), UUID(second['lease_token']), 'Green space 20 rai', 'stub', None) == 'failed'
             translations = await call(db, ids['viewer'], "select hub.content_translation_list('projects',$1)", public_id)
             current = next(t for t in translations if t['id'] == str(translation_id))
@@ -238,7 +238,7 @@ def test_faq_approval_corporate_draft_versions_and_scope_denial(permission_accou
         try:
             proposal = {'topic': 'design', 'default_level': 'corporate', 'question_template': {'th': 'แนวคิดขององค์กรคืออะไร'}, 'answer_kind': 'text'}
             await call(db, ids['editor'], "select hub.save_faq_question('synthetic_corporate',0,$1)", proposal)
-            await set_bit(ids['editor'], 'knowledge', can_approve=True)
+            await set_bit(ids['editor'], 'knowledge', can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError, match='cannot approve'):
                 await call(db, ids['editor'], "select hub.approve_faq_question('synthetic_corporate',1,'approved')")
             await call(db, ids['publisher'], "select hub.approve_faq_question('synthetic_corporate',1,'approved')")
@@ -252,7 +252,7 @@ def test_faq_approval_corporate_draft_versions_and_scope_denial(permission_accou
             assert second['history'][1]['detail']['th'] == 'เนื้อหาการตลาดสมมติ'
             with pytest.raises(asyncpg.SerializationError):
                 await call(db, ids['editor'], 'select hub.save_faq($1,1,$2)', UUID(first['id']), body)
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select hub.faq_read($1)', UUID(first['id']))
         finally:
@@ -313,7 +313,7 @@ def test_contacts_allow_any_domain_but_require_shared_mailbox_and_exact_scope(pe
     async def check():
         db = await runtime()
         try:
-            await set_bit(ids['admin'], 'projects', special_actions=['projects.manage_field_catalog'])
+            await set_bit(ids['admin'], 'projects', special_actions=['projects.manage_field_catalog'], connection=db, manager=ids['second'])
             with pytest.raises(asyncpg.CheckViolationError, match='allowlist retired'):
                 await call(db, ids['admin'], "select hub.save_contact_domain('company.example',0,'active')")
             assert 'email_domains' not in await call(db, ids['editor'], 'select hub.content_fields()')
@@ -343,7 +343,7 @@ def test_contacts_allow_any_domain_but_require_shared_mailbox_and_exact_scope(pe
             assert changed['revision'] == 2
             with pytest.raises(asyncpg.SerializationError):
                 await call(db, ids['editor'], "select hub.save_content_contact('corporate','sena',$1,1,$2)", UUID(contact['id']), body)
-            await set_bit(ids['editor'], 'knowledge', can_edit=False)
+            await set_bit(ids['editor'], 'knowledge', can_edit=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], sql, body)
             assert await call(db, ids['editor'], "select hub.content_contacts('corporate','sena')")

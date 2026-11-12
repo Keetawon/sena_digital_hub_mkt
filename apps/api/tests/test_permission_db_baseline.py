@@ -179,6 +179,10 @@ BUSINESS_FUNCTIONS = {
     'internal.assistant_saved_source_visible',
 }
 
+SCOPE_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/permissions/content-scope-db.json').read_text(encoding='utf-8'))
+SCOPE_TABLES = {row['name'] for row in SCOPE_INVENTORY['new_tables']['tables']}
+SCOPE_FUNCTIONS = set(SCOPE_INVENTORY['new_functions']['names'])
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -300,9 +304,23 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     additions = FOUNDATION_TABLES | ACCOUNT_UI_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES if name == 'relations' else FOUNDATION_FUNCTIONS | CONTENT_FUNCTIONS | PUBLICATION_FUNCTIONS | REGISTRY_FUNCTIONS | OPERATIONS_FUNCTIONS | ASSISTANT_FUNCTIONS | SHARED_FUNCTIONS | ACCOUNT_UI_FUNCTIONS | PROJECT_CONTENT_FUNCTIONS | MEDIA_FUNCTIONS | UNIT_FUNCTIONS | FAQ_INTAKE_FUNCTIONS | COMMERCIAL_FUNCTIONS | FAQ_COVERAGE_FUNCTIONS | AMENITY_FUNCTIONS | ARTICLE_FUNCTIONS | WEB_FUNCTIONS
                     additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS | WORKFLOW_FUNCTIONS
                     additions |= BUSINESS_TABLES if name == 'relations' else BUSINESS_FUNCTIONS
+                    additions |= SCOPE_TABLES if name == 'relations' else SCOPE_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    # Explicit W6 additions are verified independently against
+                    # the frozen inventory, before the older policy counts.
+                    restrictive = [r for r in actual if r['name'] == 'content_object_scope']
+                    expected_scope = SCOPE_INVENTORY['existing_restrictive_policies']
+                    assert len(restrictive) == expected_scope['expected_count'] == 92
+                    assert {r['schema'] + '.' + r['table'] for r in restrictive} == set(expected_scope['relations'])
+                    assert all(r['permissive'] == 'RESTRICTIVE' and r['cmd'] == 'ALL'
+                        and r['with_check'] == 'false' and 'hub.content_row_visible(' in r['qual'] for r in restrictive)
+                    owners = [r for r in actual if r['schema'] + '.' + r['table'] in SCOPE_TABLES]
+                    assert len(owners) == len(SCOPE_TABLES) == 7
+                    assert all(r['name'] == 'scope_owner' and r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
+                        and r['qual'] == r['with_check'] == 'true' for r in owners)
+                    actual = [r for r in actual if r not in restrictive + owners]
                     business = [r for r in actual if r['schema'] + '.' + r['table'] in BUSINESS_TABLES]
                     assert len(business) == 2
                     assert all(r['name'] == 'business_owner' and r['roles'] == ['postgres']
@@ -528,14 +546,17 @@ async def assert_reviewed_database_boundary(db):
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
-    classified |= BUSINESS_TABLES
+    classified |= BUSINESS_TABLES | SCOPE_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
-    # These three operator-only staging/seed relations intentionally have
-    # FORCE RLS with no policy: the application can never read them.
+    # Technical relations have no permissive policy or application grants.
+    # The source-offer object policy is restrictive only and cannot grant access.
     policy_tables = {r['schema'] + '.' + r['table'] for r in policies}
-    assert set(tables) - policy_tables == TECHNICAL_TABLES
+    assert set(tables) - policy_tables == TECHNICAL_TABLES - {'staging.source_offers'}
+    technical_policies = [r for r in policies if r['schema'] + '.' + r['table'] in TECHNICAL_TABLES]
+    assert [(r['schema'] + '.' + r['table'], r['name'], r['permissive']) for r in technical_policies] == [
+        ('staging.source_offers', 'content_object_scope', 'RESTRICTIVE')]
     # Domain tables need an actual permission predicate, not just RLS on.
     domain = CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES | OPERATIONS_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES
     domain |= {'hub.website_asset_suggestions'}
@@ -545,6 +566,7 @@ async def assert_reviewed_database_boundary(db):
     assert all(not tables[name]["grants"] for name in WEB_TABLES), "Website storage is accessible only through guarded commands"
     assert all(not tables[name]['grants'] for name in WORKFLOW_TABLES), 'Content review versions have no application table grants'
     assert all(not tables[name]['grants'] for name in BUSINESS_TABLES), 'Business catalog uses guarded commands only'
+    assert all(not tables[name]['grants'] for name in SCOPE_TABLES), 'Content scopes and membership are owner-only storage'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

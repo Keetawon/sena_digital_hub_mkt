@@ -46,7 +46,7 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       select 'reviews',jsonb_agg(to_jsonb(t) order by candidate_id) from hub.knowledge_reviews t union all
       select 'permissions',jsonb_agg(to_jsonb(t) order by account_id,tab) from hub.account_permission t
     ) evidence order by name`)).rows;
-    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState,promotionState,businessState,businessAuditId;
+    let phase2State,phase3State,phase5State,legacyFaq,legacySection,phase7State,workspaceState,promotionState,businessState,businessAuditId,scopeState,scopeAuditId;
     const workspaceRows=async(normalizePromotions=false,auditThrough=null)=>{
       const tables=(await db.query("select schemaname,tablename from pg_tables where schemaname in ('hub','staging','audit') order by schemaname,tablename")).rows;
       const result=[];
@@ -77,6 +77,12 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
     const legacyState=async()=>(await db.query(`select 'faq' name,to_jsonb(f)-array['question_key','state','revision','draft_version_id','published_version_id','pinned_on'] payload from hub.faqs f
       union all select 'section',to_jsonb(s)-array['section_key','state','revision','draft_version_id','published_version_id','website_source'] from hub.content_sections s order by name`)).rows;
     for(const name of (await readdir(migrations)).filter(name=>name.endsWith('.sql')&&name>='202610090047_content_permissions.sql').sort()) {
+      if(name==='202611090089_content_scopes.sql'){
+        scopeAuditId=(await db.query('select coalesce(max(id),0)::text id from audit.change_log')).rows[0].id;
+        scopeState=await workspaceRows(false,scopeAuditId);
+        for(const table of ['public_promotions','promotion_reviews','promotion_versions','content_section_versions','faq_versions','user_account','account_permission','brand_business'])
+          assert.ok(scopeState.find(row=>row.relation==='"hub"."'+table+'"')?.count>0,'Populated W6 preservation fixture: '+table);
+      }
       if(name==='202611080088_business_level.sql'){
         businessAuditId=(await db.query('select coalesce(max(id),0)::text id from audit.change_log')).rows[0].id;
         businessState=await workspaceRows(false,businessAuditId);
@@ -123,6 +129,15 @@ test('populated content upgrade preserves accounts and asset editors, audits bac
       }
       phase7State=await beforePhase7(db,name,phase7State);
       await db.query(await readFile(path.join(migrations,name),'utf8'));
+      if(name==='202611090089_content_scopes.sql'||name==='202611090090_bu_membership.sql'){
+        const beforeRelations=new Set(scopeState.map(row=>row.relation));
+        assert.deepEqual((await workspaceRows(false,scopeAuditId)).filter(row=>beforeRelations.has(row.relation)),scopeState,
+          'W6 must preserve every pre-existing Hub, staging and audit row exactly');
+        assert.equal(Number((await db.query('select count(*) from hub.account_content_scope')).rows[0].count),0,
+          'Existing accounts retain unrestricted scope without scope rows');
+        assert.equal(Number((await db.query("select count(*) from audit.change_log where id>$1 and (table_name not in ('hub.content_scope_settings','hub.content_scope_state') or operation<>'INSERT')",[scopeAuditId])).rows[0].count),0,
+          'W6 migration may audit only its new singleton settings/state inserts');
+      }
       if(name==='202610220070_real_promotions.sql'){
         const actor='00000000-0000-0000-0000-000000000001';
         const reviewer='00000000-0000-0000-0000-000000000002';

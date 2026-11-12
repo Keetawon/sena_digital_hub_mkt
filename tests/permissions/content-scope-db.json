@@ -1,0 +1,1898 @@
+{
+  "schema_version": 1,
+  "programme": "Unified content workspace W6",
+  "review_method": "Static finite source review; no live catalogue snapshot or runtime execution.",
+  "provenance": {
+    "migrations": [
+      {
+        "path": "supabase/migrations/202611090089_content_scopes.sql",
+        "sha256": "523522f6dc0cb89b6d77e70480637aad2022429f0b7f6aab6949b8ef205d5e2e"
+      },
+      {
+        "path": "supabase/migrations/202611090090_bu_membership.sql",
+        "sha256": "5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4"
+      }
+    ],
+    "source_worktree": "ws/w6-scope-audit-fixes",
+    "comparison_sources": [
+      "apps/api/tests/test_permission_db_baseline.py on main",
+      "apps/api/tests/test_permission_db_baseline.py W4 candidate in ws/w6-scope-audit-fixes",
+      "tests/permissions/legacy-db.json",
+      "apps/api/sena_hub_api/content_permissions.py on main",
+      "apps/api/sena_hub_api/content_scopes.py",
+      "apps/api/sena_hub_api/bu_membership.py",
+      "docs/36-adding-feature-permissions.md"
+    ]
+  },
+  "probe_roles": [
+    "admin",
+    "agency",
+    "editor",
+    "hub_app",
+    "hub_media_worker",
+    "hub_translation_worker",
+    "online_staff",
+    "publisher",
+    "service_consumer",
+    "viewer"
+  ],
+  "new_functions": {
+    "expected_count": 213,
+    "migration_counts": {
+      "0089": 206,
+      "0090": 7
+    },
+    "expected_overloads": [],
+    "expected_rows_per_name": 1,
+    "defaults": {
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [],
+      "public_execute": false
+    },
+    "exceptions": {
+      "hub.content_bu_notices": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      },
+      "hub.content_bu_runs_read": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      },
+      "hub.content_bu_validate": {
+        "security_definer": false
+      },
+      "hub.content_row_visible": {
+        "execute_roles": [
+          "admin",
+          "agency",
+          "editor",
+          "hub_app",
+          "online_staff",
+          "publisher",
+          "viewer"
+        ]
+      },
+      "hub.content_scope_batch_preview": {
+        "config": [
+          "search_path=pg_catalog, pg_temp",
+          "TimeZone=UTC"
+        ]
+      },
+      "hub.content_scope_fingerprint": {
+        "config": [
+          "search_path=pg_catalog, pg_temp",
+          "TimeZone=UTC"
+        ]
+      },
+      "hub.content_scope_identity": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      },
+      "hub.content_scope_now": {
+        "security_definer": false
+      },
+      "hub.content_scope_settings_apply": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      },
+      "hub.content_scope_settings_preview": {
+        "execute_roles": [
+          "hub_app"
+        ],
+        "config": [
+          "search_path=pg_catalog, pg_temp",
+          "TimeZone=UTC"
+        ]
+      },
+      "hub.content_scope_settings_read": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      },
+      "hub.content_scopes_read": {
+        "execute_roles": [
+          "hub_app"
+        ]
+      }
+    },
+    "names": [
+      "hub.accept_account_invite_before_scopes",
+      "hub.add_model_from_rem_before_scopes",
+      "hub.apply_account_permissions_before_scopes",
+      "hub.approve_account_access_before_scopes",
+      "hub.approve_faq_question_before_scopes",
+      "hub.approve_glossary_before_scopes",
+      "hub.article_preview_before_scopes",
+      "hub.article_read_before_scopes",
+      "hub.article_review_before_scopes",
+      "hub.article_save_before_scopes",
+      "hub.article_submit_before_scopes",
+      "hub.assign_project_brand_before_project_intake_before_scopes",
+      "hub.assign_project_brand_before_scopes",
+      "hub.bind_asset_before_scopes",
+      "hub.bind_brand_asset_before_scopes",
+      "hub.bind_commercial_asset_before_scopes",
+      "hub.bind_model_asset_before_scopes",
+      "hub.bind_project_asset_before_scopes",
+      "hub.bind_scoped_asset_before_scopes",
+      "hub.brand_bulk_create_before_scopes",
+      "hub.brand_bulk_preview_before_scopes",
+      "hub.brand_detail_before_completeness_before_scopes",
+      "hub.brand_detail_before_scopes",
+      "hub.brand_versions_before_scopes",
+      "hub.c4_facility_cover_before_scopes",
+      "hub.c4_facility_save_before_scopes",
+      "hub.c4_item_save_before_scopes",
+      "hub.c4_nearest_stations_before_scopes",
+      "hub.c4_reference_save_before_scopes",
+      "hub.c4_solar_review_before_scopes",
+      "hub.c4_workspace_before_scopes",
+      "hub.claim_translation_before_scopes",
+      "hub.configure_account_access_before_scopes",
+      "hub.confirm_brand_source_names_before_scopes",
+      "hub.confirm_model_before_scopes",
+      "hub.content_account_project_allowed",
+      "hub.content_account_project_grace",
+      "hub.content_article_node_projection",
+      "hub.content_article_projects",
+      "hub.content_article_rows",
+      "hub.content_article_version_visible",
+      "hub.content_asset_bindings",
+      "hub.content_asset_scope_allowed",
+      "hub.content_brand_rows",
+      "hub.content_bu_accept",
+      "hub.content_bu_capture",
+      "hub.content_bu_effects_at",
+      "hub.content_bu_maintain",
+      "hub.content_bu_notices",
+      "hub.content_bu_reject",
+      "hub.content_bu_runs_read",
+      "hub.content_bu_validate",
+      "hub.content_candidate_rows",
+      "hub.content_cluster_rows",
+      "hub.content_contacts_before_scopes",
+      "hub.content_faq_projects",
+      "hub.content_faq_rows",
+      "hub.content_gap_rows",
+      "hub.content_history_source_visible",
+      "hub.content_media_link_rows",
+      "hub.content_programme_rows",
+      "hub.content_progress_dirty_rows",
+      "hub.content_progress_rows",
+      "hub.content_project_allowed",
+      "hub.content_project_rows",
+      "hub.content_project_set_allowed",
+      "hub.content_promotion_projection",
+      "hub.content_promotion_reference_visible",
+      "hub.content_promotion_rows",
+      "hub.content_promotion_scope_input",
+      "hub.content_rem_brand_rows",
+      "hub.content_rem_project_rows",
+      "hub.content_row_visible",
+      "hub.content_scope_account_value",
+      "hub.content_scope_admin",
+      "hub.content_scope_batch_apply",
+      "hub.content_scope_batch_preview",
+      "hub.content_scope_effects",
+      "hub.content_scope_effects_at",
+      "hub.content_scope_epoch_changed",
+      "hub.content_scope_exclusive_lock",
+      "hub.content_scope_fingerprint",
+      "hub.content_scope_history",
+      "hub.content_scope_identity",
+      "hub.content_scope_lock",
+      "hub.content_scope_now",
+      "hub.content_scope_project_references",
+      "hub.content_scope_projects",
+      "hub.content_scope_proposed",
+      "hub.content_scope_record_effects",
+      "hub.content_scope_redact",
+      "hub.content_scope_selection",
+      "hub.content_scope_settings_apply",
+      "hub.content_scope_settings_preview",
+      "hub.content_scope_settings_read",
+      "hub.content_scope_settle_deadlines",
+      "hub.content_scopes_read",
+      "hub.content_source_allowed",
+      "hub.content_source_projects",
+      "hub.content_translation_requester_allowed",
+      "hub.content_translation_scope_allowed",
+      "hub.content_unit_rows",
+      "hub.content_unrestricted",
+      "hub.content_workflow_review_before_scopes",
+      "hub.content_workflow_save_approve_before_scopes",
+      "hub.content_workflow_submit_before_scopes",
+      "hub.create_brand_from_rem_before_scopes",
+      "hub.create_commercial_types_before_scopes",
+      "hub.create_project_from_rem_before_scopes",
+      "hub.decide_account_before_scopes",
+      "hub.faq_applicability_preview_before_scopes",
+      "hub.faq_composition_before_scopes",
+      "hub.faq_gap_update_before_scopes",
+      "hub.finish_translation_before_scopes",
+      "hub.knowledge_followup_before_scopes",
+      "hub.knowledge_link_approved_asset_before_scopes",
+      "hub.knowledge_model_catalogue_before_scopes",
+      "hub.knowledge_preview_read_before_scopes",
+      "hub.list_rem_models_before_scopes",
+      "hub.lock_commercial_project_before_scopes",
+      "hub.lock_knowledge_asset_before_scopes",
+      "hub.media_ai_state_before_scopes",
+      "hub.media_checklist_before_scopes",
+      "hub.media_claim_before_scopes",
+      "hub.media_clip_check_before_scopes",
+      "hub.media_clip_save_before_scopes",
+      "hub.media_finish_before_scopes",
+      "hub.media_job_request_before_scopes",
+      "hub.media_jobs_read_before_scopes",
+      "hub.media_link_remove_before_scopes",
+      "hub.media_link_save_before_scopes",
+      "hub.media_requirement_save_before_scopes",
+      "hub.media_save_asset_before_scopes",
+      "hub.media_tag_approve_before_scopes",
+      "hub.media_tag_save_before_scopes",
+      "hub.patch_model_before_scopes",
+      "hub.patch_project_before_scopes",
+      "hub.prefill_project_from_dw_before_scopes",
+      "hub.project_commercial_workspace_before_scopes",
+      "hub.project_content_before_scopes",
+      "hub.project_content_facts_before_scopes",
+      "hub.project_content_readiness_before_scopes",
+      "hub.project_content_sections_before_scopes",
+      "hub.project_detail_before_commercial_types_before_scopes",
+      "hub.project_detail_before_demo_before_scopes",
+      "hub.project_detail_before_facilities_before_scopes",
+      "hub.project_detail_before_gold_preview_before_scopes",
+      "hub.project_detail_before_scopes",
+      "hub.project_media_before_scopes",
+      "hub.project_price_review_before_scopes",
+      "hub.project_readiness_before_scopes",
+      "hub.project_versions_before_scopes",
+      "hub.publication_queue_publish_before_scopes",
+      "hub.publish_brand_before_scopes",
+      "hub.publish_knowledge_preview_before_scopes",
+      "hub.publish_project_before_scopes",
+      "hub.record_knowledge_gap_before_scopes",
+      "hub.release_publish_before_scopes",
+      "hub.release_rollback_before_scopes",
+      "hub.request_brand_before_scopes",
+      "hub.require_content_project",
+      "hub.require_content_project_set",
+      "hub.require_content_source",
+      "hub.require_content_translation_scope",
+      "hub.require_content_unrestricted",
+      "hub.require_field_admin_before_scopes",
+      "hub.resolve_brand_request_before_scopes",
+      "hub.review_asset_before_scopes",
+      "hub.review_knowledge_candidate_before_scopes",
+      "hub.review_knowledge_question_before_scopes",
+      "hub.review_model_before_scopes",
+      "hub.review_project_commercial_before_scopes",
+      "hub.rollback_brand_before_scopes",
+      "hub.rollback_project_before_readiness_levels_before_scopes",
+      "hub.rollback_project_before_scopes",
+      "hub.save_contact_domain_before_scopes",
+      "hub.save_content_contact_before_scopes",
+      "hub.save_content_field_before_scopes",
+      "hub.save_content_section_before_scopes",
+      "hub.save_faq_question_before_scopes",
+      "hub.save_glossary_before_scopes",
+      "hub.save_project_building_before_scopes",
+      "hub.save_project_commercial_before_scopes",
+      "hub.save_project_facility_before_scopes",
+      "hub.save_project_fact_before_scopes",
+      "hub.save_project_price_before_scopes",
+      "hub.save_selling_point_before_scopes",
+      "hub.submit_content_section_before_scopes",
+      "hub.submit_faq_before_scopes",
+      "hub.unbind_brand_asset_before_scopes",
+      "hub.unbind_commercial_asset_before_scopes",
+      "hub.unbind_model_asset_before_scopes",
+      "hub.unbind_project_asset_before_scopes",
+      "hub.unbind_scoped_asset_before_scopes",
+      "hub.unit_type_review_before_scopes",
+      "hub.unit_type_workspace_before_scopes",
+      "hub.update_brand_draft_before_scopes",
+      "hub.update_commercial_type_before_scopes",
+      "hub.update_model_before_scopes",
+      "hub.web_history_before_scopes",
+      "hub.web_page_save_before_scopes",
+      "hub.web_pointer_before_scopes",
+      "hub.web_prepare_before_scopes",
+      "hub.web_version_preview_before_scopes",
+      "hub.website_content_sources_before_scopes",
+      "hub.website_media_confirm_before_scopes",
+      "hub.website_media_queue_before_scopes",
+      "hub.withdraw_brand_before_scopes",
+      "hub.withdraw_project_before_scopes",
+      "hub.workspace_confirmed_groups_before_scopes",
+      "hub.workspace_native_rows_before_scopes",
+      "hub.workspace_scope_matches_tab",
+      "internal.assistant_scoped_source"
+    ],
+    "literal_argument_declarations": {
+      "hub.content_account_project_allowed": "account uuid,tab text,level text,rem_id text,at_time timestamptz",
+      "hub.content_article_node_projection": "value jsonb",
+      "hub.content_article_projects": "article uuid,version uuid default null",
+      "hub.content_article_rows": "",
+      "hub.content_article_version_visible": "version uuid",
+      "hub.content_asset_bindings": "asset uuid",
+      "hub.content_asset_scope_allowed": "asset uuid,level text",
+      "hub.content_brand_rows": "tab text",
+      "hub.content_bu_accept": "rows jsonb,captured_run uuid,captured_epoch bigint",
+      "hub.content_bu_capture": "",
+      "hub.content_bu_effects_at": "moment timestamptz,extra_ids text[]",
+      "hub.content_bu_maintain": "",
+      "hub.content_bu_notices": "project_ref text default null,page_size integer default 20",
+      "hub.content_bu_reject": "captured_run uuid,captured_epoch bigint,code text,row_count integer default 0",
+      "hub.content_bu_runs_read": "after_cursor text default null,page_size integer default 50",
+      "hub.content_bu_validate": "rows jsonb,moment timestamptz",
+      "hub.content_candidate_rows": "",
+      "hub.content_cluster_rows": "",
+      "hub.content_faq_projects": "faq uuid,version uuid default null",
+      "hub.content_faq_rows": "",
+      "hub.content_gap_rows": "",
+      "hub.content_history_source_visible": "table_name text,value jsonb",
+      "hub.content_media_link_rows": "",
+      "hub.content_programme_rows": "tab text",
+      "hub.content_progress_dirty_rows": "",
+      "hub.content_progress_rows": "",
+      "hub.content_project_allowed": "tab text,level text,rem_project_id text",
+      "hub.content_project_rows": "tab text",
+      "hub.content_project_set_allowed": "tab text,level text,ids text[],global_object boolean default false",
+      "hub.content_promotion_projection": "value jsonb",
+      "hub.content_promotion_rows": "",
+      "hub.content_rem_brand_rows": "",
+      "hub.content_rem_project_rows": "tab text",
+      "hub.content_row_visible": "table_name text,row_data jsonb",
+      "hub.content_scope_account_value": "account uuid,tab text,level text",
+      "hub.content_scope_admin": "",
+      "hub.content_scope_batch_apply": "p jsonb,expected_digest text",
+      "hub.content_scope_batch_preview": "p jsonb",
+      "hub.content_scope_effects": "account_ids uuid[] default null",
+      "hub.content_scope_epoch_changed": "",
+      "hub.content_scope_exclusive_lock": "",
+      "hub.content_scope_fingerprint": "",
+      "hub.content_scope_history": "account uuid,after_cursor text default null,page_size integer default 50",
+      "hub.content_scope_identity": "",
+      "hub.content_scope_lock": "",
+      "hub.content_scope_now": "",
+      "hub.content_scope_project_references": "",
+      "hub.content_scope_projects": "kind text,ref text",
+      "hub.content_scope_proposed": "account uuid,tab text,level text,scope jsonb,action_level text default null",
+      "hub.content_scope_record_effects": "before_rows jsonb,after_rows jsonb,reason text,effective_at timestamptz,run_id uuid default null",
+      "hub.content_scope_redact": "value jsonb,tab text",
+      "hub.content_scope_selection": "scope jsonb",
+      "hub.content_scope_settings_apply": "days integer,expected_revision bigint,expected_digest text",
+      "hub.content_scope_settings_preview": "days integer,expected_revision bigint",
+      "hub.content_scope_settings_read": "",
+      "hub.content_scope_settle_deadlines": "",
+      "hub.content_scopes_read": "account uuid default null,reference_kind text default 'projects',bu text default null,query text default '', after_cursor text default null,page_size integer default 100,history_after text default null,history_size integer default 50",
+      "hub.content_source_allowed": "table_name text,row_data jsonb,tab text,level text default 'view'",
+      "hub.content_source_projects": "table_name text,row_data jsonb",
+      "hub.content_translation_requester_allowed": "account uuid,translation uuid",
+      "hub.content_translation_scope_allowed": "translation uuid,level text",
+      "hub.content_unit_rows": "tab text",
+      "hub.content_unrestricted": "tab text,level text",
+      "hub.require_content_project": "project_uuid uuid,tab text,level text",
+      "hub.require_content_project_set": "tab text,level text,rem_project_ids text[],global_object boolean default false",
+      "hub.require_content_source": "table_name text,row_data jsonb,tab text,level text",
+      "hub.require_content_translation_scope": "translation uuid,level text",
+      "hub.require_content_unrestricted": "tab text,level text",
+      "internal.assistant_scoped_source": "kind text,ref text,version text",
+      "hub.content_promotion_reference_visible": "kind text,ref text",
+      "hub.content_promotion_scope_input": "p_id uuid,expected integer,proposed jsonb"
+    },
+    "private_wrapper_delegates": {
+      "schema": "hub",
+      "name_suffix": "_before_scopes",
+      "signature_contract": "Exactly one function per base and delegate; delegate identity argument types, argument names/defaults and result match its source function. Original function name remains present with guarded body and prior ACL.",
+      "base_names": [
+        "add_model_from_rem",
+        "approve_faq_question",
+        "approve_glossary",
+        "article_preview",
+        "article_read",
+        "article_review",
+        "article_save",
+        "article_submit",
+        "assign_project_brand",
+        "assign_project_brand_before_project_intake",
+        "bind_asset",
+        "bind_brand_asset",
+        "bind_commercial_asset",
+        "bind_model_asset",
+        "bind_project_asset",
+        "bind_scoped_asset",
+        "brand_bulk_create",
+        "brand_bulk_preview",
+        "brand_detail",
+        "brand_detail_before_completeness",
+        "brand_versions",
+        "c4_facility_cover",
+        "c4_facility_save",
+        "c4_item_save",
+        "c4_nearest_stations",
+        "c4_reference_save",
+        "c4_solar_review",
+        "c4_workspace",
+        "claim_translation",
+        "confirm_brand_source_names",
+        "confirm_model",
+        "content_contacts",
+        "content_workflow_review",
+        "content_workflow_save_approve",
+        "content_workflow_submit",
+        "create_brand_from_rem",
+        "create_commercial_types",
+        "create_project_from_rem",
+        "faq_composition",
+        "faq_gap_update",
+        "finish_translation",
+        "knowledge_followup",
+        "knowledge_link_approved_asset",
+        "knowledge_model_catalogue",
+        "knowledge_preview_read",
+        "list_rem_models",
+        "lock_commercial_project",
+        "lock_knowledge_asset",
+        "media_ai_state",
+        "media_checklist",
+        "media_claim",
+        "media_clip_check",
+        "media_clip_save",
+        "media_finish",
+        "media_job_request",
+        "media_jobs_read",
+        "media_link_remove",
+        "media_link_save",
+        "media_requirement_save",
+        "media_save_asset",
+        "media_tag_approve",
+        "media_tag_save",
+        "patch_model",
+        "patch_project",
+        "prefill_project_from_dw",
+        "project_commercial_workspace",
+        "project_content",
+        "project_content_facts",
+        "project_content_readiness",
+        "project_content_sections",
+        "project_detail",
+        "project_detail_before_commercial_types",
+        "project_detail_before_demo",
+        "project_detail_before_facilities",
+        "project_detail_before_gold_preview",
+        "project_media",
+        "project_price_review",
+        "project_readiness",
+        "project_versions",
+        "publication_queue_publish",
+        "publish_brand",
+        "publish_knowledge_preview",
+        "publish_project",
+        "record_knowledge_gap",
+        "release_publish",
+        "release_rollback",
+        "request_brand",
+        "require_field_admin",
+        "resolve_brand_request",
+        "review_asset",
+        "review_knowledge_candidate",
+        "review_knowledge_question",
+        "review_model",
+        "review_project_commercial",
+        "rollback_brand",
+        "rollback_project",
+        "rollback_project_before_readiness_levels",
+        "save_contact_domain",
+        "save_content_contact",
+        "save_content_field",
+        "save_content_section",
+        "save_faq_question",
+        "save_glossary",
+        "save_project_building",
+        "save_project_commercial",
+        "save_project_facility",
+        "save_project_fact",
+        "save_project_price",
+        "save_selling_point",
+        "submit_content_section",
+        "submit_faq",
+        "unbind_brand_asset",
+        "unbind_commercial_asset",
+        "unbind_model_asset",
+        "unbind_project_asset",
+        "unbind_scoped_asset",
+        "unit_type_review",
+        "unit_type_workspace",
+        "update_brand_draft",
+        "update_commercial_type",
+        "update_model",
+        "web_history",
+        "web_page_save",
+        "web_pointer",
+        "web_prepare",
+        "web_version_preview",
+        "website_content_sources",
+        "website_media_confirm",
+        "website_media_queue",
+        "withdraw_brand",
+        "withdraw_project"
+      ]
+    },
+    "private_account_delegates": {
+      "schema": "hub",
+      "name_suffix": "_before_scopes",
+      "base_names": [
+        "accept_account_invite",
+        "apply_account_permissions",
+        "approve_account_access",
+        "configure_account_access",
+        "decide_account"
+      ],
+      "signature_contract": "Same identity arguments/defaults/result as original; original guarded functions remain. decide_account delegate calls private configure/approve delegates."
+    },
+    "special_private_copies": {
+      "hub.content_account_project_grace": {
+        "source": "hub.content_account_project_allowed(uuid,text,text,text,timestamptz)",
+        "identity_types": [
+          "uuid",
+          "text",
+          "text",
+          "text",
+          "timestamp with time zone",
+          "integer"
+        ]
+      },
+      "hub.content_scope_effects_at": {
+        "source": "hub.content_scope_effects(uuid[])",
+        "identity_types": [
+          "uuid[]",
+          "timestamp with time zone"
+        ]
+      },
+      "hub.workspace_native_rows_before_scopes": {
+        "source": "hub.workspace_native_rows()",
+        "identity_types": []
+      },
+      "hub.workspace_confirmed_groups_before_scopes": {
+        "source": "hub.workspace_confirmed_groups()",
+        "identity_types": []
+      },
+      "hub.faq_applicability_preview_before_scopes": {
+        "source": "hub.faq_applicability_preview(jsonb,text,text)",
+        "identity_types": [
+          "jsonb",
+          "text",
+          "text"
+        ]
+      },
+      "hub.workspace_scope_matches_tab": {
+        "source": "hub.workspace_scope_matches(text,text,text[],text,text)",
+        "identity_types": [
+          "text",
+          "text",
+          "text[]",
+          "text",
+          "text",
+          "text"
+        ]
+      }
+    }
+  },
+  "new_tables": {
+    "expected_count": 7,
+    "defaults": {
+      "kind": "r",
+      "rls": true,
+      "force_rls": true,
+      "grants": [],
+      "public_grants": [],
+      "policy_count": 1,
+      "policy": {
+        "name": "scope_owner",
+        "permissive": "PERMISSIVE",
+        "roles": [
+          "postgres"
+        ],
+        "cmd": "ALL",
+        "qual": "true",
+        "with_check": "true"
+      },
+      "audit_trigger": {
+        "name": "scope_audit",
+        "timing": "AFTER",
+        "events": [
+          "INSERT",
+          "UPDATE",
+          "DELETE"
+        ],
+        "level": "ROW",
+        "function": "audit.record_change()"
+      }
+    },
+    "owner_note": "Policy role is migration current_user; documented disposable replay owner is postgres. Runtime/legacy/worker roles get no direct DML.",
+    "tables": [
+      {
+        "name": "hub.account_content_scope",
+        "columns": [
+          {
+            "name": "account_id",
+            "type": "uuid",
+            "nullable": false
+          },
+          {
+            "name": "tab",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "level",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "bu_ids",
+            "type": "text[]",
+            "nullable": false,
+            "default": "'{}'"
+          },
+          {
+            "name": "project_ids",
+            "type": "text[]",
+            "nullable": false,
+            "default": "'{}'"
+          },
+          {
+            "name": "revision",
+            "type": "bigint",
+            "nullable": false,
+            "default": "1"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "nullable": false,
+            "default": "clock_timestamp()"
+          },
+          {
+            "name": "updated_by",
+            "type": "uuid",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "account_id",
+          "tab",
+          "level"
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "account_id"
+            ],
+            "references": "hub.user_account(id)",
+            "on_delete": "CASCADE"
+          },
+          {
+            "columns": [
+              "tab"
+            ],
+            "references": "hub.permission_catalog(tab)"
+          }
+        ],
+        "checks": [
+          "tab IN (projects,brands,knowledge,promotions,releases)",
+          "level IN (view,edit,approve)",
+          "revision > 0",
+          "Neither selection array contains NULL"
+        ],
+        "semantics": "Missing row is unrestricted; no foreign key or cascade to account_permission; base permissions remain independently required."
+      },
+      {
+        "name": "hub.content_scope_settings",
+        "columns": [
+          {
+            "name": "singleton",
+            "type": "boolean",
+            "nullable": false,
+            "default": "true"
+          },
+          {
+            "name": "grace_days",
+            "type": "integer",
+            "nullable": false,
+            "default": "7"
+          },
+          {
+            "name": "revision",
+            "type": "bigint",
+            "nullable": false,
+            "default": "1"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "nullable": false,
+            "default": "clock_timestamp()"
+          },
+          {
+            "name": "updated_by",
+            "type": "uuid",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "singleton"
+        ],
+        "checks": [
+          "singleton",
+          "grace_days BETWEEN 1 AND 7",
+          "revision > 0"
+        ]
+      },
+      {
+        "name": "hub.content_bu_run",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "nullable": false,
+            "default": "gen_random_uuid()"
+          },
+          {
+            "name": "status",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "source_watermark",
+            "type": "timestamp with time zone",
+            "nullable": true
+          },
+          {
+            "name": "accepted_at",
+            "type": "timestamp with time zone",
+            "nullable": true
+          },
+          {
+            "name": "recorded_at",
+            "type": "timestamp with time zone",
+            "nullable": false,
+            "default": "clock_timestamp()"
+          },
+          {
+            "name": "digest",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "row_count",
+            "type": "integer",
+            "nullable": false,
+            "default": "0"
+          },
+          {
+            "name": "failure_code",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "captured_run_id",
+            "type": "uuid",
+            "nullable": true
+          },
+          {
+            "name": "captured_epoch",
+            "type": "bigint",
+            "nullable": false
+          }
+        ],
+        "primary_key": [
+          "id"
+        ],
+        "checks": [
+          "status IN (ACCEPTED,REJECTED,FAILED)",
+          "digest IS NULL OR lowercase 64-hex",
+          "row_count >= 0",
+          "captured_epoch >= 0",
+          "ACCEPTED requires source_watermark,accepted_at,digest,row_count>0 and failure_code NULL; other statuses require accepted_at NULL and failure_code non-NULL"
+        ],
+        "failure_codes": [
+          "empty",
+          "invalid_shape",
+          "invalid_project",
+          "duplicate_project",
+          "invalid_bu",
+          "invalid_timestamp",
+          "future_snapshot",
+          "old_snapshot",
+          "stale_refresh",
+          "read_failed"
+        ]
+      },
+      {
+        "name": "hub.content_bu_membership",
+        "columns": [
+          {
+            "name": "run_id",
+            "type": "uuid",
+            "nullable": false
+          },
+          {
+            "name": "project_id",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "rem_bu_id",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_code",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_name",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_is_active",
+            "type": "boolean",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_is_deleted",
+            "type": "boolean",
+            "nullable": true
+          },
+          {
+            "name": "source_snapshot_at",
+            "type": "timestamp with time zone",
+            "nullable": false
+          },
+          {
+            "name": "project_status_code",
+            "type": "text",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "run_id",
+          "project_id"
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "run_id"
+            ],
+            "references": "hub.content_bu_run(id)"
+          }
+        ],
+        "checks": [
+          "project_id is nonblank",
+          "rem_bu_id is NULL or nonblank"
+        ],
+        "semantics": "Exact eight source columns plus run_id; no inferred mapping, prefix stripping, or null normalization."
+      },
+      {
+        "name": "hub.content_bu_handover",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "nullable": false,
+            "default": "gen_random_uuid()"
+          },
+          {
+            "name": "project_id",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "rem_bu_id",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "started_at",
+            "type": "timestamp with time zone",
+            "nullable": false
+          },
+          {
+            "name": "accepted_run_id",
+            "type": "uuid",
+            "nullable": false
+          },
+          {
+            "name": "closed_at",
+            "type": "timestamp with time zone",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "id"
+        ],
+        "unique_keys": [
+          [
+            "project_id",
+            "rem_bu_id",
+            "accepted_run_id"
+          ]
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "accepted_run_id"
+            ],
+            "references": "hub.content_bu_run(id)"
+          }
+        ],
+        "checks": [
+          "project_id and rem_bu_id are nonblank",
+          "closed_at IS NULL OR closed_at >= started_at"
+        ]
+      },
+      {
+        "name": "hub.content_scope_state",
+        "columns": [
+          {
+            "name": "singleton",
+            "type": "boolean",
+            "nullable": false,
+            "default": "true"
+          },
+          {
+            "name": "accepted_run_id",
+            "type": "uuid",
+            "nullable": true
+          },
+          {
+            "name": "acceptance_epoch",
+            "type": "bigint",
+            "nullable": false,
+            "default": "0"
+          },
+          {
+            "name": "authorization_epoch",
+            "type": "bigint",
+            "nullable": false,
+            "default": "0"
+          },
+          {
+            "name": "deadlines_settled_at",
+            "type": "timestamp with time zone",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "singleton"
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "accepted_run_id"
+            ],
+            "references": "hub.content_bu_run(id)"
+          }
+        ],
+        "checks": [
+          "singleton",
+          "acceptance_epoch >= 0",
+          "authorization_epoch >= 0"
+        ],
+        "column_migrations": {
+          "deadlines_settled_at": "0090"
+        }
+      },
+      {
+        "name": "hub.content_bu_membership_interval",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "nullable": false,
+            "default": "gen_random_uuid()"
+          },
+          {
+            "name": "project_id",
+            "type": "text",
+            "nullable": false
+          },
+          {
+            "name": "rem_bu_id",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_code",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_name",
+            "type": "text",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_is_active",
+            "type": "boolean",
+            "nullable": true
+          },
+          {
+            "name": "rem_bu_is_deleted",
+            "type": "boolean",
+            "nullable": true
+          },
+          {
+            "name": "valid_from",
+            "type": "timestamp with time zone",
+            "nullable": false
+          },
+          {
+            "name": "valid_to",
+            "type": "timestamp with time zone",
+            "nullable": true
+          },
+          {
+            "name": "source_snapshot_at",
+            "type": "timestamp with time zone",
+            "nullable": false
+          },
+          {
+            "name": "opened_run_id",
+            "type": "uuid",
+            "nullable": false
+          },
+          {
+            "name": "closed_run_id",
+            "type": "uuid",
+            "nullable": true
+          }
+        ],
+        "primary_key": [
+          "id"
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "opened_run_id"
+            ],
+            "references": "hub.content_bu_run(id)"
+          },
+          {
+            "columns": [
+              "closed_run_id"
+            ],
+            "references": "hub.content_bu_run(id)"
+          }
+        ],
+        "checks": [
+          "length(btrim(project_id)) > 0",
+          "rem_bu_id IS NULL OR length(btrim(rem_bu_id)) > 0",
+          "source_snapshot_at <= valid_from",
+          "valid_to IS NULL OR valid_to >= valid_from",
+          "(valid_to IS NULL) = (closed_run_id IS NULL)"
+        ]
+      }
+    ],
+    "excluded_temporary_relations": [
+      "content_scope_existing_functions",
+      "bu_membership_existing_functions"
+    ],
+    "partial_indexes": [
+      {
+        "relation": "hub.content_bu_membership_interval",
+        "name": "content_bu_one_open_interval",
+        "unique": true,
+        "columns": [
+          "project_id"
+        ],
+        "predicate": "(valid_to IS NULL)"
+      }
+    ]
+  },
+  "existing_restrictive_policies": {
+    "expected_count": 92,
+    "name": "content_object_scope",
+    "permissive": "RESTRICTIVE",
+    "roles": [
+      "admin",
+      "agency",
+      "editor",
+      "hub_app",
+      "online_staff",
+      "publisher",
+      "viewer"
+    ],
+    "cmd": "ALL",
+    "with_check": "false",
+    "qual_template": "hub.content_row_visible('<unqualified_table>', to_jsonb(<unqualified_table>.*))",
+    "qual_note": "Compare the canonical pg_get_expr form; assert exact relation/table argument and row-to-json conversion rather than source whitespace.",
+    "relations": [
+      "hub.article_links",
+      "hub.article_versions",
+      "hub.articles",
+      "hub.asset_links",
+      "hub.asset_media_tags",
+      "hub.assets",
+      "hub.brand_assets",
+      "hub.brand_bulk_runs",
+      "hub.brand_requests",
+      "hub.brand_versions",
+      "hub.brands",
+      "hub.commercial_type_assets",
+      "hub.commercial_type_sources",
+      "hub.commercial_type_versions",
+      "hub.commercial_types",
+      "hub.contact_domains",
+      "hub.contacts",
+      "hub.content_gaps",
+      "hub.content_review_versions",
+      "hub.content_section_versions",
+      "hub.content_sections",
+      "hub.content_translations",
+      "hub.entity_aliases",
+      "hub.entity_assets",
+      "hub.entity_versions",
+      "hub.facility_taxonomy",
+      "hub.faq_intake_decisions",
+      "hub.faq_question_versions",
+      "hub.faq_questions",
+      "hub.faq_sources",
+      "hub.faq_versions",
+      "hub.faqs",
+      "hub.feature_catalog",
+      "hub.field_catalog",
+      "hub.knowledge_asset_links",
+      "hub.knowledge_evaluation_reviews",
+      "hub.knowledge_fact_candidates",
+      "hub.knowledge_preview_releases",
+      "hub.knowledge_reviews",
+      "hub.knowledge_topics",
+      "hub.media_jobs",
+      "hub.media_link_targets",
+      "hub.media_links",
+      "hub.media_requirements",
+      "hub.media_tags",
+      "hub.model_types",
+      "hub.project_buildings",
+      "hub.project_commercial_versions",
+      "hub.project_disclosures",
+      "hub.project_facilities",
+      "hub.project_facts",
+      "hub.project_features",
+      "hub.project_places",
+      "hub.project_price_versions",
+      "hub.project_prices",
+      "hub.project_programmes",
+      "hub.project_progress",
+      "hub.project_progress_cache",
+      "hub.project_progress_dirty",
+      "hub.project_sales_terms",
+      "hub.project_selling_points",
+      "hub.projects",
+      "hub.promotion_reviews",
+      "hub.promotion_versions",
+      "hub.public_promotions",
+      "hub.publication_release_members",
+      "hub.publication_releases",
+      "hub.ref_expressway_ramps",
+      "hub.ref_expressways",
+      "hub.ref_rail_lines",
+      "hub.ref_rail_stations",
+      "hub.solar_estimates",
+      "hub.translation_glossary",
+      "hub.translation_jobs",
+      "hub.web_changes",
+      "hub.web_pages",
+      "hub.web_publications",
+      "hub.website_asset_suggestions",
+      "rag.knowledge_preview_chunks",
+      "rag.project_fact_cards",
+      "staging.dw_project_groups",
+      "staging.dw_projects",
+      "staging.faq_clusters",
+      "staging.knowledge_batches",
+      "staging.knowledge_candidates",
+      "staging.knowledge_eval_questions",
+      "staging.knowledge_followup_batches",
+      "staging.knowledge_promotion_annotations",
+      "staging.rem_brands",
+      "staging.rem_projects",
+      "staging.source_offers",
+      "staging.website_content_receipts"
+    ],
+    "semantics": "Adds a restriction only; preserves existing policies/grants. Excludes service_consumer and worker roles. Filter these named policies before older family policy-count assertions."
+  },
+  "changed_existing_functions": {
+    "expected_count": 221,
+    "names": [
+      "hub.accept_account_invite",
+      "hub.account_directory",
+      "hub.add_model_from_rem",
+      "hub.apply_account_permissions",
+      "hub.approve_account_access",
+      "hub.approve_faq_question",
+      "hub.approve_glossary",
+      "hub.article_list",
+      "hub.article_preview",
+      "hub.article_read",
+      "hub.article_reference_allowed",
+      "hub.article_references",
+      "hub.article_review",
+      "hub.article_save",
+      "hub.article_submit",
+      "hub.assign_project_brand",
+      "hub.assign_project_brand_before_project_intake",
+      "hub.bind_asset",
+      "hub.bind_brand_asset",
+      "hub.bind_commercial_asset",
+      "hub.bind_model_asset",
+      "hub.bind_project_asset",
+      "hub.bind_scoped_asset",
+      "hub.brand_bulk_create",
+      "hub.brand_bulk_preview",
+      "hub.brand_completeness",
+      "hub.brand_detail",
+      "hub.brand_detail_before_completeness",
+      "hub.brand_registration_rows",
+      "hub.brand_versions",
+      "hub.business_references",
+      "hub.c4_facility_cover",
+      "hub.c4_facility_save",
+      "hub.c4_item_save",
+      "hub.c4_nearest_stations",
+      "hub.c4_reference_save",
+      "hub.c4_solar_review",
+      "hub.c4_workspace",
+      "hub.can_read_asset",
+      "hub.can_read_asset_before_media",
+      "hub.claim_translation",
+      "hub.configure_account_access",
+      "hub.confirm_brand_source_names",
+      "hub.confirm_model",
+      "hub.content_contacts",
+      "hub.content_scope_access",
+      "hub.content_translation_list",
+      "hub.content_workflow_review",
+      "hub.content_workflow_save_approve",
+      "hub.content_workflow_source",
+      "hub.content_workflow_submit",
+      "hub.create_brand_from_rem",
+      "hub.create_commercial_types",
+      "hub.create_project_from_rem",
+      "hub.decide_account",
+      "hub.decide_faq_cluster",
+      "hub.faq_applicability_preview",
+      "hub.faq_composition",
+      "hub.faq_coverage",
+      "hub.faq_gap_update",
+      "hub.faq_gaps",
+      "hub.faq_intake_cluster",
+      "hub.faq_intake_clusters",
+      "hub.faq_read",
+      "hub.faq_references",
+      "hub.faq_rule_projects",
+      "hub.finish_translation",
+      "hub.knowledge_candidate_rows",
+      "hub.knowledge_followup",
+      "hub.knowledge_link_approved_asset",
+      "hub.knowledge_model_catalogue",
+      "hub.knowledge_preview_read",
+      "hub.list_brand_requests",
+      "hub.list_brands",
+      "hub.list_rem_brands",
+      "hub.list_rem_models",
+      "hub.list_rem_projects",
+      "hub.lock_commercial_project",
+      "hub.lock_knowledge_asset",
+      "hub.media_ai_state",
+      "hub.media_checklist",
+      "hub.media_claim",
+      "hub.media_clip_check",
+      "hub.media_clip_save",
+      "hub.media_finish",
+      "hub.media_image_begin",
+      "hub.media_image_claim",
+      "hub.media_image_finish",
+      "hub.media_image_lease",
+      "hub.media_image_wait",
+      "hub.media_job_allowed",
+      "hub.media_job_request",
+      "hub.media_jobs_read",
+      "hub.media_link_remove",
+      "hub.media_link_save",
+      "hub.media_require_asset_edit",
+      "hub.media_requirement_save",
+      "hub.media_save_asset",
+      "hub.media_tag_approve",
+      "hub.media_tag_save",
+      "hub.media_target",
+      "hub.patch_model",
+      "hub.patch_project",
+      "hub.prefill_project_from_dw",
+      "hub.preview_account_permissions",
+      "hub.progress_inputs",
+      "hub.project_commercial_workspace",
+      "hub.project_content",
+      "hub.project_content_facts",
+      "hub.project_content_readiness",
+      "hub.project_content_sections",
+      "hub.project_detail",
+      "hub.project_detail_before_commercial_types",
+      "hub.project_detail_before_demo",
+      "hub.project_detail_before_facilities",
+      "hub.project_detail_before_gold_preview",
+      "hub.project_media",
+      "hub.project_permission_projection",
+      "hub.project_price_review",
+      "hub.project_readiness",
+      "hub.project_versions",
+      "hub.promotion_command",
+      "hub.promotion_read",
+      "hub.promotion_references",
+      "hub.promotion_resolve",
+      "hub.promotion_scope_access",
+      "hub.promotion_scope_visible",
+      "hub.publication_dependency_check",
+      "hub.publication_expiry_tasks",
+      "hub.publication_queue_publish",
+      "hub.publication_release_candidates",
+      "hub.publication_retained_media_source",
+      "hub.publication_write_lock",
+      "hub.publish_brand",
+      "hub.publish_knowledge_preview",
+      "hub.publish_project",
+      "hub.record_knowledge_gap",
+      "hub.release_candidates",
+      "hub.release_publish",
+      "hub.release_read",
+      "hub.release_rollback",
+      "hub.request_brand",
+      "hub.require_field_admin",
+      "hub.resolve_brand_request",
+      "hub.retry_content_translation",
+      "hub.review_asset",
+      "hub.review_content_translation",
+      "hub.review_knowledge_candidate",
+      "hub.review_knowledge_question",
+      "hub.review_model",
+      "hub.review_project_commercial",
+      "hub.rollback_brand",
+      "hub.rollback_project",
+      "hub.rollback_project_before_readiness_levels",
+      "hub.save_contact_domain",
+      "hub.save_content_contact",
+      "hub.save_content_field",
+      "hub.save_content_section",
+      "hub.save_faq",
+      "hub.save_faq_question",
+      "hub.save_glossary",
+      "hub.save_project_building",
+      "hub.save_project_commercial",
+      "hub.save_project_facility",
+      "hub.save_project_fact",
+      "hub.save_project_price",
+      "hub.save_selling_point",
+      "hub.section_visible",
+      "hub.source_project_readiness",
+      "hub.submit_content_section",
+      "hub.submit_faq",
+      "hub.unbind_brand_asset",
+      "hub.unbind_commercial_asset",
+      "hub.unbind_model_asset",
+      "hub.unbind_project_asset",
+      "hub.unbind_scoped_asset",
+      "hub.unit_type_review",
+      "hub.unit_type_workspace",
+      "hub.update_brand_draft",
+      "hub.update_commercial_type",
+      "hub.update_model",
+      "hub.web_assert_sources",
+      "hub.web_history",
+      "hub.web_page_save",
+      "hub.web_pointer",
+      "hub.web_prepare",
+      "hub.web_version_preview",
+      "hub.website_content_sources",
+      "hub.website_media_claim",
+      "hub.website_media_confirm",
+      "hub.website_media_finish",
+      "hub.website_media_projects",
+      "hub.website_media_queue",
+      "hub.withdraw_brand",
+      "hub.withdraw_project",
+      "hub.workspace_confirmed_groups",
+      "hub.workspace_content_tasks",
+      "hub.workspace_faq",
+      "hub.workspace_faq_scope_access",
+      "hub.workspace_history_contexts",
+      "hub.workspace_history_event",
+      "hub.workspace_history_visible",
+      "hub.workspace_home",
+      "hub.workspace_native_rows",
+      "hub.workspace_page",
+      "hub.workspace_preview",
+      "hub.workspace_project_bu",
+      "hub.workspace_project_readiness",
+      "hub.workspace_promotion_suggestions",
+      "hub.workspace_promotions",
+      "hub.workspace_scope_matches",
+      "internal.assistant_access",
+      "internal.assistant_citation_read",
+      "internal.assistant_content_version",
+      "internal.assistant_project_reference",
+      "internal.assistant_proposal_create",
+      "internal.assistant_proposal_read",
+      "internal.assistant_run_create",
+      "internal.assistant_run_finish",
+      "internal.assistant_run_read",
+      "internal.assistant_tool_record"
+    ],
+    "wrapper_base_count": 136,
+    "wrapper_base_names": [
+      "hub.accept_account_invite",
+      "hub.add_model_from_rem",
+      "hub.apply_account_permissions",
+      "hub.approve_account_access",
+      "hub.approve_faq_question",
+      "hub.approve_glossary",
+      "hub.article_preview",
+      "hub.article_read",
+      "hub.article_review",
+      "hub.article_save",
+      "hub.article_submit",
+      "hub.assign_project_brand",
+      "hub.assign_project_brand_before_project_intake",
+      "hub.bind_asset",
+      "hub.bind_brand_asset",
+      "hub.bind_commercial_asset",
+      "hub.bind_model_asset",
+      "hub.bind_project_asset",
+      "hub.bind_scoped_asset",
+      "hub.brand_bulk_create",
+      "hub.brand_bulk_preview",
+      "hub.brand_detail",
+      "hub.brand_detail_before_completeness",
+      "hub.brand_versions",
+      "hub.c4_facility_cover",
+      "hub.c4_facility_save",
+      "hub.c4_item_save",
+      "hub.c4_nearest_stations",
+      "hub.c4_reference_save",
+      "hub.c4_solar_review",
+      "hub.c4_workspace",
+      "hub.claim_translation",
+      "hub.configure_account_access",
+      "hub.confirm_brand_source_names",
+      "hub.confirm_model",
+      "hub.content_contacts",
+      "hub.content_workflow_review",
+      "hub.content_workflow_save_approve",
+      "hub.content_workflow_submit",
+      "hub.create_brand_from_rem",
+      "hub.create_commercial_types",
+      "hub.create_project_from_rem",
+      "hub.decide_account",
+      "hub.faq_composition",
+      "hub.faq_gap_update",
+      "hub.finish_translation",
+      "hub.knowledge_followup",
+      "hub.knowledge_link_approved_asset",
+      "hub.knowledge_model_catalogue",
+      "hub.knowledge_preview_read",
+      "hub.list_rem_models",
+      "hub.lock_commercial_project",
+      "hub.lock_knowledge_asset",
+      "hub.media_ai_state",
+      "hub.media_checklist",
+      "hub.media_claim",
+      "hub.media_clip_check",
+      "hub.media_clip_save",
+      "hub.media_finish",
+      "hub.media_job_request",
+      "hub.media_jobs_read",
+      "hub.media_link_remove",
+      "hub.media_link_save",
+      "hub.media_requirement_save",
+      "hub.media_save_asset",
+      "hub.media_tag_approve",
+      "hub.media_tag_save",
+      "hub.patch_model",
+      "hub.patch_project",
+      "hub.prefill_project_from_dw",
+      "hub.project_commercial_workspace",
+      "hub.project_content",
+      "hub.project_content_facts",
+      "hub.project_content_readiness",
+      "hub.project_content_sections",
+      "hub.project_detail",
+      "hub.project_detail_before_commercial_types",
+      "hub.project_detail_before_demo",
+      "hub.project_detail_before_facilities",
+      "hub.project_detail_before_gold_preview",
+      "hub.project_media",
+      "hub.project_price_review",
+      "hub.project_readiness",
+      "hub.project_versions",
+      "hub.publication_queue_publish",
+      "hub.publish_brand",
+      "hub.publish_knowledge_preview",
+      "hub.publish_project",
+      "hub.record_knowledge_gap",
+      "hub.release_publish",
+      "hub.release_rollback",
+      "hub.request_brand",
+      "hub.require_field_admin",
+      "hub.resolve_brand_request",
+      "hub.review_asset",
+      "hub.review_knowledge_candidate",
+      "hub.review_knowledge_question",
+      "hub.review_model",
+      "hub.review_project_commercial",
+      "hub.rollback_brand",
+      "hub.rollback_project",
+      "hub.rollback_project_before_readiness_levels",
+      "hub.save_contact_domain",
+      "hub.save_content_contact",
+      "hub.save_content_field",
+      "hub.save_content_section",
+      "hub.save_faq_question",
+      "hub.save_glossary",
+      "hub.save_project_building",
+      "hub.save_project_commercial",
+      "hub.save_project_facility",
+      "hub.save_project_fact",
+      "hub.save_project_price",
+      "hub.save_selling_point",
+      "hub.submit_content_section",
+      "hub.submit_faq",
+      "hub.unbind_brand_asset",
+      "hub.unbind_commercial_asset",
+      "hub.unbind_model_asset",
+      "hub.unbind_project_asset",
+      "hub.unbind_scoped_asset",
+      "hub.unit_type_review",
+      "hub.unit_type_workspace",
+      "hub.update_brand_draft",
+      "hub.update_commercial_type",
+      "hub.update_model",
+      "hub.web_history",
+      "hub.web_page_save",
+      "hub.web_pointer",
+      "hub.web_prepare",
+      "hub.web_version_preview",
+      "hub.website_content_sources",
+      "hub.website_media_confirm",
+      "hub.website_media_queue",
+      "hub.withdraw_brand",
+      "hub.withdraw_project"
+    ],
+    "body_or_projection_only_names": [
+      "hub.account_directory",
+      "hub.article_list",
+      "hub.article_reference_allowed",
+      "hub.article_references",
+      "hub.brand_completeness",
+      "hub.brand_registration_rows",
+      "hub.business_references",
+      "hub.can_read_asset",
+      "hub.can_read_asset_before_media",
+      "hub.content_scope_access",
+      "hub.content_translation_list",
+      "hub.content_workflow_source",
+      "hub.decide_faq_cluster",
+      "hub.faq_applicability_preview",
+      "hub.faq_coverage",
+      "hub.faq_gaps",
+      "hub.faq_intake_cluster",
+      "hub.faq_intake_clusters",
+      "hub.faq_read",
+      "hub.faq_references",
+      "hub.faq_rule_projects",
+      "hub.knowledge_candidate_rows",
+      "hub.list_brand_requests",
+      "hub.list_brands",
+      "hub.list_rem_brands",
+      "hub.list_rem_projects",
+      "hub.media_image_begin",
+      "hub.media_image_claim",
+      "hub.media_image_finish",
+      "hub.media_image_lease",
+      "hub.media_image_wait",
+      "hub.media_job_allowed",
+      "hub.media_require_asset_edit",
+      "hub.media_target",
+      "hub.preview_account_permissions",
+      "hub.progress_inputs",
+      "hub.project_permission_projection",
+      "hub.promotion_command",
+      "hub.promotion_read",
+      "hub.promotion_references",
+      "hub.promotion_resolve",
+      "hub.promotion_scope_access",
+      "hub.promotion_scope_visible",
+      "hub.publication_dependency_check",
+      "hub.publication_expiry_tasks",
+      "hub.publication_release_candidates",
+      "hub.publication_retained_media_source",
+      "hub.publication_write_lock",
+      "hub.release_candidates",
+      "hub.release_read",
+      "hub.retry_content_translation",
+      "hub.review_content_translation",
+      "hub.save_faq",
+      "hub.section_visible",
+      "hub.source_project_readiness",
+      "hub.web_assert_sources",
+      "hub.website_media_claim",
+      "hub.website_media_finish",
+      "hub.website_media_projects",
+      "hub.workspace_confirmed_groups",
+      "hub.workspace_content_tasks",
+      "hub.workspace_faq",
+      "hub.workspace_faq_scope_access",
+      "hub.workspace_history_contexts",
+      "hub.workspace_history_event",
+      "hub.workspace_history_visible",
+      "hub.workspace_home",
+      "hub.workspace_native_rows",
+      "hub.workspace_page",
+      "hub.workspace_preview",
+      "hub.workspace_project_bu",
+      "hub.workspace_project_readiness",
+      "hub.workspace_scope_matches",
+      "internal.assistant_access",
+      "internal.assistant_citation_read",
+      "internal.assistant_content_version",
+      "internal.assistant_project_reference",
+      "internal.assistant_proposal_create",
+      "internal.assistant_proposal_read",
+      "internal.assistant_run_create",
+      "internal.assistant_run_finish",
+      "internal.assistant_run_read",
+      "internal.assistant_tool_record"
+    ],
+    "defaults": {
+      "identity_arguments": "unchanged",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_acl": "preserve reviewed predecessor ACL, including explicit worker grants",
+      "public_execute": "preserve reviewed predecessor (closed)"
+    },
+    "new_execute_grants_to_existing_functions": [],
+    "notes": [
+      "These are existing pre-W6 function OIDs, not additions to the closed new-function set.",
+      "0090 replaces content_scope_settle_deadlines and sets UTC on fingerprint/batch-preview/settings-preview introduced in 0089; those remain in new_functions.",
+      "Generic wrappers use SELECT INTO STRICT by base proname, so an unexpected overload aborts migration. Assert one row per reviewed new name and exact delegate/base identity equivalence."
+    ]
+  },
+  "other_existing_schema_changes": [
+    {
+      "type": "index",
+      "relation": "hub.permission_event",
+      "name": "permission_scope_effect_key",
+      "unique": true,
+      "expression": "after_value ->> 'event_key'",
+      "predicate": "action = 'CONTENT_SCOPE_EFFECT'"
+    },
+    {
+      "type": "trigger",
+      "relation": "hub.account_permission",
+      "name": "content_scope_grant_epoch",
+      "timing": "AFTER",
+      "events": [
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "level": "STATEMENT",
+      "function": "hub.content_scope_epoch_changed()"
+    },
+    {
+      "type": "trigger",
+      "relation": "hub.user_account",
+      "name": "content_scope_identity_epoch",
+      "timing": "AFTER",
+      "events": [
+        "UPDATE"
+      ],
+      "columns": [
+        "status",
+        "hub_role",
+        "legacy_hub_role"
+      ],
+      "level": "ROW",
+      "when": "At least one listed old/new value is distinct",
+      "function": "hub.content_scope_epoch_changed()"
+    }
+  ],
+  "api_routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/content-scopes",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py",
+      "shared_class": "accounts",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "viewer",
+          "editor",
+          "publisher",
+          "admin",
+          "online_staff"
+        ],
+        "can_manage_users": true,
+        "actual_hub_role_admin": false
+      },
+      "sql_entry": "hub.content_scopes_read(uuid,text,text,text,text,integer,text,integer)"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/bu-sync-runs",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py",
+      "shared_class": "accounts",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "viewer",
+          "editor",
+          "publisher",
+          "admin",
+          "online_staff"
+        ],
+        "can_manage_users": true,
+        "actual_hub_role_admin": false
+      },
+      "sql_entry": "hub.content_bu_runs_read(text,integer)"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/accounts/content-scope-settings",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py",
+      "shared_class": "accounts",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "admin"
+        ],
+        "can_manage_users": true,
+        "actual_hub_role_admin": true
+      },
+      "sql_entry": "hub.content_scope_settings_read()"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/accounts/content-scope-settings/preview",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py",
+      "shared_class": "accounts",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "admin"
+        ],
+        "can_manage_users": true,
+        "actual_hub_role_admin": true
+      },
+      "sql_entry": "hub.content_scope_settings_preview(integer,bigint)"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/accounts/content-scope-settings/apply",
+      "tab": "accounts",
+      "level": "admin",
+      "entry_roles": [
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/content_scopes.py",
+      "shared_class": "accounts",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "admin"
+        ],
+        "can_manage_users": true,
+        "actual_hub_role_admin": true
+      },
+      "sql_entry": "hub.content_scope_settings_apply(integer,bigint,text)"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/bu-notices",
+      "tab": "content_workspace",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin",
+        "online_staff"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/bu_membership.py",
+      "shared_class": "content_workspace",
+      "actual_entry_ceiling": {
+        "status": "ACTIVE",
+        "roles": [
+          "viewer",
+          "editor",
+          "publisher",
+          "admin",
+          "online_staff"
+        ],
+        "project_query_requires": "Current Projects View or Knowledge-owned FAQ scope; SQL resolves exact object.",
+        "without_project_query": "Bounded own-scope notices; manager-only failure details."
+      },
+      "sql_entry": "hub.content_bu_notices(text,integer)"
+    }
+  ],
+  "integration_notes": [
+    "Add only these explicit sets to current W4/W5 inventories; do not regenerate or edit legacy-db.json.",
+    "Add all seven tables to owner-only direct-grant/RLS coverage. New policies total 99: seven owner-only plus 92 restrictive on existing relations.",
+    "Probe EXECUTE against hub_app, all seven legacy roles and both existing worker roles; separately prove PUBLIC has no new EXECUTE. Role membership queries in the existing probe fixture must remain unchanged.",
+    "W4 nine-entry function ACL inventory remains valid; W6 delegates belong only to this new set.",
+    "Three final configs include TimeZone=UTC; content_scope_now and content_bu_validate are deliberately SECURITY INVOKER.",
+    "Five account route JSON entry_roles reflect default template fixtures. Add separate delegated can_manage_users positives for the first two; all three settings routes must still deny a non-admin manager.",
+    "Existing /v1/admin/permissions/preview and /apply accept the new content_scope assignment; no new account mutation, import, catalog or maintenance endpoint exists.",
+    "Classify exact route pairs in SHARED_RULES; do not add a fabricated content tab or grant. Preserve no-store directives and unknown-query/body rejection."
+  ]
+}

@@ -1,3 +1,4 @@
+import { contentScopeAllowsApi, contentScopeAllowsQuery } from './content-scope-routes';
 import { businessAllowsApi, businessAllowsQuery } from './business-api-routes';
 import { workflowAllowsApi, workflowAllowsQuery } from './content-workflow-routes';
 // Exact private draft routes; source-specific authority is rechecked in SQL.
@@ -15,6 +16,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsApi(path, method);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
   if (path === "v1/admin/promotions/resolve") return method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
@@ -43,6 +45,7 @@ const intakeFilters: Record<string, RegExp> = {
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsQuery(path, method, query);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsQuery(path, method, query);
   if (workspaceAllowsApi(path, method)) return workspaceAllowsQuery(path, method, query);

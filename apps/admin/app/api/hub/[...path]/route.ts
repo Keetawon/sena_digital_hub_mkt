@@ -4,6 +4,8 @@ import { getHostedIdentity } from "@/lib/hosted-session";
 import { HubApiUnavailable, unavailableMessage, readHubAccount } from "@/lib/hub-account";
 import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/hosted-config";
 import { contentAllowsApi, contentAllowsQuery } from "@/lib/content-routes";
+import { capabilityKey, contentScopeExpired } from "@/lib/hub-permissions";
+import { contentScopeText } from "@/lib/content-scope-text";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
 const maxUploadBytes = 10 * 1024 * 1024;
@@ -22,6 +24,10 @@ const financeAllowed = {
   POST: new RegExp(`^v1/admin/ads/(?:memos(?:/${financeId}/confirm-record)?|memo-identifiers(?:/${financeId}/(?:review|retire))?|media-lines(?:/${financeId}/(?:archive|revisions(?:/${financeId}/confirm)?))?|line-assignments(?:/${financeId}/(?:replace|end|acknowledge))?|corrections(?:/${financeId}/(?:review|apply|retire))?|(?:ad-accounts|channel-accounts)(?:/${financeId}/versions(?:/(?:confirm|close))?)?|commitments(?:/${financeId}/(?:revisions|activate|suspend|covers|occurrences))?|card-statements|card-imports/${financeId}/(?:confirm|replace)|card-import-rows/${financeId}/classify|cost-records/${financeId}/allocations)$`),
   PATCH: new RegExp(`^v1/admin/ads/(?:(?:memos|card-statements)/${financeId}|media-lines/${financeId}/revisions/${financeId})$`),
 };
+
+class ContentAuthorityChanged extends Error {
+  constructor(readonly status: number, message = contentScopeText.scope_loss) { super(message); }
+}
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const error = (message: string, status: number) => NextResponse.json({ error: { message } }, { status, headers: { "Cache-Control": "no-store" } });
@@ -68,6 +74,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const adsWrite = /^v1\/admin\/ads\/(?:registrations(?:\/preview|\/SN\d{7}[A-Z0-9]\/(?:names|bindings))?|names\/(?:validate|explain))$/.test(path);
   const financeRoute = financeAllowed[method as keyof typeof financeAllowed]?.test(path) ?? false;
   if (!(accountPath || allowed[method]?.test(path) || projectContent || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || questionsRead || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish || operationsRead || operationsWrite || archiveRead || archiveWrite || (method === "GET" && adsRead) || (method === "POST" && adsWrite) || financeRoute)) return error("ไม่รองรับคำขอนี้", 404);
+  // Only admitted private content uses this delivery guard. Account-own reads
+  // remain read-once; unrelated operations and public consumers keep their paths.
+  const privateContent = path.startsWith("v1/admin/") && !accountPath && Boolean(allowed[method]?.test(path) || projectContent || knowledgeRead || knowledgeWrite || brandDashboard || brandBulk || brandConfirm || assistantRead || assistantWrite || contentRead || promotionDraft || contentPublish);
   // Only the public project collection accepts one explicit brand filter.
   const query = request.nextUrl.searchParams;
   const progressQuery = method === "GET" && path === "v1/admin/projects/progress" && [...query.keys()].every(key =>
@@ -170,12 +179,24 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       try { JSON.parse(body); } catch { return error("รูปแบบข้อมูลไม่ถูกต้อง", 400); }
     }
   }
+  const bearer = token;
+  let authorityKey: string | null = null;
+  async function currentContentAuthority() {
+    // Never use the request-cached caller here: this runs after awaited bytes
+    // and at each complete assistant frame, with current server authority.
+    const fresh = await readHubAccount(base.origin, bearer);
+    if (!fresh.account || fresh.account.status !== "ACTIVE" || !fresh.account.id || contentScopeExpired(fresh.account)) throw new ContentAuthorityChanged(fresh.account ? 403 : fresh.status);
+    const key = capabilityKey(fresh.account);
+    if (authorityKey !== null && authorityKey !== key) throw new ContentAuthorityChanged(403);
+    return key;
+  }
   const streamAbort = assistantRun ? new AbortController() : null;
   const cancelStream = () => streamAbort?.abort();
   const streamTimer = assistantRun ? setTimeout(cancelStream, 75_000) : null;
   if (assistantRun) request.signal.addEventListener("abort", cancelStream, { once: true });
   const releaseStream = () => { if (streamTimer) clearTimeout(streamTimer); request.signal.removeEventListener("abort", cancelStream); };
   try {
+    if (privateContent) authorityKey = await currentContentAuthority();
     const upstream = await fetch(new URL(`${path}${request.nextUrl.search}`, `${base.origin}/`), {
       method, body, cache: "no-store", redirect: "error",
       headers,
@@ -183,28 +204,66 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     });
     if (hosted && (upstream.status === 401 || path === "v1/me" && upstream.status >= 500)) {
       releaseStream(); await upstream.body?.cancel().catch(() => {});
+      if (privateContent && upstream.status === 401) throw new ContentAuthorityChanged(401);
       return error(upstream.status === 401 ? "กรุณาเข้าสู่ระบบ" : unavailableMessage, upstream.status === 401 ? 401 : 503);
     }
     if (assistantRun && upstream.ok) {
       if (!upstream.body || !upstream.headers.get("Content-Type")?.startsWith("text/event-stream")) { releaseStream(); streamAbort?.abort(); return error("ไม่ได้รับข้อมูลผู้ช่วยในรูปแบบที่รองรับ", 502); }
       const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let pending = "", bytes = 0, ended = false, closed = false;
+      const closeReader = async () => { releaseStream(); streamAbort?.abort(); await reader.cancel().catch(() => {}); reader.releaseLock(); };
       const stream = new ReadableStream<Uint8Array>({
         async pull(controller) {
-          try { const chunk = await reader.read(); if (chunk.done) { releaseStream(); reader.releaseLock(); controller.close(); } else controller.enqueue(chunk.value); }
-          catch (failure) { releaseStream(); streamAbort?.abort(); controller.error(failure); }
+          try {
+            // Never forward partial frames. A later denial must discard the
+            // buffered source, not append an error inside its incomplete JSON.
+            while (!closed) {
+              const boundary = pending.search(/\r?\n\r?\n/);
+              if (boundary >= 0) {
+                const separator = /^\r?\n\r?\n/.exec(pending.slice(boundary))![0];
+                const frame = pending.slice(0, boundary + separator.length);
+                pending = pending.slice(boundary + separator.length);
+                await currentContentAuthority();
+                if (!closed) controller.enqueue(encoder.encode(frame));
+                return;
+              }
+              if (ended) {
+                if (pending.trim()) throw new Error("Incomplete assistant event");
+                closed = true; releaseStream(); reader.releaseLock(); controller.close(); return;
+              }
+              const chunk = await reader.read();
+              if (closed) return;
+              if (chunk.done) { ended = true; pending += decoder.decode(); }
+              else {
+                bytes += chunk.value.byteLength;
+                if (bytes > 1_000_000) throw new Error("Assistant stream exceeds its client bound");
+                pending += decoder.decode(chunk.value, { stream: true });
+              }
+            }
+          } catch (failure) {
+            if (closed) return;
+            closed = true; pending = "";
+            const message = failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage;
+            controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ code: "content_authority_changed", message_th: message, invalidate_access: true })}\n\n`));
+            controller.close(); await closeReader();
+          }
         },
-        async cancel() { releaseStream(); streamAbort?.abort(); await reader.cancel().catch(() => {}); },
-      });
+        async cancel() { if (!closed) { closed = true; pending = ""; await closeReader(); } },
+      }, { highWaterMark: 0 });
       return new NextResponse(stream, { status: upstream.status, headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "private, no-store, no-transform", "X-Accel-Buffering": "no", "X-Content-Type-Options": "nosniff" } });
     }
     releaseStream();
+    const privateBody = privateContent ? await upstream.arrayBuffer() : null;
+    if (privateContent) await currentContentAuthority();
     if (upstream.ok && method === "GET" && /^v1\/admin\/web\/publications\/[0-9a-f-]{36}\/preview$/.test(path)) {
       if (!upstream.headers.get("Content-Type")?.startsWith("text/html")) return error("รูปแบบตัวอย่างไม่ถูกต้อง", 502);
-      return new NextResponse(upstream.body, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox; frame-ancestors 'self'" } });
+      return new NextResponse(privateBody ?? upstream.body, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox; frame-ancestors 'self'" } });
     }
     if (upstream.ok && brandDashboard && path.endsWith(".csv")) {
       if (!upstream.headers.get("Content-Type")?.startsWith("text/csv")) return error("รูปแบบ CSV ไม่ถูกต้อง", 502);
-      return new NextResponse(upstream.body, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="brand-completeness.csv"', "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+      return new NextResponse(privateBody ?? upstream.body, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="brand-completeness.csv"', "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
     }
     if (upstream.ok && archivePage) {
       if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/png") return error("รูปแบบหน้าหลักฐานไม่ถูกต้อง กรุณาเปิดไฟล์ต้นฉบับ", 502);
@@ -216,12 +275,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
         const value = upstream.headers.get(name);
         if (value) downloadHeaders.set(name, value);
       }
-      return new NextResponse(upstream.body, { status: upstream.status, headers: downloadHeaders });
+      return new NextResponse(privateBody ?? upstream.body, { status: upstream.status, headers: downloadHeaders });
     }
-    const data = await upstream.json();
+    const data = privateBody === null ? await upstream.json() : JSON.parse(new TextDecoder().decode(privateBody));
     return NextResponse.json(data, { status: upstream.status, headers: { "Cache-Control": hosted ? "private, no-store" : "no-store" } });
-  } catch {
+  } catch (failure) {
     releaseStream(); streamAbort?.abort();
+    if (privateContent && (failure instanceof ContentAuthorityChanged || failure instanceof HubApiUnavailable)) return NextResponse.json({ error: { code: "content_authority_changed", message: failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage, invalidate_access: true } }, { status: failure instanceof ContentAuthorityChanged ? failure.status : 503, headers: { "Cache-Control": "private, no-store" } });
     return error(hosted ? unavailableMessage : "เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", hosted ? 503 : 502);
   }
 }

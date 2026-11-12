@@ -390,49 +390,76 @@ States for every content kind that reaches the website:
 
 ## 7. BUD scoping (N4)
 
-### 7.1 Source of BUD membership
+### 7.1 Source, refresh and grace for BUD membership
 
-- Authoritative source (owner, 4 November 2026): REM `Sys_Admin_Bu.BUCode`
-  joined to `Sys_Master_Projects.BUID` on `BUId`. The Hub must not read REM
-  directly and must not modify the DW repository.
-- The DW already loads `Sys_Admin_Bu` once a day in the project-dimension relay
-  and publishes `rem_bu_id`, `rem_bu_code`, `rem_bu_name`, `rem_parent_bu_id`,
-  `rem_bu_for` and `rem_sub_bu_id` in `gold.dim_project`. The reviewed DW
-  package of 5 October 2026 (manifest
-  `6251c4663d85303caeb5bb7469d79bd00b022f64f470486afcf14db050955ed3`) already
-  carries these fields for all 278 REM projects inside each row's `gold`
-  object; the Hub has not used them yet. Codes in that package: BusinessUnit1
-  82, BUD C1 43, blank 39, BUD H1 27, BUD H2 21, BUD C3 18, BUD C2 15, BUD51 15,
-  BUD11 9, BUD31 4, BUD12 3, BUD Premium 2.
-- Owner decision (4 November 2026, second reply): **BUD is the REM BU exactly
-  as `Sys_Admin_Bu` holds it.** Use `rem_bu_id` as the key and show
-  `rem_bu_code` with `rem_bu_name`. No mapping table, no prefix stripping and
-  no grouping of codes. REM wins over every other source, so TPRAK and K9BK5
-  belong to BUD31. A project with a blank BUID has no BUD and is visible only to
-  unrestricted scopes; list it for follow-up.
-- The business sheet (Google Sheet `1BvPr9mjRt2hm2OUVS29HPIjGShZM8rbuRB77xExv-j4`,
-  tab Project) is not a BUD source. Its CSV was byte-identical on 6 October,
-  27 October and 4 November 2026, so it does not follow BUD changes.
-- One brand appears in several BUDs (for example KITH in BUD C1, BUD C3 and
-  BUD H2), so brand cannot stand in for BUD.
-- Freshness (owner decision): the Hub refreshes BUD membership **daily**, after
-  the DW's 16:00 Bangkok project-dimension relay. Today BU data reaches the Hub
-  only through manually exported packages, so W6 adds a read-only daily sync:
-  - it reads only project ID, BU fields and the source snapshot time from a
-    narrow read-only DW relation through a dedicated read-only credential
-    (delivered by the DW request of 4 November 2026);
-  - it is idempotent, stores one dated membership row per change
-    (`valid_from`, `valid_to`, source snapshot time, run reference), so the Hub
-    keeps the history itself;
-  - a failed, empty or stale run (source snapshot older than 48 hours) keeps
-    the previous membership, records the failure and warns account managers;
-  - local development and tests use fixtures and the 5 October package; enabling
-    the job on hosted TEST needs the owner to install the credential (STOP
-    until then).
-- Membership changes apply automatically, because BUD-scoped grants are meant
-  to follow the BUD. Every run is audited, and account managers see a notice
-  listing projects that moved and the accounts whose access changed.
-  Per-project exceptions are unaffected by BUD moves.
+Owner decision of 4 November 2026, latest reply, supersedes the earlier W6
+freshness wording. BUD is the exact REM BU joined through the project's BUID.
+Use rem_bu_id as key and show exact rem_bu_code and rem_bu_name. No mapping,
+prefix stripping, parent rollup or business-sheet assignment. The Hub never
+connects to live REM or modifies the DW repository.
+
+The DW delivered serving.hub_project_bu in commit 3b425c0. Its read-only contract
+is DIM_PROJECT_DATA_CONTRACT.md, "Daily Hub project-to-BUD access (2026-11-04)".
+Read exactly project_id, rem_bu_id, rem_bu_code, rem_bu_name, rem_bu_is_active,
+rem_bu_is_deleted, source_snapshot_at and project_status_code in one read-only
+transaction with sslmode=verify-full. Keep exact text identifiers, leading zeros,
+nullable flags and label whitespace/case. Flags and project status do not add
+new access eligibility rules. NULL rem_bu_id means no BUD; infer no assignment.
+
+Refresh daily after the DW 16:00 Bangkok project-dimension relay completes.
+The relay skipped 29 October, 31 October and 1 November; successful daily source
+publication is not guaranteed. The source timestamp is the older project/BU
+capture watermark. Fetch or retry time never substitutes for source evidence.
+
+Accept a full new snapshot only if it is nonempty, project_id is unique and
+nonnull, and every source_snapshot_at is nonnull, not in the future and no more
+than 48 hours old. Reject the whole refresh otherwise and keep the last good
+membership. The 48-hour threshold admits data; it never itself removes access.
+Keep acceptance serialized and reject stale in-flight completions. Exact replay
+does not create new membership or refresh its deadline.
+
+Store membership in its own tables, never staging.dw_projects or any other
+staging relation used by approval snapshots. Retain dated membership intervals
+with valid_from, valid_to, source timestamp and run references, alongside the
+accepted full snapshot. Use existing audit.change_log and permission history.
+BU membership changes never invalidate content approval or rewrite content,
+versions, reviews, publication history, accounts, grants or templates.
+
+One admin-only grace setting defaults to seven days and cannot exceed the DW
+contract's seven-day retention ceiling. All grace intervals use elapsed 24-hour
+days. Authorization uses last-good membership until that interval from the
+oldest accepted source_snapshot_at. At expiry, only BUD-based grants stop
+applying; unrestricted and explicit per-project grants continue, including for
+projects with no BUD. A fresh accepted snapshot can restore BUD-based access.
+
+When acceptance moves a project from BUD A to BUD B, B grants apply immediately
+and A grants keep applying to that project for the grace interval from acceptance,
+then end. Show a project-page banner with the handover end date. Each move has
+its own deadline; later refreshes cannot extend an earlier handover. The stale
+membership deadline also bounds any BUD-derived handover access. NULL/missing
+assignments never manufacture a destination BUD or a new handover.
+
+Alerts use the existing notification mechanism, or an in-app banner plus a home
+task item when none exists:
+
+- Failed or stale runs: account managers.
+- Day five of stale data: account managers and every user whose access depends
+  on BUD membership, with the actual date BUD access will stop.
+- Day seven: the same recipients; account managers also get a link to add
+  temporary per-project grants through the existing preview/confirm workflow.
+- A BUD move: account managers and affected users of both A and B, with the
+  handover end date. Do not disclose another account's grants to ordinary users.
+
+With a shorter configured grace interval, warn two days before its actual end
+(or immediately when the interval is at most two days). Every effective access
+change, including clock-driven expiry and restoration, is recorded through the
+existing history. Read projections do not create a second logging mechanism.
+
+Local tests use fixtures and a fake clock, including the staged 5 October 2026
+package. This checkout makes no connection to the DW. Build and exercise the
+fixture capture/accept/reject/persist/maintenance path locally; document the
+disabled future schedule and verified-TLS read adapter. Hosted TEST activation
+requires the owner's dedicated credential and separate rollout authorization.
 
 ### 7.2 Scope model
 
@@ -745,6 +772,67 @@ W3.1 overview and exposure copy:
 | exposure_default | ช่องทางตามค่าเริ่มต้นของฟิลด์ |
 | internal_notice | รายการนี้ใช้ภายใน Hub เท่านั้น จะไม่ปรากฏบนเว็บไซต์หรือในคำตอบของ AI |
 | change_exposure | เปลี่ยนช่องทางการใช้ข้อมูล |
+
+W6 account scope and membership notices:
+
+| Key | Thai label |
+|---|---|
+| scope_edit | แก้ไขขอบเขต |
+| scope_search | ค้นหา BUD หรือโครงการ |
+| scope_future_members | รวมโครงการที่จะเข้าร่วม BUD นี้ในอนาคต |
+| scope_project_exception | เลือกโครงการนี้เพิ่มเติม |
+| scope_bu_included | รวมอยู่ใน BUD ที่เลือก |
+| scope_no_bu | ยังไม่มี BUD |
+| scope_empty_selected | ยังไม่ได้เลือก BUD หรือโครงการ จึงไม่มีสิทธิ์ในระดับนี้ |
+| scope_base_required | ขอบเขตไม่เพิ่มสิทธิ์ดู แก้ไข หรืออนุมัติที่ยังไม่ได้รับ |
+| scope_preview | ตรวจการเปลี่ยนแปลงขอบเขต |
+| scope_gained | โครงการที่ได้รับสิทธิ์เพิ่ม |
+| scope_lost | โครงการที่สิทธิ์สิ้นสุด |
+| scope_unchanged | ไม่มีการเปลี่ยนแปลงสิทธิ์ |
+| scope_confirm | ยืนยันเปลี่ยนขอบเขต |
+| scope_saved | บันทึกขอบเขตแล้ว |
+| scope_stale | ข้อมูลเปลี่ยนแปลงแล้ว เก็บรายการที่คุณเลือกไว้ กรุณาตรวจอีกครั้ง |
+| scope_history | ประวัติการเปลี่ยนแปลงสิทธิ์ในโครงการ |
+| scope_effective_at | มีผลวันที่ |
+| scope_observed_at | บันทึกวันที่ |
+| scope_gain | ได้รับสิทธิ์ |
+| scope_loss | สิทธิ์สิ้นสุด |
+| scope_load_more | โหลดรายการเพิ่มเติม |
+| scope_sync_runs | ประวัติการปรับข้อมูล BUD |
+| scope_sync_failed | ปรับข้อมูล BUD ไม่สำเร็จ |
+| scope_sync_accepted | รับข้อมูลแล้ว |
+| scope_sync_rejected | ไม่รับข้อมูลชุดนี้ |
+| scope_source_at | วันที่ข้อมูลต้นทาง |
+| scope_cutoff | สิทธิ์ตาม BUD สิ้นสุดวันที่ |
+| scope_grace | ระยะผ่อนผันสิทธิ์ตาม BUD |
+| scope_grace_help | ใช้ระยะเดียวกันเมื่อข้อมูลล่าช้าหรือโครงการย้าย BUD เลือกได้ 1–7 วัน ค่าเริ่มต้น 7 วัน |
+| scope_days | วัน |
+| scope_settings_preview | ตรวจผลการเปลี่ยนระยะผ่อนผัน |
+| scope_settings_confirm | ยืนยันเปลี่ยนระยะผ่อนผัน |
+| scope_settings_saved | บันทึกระยะผ่อนผันแล้ว |
+| scope_admin_only | ผู้ดูแลระบบเท่านั้นที่เปลี่ยนระยะผ่อนผันได้ |
+| scope_preview_partial | แสดงผลกระทบ 100 รายการแรก |
+| scope_discard | ยกเลิกการแก้ไขที่ยังไม่บันทึก |
+| scope_read_only | ดูขอบเขตสิทธิ์ |
+| scope_reason_scope_change | เปลี่ยนขอบเขตสิทธิ์ |
+| scope_reason_base_change | เปลี่ยนสิทธิ์รายแท็บ |
+| scope_reason_settings_change | เปลี่ยนระยะผ่อนผัน |
+| scope_reason_membership_accept | รับข้อมูลสมาชิก BUD |
+| scope_reason_membership_stale | ข้อมูล BUD เกินระยะผ่อนผัน |
+| scope_reason_handover_end | สิ้นสุดระยะส่งต่องาน |
+| scope_reason_account_status | เปลี่ยนสถานะบัญชี |
+| scope_sync_missing | ยังไม่มีข้อมูลสมาชิก BUD |
+| scope_stale_data | ข้อมูล BUD ล่าช้า กำลังใช้ข้อมูลล่าสุดที่รับไว้ |
+| scope_stale_warning | ข้อมูล BUD ล่าช้า โปรดตรวจวันที่สิทธิ์จะสิ้นสุด |
+| scope_stale_expired | สิทธิ์ตาม BUD หยุดใช้ชั่วคราวจนกว่าจะรับข้อมูลใหม่ |
+| scope_handover | โครงการย้าย BUD อยู่ระหว่างส่งต่องาน |
+| scope_handover_end | สิ้นสุดการส่งต่องานวันที่ |
+| scope_temporary_grant | จัดการสิทธิ์รายโครงการชั่วคราว |
+| scope_save_base_first | บันทึกหรือยกเลิกการแก้ไขสิทธิ์รายแท็บก่อนเปลี่ยนขอบเขต |
+| scope_title | ขอบเขต |
+| scope_all | ทุกโครงการ |
+| scope_selected | เลือกเอง |
+| scope_references_partial | แสดงเฉพาะโครงการที่คุณมีสิทธิ์ดู จำนวนผลกระทบรวมทุกโครงการ ขอบเขตที่ไม่แสดงจะคงไว้เมื่อบันทึก |
 
 ### 8.6 Upload optimization
 

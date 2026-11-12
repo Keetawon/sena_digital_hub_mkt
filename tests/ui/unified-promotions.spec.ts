@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { persona, readData, workflowText, mockWorkflowReads } from './content-workflow-fixtures';
 import { fitsWorkspace, workspaceProjection, workspaceHref, workspaceText as text } from './unified-workspace-helpers';
+import { contentScopeText } from '../../apps/admin/lib/content-scope-text';
 
 const api = '/api/hub/v1/admin';
 const projectId = '61000000-0000-4000-8000-000000000031';
@@ -143,6 +144,48 @@ for (const theme of ['light', 'dark'] as const) for (const width of [1280, 390])
     expect(data.writes).toEqual([]);
   });
 }
+
+test('partial promotion references use the saved resolver and preserve hidden ownership in transport', async ({ page }) => {
+  const data = await fixture(page);
+  const visibleScope = { ...scope, items: scope.items.slice(0, 1), applicability_complete: false };
+  Object.assign(data.row, { project_id: null, public_project_id: null, owning_brand_id: null, public_owning_brand_id: null,
+    applies_via: { scope_level: 'brand' }, applicability_complete: false, scope: visibleScope,
+    targets: [{ type: 'project', id: projectId }], excluded_project_ids: [], reviews: [], published: null });
+  await page.route(`**${api}/promotions/**`, async route => {
+    const request = route.request(), path = new URL(request.url()).pathname.slice(api.length + 1);
+    const json = (data: unknown) => route.fulfill({ json: { data } });
+    if (path === 'promotions/references') return json({ projects: visibleScope.items, brands: [], commercial_types: [] });
+    if (path === 'promotions/resolve') {
+      const body = request.postDataJSON(); data.writes.push({ path, method: request.method(), body });
+      expect(body).toEqual({ promotion_id: promotionId, expected_revision: 4, targets: data.row.targets, excluded_project_ids: [] });
+      return json(visibleScope);
+    }
+    if (path === `promotions/${promotionId}` && request.method() === 'PATCH') {
+      const body = request.postDataJSON(); data.writes.push({ path, method: request.method(), body });
+      expect(body).toMatchObject({ expected_revision: 4, audience: 'general', targets: data.row.targets, excluded_project_ids: [] });
+      expect(body).not.toHaveProperty('project_id'); expect(body).not.toHaveProperty('owning_brand_id');
+      expect(JSON.stringify(body)).not.toContain(brandId); expect(JSON.stringify(body)).not.toContain(scope.items[1].id);
+      Object.assign(data.row, { audience: body.audience, draft_revision: 5 });
+      return json(data.row);
+    }
+    return route.fallback();
+  });
+  await page.goto(`/promotions?promotion=${promotionId}&project_id=${projectId}`);
+  const dialog = page.getByRole('dialog');
+  const fields = dialog.locator('.registry-panel').filter({ has: page.getByRole('heading', { name: `${text.promotion_resolved_projects} (2)`, exact: true }) });
+  await expect(fields).toContainText(contentScopeText.scope_references_partial);
+  await expect(fields).toContainText(`${text.promotion_owner}: ${text.brand}`);
+  await expect(dialog).not.toContainText('Synthetic neighbour'); await expect(dialog).not.toContainText('Synthetic brand');
+  await fields.getByRole('button').first().click();
+  await expect.poll(() => data.writes.filter(write => write.path === 'promotions/resolve').length).toBe(1);
+  await fields.locator('#promotion-audience').selectOption('general');
+  await fields.locator('form .content-actions button').last().click();
+  await expect.poll(() => data.writes.filter(write => write.method === 'PATCH').length).toBe(1);
+  await expect(fields.locator('form')).toHaveCount(0);
+  await expect(fields).toContainText(contentScopeText.scope_references_partial);
+  expect(data.row.draft_revision).toBe(5);
+  await fitsWorkspace(page);
+});
 
 test('legacy suggestion copies only text into the contextual brand editor', async ({ page }) => {
   const data = await fixture(page, 'brand');

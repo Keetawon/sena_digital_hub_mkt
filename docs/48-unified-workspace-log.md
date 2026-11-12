@@ -61,7 +61,7 @@ before every commit. **Blocker cleared; Wave 1 may proceed.**
 | W3.2 | Contextual Promotions tabs, owning brand, reviewed exclusions and legacy suggestions | W3.1 committed | Complete: `7ceed6f`, pushed; receipt `cdfeb42` |
 | W4 | N1 governance, per-item approve/return, FAQ withdraw, N2 publisher boundary, N6 single queue | Backend independent; UI after W3 | Complete: `16b38cd`, pushed; receipt `5a59e13`; migrations 0084/0085 |
 | W5 | Fixed business level and composition order | W4 merged | Complete: `9ac800c`, pushed to origin/main; migration 0088; full gate passed |
-| W6 | BUD scopes, dated daily BU sync and account scope controls | W4 merged; migration lane after W5 | Prepared design and implementation slices; lead integration/runtime gates pending |
+| W6 | BUD scopes, dated daily BU sync and account scope controls | W5 delivered | Lead integration on 0089/0090; design updated to latest owner rules; runtime gates pending |
 | W7 | Stub-only writing aid, registry flag, budget and diff UI | Backend independent; UI after W3 | Backend/UI prepared; lead integration/runtime gates after W6 |
 | W9 | Optimize future uploads, retain only stored result, allowlisted private file metadata suggestions | Bounded preparation parallel; shared adapters serialized; before W8 | Decision/card recorded; isolated processor has 49 preparation checks passing; integration/full gate pending |
 | W8 | Thai UAT pack covering all docs/47 flows; final full gate | W1–W7, W3.2 and W9 | Fifty-four-case draft including Promotions and W9 amendments reviewed; fixtures, rehearsal and final programme gate pending |
@@ -439,8 +439,8 @@ saved. The new boundary must fix old entry points as well as the new queue.
 | Sensitivity | Account scope diffs and impacted-account notices are account-manager-only; never content history, assistant, export, RAG or AI payloads |
 | Other tabs | Source/destination checks in same transaction; shared objects compute exact affected projects, never substitute brand for BUD |
 | Shared surfaces | Every guarded SQL/RLS/API/cache/search/coverage/home task/publication/assistant/export/preview path in docs/47 section 7.2, including next-request revocation and private bytes |
-| Endpoints / SQL | Existing account preview/confirm endpoints gain bounded scope input/diff/digest. Proposed GET `/v1/admin/accounts/content-scopes` and `/v1/admin/accounts/bu-sync-runs`; typed object-scope helpers, dated membership and sync run relations, account-manager-only notice projection. Exact discovered route/function/policy inventory required before W6 code |
-| Rollout / verification | Fixture-only default-deny new scope operations; unchanged existing accounts. Exact `rem_bu_id` keys and unmodified code/name. Blank BUID projects unrestricted-only. Dynamic BU moves, project exceptions, mixed/shared scope, revoked caches, preview drift, every runtime deny/neighbour, replay and concurrency |
+| Endpoints / SQL | Existing account preview/confirm endpoints gain bounded scope input/diff/digest. Proposed GET `/v1/admin/accounts/content-scopes` and `/v1/admin/accounts/bu-sync-runs`; typed object-scope helpers, dated membership and sync run relations, GET `/v1/admin/accounts/content-scope-settings`, POST `/v1/admin/accounts/content-scope-settings/preview` and `/apply` (actual Admin plus account management), GET `/v1/admin/content/bu-notices` (bounded own notices; manager-only failure details). Existing POST `/v1/admin/promotions/resolve` gains a saved identity/revision body only. Exact route/function/policy inventories accompany the migration |
+| Rollout / verification | Fixture-only default-deny new scope operations; unchanged existing accounts. Exact `rem_bu_id` keys and unmodified code/name. NULL BUD projects retain unrestricted and explicit per-project access; no BUD assignment is inferred. Dynamic BU moves, project exceptions, mixed/shared scope, revoked caches, preview drift, every runtime deny/neighbour, replay and concurrency |
 
 Daily sync: after DW 16:00 Asia/Bangkok relay; narrow project ID/BU fields/source
 snapshot read only. Idempotent dated membership (`valid_from`, `valid_to`, source
@@ -449,7 +449,7 @@ records a warning. Local fixtures plus reviewed 5 October package; no REM read,
 DW repository change or business-sheet mapping. Hosted enablement remains STOP
 until separately authorized and the dedicated credential is installed by owner.
 
-W6 integration contract for W7: migration 0087 defines private
+W6 integration contract for W7: migration 0089 defines private
 `hub.require_content_translation_scope(translation_id uuid, required_level text)`
 returning void, with closed runtime EXECUTE. It resolves the tracked source,
 current affected projects, owning tab and grant scope. W7 calls it for read,
@@ -460,9 +460,36 @@ Read-only preparation verified the staged 5 October manifest SHA-256 and
 `gold_projects.json` payload hash/length/count: 278 rows, each with all six BU
 fields in `gold`, keyed by outer `project_id`. Its exact BU-code counts match
 docs/47, including 39 blank codes. The source snapshot is
-`2026-10-05T02:50:00.717680+00:00`. Raw `projects.json` carries REM identity;
+`2026-10-05T02:50:00.717680+00:00` package capture; membership source evidence retains each Gold BU timestamp from 3 October, not package/fetch time. Raw `projects.json` carries REM identity;
 BU membership comes from `gold_projects.json`, not that raw identity file.
 No database, source package or credential was changed.
+
+Latest owner-rule refinement, integrated with the W6 design on 9 November:
+docs/47 section 7.1 now contains the exact eight-column read contract, complete
+48-hour admission checks, independent seven-day stale and move grace, NULL
+semantics, dated intervals, account/own-user alerts and effective-access history.
+No source connection is made locally. The fixture job and maintenance entry
+points accept injected connections; hosted scheduling and credentials stay off.
+
+W3.2 promotion refinement: Promotions View/Edit use the existing any-affected
+project rule; DATA/LEGAL approval requires all resolved projects. Individual
+references also require their Projects/Brands View scope. Complete impact count
+and hash remain server-authoritative; hidden references are projected away and
+marked incomplete. Saved scope resolution derives immutable ownership from
+promotion_id plus expected_revision. Resolve and save preserve omitted hidden
+prior targets/exclusions and deny new inaccessible references. Historical
+versions use frozen target_project_ids; reviews use their recorded exact scope
+or exact retained revision, never a later unrelated draft. Raw table reads may
+not expose references removed by the staff projection. No existing row is
+rewritten. All new helpers remain private and the exact resolver RPC stays mapped.
+
+Lead-owned additions: content_promotion_reference_visible(text,text),
+content_promotion_scope_input(uuid,integer,jsonb), the promotion projection,
+resolver/access/visibility/read/command refinements, business_references scope
+filtering and corresponding DTO/browser/runtime tests. Private dated relation
+content_bu_membership_interval has FORCE RLS, existing audit triggers and no
+runtime grants. The two migrations remain additive and run only in disposable
+local test databases during this programme.
 
 ### W7 — writing aid
 
@@ -5136,3 +5163,1066 @@ have complete delivery/archive provenance; future slices remain in progress.
 | `ws/w9-upload-fixtures` | `9c6beb7` |
 | `ws/w9-upload-inventory` | `9c6beb7` |
 | `ws/w9-upload-processing` | `9c6beb7` |
+
+
+## W6 lead integration started — 9 November 2026
+
+Predecessor product W5 is delivered at 9ac800c; its verification receipt is
+4b00099, both pushed. The serial test lock is free after full-gate teardown and
+the supplementary loopback review's owned ports were verified released.
+
+Updated docs/47 section 7.1 and this docs/36 card before product changes. Read the
+DW contract locally, read-only, at the owner's named path; no source connection,
+credential read, staging write or DW repository modification. Prepared dated
+intervals, fixture job/maintenance, shared promotion compatibility and regression
+cases are not a completed runtime gate. New migration lane: 0089 scopes and 0090
+membership; W7 retains 0091. W9 has no allocated migration yet.
+
+The lead owns all integration changes in main. Bounded agents' prepared branches
+are reviewed as finite diffs; none runs a port-bound command or changes main.
+The existing W5 context browser review tree has been removed after its delivery;
+its read-only W6 contract findings are retained in ignored review artifacts.
+
+Initial prepared ownership inputs (55 paths; older migration filenames are
+renamed only before their first integration, never after a commit):
+
+| Prepared path | Bounded worktree |
+|---|---|
+| `apps/admin/app/api/hub/[...path]/route.ts` | `w6-client-boundaries` |
+| `apps/admin/components/accounts.tsx` | `w6-client-boundaries` |
+| `apps/admin/components/admin-accounts.tsx` | `w6-account-ui` |
+| `apps/admin/components/commercial-types.tsx` | `w6-client-callers` |
+| `apps/admin/components/content-bu-notices.css` | `w6-notice-ui` |
+| `apps/admin/components/content-bu-notices.tsx` | `w6-notice-ui` |
+| `apps/admin/components/content-scope-editor.tsx` | `w6-account-ui` |
+| `apps/admin/components/content-scope-settings.tsx` | `w6-account-ui` |
+| `apps/admin/components/content-scope.css` | `w6-account-ui` |
+| `apps/admin/components/entity-workspace.tsx` | `w6-notice-ui` |
+| `apps/admin/components/hub-assistant.tsx` | `w6-assistant-scope` |
+| `apps/admin/components/hub-request.ts` | `w6-client-boundaries` |
+| `apps/admin/components/knowledge-review.tsx` | `w6-client-callers` |
+| `apps/admin/components/project-assets.tsx` | `w6-client-callers` |
+| `apps/admin/components/workspace-home.tsx` | `w6-client-callers` |
+| `apps/admin/components/workspace-search.tsx` | `w6-client-boundaries` |
+| `apps/admin/lib/content-scope-routes.ts` | `w6-route-transport` |
+| `apps/admin/lib/content-scope-text.ts` | `w6-account-ui` |
+| `apps/admin/lib/hub-permissions.ts` | `w6-client-boundaries` |
+| `apps/api/sena_hub_api/accounts.py` | `w6-scopes` |
+| `apps/api/sena_hub_api/assistant.py` | `w6-assistant-scope` |
+| `apps/api/sena_hub_api/brand_completeness.py` | `w6-read-boundaries` |
+| `apps/api/sena_hub_api/bu_membership.py` | `w6-bu-import` |
+| `apps/api/sena_hub_api/content_asset_delivery.py` | `w6-asset-delivery` |
+| `apps/api/sena_hub_api/content_scopes.py` | `w6-scopes` |
+| `apps/api/sena_hub_api/knowledge.py` | `w6-read-boundaries` |
+| `apps/api/sena_hub_api/staff_media.py` | `w6-read-boundaries` |
+| `apps/api/tests/test_assistant_scope_stream.py` | `w6-assistant-scope` |
+| `apps/api/tests/test_bu_membership.py` | `w6-bu-import` |
+| `apps/api/tests/test_content_asset_delivery.py` | `w6-asset-delivery` |
+| `apps/api/tests/test_content_scope_history.py` | `w6-scope-audit-fixes` |
+| `apps/api/tests/test_content_scope_inventory.py` | `w6-permission-inventory` |
+| `apps/api/tests/test_content_scope_read_boundaries.py` | `w6-read-boundaries` |
+| `apps/api/tests/test_content_scopes.py` | `w6-scopes` |
+| `scripts/sync-content-bu.py` | `w6-bu-import` |
+| `supabase/migrations/202611040087_content_scopes.sql` | `w6-scope-audit-fixes` |
+| `supabase/migrations/202611040088_bu_membership.sql` | `w6-scope-audit-fixes` |
+| `supabase/tests/bu_membership.sql` | `w6-bu-import` |
+| `supabase/tests/concurrent_content_scopes.mjs` | `w6-scopes` |
+| `supabase/tests/content_scopes.sql` | `w6-scopes` |
+| `supabase/tests/fixtures/bu_membership/invalid.json` | `w6-bu-import` |
+| `supabase/tests/fixtures/bu_membership/move.json` | `w6-bu-import` |
+| `supabase/tests/fixtures/bu_membership/no-bu.json` | `w6-bu-import` |
+| `supabase/tests/fixtures/bu_membership/valid.json` | `w6-bu-import` |
+| `tests/permissions/content-scope-db.json` | `w6-permission-inventory` |
+| `tests/ui/assistant-scope-races.spec.ts` | `w6-assistant-scope` |
+| `tests/ui/content-bu-account-notices.spec.ts` | `w6-account-ui` |
+| `tests/ui/content-bu-notices-h1.spec.ts` | `w6-notice-ui` |
+| `tests/ui/content-bu-notices.spec.ts` | `w6-notice-ui` |
+| `tests/ui/content-scope-expiry.spec.ts` | `w6-client-boundaries` |
+| `tests/ui/content-scope-proxy.spec.ts` | `w6-client-boundaries` |
+| `tests/ui/content-scope-raw-callers.spec.ts` | `w6-client-callers` |
+| `tests/ui/content-scope-transport.spec.ts` | `w6-route-transport` |
+| `tests/ui/content-scopes-h1.spec.ts` | `w6-account-ui` |
+| `tests/ui/content-scopes.spec.ts` | `w6-account-ui` |
+
+Lead also owns docs/47, docs/48, main.py, content_permissions.py, final permission
+inventories/baselines, proxy allowlist registration, replay/H1 suite registration,
+profile hashes, promotion transport/UI, and new membership-job/interval and
+promotion-scope tests. Keep W3.1 overview/exposure, W3.2 Promotions and W5 business
+context safeguards in every merge. Update file/hash ownership before the full
+gate. Current preparation is unverified until the serial runtime checks pass.
+
+### W6 current-main integration checks, 9 November 2026
+
+A bounded sub-agent reviews only the prepared client deltas in isolated worktree
+`D:/Personal/workspace/sena_hub_wt/w6-client-review`, branch `ws/w6-client-review`,
+cut from `4b00099`. Its only writable deliverable is
+`artifacts/unified-workspace/w6-client-review.md` in that worktree. It may inspect
+types and source without binding ports; it must not edit product files, shared
+docs, migrations, permission inventories or configuration, commit, push or run
+test harnesses. Done means concrete client findings against the delivered
+W3.1/W3.2/W5 predecessor. The lead owns integration and all security decisions.
+
+The lead integrated 61 explicitly inventoried paths and the six finite API routes,
+preserving existing registrations. The admin typecheck passed. The first selected
+API run stopped during fresh migration replay: the confirmed-group query used an
+ambiguous `id` alias. It reached no test cases. The lead qualified that reference;
+the rerun is pending. A reviewed notice-fetch issue also now propagates current
+access invalidation and ignores stale/aborted responses before rendering.
+No full gate or W6 delivery is claimed.
+
+#### W6 integration corrections and selected checks
+
+The lead corrected qualified parameters in copied SQL delegates, ambiguous row
+aliases, and the settings-preview state reference. Test fixtures now call the
+ordinary public account permission preview/apply commands; private scope helpers
+remain closed. Existing FAQ fallback and no-store response contracts are retained.
+
+Selected API run 7: 121 passed, 2 failed, no skips, one existing dependency
+deprecation warning. The remaining failures were direct calls to the private
+scope-apply helper; the tests now exercise `apply_account_permissions`. Earlier
+run 6 was 93 passed / 11 failed; it is diagnostic evidence, not a delivery gate.
+Artifacts: `artifacts/unified-workspace/w6/api-integration-6.log` and
+`api-integration-7.log`. Admin typecheck passed again after the client changes.
+
+The lead also extended promotion projection checks to contextual lists, home
+tasks, frozen published applicability and brand-owned drafts. Shared editors keep
+inaccessible existing targets without receiving their identities; review still
+requires every resolved project. Promotion suggestions require the matching
+Projects and Promotions scopes, plus Knowledge scope for KM suggestions. The
+permission inventory records 213 new functions, 217 changed existing functions,
+seven private tables and 92 additional restrictive policies. Runtime catalogue
+checks remain part of the gate.
+
+Run 8 could not start inside the restricted process token (`uv_os_get_passwd`
+failed before database startup). The unchanged documented disposable harness was
+retried with the authorized local execution permission. No credentials were
+opened or copied and no harness configuration-loading behavior was changed.
+Results and the full W6 gate are still pending; no W6 commit or push yet.
+
+Selected rerun 8 completed: 84 passed, zero failed or skipped, one existing
+dependency warning (`api-integration-8-retry.log`). The full API quick gate is
+running because shared API functions changed. The lead additionally owns
+`apps/admin/components/hub-shell.tsx`, `apps/admin/app/layout.tsx` and
+`tests/content-upgrade.test.mjs`: preserve same-account authored assistant text
+while its own scope guard clears retrieved data; include the bounded role/scope
+projection at initial hosted hydration; prove exact preservation of all existing
+Hub, staging and audit rows through both W6 migrations. No other workstream owns
+these files concurrently. These changes are pending their gates.
+
+The first full API quick run was interrupted after progress stopped: older tests
+held a content transaction and synchronously changed a grant through another
+connection, which now correctly waits for W6's shared transaction lock. Ports were
+released before the next run. The lead is adapting the affected test calls to
+the existing same-connection permission helper, retaining authorization and
+assertions; no harness configuration loading or production locks are weakened.
+The reviewed fixture-call scope is articles, business assistant/content, content
+workflow/workspace, FAQ coverage, project amenities/commercial/content core,
+publication queue, real promotions and unit-type workflow tests. The bounded
+sub-agent inventories call sites read-only; the lead makes every edit.
+
+The article quick rerun passed 32 tests, with no failures/skips and one existing
+warning (`api-articles-2.log`). Hidden article references retain the existing
+unavailable-content placeholder with empty identifiers; the private reference
+dictionary omits the inaccessible keys entirely.
+
+The first database quick gate passed its 90 Node tests, including the populated
+W6 migration-preservation regression, then stopped in the older workspace-home
+SQL fixture. That fixture supplied BUD only in DW staging; W6 intentionally uses
+the accepted membership tables. The lead added its synthetic membership through
+the private fixture importer and retained the exact whitespace/key assertion.
+The remaining database and concurrency suites have not yet passed. Additional
+lead-owned paths are `supabase/tests/workspace_home.sql`,
+`tests/permissions/README.md`, `tests/ui/unified-promotions.spec.ts` and the
+permission assistant/publication/content fixture helpers. Fixture adaptations
+do not change how configuration is loaded.
+
+The broader selected fixture run was interrupted after a 90-second diagnostic
+timeout in the Knowledge-only FAQ workspace request. Its log is
+`api-fixtures-1.log`; no complete suite result is claimed. The isolated
+regression run then completed with 11 failures and one existing warning
+(`api-regressions-1.log`). The lead corrected three causes: translation source
+dependencies now use the exact translation-owner scope guard; saved assistant
+evidence preserves its canonical stale-versus-forbidden error; save-and-approve
+retains the existing revision check before its mandatory approval guard. The
+ordinary command still checks both Edit and Approve before writing.
+
+The bounded browser review identified an incorrectly rooted checkbox selector,
+an invalid public-ID value for a UUID promotion filter, and a race that asserted
+a transient warning instead of the final revoked-access screen. The lead fixed
+these test cases and retained the no-preview/no-confirm assertions. The promotion
+browser test checks safe transport; real database tests separately prove that
+hidden existing targets survive a shared edit. The private-table SQL check now
+also explicitly includes dated membership intervals. All these changes await
+their selected reruns and the full gate. No W6 commit or push yet.
+
+Isolated rerun 2 passed all 14 cases, with no failures/skips and one existing
+warning (`api-regressions-2.log`, 202.77 seconds). The three Knowledge-only FAQ
+cases completed in 40.27, 52.75 and 66.35 seconds; this established a query-cost
+problem rather than a persistent transaction deadlock in those cases. The lead
+replaced the per-lookup all-FAQ materialization in the workspace reader with an
+inline relation using the identical source-scope predicate, so question and ID
+filters can retain their indexed lookups. The complete workspace and scope
+regressions are running against that change; the earlier 14-case pass predates
+this performance change and is not final-source full-gate evidence.
+
+Workspace/scope run 1 completed with 71 passed, 2 failed, no skips and one
+existing warning (`api-workspace-1.log`, 352.31 seconds). The remaining failures
+were a private history predicate hiding an otherwise visible publication-batch
+event, and an ambiguous cluster alias in the intake guard. History now reuses
+the existing authorized context projection for batch/release/pointer events;
+raw batch rows remain closed and the history field allowlist still excludes
+hidden members. The intake alias is explicitly qualified.
+
+For ordinary unrestricted project checks, the lead also reuses the existing
+base-permission predicate before constructing a full account projection for
+each row. Selected scopes still use the exact project/BUD and grace checks.
+A regression verifies inactive/external accounts and a disabled permission tab
+remain denied. The focused rerun includes both history/intake failures, the
+Knowledge-only FAQ cases, scope intersections and the live inventory checks.
+
+Workspace/scope rerun 2 passed all 11 selected cases, with no failures/skips and
+one existing warning (`api-workspace-2.log`, 48.22 seconds). Knowledge-only FAQ
+cases took 6.84, 10.33 and 15.60 seconds. The source guards, excluded actors,
+disabled tab, history and intake regressions all passed.
+
+Database quick run 2 passed 90 Node tests, including populated migration replay,
+then found that the BU preservation assertion compared two empty staging
+aggregates with SQL `=`. It now uses `IS NOT DISTINCT FROM` for exact null-safe
+equality. Run 3 again passed 90 Node tests and passed all new scope/membership SQL
+checks, then found an existing brand rollback regression: the new asset guard
+denied an older logo with an exact immutable dependency but no current binding.
+Neither run is a complete database pass (`db-quick-2.log`, `db-quick-3.log`).
+
+The lead additionally owns `supabase/tests/brands.sql` for that regression. The
+proposed correction reuses the existing retained-media certificate and checks
+the owning version's project set against the dependency's source tab. Only that
+exact retained asset can use this rollback path; ordinary file/library access
+to an unbound historical asset remains denied. Added checks deny a selected-empty
+Brands scope, altered certificate and absent source View, and restore the
+positive case when source scope is restored. The current inventory is 213 new
+functions, 218 changed existing functions, seven private tables and 92 additional
+restrictive policies. Database quick run 4 is pending; no W6 full-gate pass,
+commit or push is claimed.
+
+
+Database quick run 4 passed 90 Node tests, the retained-brand rollback and scope
+regressions, then stopped in the existing assistant SQL fixture. It used a
+nonexistent `prj_synthetic` as a positive scoped run/citation source. The lead
+additionally owns `supabase/tests/assistant.sql`: the positive case now uses
+the synthetic project the fixture already creates, and a separate negative
+case proves that a missing project is rejected. Existing ownership, raw-text,
+namespace, proposal and audit assertions remain. Run 5 is pending. Admin
+typecheck passed again (`typecheck-4.log`).
+
+Database quick run 5 passed completely: 95 Node tests, 44 SQL suites and 24
+concurrency scenarios, with zero failures/skips. The populated upgrade preserves
+existing Hub/staging/audit rows; the brand retained-source, assistant fixture,
+scope confirmation and waiting-read checks passed. Teardown confirmed that the
+working database and file stores were never used (`db-quick-5.log`). The full
+API quick rerun is now pending (`api-quick-full-2.log`); it stops on the first
+failure for diagnosis and will not be reported as a full gate.
+
+The bounded read-only housekeeping review checked all 15 `ws/w6-*` worktrees.
+All branch tips are ancestors of current main. Only `ws/w6-client-review` and
+`ws/w6-review` are clean candidates for ordinary removal after delivery. The
+other 13 contain uncommitted preparation/inherited work, so non-force removal
+would fail; they remain preserved. No ignored files or credential contents were
+inspected. Lead-owned removal and the final remaining-tree inventory are still
+pending the W6 delivery.
+
+Full API quick run 2 stopped at the first failure: 556 passed, four existing
+skips, one failed and one existing warning (222.13 seconds). The new stream
+fixture supplied no synthetic demo tokens and therefore failed existing
+settings validation before exercising delivery. It now reuses the existing
+assistant test-token fixture. The focused stream/assistant/catalogue rerun
+passed all 42 cases, zero failures/skips and one existing warning
+(`api-stream-1.log`, 15.63 seconds). Complete API quick run 3 is pending.
+
+The lead corrected stray question-mark display separators/fallbacks in the
+scope editor/settings panels; their Thai labels were unchanged. Admin typecheck
+passed (`typecheck-5.log`). A UTF-8 copy check verified all 77 scope catalogue
+labels occur exactly in docs/47 (`copy-check.json`). Browser collection lists
+147 focused cases in ten files and 609 total local cases in 76 files; collection
+is not runtime evidence. The browser quick gate and final full gate are pending.
+
+The updated offline production build passed (`build-quick-2.log`). W9 integration
+must also update the W6 private delivery helper's byte bounds in
+`apps/api/sena_hub_api/content_asset_delivery.py`: the current 10 MB asset bound
+must accommodate the authorized 20 MB stored non-legal PDF limit while retaining
+checksum/length validation and the final current-authority check. This is a W9
+follow-up, not a change to W6 upload behavior.
+
+Complete API quick run 3 was interrupted at an older publication fixture that
+held a content transaction while synchronously changing a permission through
+another connection. It had recorded 2,006 passes, 32 failures and nine existing
+skips; this is an incomplete run, not full-gate evidence. The lead interrupted
+only that owned run and confirmed all test ports were released. The two remaining
+permission updates in that fixture now use the existing same-connection helper.
+No production lock or configuration-loading behavior changed.
+
+A bounded read-only fixture review identified missing cleanup of dated BU
+intervals: their non-cascading run references prevent deleting the test runs and
+can contaminate later invitation fixtures. The lead is confirming the short
+failure traces before fixing this and the promotion read/permission regressions.
+The selected diagnostic rerun and subsequent quick gates are pending. No W6
+commit or push is claimed.
+
+The short diagnostic run completed with 31 failed, one passed, zero skips and
+one existing warning (`api-diagnostic-1.log`, 33.55 seconds). The formerly
+blocked publication fixture passed. Confirmed corrections are: restore only
+test-created/closed membership intervals during fixture cleanup; retain null
+results for absent assistant versions while filtering actual owner scope;
+check base project permissions before lookup; retain the original promotion
+list alias; reject missing promotion ownership as invalid input after base
+permission checks; and retain the reviewed restrictive-only source-offer policy
+in the exhaustive database boundary assertion.
+
+The brand dashboard now resolves an existing brand's visibility from its Hub
+project assignments. Staged brand assignments are used only for not-yet-created
+brands, so an inaccessible existing brand cannot appear as a new suggestion.
+The fake-clock regression includes a conflicting staged assignment and still
+checks immediate expiry, explicit-project and unrestricted neighbours. The
+lead additionally owns `apps/api/tests/test_hosted_h1.py` to assert both exact
+file-authority reads around storage retrieval; headers and agency denial remain
+asserted. These changes are pending focused rerun 2 and updated database/full
+gates. Only the two uncommitted W6 migration receipts were refreshed.
+
+Focused rerun 2 passed 77 cases and failed two invitation assertions solely on
+grant-array order, with no skips and one existing warning (69.23 seconds).
+The assertion now compares the complete sorted grant arrays to the normalized
+template, retaining every tab and duplicate check. The whole history file then
+passed all ten cases, zero failures/skips, one existing warning
+(`api-history-3.log`, 12.32 seconds).
+
+Database quick run 6 passed on the corrected migration source: 95 Node tests,
+44 SQL suites and 24 concurrency scenarios, zero failures/skips
+(`db-quick-6.log`). Existing-row preservation and disposable teardown passed.
+An added assistant-version scope regression initially hit the existing version
+insertion guard while constructing its fixture (`api-assistant-scope-1.log`);
+the fixture now uses the ordinary reviewed publication helpers. Its rerun and
+the browser quick gate remain pending. No W6 final full gate or commit yet.
+
+The added published-version scope regression passed using real reviewed project
+and brand publications (one test, zero failures/skips, one existing warning,
+7.34 seconds; `api-assistant-scope-2.log`). It denies the excluded owner while
+keeping the unrestricted positive neighbour.
+
+Browser quick run 1 completed with 140 passed, seven failed and zero skipped
+in four minutes (`ui-quick-1.log`). Two paging failures exposed a regression
+from the lead's earlier punctuation cleanup: it had changed the URL query
+separator as well as display fallbacks. The URL separator is restored and the
+remaining display separator is corrected by an exact display-only match. The
+other failures concerned an ambiguous framework alert, a cross-context promise
+assertion, exact label-text matching for selects and a fixture attempting Edit
+before View. Assertions retain the current-authority denial, paged projects and
+history, unsaved selections and explicit grace confirmation. Typecheck, offline
+rebuild and the same 147-case browser selection are pending rerun.
+
+Admin typecheck and the documented offline build passed (`typecheck-6.log`,
+`build-quick-3.log`). Browser quick run 2 passed all 147 cases with zero
+failures/skips in 1.9 minutes (`ui-quick-2.log`). The full-page scope screenshots
+included the long underlying account table, obscuring the fixed native dialog;
+the screenshot cases now capture the viewport and additionally assert the
+dialog's bounds and absence of horizontal overflow. This four-case visual rerun
+is pending, followed by the complete API quick rerun and final full gate.
+
+The four viewport screenshot cases passed (zero failures/skips, 7.2 seconds;
+`ui-visual-1.log`). The lead reviewed the four scope-editor images at 1280/390
+in light/dark and both 390px notice images under `artifacts/unified-workspace/w6/`.
+The complete API quick run 4 is pending. No final full-gate result is claimed.
+
+Read-only preparation during this run verified all 25 files covered by the five
+W7 handoff manifests still match their frozen hashes; this is not integration
+or runtime evidence. A bounded sub-agent checked the prepared W8 pack and
+identified four additions to U20/U22-U25: large scope paging, content-free
+account-manager notices, notice refresh/phase races with unsaved input, and
+preserved approvals/publications across membership changes. The lead retained
+the checklist in `artifacts/unified-workspace/w8/w6-coverage-followup.md` for W8.
+
+While the complete API quick run remains in progress, a preliminary broad
+credential scan passed across 852 source and 71 browser files with zero matches
+and no credential-file reads; whitespace validation also passed. These are
+preflight results, not the final full-gate receipt. All five protected credential
+paths remain ignored, as checked without opening them.
+
+Additional read-only preparation recorded in
+`w7/preintegration-review-followup.md` identifies acceptance after field
+unmount, a trailing-newline UUID mismatch, and a membership-fixture cleanup gap.
+The bounded review made no source edits or runtime calls. A W9 follow-up initially
+compared an archived processor copy. The current `ws/w9-upload-processing`
+processor already guards GPS-directory extraction on available authorized
+project coordinates and distinguishes metadata-only PDF rewriting from keeping
+original bytes. All three current source hashes still match the earlier
+49-case receipt in `w9/current-processor-receipt.json`; no new runtime result is
+claimed. Both workstreams remain unintegrated.
+
+Complete API quick run 4 finished 2,622 passed / 17 failed / 11 existing skips
+with six warnings in 1h24m53s (`api-quick-full-4.log`). The owned runner exited
+and the working-stack ports were free. Most failures share a retained-media
+validation cycle through history and web source checks; the authority-wait
+cases failed during fixture publication, not at the account-lock barrier.
+Other traces show hidden legacy section versions, an old one-read assertion
+in the hosted knowledge-file fixture, and a home query timeout. No stack,
+timeout, harness-configuration or existing denial assertion is being relaxed.
+
+Lead additionally owns `apps/api/tests/test_r2_assets.py` for the precise
+two-read delivery expectation, bringing the explicit W6 path set to 101.
+The SQL correction retains exact immutable owning-version authority, all source
+tabs and non-media object checks without re-entering retained-media lookup from
+its history proof. Legacy candidate sections retain their stored REM identity
+and use their exact applicability for scope checks; raw shared rows still hide
+excluded identifiers. Two regression cases cover legacy version visibility
+and retained media's scoped deny/unrestricted neighbour. Focused verification
+and the final full gate remain pending.
+
+Focused recovery passed all 19 cases, zero failures/skips and one existing
+warning (`api-recovery-1.log`, 91.17 seconds): the 17 previous failures and
+both new regression cases. The eight account-lock publication checks passed
+without changes to their lock barriers. Disposable teardown confirmed that
+the working database and file stores were never used.
+
+Database quick run 7 passed on this corrected source (`db-quick-7.log`),
+including migration replay, existing-row preservation and concurrency checks.
+The permission-focused API quick run is now active under the sole port-test
+lock (`api-permission-quick-5.log`). These remain quick-gate results; the W6
+final full gate, commit and push are pending.
+
+The permission-focused quick run passed 433 cases with zero failures/skips,
+2,219 deselected and one existing warning in 666.21 seconds
+(`api-permission-quick-5.log`). Database quick run 7 totals are 95 Node tests,
+44 SQL suites and 24 concurrency scenarios, all passing with zero skips.
+Both disposable runs completed their working-database/file-store preservation
+and teardown checks. The lead now freezes the 101 explicit W6 paths for the
+serial final full gate; results, commit and push are not yet claimed.
+
+### W6 detached final gate recovery — 11 November 2026
+
+The detached serial runner ended at 11:14 Bangkok with exit code 1 in the API
+stage. Exact result: 2,640 passed, one failed, 11 existing skips and six warnings
+in 4,509.08 seconds. The failure is
+`test_workspace_home.py::test_home_reads_do_not_record_gaps_or_audit_and_project_revocation_clears_counts`:
+the initial home projection exceeded the database command timeout. Database,
+H1, both browser widths and final scans were not reached. No delivery, commit
+or push is claimed.
+
+The succeeding lead verified all 101 frozen file hashes, their exact changed
+path set, an empty staging area and unchanged base `4b00099` before recovery.
+The original runner was not stopped or altered; its state file records the
+failure and its processes/test ports have exited. Evidence is retained in
+`artifacts/unified-workspace/w6/api-full-failed-20261111-1114.log`,
+`durable-gate-state.json` and `durable-gate-output.log`. Recovery stays inside
+the W6 lease, preserves the existing timeouts and denial assertions, and starts
+with the isolated home regression. A permission or migration correction will
+be reported before rerunning its gates. P1 still waits for W6 delivery.
+
+The isolated original home case passed (one case, one existing warning,
+4.26 seconds), so recovery exercised accumulated project data. A 300-project
+fixture reproduced the timeout. Migration 0089 now avoids resolving project
+sets for a currently unrestricted caller after taking the scope lock, computes
+the detailed home media checklist once, and retains readiness item arrays only
+for the requested project page. All projects still receive their readiness and
+scope checks; aggregate counts and returned page fields are unchanged. Both
+changed scope/readiness helpers use fresh statement snapshots after lock waits.
+No timeout, grant, denial assertion or API contract was relaxed. Migration 0090
+is unchanged. The reviewed existing-function inventory is now 219; its README
+and migration provenance hashes were updated within the original lease.
+
+The intermediate recovery run passed 65 cases before concurrency review added
+six real lock-wait cases. The next run passed 70 but still timed out on the
+300-project fixture. After the page-array correction, focused recovery run 5
+passed **71 cases**, zero failures/skips and one existing warning in **88.52
+seconds**. It covers selected-empty and revoked access after a real account lock
+wait, unchanged-access neighbours, identical readiness summaries, both the
+first and last 25 rows of 300 projects within the existing 15-second query
+budget, and no audit writes. Evidence: `api-home-recovery-1.log`,
+`api-home-scale-{1,2}.log` and `api-home-scope-recovery-{2,3,4,5}.log` under
+`artifacts/unified-workspace/w6/`. Read-only review approved the final guards,
+readiness composition and pagination bounds. Database and permission quick
+checks are running serially before a newly frozen complete full gate.
+
+Database recovery runs 8 and 9 stopped in the existing scope-confirmation
+concurrency scenario with `permission_preview_stale`; each had completed 90
+Node checks and 17 earlier concurrency scenarios without failure. No completed
+database gate or permission API rerun is claimed for either attempt. The focused
+diagnostic reproduced the conflict: custom and generic query plans returned the
+same lost project set in different array orders, changing its digest. A fresh
+connection matched the original preview exactly, confirming that the unrelated
+draft edit was not an intended digest input.
+
+Migration 0089 now sorts both complete gained/lost set results before digesting
+them. Existing digest inputs, stale-review refusal and expiry checks remain.
+A permanent regression compares complete previews under both query plan modes
+and applies the reviewed result for both loss and gain transitions. Temporary
+diagnostic code was removed. Evidence: `db-recovery-{8,9}.log` and
+`api-scope-concurrency-diagnostic.log`. The correction was reported before the
+serial focused API, database and permission quick checks restarted.
+
+The corrected recovery quick gate passed: focused API **72 passed**, zero
+failures/skips, one existing warning in **86.53 seconds**
+(`api-home-scope-recovery-6.log`); database **95 Node tests, 44 SQL suites and
+24 concurrency scenarios**, zero failures/skips (`db-recovery-10.log`);
+permission API **433 passed**, zero failures/skips, **2,227 deselected**, one
+existing warning in **581.76 seconds** (`api-permission-recovery-6.log`). All
+three runs passed disposable teardown and working-store preservation checks.
+
+The lead reverified origin/main and local base `4b00099`, the empty index and
+the exact original 101-path lease. Seven leased paths differ from the failed
+freeze. The original manifest, failed runner state/output and prior full-stage
+logs were archived with matching hashes under `w6/failed-run-20261111-1114/`.
+The 101 current paths are being frozen again for a complete serial full gate
+from typecheck through both browser widths and final scans; no earlier passed
+stage is reused in this recovery run. Runner:
+`artifacts/unified-workspace/w6/full-recovery-20261111.ps1`; live state:
+`durable-gate-state.json`. The lead retains the sole port-bound test lease.
+W6 delivery and P1 remain pending this gate.
+
+The complete recovery runner exited naturally at **13:04 Bangkok** in the API
+stage: **2,647 passed, two failed, 11 existing skips and six warnings in 3,510.60
+seconds**. Both failures are home-query timeouts: the added 300-project case and
+the original read-only/revocation home case. Typecheck, offline build and four
+production checks passed again; later full stages were not reached. All 101
+frozen hashes, the exact path set, empty index and base still matched after the
+failure. The runner and test listeners exited. Evidence is preserved under
+`w6/failed-run-20261111-1304/`; no commit or push occurred.
+
+Read-only review found that each generic task attempted a complete native-row
+lookup even when its kind could never match a native record. Migration 0089 now
+performs that fallback only for the complete existing native-kind set. Current
+source, approval, publication and expiry checks remain per item; no authorization
+or readiness result is cached. A transaction-local function-call regression
+checks that four submitted contacts and two submitted selling points retain all
+six approval tasks without adding native-row scans. This correction was reported
+before its focused quick check. Recovery will also exercise accumulated fixtures
+before another complete full gate, rather than relying only on the small fixture.
+
+Focused recovery run 7 passed **73 cases**, zero failures/skips and one existing
+warning in **95.19 seconds** (`api-home-scope-recovery-7.log`). The native-scan
+regression passed and disposable teardown completed. Read-only review approved
+the exact kind guard and the non-timing regression.
+
+The next quick run uses the 34 API files in ordinal filename order through
+`test_content_scopes.py`, followed by `test_workspace_home.py`, in one disposable
+database invocation. Its exact selection is
+`w6/api-accumulated-prefix-files.json`; output is
+`w6/api-accumulated-recovery-1.log`. This reproduces the fixture population before
+the 300-project failure and then exercises home again. It does not replace the
+complete API gate or claim coverage of all later full-suite accumulation. The
+same serial runner proceeds to database and permission quick checks only if
+this reproduction passes. W6 still owns the sole test lease.
+
+The accumulated-fixture run stopped with **1,010 passed, one failed, five existing
+skips and one existing warning in 613.04 seconds**. The remaining failure is the
+300-project home timeout; the original home/revocation case passed in 7.90 seconds.
+Database and permission follow-up checks were not started. No commit or push
+occurred. The lead is profiling the remaining home work within the W6 lease before
+another full gate.
+
+The isolated profile (`api-home-profile-3.log`, one passed, one existing warning,
+32.53 seconds) measured all 300 project summaries and exposed repeated context
+lookups plus 15,652 candidate scope checks. Migration 0089 now builds detailed
+checklist contexts only for the visible page, keeps canonical summary calculations
+for all projects, and reuses one project-context lookup within each detailed
+checklist. The 300-project regression asserts exactly 25 detailed projections per
+page while preserving totals, distinct first/last pages, brand aggregates and
+read-only behavior. The two-file focused check passed **70 cases**, one existing
+warning and no failures/skips in **113.95 seconds** (`api-home-scope-recovery-8.log`).
+
+The remaining repeated task-filter scope checks are narrowed using the existing
+association, BUD and brand predicates before invoking current authority for each
+matching project. Both helper variants retain their original fast paths and
+matching-candidate scope checks. A regression verifies zero checks for a
+nonmatching brand, one for a matching project, selected-empty denial and explicit
+selection acceptance. These migration changes were reported before rerunning
+checks. No new grants, signatures or cached authority were introduced.
+
+Read-only review approved both optimizations and their exact regressions. Focused
+recovery 9 passed **80 cases**, one existing warning and zero failures/skips in
+**118.26 seconds**, including publication lock-wait cases. The 300-project test
+took 14.01 seconds across fixture setup and both page queries; each query retains
+its 15-second limit. Evidence: `api-home-scope-recovery-9.log`. The lead now repeats
+the same accumulated API prefix (`api-accumulated-recovery-2.log`), then database
+(`db-recovery-11.log`) and permission API (`api-permission-recovery-7.log`) checks
+serially, stopping on any failure. The sole test lease remains with W6.
+
+Accumulated recovery 2 still failed the 300-project timeout: **1,012 passed, one
+failed, five existing skips and one existing warning in 657.07 seconds**. The
+database and permission follow-ups were not started. The isolated improvement is
+insufficient evidence for accumulated fixtures, so the next diagnostic profiles
+that exact preceding file population and the failing case. The 15-second limit
+remains unchanged; no product commit or full-gate restart occurred.
+
+Accumulated profile 4 reproduced the failure after the same 33 preceding files:
+**941 passed, one failed, five existing skips, one existing warning, 518.77
+seconds** (`api-home-profile-4.log`). All 300 readiness summaries completed, with
+only 25 detailed projections. The remaining measured cost was FAQ rule resolution:
+612 rule resolutions triggered 216,924 business-membership lookups and 193,692
+property-form lookups; FAQ composition consumed 7.48 seconds before cancellation.
+
+Migration 0089 now evaluates cheap project/brand/group/rule predicates before
+the expensive form and business-membership lookups inside `faq_rule_projects`.
+Validation, empty-rule behavior, full applicability, sorted result, signatures,
+ACLs and caller-scope independence remain unchanged. The changed-existing-function
+inventory is **220**. A non-timing regression checks unrelated brands cause no
+expensive lookups while positive membership, missing form and lost membership
+retain their results. This migration correction was reported before rerunning;
+the next focused run includes the business cases that seed the expensive rules.
+
+The exact resolver patch and inventory passed read-only review. Focused recovery
+10 passed **91 cases**, zero failures/skips and one existing warning in **201.11
+seconds**, including accumulated business fixtures, applicability drift cases,
+the 300-project first/last pages and the closed function inventory. Evidence:
+`api-home-scope-recovery-10.log`. Temporary profile output was removed before this
+check. The lead repeats the complete selected prefix in
+`api-accumulated-recovery-3.log`, then runs database and permission checks serially
+only on success. The full gate and product commit remain pending.
+
+The final recovery quick chain passed on the current candidate:
+
+| Check | Exact result | Evidence under `artifacts/unified-workspace/w6/` |
+|---|---|---|
+| Accumulated API prefix and home | 1,014 passed, zero failed, five existing skips, one existing warning; 574.86 seconds | `api-accumulated-recovery-3.log` |
+| Database | 95 Node checks, 44 SQL suites, 24 concurrency scenarios; zero failures/skips | `db-recovery-11.log` |
+| Permission API | 433 passed, zero failures/skips, 2,231 deselected, one existing warning; 609.79 seconds | `api-permission-recovery-7.log` |
+
+All three disposable runs completed teardown. The accumulated 300-project case
+passed in 17.51 seconds across setup and both page queries; the original home
+read/revocation case passed in 7.04 seconds. Each query retains its 15-second limit.
+Migration 0089 SHA-256 is
+`13bb3232ef76383df1a69379ba76338f1c78c3d694c81a2148094b14ecc276ad`;
+0090 remains `5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4`.
+
+Local and remote main remain `4b00099`, the index is empty, and the lease is still
+exactly 101 paths; seven differ from the original failed freeze. The lead is
+freezing this candidate again for the complete serial full gate, starting with
+typecheck and reusing no earlier stages. The existing recovery runner writes
+`durable-gate-state.json`; the source is read-only while it runs. W6 retains the
+sole port-bound lease. Delivery, cleanup and P1 remain pending the complete gate.
+
+
+### W6 full API passed; operator-copy inventory stop — 11 November 2026
+
+The 14:28 serial full run passed typecheck, offline webpack build, production
+installation/import/isolation (4), and the complete API suite: **2,653 passed,
+11 existing skips, 6 existing warnings, 0 failures, 3,957.80 seconds**. API
+teardown passed. All 101 frozen paths and base `4b00099` still matched after
+the runner naturally stopped at 15:36 in its DB stage.
+
+The failing test was `tests/hosted-write-paths.test.mjs`: the operator inventory
+recursively scans ignored `.local/hosted-content-rollout/`. During the separately
+authorized W1-W5 TEST staging, the lead had materialized the approved 4b00099
+source tree there. Its ordinary application/test transactions were consequently
+classified as additional hosted operators. This was an artifact-placement
+mistake by the lead, not a W6 source failure. The DB stage reported 66 Node
+passes in its first group, then 22 passes and one failure in its second group;
+later SQL/concurrency stages were not reached. No product path was edited to
+silence the inventory.
+
+The committed-tree copy was moved to the verified temporary source directory
+outside the repository scan. The three inventory tests then passed with zero
+skips/failures. No test process or listener remained on the owned ports. The
+failed state, original manifest and all completed stage logs are preserved in
+`w6/failed-run-20261111-1536/`.
+
+Resume the complete serial gate at DB, then H1, both complete browser widths
+and final scans. Reuse the four completed stages only with their archived log
+hashes and exact unchanged product/test source. The only frozen-path change
+before resuming is this appended log entry; the 100 other path hashes must
+match the archived manifest. No migration, permission, API or UI fix is made.
+
+The separately authorized TEST candidate `4b00099-media-00f0f23e0fe3` passed
+Linux build and isolated self-checks but remains **staged only**, by owner
+decision. Prefix 81 and the live 0240315 release are unchanged. Migration 88
+needs a populated rehearsal covering `hub.brand_business`; the saved rehearsal
+does not include that write for the 33 active hosted brands. No hosted database
+write, new backup, migration, promotion, account/grant change or signed-in
+browser session occurred. The docs/46 entry and immutable staged handoff are
+held under `.local/hosted-content-rollout/` until the W6 commit boundary.
+
+
+## W6 H1 failure recovery and hosted demo handover - 11 November 2026
+
+The resumed serial gate naturally stopped at H1 at 15:47 local; no runner was
+interrupted. Retained full API: **2,653 passed, 11 existing skips, six warnings,
+3,957.80 seconds**. Resumed DB: **95 Node tests, 44 SQL suites and 24 concurrency
+scenarios**, zero failures/skips. H1: **69 Node tests and 10 smoke tests passed;
+64 browser checks passed and six failed**. Configuration-off/outage phases,
+full browser widths and final scans did not run. This is not a completed gate.
+Immutable failure evidence is `artifacts/unified-workspace/w6/failed-run-20261111-1547/`.
+
+Four legacy account checks lost a dialog/success message after successful account
+writes. The global authorization epoch changes the content-scope fingerprint,
+which unnecessarily remounted account management. Its remount/recovery key now
+excludes only content scope while retaining the current manager's identity,
+status, role, agency and management authority. Content pages retain the full scope key;
+server authorization and expiry enforcement are unchanged. Two new W6 H1 checks
+raced a second navigation against login's redirect; they now await that redirect.
+Only leased account/shell components and the new W6 spec changed. No migration,
+SQL, API contract or permission grant changed. Quick checks and a fresh full gate are
+required before delivery; no W6 product commit has been made.
+
+Hosted TEST is now exact W1-W5 release `4b00099-media-00f0f23e0fe3`, prefix 88,
+under the owner's post-migration timeout decision. Full details and backups are
+in docs/46, section "W1-W5 hosted TEST demo release - 11 November 2026". Heavy
+requests cancel at the production time limit with no remaining transactions,
+lock waits or health degradation. Residential is the clean demo route; project
+content works but its header inventory times out. Home, brands, publishing,
+approvals and history also time out. No performance hotfix was applied. W6 stays
+local pending its gates and the DW BUD feed. The independent docs/46 receipt is
+outside W6's 101 product paths and must be preserved separately during freezing
+and explicit-path commits.
+
+The first recovery quick H1 run passed 69 Node and 10 smoke checks, then 64
+browser checks with six failures. It exposed a second remount key in HubShell,
+which now uses the same account-management key only on the accounts screen.
+The scope checks reached the editor successfully; their last assertion now
+uses the grace selector's actual combobox accessible name, as the existing
+local scope spec does. This changes no UI label or assertion of authority.
+The failed quick log is `h1-recovery-quick.log`; the revised quick run follows.
+
+Recovery quick H1 run 2 passed all 70 main browser checks and three configuration
+checks, then five outage checks passed and two failed. Network/timeout content
+read invalidation temporarily masks content tabs; including those tab flags in
+the account manager's key still remounted its input. The account-only key now
+uses identity, status, role, agency and `can_manage_users`, the authority actually
+required for account management. Scope editors/settings keep their independent
+full fingerprints and fresh-authority checks. Manager revocation and 401/403
+closure are unchanged. The failed log is `h1-recovery-quick-2.log`; subsequent
+quick coverage includes outage preservation, manager revocation, identity switch,
+scope expiry and navigation. No hosted action or migration change followed.
+
+### W6 final selector lease and browser recovery - 11 November 2026
+
+Recovery quick run 3 passed typecheck, the offline webpack build and complete
+local H1: **69 Node tests, 10 smoke tests and 80 browser checks**, zero failures
+or skips. Evidence: `typecheck-h1-recovery-3.log`, `build-h1-recovery-3.log` and
+`h1-recovery-quick-3.log` under `artifacts/unified-workspace/w6/`.
+The selected 1280 browser run then reported 45 passes and four failures: three
+legacy account assertions matched additional W6 status/alert elements, and one
+scope fixture forwarded a request after its page had cancelled it. The latter
+fixture now captures the real caller projection once before mocking, preserving
+all authority mutations and assertions, and waits for route cleanup.
+
+The owner's two explicit approvals expand the product lease **101 -> 102 -> 105
+paths**. Apply exactly `phasec-assertion-scope.proposed.patch` and
+`legacy-project-alert-scope.proposed.patch`, adding these legacy specs:
+`tests/ui/phasec-accounts.spec.ts`, `tests/ui/assistant.spec.ts`,
+`tests/ui/project-form.spec.ts` and `tests/ui/project-media-draft.spec.ts`.
+Only selectors change in these four files; expected messages, payload assertions
+and permission checks are unchanged. The complete read-only sweep covered 90
+specs, including multiline and CSS selectors (`legacy-status-alert-sweep.json`).
+This is the final selector lease expansion. Any further selector conflict is a
+reportable stop, not another lease request.
+
+The next quick selection runs all four approved specs plus scope, scope-expiry
+and navigation at both widths, in serial disposable harnesses. Then resume the
+full gate with both complete browser widths and final scans. Reuse only passed
+stages whose actual inputs remain unchanged, with exact source differences and
+archived log hashes in the resumption receipt. Refresh the 105-path frozen
+manifest before starting. The independent hosted docs/46 receipt stays outside
+the product lease. W6 delivery and P1 remain pending; no hosted change follows.
+
+Read-only answer on BUD errors: the legacy fixtures produce unmocked or malformed
+notice responses, but the behavior is real. `ContentBuNotices` mounts on home,
+project entity pages and account scope settings. Any eligible active staff role
+can see its `role=alert` when that request fails, even without a BUD-scoped grant.
+It is not mounted on every brand/business page. Section 7.1 of docs/47 requires
+targeted stale, failure and handover notifications; it does not require this
+generic request-failure alert. No notice behavior changes in W6. Proposed P1
+follow-up: a retryable, non-assertive message shown once only for callers with a
+BUD-scoped grant, while retaining the required targeted operational notices.
+The current caller projection exposes only a scope fingerprint and expiry, not
+a BUD-grant flag; do not infer grant type from either. If reliable targeting
+needs a new API field, report that separately under P1's no-contract-change rule.
+
+### W6 final selector stop - 11 November 2026
+
+The exact approved patches are applied. The seven-spec quick selection finished
+at both widths with **81 passed, one failed, zero skips per width** (2.4 minutes
+of browser execution each). All 105 frozen source paths and base `4b00099`
+matched during both runs. No runner was interrupted; both disposable harnesses
+completed their teardown.
+
+| Spec | 1280 | 390 |
+|---|---|---|
+| assistant | 23 passed | 23 passed |
+| phasec-accounts | 10 passed, 1 failed | 10 passed, 1 failed |
+| project-form | 7 passed | 7 passed |
+| project-media-draft | 3 passed | 3 passed |
+| content-scopes | 13 passed | 13 passed |
+| content-scope-expiry | 8 passed | 8 passed |
+| hub-navigation | 17 passed | 17 passed |
+
+The sole failure is `tests/ui/phasec-accounts.spec.ts:120`, in the existing
+stale-save check. Its dialog-wide refresh-button lookup now resolves to three
+buttons: the original account conflict action, scope refresh and scope history
+refresh. The approved status/alert changes pass; this separate button selector
+was outside the requested status/alert sweep. In accordance with the owner's
+final-selector instruction, it remains unchanged. No further lease expansion is
+requested, and the full-gate restart, product commit and P1 start are held.
+
+Evidence under `artifacts/unified-workspace/w6/`:
+`ui-1280-final-selectors-quick.log`, `ui-390-final-selectors-quick.log`,
+`final-selector-stop-1280/` and `final-selector-stop-390/` (screenshot, trace,
+error context), plus `final-selector-stop-receipt.json`. Refresh the frozen
+manifest only for this log entry; retain its preceding quick-run manifest as
+`final-selectors-quick-source-hashes.json`.
+
+No new full-gate stages ran after these selector approvals. The reviewed reuse
+plan retains the successful full API (2,653 passed, 11 existing skips, six
+warnings) and production (4 passed), whose inputs are unchanged, and the latest
+complete recovery typecheck, offline build and H1 (69 Node, 10 smoke, 80 browser).
+The later changes affect only local browser specs and documentation. A future
+resumption must rerun DB because ignored hosted operator inputs changed after
+its earlier 95 Node / 44 SQL / 24 concurrency pass, followed by both complete
+browser widths and final scans. A fresh, port-free hosted operator inventory
+check passed all three tests under the runner's authorized access; no backup or
+credential contents were opened. Prepared reuse verification refuses to resume
+while either quick browser selection is failing. This is not a completed full
+gate and no W6 delivery/receipt commit exists yet.
+
+### W6 continuation after reported selector stop - 12 November 2026
+
+The owner instructed the lead to continue after receiving the complete stop and
+handoff. This authorizes the reported refresh-button correction within the
+existing 105-path lease: the stale-save test now finds its refresh button inside
+the original `.account-action-error` container. No new path, expected text,
+payload assertion, permission check or application behavior changes. The seven
+affected specs run again at both widths before resuming the remaining gate.
+Earlier failing logs and evidence are retained unchanged; new quick logs use
+the `20261112` suffix. Verify the sole test lease before each serial run.
+
+The 1280 quick selection passed all 82 checks in 2.2 minutes. A chat service
+restart interrupted the 390 selection after 18 passes, before a final result;
+the runner and all owned listeners were gone on recovery. Its partial log/state
+are preserved with the `-interrupted` suffix. No application or test source
+changed. Rerun only the 390 selection in a detached hidden runner, retaining the
+completed 1280 evidence. This interruption is not a passed browser stage.
+
+The detached 390 rerun passed all 82 checks in 2.5 minutes; both widths now have
+zero failures or skips. The test lease is released. Final resumption freezes
+the same 105 product paths, verifies base/origin `4b00099`, and retains the
+successful API, production, recovery-3 typecheck/build and complete recovery-3
+H1 results. Exact source differences, input ordering and retained log hashes
+are recorded in `resume-final-ui-20261111.json`. The new detached serial runner
+`resume-final-full-20261112.ps1` runs DB, the complete 1280 and 390 suites, then
+credential scans and diff/source verification. No source edits are permitted
+during this final run. No additional migration or permission change was needed.
+
+### W6 complete desktop browser failure and read profiling - 12 November 2026
+
+The detached gate ended naturally at 08:43 Bangkok with exit code 1 in
+`ui-1280`: **603 passed, six failed, zero skipped, 24.0 minutes**. DB passed
+again; the 390 suite and final scans did not run. All 105 frozen product paths,
+base `4b00099`, the independent docs/46 receipt and retained stage hashes still
+matched after the runner exited. No test listener remained on 55432, 8000 or
+3000. Evidence, six traces and source hashes are preserved in
+`artifacts/unified-workspace/w6/failed-run-20261112-0843/`.
+
+Two asset lifecycle checks and three brand checks failed during slow workspace
+loading or publication preparation. Trace reads returned 200 after roughly
+12-13 seconds; uploads, duplicate reuse and binding requests passed. The
+publication preparation request returned 200 after 11 seconds, beyond its
+five-second assertion. Cleanup permission writes waited for outstanding reads
+before restoring fixtures. The final failure is the many-gap overview's
+height: 2,212 pixels against its 2,200-pixel ceiling after adding the BUD notice
+panel. It is not another selector conflict. No assertion or timeout is relaxed.
+
+Recovery begins with the existing disposable UI fixtures and transaction-local
+function statistics for workspace/history reads. Empty new brand pages are
+also slow despite having no project FAQ/readiness work, making history the
+first profiling target. Keep scope locks and authorization checks intact.
+Any SQL fix stays inside the W6 lease and is reported before rerunning the
+required DB/permission quick checks. Delivery, P1 and subsequent integration
+remain pending; the hosted W1-W5 release is unchanged.
+
+The 57-test prefix replay passed. Read-only profiling measured project
+workspace/history at 11,470/11,070 ms and brand workspace/history at
+12,166/11,691 ms. Each history scan called `article_read` 158 times, rebuilding
+an editor payload that history discarded; its recursive projection ran 202,082
+times. Evidence: `workspace-profile-before-20261112.json` and
+`workspace-profile-prefix-before-20261112.log`. Audit rows were unchanged.
+
+Migration 0089 now keeps Knowledge View, article existence, and current-source
+scope checks before and after the exact historical-reference work without
+constructing that discarded payload. Historical-version/reference checks,
+redaction, shared locks and private ACLs remain. The changed-existing-function
+inventory is 221. Its new SHA-256 is
+`523522f6dc0cb89b6d77e70480637aad2022429f0b7f6aab6949b8ef205d5e2e`;
+0090 is unchanged. The lead reported this SQL change before running checks.
+The new non-timing regression verifies four audit-event classes, zero editor
+payload reads, no audit writes, current-versus-historical denial, a permitted
+neighbour, empty scope and BUD expiry. Its first fixture selected a pointer-only
+audit update, correctly hidden by existing history rules; selecting the original
+content event fixed the fixture. The focused rerun passed one test, 45
+deselected, one existing warning, in 3.72 seconds (`api-history-focused-2.log`).
+
+The BUD panel's outer vertical margin is reduced from 16 to 8 pixels to keep
+the existing compact-overview limit. Padding, controls and notices are unchanged.
+All changes remain within the 105 leased paths; no test timeout or assertion
+limit changed. Next are DB, the permission and affected API selection, affected
+browser workflows at both widths, and H1. A fresh full gate follows only after
+these quick checks pass; the prior API/H1 passes cannot cover this SQL change.
+
+The history-recovery quick chain passed DB (95 Node checks, 44 SQL suites, 24
+concurrency scenarios) and the selected API run (**614 passed, 2,051 deselected,
+one existing warning, 1,147.31 seconds**) on the corrected migration. The 1280
+selection then reported **121 passed, one failed**: the five slow
+workspace/history failures are gone (profiled brand workspace/history reads now
+about 2.2 seconds each, from 11-12 seconds), and the only remaining failure is
+the W3.1 many-gap overview height, **2,204 pixels against the 2,200 ceiling**
+(`ui-1280-history-recovery-20261112.log`, state
+`quick-history-recovery-state-20261112.json`). The 390 selection and H1 stages
+were not run.
+
+Reported before rerunning: the project-page notice variant only
+(`.content-bu-notices.content-bu-project-notices`) now uses `margin-block:
+.25rem` and `padding-block: .5rem`. Home and account-settings panels, copy,
+controls, 44-pixel targets and every notice behavior are unchanged, and the
+overview ceiling assertion is untouched. This stays inside the 105-path lease.
+The remaining quick stages (both width selections plus H1) rerun after this
+correction; the fresh full gate still follows.
+
+The recovery DB gate passed **95 Node, 44 SQL and 24 concurrency checks**. The
+affected API/permission selection passed **614 tests, zero failures/skips,
+2,051 deselected and one existing warning**. The desktop selection passed 121
+of 122 checks: all five previously slow asset/brand checks now pass. Read-only
+profiling after the selection measured project workspace/history at 292/60 ms
+and brand workspace/history at 2,208/2,154 ms, with unchanged audit rows. These
+figures use the selection's final fixtures and are diagnostic, not a timing
+assertion or a claim that every dataset has the same cost.
+
+The remaining overview height was 2,204 pixels against the unchanged 2,200
+limit. Collapsed margins saved only eight pixels; the notice panel now uses
+12-pixel vertical padding, matching its existing mobile padding. Controls keep
+their 44-pixel target, text and internal gaps. All 105 quick-frozen hashes
+matched before this CSS-only correction. The failure log, trace, screenshot,
+profile and source manifest are preserved in
+`artifacts/unified-workspace/w6/quick-history-failure-20261112-0926/`.
+
+The follow-up quick run retains only the completed DB and API selection, whose
+sources are unchanged, and reruns typecheck, offline build, the same 122-browser
+selection at both widths and full local H1. Its evidence uses the suffix
+`history-recovery-2-20261112`. No test selector, assertion, timeout, permission
+or migration changes in this correction. A new full gate will then rerun every
+stage without reuse before delivery. P1, W7 and W9 have bounded preparation
+reports; W8 is preparing six additional cases, with UAT execution still last.
+
+### W6 single-lead reconciliation - 12 November 2026
+
+The follow-up runtime checks passed: typecheck, offline build, **122 browser
+checks at each width**, and local H1 **69 Node, 10 smoke, 80 browser checks**,
+with no failures or skips. Its final source postcheck failed: another session
+added the project-only notice-spacing rule at 09:30 and its log entry at 09:31,
+after the 105-path freeze. The other session's attempted runner at 09:32 refused
+to start because the test lease was occupied. No simultaneous port-bound test
+run occurred. Only the notice CSS and this log changed; all other source hashes,
+retained DB/API logs and the independent hosted receipt matched. Preserve this
+as a failed source attestation, not a completed quick gate. Evidence:
+`artifacts/unified-workspace/w6/quick-history-source-drift-20261112-0946/`.
+
+The owner selected this chat as sole lead and said the other session would be
+paused. Reconciliation keeps the narrower project-only rule (`margin-block:
+.25rem; padding-block: .5rem`) and removes the overlapping global 12-pixel
+padding change. Home/account panels retain their original 16-pixel padding;
+mobile padding remains 12 pixels. No assertion or behavior changes. The next
+quick run freezes 105 paths again and reruns typecheck, offline build, the four
+affected notice/overview/navigation specs at both widths, and H1. DB/API results
+are retained only for this CSS-only quick correction with unchanged input
+hashes. The final full gate reruns every stage without reuse. No commit or push
+is authorized by the failed source attestation.
+
+Bounded preparation is reviewed separately: W7's 43 candidate hashes match,
+with 41 current baselines matching and two manual merges required (hosted
+profile and permission README). P1's lead review corrects queue-card scope and
+completes the empty-state inventory. The W8 draft now preserves U01-U54 exactly
+and appends U55-U60, all NOT RUN; receipt and prepared pack are under
+`artifacts/unified-workspace/w8/`. W9's route inventory remains preparation with
+explicit unresolved command boundaries. None of this preparation is integrated
+or runtime-verified, and no hosted change follows.
+
+The reconciled quick run completed at 10:04 Bangkok: typecheck and offline
+build passed; the four affected browser specs passed **58 checks at 1280 and
+58 at 390**, zero failures/skips; H1 passed **69 Node, 10 smoke and 80 browser
+checks**, zero failures/skips. All 105 source hashes matched at the final
+postcheck. DB **95 Node / 44 SQL / 24 concurrency** and API **614 passed / 2,051
+deselected / one warning** are retained quick results with verified unchanged
+inputs. Evidence: `quick-history-final-receipt-20261112.json`,
+`quick-history-source-hashes-3.json`, `quick-history-retained-stages-3.json` and
+`*-history-recovery-3-20261112.log` under `artifacts/unified-workspace/w6/`.
+
+Fresh full gate: freeze the same 105 explicit paths on base/origin `4b00099`
+and run `run-history-full-20261112.ps1` serially through typecheck, offline build,
+production imports, complete API, DB/replay, H1, both complete browser widths,
+credential/diff/broad scans and source postcheck. **No stage is reused.** Prior
+full evidence is preserved in `before-fresh-history-full-20261112/`. No product
+source edits are permitted until the runner ends. W6 delivery is still pending
+this result. A separate isolated W9 processor-log privacy check owns only its
+new worktree's processor/test files; it has no test-port lease or main writes.
+
+### W6 final mobile failures - 12 November 2026
+
+The fresh serial gate ended naturally at 12:08 Bangkok with exit code 1 in
+`ui-390`: **607 passed, two failed, zero skipped, 25.9 minutes**. Desktop
+passed all 609 checks. Earlier fresh stages passed: typecheck, offline build,
+production 4, API 2,654 with 11 existing skips and six warnings, DB 95 Node /
+44 SQL / 24 concurrency, and local H1 69 Node / 10 smoke / 80 browser. No stage
+was reused. Final credential/diff/broad scans and source postcheck did not run.
+An independent post-run check verified all 105 frozen paths, base `4b00099`,
+the unchanged independent hosted receipt, exact dirty paths and empty index.
+The runner ended and no local test listeners remained; no process was stopped.
+
+`knowledge-followup.spec.ts:36` reads `calls[0].body` immediately after the
+save click and finds no recorded request yet. `web-publication.spec.ts:59`
+waits for version 1 after the history-button click until the 120-second test
+timeout. Its trace shows successful publication and quick 200 responses, but
+no subsequent page-history request. These are initial diagnostic observations,
+not a completed root-cause finding. Neither expected text nor test timeout is
+changed. Source and traces are preserved in
+`artifacts/unified-workspace/w6/failed-run-20261112-1208/`, including the exact
+stage logs, source manifest and `archive-receipt.json`. W6 remains uncommitted;
+P1 implementation and subsequent integration remain pending. Hosted TEST is
+unchanged.
+
+Trace review identifies two synchronization gaps. The knowledge save click
+returns at 589790 ms; the existing route fixture receives and fulfills the
+intended POST at 589797 ms, after the synchronous payload assertion has already
+failed. The publication click reports the target's final bounding box while
+the compositor still shows the sandboxed preview at that position. Original
+trace frames at 1404064 and 1404091 ms show the preview followed by the settled
+history button; the failed page snapshot has focus inside the iframe. No
+history request or permission denial follows the missed click.
+
+Prepared, not applied: `mobile-async-scroll.proposed.patch` adds a polling
+assertion for exactly one recorded save before the unchanged payload assertion,
+and explicitly scrolls the unchanged history-button locator into the viewport
+before its ordinary click. The latter follows the existing publication-click
+helper. No forced click, sleep, timeout increase, selector replacement,
+application change or weakened assertion is proposed. Both test files are
+outside the 105-path lease, so a single grouped 105-to-107 lease request is
+pending. This is a request for synchronization fixes, not another status/alert
+selector amendment. Proposed file hashes are in
+`mobile-async-scroll.proposal.json`. No patched test run or gate restart occurs
+before the owner's decision.
+
+### W6 mobile synchronization lease applied; final browser reruns - 12 November 2026
+
+The owner approved the grouped 105-to-107 test lease request with the paused
+session's 12:13 report, and the sole lead session (the owner paused the other)
+verified both ui-390 failures, the patch scope and the fresh-gate evidence
+before applying. `mobile-async-scroll.proposed.patch` (SHA-256
+`b2ddead3dbcf9cde17c5e5bc52dd1a62e9006d67ceee9d35e1e620da21134e90`) was
+applied with `git apply --ignore-whitespace`; the resulting diff contains
+exactly the polling capture wait in `tests/ui/knowledge-followup.spec.ts` and
+the scroll-into-view plus viewport settle before the unchanged history-button
+click in `tests/ui/web-publication.spec.ts`. Selectors, expected payloads,
+permission checks and timeouts are unchanged; the final-selector boundary is
+untouched. Receipt: `lease-amendment-20261112.json`.
+
+Plan: focused rerun of both amended specs at both widths, then the complete
+browser suites at 1280 and 390 and the final credential/diff/broad scans. The
+fresh full gate's typecheck, offline build, production (4), API (2,654 passed,
+11 existing skips, six warnings), DB (95 Node, 44 SQL suites, 24 concurrency)
+and H1 (69 Node, 10 smoke, 80 browser) stages are retained; their inputs do not
+include the two amended browser specs. Both complete browser suites rerun on
+the amended specs, including desktop; the prepared supplemental H1
+scope-preview captures run after the complete gate passes.

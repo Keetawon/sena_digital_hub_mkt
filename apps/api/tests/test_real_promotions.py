@@ -53,7 +53,7 @@ def test_real_promotion_scopes_manual_english_four_eyes_and_environment_guard(pe
             assert await call(db, ids['editor'], 'select count(*) from hub.translation_jobs j join hub.content_translations t on t.id=j.translation_id where t.owner_key=$1', row['id']) == 0
             row = await english(db, ids['editor'], row)
             assert not any(i['field'].endswith('.en') for i in row['readiness']['missing'])
-            await set_bit(ids['editor'], 'promotions', can_edit=False, can_approve=True)
+            await set_bit(ids['editor'], 'promotions', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await command(db, ids['editor'], 'review', row, review_type='DATA', decision='APPROVED', evidence='Synthetic evidence', change_reason='Synthetic')
             row = await command(db, ids['publisher'], 'review', row, review_type='DATA', decision='APPROVED', evidence='Synthetic evidence', change_reason='Synthetic')

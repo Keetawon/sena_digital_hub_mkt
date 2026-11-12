@@ -201,7 +201,7 @@ def test_solar_is_entered_scenario_with_manual_english_four_eyes_and_immutable_a
             identity = {'id': saved['id']}
             metadata = await operator_call(db, ids['editor'], 'select hub.content_workflow_read($1,$2)', 'solar', identity)
             await operator_call(db, ids['editor'], 'select hub.content_workflow_submit($1,$2,$3)', 'solar', identity, metadata['expected_hash'])
-            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True)
+            await set_bit(ids['editor'], 'projects', can_edit=False, can_approve=True, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.CheckViolationError, match='reason'):
                 await operator_call(db, ids['editor'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
             approved = await operator_call(db, ids['publisher'], "select hub.c4_solar_review($1,$2,$3,'approve')", public_id, UUID(saved['id']), saved['revision'])
@@ -277,7 +277,7 @@ def test_revocation_clears_reads_but_preserves_neighbor_and_blocks_direct_dml(pe
         try:
             public_id = await project(db, ids['viewer'])
             assert (await call(db, ids['viewer'], 'select hub.c4_workspace($1)', public_id))['references']['features']
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             for query, args in [('select hub.c4_workspace($1)', [public_id]), ('select hub.c4_references()', []), ('select hub.c4_nearest_stations($1)', [public_id])]:
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['viewer'], query, *args)

@@ -90,7 +90,7 @@ def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_
                     await call(db, ids['viewer'], f'select count(*) from {table}', role=role)
             for entry in reads:
                 await call(db, ids['viewer'], 'select ' + entry, role=role)
-            await set_bit(ids['viewer'], tab, can_view=False)
+            await set_bit(ids['viewer'], tab, can_view=False, connection=db, manager=ids['admin'])
             if role == 'hub_app' or tab == 'knowledge':
                 assert await call(db, ids['viewer'], f'select count(*) from {table}', role=role) == 0
             for entry in reads:
@@ -104,7 +104,7 @@ def test_publication_view_off_denies_rows_rpc_and_preserves_neighbor(permission_
                     with pytest.raises(asyncpg.InsufficientPrivilegeError):
                         await call(db, ids['viewer'], 'select ' + entry, role=role)
             if tab == 'releases':
-                await set_bit(ids['viewer'], 'knowledge', can_view=False)
+                await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['viewer'], 'select ' + rpc, role=role)
             await call(db, ids['viewer'], 'select hub.list_brands()', role=role)
@@ -210,23 +210,23 @@ def test_mixed_release_publish_and_rollback_require_every_member_view(permission
                 'promotion_versions',(select count(*) from hub.promotion_versions))"""
             assert not await call(db, ids['viewer'], "select hub.can($1,'approve')", tab)
             before = await call(db, ids['admin'], snapshot)
-            await set_bit(ids['viewer'], tab, can_view=False)
+            await set_bit(ids['viewer'], tab, can_view=False, connection=db, manager=ids['admin'])
             for demo in (False, True):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['viewer'], 'select hub.release_publish($1::jsonb,$2,$3)', json.dumps(members), 'Synthetic', demo)
                 assert await call(db, ids['admin'], snapshot) == before
-            await set_bit(ids['viewer'], tab, can_view=True)
+            await set_bit(ids['viewer'], tab, can_view=True, connection=db, manager=ids['admin'])
             result = json.loads(await call(db, ids['viewer'], 'select hub.release_publish($1::jsonb,$2,false)', json.dumps(members), 'Synthetic'))
             published = await call(db, ids['admin'], snapshot)
-            await set_bit(ids['viewer'], tab, can_view=False)
+            await set_bit(ids['viewer'], tab, can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic')
             assert await call(db, ids['admin'], snapshot) == published
-            await set_bit(ids['viewer'], tab, can_view=True)
+            await set_bit(ids['viewer'], tab, can_view=True, connection=db, manager=ids['admin'])
             restored = json.loads(await call(db, ids['viewer'], 'select hub.release_rollback($1,$2)', UUID(result['id']), 'Synthetic'))
             assert restored['status'] == 'ROLLED_BACK'
             # Release V alone cannot disclose members/candidates from a hidden tab.
-            await set_bit(ids['viewer'], tab, can_view=False)
+            await set_bit(ids['viewer'], tab, can_view=False, connection=db, manager=ids['admin'])
             read = json.loads(await call(db, ids['viewer'], 'select hub.release_read($1)', UUID(result['id'])))
             assert all(m['entity_type'] + 's' != tab for m in read['members'])
             candidates = json.loads(await call(db, ids['viewer'], 'select hub.release_candidates(false)'))['items']
@@ -243,13 +243,13 @@ def test_knowledge_hidden_project_and_asset_data_removed_from_preview_snapshot(p
         async with rows(ids) as (db, data):
             before = json.loads(await call(db, ids['viewer'], 'select hub.knowledge_preview_read($1,$2)', data['preview'], data['project']))
             assert before['fact_card']['model_catalogue_complete'] is True and len(before['assets']) == 1
-            await set_bit(ids['viewer'], 'projects', can_view=False)
+            await set_bit(ids['viewer'], 'projects', can_view=False, connection=db, manager=ids['admin'])
             assert await call(db, ids['viewer'], 'select hub.knowledge_model_catalogue($1)', data['project']) is None
             after = json.loads(await call(db, ids['viewer'], 'select hub.knowledge_preview_read($1,$2)', data['preview'], data['project']))
             assert after['fact_card']['model_catalogue_complete'] is None and after['assets'] == []
             assert after['chunks'] == before['chunks']
             assert await call(db, ids['viewer'], 'select count(*) from hub.knowledge_preview_releases where id=$1', data['preview']) == 0
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             for query in ('select count(*) from rag.knowledge_preview_chunks', 'select count(*) from rag.project_fact_cards'):
                 assert await call(db, ids['viewer'], query) == 0
             with pytest.raises(asyncpg.InsufficientPrivilegeError):

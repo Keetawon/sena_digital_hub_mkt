@@ -82,3 +82,21 @@ Business references never grant descendant access. Assistant retrieval keeps
 thirteen tools, requires Knowledge View and exact source access, and excludes
 non-AI exposure; saved published citations pin both page and source versions.
 No account, grant, template, permission-bit or historical manifest rewrite.
+
+W6 adds `content-scope-routes.json` for five account-management routes and one
+caller-specific BU notice projection. Reference/history reads require account
+management; grace settings also require actual Admin. `content-scope-db.json`
+inventories the exact 0089/0090 additions: seven owner-only FORCE RLS tables,
+213 functions including closed delegates, 221 changed existing functions and
+92 restrictive object policies. The dedicated runtime catalogue tests verify
+columns, keys, partial indexes, policies, signatures and execution ACLs.
+
+Scopes constrain each existing content View/Edit/Approve grant. Missing scope
+rows retain unrestricted access; no existing grants or templates are rewritten.
+Shared drafts require any applicable project, while approval requires all.
+Promotion DATA/LEGAL review and separation remain unchanged. Membership refresh
+uses private dedicated tables and fixture-tested clock boundaries, independently
+of content approval snapshots. Partial promotion displays retain full impact
+counts but hide inaccessible reference IDs; saved-resolution requests use the
+promotion identity/revision, and SQL preserves omitted inaccessible targets.
+See docs/47 section 7.1 and the W6 permission card in docs/48.

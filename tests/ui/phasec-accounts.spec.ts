@@ -59,7 +59,7 @@ test('template copy stages boxes; projects and brands allow edit plus approve wh
   await panel.getByLabel('แม่แบบสิทธิ์',{exact:true}).selectOption('admin:1');await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
   await expect(panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true})).not.toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการทะเบียนแบรนด์',exact:true})).toBeChecked();
   await panel.getByRole('checkbox',{name:'แบรนด์ ดู',exact:true}).uncheck();await expect(panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true})).not.toBeChecked();await expect(panel.getByRole('checkbox',{name:'จัดการทะเบียนแบรนด์',exact:true})).toBeDisabled();
-  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('ปรับสิทธิ์');
+  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.locator('.accounts-feedback[role=status]')).toContainText('ปรับสิทธิ์');
   expect(state.calls[0].body.template).toEqual({code:'admin',version:1});expect(state.calls[0].body.tabs.brands).toEqual([]);expect(state.calls[0].body.can_manage_users).toBe(false);
   await page.keyboard.press('Escape');await expect(page.getByRole('row').filter({hasText:`${target}@example.test`})).toContainText('กำหนดเอง (จาก ผู้ดูแลระบบ)');
   await page.getByLabel('แก้ไขแท็บได้').selectOption('brands');await expect(page.getByRole('row').filter({hasText:`${target}@example.test`})).toHaveCount(0);
@@ -71,7 +71,7 @@ test('a newer server template does not change pinned boxes until explicitly appl
   await expect(panel.getByRole('checkbox',{name:'โครงการ แก้ไข',exact:true})).toBeChecked();
   await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
   await panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true}).uncheck();
-  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('ปรับสิทธิ์');
+  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.locator('.accounts-feedback[role=status]')).toContainText('ปรับสิทธิ์');
   expect(state.calls[0].body.template).toEqual({code:'editor',version:1});
   expect(state.calls[0].body.tabs.projects).toContain('edit');
   await panel.getByRole('button',{name:'ใช้แม่แบบนี้',exact:true}).click();
@@ -87,7 +87,7 @@ test('manager flag requires explicit confirmation independent of template, and s
   await panel.getByRole('checkbox',{name:'จัดการผู้ใช้และสิทธิ์',exact:true}).check();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toBeDisabled();
   await panel.getByRole('checkbox',{name:/ยืนยันให้สิทธิ์ผู้ดูแลระบบ/}).scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/permissions-uat/manager-confirmation.png',fullPage:false});
   await panel.getByRole('checkbox',{name:/ยืนยันให้สิทธิ์ผู้ดูแลระบบ/}).focus();await page.keyboard.press('Space');await panel.getByRole('button',{name:'บันทึก',exact:true}).click();
-  await expect(panel.getByRole('status')).toContainText('ปรับสิทธิ์');expect(state.calls[0].body).toMatchObject({can_manage_users:true,confirm_manage_users:true,template:{code:'editor',version:1}});
+  await expect(panel.locator('.accounts-feedback[role=status]')).toContainText('ปรับสิทธิ์');expect(state.calls[0].body).toMatchObject({can_manage_users:true,confirm_manage_users:true,template:{code:'editor',version:1}});
   await page.keyboard.press('Escape');panel=await manage(page,actor);await expect(panel.getByText('นี่คือบัญชีของคุณ')).toBeVisible();await expect(panel.getByLabel('แม่แบบสิทธิ์',{exact:true})).toBeDisabled();await expect(panel.getByRole('checkbox',{name:'โครงการ ดู',exact:true})).toBeDisabled();await expect(panel.getByRole('button',{name:'บันทึก',exact:true})).toHaveCount(0);
   await page.screenshot({path:'artifacts/permissions-uat/manage-self.png',fullPage:false});
 });
@@ -112,13 +112,13 @@ test('fixed agency history shows the actual code correction and admin note',asyn
 test('custom approval submits one atomic decision with the reviewed grid',async({page})=>{
   const state=await setup(page);const card=page.getByRole('article').filter({hasText:`${pending}@example.test`});await card.getByRole('button',{name:'อนุมัติและปรับสิทธิ์',exact:true}).click();const panel=page.getByRole('dialog');
   await panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true}).uncheck();await panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('บันทึกอนุมัติเฉพาะผู้ดูแล');await panel.getByRole('button',{name:'อนุมัติและบันทึกสิทธิ์',exact:true}).click();
-  await expect(panel.getByRole('status')).toContainText('อนุมัติ');expect(state.calls).toHaveLength(1);expect(state.calls[0].path).toBe(`accounts/${pending}/decision`);expect(state.calls[0].body).toMatchObject({action:'approve',template:{code:'editor',version:1},tabs:{brands:['view']},can_manage_users:false});
+  await expect(panel.locator('.accounts-feedback[role=status]')).toContainText('อนุมัติ');expect(state.calls).toHaveLength(1);expect(state.calls[0].path).toBe(`accounts/${pending}/decision`);expect(state.calls[0].body).toMatchObject({action:'approve',template:{code:'editor',version:1},tabs:{brands:['view']},can_manage_users:false});
 });
 
 test('stale save retains checkbox changes and note after authoritative reload',async({page})=>{
   const state=await setup(page,{stale:true});const panel=await manage(page);await panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true}).uncheck();await panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)').fill('ร่างบันทึกยังอยู่');await panel.getByRole('button',{name:'บันทึก',exact:true}).click();
-  await expect(panel.getByRole('alert')).toContainText('ข้อมูลเปลี่ยนแล้ว');await panel.getByRole('button',{name:'โหลดข้อมูลล่าสุด',exact:true}).click();await expect(panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true})).not.toBeChecked();await expect(panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)')).toHaveValue('ร่างบันทึกยังอยู่');
-  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.getByRole('status')).toContainText('ปรับสิทธิ์');expect(state.calls[1].body.updated_at).toBe('2026-10-09T01:00:00Z');
+  await expect(panel.locator('.account-action-error[role=alert]')).toContainText('ข้อมูลเปลี่ยนแล้ว');await panel.locator('.account-action-error').getByRole('button',{name:'โหลดข้อมูลล่าสุด',exact:true}).click();await expect(panel.getByRole('checkbox',{name:'แบรนด์ แก้ไข',exact:true})).not.toBeChecked();await expect(panel.getByLabel('บันทึกสำหรับผู้ดูแล (ไม่บังคับ)')).toHaveValue('ร่างบันทึกยังอยู่');
+  await panel.getByRole('button',{name:'บันทึก',exact:true}).click();await expect(panel.locator('.accounts-feedback[role=status]')).toContainText('ปรับสิทธิ์');expect(state.calls[1].body.updated_at).toBe('2026-10-09T01:00:00Z');
 });
 
 test('manager revocation removes directory source data and preserves only the authored admin note',async({page})=>{

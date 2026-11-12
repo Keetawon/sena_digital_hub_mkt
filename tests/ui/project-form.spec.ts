@@ -230,7 +230,7 @@ test('reviewed defaults appear without writes; save-and-continue advances only a
   expect(writes).toBe(0);
   await page.locator('#public_name_en').fill('Reviewed English');
   await page.getByRole('button', { name: 'บันทึกและไปต่อ', exact: true }).click();
-  await expect(page.locator('.notice[role="alert"]')).toContainText('ข้อมูลเปลี่ยนแปลง');
+  await expect(page.locator('.entity-embedded-editor > .notice.error[role="alert"]')).toContainText('ข้อมูลเปลี่ยนแปลง');
   await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#public_name_en')).toHaveValue('Reviewed English');
   failSave = false;

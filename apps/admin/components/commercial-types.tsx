@@ -193,6 +193,7 @@ export function CommercialMedia<T extends CommercialProject>({ project, item, ro
       for (const file of files) {
         const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
         const result = await response.json().catch(() => null);
+        if (!response.ok && result?.error?.invalidate_access === true) window.dispatchEvent(new Event("hub-content-access-invalidated"));
         if (!response.ok) throw new Error(`${file.name}: ${result?.error?.message ?? "อัปโหลดไม่สำเร็จ"}`);
         completed++;
       }

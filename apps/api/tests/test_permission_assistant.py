@@ -141,7 +141,7 @@ def test_assistant_history_citations_recheck_finance_filter_and_uuid_ownership(p
             assert await call(db, ids['admin'], 'select internal.assistant_citation_read($1,$2)', rid, cid, role='viewer')
             with pytest.raises(asyncpg.NoDataFoundError):
                 await call(db, ids['second'], 'select internal.assistant_run_read($1)', rid)
-            await set_bit(ids['admin'], 'finance', can_edit=False, can_approve=False, special_actions=[], can_view=False)
+            await set_bit(ids['admin'], 'finance', can_edit=False, can_approve=False, special_actions=[], can_view=False, connection=db, manager=ids['second'])
             history = json.loads(await call(db, ids['admin'], 'select internal.assistant_run_read($1)::text', rid))
             assert history['citations'] == [] and history['tools'] == []
             with pytest.raises(asyncpg.InsufficientPrivilegeError):

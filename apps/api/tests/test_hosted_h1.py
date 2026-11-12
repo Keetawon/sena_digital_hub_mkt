@@ -297,13 +297,13 @@ def test_private_file_delivery_keeps_rights_rpc_and_safe_headers(monkeypatch, si
     asset_id = UUID(int=900)
     response = client.get(f"/v1/admin/assets/{asset_id}/file", headers=headers)
     assert response.status_code == 200 and response.content == content
-    assert calls == [("SELECT hub.asset_file($1)", asset_id)]
+    assert calls == [("SELECT hub.asset_file($1)", asset_id)] * 2
     assert response.headers["content-security-policy"] == "sandbox; default-src 'none'; frame-ancestors 'none'"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["cache-control"] == "no-store"
     agency, headers = signed_client(signing_key, role="agency", agency="KIN")
     assert agency.get(f"/v1/admin/assets/{asset_id}/file", headers=headers).status_code == 403
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
 @pytest.mark.parametrize("profile,approved,issuing,allowed", [

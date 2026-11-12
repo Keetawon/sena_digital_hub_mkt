@@ -36,6 +36,7 @@ async def set_bit(uid, tab, *, connection=None, manager=None, **bits):
     if connection is not None:
         assert manager is not None
         directory = await call(connection, manager, 'select hub.account_directory()')
+        directory = json.loads(directory) if isinstance(directory, str) else directory
         row = next(item for item in directory['items'] if item['id'] == str(uid))
         tabs = row['access']['tabs']
         levels = set(tabs[tab])
@@ -47,8 +48,8 @@ async def set_bit(uid, tab, *, connection=None, manager=None, **bits):
         if 'special_actions' in bits:
             levels = (levels & {'view', 'edit', 'approve'}) | set(bits['special_actions'])
         tabs[tab] = sorted(levels)
-        await call(connection, manager, 'select hub.save_account_permissions($1,$2,$3,$4)',
-                   uid, tabs, row['can_manage_users'], datetime.fromisoformat(row['updated_at']))
+        await call(connection, manager, 'select hub.save_account_permissions($1,$2::text::jsonb,$3,$4)',
+                   uid, json.dumps(tabs), row['can_manage_users'], datetime.fromisoformat(row['updated_at']))
         return
     db = await disposable_operator()
     try:

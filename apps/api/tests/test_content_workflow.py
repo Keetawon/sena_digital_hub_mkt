@@ -142,7 +142,7 @@ def test_asset_review_uses_its_own_source_without_projects_grants(permission_acc
             for role in ['editor', 'publisher']:
                 for tab in ['projects', 'brands', 'knowledge']:
                     if tab != source_tab:
-                        await set_bit(ids[role], tab, can_view=False, can_edit=False, can_approve=False)
+                        await set_bit(ids[role], tab, can_view=False, can_edit=False, can_approve=False, connection=db, manager=ids['admin'])
             reviewed = await approve_item(db, ids, 'asset', {'id': asset['id']})
             assert reviewed['state'] == 'APPROVED' and reviewed['source_tabs'] == [source_tab]
             source_stamp = await db.fetchval("select jsonb_build_object('revision',media_revision,'updated_at',updated_at) from hub.assets where id=$1", UUID(asset['id']))
@@ -192,7 +192,7 @@ def test_review_certificate_pins_english_reviewer_and_freezes_submitted_translat
             approved = await call(db, ids['publisher'], "select hub.content_workflow_review($1,$2,$3,'approve',null)",
                                   'building', identity, submitted['expected_hash'])
             assert ids['viewer'] in await db.fetchval('select editors from hub.content_review_versions where id=$1', UUID(approved['version_id']))
-            await set_bit(ids['viewer'], 'projects', can_edit=False)
+            await set_bit(ids['viewer'], 'projects', can_edit=False, connection=db, manager=ids['admin'])
             await db.execute("select set_config('app.actor_id',$1,true)", str(ids['viewer']))
             dependency = await db.fetchval("select hub.web_dependency('project_buildings',$1,'projects')", identity)
             with pytest.raises(asyncpg.InsufficientPrivilegeError, match='English reviewer'):
@@ -353,9 +353,9 @@ def test_home_tasks_use_exact_certificate_and_current_source_permissions(permiss
             approved = await approve_item(db, ids, 'contact', identity)
             ready = await tasks('viewer', 'publish')
             assert len(ready) == 1 and ready[0]['version_id'] == approved['version_id']
-            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'])
+            await set_bit(ids['publisher'], 'knowledge', special_actions=['knowledge.publish_web'], connection=db, manager=ids['admin'])
             assert await tasks('publisher', 'publish') == [], 'The exact approver cannot publish'
-            await set_bit(ids['viewer'], 'knowledge', can_view=False, special_actions=[])
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, special_actions=[], connection=db, manager=ids['admin'])
             assert await tasks('viewer', 'publish') == []
         finally:
             await db.close()
@@ -371,7 +371,7 @@ def test_native_question_tasks_require_submission_and_keep_knowledge_authority(p
             key = 'w4_task_' + uuid4().hex
             await call(db, ids['editor'], 'select hub.save_faq_question($1,0,$2)', key,
                        {'topic': 'design', 'default_level': 'corporate', 'question_template': {'th': 'Synthetic question?'}, 'answer_kind': 'text'})
-            await set_bit(ids['publisher'], 'projects', can_view=False, can_edit=False, can_approve=False)
+            await set_bit(ids['publisher'], 'projects', can_view=False, can_edit=False, can_approve=False, connection=db, manager=ids['admin'])
 
             async def questions():
                 home = await call(db, ids['publisher'], "select hub.workspace_home(null,null,0,100,'approval',null)")
@@ -384,7 +384,7 @@ def test_native_question_tasks_require_submission_and_keep_knowledge_authority(p
             assert len(pending) == 1 and pending[0]['source_tab'] == 'knowledge'
             assert pending[0]['context']['tab'] == 'bank' and pending[0]['context']['question'] == key
             assert pending[0]['version_no'] == 1
-            await set_bit(ids['publisher'], 'knowledge', can_approve=False)
+            await set_bit(ids['publisher'], 'knowledge', can_approve=False, connection=db, manager=ids['admin'])
             assert await questions() == []
         finally:
             await db.close()
@@ -405,7 +405,7 @@ def test_generic_review_history_is_bounded_and_permission_guarded(permission_acc
             assert detail['after']['snapshot']['value'] == row['value']
             assert detail['target']['version'] == approved['version_id']
             assert not {'payload', 'editors', 'identity', 'source_hash', 'created_by', 'updated_by', 'approved_by'} & detail['after'].keys()
-            await set_bit(ids['viewer'], 'knowledge', can_view=False)
+            await set_bit(ids['viewer'], 'knowledge', can_view=False, connection=db, manager=ids['admin'])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], "select hub.content_history_event('corporate','sena',$1)", int(event['audit_id']))
         finally:
