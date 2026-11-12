@@ -6226,3 +6226,80 @@ and H1 (69 Node, 10 smoke, 80 browser) stages are retained; their inputs do not
 include the two amended browser specs. Both complete browser suites rerun on
 the amended specs, including desktop; the prepared supplemental H1
 scope-preview captures run after the complete gate passes.
+
+## W6 delivered — 12 November 2026
+
+Product commit `7ce77b6c71f6fa189d3b64ded8d0740d4ec3b411` was pushed to
+origin/main and the remote head verified. The product commit contains exactly
+the 107 explicitly leased paths (101 original + four approved legacy selector
+specs + the two approved mobile-synchronization specs). Source stayed frozen
+throughout the final gate; this receipt-only update follows separately. The
+independent docs/46 hosted receipt remains intentionally uncommitted with W6.
+
+Built BUD scoping (N4): per-level content scope model with «ทุกโครงการ» /
+selected BUD / selected-project exceptions, the account scope screen with
+searchable BUD tree, preview and confirm, dated BU membership with the
+read-only DW contract adapter, full-snapshot acceptance rules, seven-day grace
+and handover windows, stale/sync notices, and object-aware checks across SQL,
+API routes, proxies, cached projections, home tasks, publication, assistant
+retrieval and exports. No existing account, grant or template changed; no
+invitation can grant admin; the bootstrap operator still refuses while an
+active manager exists.
+
+Migrations: `supabase/migrations/202611090089_content_scopes.sql` (SHA-256
+`523522f6dc0cb89b6d77e70480637aad2022429f0b7f6aab6949b8ef205d5e2e`) and
+`202611090090_bu_membership.sql` (SHA-256
+`5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4`). Migration
+0089 carries the measured performance corrections (cheap-predicate ordering in
+`hub.faq_rule_projects`, bounded home page detail projections, sorted
+scope-digest inputs, no discarded editor payload in history scans); hosted TEST
+still runs the unoptimized 0088 function and keeps its documented timeout
+limitation until the owner authorizes the W6 rollout.
+
+| Final suite | Passed | Skipped | Failed |
+|---|---:|---:|---:|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production import/install/isolation | 4 | 0 | 0 |
+| API | 2654 | 11 existing | 0 |
+| DB | 95 Node; 44 SQL suites; 24 concurrency scenarios | 0 | 0 |
+| Local H1 | 69 Node; 10 smoke; 80 browser | 0 | 0 |
+| UI 1280px | 609 | 0 | 0 |
+| UI 390px | 609 | 0 | 0 |
+| Changed-source/browser credential scans | zero matches; no credential files read | 0 | 0 |
+| Diff/source-freeze verification | pass | 0 | 0 |
+
+Stage evidence: the fresh serial gate (10:06-12:08 Bangkok) supplied typecheck,
+offline build, production, full API (3,774.26 seconds), DB, H1 and the first
+desktop 609; both complete browser suites plus credential/diff/broad scans and
+source post-check reran on the final 107-path freeze
+(`full-final-107-source-hashes.json`, SHA-256
+`3b026704b3a4444a638ee5dcb35abf11b29b329545e9257445af0dcb1a6cf40c`) after the
+approved synchronization patch. The combined receipt with all log hashes is
+`artifacts/unified-workspace/w6/full-gate-receipt.json`. API reported six
+existing dependency deprecations. Earlier failing runs remain recorded above;
+nothing was quarantined or weakened.
+
+Supplemental settled scope-preview captures: eight images (light/dark at
+1280/390, viewport and panel) from a separately owned loopback H1 review
+session after the gate, with zero scope confirmations
+(`settled-scope-preview-h1-capture.json`). The capture operator script was
+prepared unexecuted and needed two artifact-only corrections at first run
+(the preview request path is the manager permissions preview, and one tree
+selection precedes the request); no product source changed. Force-stopping the
+demo after completion printed two invalid-credential middleware errors during
+teardown; captures and receipts are unaffected. Other visual evidence under
+`artifacts/unified-workspace/w6/`: `h1-scope-preview-{1280,390}.png`,
+`account-notices-{1280,390}.png` and `scopes-{1280,390}-{light,dark}.png`.
+
+Removed completed worktrees/branches normally: `ws/w6-client-review` and
+`ws/w6-review`. The 13 remaining `ws/w6-*` trees keep uncommitted preparation
+and were not touched. Sixty worktrees remain, including main.
+
+Requirement deviations: none. The generic BUD request-failure alert stays
+unchanged with its recorded owner answer; the proposed P1 behavior remains a
+P1 candidate, including the possible API-field scope question. Hosted TEST is
+unchanged; W6 deployment additionally requires the DW BUD feed decision.
+
+Next: P1 (copy/layout corrections) on `ws/polish-p1` from this delivered main,
+then W7, W9 and finally W8 UAT.
