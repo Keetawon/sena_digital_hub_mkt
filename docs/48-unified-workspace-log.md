@@ -6542,3 +6542,626 @@ The root retains the sole test lease for the fresh shared full gate in
 `artifacts/unified-workspace/p1-w7-full-20261113-r2/`: freeze 75 source paths
 and the exact 33-path P1 index, preserving the FAQ split, and rerun every stage
 without reuse. No product commit or hosted change has been made.
+
+### P1/W7 full retry stopped on home read timeout — 13 November 2026
+
+The fresh retry ended naturally at 07:30 Bangkok in the API stage: **2,703
+passed, one failed, 11 existing skips and six warnings**, 3,208.65 seconds.
+Typecheck, offline build and production imports passed. DB, H1, both complete
+browser widths and final scans were not reached in this retry. The failed
+case is `test_workspace_home.py::test_home_reads_do_not_record_gaps_or_audit_and_project_revocation_clears_counts`:
+the initial viewer home GET reached `workspace_home.py:83`, then the SQL
+`hub.workspace_home` call exceeded the existing 15-second command deadline.
+This is a diagnostic observation, not yet a root-cause finding.
+
+All 75 frozen source hashes, 33 index entries and base ee78876 were unchanged.
+The guarded continuation stopped without a commit, push or W9 integration.
+The exact failure receipt and original logs remain under
+`artifacts/unified-workspace/p1-w7-full-20261113-r2/`. The same API source had
+passed the prior complete API run; that result does not override this failure.
+
+The root holds the sole test lease for a focused clean-disposable home rerun
+and diagnosis. A bounded read-only review checks the existing home projection
+and fixture growth. No timeout, expected assertion, application source,
+permission or migration has been changed. W9 stays isolated and W8 candidates
+remain unexecuted. A new successful gate is required before delivery.
+
+The unchanged fresh-disposable home suite passed **28 tests, one warning in
+17.08 seconds**; the failed case took 0.96 seconds. This does not clear the
+full-gate failure. Read-only source review confirmed retained project/FAQ
+fixtures in earlier suites; the 300-project scope fixture correctly rolls back.
+The root retains the sole lease for one representative accumulated-data run
+with the original home test, assertions and 15-second deadline unchanged. An
+artifact-only diagnostic enables function timing in that disposable database,
+records aggregate population and wait events without query text or identities,
+then restores its diagnostic setting. Product source remains unchanged.
+
+### Home scaling diagnosis and separate correction STOP ? 13 November 2026
+
+The representative accumulated diagnostic completed: **126 passed, one warning
+in 487.47 seconds**. Population: 53 projects, 37 brands, 20 FAQs and 24 FAQ versions.
+Across three ordinary home requests, function timing measured 14.702 seconds
+in home and 11.130 seconds in its task projection. Nine native enumerations
+caused 369 scoped FAQ collection scans: 9 ? (1 + 2 ? 20). The per-FAQ permission
+wrapper builds and discards the full FAQ response, including two collection
+scans. The FAQ composition function used 1.126 seconds; it is not the dominant
+cost in this measurement. No lock waits or blockers were observed.
+
+A second bounded synthetic diagnostic, using existing fixture helpers and
+ordinary draft FAQ commands, reproduced the original first-home-GET timeout:
+51 projects, 26 brands, 50 FAQs; the unchanged 15-second API deadline cancelled
+the request at 15.221 seconds. Completed scoped FAQ scans consumed 12.480 seconds.
+There were no observed blockers. This is a reproduction of the scaling failure
+class, not a claim that its population matches the failed full suite exactly.
+A final run without function profiling checks the observation overhead.
+
+The lead has requested approval for a separately identified local correction:
+replace only the redundant native FAQ wrapper with the existing targeted
+`content_source_allowed` guard, preserving outer scoped rows, final version
+checks, lock behaviour, permissions and API contracts. A new forward migration
+is needed. Proposed allocation is 0092, with only the uncommitted W9 migration
+renumbered to 0093 and its receipts refreshed. Delivered 0089/0090 stay immutable.
+The P1 copy/layout-only STOP rule is why this change is not implemented yet.
+No product commit, migration edit, W9 integration or hosted change occurred.
+
+Evidence and concrete proposal remain under
+`artifacts/unified-workspace/home-timeout-recovery-20261113/`. All 74 non-log
+frozen source files, all 33 P1 index entries and base ee78876 remain unchanged.
+The earlier guarded delivery watcher is stopped. Root owns the final diagnostic
+lease; after it ends, no gate or delivery may start before this scope decision.
+W8 evidence mapping and three prepared regression cases have been verified and
+retained under `artifacts/unified-workspace/w8/`; runtime/UAT remain NOT_RUN.
+
+The final bounded run also failed with function profiling disabled: **one
+failed, one warning in 33.49 seconds**, the same first viewer home GET and
+15-second command timeout (15.41 seconds including cancellation/HTTP handling).
+No function timing rows, lock waits or blockers were observed. Both bounded
+runners ended normally through harness cleanup. The lead has released the test
+lease and is awaiting the separate correction decision; no automatic delivery
+watcher or subsequent gate is active. Exact hashes and totals are in
+`home-timeout-recovery-20261113/diagnostic-receipt.json`.
+
+### Approved home performance correction 0092 - 13 November 2026
+
+The owner approved a separate correction as migration 0092 and renumbering
+only the uncommitted W9 migration to 0093. Never edit 0089/0090/0091. The fix
+must remain a separate commit from P1, with no permission rule, API contract,
+timeout or hosted change. Before delivery, compare old and new FAQ visibility
+row for row under every specified grant shape, lifecycle and owning scope,
+including no Knowledge View. Any difference requires STOP/report, not a rule
+adjustment. The owner also requested a read-only assessment of hosted TEST's
+actual FAQ count and deployed query path.
+
+The lead prepared the exact single-predicate migration and replay pins. W7's
+pre-correction profile/test/inventory bytes are retained for its separate
+commit. The new permission card says no permission change. W9's 60-path
+manifest has been refreshed for `202611130093_upload_optimization.sql`; SQL
+bytes remain SHA-256
+`48a1ff71b16e0d6ecd6df5eee3b6a9a28068c9a1842617b2c260fb842ba11d2f`.
+Only the two filename references changed. Old receipts remain preserved.
+
+The root holds the sole local test lease for the unchanged bounded 50-FAQ
+HTTP reproduction, strict equivalence matrix, affected permission/concurrency
+checks, then full DB/API quick checks. The separate hosted assessment is
+aggregate-only and read-only; no signed-in browser or local listener is used.
+No product commit or full gate has started. Source/evidence folder:
+`artifacts/unified-workspace/home-performance-0092-20261113/`.
+
+The unchanged 50-FAQ HTTP reproduction passed after 0092: **one passed, one
+warning in 21.53 seconds**, with all three home requests together taking
+7.747 seconds; previously the first request timed out. No timeout or assertion
+was changed. The rollback-only regression also proves one scoped FAQ collection
+scan per native enumeration and retains the 15-second home deadline.
+
+The initial owner-required comparison passed **two tests, one warning in
+42.31 seconds**: 20 labelled FAQ rows plus a missing-row probe across eight
+grant scenarios, **168 comparisons with zero differences**. Complete old/new
+native JSON, exact function definition, attributes and ACLs also matched;
+reads changed neither audit nor gap counts. Supported FAQ archival is withdrawal
+(the FAQ table has no deleted/archive timestamp); deleted project/brand parents,
+missing FAQ, never-approved, retired-question, superseded applicability,
+internal/hidden, excluded and business/brand/group/corporate ownership are
+explicit fixtures. BUD-only and BUD-plus-exception selections are being added
+to supplement the already-passing explicit-project selections before freezing.
+
+Hosted TEST read-only assessment at 08:19 Bangkok confirmed current release
+`4b00099-media-00f0f23e0fe3`, API/admin active. Both `hub.faqs` and
+`hub.faq_versions` are ordinary unpartitioned tables, have no inheritance
+children, and have zero allocated heap bytes: **zero FAQ objects and versions
+at the observation**, inferred from physical relation metadata, not an executed
+COUNT or an estimate. The separate live-row estimate is also zero. The current
+FAQ-source count and exact migration-history prefix were not reread; prefix 88
+remains the last documented value. The runtime role correctly denied history
+access, and the approved direct operator environment was unavailable.
+
+Live function fingerprints show direct exact-ID `hub.faqs` lookups and absence
+of `content_faq_rows` and `workspace_native_rows_before_scopes`. Therefore hosted
+TEST is not exposed to this W6 repeated scoped-collection scan. The independently
+documented 0088 business/form rule-resolution cost remains; no new heavy content
+request was issued to test it. No hosted row, release, configuration or file was
+changed, no actor was injected, and no signed-in browser was used. Sanitized
+receipts and the metadata-method limitation are retained in
+`home-performance-0092-20261113/hosted-read-only/`.
+
+Final comparison including BUD-only and BUD-plus-exception grants passed: **two
+tests, one warning in 41.84 seconds; 210 row comparisons, zero differences**.
+Each scenario compares complete native FAQ JSON as well as the old predicate
+(`Knowledge View` plus `faq_read(id)`), the new exact-row predicate and native
+inclusion. No predicate or visibility rule was adjusted. Results:
+
+| Grant scenario | Old/new readable FAQs | Old/new native FAQs | Equal row payloads/probes |
+|---|---:|---:|---:|
+| unrestricted | 20/20 | 19/19 | 21/21 |
+| selected_one | 10/10 | 9/9 | 21/21 |
+| selected_two | 11/11 | 10/10 | 21/21 |
+| positive_neighbour_only | 2/2 | 2/2 | 21/21 |
+| selected_empty | 0/0 | 0/0 | 21/21 |
+| partial_shared_knowledge_only | 10/10 | 9/9 | 21/21 |
+| revoked_after_positive | 0/0 | 0/0 | 21/21 |
+| no_knowledge_view | 0/0 | 0/0 | 21/21 |
+| selected_bud | 10/10 | 9/9 | 21/21 |
+| selected_bud_with_exception | 11/11 | 10/10 | 21/21 |
+
+The exact scenario/row evidence is `equivalence-final-receipt.json` in the
+0092 evidence folder. The previous eight-scenario receipt remains preserved.
+The root now freezes the 77 explicit source paths and unchanged 33-path P1
+index for full DB/API quick verification. P1 (33 paths), W7 (43 paths with its
+pre-0092 profile/test bytes), and the separate correction (six overlapping/new
+paths) retain distinct planned commits. Full-gate delivery is still pending.
+
+
+### 0092 quick verification: scale-home timeout — 13 November 2026
+
+The serial DB/API quick run ended at 09:40 Bangkok with the source still
+matching all **77 frozen paths** and the same **33 P1 index blobs** on
+`ee788763c1cc0fb9fd1a55c5ad134862dd26724b`. DB passed **95 Node checks,
+45 SQL suites and 24 concurrency scenarios**. API reported **2,705 passed,
+one failed, 11 existing skips and six warnings in 4,276.61 seconds**.
+
+The strict 210-row authority/lifecycle comparison passed in this accumulated
+suite. The separate scale regression also passed its native FAQ count and
+exactly-one-scoped-collection-scan assertions, then timed out on the unchanged
+15-second `workspace_home()` call at test line 226. No FAQ predicate difference
+was observed. The original home regressions and every other API test passed.
+No assertion, visibility rule or timeout was adjusted. The shared full gate
+has not started and there is no product commit.
+
+Evidence: `artifacts/unified-workspace/home-performance-0092-20261113/`
+contains `quick-failure-receipt.json`, `api-quick.log`, `db-quick-receipt.json`
+and the original `quick-source-proof.json`. A collection-only diagnostic
+identified the failing test's ordinal without running fixtures or opening a
+port; the final traceback confirmed it. The failed run and its proof remain
+preserved.
+
+The failed runner has exited and its owned test processes/listeners are gone.
+The root retains the sole test lease for a focused diagnostic using the
+existing disposable harness. It will measure ambient and added fixture counts
+on the same rollback connection and transaction-local function timings.
+Instrumentation issues no additional SQL inside the 15-second wait and is
+diagnostic evidence only. The source predicate, tests and migrations remain
+unchanged while the cause is measured. Earlier passed stages will not be
+represented as a completed full gate. No hosted change.
+
+
+### 0092 accumulated diagnostic: separate composition limit — 13 November 2026
+
+The approved 0092 predicate and all 77 product paths remained unchanged through
+two focused accumulated runs on the same four preceding content suites and the
+new scale regression. The existing 33 P1 index blobs and base also matched at
+completion. The first diagnostic reported **98 passed, one failed, one warning
+in 544.31 seconds**. A control restoring the exact original transaction-local
+`track_functions=none` after the native scan assertion reported **98 passed,
+one failed, one warning in 496.83 seconds**. These are diagnostics, not gates.
+
+Both runs began with 53 projects, 37 brands, 20 FAQs and nine unit types. The
+new rollback fixture adds 50 projects and 50 corporate FAQs, so its unfiltered
+home request actually covers 103 projects, 38 brands and 70 FAQs. This exceeds
+the original bounded reproduction's 51 projects, 26 brands and 50 FAQs, which
+passed unchanged after 0092. Native projection returned all 70 FAQs in 0.681071
+seconds in the first run and 1.046850 seconds in the control. Both retained the
+exactly-one-scoped-collection-scan assertion. Home still hit the unchanged
+15-second deadline: 15.001417 and 15.012364 seconds respectively.
+
+The first run's partial, cancelled home profile recorded 101 completed
+`compose_project_faq` calls (12,640.0394 ms total, 8,908.5171 ms self) and
+49,204 `business_project_matches` calls (3,112.2293 ms). It recorded no additional
+`content_faq_rows` call before cancellation. These nested timings must not be
+summed, and cancelled profiles are incomplete. The control has no home function
+counters after tracking restoration; its matching workload and timeout show
+that all-mode profiling alone does not explain the failure. No FAQ predicate
+mismatch was observed; the separately recorded 210-row equality proof stands.
+
+Both rollback contexts restored every measured ambient row count. The second
+runner exited at 10:08 Bangkok; its process and all test processes/listeners
+were confirmed gone. The earlier failed quick gate, both diagnostics and their
+source proofs remain preserved under `home-performance-0092-20261113/`, in
+`faq-scale-diagnostic/accumulated-receipt.json` and
+`faq-scale-ambient-mode/accumulated-receipt.json`. No timeout, assertion,
+permission rule, migration or application source was changed for these runs.
+
+This separate composition hotspot is outside the approved one-predicate 0092
+patch. A bounded extension proposal is being prepared for owner review. The
+root has released the diagnostic lease; the shared full gate and delivery
+remain stopped. There is no new product commit or hosted change. W9 remains
+prepared as 0093. W8's combined v6 fixture package has 20 syntax checks and seven
+pure-check scripts passed; all 61 cases remain NOT_RUN with owner acceptance
+PENDING. A further read-only review found stale translation-review revisions
+and attempted resubmission of already-approved seed assets in its new
+multiphase setup; corrections remain artifact-only preparation.
+
+The exact extension proposal is now retained in
+`home-performance-0092-20261113/composition-extension-proposal/`:
+`composer-business-guard.proposed.patch`, SHA-256
+`eda469a24c0219c5c09d0525e19ab1bb1c769725fa7969d77f458da4b3ecc7ab`.
+Only the direct business-membership branch of `compose_project_faq` would gain
+an explicit CASE using the same selected question and state predicates already
+required by its outer WHERE. Latest-version selection, applicability, ranks,
+conflicts and payload construction would stay unchanged. This is not yet
+implemented or measured. The owner has been asked to approve widening the
+uncommitted 0092 scope; the native-only permission card remains unchanged.
+The proposed proof includes all 81 SQL true/false/NULL acceptance combinations,
+complete old/new composition JSON, exact function attributes/ACL and unchanged
+audit/gap counts, in addition to the existing 210 native comparisons and
+unchanged deadline tests. Any mismatch stops work; this is not authority for
+a further optimization. The original 0089/0090/0091 bytes remain immutable.
+
+
+W8 preparation continued without a test lease or product edit. The reviewed
+combined package and its separate correction are retained at
+`artifacts/unified-workspace/w8/w8-retained-combined-v6/` and
+`w8-retained-combined-v6-correction/`. The correction rereads each translation's
+current revision before review and preserves valid independent certificates
+only for the two exact seed assets and their existing P1 bindings. New source
+approvals still follow the original workflow. No retry hides a conflict.
+
+All 38 original combined-package files and 54 runtime source pins remain
+unchanged. The correction receipt is SHA-256
+`a96d6875992a157854a46c818f1b4c927d5788a22777739a3349a43fc0320ee4`;
+its patch is `4e6742f9cabdda499a5792ed7fdcf053383a9c2568cfce3ee4b4e14ca2d24785`.
+The bounded review found no additional concrete setup blocker. Twenty module
+syntax checks and the seven unchanged pure-check scripts passed in preparation;
+the lead also ran the 18 source/in-memory correction checks after copying and
+verifying all 28 correction artifacts. Those checks reproduce the two old
+fixture failures and verify the proposed steps, not SQL/API/browser behavior.
+Final-W9 compatibility, retained setup/cleanup, all 61 case observations and
+owner acceptance remain pending. No UAT case was marked passed.
+
+
+### Owner-approved composer measurement and revised order — 13 November 2026
+
+The owner approved three separate parts. First, measure the exact proposed
+business CASE guard in a rollback-only fixture on the actual accumulated corpus
+and every ordinary scenario listed in its review. Compare complete composition
+JSON for Thai/English and published-only true/false, plus owner, ACL, signature
+and audit/gap counts. Only exact equality permits adding that guard to the
+still-uncommitted 0092. Any mismatch stops work without a rule adjustment.
+
+Second, the new scale regression now supplies its own brand filter and asserts
+exactly its 50 fixture projects. Its native one-scan assertion remains global;
+the original unfiltered bounded HTTP regression and 15-second limits remain
+unchanged. No ambient row or test was removed. **OPEN blocker for W8 UAT and any
+hosted rollout of the next release:** the accumulated unfiltered home request
+at 103 projects/70 FAQs timed out at 15.0 seconds; its partial profile has
+101 composition calls, 12.6 seconds total and 8.9 seconds self time. The new
+brand filter does not resolve or close that blocker.
+
+Third, a separate home task-composition slice is design-only until the owner
+approves implementation. It must retain today's fact_missing tasks and totals,
+with a target below five seconds at 300 projects and the current FAQ/unit-type
+volume. Visible behavior proposals require separate owner decisions. Exact
+hosted project/unit-type/FAQ counts may be read without hosted changes.
+
+Delivery order is the shared P1/W7/0092 gate and separate planned commits,
+then W9/0093, then the approved home-composition slice, then W8 UAT. The lead
+retains the sole test lease for the existing disposable harness and the
+rollback-only comparison. No guard has yet been applied to product SQL.
+
+
+### Approved composer proof complete and final 0092 prepared - 13 November 2026
+
+The rollback-only comparison passed on both required corpora before the guard
+was added to product SQL. Every comparison used the complete cells/items/hidden/
+conflicts/ready JSON for Thai/English and published_only false/true. The exact
+function owner, ACL, signature and other attributes matched; audit/change-log
+and content-gap counts stayed unchanged. Each nested probe restored the exact
+original definition, and the enclosing fixture rolled back. All 81 SQL
+true/false/NULL row-acceptance combinations matched in every snapshot.
+
+| Corpus/snapshot | Full JSON comparisons | Business calls before -> after | Comparison seconds before -> after |
+| --- | ---: | ---: | ---: |
+| Actual accumulated repro: 103 projects, 70 FAQs, 112 project/unit contexts | 448 | 217,152 -> 2,784 | 48.257345 -> 39.540456 |
+| Draft/static, seven levels and legacy | 28 | 15,896 -> 314 | 0.405956 -> 0.216069 |
+| Published version before newer draft | 28 | 15,896 -> 328 | 0.436939 -> 0.238221 |
+| Approved version before newer draft | 28 | 15,896 -> 328 | 0.450404 -> 0.231028 |
+| Rekey, withdrawal, newer drafts and deleted parents | 24 | 13,446 -> 258 | 0.381646 -> 0.216185 |
+
+There were **556 exact comparisons and zero differences**. The ordinary corpus
+has 49 explicit fixture preconditions, covering every ordinary scenario in the
+stored review: positive/negative business membership, explicit/rule applicability,
+unrelated/rekeyed questions, latest withdrawal without reviving older answers,
+approved/published versions with newer drafts, seven-level precedence, same-rank
+conflict, deleted parents, corporate opt-out, property-form holds, missing/core/
+legacy cells, inherited unit-specific facts, exposure, expiry and locale fallback.
+Publication preconditions prove the approved version identity, published pointer,
+frozen page dependency and unchanged public payload after the newer draft.
+
+The actual-repro diagnostic suite passed 99 tests with one existing warning in
+595.90 seconds. The ordinary matrix passed one test with one existing warning in
+15.08 seconds. Actual-repro business lookup time fell from 12,379.0989 to
+922.3262 ms; composer calls remained 448, total time 47,450.1284 -> 38,718.2375 ms,
+self time 33,662.2528 -> 36,353.4807 ms. FAQ rule/form call counts remained 384/1,180.
+Nested times must not be added. These profiled comparison timings are neither a
+whole-home target measurement nor evidence closing the accumulated timeout.
+
+Evidence under `artifacts/unified-workspace/home-performance-0092-20261113/`:
+`composer-measurement/repro-receipt.json`, SHA-256
+`113e97dda09fd83c62d2f1be7ca07031fe881dd3699b3f1c8f18349e61300784`;
+`composer-ordinary-measurement/ordinary-receipt.json`, SHA-256
+`ba9cb0759c4c191e6458efbb0fe0757a7634489070eba07fa76323b4f1dc81e4`.
+Both bind their raw logs, source proof and unchanged comparison helper
+`a0b1f899c08844259133f4d5fcfcc39e3ad5a1d68b4a1a7fd348e004e67ca942`.
+The ordinary launch refusal and two setup failures are retained: the harness
+rejected an artifact-directory test path; an intake suggestion needed ordinary
+question approval; a published cell could legitimately display hold from lint.
+Only fixture setup/preconditions were corrected. No equality assertion or rule
+was weakened. The admitted temporary test was hash-verified, archived and removed
+normally after the runner exited; it is not a delivery path.
+
+The exact approved business CASE is now folded into the still-uncommitted 0092,
+alongside its original native-row predicate correction. The docs/36 card still
+states **no permission change**. Profile canonical/executed pins are refreshed;
+0089, 0090 and 0091 bytes remain unchanged. W9 stays 0093 with unchanged SQL hash
+`48a1ff71b16e0d6ecd6df5eee3b6a9a28068c9a1842617b2c260fb842ba11d2f`.
+The native 210-row grant/lifecycle comparison will rerun on final SQL, as will
+the original unfiltered bounded HTTP regression, full DB checks and affected API
+selection. The full shared gate will run all twelve stages fresh, reusing none
+of the earlier failed gates. No product commit, push or hosted change yet.
+
+**OPEN blocker remains for W8 UAT and any next-release hosted rollout:** the
+unfiltered 103-project home request timed out at 15.0 seconds; its partial
+profile completed 101 composer calls (12.6 seconds total, 8.9 seconds self).
+Filtering the new test to its own exactly 50 projects does not resolve this.
+Its global one-scan assertion and original unfiltered HTTP regression remain.
+
+The separate home-task design is retained at
+`artifacts/unified-workspace/home-missing-fact-design-20261113/proposal.md`,
+SHA-256 `240954dc9ac5fdd706791b07e760da0e786fba3e5f87ae29cd56d97b61188473`.
+The owner approved implementation **after W9**: a private missing-fact projection
+must preserve exact tasks, totals, links, ordering and permissions and pass
+whole-home requests below five seconds at 300 projects. No intended visible
+change except speed; no implementation has begun. Delivery order remains shared
+0092/P1/W7 gate and separate commits, W9/0093, home composition, then W8 UAT.
+
+Hosted read-only observation at 11:27:39 Bangkok retained release
+`4b00099-media-00f0f23e0fe3`, with API/admin active. Exact current project/unit/FAQ
+COUNT admission stopped: hub_runtime has no table SELECT and active forced RLS.
+Zero COUNT queries or application requests ran; no actor injection, role change,
+bypass, grant, configuration or hosted write occurred. FAQ and version heaps were
+empty ordinary unpartitioned relations with no children, supporting zero stored
+FAQ/version rows at that observation, not an executed COUNT. Current exact
+project/unit/question counts remain unavailable; the dated 11 November values
+must not be relabelled current. The deployed 0082 home still has the composition
+loop, but current empty FAQ heaps do not establish its real total cost or limit.
+Receipt: `hosted-home-counts/receipt.json`, SHA-256
+`ca31a9ec09173c384efc5550b0752de81fa5b67f453b7e813fbb9d5a7659b0e3`.
+
+The lead retains the sole test lease for final-source quick checks and the
+subsequent serial shared full gate. Other worktrees remain preparation-only.
+
+
+### Hosted counts completed read-only; home target volume selected - 13 November 2026
+
+At 12:13:46 Bangkok, the existing protected environment launcher documented in
+docs/46 admitted the fixed aggregate operator. It used the already-configured
+TEST administrator, verified TLS/target/schema-88 and migration 82-88 checksums,
+and confirmed existing SELECT with inactive RLS before counting. No role,
+permission, bypass setting, credential, configuration or hosted data changed.
+One repeatable-read/read-only transaction ended by rollback; no application or
+heavy home/brand/composer request ran. The earlier runtime-principal STOP is
+preserved and is superseded only for the requested count evidence.
+
+Exact counts: **82 projects, 273 eligible unit types, 355 potential project/unit
+contexts before caller filters, zero FAQs, zero FAQ versions, ten question-bank
+rows (zero approved), and 33 active brands**. All projects and unit types are
+not deleted; all units are not withdrawn and belong to not-deleted projects.
+
+The deployed home definition still composes FAQ per project/unit context. Its
+composer hash equals the measured pre-0092 definition. The W6 scoped-collection
+rescan is absent from the deployed exact-ID FAQ reader. The composition scaling
+pattern exists, but zero answers/versions and zero approved questions do not
+match the populated local failure workload. No hosted latency pass is claimed.
+
+The lead selects the approved later benchmark at 300 projects plus at least
+273 units (573 contexts), keeping at least 70 FAQs/74 versions and 144
+questions/277 versions. This uses the approved proposal's larger verified-volume
+allowance. Exact task/output equality and every whole-HTTP request below five
+seconds remain required. Implementation stays after W9, before W8.
+
+Evidence under `home-performance-0092-20261113/hosted-home-counts/protected-operator/`:
+`home-counts-1794546826678.json`, SHA-256
+`e9294b296bcc25107486cda5f53c9e8e23eaaacd01075402f08194f5deae0587`;
+`completed-receipt.json`, SHA-256
+`4ad302bce67233908b7f57bf7ec38cccc67e8a78f7f35b7a1f42abb26b211cdb`.
+The lead retains the sole test lease for the serial local quick/full gate.
+
+
+### Final 0092 recovery quick gate passed; shared full gate starts - 13 November 2026
+
+The final-source quick sequence completed at 12:21:50 Bangkok with exit zero.
+Original unfiltered bounded HTTP regression: 1 passed, 1 existing warning,
+27.02 seconds. Strict native grant/lifecycle comparison plus own-brand scale
+regression: 2 passed, 1 existing warning, 67.83 seconds; all 210 comparison rows
+and full native payloads matched exactly with zero differences. The scale test
+asserts exactly 50 projects; its global one-scan assertion remains intact.
+DB: 95 Node checks, 45 SQL suites and 24 concurrency scenarios, all passed.
+Affected API selection: 540 passed, 2,177 deselected by the explicit quick
+selection, 1 existing warning, 1,243.93 seconds. There were no failures or skips.
+
+The 77 product paths and 33 staged P1 objects matched their frozen quick proof.
+The final native receipt SHA-256 is
+`449d5b6271ccaac59254b5085047de0d5f82d66cad9832c6e6b2c86f350cc09d`;
+source proof is `0ac6ecdada22458c024783f036fa342386406c138050c233a7fdb49808142b50`.
+Evidence: `home-performance-0092-20261113/quick-recovery/quick-receipt.json` and
+its four raw stage logs. The original quick proof is preserved separately.
+Final 0092 SHA-256:
+`100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1`.
+
+After process/port release was verified, the lead appended the read-only hosted
+count evidence and this log entry. No tested product code changed. The shared
+R3 full gate freezes all 77 final source paths and 33 P1 index objects and runs
+all twelve stages fresh, including the complete API suite and both UI widths.
+No stage from earlier failed gates is reused. Source and index stay frozen until
+it exits. The lead retains the sole test lease. No product commit or push has
+occurred. The unfiltered 103-project timeout remains OPEN for W8 and any next
+hosted release; the approved home implementation follows W9 before W8.
+
+
+### Owner pause for laptop shutdown - 13 November 2026
+
+At the owner's explicit request, the lead sent normal Ctrl+C to the owned R3
+full-gate console. The disposable runner and its database exited; all owned
+test processes and listeners on 3000/8000/55432 were confirmed gone. No other
+process was stopped. Typecheck, offline build and production imports had passed;
+the API suite was interrupted at its last reported 37 percent, without final
+suite totals. The runner records exit 1/failed because of interruption, not a
+completed gate or an observed product assertion failure. DB, H1, UI and final
+scans remain unrun in R3.
+
+All 77 frozen source paths and 33 staged P1 objects were verified unchanged
+before this pause entry. No commit, push or hosted change occurred. Quick checks
+and exact-equivalence evidence remain preserved. Full evidence and the owner
+pause receipt are in `artifacts/unified-workspace/p1-w7-home-full-20261113-r3/`.
+The source freeze remains historical; this docs/48 pause append is the sole
+post-freeze source change. All preparation worktrees are preserved.
+
+Work is PAUSED, with the test lease released. Do not restart automatically.
+On explicit resume, revalidate source/base/index and the lease, then continue
+the interrupted gate according to docs/11 with an explicit evidence decision.
+No delivery until a complete valid gate. Next delivery order remains separate
+P1/W7/0092 commits, W9/0093, approved home composition, then W8 UAT.
+
+
+### Owner resumed; fresh shared gate prepared - 16 November 2026
+
+The owner explicitly resumed work. HEAD and live origin/main remain
+`ee788763c1cc0fb9fd1a55c5ad134862dd26724b`. The lead rechecked all 77 explicit
+paths and 33 P1 staged objects against R3: every non-log source hash and every
+index object matches. The only source difference was the exact recorded
+owner-pause append to this log. No test process or test listener was active.
+The 13 November quick checks and 210 native/556 composer equality evidence
+remain valid for the unchanged implementation. No new hosted request ran.
+
+Preserve R3's interrupted state/logs and pause receipt. Prepare a fresh serial
+attempt under `artifacts/unified-workspace/p1-w7-home-full-20261116-r4/`, with
+all twelve stages run again and no reused stage. The first three checks are
+short and rebuilding verifies the environment after shutdown. This choice
+avoids treating the incomplete API stage as evidence or overwriting the
+interrupted attempt. The 77 final source paths and 33 P1 index objects will
+remain frozen through R4. No quick test is repeated solely for a log append.
+
+The reviewed explicit commit partition remains P1 33, W7 43 (including the two
+saved pre-0092 profile/inventory blobs), then the separate 0092 correction six
+paths, followed by a docs/48 receipt. No commit or push yet. R4 delivery and
+W9 handoff operators are rebound to the new freeze; original R3 operators and
+previous handoff bytes remain preserved. All preparation worktrees remain.
+The lead holds the sole test lease for this serial full gate. Hosted TEST
+remains unchanged. The 103-project home timeout stays OPEN for W8 and the
+next hosted release. Delivery order remains P1/W7/0092, W9/0093, approved home
+composition at 300 projects plus at least 273 units, then W8 UAT.
+
+
+### R4 full gate failed on the filtered scale-home deadline - 16 November 2026
+
+The resumed shared R4 gate stopped in its complete API stage. Typecheck,
+offline webpack build and all four production import/isolation checks passed.
+API: **2,705 passed, one failed, 11 existing skips and six warnings in
+4,084.77 seconds**. DB, H1, both UI widths and final scans did not run in R4.
+This is a failed full gate, not delivery evidence. No stage is marked reused.
+
+The failure is `test_native_faq_projection_scans_the_scoped_collection_once_at_scale`
+at line 226: `hub.workspace_home(brand=>$1)` exceeded the unchanged 15-second
+deadline. The fixture supplies its own brand and 50 projects, as approved.
+The global native FAQ count and exactly-one-collection-scan assertions passed;
+the later exact-50-project response and read-side-effect assertions were not
+reached. The strict native authority/lifecycle comparison and original
+unfiltered bounded HTTP regression passed in this complete API run. The
+filtered isolated quick result therefore does not establish accumulated-suite
+home performance. The earlier unfiltered 103-project blocker remains OPEN.
+
+After exit, the lead verified all **77 frozen source paths and 33 staged P1
+objects unchanged**, on base `ee788763c1cc0fb9fd1a55c5ad134862dd26724b`.
+The runner, owned test processes and listeners on 3000/8000/55432 are gone.
+Evidence remains in `artifacts/unified-workspace/p1-w7-home-full-20261116-r4/`;
+`failure-receipt.json` SHA-256 is
+`9d146fa290ec1db555719ada4a4be1a7cd8b9027d31973a45560bb643f1bacd5`.
+This log append follows the frozen-source verification. No product file,
+permission rule, migration, timeout, test assertion or hosted resource changed;
+there is no product commit or push.
+
+The lead retains the sole test lease for a focused disposable diagnostic.
+Reproduce the actual preceding suite population, measure the current filtered
+request and compare its original function-profiling mode with the normal entry
+mode outside the original assertion. Preserve the original failure and all
+assertions; any extra read-only control is diagnostic evidence only. Do not
+infer that profiling explains the failure before measurement. Delivery and W9
+integration remain stopped; the approved home implementation is still ordered
+after W9 unless the owner changes that order.
+
+
+### R4 focused replay passed; one fresh full validation - 16 November 2026
+
+The artifact-only diagnostic completed with **1,740 passed, nine existing
+skips, 968 explicitly deselected suffix tests and six warnings in 1,677.51
+seconds**. It first collected all 2,717 tests, then retained the original
+ordered 1,749-test prefix through the failed scale case. The original target
+test, its assertions, own-brand filter and 15-second deadline were unchanged.
+No collection-dependent repository fixture or ordering hook was found; the
+target is the last test in its module. Extra read observations still make
+this diagnostic distinct from an uninstrumented full run.
+
+In this replay the preceding tests produced 54 projects, 37 brands, eight
+unit types and 20 FAQs. The rollback fixture increased these to 104 projects,
+38 brands and 70 FAQs/74 versions, with 144 questions/277 question versions.
+Its brand selected exactly 50 projects and returned 25. These are this
+replay's measured counts, not a retrospective measurement of the failed R4
+database or a replacement for the earlier 103-project evidence.
+
+The original native projection took 0.723469 seconds and retained its global
+one-scan assertion. The original home call passed at 9.999048 seconds with
+function tracking enabled. After its savepoint recovered, three read-only
+controls used the same caller, brand, fixture and unchanged deadline, each
+inside an additional rollback-only savepoint:
+
+| Control tracking mode | Helper elapsed seconds | Complete JSON versus original |
+| --- | ---: | --- |
+| Normal entry mode: none | 8.660778 | exact match |
+| all | 9.099861 | exact match |
+| Normal entry mode: none | 10.854715 | exact match |
+
+Every response retained exactly 50 projects/25 returned. Canonical comparison
+preserved all fields and array order and distinguished booleans from numbers.
+Audit/gap and logical counts stayed unchanged before each rollback; role,
+actor and tracking settings recovered, and outer rollback restored the
+ambient counts. There were no diagnostic errors. The original home profile
+completed 50 composer calls (4,166.9208 ms total; 3,717.3999 ms self), alongside
+permission and source-read costs. Nested total times must not be summed.
+
+The real R4 timeout was **not reproduced and remains unexplained**. These warm
+controls do not establish profiling as its cause; the final unprofiled control
+was slower than the profiled control. No permission, migration, code, timeout,
+fixture or test assertion change is justified by this evidence. The original
+failed gate is preserved and is not relabelled green.
+
+All 77 source paths and 33 staged objects matched the diagnostic freeze after
+exit. The runner and test listeners are gone. Evidence is under
+`artifacts/unified-workspace/home-scale-r4-20261116/`; `receipt.json` SHA-256:
+`d0c82a5b3218a517c70fe0d1e67a567a99472e889a96553be20d20c082040787`.
+This log entry follows that verification. No product commit or hosted change.
+
+The lead retains the sole test lease for one fresh uninstrumented R5 shared
+full gate, with all twelve stages run again and no reused stage. Its complete
+API suite includes the original prefix. If the same deadline recurs, stop and
+report instead of continuing retries until green. Any eventual delivery must
+disclose R4 and this diagnostic. The unfiltered home blocker remains OPEN;
+delivery order stays shared gate/commits, W9, approved home implementation,
+then W8 UAT.

@@ -458,6 +458,11 @@
       "name": "202611110091_writing_aid.sql",
       "canonical_sha256": "853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4",
       "executed_sha256": "853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4"
+    },
+    {
+      "name": "202611130092_home_faq_projection.sql",
+      "canonical_sha256": "100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1",
+      "executed_sha256": "100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1"
     }
   ]
 }

@@ -72,3 +72,20 @@ descriptions, queue-card titles and assistant clearance are presentation only;
 every guarded command keeps its existing checks. The targeted BUD-grant notice
 variant needs a caller-projection field and is backlog in docs/47 §7.1, not
 part of P1.
+
+Home performance correction (13 November 2026): **no permission change**.
+Owner-approved migration `202611130092_home_faq_projection.sql` replaces
+the native FAQ projection's discarded full-reader call with the existing
+exact-row `content_source_allowed` check. Scoped collection filtering, current
+draft/version predicates, final source checks, locks, function ownership and
+ACL stay intact. The separately approved composer guard evaluates the existing
+business-membership lookup only when its already-selected version satisfies
+the same question and state predicates. It preserves full composition JSON,
+latest-version selection, applicability, publication behavior and function
+attributes. Rollback-only proof covered 448 accumulated-corpus comparisons and
+108 ordinary-fixture comparisons, with zero differences and unchanged audit/gap
+counts. No route, account, grant, API contract or timeout changes.
+Delivery requires exact old/new FAQ-set equality across the approved grant,
+lifecycle and owning-scope matrix; any differing row stops delivery. The
+correction is separately identified from P1 and W7. Prepared W9 moves to 0093;
+delivered 0089/0090 and prepared 0091 are not edited.
