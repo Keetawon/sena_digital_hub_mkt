@@ -7165,3 +7165,120 @@ report instead of continuing retries until green. Any eventual delivery must
 disclose R4 and this diagnostic. The unfiltered home blocker remains OPEN;
 delivery order stays shared gate/commits, W9, approved home implementation,
 then W8 UAT.
+
+
+## P1, W7 and FAQ performance correction delivered — 16 November 2026
+
+P1 `adc4a9b430f6ffde47b57b61d9b458058e0b75cd`, W7 `7a355b21073ecbfe6f1f34675221a80c797a9a27` and the separate performance
+correction `ad55697eefd8cd9a42b60a38ec108bcca7852695` were committed in that order and pushed
+to origin/main; the product remote head was verified. P1 has 33 explicit
+paths, W7 43 and the performance correction six, across 77 final paths.
+P1 uses its frozen staged objects. W7 uses the two approved pre-0092 profile
+and migration-inventory blobs; the performance commit supplies their final
+0092 versions. Every commit's parent, exact paths, tree and blobs were checked.
+This delivery receipt follows as a separate explicit docs/48 commit.
+
+P1 delivers the six approved copy/layout corrections plus U61's quiet BUD
+notice-failure message on content pages. Accounts retains its assertive alert;
+grant-type targeting remains backlog. The original alert was a real request
+failure fallback, also exposed by unmocked fixtures. P1 changes no permission,
+schema, migration or API contract. W8 checks U55-U61 retain their approved scope.
+
+W7 adds governed draft writing controls with reviewed context, admission,
+revision checks and ordinary-draft acceptance. It remains off by default and
+uses synthetic generation in tests. No live generation or hosted change ran.
+
+The separate performance correction replaces the discarded native FAQ read
+with its exact scoped-row predicate and guards the direct composer business
+lookup with existing eligibility predicates. Native authority/row equality:
+210 comparisons, zero differences. Composer equality: 448 actual-corpus plus
+108 ordinary-fixture full JSON comparisons = 556, zero differences, th/en and
+both published modes; 81 SQL NULL/truth combinations, preserved attributes,
+owner/ACL/signature and no audit/gap side effects. Measured composition equality
+is not a successful unfiltered home deadline result.
+
+**OPEN: the accumulated 103-project home performance blocker remains open.**
+The unfiltered accumulated request exceeded 15 seconds, including with original
+tracking disabled. The approved scale-test change applies the existing brand
+filter to its own 50 synthetic projects and asserts exactly that population;
+it retains the global FAQ one-scan assertion. This is a disclosed test-scope
+change, not evidence that the 103-project production workload is resolved.
+No timeout, API, permission or business rule was relaxed. No additional home
+optimization is included. The approved home implementation follows W9, before
+W8 execution; this gate does not close that blocker or grant UAT acceptance.
+
+| Migration | SHA-256 |
+|---|---|
+| 0091 writing aid | `853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4` |
+| 0092 FAQ projection/composer guard | `100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1` |
+
+Delivered 0089/0090 and 0091 bytes stayed unchanged throughout the correction.
+The final 0092 is a separate local forward migration. Hosted TEST stays at the
+W1-W5 application/schema 88; no settings, accounts, grants, content or hosted
+migration changed in this delivery.
+
+| Final R5 suite | Passed | Skipped | Failed |
+|---|---:|---:|---:|
+| Admin typecheck | pass | 0 | 0 |
+| Documented offline webpack build | pass | 0 | 0 |
+| Production import/install/isolation | 4 | 0 | 0 |
+| API | 2706 | 11 existing | 0 |
+| DB | 95 Node; 45 SQL suites; 24 concurrency scenarios | 0 | 0 |
+| Local H1 | 69 Node; 10 smoke; 87 browser | 0 | 0 |
+| UI 1280 | 698 | 0 | 0 |
+| UI 390 | 698 | 0 | 0 |
+| Credential/broad scans | zero matches; no credential files read | 0 | 0 |
+| Working/index diff and frozen-source checks | pass | 0 | 0 |
+
+R4 stopped in API: 2,705 passed, one failed, 11 existing skips and six
+warnings in 4,084.77 seconds. Its own-brand 50-project home call timed out at
+15 seconds; no later full stages ran. The unchanged original test then passed
+in the actual-prefix diagnostic: 1,740 passed, nine skips, 968 diagnostic
+suffix deselections and six warnings in 1,677.51 seconds. Original home was
+9.999048 seconds; none/all/none controls were 8.660778/9.099861/10.854715,
+with identical complete JSON, exact 50/25 counts and unchanged state. The
+failure was not reproduced, and profiling was not established as its cause.
+No test, fixture, timeout or product code was changed for R5. This one fresh
+uninstrumented gate follows that focused check; the earlier failure remains
+preserved and disclosed, not corrected or relabelled green. Evidence:
+`artifacts/unified-workspace/p1-w7-home-full-20261116-r4/failure-receipt.json`
+and `artifacts/unified-workspace/home-scale-r4-20261116/receipt.json`.
+The larger home blocker remains open until the approved later slice passes.
+
+API warnings: 6 existing; elapsed 4166.22 seconds.
+The original R5 runner passed typecheck, offline build, production imports,
+API, DB, H1 and both complete UI widths. It then stopped before the credential
+scanner launched: command discovery returned two executable paths, which the
+shell treated as one command. The original failed state and error log remain
+unaltered under `artifacts/unified-workspace/p1-w7-home-full-20261116-r5/`.
+
+After confirming all 77 source hashes, 33 staged objects and the base unchanged,
+and all test processes and listeners released, the lead retained those eight
+passed stages and ran only the four unstarted checks: credential scan, working
+diff, index diff and broad scan. Each used one resolved executable. All four
+passed; no product source, test, timeout or permission rule changed. This is a
+continuation of the same frozen full gate, with no quick or earlier-gate stage
+reuse and no rerun of the passed suites. The original R5 process is still
+recorded as failed; it is not relabelled completed.
+
+Combined full-gate verification, byte-identical retained logs, continuation
+inputs and exact stage origins are under
+`artifacts/unified-workspace/p1-w7-home-full-20261116-r5-completion/`.
+Frozen source SHA-256: `5cee86f373977569f5671eaca491aff1004c3d1517306cc06e2d2d9677e612da`; acceptance is recorded in
+`completion-verification.json`. Earlier mobile-scroll and home-timeout
+failures remain archived. Prior quick and rollback diagnostics are evidence,
+not reused full-gate stages. Equivalence and bounded quick receipts are under
+`artifacts/unified-workspace/home-performance-0092-20261113/`.
+
+P1 visual evidence: 52 matched before and 52 after images at both widths/themes
+under `artifacts/unified-workspace/polish-p1/capture/evidence/`; matched receipt
+under `p1-w7-takeover-20261112/`. W7: eight reviewed width/theme images under
+`artifacts/unified-workspace/w7/capture/evidence/`, four capture cases and hash
+receipt under `p1-w7-scroll-recovery-20261113/`. Mocked presentation captures
+remain distinct from real local H1 evidence.
+
+No worktree or branch was removed. All 71 worktrees and their
+preparation are preserved; inventory is `worktrees-preserved.txt` in the R5 completion folder.
+Next: W9 integration and its checks/full gate; then the approved home
+implementation and validation; then W8 retained fixtures, all UAT checks and
+owner acceptance. W8 is pending and is not inferred from automated success.
