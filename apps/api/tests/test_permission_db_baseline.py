@@ -183,6 +183,10 @@ SCOPE_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/permi
 SCOPE_TABLES = {row['name'] for row in SCOPE_INVENTORY['new_tables']['tables']}
 SCOPE_FUNCTIONS = set(SCOPE_INVENTORY['new_functions']['names'])
 
+WRITING_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/permissions/content-writing-db.json').read_text(encoding='utf-8'))
+WRITING_TABLES = {row['name'] for row in WRITING_INVENTORY['new_tables']['entries']}
+WRITING_FUNCTIONS = {row['name'] for row in WRITING_INVENTORY['new_functions']['entries']}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -305,9 +309,15 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     additions |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES if name == 'relations' else WEBSITE_FUNCTIONS | WORKSPACE_FUNCTIONS | WORKFLOW_FUNCTIONS
                     additions |= BUSINESS_TABLES if name == 'relations' else BUSINESS_FUNCTIONS
                     additions |= SCOPE_TABLES if name == 'relations' else SCOPE_FUNCTIONS
+                    additions |= WRITING_TABLES if name == 'relations' else WRITING_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    writing = [r for r in actual if r['schema'] + '.' + r['table'] in WRITING_TABLES]
+                    assert len(writing) == len(WRITING_TABLES) == 2
+                    assert all(r['name'] == 'writing_owner' and r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
+                        and r['qual'] == r['with_check'] == 'true' for r in writing)
+                    actual = [r for r in actual if r not in writing]
                     # Explicit W6 additions are verified independently against
                     # the frozen inventory, before the older policy counts.
                     restrictive = [r for r in actual if r['name'] == 'content_object_scope']
@@ -546,7 +556,7 @@ async def assert_reviewed_database_boundary(db):
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
-    classified |= BUSINESS_TABLES | SCOPE_TABLES
+    classified |= BUSINESS_TABLES | SCOPE_TABLES | WRITING_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -567,6 +577,7 @@ async def assert_reviewed_database_boundary(db):
     assert all(not tables[name]['grants'] for name in WORKFLOW_TABLES), 'Content review versions have no application table grants'
     assert all(not tables[name]['grants'] for name in BUSINESS_TABLES), 'Business catalog uses guarded commands only'
     assert all(not tables[name]['grants'] for name in SCOPE_TABLES), 'Content scopes and membership are owner-only storage'
+    assert all(not tables[name]['grants'] for name in WRITING_TABLES), 'Writing state is accessible only through exact guarded commands'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

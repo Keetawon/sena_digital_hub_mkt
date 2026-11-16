@@ -6,6 +6,8 @@ import { ArticleEditor, type ArticleReferences } from "./article-editor";
 import { useHubPermissions } from "./accounts";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { WritingFields } from "./content-common";
+import { WritingAidError, writingTopics, type WritingAcceptance } from "@/lib/writing-aid";
 import { ErrorSummary, useContentLocation } from "./content-operations-shared";
 import { BilingualInput, ExposureInput, TranslationReviewPanel, contentDate, errorMessage, useFieldCatalog, type Exposure, type Locales, type Translation } from "./content-common";
 import "./articles.css";
@@ -72,6 +74,17 @@ export function ArticlesWorkspace() {
     setDraft({ ...v.metadata, title: v.title, excerpt: v.excerpt, seo_title: v.seo_title, seo_description: v.seo_description, blocks: v.blocks.th, links: current.links });
     setDirty(false); setTab("content"); setError(""); setNotice("");
   }
+  async function acceptWriting(key: keyof TextFields, acceptance: WritingAcceptance) {
+    if (!current || !canEdit || dirty || acceptance.expectedDraft.revision !== (draft ? draftRevision : current.revision)) throw new WritingAidError("stale");
+    const v = current.version;
+    setPending(true);
+    try {
+      await request(`v1/admin/articles/${current.id}`, "PUT", { expected_revision: acceptance.expectedDraft.revision, content: {
+        ...v.metadata, title: v.title, excerpt: v.excerpt, seo_title: v.seo_title, seo_description: v.seo_description,
+        blocks: v.blocks.th, links: current.links, [key]: { ...v[key], [acceptance.language]: acceptance.after } } });
+      await reloadCurrent(); setDraft(null); setDirty(false);
+    } finally { setPending(false); }
+  }
   async function save() {
     if (!draft || !canEdit || pending || workflowBusy) return;
     setPending(true); setError(""); setNotice("");
@@ -123,6 +136,13 @@ export function ArticlesWorkspace() {
           {canApprove && current.approved_version_id && <button className="button secondary" disabled={pending || workflowBusy || ownApproved} onClick={() => void review("withdraw")}>ถอนการอนุมัติ</button>}
         </div>
       </> : !error && <p role="status">กำลังโหลดบทความ…</p>)}
+      {current && tab === "content" && writingTopics.has(current.category) && (Object.keys(textFields) as (keyof TextFields)[]).map(key => <WritingFields key={key}
+        field={catalog?.items.find(field => field.field_key === `article.${key}`)} fields={catalog?.items ?? []} translations={current.translations}
+        contextTranslations={current.translations.filter(source => source.owner_type === "article" && Object.keys(textFields).some(key => source.field_key === `article.${key}`))}
+        ownerType="article" ownerKey={current.translations.find(source => source.owner_type === "article" && source.field_key === `article.${key}`)?.owner_key}
+        value={draft?.[key] ?? current.version[key]} savedValue={current.version[key]} stamp={{ revision: draft ? draftRevision : current.revision }} dirty={dirty} canEdit={canEdit}
+        maxLength={textFields[key].max} disabled={pending || translationDirty || Array.from(workflowOwners).some(owner => owner !== "writing:" + key)}
+        onActivityChange={active => workflowEditing("writing:" + key, active)} onAccept={value => acceptWriting(key, value)} />)}
       {current && tab === "content" && <ContentWorkflow target={{ kind: "article", identity: { id: current.id } }} label={current.version.title.th || current.slug} revision={draft ? draftRevision : current.revision} submitDisabled={current.readiness.length > 0} disabled={pending || translationDirty || workflowOwners.size > 0 && !workflowOwners.has("article:" + current.id)} draft={draft ? { dirty: true, valid: canEdit && Boolean(draft.slug && draft.title.th?.trim()), sourceStamp: { revision: draftRevision }, getChanges: () => form.current?.reportValidity() ? draft : null } : undefined} onEditingChange={value => workflowEditing("article:" + current.id, value)} onChanged={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} onReload={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} />}
       {tab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog?.items ?? []} canEdit={canEdit && !pending && !workflowBusy} onChanged={reloadCurrent} onEditingChange={setTranslationDirty} />}
       {tab === "preview" && current && <section aria-label="ตัวอย่างบทความภายใน"><label className="content-input">ภาษาตัวอย่าง<select value={locale} onChange={event => setLocale(event.target.value as "th" | "en")}><option value="th">ไทย</option><option value="en">อังกฤษ</option></select></label><p className="field-help">ตัวอย่างสำหรับตรวจเนื้อหาใน Hub อ้างอิงข้อมูลปัจจุบันที่คุณมีสิทธิ์อ่าน</p>{preview ? <div className="article-preview" dangerouslySetInnerHTML={{ __html: preview.html }} /> : <p role="status">กำลังเตรียมตัวอย่าง…</p>}</section>}

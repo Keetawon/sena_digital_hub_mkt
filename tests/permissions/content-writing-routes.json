@@ -1,0 +1,31 @@
+{
+  "phase": "Unified workspace W7",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/content/writing-aid/{translation_id}",
+      "tab": "content_writing",
+      "level": "view",
+      "entry_roles": [
+        "viewer",
+        "editor",
+        "publisher",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/writing_aid.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/content/writing-aid/{translation_id}/proposals",
+      "tab": "content_writing",
+      "level": "edit",
+      "entry_roles": [
+        "editor",
+        "admin"
+      ],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/writing_aid.py"
+    }
+  ]
+}

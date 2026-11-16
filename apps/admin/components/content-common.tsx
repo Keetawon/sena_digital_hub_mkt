@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { request } from "./hub-request";
+import { WritingAid } from "./writing-aid";
+import { writingFieldSafe, type WritingAcceptance, type WritingDraftStamp, type WritingLanguage } from "@/lib/writing-aid";
 import "./project-content.css";
 
 export type Locales = { th?: string; en?: string };
@@ -14,7 +16,7 @@ export type ContentField = {
   required_for: Record<string, "required" | "recommended" | "optional">; locales_required: string[];
   surfaces: string[]; default_ai_exposure: Exposure; review_every_days: number | null;
   validation: { min?: number; integer?: boolean; units?: string[]; max_length?: number };
-  status: "active" | "planned" | "retired"; revision: number;
+  status: "active" | "planned" | "retired"; revision: number; ai_writing_enabled?: boolean;
 };
 export type FieldCatalog = { items: ContentField[]; can_manage: boolean };
 export type Translation = {
@@ -128,4 +130,64 @@ export function TranslationReviewPanel({ items, fields, canEdit, onChanged, onEd
       </article>;
     })}</div>
   </section>;
+}
+
+/** Read only the caller-authorized ordinary source projection. No inferred IDs. */
+export function useWritingTranslations(path: string, revision: unknown, enabled: boolean) {
+  const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
+  const key = JSON.stringify([path, revision, authority, enabled]);
+  const current = useRef(key); current.current = key;
+  const sequence = useRef(0);
+  const [loaded, setLoaded] = useState<{ key: string; items: Translation[] } | null>(null);
+  const reload = useCallback(async () => {
+    if (!enabled) return;
+    const read = ++sequence.current;
+    const data = await request<{ translations: Translation[] }>(path);
+    if (current.current === key && sequence.current === read) setLoaded({ key, items: data.translations ?? [] });
+  }, [path, key, enabled]);
+  useEffect(() => { setLoaded(null); if (enabled) void reload().catch(() => {}); }, [reload, enabled]);
+  return { items: loaded?.key === key ? loaded.items : [], reload };
+}
+
+/** Kept beside the saved field, outside disabled ordinary form fieldsets. */
+export function WritingFields({ field, fields, translations, ownerType, ownerKey, value, savedValue, stamp, dirty, canEdit,
+  disabled, maxLength, onAccept, onActivityChange, language, contextTranslations }: {
+  field?: ContentField; fields: ContentField[]; translations: Translation[]; ownerType: string; ownerKey?: string;
+  value: Locales; savedValue: Locales; stamp: WritingDraftStamp; dirty: boolean; canEdit: boolean; disabled?: boolean;
+  maxLength?: number; language?: WritingLanguage; contextTranslations?: Translation[];
+  onAccept: (acceptance: WritingAcceptance) => Promise<void>; onActivityChange: (active: boolean) => void;
+}) {
+  const permissions = useHubPermissions(), authorityKey = capabilityKey(permissions.account);
+  const [active, setActive] = useState<string[]>([]);
+  const callback = useRef(onActivityChange); callback.current = onActivityChange;
+  useEffect(() => { callback.current(active.length > 0); }, [active.length]);
+  useEffect(() => () => callback.current(false), []);
+  const held = useRef<{ scope: string; source: Translation; value: Locales; savedValue: Locales; stamp: WritingDraftStamp; context: Translation[] } | null>(null);
+  if (!field || field.status !== "active" || !writingFieldSafe(field) || !field.ai_writing_enabled || !ownerKey || !canEdit) return null;
+  const scope = JSON.stringify([authorityKey, ownerType, ownerKey, field.field_key]);
+  const liveSource = translations.find(item => item.owner_type === ownerType && item.owner_key === ownerKey && item.field_key === field.field_key);
+  if (liveSource?.editable === false) return null;
+  // An accepted ordinary write can reload several projections. Keep its reviewed
+  // snapshot until every reload settles; live rights, flags and dirty state still
+  // apply, and acceptance independently rechecks the server's source revision.
+  if (!active.length || held.current?.scope !== scope) held.current = liveSource ? { scope, source: liveSource, value, savedValue, stamp,
+    context: contextTranslations ?? translations.filter(item => item.owner_type === ownerType && item.owner_key === ownerKey) } : null;
+  const frozen = held.current?.scope === scope ? held.current : null;
+  if (!frozen) return null;
+  const source = frozen.source;
+  const binding = { translation_id: source.id, revision: source.revision, th_version: source.th_version,
+    owner_type: source.owner_type, owner_key: source.owner_key, field_key: source.field_key };
+  return <div data-writing-owner={ownerKey}><ContentLabel field={field} />{(language ? [language] : ["th", "en"] as const).map(locale => {
+    // Explicit references only: same saved owner, finite safe fields, nonempty
+    // locale text. The server independently rechecks every context and flag.
+    const context = frozen.context.filter(item => item.id !== source.id
+      && item.editable && (locale === "th" ? item.th_text : item.entered_en)?.trim()
+      && fields.some(candidate => candidate.field_key === item.field_key && candidate.ai_writing_enabled === true && candidate.status === "active" && writingFieldSafe(candidate))).slice(0, 8)
+      .map(item => ({ translation_id: item.id, expected_revision: item.revision }));
+    return <WritingAid key={locale} field={field} binding={binding} language={locale} value={frozen.value[locale] ?? ""}
+      savedValue={frozen.savedValue[locale] ?? ""} draftStamp={frozen.stamp} formDirty={dirty} canEdit={canEdit} authorityKey={authorityKey}
+      maxLength={Math.min(maxLength ?? field.validation.max_length ?? 12000, 12000)} context={context}
+      disabled={disabled || active.some(item => item !== locale)} onAccept={onAccept}
+      onActivityChange={busy => setActive(values => values.includes(locale) === busy ? values : busy ? [...values, locale] : values.filter(item => item !== locale))} />;
+  })}</div>;
 }

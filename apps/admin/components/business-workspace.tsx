@@ -52,7 +52,7 @@ export function BusinessWorkspace({ code, onEditingChange, onWorkflowChanged }: 
     {!data || !catalog ? !error && !catalogError && <p role="status">{text.loading}</p> : <>
       <nav className="content-tabs" aria-label={text.data}>{tabs.map(value => <button type="button" key={value} aria-current={tab === value ? "page" : undefined} disabled={editing && tab !== value} onClick={() => { if (!editing) location.navigate({ section: value, field: null, item: null }); }}>{text[value]}</button>)}</nav>
       <div key={identity + tab}>
-        {tab === "narrative" && <ContentNarrative apiBase={base} heading={text.narrative} sections={data.sections} points={[]} fields={catalog.items} showPoints={false} canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
+        {tab === "narrative" && <ContentNarrative key={identity} apiBase={base} heading={text.narrative} sections={data.sections} points={[]} fields={catalog.items} showPoints={false} canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
         {tab === "contacts" && <ContentContacts items={data.contacts} catalog={catalog} apiBase={`${base}/contacts`} canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
         {tab === "english" && <TranslationReviewPanel items={data.translations} fields={catalog.items} canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
       </div>

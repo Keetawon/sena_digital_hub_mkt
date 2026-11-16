@@ -6,6 +6,8 @@ import { capabilityKey } from "@/lib/hub-permissions";
 import { useHubPermissions } from "./accounts";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { WritingFields } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { publicationChanges, publicationValue } from "./publication-comparison";
 import { CommercialMedia, type CommercialProject, type CommercialType } from "./commercial-types";
 import { BilingualInput, ContentLabel, ExposureInput, FieldInfo, TranslationReviewPanel, contentDate, errorMessage, useFieldCatalog, type Exposure, type Locales, type Translation } from "./content-common";
@@ -68,6 +70,15 @@ export function UnitTypeWizard<T extends CommercialProject>({ project, initialTy
       setFormStamp(updated.updated_at); setDirty(false); setNotice("บันทึกร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ"); await onProjectChanged(updated);
     });
   }
+  async function acceptWriting(key: "description" | "highlights", acceptance: WritingAcceptance) {
+    if (!item || !canEdit || dirty || disabled || childDirty || acceptance.expectedDraft.updated_at !== formStamp) throw new WritingAidError("stale");
+    setBusy(true);
+    try {
+      await request(`${base}/commercial-types/${item.public_commercial_type_id}`, "PATCH", { updated_at: acceptance.expectedDraft.updated_at,
+        [key]: { ...item[key], [acceptance.language]: acceptance.after } });
+      await resetDraft();
+    } finally { setBusy(false); }
+  }
   async function resetDraft() {
     const fresh = await request<Workspace>(`${base}/unit-types`), saved = fresh.types.find(type => type.public_commercial_type_id === typeId);
     setData(fresh); if (saved) setDraft(draftOf(saved)); setFormStamp(fresh.project.updated_at); setDirty(false);
@@ -98,6 +109,10 @@ export function UnitTypeWizard<T extends CommercialProject>({ project, initialTy
           {data.source.groups.filter(group => group.public_model_ids.some(id => draft.source_model_ids.includes(id))).map(group => <article className="unit-source-group" key={group.group_key}><strong>{group.name || group.group_key}</strong><p>{group.model_ids.join(", ")} · {contentDate(group.as_of)}</p><p>ทั้งหมด {group.total_unit_count ?? "ยังไม่ทราบ"} · ว่างตาม snapshot {group.available_unit_count ?? "ยังไม่ทราบ"}</p><p>ราคาต่ำสุด REM {group.rem_min_available?.toLocaleString("th-TH") ?? "ยังไม่ทราบ"} · ใช้เปรียบเทียบภายใน</p>{group.unavailable && <p>ต้นทางกลุ่มนี้ไม่พร้อมใช้งาน</p>}</article>)}</>}
         {canEdit && <button className="button primary" type="submit" disabled={!dirty && Boolean(item)}>บันทึกร่างแบบขาย</button>}
       </fieldset></form>}
+      {item && step === 1 && (["description", "highlights"] as const).map(key => <WritingFields key={key} field={field(key)} fields={fields}
+        translations={data.translations} ownerType="commercial_type" ownerKey={item.id} value={draft[key]} savedValue={item[key] ?? {}}
+        stamp={{ updated_at: formStamp }} dirty={dirty} canEdit={canEdit} disabled={disabled || busy || childDirty || Array.from(workflowOwners).some(owner => owner !== "writing:" + key)}
+        onActivityChange={active => workflowEditing("writing:" + key, active)} onAccept={value => acceptWriting(key, value)} />)}
       {item && <ContentWorkflow target={{ kind: "unit_type", identity: { id: item.id } }} label={item.public_name.th || item.public_commercial_type_id} revision={formStamp} submitDisabled={!item.workflow.ready} disabled={disabled || busy || childDirty || workflowOwners.size > 0 && !workflowOwners.has("type:" + item.id)} draft={{ dirty, valid: canEdit && Boolean(draft.public_name.th?.trim()), sourceStamp: { updated_at: formStamp }, getChanges: () => !form.current || form.current.reportValidity() ? changes(draft) : null }} onEditingChange={value => workflowEditing("type:" + item.id, value)} onChanged={resetDraft} onReload={resetDraft} />}
       {(step === 2 || step === 3) && (!item || dirty ? <p className="notice warning">บันทึกร่างแบบขายก่อนจัดการภาพ แปลน และทัวร์</p> : <>
         {step === 2 && <><h4>แปลนแต่ละชั้น</h4><p>บ้าน {item.storeys ?? "ยังไม่ทราบ"} ชั้น · เพิ่มแปลนและเลือกชั้นให้ตรงกับแบบ แปลนไม่ครบเป็นรายการแนะนำ ไม่กีดกันการส่งตรวจ</p></>}

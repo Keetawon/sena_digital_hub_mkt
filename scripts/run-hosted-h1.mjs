@@ -87,7 +87,7 @@ try {
     await ready(adminOrigin+'/login',adminProcess);
   }
   if(args.includes('--test')) {
-    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','tests/ui/auth-design-h1.spec.ts','tests/ui/workspace-home-h1.spec.ts','tests/ui/unified-workspace-h1.spec.ts','tests/ui/unified-publication-h1.spec.ts','tests/ui/publication-navigation-h1.spec.ts','tests/ui/business-workspace-h1.spec.ts','tests/ui/content-scopes-h1.spec.ts','tests/ui/content-bu-notices-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
+    const tests=child(process.execPath,[path.join(root,'node_modules/@playwright/test/cli.js'),'test','tests/ui/hosted-h1.spec.ts','tests/ui/accounts-h1.spec.ts','tests/ui/accounts-followup-h1.spec.ts','tests/ui/accounts-redesign-h1.spec.ts','tests/ui/auth-design-h1.spec.ts','tests/ui/workspace-home-h1.spec.ts','tests/ui/unified-workspace-h1.spec.ts','tests/ui/unified-publication-h1.spec.ts','tests/ui/publication-navigation-h1.spec.ts','tests/ui/business-workspace-h1.spec.ts','tests/ui/content-scopes-h1.spec.ts','tests/ui/content-bu-notices-h1.spec.ts','tests/ui/writing-aid-h1.spec.ts','tests/ui/writing-fields-h1.spec.ts','--output',path.join(root,'artifacts/playwright-h1')],{...env,PLAYWRIGHT_CHANNEL:'msedge'});
     const [code]=await once(tests,'exit');
     if(code!==0) {await stop();process.exit(code??1);}
     // Restart only this runner's owned Next process to exercise configuration-off

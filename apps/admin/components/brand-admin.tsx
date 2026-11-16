@@ -12,6 +12,8 @@ import { ContentWorkflow } from "./content-workflow";
 import { workflowText } from "@/lib/content-workflow";
 import { AssetDialog, Preview, ProjectAssets, RightsBadge, type AssetBinding } from "./project-assets";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { DemoFields } from "./demo-fields";
 import { BrandDashboard } from "./brand-dashboard";
 import { brandHasChanges, useBrandReviews, type BrandSnapshot, type BrandVersion } from "./brand-review";
@@ -164,7 +166,8 @@ export function BrandDetail({ brandId, role, onDirtyChange, embedded, history, o
   const { reload: reloadReviews } = useBrandReviews();
   const [brand, setBrand] = useState<Brand | null>(null);
   const [draft, setDraft] = useState<BrandDraft | null>(null);
-  const [workflowBusy, setWorkflowBusy] = useState(false), [workflowRevision, setWorkflowRevision] = useState(0), [mediaEditing, setMediaEditing] = useState(false);
+  const [nativeWorkflowBusy, setWorkflowBusy] = useState(false), [writingBusy, setWritingBusy] = useState(false), [workflowRevision, setWorkflowRevision] = useState(0), [mediaEditing, setMediaEditing] = useState(false);
+  const workflowBusy = nativeWorkflowBusy || writingBusy;
   const [versions, setVersions] = useState<BrandVersion[]>([]);
   const [versionsError, setVersionsError] = useState("");
   const [tab, setTab] = useState<"content" | "versions">(embedded === "history" ? "versions" : "content");
@@ -178,6 +181,7 @@ export function BrandDetail({ brandId, role, onDirtyChange, embedded, history, o
   const base = `v1/admin/brands/${encodeURIComponent(brandId)}`;
   const dirty = Boolean(brand && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(brand)));
   const canEdit = permissions.can("brands", "edit");
+  const writing = useWritingTranslations(`${base}/content`, brand?.updated_at, canEdit && !!brand && !!contentCatalog?.items.some(field => field.ai_writing_enabled));
   const update = (data: Brand) => { setBrand(data); setDraft(draftFrom(data)); onWorkflowChanged?.(); void reloadReviews(); };
   const loadVersions = useCallback(async () => { try { setVersions(await request<BrandVersion[]>(`${base}/versions`)); setVersionsError(""); } catch (error) { setVersionsError(message(error)); } }, [base]);
   const load = useCallback(async () => {
@@ -191,6 +195,15 @@ export function BrandDetail({ brandId, role, onDirtyChange, embedded, history, o
   useEffect(() => { if (error) errorSummary.current?.focus(); }, [error]);
   useEffect(() => { if (!dirty) return; const warn = (event: BeforeUnloadEvent) => event.preventDefault(); window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn); }, [dirty]);
   function draftChanges() { return brand && draft ? { public_name: { ...brand.public_name, th: draft.name, ...(draft.nameEn || brand.public_name.en !== undefined ? { en: draft.nameEn } : {}) }, description: { ...brand.description, th: draft.description, en: draft.descriptionEn }, slug: draft.slug, status: draft.status } : null; }
+  async function acceptWriting(acceptance: WritingAcceptance) {
+    if (!brand || !draft || !canEdit || dirty || acceptance.expectedDraft.updated_at !== brand.updated_at) throw new WritingAidError("stale");
+    setSaving(true);
+    try {
+      await request<Brand>(base, "PATCH", { updated_at: acceptance.expectedDraft.updated_at,
+        description: { ...brand.description, [acceptance.language]: acceptance.after } });
+      await writing.reload(); await reloadWorkflow();
+    } finally { setSaving(false); }
+  }
   async function reloadWorkflow() { update(await request<Brand>(base)); setError(""); setConflict(false); setWorkflowRevision(value => value + 1); }
   async function save(event: FormEvent) {
     event.preventDefault(); if (!brand || !draft || !canEdit || saving || workflowBusy || mediaEditing) return;
@@ -227,7 +240,11 @@ export function BrandDetail({ brandId, role, onDirtyChange, embedded, history, o
         <div className="form-field"><ContentLabel htmlFor="brand-description-en" field={contentCatalog?.items.find(field => field.field_key === "brand.description")}>คำอธิบายแบรนด์ (ภาษาอังกฤษ)</ContentLabel><textarea id="brand-description-en" data-workspace-field="brand.description_en" rows={4} maxLength={20000} disabled={!canEdit || saving || workflowBusy || mediaEditing} value={draft.descriptionEn} onChange={event => setDraft({ ...draft, descriptionEn: event.target.value })} /></div>
         <div className="form-field"><label htmlFor="brand-status">สถานะแบรนด์ในข้อมูลร่าง</label><select id="brand-status" data-workspace-field="brand.status" disabled={!canEdit || saving || workflowBusy || mediaEditing} value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value as BrandDraft["status"] })}><option value="active">เปิดใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select><p className="field-help">การแก้ไขสถานะร่างยังไม่เปลี่ยนเวอร์ชันที่เผยแพร่ ใช้ถอนการเผยแพร่เมื่อต้องการหยุดส่งข้อมูลผ่าน API</p></div>
       </>}{!canEdit && <BrandWebsitePreview brand={brand} />}</div></section>{canEdit && !dirty && <div className="save-bar"><span>ข้อมูลร่างแบรนด์เป็นปัจจุบัน</span><button className="button primary" disabled>บันทึกข้อมูลแบรนด์</button></div>}</form>
-      {embedded !== "media" && <ContentWorkflow key={workflowRevision} target={{ kind: "brand", identity: { id: brand.id } }} label={brand.public_name.th || brand.public_brand_id} revision={brand.updated_at} disabled={saving || mediaEditing}
+      {embedded !== "media" && <WritingFields field={contentCatalog?.items.find(field => field.field_key === "brand.description")} fields={contentCatalog?.items ?? []}
+        translations={writing.items} ownerType="brand" ownerKey={brand.id} value={{ th: draft.description, en: draft.descriptionEn }} savedValue={brand.description}
+        stamp={{ updated_at: brand.updated_at }} dirty={dirty} canEdit={canEdit} disabled={saving || mediaEditing || nativeWorkflowBusy}
+        onActivityChange={setWritingBusy} onAccept={acceptWriting} />}
+      {embedded !== "media" && <ContentWorkflow key={workflowRevision} target={{ kind: "brand", identity: { id: brand.id } }} label={brand.public_name.th || brand.public_brand_id} revision={brand.updated_at} disabled={saving || mediaEditing || writingBusy}
         draft={{ dirty, valid: canEdit && (!draft.slug || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)), sourceStamp: { updated_at: brand.updated_at }, getChanges: draftChanges }}
         onChanged={reloadWorkflow} onReload={reloadWorkflow} onEditingChange={setWorkflowBusy} />}
       <ProjectAssets project={brand} role={role} disabled={dirty || saving || workflowBusy} onProjectChanged={update} {...{ onEditingChange: setMediaEditing }} />

@@ -6,6 +6,8 @@ import { ContentWorkflow } from "./content-workflow";
 import { workflowText, type WorkflowTarget } from "@/lib/content-workflow";
 import { DetailDialog } from "./registry-motion";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { errorMessage, ExposureInput, TranslationReviewPanel, type ContentField, type Exposure, type Locales, type Translation } from "./content-common";
 import { AmenityDate, AmenityField, AmenityNumber, AmenitySelect, AmenityText, FeatureMetrics, localized, placeCategories, placeStatus, presence, stringValue, type AmenityRow, type References } from "./amenity-fields";
 import { FacilityPhotos, type AmenityMedia } from "./facility-photos";
@@ -66,6 +68,16 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
       changes: Object.fromEntries(keys[kind].filter(k => row[k] !== undefined).map(k => [k, row[k]])) });
       await reload();setEditing(null);setNotice(`บันทึก${titles[kind]}แล้ว`);
     } catch (e) { setError(errorMessage(e)); } finally { setBusy(false); }
+  }
+  async function acceptWriting(item: AmenityRow, acceptance: WritingAcceptance) {
+    if (!canEdit || !data || acceptance.expectedDraft.revision !== item.revision || editing && JSON.stringify(editing.row) !== JSON.stringify(item)) throw new WritingAidError("stale");
+    setBusy(true);
+    try {
+      await request(`${base}/facilities/${encodeURIComponent(item.code!)}`, "PUT", { expected_revision: acceptance.expectedDraft.revision,
+        changes: { ...Object.fromEntries(keys.facilities.filter(key => item[key] !== undefined).map(key => [key, item[key]])),
+          description: { ...localized(item, "description"), [acceptance.language]: acceptance.after } } });
+      await reload(); setEditing(null);
+    } finally { setBusy(false); }
   }
   async function withdraw() {
     if (!withdrawal || !withdrawalReason.trim() || !canApprove || busy || workflowBusy || editing || childDirty) return;setBusy(true);setError("");
@@ -133,6 +145,11 @@ export function ProjectAmenities({ projectId, tab, fields, onChanged, onEditingC
         {kind === "facilities" && <p>ค่าว่างหรือยังไม่ตอบคือ “ยังไม่ทราบ” ส่วนกลางที่อยู่ในแผนยังไม่ถือว่าเปิดใช้งาน</p>}
         {!data[kind].length && <p>ยังไม่มีรายการ</p>}<div className="content-card-list">{data[kind].map(item => <article className="content-card" key={item.id ?? item.code} data-workspace-item={String(item.id ?? item.code)} tabIndex={-1}><h3 className="content-label">{kind === "facilities" && <FacilityIcon code={String(item.icon_code)} />}{name(item, kind)}</h3>
           {kind === "facilities" && <p className="field-help">{facilityGroups[String(item.group_code)] ?? String(item.group_code)}</p>}
+          {kind === "facilities" && <WritingFields field={fields.find(field => field.field_key === "facility.description")} fields={fields} translations={data.translations}
+            ownerType="facility" ownerKey={`${data.project.id}:${item.code}`} value={editing?.kind === "facilities" && editing.row.code === item.code ? localized(editing.row, "description") : localized(item, "description")}
+            savedValue={localized(item, "description")} stamp={{ revision: editing && editing.row.code === item.code ? editing.row.revision : item.revision }} dirty={Boolean(editing && JSON.stringify(editing.row) !== JSON.stringify(item))}
+            canEdit={canEdit} disabled={busy || childDirty || Array.from(workflowOwners).some(owner => owner !== "writing:" + item.code)}
+            onActivityChange={active => workflowEditing("writing:" + item.code, active)} onAccept={value => acceptWriting(item, value)} /> }
           <p>{kind === "solar" ? ({ draft: "ร่าง · ยังไม่อนุมัติ", approved: "อนุมัติสถานการณ์แล้ว", withdrawn: "ถอนแล้ว" }[String(item.state)] ?? "ร่าง") : ((kind === "places" ? placeStatus : presence) as Record<string, string>)[String(item.status)] ?? String(item.status ?? "ยังไม่ทราบ")}</p>
           {kind === "facilities" && <><p>{localized(item, "location_label").th || "ยังไม่ระบุตำแหน่ง"} · {item.size_sqm == null ? "ยังไม่ระบุขนาด" : `${item.size_sqm} ตร.ม.`}</p><p>{localized(item, "opening_hours").th || "ยังไม่ระบุเวลาเปิดใช้"}</p><p>{localized(item, "description").th}</p></>}
           {kind === "features" && <><p className="field-help">{item.commercial_type_id ? `ใช้กับ ${data.unit_types.find(t => t.id === item.commercial_type_id)?.name.th ?? "แบบที่อยู่อาศัยที่เลือก"}` : "ใช้ทั้งโครงการ"}</p><p>{localized(item, "detail").th}</p><dl className="c4-summary">{Object.entries((item.metrics ?? {}) as Record<string, unknown>).map(([key, value]) => {

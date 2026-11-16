@@ -453,6 +453,11 @@
       "name": "202611090090_bu_membership.sql",
       "canonical_sha256": "5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4",
       "executed_sha256": "5a3143b717dde6ed9c76e79dfb702126b3de76c40489cd29e8518b8f56a273a4"
+    },
+    {
+      "name": "202611110091_writing_aid.sql",
+      "canonical_sha256": "853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4",
+      "executed_sha256": "853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4"
     }
   ]
 }

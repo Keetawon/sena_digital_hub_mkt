@@ -9,6 +9,8 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { roleLabels as roles, localPersonas, type LocalRole } from "@/lib/roles";
 import { isHubStaff, isContentStaff } from "@/lib/staff";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { useHostedSession } from "./hosted-session";
 import { HubShell } from "./hub-shell";
 import { ProjectSourceReview, ProjectGroupSummary, SourceStatusFilter, type SourceReview, type ProjectGroupInfo } from "./project-source-review";
@@ -243,6 +245,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
   const [conflict, setConflict] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}`;
   const canEdit = permissions.can("projects", "edit");
+  const writing = useWritingTranslations(`${base}/content`, project?.updated_at, canEdit && !!project && !!contentCatalog?.items.some(field => field.ai_writing_enabled));
   const dirty = Boolean(project && draft && JSON.stringify(draft) !== JSON.stringify(draftFrom(project)));
   const relatedDirty = commercialDirty || facilitiesDirty || modelDirty;
   const anyDirty = dirty || relatedDirty || mediaEditing || Boolean(workflowActive);
@@ -288,6 +291,15 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
   function projectChangesForSave() {
     if (!project || !draft) return null;
     return { public_name: { ...project.public_name, th: draft.public_name, en: draft.public_name_en }, slug: draft.slug, address: { ...project.address, th: draft.address, en: draft.address_en }, latitude: draft.latitude.trim() === "" ? null : Number(draft.latitude), longitude: draft.longitude.trim() === "" ? null : Number(draft.longitude), ad_disclaimer: { ...project.ad_disclaimer, th: draft.ad_disclaimer, en: draft.ad_disclaimer_en }, meta_title: { ...project.meta_title, th: draft.meta_title, en: draft.meta_title_en }, meta_description: { ...project.meta_description, th: draft.meta_description, en: draft.meta_description_en }, website_content: { ...project.website_content, th: draft.website_content } };
+  }
+  async function acceptWriting(key: "meta_title" | "meta_description", acceptance: WritingAcceptance) {
+    if (!project || !draft || !canEdit || dirty || acceptance.expectedDraft.updated_at !== draftUpdatedAt) throw new WritingAidError("stale");
+    setSaving(true);
+    try {
+      await request<Project>(base, "PATCH", { updated_at: acceptance.expectedDraft.updated_at,
+        [key]: { ...project[key], [acceptance.language]: acceptance.after } });
+      await writing.reload(); await reloadWorkflow();
+    } finally { setSaving(false); }
   }
   async function reloadWorkflow() {
     const data = await request<Project>(base);
@@ -362,7 +374,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
 
   function field(name: keyof Draft, multiline = false, help?: string) {
     const coordinate = name === "latitude" || name === "longitude";
-    const common = { id: name, name, "data-workspace-field": `project.${name}`, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
+    const common = { id: name, name, "data-workspace-field": `project.${name}`, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty || Boolean(workflowActive) || mediaEditing, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
       onBlur: () => { if (coordinate) setFieldErrors(previous => ({ ...previous, [name]: coordinateError(name, draft![name]) })); },
       onPaste: (event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (!coordinate) return;
@@ -485,6 +497,11 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
         <p className="read-only-note">ข้อมูลเสริมเป็นทางเลือก ไม่กีดกันการเผยแพร่</p>
         <ProjectFacilities project={project} role={role} disabled={dirty || commercialDirty || saving || mediaEditing || Boolean(workflowActive)} onDirtyChange={setFacilitiesDirty} onProjectChanged={data => { setProject(data); setDraft(draftFrom(data)); setDraftUpdatedAt(data.updated_at); onWorkflowChanged?.(); }} />
         <section className="panel" inert={Boolean(workflowActive) || mediaEditing}><div className="panel-body">{field("meta_title")}{field("meta_title_en")}{field("meta_description", true)}{field("meta_description_en", true)}<PublicWebsiteSource sources={project.website_sources} />{field("website_content", true, "ข้อความอ้างอิงภายใน Hub สำหรับตรวจและเรียบเรียง ไม่ส่งออกเว็บไซต์หรือ AI")}</div></section>
+        {(["meta_title", "meta_description"] as const).map(key => <WritingFields key={key} field={contentCatalog?.items.find(field => field.field_key === `project.${key}`)} fields={contentCatalog?.items ?? []}
+          translations={writing.items} ownerType="project" ownerKey={project.id} value={{ th: draft[key], en: draft[`${key}_en`] }} savedValue={project[key] ?? {}}
+          stamp={{ updated_at: draftUpdatedAt }} dirty={dirty} canEdit={canEdit} maxLength={key === "meta_title" ? 300 : 1000}
+          disabled={saving || relatedDirty || mediaEditing || workflowOwners.some(owner => owner !== "writing:" + key)}
+          onActivityChange={active => workflowEditing("writing:" + key, active)} onAccept={value => acceptWriting(key, value)} />)}
       </div>
       <div id="versions-panel" role="tabpanel" tabIndex={-1} aria-labelledby="versions-tab" hidden={tab !== "versions"}>
         <section className="panel" aria-labelledby="readiness-title"><div className="panel-heading"><div><span className="section-chip">ตรวจสอบก่อนส่งต่อ</span><h2 id="readiness-title">ความพร้อมก่อนเผยแพร่</h2><p>ข้อมูลร่างจะเข้าสู่ API เมื่อผู้เผยแพร่ยืนยันเท่านั้น</p></div><strong className="readiness-compact-number">{readiness.ready ? "พร้อมเผยแพร่ · ไม่มีรายการค้าง" : `${readiness.missing.length} รายการ`}</strong></div><div className="panel-body"><p className="read-only-note">การเผยแพร่ชุดปัจจุบันยังไม่รวมแบบขายของ Marketing และสิ่งอำนวยความสะดวก ซึ่งอยู่ระหว่างจัดเตรียมข้อมูลร่าง</p>{dirty && <p className="inline-warning">รายการนี้อ้างอิงข้อมูลที่บันทึกแล้ว กรุณาบันทึกข้อมูลร่างเพื่อประเมินอีกครั้ง</p>}{readiness.ready ? <p className="read-only-note">ข้อมูลที่จำเป็นครบถ้วน พร้อมให้ผู้เผยแพร่ตรวจสอบ</p> : <div className="readiness-groups">{missingGroups.filter(group => group.items.length).map(group => <details key={group.label}><summary><strong>{group.label}</strong><span className="count">{group.items.length}</span></summary><ul className="readiness-list">{group.items.map((item, index) => <li key={`${item.field}-${index}`}><span className="missing-mark" aria-hidden="true" /><a href={`#${missingAnchor(item.field)}`} onClick={event => { event.preventDefault(); revealField(item.field); }}>{item.message}</a></li>)}</ul></details>)}</div>}<div className="publication-actions"><a className="button primary" href={`/publish?source=project&id=${encodeURIComponent(project.public_project_id)}`} aria-disabled={anyDirty || saving} onClick={event => { if (anyDirty || saving) event.preventDefault(); }}>{workflowText.queue}</a></div></div></section>

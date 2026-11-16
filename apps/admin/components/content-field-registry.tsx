@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { writingFieldSafe, writingText } from "@/lib/writing-aid";
 import { request } from "./hub-request";
 import { useHubPermissions } from "./accounts";
 import { FieldInfo, useFieldCatalog, errorMessage, sectionLabel, type ContentField } from "./content-common";
@@ -23,7 +24,7 @@ export function ContentFieldRegistry() {
     try {
       await request(`v1/admin/content/fields/${encodeURIComponent(editing.field_key)}`, "PATCH", {
         expected_revision: editing.revision, changes: { label: editing.label, help: editing.help, owner_role: editing.owner_role,
-          review_every_days: editing.review_every_days, required_for: editing.required_for, sort: editing.sort },
+          review_every_days: editing.review_every_days, required_for: editing.required_for, sort: editing.sort, ai_writing_enabled: editing.ai_writing_enabled === true },
       });
       setEditing(null); reload(); setNotice("บันทึกทะเบียนฟิลด์แล้ว");
     } catch (error) { setError(errorMessage(error)); } finally { setPending(false); }
@@ -40,6 +41,7 @@ export function ContentFieldRegistry() {
             <label className="content-input">คำแนะนำ<textarea rows={3} value={editing.help.th ?? ""} onChange={event => setEditing({ ...editing, help: { ...editing.help, th: event.target.value } })} /></label>
             <div className="content-two-columns"><label className="content-input">ผู้รับผิดชอบ<input required value={editing.owner_role} onChange={event => setEditing({ ...editing, owner_role: event.target.value })} /></label><label className="content-input">ทบทวนทุกกี่วัน (เว้นว่างหากไม่มีรอบตายตัว)<input type="number" min="1" max="3650" value={editing.review_every_days ?? ""} onChange={event => setEditing({ ...editing, review_every_days: event.target.value ? Number(event.target.value) : null })} /></label></div>
             <div className="content-two-columns">{[["all", "ทุกประเภท"], ["condominium", "คอนโดมิเนียม"], ["house", "บ้าน"], ["townhome", "ทาวน์โฮม"]].map(([key, label]) => <label className="content-input" key={key}>ข้อกำหนด: {label}<select value={editing.required_for[key] ?? ""} onChange={event => { const next = { ...editing.required_for }; if (event.target.value) next[key] = event.target.value as "required" | "recommended" | "optional"; else delete next[key]; setEditing({ ...editing, required_for: next }); }}><option value="">ใช้ค่าทุกประเภท</option><option value="required">จำเป็น</option><option value="recommended">แนะนำ</option><option value="optional">เพิ่มเติม</option></select></label>)}</div>
+            {writingFieldSafe(editing) && <label className="content-checks"><input type="checkbox" checked={editing.ai_writing_enabled === true} onChange={event => setEditing({ ...editing, ai_writing_enabled: event.target.checked })} />{writingText.writing_enabled}</label>}
           </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => setEditing(null)}>ยกเลิก</button><button className="button primary" disabled={pending || !canManage}>บันทึกทะเบียนฟิลด์</button></div></form>}
         </article>)}</div>
       </section>

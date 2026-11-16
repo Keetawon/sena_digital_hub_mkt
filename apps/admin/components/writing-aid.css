@@ -1,0 +1,44 @@
+.writing-aid {
+  min-width: 0;
+  max-width: 100%;
+  margin-block: 12px;
+  color: var(--ink);
+  font-size: var(--text-small, 15px);
+  line-height: 1.6;
+}
+.writing-aid-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.writing-aid-language { color: var(--muted); }
+.writing-aid-button {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  line-height: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.writing-aid-button:hover:not(:disabled) { background: var(--surface-warm); }
+.writing-aid-button:disabled { color: var(--muted); cursor: default; opacity: 1; }
+.writing-aid:focus-visible, .writing-aid-button:focus-visible, .writing-aid-review:focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 3px;
+  scroll-margin-block: 80px;
+}
+.writing-aid-accept { background: var(--action); border-color: var(--action); color: var(--surface); }
+.writing-aid-accept:hover:not(:disabled) { background: var(--primary-strong); border-color: var(--primary-strong); }
+.writing-aid-accept:disabled { background: var(--surface); border-color: var(--line-strong); color: var(--muted); }
+.writing-aid-review { min-width: 0; margin-block-start: 12px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); }
+.writing-aid h4, .writing-aid h5 { margin: 0 0 8px; font: inherit; font-weight: 700; }
+.writing-aid p { max-width: 100%; overflow-wrap: anywhere; }
+.writing-aid-message { color: var(--muted); }
+.writing-aid-diff { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-block: 12px; }
+.writing-aid-diff > section { min-width: 0; }
+.writing-aid-diff p { margin: 0; white-space: pre-wrap; }
+.writing-aid-diff del, .writing-aid-diff ins { color: var(--ink); background: var(--surface-warm); text-decoration-thickness: 2px; }
+@media (max-width: 640px) { .writing-aid-diff { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .writing-aid *, .writing-aid *::before, .writing-aid *::after { animation: none; transition: none; } }

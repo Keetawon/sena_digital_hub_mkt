@@ -9,6 +9,8 @@ import { useSearchParams } from "next/navigation";
 import type { LocalRole } from "@/lib/local-session";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations, useFieldCatalog } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { Preview, RightsBadge, RightsDialog, type Asset } from "./project-assets";
 import "./commercial-types.css";
 import { UnitTypeWizard, unitStateLabel } from "./unit-type-wizard";
@@ -85,6 +87,9 @@ export function CommercialTypes<T extends CommercialProject>({ project, role, di
   const editorRef = useRef<HTMLDivElement>(null);
   const canEdit = permissions.can("projects", "edit");
   const types = project.commercial_types ?? [];
+  const { catalog } = useFieldCatalog();
+  const writing = useWritingTranslations(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}/unit-types`, project.updated_at,
+    canEdit && !!catalog?.items.some(field => field.ai_writing_enabled));
   const models = [...(project.models ?? [])].sort((a, b) => a.rem_model_id.localeCompare(b.rem_model_id, "en", { numeric: true }));
   const base = `v1/admin/projects/${encodeURIComponent(project.public_project_id)}/commercial-types`;
   const occupied = Boolean(edit || mediaDirty || pending || wizardDirty || workflowBusy);
@@ -100,6 +105,16 @@ export function CommercialTypes<T extends CommercialProject>({ project, role, di
     setError(""); setConflict(false); setNotice("");
     setOpen(item?.public_commercial_type_id ?? null);
     setEdit({ id: item?.public_commercial_type_id ?? null, revision: project.updated_at, drafts: bulk ? [draftFrom(), draftFrom()] : [draftFrom(item)], previous: item });
+  }
+  async function acceptWriting(item: CommercialType, acceptance: WritingAcceptance) {
+    if (!canEdit || disabled || acceptance.expectedDraft.updated_at !== (edit ? edit.revision : project.updated_at)
+        || edit && (edit.id !== item.public_commercial_type_id || JSON.stringify(edit.drafts[0]) !== JSON.stringify(draftFrom(item)))) throw new WritingAidError("stale");
+    setPending(true);
+    try {
+      await request<T>(`${base}/${item.public_commercial_type_id}`, "PATCH", { updated_at: acceptance.expectedDraft.updated_at,
+        description: { ...item.description, [acceptance.language]: acceptance.after } });
+      const fresh = await request<T>(base); await writing.reload(); await onProjectChanged(fresh); setEdit(null);
+    } finally { setPending(false); }
   }
   async function save(event: FormEvent) {
     event.preventDefault(); if (!edit || disabled || pending || workflowBusy || mediaDirty || wizardDirty || !canEdit) return;
@@ -139,7 +154,12 @@ export function CommercialTypes<T extends CommercialProject>({ project, role, di
         return <article className={`ct-card${expanded ? " is-open" : ""}`} key={id} data-workspace-item={id} tabIndex={-1} aria-label={`แบบขาย ${name}`}>
           <button className="button secondary" disabled={disabled || occupied} onClick={() => setWizard(id)}>เปิด 6 ขั้นตอน · {name}</button>
           <div className="ct-card-header"><div><h3>{name}</h3><p className="ct-summary">{item.product_form ? forms[item.product_form] : "ยังไม่ระบุประเภท"} · {item.area_min_sqm == null ? "ยังไม่ระบุพื้นที่" : `${item.area_min_sqm}${item.area_max_sqm != null && item.area_max_sqm !== item.area_min_sqm ? `–${item.area_max_sqm}` : ""} ตร.ม.`} · {item.bedrooms ?? "—"} ห้องนอน · {item.bathrooms ?? "—"} ห้องน้ำ</p><div className="ct-chips"><span className="ct-chip">{unitStateLabel[item.status]}</span><span className="ct-chip">อ้างอิง REM {item.source_model_ids.length} รหัส</span>{item.readiness.collection && <span className="ct-chip">กรอกแล้ว {item.readiness.collection.present}/{item.readiness.collection.expected} หัวข้อ</span>}{missing.length > 0 && <span className="ct-chip warning">ต้องเติม/ตรวจ {missing.length} รายการ</span>}{item.source_links?.some(link => link.shared_reference) && <span className="ct-chip warning">รอแยกยูนิต</span>}</div></div><div className="ct-card-actions"><button className="button secondary" aria-expanded={expanded} aria-controls={`ct-detail-${id}`} disabled={occupied} onClick={() => setOpen(expanded ? null : id)}>{expanded ? "ย่อรายละเอียด" : "ดูรายละเอียด"}<span className="visually-hidden"> {name}</span></button>{canEdit && <button className="button secondary" disabled={disabled || occupied || item.status === "in_review"} onClick={() => start(item)}>แก้ไข<span className="visually-hidden"> {name}</span></button>}</div></div>
-          <div id={`ct-detail-${id}`} hidden={!expanded} className="ct-detail">{edit?.id === id ? editor : <><div className="ct-facts"><div><strong>รายละเอียด</strong><p>{item.description.th || "ยังไม่ระบุรายละเอียด"}</p></div><dl>{numbers.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{item[field.key] ?? "ยังไม่ทราบ"}</dd></div>)}</dl><div><strong>รหัส REM ที่เกี่ยวข้อง</strong><p>{item.source_links?.map(link => link.rem_model_id).join(", ") || "ยังไม่เชื่อมรหัสต้นทาง"}</p><p className="field-help">เป็นข้อมูลอ้างอิงที่ยังไม่ยืนยันการจัดประเภทยูนิต{item.source_links?.some(link => link.shared_reference) ? " · รหัสร่วมกับแบบขายอื่น ต้องตรวจขอบเขตและยูนิตก่อนใช้ข้อมูลราคา/คงเหลือ" : ""}</p>{item.source_notes && <p>{item.source_notes}</p>}</div></div>{missing.length > 0 && <div className="ct-gaps"><h4>ข้อมูลที่ต้องเติมหรือตรวจสอบ</h4><ul>{missing.map((gap, index) => <li key={`${gap.field}-${index}`}>{gap.message}</li>)}</ul></div>}{Boolean(item.readiness.review_issues?.length) && <div className="ct-gaps"><h4>รอการตรวจสอบ</h4><ul>{item.readiness.review_issues?.map((issue, index) => <li key={`${issue.field}-${index}`}>{issue.message}</li>)}</ul></div>}<CommercialMedia project={project} item={item} role={role} disabled={disabled || pending || workflowBusy || wizard !== null || Boolean(edit) || item.status === "in_review" || mediaOwners.size > 0 && !mediaOwners.has(item.public_commercial_type_id)} onDirtyChange={mediaCallbacks[item.public_commercial_type_id]} onProjectChanged={onProjectChanged} /></>}</div>
+          <div id={`ct-detail-${id}`} hidden={!expanded} className="ct-detail">{edit?.id === id ? editor : <><div className="ct-facts"><div><strong>รายละเอียด</strong><p>{item.description.th || "ยังไม่ระบุรายละเอียด"}</p></div><dl>{numbers.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{item[field.key] ?? "ยังไม่ทราบ"}</dd></div>)}</dl><div><strong>รหัส REM ที่เกี่ยวข้อง</strong><p>{item.source_links?.map(link => link.rem_model_id).join(", ") || "ยังไม่เชื่อมรหัสต้นทาง"}</p><p className="field-help">เป็นข้อมูลอ้างอิงที่ยังไม่ยืนยันการจัดประเภทยูนิต{item.source_links?.some(link => link.shared_reference) ? " · รหัสร่วมกับแบบขายอื่น ต้องตรวจขอบเขตและยูนิตก่อนใช้ข้อมูลราคา/คงเหลือ" : ""}</p>{item.source_notes && <p>{item.source_notes}</p>}</div></div>{missing.length > 0 && <div className="ct-gaps"><h4>ข้อมูลที่ต้องเติมหรือตรวจสอบ</h4><ul>{missing.map((gap, index) => <li key={`${gap.field}-${index}`}>{gap.message}</li>)}</ul></div>}{Boolean(item.readiness.review_issues?.length) && <div className="ct-gaps"><h4>รอการตรวจสอบ</h4><ul>{item.readiness.review_issues?.map((issue, index) => <li key={`${issue.field}-${index}`}>{issue.message}</li>)}</ul></div>}<CommercialMedia project={project} item={item} role={role} disabled={disabled || pending || workflowBusy || wizard !== null || Boolean(edit) || item.status === "in_review" || mediaOwners.size > 0 && !mediaOwners.has(item.public_commercial_type_id)} onDirtyChange={mediaCallbacks[item.public_commercial_type_id]} onProjectChanged={onProjectChanged} /></>}{expanded && <WritingFields field={catalog?.items.find(field => field.field_key === "commercial_type.description")} fields={catalog?.items ?? []}
+            translations={writing.items} ownerType="commercial_type" ownerKey={item.id} value={edit?.id === id ? { th: edit.drafts[0].description, en: edit.drafts[0].description_en } : item.description}
+            savedValue={item.description} stamp={{ updated_at: edit?.id === id ? edit.revision : project.updated_at }}
+            dirty={Boolean(edit && (edit.id !== id || JSON.stringify(edit.drafts[0]) !== JSON.stringify(draftFrom(item))))} canEdit={canEdit} maxLength={4000}
+            disabled={disabled || pending || mediaDirty || wizardDirty || wizard !== null || Array.from(workflowOwners).some(owner => owner !== "writing:" + item.id)}
+            onActivityChange={active => workflowEditing("writing:" + item.id, active)} onAccept={value => acceptWriting(item, value)} />}</div>
           {!edit && wizard === null && <ContentWorkflow target={{ kind: "unit_type", identity: { id: item.id } }} label={name} revision={project.updated_at} disabled={disabled || pending || mediaDirty || workflowOwners.size > 0 && !workflowOwners.has("type:" + item.id)} onEditingChange={value => workflowEditing("type:" + item.id, value)} onChanged={async () => { await onProjectChanged(await request<T>(base)); }} onReload={async () => { await onProjectChanged(await request<T>(base)); }} />}
         </article>;
       })}</div>

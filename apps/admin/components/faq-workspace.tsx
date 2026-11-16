@@ -7,6 +7,8 @@ import { workspaceApi, workspaceHref, workspaceName, workspaceText, type Workspa
 import { ContentWorkflow } from "./content-workflow";
 import { ExposureChip } from "./content-exposure";
 import { request } from "./hub-request";
+import { WritingFields } from "./content-common";
+import { WritingAidError, writingTopics, type WritingAcceptance } from "@/lib/writing-aid";
 import { useContentLocation } from "./content-operations-shared";
 import { ContentContacts, type Contact } from "./content-contacts";
 import { FaqBank, FaqGlossary, kindLabels, scopeLabels, type QuestionBank } from "./faq-bank";
@@ -76,6 +78,20 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
     setDraft({ question_key: current.question_key ?? "", scope_type: current.scope_type, scope_id: current.scope_id, question: locales(value.question), alt_questions: locales(value.alt_questions), short_answer: locales(value.short_answer), detail: locales(value.detail), answer_kind: value.answer_kind, fact_keys: value.fact_keys, applies_to_project_ids: value.applies_to_project_ids, applicability_rule: value.applicability_rule ?? {}, review_due: value.review_due ?? "", effective_to: value.effective_to ?? "", ai_exposure: value.ai_exposure, source_ref: "", source_url: "" });
     setDirty(true); setEditTab("answer"); setError(""); setNotice("");
   }
+  async function acceptWriting(key: "question" | "alt_questions" | "short_answer" | "detail", acceptance: WritingAcceptance) {
+    if (!current || !canEdit || frozen || dirty || acceptance.expectedDraft.revision !== current.revision) throw new WritingAidError("stale");
+    const v = current.version;
+    setPending(true);
+    try {
+      await request(`v1/admin/faq/${current.id}`, "PUT", { expected_revision: acceptance.expectedDraft.revision, changes: {
+        question_key: current.question_key, scope_type: current.scope_type, scope_id: current.scope_id,
+        question: v.question, alt_questions: v.alt_questions, short_answer: v.short_answer, detail: v.detail,
+        answer_kind: v.answer_kind, fact_keys: v.fact_keys, applies_to_project_ids: v.applies_to_project_ids,
+        applicability_rule: v.applicability_rule, review_due: v.review_due, effective_to: v.effective_to, ai_exposure: v.ai_exposure,
+        [key]: { ...locales(v[key]), [acceptance.language]: acceptance.after } } });
+      await reloadCurrent(); setDraft(null); setDirty(false);
+    } finally { setPending(false); }
+  }
   async function save() {
     if (!draft || !canEdit || frozen || pending || workflowBusy || scope && (draft.scope_type !== scope.type || draft.scope_id !== scope.id)) return;
     setPending(true); setError(""); setNotice("");
@@ -116,6 +132,11 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
             <div className="content-two-columns"><label className="content-input">กำหนดตรวจคำตอบ<input type="date" value={draft.review_due} onChange={event => setDraft({ ...draft, review_due: event.target.value })} /></label><label className="content-input">วันที่สิ้นสุดคำตอบ<input type="date" value={draft.effective_to} onChange={event => setDraft({ ...draft, effective_to: event.target.value })} /></label></div>
             <label className="content-input">แหล่งอ้างอิงใหม่<input maxLength={1000} value={draft.source_ref} onChange={event => setDraft({ ...draft, source_ref: event.target.value })} /></label><label className="content-input">ลิงก์แหล่งอ้างอิง<input type="url" placeholder="https://" maxLength={2000} value={draft.source_url} onChange={event => setDraft({ ...draft, source_url: event.target.value })} /></label><ExposureInput value={draft.ai_exposure} onChange={ai_exposure => setDraft({ ...draft, ai_exposure })} />
           </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setDraft(null); setDirty(false); if (!current) location.navigate({ faq: null }, true); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || frozen || !draft.question_key || !draft.question.th?.trim() || !draft.short_answer.th?.trim()}>บันทึกคำตอบ</button></div></form> : current ? <><h3>{current.version.question.th}</h3><p className="content-preserve">{current.version.short_answer.th}</p><p className="content-preserve">{current.version.detail.th}</p><p>{kindLabels[current.version.answer_kind]} · {scopeLabels[current.scope_type]} {scopeOptions(current.scope_type).find(ref => ref.id === current.scope_id)?.name ?? current.scope_id}</p><p>เฟสที่ใช้: {current.version.applies_to_project_ids.join(", ") || (current.scope_type === "corporate" ? "ระดับองค์กร" : businessWorkspaceText.noApplicablePhases)}</p>{canEdit && <div className="content-actions"><button className="button secondary" disabled={pending || workflowBusy || frozen} onClick={edit}>แก้ไขเป็นฉบับใหม่</button></div>}</> : <p role="status">กำลังโหลดคำตอบ…</p>)}
+          {current && editTab === "answer" && writingTopics.has(bank?.items.find(item => item.question_key === current.question_key)?.topic ?? "") && current.version.answer_kind === "text" && !current.version.fact_keys.length && (["question", "alt_questions", "short_answer", "detail"] as const).map(key => <WritingFields key={key}
+            field={catalog.items.find(field => field.field_key === `faq.${key}`)} fields={catalog.items} translations={current.translations} ownerType="faq" ownerKey={current.id}
+            value={draft?.[key] ?? locales(current.version[key])} savedValue={locales(current.version[key])} stamp={{ revision: draft ? draftRevision : current.revision }} dirty={dirty}
+            canEdit={canEdit} disabled={pending || frozen || editing || Array.from(workflowOwners).some(owner => owner !== "writing:" + key)}
+            onActivityChange={active => workflowEditing("writing:" + key, active)} onAccept={value => acceptWriting(key, value)} />)}
           {current && editTab === "answer" && <ContentWorkflow target={{ kind: "faq", identity: { id: current.id } }} label={current.version.question.th || current.question_key || current.id} revision={draft ? draftRevision : current.revision} disabled={pending || editing || workflowOwners.size > 0 && !workflowOwners.has("faq:" + current.id)} draft={draft ? { dirty: true, valid: canEdit && Boolean(draft.question_key && draft.question.th?.trim() && draft.short_answer.th?.trim()) && (!scope || draft.scope_type === scope.type && draft.scope_id === scope.id), sourceStamp: { revision: draftRevision }, getChanges: () => form.current?.reportValidity() ? { ...draft, review_due: draft.review_due || null, effective_to: draft.effective_to || null, source_url: draft.source_url || null } : null } : undefined} onEditingChange={value => workflowEditing("faq:" + current.id, value)} onChanged={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} onReload={async () => { await reloadCurrent(); setDraft(null); setDirty(false); }} />}
           {editTab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog.items} canEdit={canEdit && !frozen && !pending && !workflowBusy} onChanged={reloadCurrent} onEditingChange={setEditing} />}
           {editTab === "sources" && current && <div><h3>แหล่งข้อมูลประกอบคำตอบ</h3>{current.sources.length ? current.sources.map(source => <article className="content-card" key={source.id}><p>{source.source_ref}</p><p>{source.source_url}</p><p>{contentDate(source.decided_at)}</p></article>) : <p>ยังไม่มีแหล่งอ้างอิงแนบกับคำตอบนี้</p>}</div>}

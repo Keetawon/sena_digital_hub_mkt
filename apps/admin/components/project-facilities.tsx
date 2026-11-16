@@ -7,6 +7,8 @@ import type { LocalRole } from "@/lib/local-session";
 import type { Project } from "./hub-admin";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import "./project-facilities.css";
 
 export type Facility = {
@@ -39,6 +41,8 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
   const [notice, setNotice] = useState("");
   const data = project.facilities;
   const canEdit = permissions.can("projects", "edit");
+  const writing = useWritingTranslations(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}/content`, project.updated_at,
+    canEdit && !!project.id && !!catalog?.items.some(field => field.ai_writing_enabled));
   useEffect(() => { onDirtyChange(Boolean(editing) || pending || workflowBusy); return () => onDirtyChange(false); }, [editing, pending, workflowBusy, onDirtyChange]);
 
   function edit(item: Facility, status = item.status, openDetails = false) {
@@ -50,6 +54,17 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
     setError(""); setNotice("");
   }
 
+  async function acceptWriting(item: Facility, acceptance: WritingAcceptance) {
+    if (!canEdit || disabled || acceptance.expectedDraft.updated_at !== (editing ? editStamp : project.updated_at) || editing && JSON.stringify(editing) !== JSON.stringify(item)) throw new WritingAidError("stale");
+    setPending(true);
+    try {
+      await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}/facilities/${encodeURIComponent(item.code)}`, "PUT", {
+        updated_at: acceptance.expectedDraft.updated_at, status: item.status, description: { ...item.description, [acceptance.language]: acceptance.after },
+        location_note: item.location_note, access_note: item.access_note, evidence_note: item.evidence_note, expected_open_date: item.expected_open_date });
+      const fresh = await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}`);
+      await writing.reload(); await onProjectChanged(fresh); setEditing(null);
+    } finally { setPending(false); }
+  }
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!editing || disabled || pending || workflowBusy || !canEdit) return;
@@ -103,6 +118,11 @@ export function ProjectFacilities({ project, role, disabled, onDirtyChange, onPr
             <div className="facility-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setEditing(null); setError(""); }}>ยกเลิก</button><button className="button primary" type="submit" aria-busy={pending} disabled={disabled || workflowBusy || pending}>{pending ? "กำลังบันทึก…" : "บันทึกสิ่งอำนวยความสะดวก"}</button></div>
           </form> : <>{item.description.th && <p className="facility-description">{item.description.th}</p>}{item.description.en && <p className="facility-description" lang="en">{item.description.en}</p>}{item.access_note && <p className="small-text muted">เงื่อนไข: {item.access_note}</p>}{item.expected_open_date && <p className="small-text muted">คาดว่าจะเปิดใช้: {item.expected_open_date}</p>}{item.evidence_note && <details className="facility-evidence"><summary>แหล่งข้อมูลและประวัติบันทึก</summary><p>{item.evidence_note}</p>{item.updated_at && <p className="small-text muted">บันทึก {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" }).format(new Date(item.updated_at))}</p>}</details>}</>}
           </td></tr>}
+          {item.updated_at && project.id && <tr><td colSpan={3}><WritingFields field={catalog?.items.find(field => field.field_key === "facility.description")} fields={catalog?.items ?? []}
+            translations={writing.items} ownerType="facility" ownerKey={`${project.id}:${item.code}`} value={active ? editing.description : item.description} savedValue={item.description}
+            stamp={{ updated_at: editing ? editStamp : project.updated_at }} dirty={Boolean(editing && JSON.stringify(editing) !== JSON.stringify(item))} canEdit={canEdit}
+            maxLength={4000} disabled={disabled || pending || Array.from(workflowOwners).some(owner => owner !== "writing:" + item.code)}
+            onActivityChange={active => workflowEditing("writing:" + item.code, active)} onAccept={value => acceptWriting(item, value)} /></td></tr>}
           {item.updated_at && project.id && <tr><td colSpan={3}><ContentWorkflow target={{ kind: "facility", identity: { project_id: project.id, facility_code: item.code } }} label={item.name_th} revision={item.updated_at} disabled={disabled || pending || Boolean(editing) || workflowOwners.size > 0 && !workflowOwners.has("facility:" + item.code)} onEditingChange={value => workflowEditing("facility:" + item.code, value)} onChanged={async () => { onProjectChanged(await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}`)); }} onReload={async () => { onProjectChanged(await request<Project>(`v1/admin/projects/${encodeURIComponent(project.public_project_id)}`)); }} /></td></tr>}
         </tbody>; })}</table></div>
       </> : <p className="muted">ยังไม่มีรายการสิ่งอำนวยความสะดวกจากระบบ</p>}

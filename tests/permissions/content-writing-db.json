@@ -1,0 +1,427 @@
+{
+  "schema_version": 1,
+  "programme": "Unified content workspace W7",
+  "review_method": "Finite source-reviewed inventory, not a live catalogue snapshot. Runtime checks execute only in the existing disposable API gate.",
+  "provenance": {
+    "migration": "supabase/migrations/202611110091_writing_aid.sql",
+    "sha256": "853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4",
+    "source_worktree": "ws/w7-admission-order"
+  },
+  "probe_roles": [
+    "admin",
+    "agency",
+    "editor",
+    "hub_app",
+    "hub_media_worker",
+    "hub_translation_worker",
+    "online_staff",
+    "publisher",
+    "service_consumer",
+    "viewer"
+  ],
+  "new_functions": {
+    "expected_count": 9,
+    "expected_overloads": [],
+    "entries": [
+      {
+        "name": "hub.writing_aid_field_safe",
+        "signature": "hub.writing_aid_field_safe(text)",
+        "arguments": "key text",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "boolean",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_source",
+        "signature": "hub.writing_aid_source(uuid,text)",
+        "arguments": "translation uuid, required_level text",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "hub.content_translations",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_allowed",
+        "signature": "hub.writing_aid_allowed(hub.content_translations)",
+        "arguments": "t hub.content_translations",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "boolean",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_budget",
+        "signature": "hub.writing_aid_budget()",
+        "arguments": "",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "jsonb",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_input",
+        "signature": "hub.writing_aid_input(uuid,integer,text,text,jsonb)",
+        "arguments": "translation uuid, expected integer, locale text, operation text, context_fields jsonb",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "jsonb",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_state",
+        "signature": "hub.writing_aid_state(uuid)",
+        "arguments": "translation uuid",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [
+          "hub_app"
+        ],
+        "public_execute": false,
+        "result": "jsonb",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_request_visible",
+        "signature": "hub.writing_aid_request_visible(hub.writing_ai_requests)",
+        "arguments": "q hub.writing_ai_requests",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [],
+        "public_execute": false,
+        "result": "boolean",
+        "volatility": "s",
+        "argument_defaults": 0
+      },
+      {
+        "name": "hub.writing_aid_begin",
+        "signature": "hub.writing_aid_begin(uuid,integer,text,text,uuid,jsonb)",
+        "arguments": "translation uuid, expected integer, locale text, operation text, request_uuid uuid, context_fields jsonb",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [
+          "hub_app"
+        ],
+        "public_execute": false,
+        "result": "jsonb",
+        "volatility": "v",
+        "argument_defaults": 1
+      },
+      {
+        "name": "hub.writing_aid_finish",
+        "signature": "hub.writing_aid_finish(uuid,text,integer)",
+        "arguments": "request_uuid uuid, error text, elapsed integer",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, pg_temp"
+        ],
+        "execute_roles": [
+          "hub_app"
+        ],
+        "public_execute": false,
+        "result": "jsonb",
+        "volatility": "v",
+        "argument_defaults": 0
+      }
+    ]
+  },
+  "new_tables": {
+    "expected_count": 2,
+    "expected_policy_count": 2,
+    "expected_trigger_count": 4,
+    "owner_note": "writing_owner is created for migration current_user; the documented disposable replay owner is postgres. The policy role must also equal each actual relation owner. Runtime, legacy and worker roles receive no direct or column-level grants.",
+    "entries": [
+      {
+        "name": "hub.writing_ai_settings",
+        "kind": "r",
+        "rls": true,
+        "force_rls": true,
+        "grants": [],
+        "public_grants": [],
+        "columns": [
+          "singleton",
+          "monthly_cap_usd",
+          "request_ceiling_usd",
+          "blocked_month",
+          "provider_mode",
+          "model",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "policy": {
+          "schema": "hub",
+          "table": "writing_ai_settings",
+          "name": "writing_owner",
+          "permissive": "PERMISSIVE",
+          "roles": [
+            "postgres"
+          ],
+          "cmd": "ALL",
+          "qual": "true",
+          "with_check": "true"
+        },
+        "triggers": [
+          {
+            "name": "writing_audit",
+            "function": "audit.record_change()",
+            "enabled": "O",
+            "type": 29,
+            "timing": "AFTER",
+            "events": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
+            "level": "ROW"
+          },
+          {
+            "name": "writing_touch",
+            "function": "hub.touch_record()",
+            "enabled": "O",
+            "type": 19,
+            "timing": "BEFORE",
+            "events": [
+              "UPDATE"
+            ],
+            "level": "ROW"
+          }
+        ]
+      },
+      {
+        "name": "hub.writing_ai_requests",
+        "kind": "r",
+        "rls": true,
+        "force_rls": true,
+        "grants": [],
+        "public_grants": [],
+        "columns": [
+          "id",
+          "translation_id",
+          "source_revision",
+          "language",
+          "mode",
+          "context",
+          "requested_by",
+          "status",
+          "error_code",
+          "model",
+          "synthetic",
+          "input_tokens",
+          "output_tokens",
+          "elapsed_ms",
+          "budget_month",
+          "reserved_usd",
+          "charged_usd",
+          "completed_at",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "policy": {
+          "schema": "hub",
+          "table": "writing_ai_requests",
+          "name": "writing_owner",
+          "permissive": "PERMISSIVE",
+          "roles": [
+            "postgres"
+          ],
+          "cmd": "ALL",
+          "qual": "true",
+          "with_check": "true"
+        },
+        "triggers": [
+          {
+            "name": "writing_audit",
+            "function": "audit.record_change()",
+            "enabled": "O",
+            "type": 29,
+            "timing": "AFTER",
+            "events": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
+            "level": "ROW"
+          },
+          {
+            "name": "writing_touch",
+            "function": "hub.touch_record()",
+            "enabled": "O",
+            "type": 19,
+            "timing": "BEFORE",
+            "events": [
+              "UPDATE"
+            ],
+            "level": "ROW"
+          }
+        ]
+      }
+    ]
+  },
+  "changed_existing_functions": [
+    {
+      "name": "hub.save_content_field",
+      "signature": "hub.save_content_field(text,integer,jsonb)",
+      "arguments": "key text, expected integer, changes jsonb",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, pg_temp"
+      ],
+      "execute_roles": [
+        "hub_app"
+      ],
+      "public_execute": false,
+      "result": "jsonb",
+      "volatility": "v",
+      "argument_defaults": 0,
+      "change": "Accept ai_writing_enabled only as a boolean through the existing revision check, actual Admin plus projects.manage_field_catalog guard, and hard marketing allowlist."
+    }
+  ],
+  "column_defaults": [
+    {
+      "table": "hub.field_catalog",
+      "column": "ai_writing_enabled",
+      "type": "boolean",
+      "nullable": false,
+      "default": "false"
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "singleton",
+      "type": "boolean",
+      "nullable": false,
+      "default": "true"
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "monthly_cap_usd",
+      "type": "numeric(12,6)",
+      "nullable": false,
+      "default": "0"
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "request_ceiling_usd",
+      "type": "numeric(12,6)",
+      "nullable": false,
+      "default": "0"
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "blocked_month",
+      "type": "date",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "provider_mode",
+      "type": "text",
+      "nullable": false,
+      "default": "'stub'::text"
+    },
+    {
+      "table": "hub.writing_ai_settings",
+      "column": "model",
+      "type": "text",
+      "nullable": false,
+      "default": "'stub-writing-v1'::text"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "context",
+      "type": "jsonb",
+      "nullable": false,
+      "default": "'[]'::jsonb"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "model",
+      "type": "text",
+      "nullable": false,
+      "default": "'stub-writing-v1'::text"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "synthetic",
+      "type": "boolean",
+      "nullable": false,
+      "default": "true"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "input_tokens",
+      "type": "integer",
+      "nullable": false,
+      "default": "0"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "output_tokens",
+      "type": "integer",
+      "nullable": false,
+      "default": "0"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "reserved_usd",
+      "type": "numeric(12,6)",
+      "nullable": false,
+      "default": "0"
+    },
+    {
+      "table": "hub.writing_ai_requests",
+      "column": "charged_usd",
+      "type": "numeric(12,6)",
+      "nullable": false,
+      "default": "0"
+    }
+  ],
+  "dependencies": {
+    "private_scope_guard": "hub.require_content_translation_scope(uuid,text)",
+    "read_projection": "hub.content_fields()",
+    "ordinary_acceptance": "Existing source draft writer; writing proposals never save, submit, approve or publish content."
+  },
+  "integration_notes": [
+    "Add only these explicit new function/table sets to the current DB baseline classifications. Keep legacy-db.json unchanged.",
+    "save_content_field is an existing replacement and retains its execution ACL. content_fields already returns the new column through to_jsonb(field_catalog).",
+    "All existing and newly registered fields remain off until an explicit authorized registry save. No field is automatically opted in by this migration.",
+    "No new roles, grants to accounts, templates, logging system, provider credential lookup or live provider are introduced.",
+    "The two existing audit/touch functions are reused and are not new inventory entries."
+  ]
+}

@@ -2,6 +2,8 @@
 import { workspaceText } from "@/lib/unified-workspace";
 import { useEffect, useRef, useState } from "react";
 import { request } from "./hub-request";
+import { WritingFields, useWritingTranslations } from "./content-common";
+import { WritingAidError, type WritingAcceptance } from "@/lib/writing-aid";
 import { ContentWorkflow } from "./content-workflow";
 import { BilingualInput, ContentLabel, ExposureInput, exposureLabels, FieldInfo, contentDate, errorMessage, type ContentField, type Exposure, type Locales } from "./content-common";
 
@@ -27,6 +29,26 @@ export function ContentNarrative({ projectId = "", projectRowId, apiBase, headin
   useEffect(() => { onEditingChange(Boolean(section || point || pending || workflowActive)); return () => onEditingChange(false); }, [section, point, pending, workflowActive, onEditingChange]);
   const base = apiBase ?? `v1/admin/projects/${encodeURIComponent(projectId)}`;
   const field = (key: string) => fields.find(item => item.field_key === key);
+  const writing = useWritingTranslations(`${base}/content`, JSON.stringify([sections.map(item => [item.id, item.revision]), points.map(item => [item.point_key, item.revision])]), canEdit && fields.some(item => item.ai_writing_enabled));
+  async function acceptSection(current: NarrativeSection, acceptance: WritingAcceptance) {
+    if (!canEdit || current.state.toUpperCase() === "IN_REVIEW" || acceptance.expectedDraft.revision !== current.revision || section && JSON.stringify(section.body) !== JSON.stringify(current.version.body)) throw new WritingAidError("stale");
+    setPending(true);
+    try {
+      await request(`${base}/sections/${current.section_key}`, "PUT", { expected_revision: acceptance.expectedDraft.revision,
+        changes: { body: { ...current.version.body, [acceptance.language]: acceptance.after }, source_ref: current.version.source_ref, ai_exposure: current.version.ai_exposure } });
+      await writing.reload(); await reloadWorkflow();
+    } finally { setPending(false); }
+  }
+  async function acceptPoint(current: SellingPoint, key: "title" | "detail", acceptance: WritingAcceptance) {
+    if (!canEdit || current.state.toUpperCase() === "IN_REVIEW" || acceptance.expectedDraft.revision !== current.revision || point && JSON.stringify(point) !== JSON.stringify(current)) throw new WritingAidError("stale");
+    setPending(true);
+    try {
+      const { title, detail, icon_code, linked_feature_code, linked_fact_keys, sort, state, ai_exposure } = current;
+      await request(`${base}/selling-points/${current.point_key}`, "PUT", { expected_revision: acceptance.expectedDraft.revision,
+        changes: { title, detail, icon_code, linked_feature_code, linked_fact_keys, sort, state, ai_exposure, [key]: { ...current[key], [acceptance.language]: acceptance.after } } });
+      await writing.reload(); await reloadWorkflow();
+    } finally { setPending(false); }
+  }
   const sectionChanges = () => section ? { body: section.body, source_ref: section.source || null, ai_exposure: section.exposure } : null;
   const pointChanges = () => point ? { title: point.title, detail: point.detail, icon_code: point.icon_code, linked_feature_code: point.linked_feature_code, linked_fact_keys: point.linked_fact_keys, sort: point.sort, state: point.state, ai_exposure: point.ai_exposure } : null;
   async function reloadWorkflow() { await onChanged(); setSection(null); setPoint(null); setError(""); setWorkflowRevision(value => value + 1); }
@@ -51,6 +73,11 @@ export function ContentNarrative({ projectId = "", projectRowId, apiBase, headin
         </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending || Boolean(workflowActive)} onClick={() => setSection(null)}>ยกเลิก</button><button className="button primary" disabled={pending || Boolean(workflowActive) || !canEdit || frozen || !section.body.th?.trim()}>บันทึกเนื้อหา</button></div></form>
           : <><p className="content-state">{current ? `${stateLabel(current.state)} · ฉบับ ${current.version.version_no}` : "ยังไม่มีเนื้อหา"}</p><p className="content-state">{current && exposureLabels[current.version.ai_exposure]}</p><p className="content-preserve">{current?.version.body.th}</p>{current?.version.body.en && <p className="content-preserve" lang="en">{current.version.body.en}</p>}
             {canEdit && <div className="content-actions"><button className="button secondary" disabled={editing || pending || Boolean(workflowActive) || frozen} onClick={() => { if (frozen) return; setSection({ id: current?.id, key: item.field_key, revision: current?.revision ?? 0, body: { ...current?.version.body }, source: current?.version.source_ref ?? "", exposure: current?.version.ai_exposure ?? item.default_ai_exposure }); setError(""); }}>{current ? `แก้ไข ${item.label.th}` : `เพิ่ม ${item.label.th}`}</button></div>}</>}
+        {current && <WritingFields field={item} fields={fields} translations={writing.items} contextTranslations={writing.items.filter(source => source.owner_type === "section" && sections.some(section => section.id === source.owner_key))} ownerType="section" ownerKey={current.id}
+          value={section?.key === item.field_key ? section.body : current.version.body} savedValue={current.version.body} stamp={{ revision: section?.key === item.field_key ? section.revision : current.revision }}
+          dirty={Boolean(section && (section.key !== item.field_key || JSON.stringify(section.body) !== JSON.stringify(current.version.body) || section.source !== (current.version.source_ref ?? "") || section.exposure !== current.version.ai_exposure) || point)}
+          canEdit={canEdit} disabled={pending || frozen || workflowOwners.some(owner => owner !== "writing:" + current.id)}
+          onActivityChange={active => workflowEditing("writing:" + current.id, active)} onAccept={value => acceptSection(current, value)} />}
         {current && <ContentWorkflow key={`${current.id}:${workflowRevision}`} target={{ kind: "section", identity: { id: section?.key === item.field_key && section.id ? section.id : current.id } }} label={item.label.th || item.field_key}
           revision={section?.key === item.field_key ? section.revision : current.revision} disabled={pending || Boolean(point || section && section.key !== item.field_key) || workflowOwners.some(owner => owner !== current.id)}
           draft={section?.key === item.field_key && section.id ? { dirty: true, valid: canEdit && Boolean(section.body.th?.trim()), sourceStamp: { revision: section.revision }, getChanges: () => sectionForm.current?.reportValidity() ? sectionChanges() : null } : undefined}
@@ -68,6 +95,11 @@ export function ContentNarrative({ projectId = "", projectRowId, apiBase, headin
       <div className="content-two-columns"><label className="content-input">ลำดับ<input type="number" min="0" max="1000" value={point.sort} onChange={event => setPoint({ ...point, sort: Number(event.target.value) })} /></label><ExposureInput value={point.ai_exposure} onChange={ai_exposure => setPoint({ ...point, ai_exposure })} /></div>
     </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending || Boolean(workflowActive)} onClick={() => setPoint(null)}>ยกเลิก</button><button className="button primary" disabled={pending || Boolean(workflowActive) || !canEdit || pointFrozen || !point.title.th?.trim()}>บันทึกจุดขาย</button></div></form>}
     <div className="content-card-list">{points.map(item => <article className="content-card" key={item.point_key} data-workspace-item={item.point_key} tabIndex={-1}><h3>{item.title.th}</h3><p className="content-preserve">{item.detail.th}</p><p lang="en">{item.title.en}</p>{canEdit && <button className="button secondary" disabled={editing || pending || Boolean(workflowActive) || item.state.toUpperCase() === "IN_REVIEW"} onClick={() => { if (item.state.toUpperCase() === "IN_REVIEW") return; setPoint({ ...item, title: { ...item.title }, detail: { ...item.detail } }); setError(""); }}>แก้ไขจุดขาย {item.title.th}</button>}
+      {(["title", "detail"] as const).map(key => <WritingFields key={key} field={field(`selling_point.${key}`)} fields={fields} translations={writing.items}
+        ownerType="selling_point" ownerKey={item.point_key} value={point?.point_key === item.point_key ? point[key] : item[key]} savedValue={item[key]}
+        stamp={{ revision: point?.point_key === item.point_key ? point.revision : item.revision }} dirty={Boolean(section || point && JSON.stringify(point) !== JSON.stringify(item))}
+        canEdit={canEdit} disabled={pending || item.state.toUpperCase() === "IN_REVIEW" || workflowOwners.some(owner => owner !== "writing:" + item.point_key + key)} maxLength={key === "title" ? 60 : 4000}
+        onActivityChange={active => workflowEditing("writing:" + item.point_key + key, active)} onAccept={value => acceptPoint(item, key, value)} />)}
       <ContentWorkflow key={`${item.point_key}:${workflowRevision}`} target={projectRowId ? { kind: "selling_point", identity: { project_id: projectRowId, point_key: item.point_key } } : null} label={item.title.th || item.point_key}
         revision={point?.point_key === item.point_key ? point.revision : item.revision} disabled={pending || Boolean(section || point && point.point_key !== item.point_key) || workflowOwners.some(owner => owner !== item.point_key)}
         draft={point?.point_key === item.point_key ? { dirty: true, valid: canEdit && Boolean(point.title.th?.trim()), sourceStamp: { revision: point.revision }, getChanges: () => pointForm.current?.reportValidity() ? pointChanges() : null } : undefined}

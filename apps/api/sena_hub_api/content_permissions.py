@@ -290,6 +290,9 @@ CONTENT_RULES = {
 # These surfaces have SQL identity/ownership or fixed technical boundaries rather
 # than a single tab bit. Tool/proposal/citation RPCs check their exact source tabs.
 SHARED_RULES = {
+    ('GET', '/v1/admin/content/writing-aid/{translation_id}'): 'content_writing',
+    ('POST', '/v1/admin/content/writing-aid/{translation_id}/proposals'): 'content_writing',
+
     ('GET', '/v1/admin/accounts/content-scopes'): 'accounts',
     ('GET', '/v1/admin/accounts/bu-sync-runs'): 'accounts',
     ('GET', '/v1/admin/accounts/content-scope-settings'): 'accounts',

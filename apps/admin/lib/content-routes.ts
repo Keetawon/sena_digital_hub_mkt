@@ -1,3 +1,4 @@
+import { writingAllowsApi, writingAllowsQuery } from './writing-aid-routes';
 import { contentScopeAllowsApi, contentScopeAllowsQuery } from './content-scope-routes';
 import { businessAllowsApi, businessAllowsQuery } from './business-api-routes';
 import { workflowAllowsApi, workflowAllowsQuery } from './content-workflow-routes';
@@ -16,6 +17,7 @@ const routes: Record<string, RegExp> = {
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/content\/writing-aid(?:\/|$)/.test(path)) return writingAllowsApi(path, method);
   if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsApi(path, method);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
   if (path === "v1/admin/promotions/resolve") return method === "POST";
@@ -45,6 +47,7 @@ const intakeFilters: Record<string, RegExp> = {
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (/^v1\/admin\/content\/writing-aid(?:\/|$)/.test(path)) return writingAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsQuery(path, method, query);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsQuery(path, method, query);

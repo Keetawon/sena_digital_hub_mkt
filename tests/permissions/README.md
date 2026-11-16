@@ -100,3 +100,14 @@ of content approval snapshots. Partial promotion displays retain full impact
 counts but hide inaccessible reference IDs; saved-resolution requests use the
 promotion identity/revision, and SQL preserves omitted inaccessible targets.
 See docs/47 section 7.1 and the W6 permission card in docs/48.
+
+W7 adds `content-writing-routes.json` for two source-bound writing-aid routes
+and `content-writing-db.json` for the exact 0091 inventory: two owner-only FORCE
+RLS usage/budget tables, nine functions and the existing registry save function.
+Only state, begin and finish are runtime SQL entry points. Registry eligibility
+defaults off; actual Admin with the existing field-catalog special may opt in
+only the finite marketing-text allowlist. Source View/Edit and every context's
+object scope remain mandatory. The only provider is the local stub. Proposals
+never write content; explicit acceptance uses the ordinary revision-checked
+draft writer and retains in-review locks. No account, grant, template, permission
+bit, assistant tool or public/export surface is added.
