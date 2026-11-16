@@ -205,6 +205,25 @@ test('W3.1 internal chips and exact exposure links inform submit and approval wi
   expect(data.commands.map(command => command.path)).toEqual(['content-workflow/submit', 'content-workflow/review']);
   await expect(workflow).toContainText(text.APPROVED);
 });
+test('page-level Hub-only notice counts internal edited items and hides when none', async ({ page }) => {
+  const data = await fixture(page);
+  data.snapshots.fact = { ...data.snapshots.fact, ai_exposure: 'internal' };
+  data.snapshots.building = { ...data.snapshots.building, ai_exposure: 'internal' };
+  data.inventory(['project', 'fact', 'building', 'contact']);
+  await data.visit(`/website/project/${publicId}?tab=data`);
+  const section = page.locator('section.content-workflow');
+  const notice = section.locator('.internal-edited-count');
+  await expect(notice).toBeVisible();
+  await expect(notice).toHaveText('รายการที่แก้ไข 2 จาก 4 รายการตั้งค่าให้ใช้ภายใน Hub เท่านั้น จึงไม่ปรากฏบนเว็บไซต์หรือในคำตอบของ AI');
+  await expect(section.getByRole('button', { name: new RegExp('^' + text.submit_all) })).toContainText('(4)');
+  await expect(section.locator('details li')).toHaveCount(2);
+  await expect(section.locator('details').first()).toBeVisible();
+  data.snapshots.fact = { ...data.snapshots.fact, ai_exposure: 'web_and_ai' };
+  data.snapshots.building = { ...data.snapshots.building, ai_exposure: 'web_and_ai' };
+  await section.getByRole('button', { name: text.refresh, exact: true }).click();
+  await expect(notice).toHaveCount(0);
+  await expect(section.getByRole('button', { name: new RegExp('^' + text.submit_all) })).toContainText('(4)');
+});
 async function approveDraft(page: Page, kind: WorkflowKind) {
   await controls(page, kind).getByRole('button', { name: text.save_approve, exact: true }).click();
   const dialog = page.getByRole('dialog');

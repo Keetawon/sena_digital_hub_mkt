@@ -18,9 +18,9 @@ import { publicationBase, publicationHref, publicationIssue, publicationLabel, p
 import "./content-workflow.css";
 
 const selectionLimit = 100;
-function ItemLink({ item, fallback }: { item: PublicationDescriptor; fallback: string }) {
+function ItemLink({ item, fallback, linkText }: { item: PublicationDescriptor; fallback: string; linkText?: string }) {
   const href = publicationHref(item), label = publicationLabel(item, fallback);
-  return href ? <a href={href}>{label}</a> : <span>{label}</span>;
+  return href ? <a href={href}>{linkText ?? label}</a> : <span>{label}</span>;
 }
 function ItemResults({ items, mayReturn, pending, onReturn, onExposureChanged, onExposureEditing }: { onExposureChanged: () => void; onExposureEditing: (value: boolean) => void; items: PublicationItem[]; mayReturn: boolean; pending: boolean; onReturn: (item: PublicationItem) => void }) {
   return <ul className="workflow-results">{items.map(item => <li key={item.item_key} data-publication-item={item.item_key}>
@@ -199,12 +199,12 @@ export function PublicationWorkspace() {
         <ul className="publication-targets">{queue.items.filter(item => item.system === system).map(item => {
           const key = publicationSelectionKey(item), label = publicationLabel(item, item.system === "web" ? item.page_key : item.public_id);
           return <li key={key} data-publication-target={key}><label className="publication-selection"><input type="checkbox" aria-label={`${text.select_item} · ${label}`} checked={selected.includes(key)} disabled={!publisher || !queue.can_publish || pending || !selected.includes(key) && selected.length >= selectionLimit} onChange={event => choose(item, event.target.checked)} /><span>{label}</span></label>
-            {publicationHref(item) && <p><ItemLink item={item} fallback={label} /></p>}
+            {publicationHref(item) && <p><ItemLink item={item} fallback={label} linkText={text.detail} /></p>}
             <ExposureChip exposure={item.ai_exposure} /><InternalExposureNotice exposure={item.ai_exposure} href={item.exposure_href} editor={item.exposure_editor} disabled={pending} onChanged={() => setRefresh(value => value + 1)} onEditingChange={setExposureEditing} />
             {item.items && <ItemResults items={item.items} mayReturn={publisher} pending={pending} onReturn={returnItem} onExposureChanged={() => setRefresh(value => value + 1)} onExposureEditing={setExposureEditing} />}
             {publisher && item.can_return && item.workflow && <button className="button secondary" disabled={pending} onClick={() => startCommand({ kind: "return", item, label })}>{text.return}</button>}
           </li>;
-        })}</ul>{!queue.items.some(item => item.system === system) && <p>{text.empty}</p>}
+        })}</ul>{!queue.items.some(item => item.system === system) && <p>{text.publication_queue_empty}</p>}
       </section>)}
       {publisher && queue?.can_publish && <form onSubmit={event => { event.preventDefault(); void prepare(); }}>
         <p>{text.select_item} · {selected.length} / {selectionLimit}</p>
@@ -232,14 +232,14 @@ export function PublicationWorkspace() {
       </section>}
       {webAllowed && <section className="publication-history-panel"><h2>{text.web_history}</h2><ul className="publication-history">{queue?.web_history.map(item => <li key={item.id}>
         <button className="button secondary" disabled={pending} onClick={() => open({ publication: item.id })}>{text.detail} · {item.reason}</button><p>{workflowStateLabel(item.state)} · {dateTime(item.created_at)}</p>
-      </li>)}</ul>{queue && !queue.web_history.length && <p>{text.empty}</p>}
+      </li>)}</ul>{queue && !queue.web_history.length && <p>{text.publication_history_empty}</p>}
         <ul className="publication-history">{web?.pages.map(page => <li key={page.page_key}><button className="button secondary" disabled={pending} onClick={() => open({ page: page.page_key })}>{text.web_history} · {page.page_key}</button></li>)}</ul>
       </section>}
       <section className="publication-history-panel"><h2>{text.release_history}</h2><ul className="publication-history">{queue?.release_history.map(item => <li key={item.id}>
         <button className="button secondary" disabled={pending} onClick={() => open({ release: item.id })}>{text.detail} · {item.change_reason}</button><p>{workflowStateLabel(item.status)} · {dateTime(item.published_at)}</p>
-      </li>)}</ul>{queue && !queue.release_history.length && <p>{text.empty}</p>}</section>
+      </li>)}</ul>{queue && !queue.release_history.length && <p>{text.publication_history_empty}</p>}</section>
       {(pageKey || releaseId) && <section className="publication-history-panel"><ErrorSummary message={historyError ? workflowFailure(historyError) : ""} />
-        {pageKey && <><h2>{text.web_history} · {pageKey}</h2>{!versions && !historyError && <p role="status">{text.loading}</p>}{versions && !versions.length && <p>{text.empty}</p>}
+        {pageKey && <><h2>{text.web_history} · {pageKey}</h2>{!versions && !historyError && <p role="status">{text.loading}</p>}{versions && !versions.length && <p>{text.publication_history_empty}</p>}
           <ul className="publication-history">{versions?.map(item => <li key={item.id}><button className="button secondary" disabled={pending} onClick={() => void inspectVersion(item)}>{text.version} {item.version_no}</button> · {item.change_reason} · {dateTime(item.published_at)}{item.id === selectedPage?.published_version_id && <p>{text.current_version}</p>}</li>)}</ul>
           {version && versionHtml && <><h3>{text.version} {version.version_no}</h3><Preview html={versionHtml} label={`${pageKey} · ${version.version_no}`} /></>}
           {publisher && web?.can_publish && selectedPage && <div className="workflow-actions">{selectedPage.published_version_id && <button className="button secondary" disabled={pending} onClick={() => startCommand({ kind: "pointer", page: selectedPage, version: null })}>{text.withdraw_page}</button>}

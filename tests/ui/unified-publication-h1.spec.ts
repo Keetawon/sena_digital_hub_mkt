@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { workflowText as text } from '../../apps/admin/lib/content-workflow';
+import { expectAssistantClearance } from './assistant-clearance';
 
 test.describe('H1 unified publication workspace', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Requires the isolated H1 Auth/API/database simulation');
@@ -15,8 +16,8 @@ test.describe('H1 unified publication workspace', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => { const url = new URL(route.request().url()); return ['http:', 'https:'].includes(url.protocol) && url.hostname !== '127.0.0.1' ? route.abort('blockedbyclient') : route.continue(); });
   });
-  for (const width of [1280, 390]) test(`verified Knowledge readers see the single queue and both histories at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme: width === 390 ? 'dark' : 'light', reducedMotion: 'reduce' });
+  for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) test(`verified Knowledge readers see the single queue and both histories at ${width}px ${colorScheme}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     await login(page, 'viewer'); await expect(page).toHaveURL(/\/publish$/);
     await expect(page.getByRole('heading', { name: text.queue, exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: text.web_history, exact: true })).toBeVisible();
@@ -27,6 +28,8 @@ test.describe('H1 unified publication workspace', () => {
     await expect(page.getByRole('button', { name: new RegExp('^' + text.prepare_review) })).toHaveCount(0);
     await expect(page.getByRole('button', { name: text.return, exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectAssistantClearance(page, page.locator('.publication-history-panel').last(), true);
+    await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-publishing-disabled-${width}-${colorScheme}.png` });
     await page.screenshot({ path: `artifacts/unified-workspace/w4/h1-queue-${width}.png`, fullPage: true });
   });
   test('H1 View cannot submit an exact source or bypass the publication special by direct API', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { workspaceCopy as copy } from '../../apps/admin/lib/workspace-copy';
+import { expectAssistantClearance } from './assistant-clearance';
 
 const origin = 'http://127.0.0.1:3000';
 const home = {
@@ -114,4 +115,14 @@ test('search aborts stale responses and never shows results for an earlier query
   await search.fill('new'); await expect(page.getByRole('option', { name: 'new RESULT', exact: true })).toBeVisible();
   release();
   await expect(page.getByRole('option', { name: 'old RESULT', exact: true })).toHaveCount(0);
+});
+
+for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) test(`home content reserves bottom clearance for the floating assistant at ${width}px ${colorScheme}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+  await enter(page);
+  await page.goto('/home');
+  await expect(page.getByRole('heading', { name: copy.greeting, exact: true })).toBeVisible();
+  await expectAssistantClearance(page, page.locator('.workspace-home-card').last());
+  await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-home-enabled-${width}-${colorScheme}.png` });
 });

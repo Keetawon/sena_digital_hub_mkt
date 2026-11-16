@@ -1,5 +1,6 @@
 // Labels are copied from docs/47 and existing editor UI, never translated here.
 export const workspaceText = {
+  "content_history_empty": "ยังไม่มีประวัติการเปลี่ยนแปลง",
   "promotion_review_data": "ตรวจข้อมูล",
   "promotion_review_legal": "ตรวจกฎหมาย",
   "promotion_review_approved": "ตรวจผ่าน",
@@ -136,6 +137,13 @@ export const workspaceText = {
   "newFaq": "เพิ่มคำตอบ FAQ",
   "loading": "กำลังโหลดข้อมูล…",
   "empty": "ไม่พบรายการตามตัวกรอง",
+  "readiness_empty": "ไม่มีรายการข้อมูลที่ยังขาด",
+  "tasks_empty": "ยังไม่มีงานที่รอคุณ",
+  "since_publication_empty": "ไม่มีการเปลี่ยนแปลงหลังเผยแพร่ล่าสุด",
+  "tree_empty": "ยังไม่มีรายการให้แสดง",
+  "fact_unavailable": "ยังไม่มีข้อมูลนี้",
+  "faq_empty": "ยังไม่มีคำถามให้แสดง",
+  "activity_log_empty": "ยังไม่มีรายการในบันทึกการใช้งาน",
   "retry": "ลองใหม่",
   "search": "ค้นหา",
   "phase": "เฟส REM",

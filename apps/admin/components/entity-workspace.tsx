@@ -38,7 +38,7 @@ function ItemGroup({ name, items }: { name: string; items: OverviewItem[] }) {
     {items.length > 5 && <button type="button" className="button secondary" aria-expanded={all} onClick={() => setAll(value => !value)}>{all ? text.show_less : text.view_all} ({items.length})</button>}
   </details>;
 }
-function Items({ title, items }: { title: string; items: OverviewItem[] }) {
+function Items({ title, items, emptyLabel }: { title: string; items: OverviewItem[]; emptyLabel: string }) {
   const groups = new Map<string, { name: string; items: OverviewItem[] }>();
   for (const item of items) {
     const section = item.target.section, key = item.target.tab + ":" + (section ?? "");
@@ -46,7 +46,7 @@ function Items({ title, items }: { title: string; items: OverviewItem[] }) {
     group.items.push(item); groups.set(key, group);
   }
   return <section className="workspace-panel" aria-label={title}><h2>{title} <span className="workspace-count">{items.length} {text.item_count}</span></h2>
-    {items.length ? Array.from(groups, ([key, group]) => <ItemGroup key={key} {...group} />) : <p>{text.empty}</p>}
+    {items.length ? Array.from(groups, ([key, group]) => <ItemGroup key={key} {...group} />) : <p>{emptyLabel}</p>}
   </section>;
 }
 function PagePreview({ endpoint }: { endpoint: string }) {
@@ -153,7 +153,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
         disabled={primaryDirty || primaryBusy || editing || suggestionEditing} onBusyChange={setHeaderBusy} onChanged={submitted}
         onExposureChanged={() => { setEditorRevision(value => value + 1); onWorkflowChanged(); }} />
     </header>
-    {publicProject && <ContentBuNotices key={publicProject} project={publicProject} />}
+    {publicProject && <ContentBuNotices key={publicProject} project={publicProject} quiet />}
     {error && <p className="notice error" role="alert">{error}</p>}
     {data.entity.grouping?.review_href && <p><a href={data.entity.grouping.review_href}>{text.groups} · {text.settings}</a></p>}
     <nav className="workspace-tabs" role="tablist" aria-label={text.website}>{tabs.map((value, index) => <button type="button" role="tab" id={`workspace-tab-${value}`} aria-controls={`workspace-panel-${value}`} aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} key={value} disabled={(primaryPending || suggestionEditing || headerBusy) && tab !== value} onClick={() => chooseTab(value)} onKeyDown={event => {
@@ -166,7 +166,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
       {tab === "overview" && (section === "preview" ? <PagePreview endpoint={webPage && sourceVersion ? `v1/admin/web/pages/${encodeURIComponent(webPage)}/versions/${encodeURIComponent(sourceVersion)}?locale=th` : `${workspaceApi(level, id)}/preview?locale=th${data.selected_phase ? "&phase=" + encodeURIComponent(data.selected_phase) : ""}`} /> : <>
         {data.overview.preview_target && <p><a className="button secondary" href={workspaceHref(data.overview.preview_target)}>{text.preview}</a></p>}
         {(level === "project" || level === "brand") && permissions.can("promotions") && permissions.can("projects") && permissions.can(level === "brand" ? "brands" : "projects") && <PromotionOverview summary={data.overview.promotions} level={level} id={id} phase={level === "project" ? data.selected_phase : null} />}
-        <div className="workspace-overview"><Items title={text.readiness} items={[...data.overview.readiness.required.map(item => ({ ...item, priority: "required" as const })), ...data.overview.readiness.recommended.map(item => ({ ...item, priority: "recommended" as const }))]} /><Items title={text.tasks} items={data.overview.tasks} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline compact items={data.overview.changes_since_publication.slice(0, 5)} /> : <p>{text.empty}</p>}<a className="workspace-history-link" href={workspaceHref({ level, id, tab: "history" })}>{text.view_history}</a></section></div>
+        <div className="workspace-overview"><Items title={text.readiness} emptyLabel={text.readiness_empty} items={[...data.overview.readiness.required.map(item => ({ ...item, priority: "required" as const })), ...data.overview.readiness.recommended.map(item => ({ ...item, priority: "recommended" as const }))]} /><Items title={text.tasks} emptyLabel={text.tasks_empty} items={data.overview.tasks} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline compact items={data.overview.changes_since_publication.slice(0, 5)} /> : <p>{text.since_publication_empty}</p>}<a className="workspace-history-link" href={workspaceHref({ level, id, tab: "history" })}>{text.view_history}</a></section></div>
       </>)}
       {tab === "data" && <><nav className="workspace-section-states" aria-label={text.data}>{data.sections.filter(item => item.tab === "data").map(item => <a key={item.key} href={workspaceHref(item.target)}>{workspaceName(item.label ?? sectionLabel(item.key))} <ExposureChip exposure={item.ai_exposure} /> · {text[item.state as keyof typeof text] ?? item.state}{item.suggestion_count > 0 && <> · {text.suggestions} {item.suggestion_count}</>}</a>)}</nav>
         {publicProject ? <ProjectContentWorkspace projectId={publicProject} embedded primary={primary} supplementary={primary} navigationBlocked={primaryBusy} navigationPending={primaryPending} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />

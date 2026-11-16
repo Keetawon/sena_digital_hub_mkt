@@ -90,7 +90,7 @@ for (const [kind, label] of [["stale_data", T.scope_stale_data], ["stale_warning
     const state = await fixture(page); state.items = [notice(kind)]; await open(page);
     await expect(panel(page)).toContainText(label);
     await expect(panel(page).locator(`time[datetime="${sourceAt}"]`)).toBeVisible();
-    await expect(panel(page).locator(`time[datetime="${cutoff}"]`)).toContainText("07:00:00");
+    await expect(panel(page).locator(`time[datetime="${cutoff}"]`)).toHaveText(/07:00$/);
     await expect(panel(page).locator("dt").filter({ hasText: T.scope_cutoff })).toHaveCount(1);
     const temporary = panel(page).getByRole("link", { name: T.scope_temporary_grant, exact: true });
     if (kind === "stale_expired") { await expect(temporary).toBeVisible(); await expect(temporary).toHaveAttribute("href", "/admin/accounts"); }

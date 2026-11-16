@@ -21,7 +21,7 @@ type Notice = {
   deadline?: string | null; membership_deadline?: string | null; expired?: boolean;
 };
 type NoticePage = { items: Notice[]; has_more: boolean };
-const dates = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Bangkok" });
+const dates = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" });
 function NoticeDate({ label, value }: { label: string; value?: string | null }) {
   if (typeof value !== "string" || !/(Z|[+-]\d\d:\d\d)$/i.test(value) || !Number.isFinite(Date.parse(value))) return null;
   return <div><dt>{label}</dt><dd><time dateTime={value}>{dates.format(new Date(value))}</time></dd></div>;
@@ -34,7 +34,7 @@ function visibleNotice(value: Notice, manager: boolean, project?: string) {
 }
 
 /** Caller-only projection; never enters home task data or assistant context. */
-export function ContentBuNotices({ project }: { project?: string }) {
+export function ContentBuNotices({ project, quiet = false }: { project?: string; quiet?: boolean }) {
   const permissions = useHubPermissions(), role = permissions.account?.hub_role ?? permissions.account?.role ?? "";
   const authority = JSON.stringify([capabilityKey(permissions.account), permissions.account?.updated_at, role]);
   const enabled = permissions.ready && permissions.account?.status === "ACTIVE" && ["viewer", "editor", "publisher", "admin", "online_staff"].includes(role);
@@ -65,7 +65,9 @@ export function ContentBuNotices({ project }: { project?: string }) {
   const items = data?.items.filter(item => visibleNotice(item, manager, project)) ?? [];
   return <section className={`content-bu-notices${project ? " content-bu-project-notices" : " content-bu-home-notices"}`} aria-label={buNoticeText.heading} data-notice-project={project ?? ""}>
     <header><h2>{buNoticeText.heading}</h2><button type="button" className="button secondary" disabled={!data && !failed} onClick={() => setRetry(value => value + 1)}>{text.refresh}</button></header>
-    {failed ? <p className="notice error" role="alert">{text.load_error}<button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{text.retry}</button></p>
+    {failed ? (quiet
+      ? <p className="bu-notice-quiet" role="status">{text.load_error}<button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{text.retry}</button></p>
+      : <p className="notice error" role="alert">{text.load_error}<button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{text.retry}</button></p>)
       : !data ? <p role="status">{text.loading}</p> : <>
         {!items.length ? <p role="status">{buNoticeText.empty}</p> : <ul>{items.map(item => <li key={item.id} data-bu-notice={item.kind}>
           <strong>{item.kind === "handover" && item.expired === true ? text.scope_reason_handover_end : labels[item.kind]}</strong>

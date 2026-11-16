@@ -226,12 +226,13 @@ test('mobile assistant clears the real publish action throughout intermediate sc
   const floating = page.getByRole('button', { name: 'ถามผู้ช่วย', exact: true });
   await expect(publish).toBeVisible();
   const initial = (await publish.boundingBox())!;
-  const documentTop = initial.y + await page.evaluate(() => scrollY);
   // Exercise a partially visible action, both edges of the assistant, and a
   // central position. The page must stay clear between scroll destinations too.
   for (const targetTop of [viewport.height - 20, viewport.height - initial.height - 2, viewport.height - initial.height - 40, 400]) {
-    await page.evaluate(value => window.scrollTo({ top: value, behavior: 'instant' }), Math.max(0, documentTop - targetTop));
     await expect.poll(async () => {
+      await publish.evaluate((element, top) => window.scrollTo({
+        top: Math.max(0, scrollY + element.getBoundingClientRect().top - top), behavior: 'instant',
+      }), targetTop);
       const [action, button] = await Promise.all([publish.boundingBox(), floating.boundingBox()]);
       if (!action || !button) return { visible: false, clear: false };
       const visible = action.y < viewport.height && action.y + action.height > 0;

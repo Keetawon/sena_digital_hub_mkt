@@ -193,7 +193,7 @@ function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { 
       {item.effective_answer && <><ExposureChip exposure={item.effective_answer.ai_exposure} /><p className="content-preserve">{workspaceName(item.effective_answer.short_answer)}</p>
         {item.display_state === "inherited" && <p className="content-state">{workspaceText.inheritedFrom}{scopeLabels[item.effective_answer.source.scope_type]} · {workspaceName(item.effective_answer.source.name)}</p>}
         <p>{item.effective_answer.author?.name}{item.effective_answer.approver?.name && <> · {item.effective_answer.approver.name}</>}</p></>}
-      <div className="workspace-faq-facts">{item.facts.map(fact => <p key={fact.field_key}>{fact.available ? fact.text || String(fact.value ?? "") : fact.target ? <a href={workspaceHref(fact.target)}>{catalog?.items.find(field => field.field_key === fact.field_key)?.label.th ?? workspaceText.data}</a> : workspaceText.empty}{fact.unit && <> {fact.unit}</>}{fact.as_of && <> · {contentDate(fact.as_of)}</>}</p>)}</div>
+      <div className="workspace-faq-facts">{item.facts.map(fact => <p key={fact.field_key}>{fact.available ? fact.text || String(fact.value ?? "") : fact.target ? <a href={workspaceHref(fact.target)}>{catalog?.items.find(field => field.field_key === fact.field_key)?.label.th ?? workspaceText.data}</a> : workspaceText.fact_unavailable}{fact.unit && <> {fact.unit}</>}{fact.as_of && <> · {contentDate(fact.as_of)}</>}</p>)}</div>
       <div className="content-actions">
         {item.own_answer && <button className="button secondary" onClick={() => onOpen(item.own_answer!.id)}>{workspaceText.faq} · {workspaceName(item.label)}</button>}
         {!item.own_answer && item.targets.create_override && item.display_state !== "not_applicable" && permissions.can("knowledge", "edit") && <button className="button secondary" onClick={() => onCreate(item.question_key)}>{item.display_state === "inherited" && scope.type === "project" ? workspaceText.override : workspaceText.newFaq}</button>}
@@ -201,7 +201,7 @@ function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { 
         {item.legacy_clusters.map(cluster => <div key={cluster.id}><ul className="intake-holds">{cluster.holds.map(hold => <li key={hold}>{holdLabels[hold] ?? hold}</li>)}</ul><a className="button secondary" href={workspaceHref(cluster.target, { cluster: cluster.id })}>{workspaceText.suggestions}</a></div>)}
       </div>
     </article>)}
-    {data && !shownItems.length && !selectedPending && <p>{workspaceText.empty}</p>}
+    {data && !shownItems.length && !selectedPending && <p>{term.trim() ? workspaceText.empty : workspaceText.faq_empty}</p>}
     {data?.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{workspaceText.more}</button>}
     {Boolean(data?.unmatched_clusters?.length) && <section aria-label={workspaceText.suggestions} className="workspace-unmatched-clusters"><h2>{workspaceText.suggestions}</h2>
       {data!.unmatched_clusters!.map(cluster => <article className="content-card" key={cluster.id} data-workspace-cluster={cluster.id}>

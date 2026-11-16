@@ -86,7 +86,7 @@ for (const kind of ["stale_warning", "stale_expired"] as const) test(`server ${k
   await home(page); const panel = notices(page);
   await expect(panel).toContainText(kind === "stale_warning" ? T.scope_stale_warning : T.scope_stale_expired);
   await expect(panel.locator("dt").filter({ hasText: T.scope_cutoff })).toHaveCount(1);
-  await expect(panel.locator(`time[datetime="${membershipEnd}"]`)).toContainText("07:00:00");
+  await expect(panel.locator(`time[datetime="${membershipEnd}"]`)).toHaveText(/07:00$/);
   await expect(panel.locator(`time[datetime="${membershipEnd}"]`)).toContainText("2573");
 });
 
@@ -95,7 +95,7 @@ test("Knowledge-only phase banners preserve separate handover and membership dea
   const panel = notices(page); await expect(panel).toHaveAttribute("data-notice-project", publicA);
   await expect(panel).toContainText(T.scope_handover); await expect(panel.locator("dt").filter({ hasText: T.scope_handover_end })).toHaveCount(1);
   await expect(panel.locator("dt").filter({ hasText: T.scope_cutoff })).toHaveCount(1);
-  await expect(panel.locator(`time[datetime="${moveEnd}"]`)).toContainText("08:02:03"); await expect(panel.locator(`time[datetime="${membershipEnd}"]`)).toContainText("07:00:00");
+  await expect(panel.locator(`time[datetime="${moveEnd}"]`)).toHaveText(/08:02$/); await expect(panel.locator(`time[datetime="${membershipEnd}"]`)).toHaveText(/07:00$/);
   expect(state.queries.every(query => new URLSearchParams(query).get("project") === publicA)).toBe(true); expect(state.sourceReads).toEqual([]);
   state.items = [handover(publicB)]; await page.locator(".workspace-heading select").selectOption("REM-B");
   await expect(notices(page)).toHaveAttribute("data-notice-project", publicB); await expect(notices(page).locator("li")).toHaveCount(1);
@@ -134,7 +134,7 @@ test("bounded replacement loads stop at 100 and disclose remaining notices", asy
 
 test("notice errors retry independently from home data and never expose server diagnostics", async ({ page }) => {
   const state = await fixture(page); state.error = true; state.homeError = true; await home(page);
-  await expect(notices(page).getByRole("alert")).toContainText(T.load_error); await expect(notices(page)).not.toContainText("PRIVATE diagnostic");
+  await expect(notices(page).getByRole("status").filter({ hasText: T.load_error })).toBeVisible(); await expect(notices(page).getByRole("alert")).toHaveCount(0); await expect(notices(page)).not.toContainText("PRIVATE diagnostic");
   state.error = false; state.items = [node("handover", { expired: true, deadline: moveEnd, membership_deadline: null, project_ref: null })];
   await notices(page).getByRole("button", { name: T.retry, exact: true }).click(); await expect(notices(page)).toContainText(T.scope_reason_handover_end);
   await expect(notices(page).locator("time")).toHaveCount(1); await expect(notices(page).locator("dt").filter({ hasText: T.scope_cutoff })).toHaveCount(0);

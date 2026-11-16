@@ -64,3 +64,11 @@ Invites pin an exact server template version, never grant admin, and do not acqu
 Per-project/brand scoping and strict revision-author four-eyes checks remain deferred. Adding either requires a separate permission card and changes to object-aware DB checks, cross-tab projections, caches, audit and concurrency tests; a new checkbox alone is insufficient.
 
 Update, 4 November 2026: scoping is now scheduled by BUD with per-project exceptions, and the edit/approve rules change for content, in [docs/47](47-unified-content-workspace.md) §5 and §7. The requirements above for a permission card and object-aware checks still apply.
+
+P1 polish (12 November 2026): copy/layout corrections and the quiet content-page
+BUD request-failure line change no permission, route, catalog, schema or API
+contract. Empty-state wording, notice counting, date precision, aria
+descriptions, queue-card titles and assistant clearance are presentation only;
+every guarded command keeps its existing checks. The targeted BUD-grant notice
+variant needs a caller-projection field and is backlog in docs/47 §7.1, not
+part of P1.

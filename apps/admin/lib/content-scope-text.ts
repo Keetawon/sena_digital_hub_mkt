@@ -76,5 +76,8 @@ export const contentScopeText = {
   "scope_save_base_first": "บันทึกหรือยกเลิกการแก้ไขสิทธิ์รายแท็บก่อนเปลี่ยนขอบเขต",
   "scope_title": "ขอบเขต",
   "scope_all": "ทุกโครงการ",
-  "scope_selected": "เลือกเอง"
+  "scope_selected": "เลือกเอง",
+  "scope_projects_empty": "ยังไม่มีโครงการให้เลือก",
+  "scope_bu_projects_empty": "ยังไม่มีโครงการใน BUD นี้ให้เลือก",
+  "scope_history_empty": "ยังไม่มีประวัติการเปลี่ยนแปลงสิทธิ์"
 } as const;

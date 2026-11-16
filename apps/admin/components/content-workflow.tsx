@@ -87,7 +87,6 @@ export function SavedContentSubmission({ scope, revision, disabled = false, onCh
       disabled={disabled || inventory.loading || !inventory.complete} onChanged={onChanged}
       onExposureChanged={async () => { await onExposureChanged?.(); inventory.refresh(); }}
       onBusyChange={value => { setPending(value); onBusyChange?.(value); }} />
-    {inventory.complete && !inventory.items.length && <p>{text.empty}</p>}
   </div>;
 }
 
@@ -195,7 +194,7 @@ export function SubmitAllContent({ items, disabled = false, onChanged, onBusyCha
     finally { busy.current = false; setPending(false); onBusyChange?.(false); }
   }
   return <section className="content-workflow" aria-label={text.submit_all}>
-    {eligible.some(item => item.snapshot.ai_exposure === "internal") && <><InternalExposureNotice exposure="internal" /><details><summary>{text.submit_all} · <ExposureChip exposure="internal" /></summary>
+    {eligible.some(item => item.snapshot.ai_exposure === "internal") && <><p className="internal-edited-count">{text.internal_edited_count.replace("{n}", String(eligible.filter(item => item.snapshot.ai_exposure === "internal").length)).replace("{m}", String(eligible.length))}</p><details><summary>{text.submit_all} · <ExposureChip exposure="internal" /></summary>
       <ul>{eligible.filter(item => item.snapshot.ai_exposure === "internal").map(item => <li key={workflowKey(item.snapshot)}>{item.label}<InternalExposureNotice exposure="internal" href={item.snapshot.exposure_href} editor={item.snapshot.exposure_editor} disabled={disabled || pending} onEditingChange={exposureBusy} onChanged={async () => { await onExposureChanged?.(); }} /></li>)}</ul>
     </details></>}
     <button type="button" className="button primary" disabled={disabled || pending || exposureEditing || !eligible.length} onClick={() => void submit()}>{text.submit_all} ({eligible.length})</button>

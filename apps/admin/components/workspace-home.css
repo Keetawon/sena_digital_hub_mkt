@@ -33,9 +33,6 @@
 .workspace-home-group { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; }
 .workspace-home-pagination { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .workspace-home-gap { scroll-margin-top: 80px; }
-.workspace-assistant-disabled { position: fixed; z-index: 20; bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; max-width: calc(100vw - 40px); display: flex; flex-direction: column; gap: 2px; opacity: 1; color: var(--muted); }
-.workspace-assistant-disabled small { font-size: var(--text-caption); }
-button.workspace-assistant-disabled:disabled { opacity: 1; background: var(--surface); color: var(--muted); }
 @media (max-width: 1000px) {
   .topbar { flex-wrap: wrap; gap: 12px; }
   .topbar .workspace-search { order: 3; flex-basis: 100%; width: 100%; }

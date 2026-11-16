@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { expectAssistantClearance } from './assistant-clearance';
 import { clickPublication } from './content-workflow-fixtures';
 import { workspaceText } from '../../apps/admin/lib/unified-workspace';
 import { workflowText as text, type PublicationItem, type PublicationQueue, type PublicationReview, type ReleaseHistory } from '../../apps/admin/lib/content-workflow';
@@ -116,6 +117,8 @@ for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as 
   await enter(page); const value = await mock(page); await page.goto('/publish');
   await expect(page.getByRole('heading', { name: text.queue, exact: true })).toBeVisible();
   expect(value.calls).toEqual([]);
+  await expectAssistantClearance(page, page.locator('.publication-history-panel').last());
+  await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-publishing-enabled-${width}-${colorScheme}.png` });
   const first = page.getByRole('checkbox', { name: text.select_item + ' · Synthetic website', exact: true });
   await first.focus(); await page.keyboard.press('Space'); await expect(first).toBeFocused(); await expect(first).toBeChecked();
   await page.getByRole('checkbox', { name: text.select_item + ' · Synthetic project export', exact: true }).check();
@@ -225,6 +228,40 @@ test('N2 publisher needs source View and the existing special without borrowing 
   await page.evaluate(() => window.dispatchEvent(new Event('hub-accounts-changed'))); await revoked;
   await expect(page.getByRole('button', { name: text.publish, exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: text.return, exact: true })).toHaveCount(0);
+  expect(value.calls).toEqual([]);
+});
+
+test('each queue card shows one visible exact title and a detail navigation link', async ({ page }) => {
+  await enter(page); await mock(page); await page.goto('/publish');
+  await expect(page.locator('.publication-targets')).toHaveCount(2);
+  const cards = page.locator('.publication-targets > li');
+  const count = await cards.count();
+  expect(count).toBeGreaterThan(0);
+  let detailed = 0;
+  for (let index = 0; index < count; index++) {
+    const card = cards.nth(index);
+    const title = card.locator('.publication-selection > span');
+    await expect(title).toHaveCount(1);
+    const value = (await title.innerText()).trim();
+    expect(value.length, 'card title').toBeGreaterThan(0);
+    await expect(card.getByText(value, { exact: true })).toHaveCount(1);
+    const detail = card.locator('p a').filter({ hasText: text.detail });
+    if (await detail.count()) { await expect(detail).toHaveCount(1); detailed++; }
+  }
+  expect(detailed, 'detail navigation links').toBeGreaterThan(0);
+});
+
+test('unfiltered publication queues and every history level name what is empty', async ({ page }) => {
+  await enter(page); const value = await mock(page);
+  value.queue.items = []; value.queue.web_history = []; value.queue.release_history = [];
+  await page.route('**/api/hub/v1/admin/web/pages/**/history', route => route.fulfill({ json: { data: [] } }));
+  await page.goto('/publish');
+  await expect(page.getByText(text.publication_queue_empty, { exact: true })).toHaveCount(2);
+  await expect(page.getByText(text.publication_history_empty, { exact: true })).toHaveCount(2);
+  await expect(page.getByText(text.empty, { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: text.web_history + ' · project:prj_exact', exact: true }).click();
+  await expect(page.getByText(text.publication_history_empty, { exact: true })).toHaveCount(3);
+  await expect(page.getByText(text.empty, { exact: true })).toHaveCount(0);
   expect(value.calls).toEqual([]);
 });
 

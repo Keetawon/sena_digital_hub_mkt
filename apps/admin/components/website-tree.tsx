@@ -44,7 +44,7 @@ function TreeBranch({ parent, query, intent, authority }: { parent?: TreeItem; q
       {item.has_children && <details open={opened[item.key] ?? false} onToggle={event => { const open = event.currentTarget.open; setOpened(current => current[item.key] === open ? current : { ...current, [item.key]: open }); }}>
         <summary>{text.scope} · {workspaceName(item.name)}</summary>{opened[item.key] && <TreeBranch parent={item} query={query} intent={intent} authority={authority} />}
       </details>}
-    </li>)}</ul>{!parent && Boolean(data.programmes?.length) && <section className="workspace-programmes"><h2>{scopeLabels.programme}</h2><ul className="workspace-items">{data.programmes!.map(item => <li key={item.key}><a href={workspaceHref({ ...item.target, ...(intent === "faq" || intent === "media" ? { tab: intent } : {}) })}>{workspaceName(item.name)}</a></li>)}</ul></section>}{!data.items.length && !data.programmes?.length && <p>{text.empty}</p>}{data.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{text.more}</button>}</>}
+    </li>)}</ul>{!parent && Boolean(data.programmes?.length) && <section className="workspace-programmes"><h2>{scopeLabels.programme}</h2><ul className="workspace-items">{data.programmes!.map(item => <li key={item.key}><a href={workspaceHref({ ...item.target, ...(intent === "faq" || intent === "media" ? { tab: intent } : {}) })}>{workspaceName(item.name)}</a></li>)}</ul></section>}{!data.items.length && !data.programmes?.length && <p>{query.trim() ? text.empty : text.tree_empty}</p>}{data.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{text.more}</button>}</>}
   </>;
 }
 export function WebsiteTree({ role }: { role: LocalRole }) {

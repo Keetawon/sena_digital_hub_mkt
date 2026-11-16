@@ -461,6 +461,15 @@ fixture capture/accept/reject/persist/maintenance path locally; document the
 disabled future schedule and verified-TLS read adapter. Hosted TEST activation
 requires the owner's dedicated credential and separate rollout authorization.
 
+Backlog (owner decision, 12 November 2026): content pages render a BUD
+notice-request failure as one quiet non-assertive line (`role=status`, no
+error styling, one retry control, shown once per page), while account and
+permission screens keep their assertive failure presentation. The targeted
+version — showing the quiet line only to callers with a BUD-scoped grant,
+which requires a new caller-projection field — is recorded here as backlog
+only; it is not implemented in P1 and needs its own API-contract decision
+before any implementation.
+
 ### 7.2 Scope model
 
 - Each content grant level (View, Edit, Approve) has a scope: «ทุกโครงการ»,
@@ -833,6 +842,33 @@ W6 account scope and membership notices:
 | scope_all | ทุกโครงการ |
 | scope_selected | เลือกเอง |
 | scope_references_partial | แสดงเฉพาะโครงการที่คุณมีสิทธิ์ดู จำนวนผลกระทบรวมทุกโครงการ ขอบเขตที่ไม่แสดงจะคงไว้เมื่อบันทึก |
+
+P1 copy corrections (owner decision, 12 November 2026). `internal_edited_count`
+replaces `{n}` and `{m}` with the internal and total eligible edited counts.
+Every other row is a truthful unfiltered empty state; the existing
+«ไม่พบรายการตามตัวกรอง» stays only where a search or filter is actually
+applied. The quiet BUD request-failure line on content pages reuses the
+existing `load_error` and `retry` labels with `role=status` and no error
+styling; no new key is introduced for it.
+
+| Key | Thai label |
+| --- | --- |
+| internal_edited_count | รายการที่แก้ไข {n} จาก {m} รายการตั้งค่าให้ใช้ภายใน Hub เท่านั้น จึงไม่ปรากฏบนเว็บไซต์หรือในคำตอบของ AI |
+| publication_queue_empty | ยังไม่มีรายการรอเผยแพร่ |
+| publication_history_empty | ยังไม่มีประวัติการเผยแพร่ |
+| content_history_empty | ยังไม่มีประวัติการเปลี่ยนแปลง |
+| readiness_empty | ไม่มีรายการข้อมูลที่ยังขาด |
+| tasks_empty | ยังไม่มีงานที่รอคุณ |
+| since_publication_empty | ไม่มีการเปลี่ยนแปลงหลังเผยแพร่ล่าสุด |
+| tree_empty | ยังไม่มีรายการให้แสดง |
+| activity_log_empty | ยังไม่มีรายการในบันทึกการใช้งาน |
+| fact_unavailable | ยังไม่มีข้อมูลนี้ |
+| faq_empty | ยังไม่มีคำถามให้แสดง |
+| scope_projects_empty | ยังไม่มีโครงการให้เลือก |
+| scope_bu_projects_empty | ยังไม่มีโครงการใน BUD นี้ให้เลือก |
+| scope_history_empty | ยังไม่มีประวัติการเปลี่ยนแปลงสิทธิ์ |
+| home_buds_empty | ยังไม่มี BUD ให้แสดง |
+| home_brands_empty | ยังไม่มีแบรนด์ให้แสดง |
 
 ### 8.6 Upload optimization
 

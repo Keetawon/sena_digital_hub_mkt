@@ -42,7 +42,7 @@ export function ContentActivityLog() {
       <button className="button secondary">{text.search}</button>
     </form>
     {error && <p className="notice error" role="alert">{error}<button className="button secondary" onClick={() => setRetry(value => value + 1)}>{text.retry}</button></p>}
-    {!data && pending && <p role="status">{text.loading}</p>}{data && <ContentTimeline items={data.items} />}{data && !data.items.length && <p>{text.empty}</p>}
+    {!data && pending && <p role="status">{text.loading}</p>}{data && <ContentTimeline items={data.items} />}{data && !data.items.length && <p>{Object.values(applied).some(Boolean) ? text.empty : text.activity_log_empty}</p>}
     {data?.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{text.next}</button>}
   </>}</section>;
 }

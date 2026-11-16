@@ -6303,3 +6303,242 @@ unchanged; W6 deployment additionally requires the DW BUD feed decision.
 
 Next: P1 (copy/layout corrections) on `ws/polish-p1` from this delivered main,
 then W7, W9 and finally W8 UAT.
+
+### P1 copy and layout corrections implemented; quick gate passed — 12 November 2026
+
+P1 ran on `ws/polish-p1` from delivered main `3d8d054` (now `ee78876` after the
+docs/46 receipt commit). All seven corrections are implemented across 24
+explicit paths (15 admin components/styles/copy libraries, five browser specs,
+docs/36 and docs/47): the counted page-level Hub-only notice
+(`internal_edited_count`, hidden at N=0, per-item notices kept; header
+inventory empty line removed), truthful unfiltered empty states with
+filter-miss copy only under an active filter, minute-precision Bangkok
+Buddhist-era BUD times, one shared future-members explanation with
+per-checkbox `aria-describedby`, one queue-card title with a `detail`
+navigation link, ceiling-safe floating-assistant clearance (scroll-padding plus
+home/queue reservation; the 2,200-pixel overview check is unchanged), and the
+owner-approved quiet content-page BUD failure line (`role=status`, retry, no
+error styling; Accounts and permission screens keep the alert). The targeted
+BUD-grant audience variant is recorded as backlog in docs/47 §7.1 and is not
+implemented; P1 changes no API file, permission, schema or contract.
+
+Quick gate: admin typecheck passed; the documented offline webpack build passed
+(a clean rebuild was required before H1: an in-place rebuild across the local
+bootstrap boundary had produced a stale artifact that failed seven auth specs;
+both logs are retained); the 12-spec selection passed **166 at 1280** and
+**166 at 390** with zero failures/skips; the complete local H1 suite passed
+after the clean rebuild (**70 browser, 3 flags, 7 outage**,
+`h1-retry-20261112.log`; the earlier `h1-quick-20261112.log` failure is
+retained with its diagnosis). Paired visual evidence: **36 before and 36 after
+captures** under `artifacts/unified-workspace/polish-p1/`. W8 pointers U55-U61
+were added to the prepared pack, with U61 tied to the approved quiet-line scope
+only.
+
+The 24 P1 paths are staged for the single shared P1/W7 serial full gate; P1
+gets no separate full gate. Its product commit lands first after that gate
+passes, before W7's separate commit.
+
+### P1/W7 lead takeover and quick-gate recovery — 12 November 2026
+
+The owner stopped the other session and assigned the remaining work to this
+lead. No detached test runner or local test listener remained. The verified
+candidate is transferred to main at ee78876: 25 staged P1 paths (including the
+log) and 43 W7 paths remain separate; their union is 67. The only source merge
+is FAQ, retaining P1 empty states and W7 field controls. Previous worktrees are
+preserved. Source/index hashes and prior logs are archived under
+artifacts/unified-workspace/p1-w7-takeover-20261112/.
+
+The prior W7 focused command failed before database setup because its selector
+used tests/ instead of apps/api/tests/. No W7 runtime result exists from it.
+The corrected focused API selection runs first under this lead's sole test
+lease. Independent P1 review found unfiltered history copy still using the
+filter-miss label, incomplete disabled-assistant compactness/clearance, and
+loading-state scope screenshots. These will be corrected and verified before
+the shared full gate; the earlier P1 quick-pass entry is not final acceptance.
+No permission, schema or contract expansion is needed for these P1 corrections.
+
+The corrected W7 focused invocation reached migration replay and exposed an
+unquoted month alias in 0091. Before rerunning: rename the internal SQL alias
+to budget_month; returned JSON month and all permissions remain unchanged.
+0091 SHA-256 is now `853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4`; hosted profile and permission
+provenance pins are refreshed. The failed replay log is retained as
+focused-api.log; no test cases had executed and no working database changed.
+
+The first focused runtime run after replay reported 44 passed and six failed.
+Two admission cases mixed a raw BEGIN with a managed nested transaction; four
+catalogue checks attempted qualified name resolution before selecting the
+existing hub_app role. The test-only corrections use a managed transaction
+and the established permission-suite SET ROLE pattern. All expected results,
+owner/ACL/RLS checks, race barriers and content fingerprints remain unchanged.
+The focused suite reruns before broader quick checks; failed logs are retained.
+
+Integrated quick checks: database checks, typecheck and offline build passed.
+The 1280px browser selection reported 235 passed and six failures. A real P1
+footer overflow at 200% text size is corrected by moving mobile clearance below
+the footer; desktop overview height remains unchanged. Four new clearance
+checks incorrectly expected a floating entry on project data, which already
+uses an inline assistant in normal flow. They now check that existing inline
+entry and final control/footer geometry. The W7 legal-topic check now scopes
+its zero-controls assertion to the loaded FAQ editor; unrelated eligible
+controls in the hidden persistent project editor remain legitimate. No expected
+permission result or product writing eligibility changed. The affected browser
+selection reruns after rebuild, then 390px, local H1 and the full API quick set.
+
+W9 remains isolated while P1/W7 quick checks own the test lease. The lead has
+allocated 202611120092_upload_optimization.sql to ws/w9-contract-final after
+reviewing the two-relation permission card. That tree owns SQL and finite
+permission checks; ws/w9-color-final-review owns the processor and locked native
+dependency; ws/w9-api-integration owns pre-body authorization/admission and the
+HTTP/client integration. None is merged into the P1/W7 candidate. Three small
+port-free admission checks pass, including repeated cancellation retaining the
+slot until worker completion. The processor's ordinary SDR16 small checks are
+recorded in its own handoff; remaining color coverage and resource gates remain
+pending. No hosted setting, existing asset, account or grant has changed.
+
+The prepared W8 pack now includes U61 and W7 ambiguous-state recovery checks:
+artifacts/unified-workspace/w8/prepared-docs49-with-p1-u61.md, SHA-256
+b18917fcf684ef898b305d655048f0b8c19b7b4ec7ce2823c63fe92d51137ec1.
+All 61 cases remain NOT RUN. Before captures are being corrected in a separate
+clean baseline worktree ws/p1-baseline-verified at ee78876; dependencies and
+its offline build are prepared without starting a port-bound process.
+
+Final acceptance review found one additional W7 client gap: after showing a
+suggestion diff, acceptance re-read the target but did not re-read its supporting
+sections. The existing state GET now revalidates each reviewed context ID,
+revision and eligibility before ordinary-save acceptance; View-only eligible
+context remains valid. Edit/unmount during these reads still cancels acceptance.
+No API, permission, migration or save payload changed. Eight focused pure cases
+passed in preparation; the mounted regression and affected browser/H1 rerun are
+pending the current full API quick check. Typecheck and the offline build passed.
+
+The previous integrated selection passed 241 checks at each width; H1 passed
+69 Node, 10 smoke and 87 browser checks (77 normal, three flags, seven outage).
+Those results predate the final context recheck and are not final full-gate
+acceptance. The running API source is unchanged by that client correction.
+The root retains the sole test lease, then runs the affected writing selection,
+H1 and identical before/after P1 capture fixtures serially. Historical P1 captures
+remain archived; loaded-state and end-scroll comparisons will supersede them.
+
+W8 U27 now includes supporting-context changes after the diff plus View-only,
+visibility-loss and edit/unmount cases. Prepared pack SHA-256 is
+58c3ef4dc574563667eeb921eaeb77814974bd2dfe1628368b6fc8e0e7675717;
+all 61 cases remain NOT RUN. W9 client/processor/SQL preparation remains isolated.
+
+### P1/W7 final quick check and scroll synchronization — 13 November 2026
+
+The complete API quick gate passed: 2,704 passed, 11 existing skips, six
+dependency warnings, zero failures (4,321.60 seconds). The final W7 supporting
+context selection passed 91 checks at each width. H1 then stopped in its normal
+browser selection with 76 passed and one failed; its Node and smoke stages
+passed, while flags/outage stages had not run. The failure is the 390px dark
+project end-scroll check, before the non-overlap assertions. The trace records
+one scroll command followed by a stable 74-pixel distance from the page end.
+The screenshot shows loaded content and a clear assistant entry, not overlap.
+
+Only the existing P1 test helper changes: repeat the ordinary end-scroll action
+inside its existing polling assertion so it follows the settled page height.
+The one-pixel end tolerance, timeout, content/footer bounding-box checks,
+disabled semantics and horizontal-overflow checks stay unchanged. All other
+73 candidate paths matched the prior source proof before this receipt update.
+Failed evidence is preserved under
+`artifacts/unified-workspace/p1-w7-takeover-20261112/h1-scroll-failure-20261113/`.
+
+The root retains the sole test lease. Rerun complete H1, the three browser specs
+that import the helper plus navigation at both widths, then the identical P1
+before/after capture fixtures. Retain the unchanged API/DB/typecheck/build and
+the 91-per-width writing selection as quick evidence only. The shared full
+gate still reruns every stage without reuse; no product commit has been made.
+
+### P1/W7 final quick evidence accepted; shared full gate frozen — 13 November 2026
+
+Final candidate: **32 P1 paths and 43 W7 paths, 74 distinct paths**, on
+base/origin `ee788763c1cc0fb9fd1a55c5ad134862dd26724b`. The FAQ index retains
+only P1 empty-state changes; its working copy also contains W7 controls. After
+the shared gate passes, commit P1 from that explicit index, then W7's explicit
+paths. No W9 product path is present in this candidate. P1 has no permission,
+schema, migration or API contract change; its seven UAT pointers are U55-U61.
+
+Quick results on the final application source: admin typecheck and offline
+webpack build passed; API **2,704 passed, 11 existing skips, six dependency
+warnings, zero failures**; DB **95 Node, 45 SQL suites and 24 concurrency
+scenarios** passed. The initial integrated browser selection passed 241 at each
+width. After the final W7 context recheck, its affected selection passed **91
+at 1280 and 91 at 390**. After the test-only scroll synchronization correction,
+the three affected page specs plus navigation passed **68 at 1280 and 68 at
+390**, and complete H1 passed **69 Node, 10 smoke, 87 browser** (77 normal,
+three flags, seven outage). Selections overlap and their totals are not added.
+The earlier failed H1 run remains archived; nothing was skipped or weakened.
+
+Matched capture runs passed 32 cases per revision and produced **52 before and
+52 after images**, each with a hash/geometry/loaded-state sidecar, in
+`artifacts/unified-workspace/polish-p1/capture/evidence/{before,after}/` under
+`1280-light`, `1280-dark`, `390-light` and `390-dark`. The baseline is the clean
+W6-delivered tree at ee78876. Root and bounded visual review cover all four
+width/theme pairs. The first complete capture set had a tall mobile preview
+crop that included underlying account rows; an identical artifact-only crop
+correction reran both phases. All 96 non-preview images stayed byte-identical;
+the eight corrected previews show the heading, before/after scope and retained
+future-members sentence. The first set is archived, not counted as final proof.
+The verified final images show no assistant overlap with the final card or
+footer text. Existing enabled-assistant/inline-editor coverage remains in the
+browser suites. Prepared W8 cases remain NOT RUN, not inferred acceptance.
+
+Evidence receipts and failure history:
+`artifacts/unified-workspace/p1-w7-takeover-20261112/`, including
+`api-quick-final-receipt.json`, `h1-quick-final-receipt.json`,
+`matched-capture-receipt.json`, final source proof and per-stage logs.
+Migration 0091 remains SHA-256
+`853222e01e3b6aab8ca72c02f5452bf3361bbad13072a853ac1d0127d398d0f4`.
+
+The root holds the sole test lease for the shared serial full gate under
+`artifacts/unified-workspace/p1-w7-full-20261113/`. Freeze all 74 source hashes
+and the exact 32-path P1 index, then run typecheck, offline build, production,
+complete API, DB, H1, both complete browser widths and credential/diff/broad
+scans. **No full-gate stage is reused.** No product edits or commits until it
+ends and the receipt/source checks pass. W9 preparation remains isolated;
+hosted TEST and the preserved preparation worktrees are unchanged.
+
+### P1/W7 mobile scroll recovery — 13 November 2026
+
+The shared full gate ended naturally at 03:15 Bangkok with exit code 1 in
+ui-390: **697 passed, one failed, zero skipped**. Desktop passed all 698.
+Earlier stages passed: typecheck, offline build, production 4, API 2,704 with
+11 existing skips and six warnings, DB 95 Node / 45 SQL / 24 concurrency,
+and local H1 69 Node / 10 smoke / 87 browser. Final credential/diff/broad
+scans did not run. All 74 source hashes, the 32-path index and base ee78876
+matched after the failure. No commit was made. Original logs and the brand
+failure screenshot/trace remain under
+`artifacts/unified-workspace/p1-w7-full-20261113/`.
+
+The brand intermediate-scroll check expected a visible, clear publish action
+but observed an off-viewport, clear action. Its trace records a single scroll
+from 240 to 390.9375 based on a cached document position; it does not show an
+assistant overlap. The test now recalculates the action's current document
+position inside its existing polling assertion. All four target positions,
+timeouts, visibility, non-overlap and assistant hit-testing remain unchanged.
+No application source, permission, migration, API contract or Thai label changes.
+Add only `tests/ui/brands.spec.ts` to P1's explicit partition: **33 P1 paths,
+43 W7 paths, 75 distinct paths**. FAQ still has P1-only staged content.
+
+The root holds the sole test lease for recovery: typecheck, offline build,
+brand and navigation browser specs at both widths, full local H1 and four
+supplemental W7 light/dark capture cases. Then freeze the final 75 paths and
+rerun every shared full-gate stage without reuse. Prior P1 matched captures
+remain valid because application source is unchanged. W9 stays isolated and
+W8 execution remains last; hosted TEST is unchanged.
+
+Recovery completed at 06:33 Bangkok: typecheck and offline build passed;
+brand/navigation passed **22 checks at 1280 and 22 at 390**; full local H1
+passed **69 Node, 10 smoke, 87 browser** (77 normal, three flags, seven outage).
+The W7 capture selection passed four cases and produced eight reviewed images
+under `artifacts/unified-workspace/w7/capture/evidence/{1280,390}-{light,dark}/`.
+The diff and controls are readable at both widths, with the narrow review
+stacked vertically and no horizontal overflow. These canonical mocked-transport
+captures supplement the runtime H1 evidence; they do not claim live generation.
+The final 75-source quick proof and exact stage/image hashes are recorded in
+`artifacts/unified-workspace/p1-w7-scroll-recovery-20261113/quick-receipt.json`.
+
+The root retains the sole test lease for the fresh shared full gate in
+`artifacts/unified-workspace/p1-w7-full-20261113-r2/`: freeze 75 source paths
+and the exact 33-path P1 index, preserving the FAQ split, and rerun every stage
+without reuse. No product commit or hosted change has been made.

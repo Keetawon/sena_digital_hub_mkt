@@ -12,6 +12,8 @@
 .content-bu-notices a { display: inline-flex; align-items: center; color: var(--action); text-decoration: underline; }
 .content-bu-notices :is(a,button):focus-visible { outline: 3px solid var(--action); outline-offset: 3px; }
 .content-bu-notices .notice { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.content-bu-notices .bu-notice-quiet { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin: 0; color: var(--muted); }
+.content-bu-notices .bu-notice-quiet .button { min-height: 44px; }
 .content-bu-notices.content-bu-project-notices { margin-block: .25rem; padding-block: .5rem; }
 @media (max-width: 600px) { .content-bu-notices { padding: .75rem; } .content-bu-notices dl > div { display: block; } .bu-notice-actions { align-items: stretch; } }
 @media (prefers-reduced-motion: reduce) { .content-bu-notices *, .content-bu-notices *::before, .content-bu-notices *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

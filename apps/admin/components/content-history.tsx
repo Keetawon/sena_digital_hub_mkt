@@ -62,7 +62,7 @@ export function ContentHistory({ level, id }: { level: WorkspaceLevel; id: strin
   }
   return <section aria-label={text.history}><h2>{text.history}</h2>
     {error && <p className="notice error" role="alert">{error}<button className="button secondary" onClick={() => setRetry(value => value + 1)}>{text.retry}</button></p>}
-    {!data && pending && <p role="status">{text.loading}</p>}{data && <ContentTimeline items={data.items} />}{data && !data.items.length && <p>{text.empty}</p>}
+    {!data && pending && <p role="status">{text.loading}</p>}{data && <ContentTimeline items={data.items} />}{data && !data.items.length && <p>{text.content_history_empty}</p>}
     {data?.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{text.next}</button>}
   </section>;
 }

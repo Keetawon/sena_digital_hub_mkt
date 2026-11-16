@@ -88,8 +88,8 @@ test.describe("W6 caller notices on isolated H1", () => {
     await page.goto(`/website/project/${project.public_project_id}?tab=faq`);
     const current = panel(page); await expect(current.locator("li")).toHaveCount(2);
     await expect(current).toContainText(T.scope_handover); await expect(current).toContainText(T.scope_stale_warning);
-    await expect(current.locator(`time[datetime="${deadline}"]`)).toContainText("08:02:03");
-    await expect(current.locator(`time[datetime="${membershipDeadline}"]`).first()).toContainText("07:00:00");
+    await expect(current.locator(`time[datetime="${deadline}"]`)).toHaveText(/08:02$/);
+    await expect(current.locator(`time[datetime="${membershipDeadline}"]`).first()).toHaveText(/07:00$/);
     await expect(current.locator("dt").filter({ hasText: T.scope_handover_end })).toHaveCount(1);
     await expect(current.locator("dt").filter({ hasText: T.scope_cutoff })).toHaveCount(2);
     expired = true; await current.getByRole("button", { name: T.refresh, exact: true }).click();

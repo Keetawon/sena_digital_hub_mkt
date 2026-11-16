@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { workspaceCopy as copy } from '../../apps/admin/lib/workspace-copy';
+import { expectAssistantClearance } from './assistant-clearance';
 
 test.describe('workspace home in disposable H1', () => {
   test.skip(process.env.HUB_HOSTED_TEST_SIMULATION !== '1', 'Requires the isolated H1 simulation');
   test.use({ baseURL: process.env.HUB_ADMIN_ORIGIN! });
-  for (const width of [1280, 390]) {
-    test(`search remains available with a short disabled assistant at ${width}px`, async ({ page }) => {
+  for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) {
+    test(`search remains available with a short disabled assistant at ${width}px ${colorScheme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
       await page.route('**/*', route => {
         const url = new URL(route.request().url());
         return ['http:', 'https:'].includes(url.protocol) && url.hostname !== '127.0.0.1' ? route.abort('blockedbyclient') : route.continue();
@@ -21,6 +23,9 @@ test.describe('workspace home in disposable H1', () => {
       const response = await page.request.get('/api/hub/v1/admin/content/home');
       expect(response.status()).toBe(200);
       expect((await response.json()).data.project_total).toBeGreaterThan(0);
+      await expectAssistantClearance(page, page.locator('.workspace-home-card').last(), true);
+      await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-home-disabled-${width}-${colorScheme}.png` });
+      await page.evaluate(() => window.scrollTo(0, 0));
       const search = page.locator('.topbar').getByRole('combobox', { name: copy.search, exact: true });
       await search.fill('H1-PROJECT');
       const result = page.getByRole('option').filter({ hasText: 'H1-PROJECT-001' });
@@ -41,6 +46,8 @@ test.describe('workspace home in disposable H1', () => {
       await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
       await expect(page.locator('.workspace-persistent-editor input#public_name')).toBeVisible();
       await expect(page.locator('.workspace-persistent-editor input#public_name')).not.toBeEditable();
+      await expectAssistantClearance(page, page.locator('.workspace-persistent-editor'), true);
+      await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-project-disabled-${width}-${colorScheme}.png` });
       expect(assistantRequests).toEqual([]);
     });
   }

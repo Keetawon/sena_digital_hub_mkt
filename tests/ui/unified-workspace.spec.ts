@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { expectAssistantClearance } from './assistant-clearance';
 import { legacyWorkspaceHref } from '../../apps/admin/lib/unified-workspace';
 import { fitsWorkspace, workspaceHref, workspaceProjection, workspaceText as text } from './unified-workspace-helpers';
 
@@ -309,8 +310,20 @@ test('Knowledge-only FAQ and history never request project or brand editor data'
   await expect(page.locator('.workspace-persistent-editor')).toHaveCount(0);
   await page.locator('#workspace-tab-history').click();
   await expect(page.locator('#workspace-panel-history')).toBeVisible();
+  await expect(page.locator('#workspace-panel-history')).toContainText(text.content_history_empty);
+  await expect(page.locator('#workspace-panel-history')).not.toContainText(text.empty);
   expect(sourceReads).toEqual([]); await fitsWorkspace(page);
   await page.screenshot({ path: 'artifacts/unified-workspace/w3/knowledge-only.png', fullPage: true });
+});
+
+for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) test(`project data keeps the enabled inline assistant clear at ${width}px ${colorScheme}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+  const project = await projectFixture(page);
+  await page.goto(`/website/project/${project.public_project_id}?tab=data&section=identity`);
+  await expect(page.locator('.workspace-persistent-editor input#public_name')).toBeVisible();
+  await expectAssistantClearance(page, page.locator('.workspace-persistent-editor'));
+  await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-project-enabled-${width}-${colorScheme}.png` });
 });
 
 test('inline website decisions retain revisions, show the registry default and preserve manual numeric evidence', async ({ page }) => {

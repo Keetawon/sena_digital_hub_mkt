@@ -29,7 +29,7 @@ async function fixture(page: Page) {
     const params = new URL(route.request().url()).searchParams, query = params.get('q') ?? '';
     if (state.delay?.query === query) await state.delay.gate.promise;
     if (state.denied) { await route.fulfill({ status: 403, json: { error: { code: 'content_scope_permission' } } }); return; }
-    let items = params.get('reference_kind') === 'bus' ? [{ id: ' BU ', rem_bu_code: ' BUD C1 ', rem_bu_name: ' Exact name ' }, { id: '001', rem_bu_code: 'BusinessUnit1', rem_bu_name: null }] : projectRows;
+    let items: { id: string; name?: string; rem_bu_id?: string | null; rem_bu_code: string | null; rem_bu_name: string | null }[] = params.get('reference_kind') === 'bus' ? [{ id: ' BU ', rem_bu_code: ' BUD C1 ', rem_bu_name: ' Exact name ' }, { id: '001', rem_bu_code: 'BusinessUnit1', rem_bu_name: null }] : projectRows;
     if (params.has('bu_id')) items = items.filter((item: any) => item.rem_bu_id === params.get('bu_id'));
     if (query) items = items.filter(item => JSON.stringify(item).toLowerCase().includes(query.toLowerCase()));
     const after = params.get('after'), limit = Number(params.get('limit') ?? 100);
@@ -93,6 +93,27 @@ test('independent scope confirmation preserves exact BU IDs and paged project ex
   await expect(page.getByRole('status').filter({ hasText: T.scope_saved })).toBeVisible();
   expect(state.applications).toHaveLength(1); expect(state.applications[0].digest).toBe('a'.repeat(64));
   expect(state.scopes['projects:view'].bu_ids).toEqual([' BU ']); expect(state.scopes['projects:edit']).toEqual(all()); expect(state.scopes['projects:approve']).toEqual(all());
+});
+
+for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) test(`the future-members explanation describes every BUD checkbox at ${width}px ${colorScheme}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+  const { state, open } = await fixture(page), editor = await open();
+  await editor.getByRole('radio', { name: T.scope_selected, exact: true }).check();
+  const explanation = editor.locator('.scope-tree > p', { hasText: T.scope_future_members });
+  await expect(explanation).toHaveCount(1);
+  const descriptionId = await explanation.getAttribute('id');
+  expect(descriptionId).toBeTruthy();
+  const buBoxes = editor.locator('.scope-bu > label input[type="checkbox"]');
+  await expect(buBoxes).toHaveCount(2);
+  for (const box of await buBoxes.all()) await expect(box).toHaveAttribute('aria-describedby', descriptionId!);
+  await expect(editor.getByText(T.scope_future_members, { exact: true })).toHaveCount(1);
+  await buBoxes.first().check();
+  await editor.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/scope-loaded-${width}-${colorScheme}.png` });
+  await editor.getByRole('button', { name: T.scope_preview, exact: true }).click();
+  await expect(editor.locator('.scope-preview')).toContainText(T.scope_future_members);
+  expect(state.applications).toHaveLength(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('stale confirmation preserves selections and requires a new preview', async ({ page }) => {
