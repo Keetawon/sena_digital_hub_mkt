@@ -8021,3 +8021,13 @@ or migration hash changed, and no Git configuration or other warning was waived.
 Original stopped delivery evidence remains intact. Exact approval and resume
 evidence: `artifacts/unified-workspace/w9-full-reuse-20261117/delivery-final-evidence.json`, SHA-256 `db1148907ff58905115c4e4dc1b1a851b3dc7a9564fddbeef53e92544cb3c38e`.
 Future gates must include new files in formatting checks before freezing source.
+
+### Orchestrator handoff published as Markdown — 17 November 2026
+
+The owner requested that the orchestrator read the note through GitHub.
+[W9 orchestrator handoff](w9-orchestrator-handoff-20261117.md) records product
+`c9791afda7a67724a7611a0ad6253316ceae757e`, receipt
+`45ca77662501a6200ea9fa6805feaf684d3d04bd`, the exact three-warning formatting
+exception, fresh/reused suite totals and outstanding hosted/Linux/home/UAT
+boundaries. This follow-up changes documentation only; it does not modify the
+tested product bytes or authorize a hosted operation.
