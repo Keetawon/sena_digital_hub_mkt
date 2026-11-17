@@ -1,3 +1,4 @@
+import { uploadText } from '../../apps/admin/lib/upload-text';
 import { closeMobileMenu, openMobileMenu } from './hub-navigation-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { mockWorkspaceProjection } from './unified-workspace-helpers';
@@ -93,6 +94,8 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
     await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (1)', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: uploadText.evidence_load, exact: true }).click();
     await expect(dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์', exact: true })).toBeEnabled();
     await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
     expect(data.writes).toEqual([]);

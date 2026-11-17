@@ -17,17 +17,19 @@ from .auth import Actor
 ASSET_FILE_SQL = "SELECT hub.asset_file($1)"
 
 
-def _bounded_bytes(path: Path) -> bytes:
+def _bounded_bytes(path: Path, *, max_bytes: int | None = None) -> bytes:
+    if max_bytes is None:
+        max_bytes = assets.MAX_BYTES
     if not path.is_file():
         raise HTTPException(404)
     try:
         with path.open("rb") as source:
-            content = source.read(assets.MAX_BYTES + 1)
+            content = source.read(max_bytes + 1)
     except FileNotFoundError:
         raise HTTPException(404) from None
     except OSError:
         raise HTTPException(503) from None
-    if not 0 < len(content) <= assets.MAX_BYTES:
+    if not 0 < len(content) <= max_bytes:
         raise HTTPException(503)
     return content
 
@@ -35,7 +37,7 @@ def _bounded_bytes(path: Path) -> bytes:
 def _checked_original(content: bytes, metadata: dict) -> bytes:
     size = metadata.get("file_size")
     if (not isinstance(content, bytes) or type(size) is not int
-            or not 0 < size <= assets.MAX_BYTES or len(content) != size
+            or not 0 < size <= assets.stored_byte_limit(metadata.get("mime_type")) or len(content) != size
             or hashlib.sha256(content).hexdigest() != metadata.get("checksum")):
         raise HTTPException(503)
     return content
@@ -50,7 +52,7 @@ def _original_bytes(metadata: dict, hosted_assets) -> bytes:
     path = assets.storage_path(metadata.get("storage_path"))
     if path.name != f"{metadata.get('checksum')}.{assets.FORMATS[mime][1]}":
         raise HTTPException(503)
-    return _checked_original(_bounded_bytes(path), metadata)
+    return _checked_original(_bounded_bytes(path, max_bytes=assets.stored_byte_limit(mime)), metadata)
 
 
 def _delivery_bytes(metadata: dict, hosted_assets, thumbnail: bool) -> bytes:

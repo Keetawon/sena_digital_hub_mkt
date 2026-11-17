@@ -1,3 +1,5 @@
+import { uploadText } from "../../apps/admin/lib/upload-text";
+import { uploadEvidenceFixture } from "./upload-fixtures";
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
@@ -78,6 +80,7 @@ async function openFixture(page: Page, failure?: { stage: 'upload' | 'bind'; fil
       return route.fulfill({ json: { data: path === projectPath ? project : path === 'assets' ? library : [] } });
     }
     if (path === 'assets' && method === 'POST') {
+      expect(JSON.parse(request.headers()['x-upload-context'])).toMatchObject({ v: 1, kind: 'project', ref: project.public_project_id });
       const filename = decodeURIComponent(request.headers()['x-filename']);
       uploads.push(filename);
       if (!failed && failure?.stage === 'upload' && filename === failure.filename) {
@@ -86,7 +89,7 @@ async function openFixture(page: Page, failure?: { stage: 'upload' | 'bind'; fil
       }
       const uploaded = asset(filename, request.headers()['content-type']);
       library.push(uploaded);
-      return route.fulfill({ status: 201, json: { data: uploaded, meta: { reused: false } } });
+      return route.fulfill({ status: 201, json: { data: uploaded, meta: { reused: false, upload: uploadEvidenceFixture } } });
     }
     const body = request.postDataJSON();
     writes.push({ path, method, body });
@@ -116,6 +119,7 @@ async function selectFiles(page: Page, files: ReturnType<typeof file>[], purpose
   await page.locator(`input[name="assets-purpose"][value="${purpose}"]`).check();
   await page.locator('#assets').getByRole('button', { name: 'อัปโหลดไฟล์', exact: true }).click();
   const dialog = page.getByRole('dialog');
+  await dialog.getByRole('combobox', { name: uploadText.category, exact: true }).selectOption(['brochure', 'master_plan', 'floor_plan'].includes(purpose) ? purpose : 'exterior');
   await expect(dialog.getByLabel('เลือกไฟล์ภาพหรือ PDF', { exact: true })).toHaveAttribute('multiple', '');
   await dialog.getByLabel('เลือกไฟล์ภาพหรือ PDF', { exact: true }).setInputFiles(files);
   return dialog;
@@ -212,3 +216,27 @@ for (const purpose of ['thumbnail', 'master_plan', 'floor_plan']) {
     expect(fixture.writes.map(write => write.body.asset_role)).toEqual([purpose, purpose]);
   });
 }
+
+for (const width of [1280,390]) test('W9 private evidence requires opt-in and Use changes only draft at '+width+'px', async ({page}) => {
+ await page.setViewportSize({width,height:900});
+ const fixture=await openFixture(page);let evidenceReads=0;
+ await page.route('**/api/hub/v1/admin/assets/asset-existing.png',route=>{
+  expect(route.request().method()).toBe('GET');
+  expect(JSON.parse(route.request().headers()['x-upload-context'])).toEqual({v:1,kind:'media_target',project_ref:projectId,target_type:'project',target_key:fixture.project.id,category:'exterior',usage:'gallery'});
+  evidenceReads++; return route.fulfill({json:{data:asset('existing.png'),meta:{upload:uploadEvidenceFixture}}});
+ });
+ await page.goto('/media?project='+projectId+'&tab=upload&asset=asset-existing.png');
+ const card=page.locator('.media-card').first();
+ await expect(card.getByRole('button',{name:uploadText.evidence_load,exact:true})).toBeVisible();
+ expect(evidenceReads).toBe(0);await expect(page.getByText(uploadEvidenceFixture.suggestions.values.caption,{exact:true})).toHaveCount(0);
+ await card.getByRole('button',{name:uploadText.evidence_load,exact:true}).click();
+ const suggestions=card.getByRole('region',{name:uploadText.file_suggestions,exact:true});
+ await expect(suggestions).toContainText(uploadText.offset_unknown);
+ await expect(card.locator('.upload-result')).toContainText(uploadText.stored);
+ const caption=card.locator('textarea[id$="-caption-th"]');
+ await expect(caption).toHaveValue('');
+ await suggestions.locator('div').filter({has:page.getByText(uploadText.caption+': '+uploadEvidenceFixture.suggestions.values.caption,{exact:true})}).getByRole('button',{name:uploadText.use,exact:true}).click();
+ await expect(caption).toHaveValue(uploadEvidenceFixture.suggestions.values.caption);
+ expect(fixture.writes).toEqual([]);expect(fixture.uploads).toEqual([]);expect(evidenceReads).toBe(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

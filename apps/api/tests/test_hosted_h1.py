@@ -21,6 +21,7 @@ from sena_hub_api import assets, main
 from sena_hub_api.auth import Actor, Authentication, Settings, ALL_DEMO_ACTORS
 from sena_hub_api.hosted_assets import BUCKET, HostedAssets, NoRedirect
 from test_assets import image_bytes
+from upload_route_fixtures import upload_resolution, SVG_CONTEXT_HEADER
 
 
 def h1_settings(**overrides):
@@ -153,7 +154,7 @@ def test_h2_modules_refuse_before_sql_or_processing(signing_key, method, path):
 def test_cors_only_allows_configured_origin(signing_key):
     client, _ = signed_client(signing_key)
     headers = {"Origin": "http://127.0.0.1:3001", "Access-Control-Request-Method": "POST",
-               "Access-Control-Request-Headers": "authorization,content-type,x-filename"}
+               "Access-Control-Request-Headers": "authorization,content-type,x-filename,x-upload-context"}
     allowed = client.options("/v1/admin/assets", headers=headers)
     assert allowed.status_code == 200
     assert allowed.headers["access-control-allow-origin"] == headers["Origin"]
@@ -236,9 +237,15 @@ def test_upload_sanitizes_svg_before_private_store_and_keeps_registry_actor(monk
     class Connection:
         async def execute(self, *args):
             pass
-        async def fetchval(self, query, metadata):
+        async def fetchval(self, query, *args):
+            if 'asset_upload_context' in query:
+                return upload_resolution(args[0], 'sanitized_svg')
+            if 'find_uploaded_asset_source' in query:
+                return None
+            assert 'record_asset_upload_source' in query
+            metadata = args[0]
             observed["registered"] = metadata
-            return {"asset": {"id": str(UUID(int=900)), **metadata}, "reused": False}
+            return {'asset': {'id': str(UUID(int=900)), **metadata}, 'reused': False, 'reuse_kind': 'none', 'upload': {}}
     @asynccontextmanager
     async def database(request, actor):
         observed["actor"] = actor.role
@@ -250,7 +257,7 @@ def test_upload_sanitizes_svg_before_private_store_and_keeps_registry_actor(monk
     monkeypatch.setattr(HostedAssets, "install", install)
     client, headers = signed_client(signing_key, role="editor")
     response = client.post("/v1/admin/assets", content=b'<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><script>alert(1)</script><rect width="512" height="512"/></svg>',
-                           headers={**headers, "Content-Type": "image/svg+xml", "X-Filename": "sample.svg"})
+                           headers={**headers, "Content-Type": "image/svg+xml", "X-Filename": "sample.svg", "X-Upload-Context": SVG_CONTEXT_HEADER})
     assert response.status_code == 201
     assert b"script" not in observed["content"]
     assert observed["actor"] == "editor"
@@ -396,7 +403,10 @@ def test_disposable_managed_simulation_end_to_end():
         assert existing.status_code == 200 and existing.content.startswith(b"\x89PNG")
         svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">'
                '<script>alert(1)</script><rect width="512" height="512" id="synthetic-h1-' + uuid4().hex + '"/></svg>').encode()
-        upload_headers = {**sessions["editor"], "Content-Type": "image/svg+xml", "X-Filename": "synthetic-h1-test.svg"}
+        upload_brand = client.get('/v1/admin/brands', headers=sessions['editor']).json()['data'][0]
+        upload_context = {'v': 1, 'kind': 'brand', 'ref': upload_brand['public_brand_id'], 'purpose': 'logo_primary'}
+        upload_headers = {**sessions["editor"], "Content-Type": "image/svg+xml", "X-Filename": "synthetic-h1-test.svg",
+                          'X-Upload-Context': json.dumps(upload_context)}
         uploaded = client.post("/v1/admin/assets", headers=upload_headers, content=svg)
         assert uploaded.status_code == 201
         asset = uploaded.json()["data"]

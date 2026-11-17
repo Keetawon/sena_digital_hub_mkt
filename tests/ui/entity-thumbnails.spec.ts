@@ -1,10 +1,14 @@
+import { projectUpload } from "./upload-fixtures";
 import { progressFixture } from './progress-fixture';
 import { test, expect } from '@playwright/test';
 
 test('uploaded SVG appears as a private WebP list thumbnail on the neutral tile', async ({page}) => {
   await page.context().addCookies([{name:'sena_local_persona',value:'editor',url:'http://127.0.0.1:3000'}]);
+  const projects = (await (await page.request.get('/api/hub/v1/admin/projects')).json()).data;
+  const owner = projects.find((item: {source: {rem_project_id: string}}) => item.source.rem_project_id === 'DEMO-001');
+  expect(owner).toBeTruthy();
   const response=await page.request.post('/api/hub/v1/admin/assets',{
-    headers:{Origin:'http://127.0.0.1:3000','Content-Type':'image/svg+xml','X-Filename':'thumbnail-test.svg'},
+    headers:{...projectUpload(owner.public_project_id),Origin:'http://127.0.0.1:3000','Content-Type':'image/svg+xml','X-Filename':'thumbnail-test.svg'},
     data:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect x="100" y="50" width="200" height="100" fill="red"/></svg>'),
   });
   expect(response.ok()).toBe(true);

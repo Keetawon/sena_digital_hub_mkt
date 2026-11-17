@@ -1,3 +1,4 @@
+import { projectUpload, uploadHeaders } from "./upload-fixtures";
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
@@ -60,7 +61,7 @@ for (const width of [1280, 390]) {
     }
     await fits(page); await wizard.screenshot({ path: `artifacts/project-content-phase5/rem-${width}.png` });
     const filename = `phase5-plan-${width}-${randomUUID()}.svg`;
-    const upload = await page.request.post(`${api}/assets`, { headers: { ...headers, 'Content-Type': 'image/svg+xml', 'X-Filename': encodeURIComponent(filename) },
+    const upload = await page.request.post(`${api}/assets`, { headers: { ...headers, ...uploadHeaders({ v: 1, kind: 'commercial_type', project_ref: project.public_project_id, ref: item.public_commercial_type_id, category: 'floor_plan', purpose: 'floor_plan' }), 'Content-Type': 'image/svg+xml', 'X-Filename': encodeURIComponent(filename) },
       data: `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="#fff"/><text x="20" y="90">Synthetic plan ${randomUUID()}</text></svg>` });
     expect(upload.status()).toBe(201);
     await wizard.getByRole('button', { name: '3. แปลนแต่ละชั้น', exact: true }).click();

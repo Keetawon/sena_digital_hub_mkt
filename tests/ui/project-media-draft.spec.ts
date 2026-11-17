@@ -1,3 +1,4 @@
+import { uploadText } from "../../apps/admin/lib/upload-text";
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
@@ -146,6 +147,7 @@ test('dirty project text survives upload, another image and removal; save uses t
   await expect(media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toBeEnabled();
   await media.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true }).click();
   let dialog = page.getByRole('dialog');
+  await dialog.getByRole('combobox', { name: uploadText.category, exact: true }).selectOption('exterior');
   await dialog.getByLabel('เลือกไฟล์ภาพหรือ PDF', { exact: true }).setInputFiles({ name: 'uploaded.png', mimeType: 'image/png', buffer: png });
   await dialog.getByLabel('คำอธิบายภาพ (ภาษาไทย) · uploaded.png', { exact: true }).fill('ภาพหลักจำลอง');
   await dialog.getByRole('button', { name: 'อัปโหลดและเพิ่มไฟล์', exact: true }).click();

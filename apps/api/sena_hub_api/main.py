@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -20,6 +21,9 @@ from starlette.exceptions import HTTPException
 from .accounts import register_account_routes
 from .auth import Actor, Authentication, Settings, failure
 from . import assets as asset_files
+from .upload_admission import UploadAdmissionError, parse_upload_context, run_upload_work, upload_slot
+from .upload_pipeline import prepare_authorized_upload
+from .upload_optimization import UploadProcessingError
 from .facilities import register_facility_routes
 from .commercial_types import register_commercial_routes
 from .unit_types import register_unit_type_routes
@@ -311,7 +315,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if hosted_assets:
         app.add_middleware(CORSMiddleware, allow_origins=[settings.admin_origin],
                            allow_credentials=False, allow_methods=["GET", "POST", "PATCH"],
-                           allow_headers=["Authorization", "Content-Type", "X-Filename"],
+                           allow_headers=["Authorization", "Content-Type", "X-Filename", "X-Upload-Context"],
                            expose_headers=["Content-Disposition"])
 
     @app.middleware("http")
@@ -417,35 +421,92 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async with database(request, actor) as connection:
             return {"data": await connection.fetchval("SELECT hub.list_assets()")}
 
+    def upload_context(request):
+        try:
+            return parse_upload_context(request.headers.getlist('x-upload-context'))
+        except UploadAdmissionError:
+            raise failure(422, 'invalid_upload_context', 'กรุณาระบุรายการและประเภทไฟล์ก่อนอัปโหลด') from None
+
     @app.post("/v1/admin/assets")
     async def upload_asset(request: Request, actor: Actor = Depends(writer)):
         require_local_assets()
-        content, mime, filename = await asset_files.read_upload(request)
-        content, metadata = await asyncio.to_thread(asset_files.prepare_upload, content, mime, filename)
-        if hosted_assets:
-            metadata.update(storage_provider=hosted_assets.provider, storage_bucket=hosted_assets.bucket)
-        created = False
+        context = upload_context(request)
+        mime = request.headers.get('content-type', '').split(';', 1)[0].strip().lower()
+        if mime not in asset_files.FORMATS:
+            raise failure(415, 'unsupported_file', 'รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF')
+        async with database(request, actor) as connection:
+            resolved = await connection.fetchval('select hub.asset_upload_context($1,$2)', context, mime)
+        too_large = ('เอกสารกฎหมายหรือไฟล์ที่ยังไม่ระบุประเภทต้องไม่เกิน 10 MB'
+                     if resolved['processing_class'] == 'private_exact' else
+                     'SVG ไม่เกิน 2 MB ต่อไฟล์' if resolved['processing_class'] == 'sanitized_svg' else
+                     'PDF ไม่เกิน 50 MB ต่อไฟล์' if mime == 'application/pdf' else 'ภาพไม่เกิน 30 MB ต่อไฟล์')
         try:
-            async with database(request, actor) as connection:
-                await connection.execute("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", metadata["checksum"])
-                result = await connection.fetchval("SELECT hub.register_uploaded_asset($1)", metadata)
-                if hosted_assets:
-                    remote_metadata = {**metadata, "source_system": "hub-hosted-test"}
-                    await asyncio.to_thread(hosted_assets.install, content, remote_metadata)
-                    await asyncio.to_thread(asset_files.install_thumbnail, content, metadata)
-                else:
-                    created = await asyncio.to_thread(asset_files.install_file, content, metadata)
-        except Exception:
-            if created:
-                await remove_unregistered_file(request, actor, metadata)
+            with upload_slot():
+                content, mime, filename = await asset_files.read_upload(request, max_bytes=resolved['input_limit'], too_large=too_large)
+                checksum = await run_upload_work(lambda data: hashlib.sha256(data).hexdigest(), content)
+                async with database(request, actor) as connection:
+                    existing = await connection.fetchval('select hub.find_uploaded_asset_source($1,$2,$3)', checksum, mime, context)
+                prepared = await run_upload_work(prepare_authorized_upload, content, mime, filename, resolved, existing)
+                metadata = dict(prepared.metadata)
+                if hosted_assets and existing is None:
+                    metadata.update(storage_provider=hosted_assets.provider, storage_bucket=hosted_assets.bucket)
+                created = False
+                def install_local():
+                    nonlocal created
+                    created = asset_files.install_file(prepared.content, metadata)
+                try:
+                    async with database(request, actor) as connection:
+                        result = await connection.fetchval('select hub.record_asset_upload_source($1,$2,$3,$4,$5,$6)',
+                            metadata, prepared.original, prepared.processing, prepared.suggestions, context, resolved['context_stamp'])
+                        if result['reuse_kind'] == 'original':
+                            verifier = hosted_assets.read if hosted_assets else asset_files.readable_file
+                            await run_upload_work(verifier, result['asset'])
+                        else:
+                            if prepared.content is None:
+                                raise failure(503, 'file_unavailable', 'ไฟล์ที่จัดเก็บไม่ตรงกับไฟล์ที่ตรวจสอบแล้ว')
+                            if hosted_assets:
+                                await run_upload_work(hosted_assets.install, prepared.content, {**metadata, 'source_system': 'hub-hosted-test'})
+                                await run_upload_work(asset_files.install_thumbnail, prepared.content, metadata)
+                            else:
+                                await run_upload_work(install_local)
+                except BaseException:
+                    if created:
+                        await asyncio.shield(remove_unregistered_file(request, actor, metadata))
+                    raise
+                return JSONResponse({'data': result['asset'], 'meta': {'reused': result['reused'], 'upload': result['upload']}},
+                                    200 if result['reused'] else 201, headers={'Cache-Control': 'no-store'})
+        except UploadAdmissionError:
+            return JSONResponse({'error': {'code': 'upload_busy', 'message': 'กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง'}},
+                                429, headers={'Retry-After': '1', 'Cache-Control': 'no-store'})
+        except UploadProcessingError as error:
+            messages = {
+                'image_input_too_large': 'ภาพไม่เกิน 30 MB ต่อไฟล์',
+                'pdf_input_too_large': 'PDF ไม่เกิน 50 MB ต่อไฟล์',
+                'legal_input_too_large': 'เอกสารกฎหมายหรือไฟล์ที่ยังไม่ระบุประเภทต้องไม่เกิน 10 MB',
+                'image_output_too_large': 'ภาพหลังปรับขนาดยังเกิน 10 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง',
+                'pdf_output_too_large': 'PDF หลังปรับขนาดยังเกิน 20 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง',
+                'pdf_reexport_required': 'ไม่สามารถลบข้อมูลแฝงของ PDF ได้อย่างปลอดภัย กรุณาส่งออก PDF ใหม่แล้วอัปโหลดอีกครั้ง',
+                'image_color_space_requires_export': 'กรุณาส่งออกภาพเป็น sRGB แล้วอัปโหลดอีกครั้ง',
+            }
+            code = error.args[0] if error.args and error.args[0] in messages else 'invalid_upload_file'
+            raise failure(422, code, messages.get(code, 'ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง')) from None
+        except asyncpg.PostgresError as error:
+            if error.sqlstate in {'P0091', 'P0092'}:
+                raise failure(409, 'upload_identity_conflict', 'ไฟล์นี้มีประเภทการใช้งานเดิมที่ไม่ตรงกัน กรุณาให้ผู้ดูแลตรวจสอบ') from None
+            if error.sqlstate == '40001' and error.message == 'upload_context_changed':
+                raise failure(409, 'upload_context_changed', 'ข้อมูลรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วอัปโหลดอีกครั้ง') from None
             raise
-        return JSONResponse({"data": result["asset"], "meta": {"reused": result["reused"]}}, 200 if result["reused"] else 201)
 
     @app.get("/v1/admin/assets/{asset_id}")
     async def asset_detail(asset_id: UUID, request: Request, actor: Actor = Depends(admin)):
         require_local_assets()
+        context = upload_context(request) if request.headers.getlist('x-upload-context') else None
         async with database(request, actor) as connection:
-            return {"data": await connection.fetchval("SELECT hub.asset_detail($1)", asset_id)}
+            asset = await connection.fetchval('select hub.asset_detail($1)', asset_id)
+            if context is not None:
+                evidence = await connection.fetchval('select hub.asset_upload_evidence($1,$2)', asset_id, context)
+                return {'data': asset, 'meta': {'upload': evidence}}
+            return {'data': asset}
 
     @app.post("/v1/admin/assets/{asset_id}/review")
     async def review_asset(asset_id: UUID, body: ReviewAsset, request: Request, actor: Actor = Depends(publisher)):

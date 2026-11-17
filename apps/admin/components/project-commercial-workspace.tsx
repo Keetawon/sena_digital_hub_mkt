@@ -1,4 +1,6 @@
 "use client";
+import { UploadResult } from "./upload-evidence";
+import type { UploadEvidence } from "../lib/upload-context";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHubPermissions } from "./accounts";
@@ -56,6 +58,7 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
   const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set());
   const workflowBusy = workflowOwners.size > 0;
   const workflowEditing = (key: string, value: boolean) => setWorkflowOwners(owners => { if (owners.has(key) === value) return owners; const next = new Set(owners); if (value) next.add(key); else next.delete(key); return next; });
+  const [uploadEvidence, setUploadEvidence] = useState<UploadEvidence | null>(null);
   const [translationEditing, setTranslationEditing] = useState(false);
   const base = `v1/admin/projects/${encodeURIComponent(projectId)}/commercial`;
   const reload = useCallback(async () => { setData(await request<Workspace>(base)); onWorkflowChanged?.(); }, [base, onWorkflowChanged]);
@@ -70,6 +73,7 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
     if (!data || !canEdit || busy || workflowBusy || translationEditing) return;
     const values: Values = { ai_exposure: item?.ai_exposure ?? "web_only" };
     for (const spec of group.fields) values[spec.key] = item?.[spec.key] ?? (spec.type === "locale" ? {} : spec.type === "list" ? [] : spec.key === "basis" && kind === "disclosures" ? "mkt_entered" : null);
+    setUploadEvidence(null);
     setEditing({ id: item?.id, values, stamp: data.project.updated_at }); setError(""); setNotice("");
   }
   function change(key: string, value: unknown) { setEditing(prior => prior && ({ ...prior, values: { ...prior.values, [key]: value } })); }
@@ -94,7 +98,8 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
   async function upload(file?: File) {
     if (!file || !canEdit || !editing) return;
     await act(async () => {
-      const asset = (await uploadAsset(file)).asset as MediaAsset;
+      const result = await uploadAsset(file, { v: 1, kind: "disclosure", project_ref: projectId, ref: editing.id ?? null });
+      const asset = result.asset as MediaAsset; setUploadEvidence(result.upload);
       if (asset.media_category !== "legal_document") await request(`v1/admin/projects/${encodeURIComponent(projectId)}/media/assets/${asset.id}`, "PUT", { expected_revision: asset.media_revision ?? 0, changes: { ...newMetadata(), media_category: "legal_document", ai_exposure: "internal", marketing_publication: false, image_kind: null } });
       change("legal_document_asset_id", asset.id);
     }, "อัปโหลดเอกสารส่วนตัวแล้ว กดบันทึกร่างเพื่อแนบกับฉบับนี้");
@@ -110,6 +115,7 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
       {kind === "construction" && <p className="field-help">รายงานงานก่อสร้าง ไม่เกี่ยวกับคะแนนความพร้อมของเนื้อหา</p>}
       {!editing && canEdit && (!data.records[kind].length || ["programmes", "construction"].includes(kind)) && <button className="button primary" disabled={busy || workflowBusy || translationEditing} onClick={() => edit()}>เพิ่ม{group.title}</button>}
       {!editing && !data.records[kind].length && <p>ยังไม่มี{group.title}ของเฟสนี้</p>}
+      {editing && <UploadResult value={uploadEvidence} />}
       {editing && <form ref={form} inert={workflowBusy} onSubmit={event => { event.preventDefault(); void save(); }}><h3>{editing.id ? "แก้ไข" : "เพิ่ม"}{group.title}</h3><fieldset disabled={busy || !canEdit}>
         {specs.map(spec => {
           const field = label(spec), id = `commercial-${spec.key}`, value = editing.values[spec.key];

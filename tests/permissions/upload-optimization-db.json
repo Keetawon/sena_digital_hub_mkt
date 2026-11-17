@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "programme": "W9 upload optimization",
+  "migration": "supabase/migrations/202611130093_upload_optimization.sql",
+  "review_method": "Finite source review; runtime verification required before delivery.",
+  "functions": [
+    {
+      "name": "hub.asset_upload_resolve_context",
+      "arguments": "context jsonb,action text,mime text",
+      "result": "jsonb",
+      "execute_roles": []
+    },
+    {
+      "name": "hub.asset_upload_context",
+      "arguments": "context jsonb,mime text",
+      "result": "jsonb",
+      "execute_roles": [
+        "hub_app"
+      ]
+    },
+    {
+      "name": "hub.find_uploaded_asset_source",
+      "arguments": "original_checksum text,original_mime text,context jsonb",
+      "result": "jsonb",
+      "execute_roles": [
+        "hub_app"
+      ]
+    },
+    {
+      "name": "hub.record_asset_upload_source",
+      "arguments": "stored_metadata jsonb,original jsonb,processing jsonb,suggestions jsonb,context jsonb,expected_context_stamp text",
+      "result": "jsonb",
+      "execute_roles": [
+        "hub_app"
+      ]
+    },
+    {
+      "name": "hub.asset_upload_evidence",
+      "arguments": "asset_uuid uuid,context jsonb",
+      "result": "jsonb",
+      "execute_roles": [
+        "hub_app"
+      ]
+    },
+    {
+      "name": "hub.asset_upload_has_stock",
+      "arguments": "asset_uuid uuid",
+      "result": "boolean",
+      "execute_roles": []
+    },
+    {
+      "name": "hub.require_asset_upload_use",
+      "arguments": "asset_uuid uuid,use_kind text,category text,external_use boolean",
+      "result": "void",
+      "execute_roles": []
+    },
+    {
+      "name": "hub.asset_upload_audit",
+      "arguments": "",
+      "result": "trigger",
+      "execute_roles": []
+    },
+    {
+      "name": "hub.asset_upload_use_guard",
+      "arguments": "",
+      "result": "trigger",
+      "execute_roles": []
+    },
+    {
+      "name": "hub.register_uploaded_asset_for_upload",
+      "arguments": "metadata jsonb",
+      "result": "jsonb",
+      "execute_roles": []
+    }
+  ],
+  "tables": [
+    "hub.asset_upload_sources",
+    "hub.asset_upload_evidence"
+  ],
+  "owner_policy": "upload_owner",
+  "immutable_trigger": "upload_immutable",
+  "audit_trigger": "upload_audit",
+  "class_guard_relations": [
+    "hub.assets",
+    "hub.entity_assets",
+    "hub.brand_assets",
+    "hub.commercial_type_assets",
+    "hub.asset_links",
+    "hub.media_links",
+    "hub.project_disclosures",
+    "hub.knowledge_asset_links"
+  ],
+  "existing_function_changes": [
+    "hub.can_read_asset(uuid)",
+    "hub.public_asset_file(text)",
+    "public_api.asset_file(uuid)",
+    "hub.public_content_payload(text,jsonb)",
+    "hub.publication_dependency_check(jsonb,boolean,boolean)",
+    "hub.media_job_allowed(hub.media_jobs)",
+    "hub.knowledge_link_approved_asset_before_scopes(uuid,uuid,integer)",
+    "hub.lock_knowledge_asset_before_scopes(uuid)",
+    "hub.workspace_history_contexts(text,jsonb)",
+    "hub.content_row_visible(text,jsonb)"
+  ],
+  "legacy_unchanged": [
+    "hub.register_uploaded_asset(jsonb)",
+    "hub.can_upload_asset()",
+    "hub.require_asset_upload()"
+  ],
+  "http_entries": [],
+  "columns": {
+    "hub.asset_upload_sources": [
+      [
+        "id",
+        "uuid"
+      ],
+      [
+        "original_checksum",
+        "text"
+      ],
+      [
+        "processing_class",
+        "text"
+      ],
+      [
+        "original_size",
+        "bigint"
+      ],
+      [
+        "original_mime",
+        "text"
+      ],
+      [
+        "original_width",
+        "integer"
+      ],
+      [
+        "original_height",
+        "integer"
+      ],
+      [
+        "asset_id",
+        "uuid"
+      ],
+      [
+        "pipeline_version",
+        "text"
+      ],
+      [
+        "processing",
+        "jsonb"
+      ],
+      [
+        "created_at",
+        "timestamp with time zone"
+      ],
+      [
+        "created_by",
+        "uuid"
+      ]
+    ],
+    "hub.asset_upload_evidence": [
+      [
+        "id",
+        "uuid"
+      ],
+      [
+        "source_id",
+        "uuid"
+      ],
+      [
+        "context",
+        "jsonb"
+      ],
+      [
+        "extraction_version",
+        "text"
+      ],
+      [
+        "proximity",
+        "text"
+      ],
+      [
+        "suggestions",
+        "jsonb"
+      ],
+      [
+        "created_at",
+        "timestamp with time zone"
+      ],
+      [
+        "created_by",
+        "uuid"
+      ]
+    ]
+  }
+}

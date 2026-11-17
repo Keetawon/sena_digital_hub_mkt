@@ -197,9 +197,9 @@ def test_real_bulk_rights_success_and_atomic_stale_batch(permission_accounts):
     from test_permission_foundations import h
     live, accounts = permission_accounts
     asyncio.run(set_bit(accounts['admin'], 'knowledge', can_approve=True))
-    ids=[UUID(f'00000000-0000-4000-9500-{i:012d}') for i in range(1,4)]
+    ids=[UUID(f'00000000-0000-4000-9500-{i:012d}') for i in range(1,5)]
     metadata=[]
-    for candidate,color in zip(ids,['cyan','magenta','yellow']):
+    for candidate,color in zip(ids,['cyan','magenta','yellow','orange']):
         output=io.BytesIO();Image.new('RGB',(13,17),color).save(output,format='PNG');content=output.getvalue()
         meta=assets.validate_file(content,'image/png',f'knowledge-{color}.png');metadata.append(meta)
         path=knowledge.file_path({'sha256':meta['checksum']});path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(content)
@@ -210,6 +210,7 @@ def test_real_bulk_rights_success_and_atomic_stale_batch(permission_accounts):
     asyncio.run(query("INSERT INTO staging.rem_projects(rem_project_id,project_name_rem,source_updated_at,source_fingerprint) VALUES('KN-RIGHTS','โครงการสิทธิ์สมมติ',now(),'synthetic') RETURNING rem_project_id"))
     asyncio.run(query("INSERT INTO staging.knowledge_batches(manifest_sha256,manifest) VALUES(repeat('9',64),'{}') RETURNING manifest_sha256"))
     for candidate,meta in zip(ids,metadata):
+        if candidate != ids[-1]: meta['media_category']='exterior'
         evidence={'sha256':meta['checksum'],'mime':'image/png','validated_metadata':meta,'classification':{'people':'absent','third_party_marks':'absent','stock_imagery':'absent'}}
         asyncio.run(query("""INSERT INTO staging.knowledge_candidates(id,batch_sha256,source_key,kind,project_ids,topic,source_ref,evidence,holds)
           VALUES($1,repeat('9',64),$2,'asset',ARRAY['KN-RIGHTS'],'media_documents','synthetic',$3::jsonb,'{}') RETURNING id""",candidate,str(candidate),json.dumps(evidence)))
@@ -217,11 +218,30 @@ def test_real_bulk_rights_success_and_atomic_stale_batch(permission_accounts):
     for candidate in ids:
         result=live.post(f'/v1/admin/knowledge/candidates/{candidate}/review',headers=auth('admin'),json={'expected_revision':0,'decision':'accepted','applies_to_project_ids':['KN-RIGHTS'],'reason':'ตรวจไฟล์สมมติแล้ว','sena_owned':True,'asset_role':'gallery','alt_th':'ภาพสีสมมติ'})
         assert result.status_code==200,result.text
+    unknown=live.post('/v1/admin/knowledge/rights/approve',headers=auth('admin'),json={'items':[{'candidate_id':str(ids[3]),'expected_revision':1}],'reason':'synthetic unknown category','confirmed':True})
+    assert unknown.status_code==409 and unknown.json()['error']['code']=='knowledge_category_required',unknown.text
+    def stored_sources(checksums):
+        return asyncio.run(query('''SELECT s.original_checksum,s.processing_class,a.id,a.checksum,a.file_size,
+          a.rights_status,a.reviewed_by,a.reviewed_at,a.marketing_publication,a.ai_exposure
+          FROM hub.asset_upload_sources s JOIN hub.assets a ON a.id=s.asset_id
+          WHERE s.original_checksum=ANY($1::text[])''',checksums))
+    private=stored_sources([metadata[3]['checksum']])
+    assert len(private)==1 and private[0]['processing_class']=='private_exact'
+    assert private[0]['checksum']==metadata[3]['checksum'] and private[0]['file_size']==metadata[3]['file_size']
+    assert private[0]['rights_status']=='pending' and private[0]['reviewed_by'] is None and private[0]['reviewed_at'] is None
+    assert private[0]['marketing_publication'] is False and private[0]['ai_exposure']=='internal'
     first=live.post('/v1/admin/knowledge/rights/approve',headers=auth('admin'),json={'items':[{'candidate_id':str(ids[0]),'expected_revision':1}],'reason':'ยืนยันสิทธิ์ไฟล์สมมติ','confirmed':True})
     assert first.status_code==200,first.text
     assert first.json()['data']['published'] is False
     assert len(asyncio.run(query("SELECT a.id FROM hub.assets a JOIN hub.knowledge_asset_links l ON l.asset_id=a.id WHERE l.candidate_id=$1 AND a.rights_status='approved'",ids[0])))==1
     stale=live.post('/v1/admin/knowledge/rights/approve',headers=auth('admin'),json={'items':[{'candidate_id':str(ids[1]),'expected_revision':1},{'candidate_id':str(ids[2]),'expected_revision':2}],'reason':'ทดสอบย้อนกลับทั้งชุด','confirmed':True})
     assert stale.status_code==409,stale.text
-    assert not asyncio.run(query('SELECT id FROM hub.assets WHERE checksum=ANY($1::text[])',[m['checksum'] for m in metadata[1:]]))
+    staged=stored_sources([m['checksum'] for m in metadata[1:3]])
+    assert len(staged)==1 and staged[0]['original_checksum']==metadata[1]['checksum']
+    assert staged[0]['processing_class']=='marketing_raster' and staged[0]['rights_status']=='pending'
+    assert staged[0]['reviewed_by'] is None and staged[0]['reviewed_at'] is None
+    assert staged[0]['marketing_publication'] is False and staged[0]['ai_exposure']=='internal'
+    approved=stored_sources([metadata[0]['checksum']])
+    assert len(approved)==1 and approved[0]['rights_status']=='approved'
+    assert len(asyncio.run(query("SELECT a.id FROM hub.assets a JOIN hub.knowledge_asset_links l ON l.asset_id=a.id WHERE l.candidate_id=$1 AND a.rights_status='approved'",ids[0])))==1
     assert not asyncio.run(query('SELECT candidate_id FROM hub.knowledge_asset_links WHERE candidate_id=ANY($1::uuid[])',ids[1:]))

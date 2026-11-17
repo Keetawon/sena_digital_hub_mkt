@@ -7,7 +7,7 @@ import re
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from .assets import FORMATS, MAX_BYTES
+from .assets import FORMATS, MAX_BYTES, stored_byte_limit
 from .auth import Settings, failure
 
 BUCKET = "hub-test-assets"
@@ -73,7 +73,7 @@ class HostedAssets:
             raise failure(404, "file_not_found", "ไม่พบไฟล์ในพื้นที่ทดสอบที่ได้รับอนุญาต")
         if check_bucket:
             self.require_private_bucket()
-        status, content = self.request("GET", f"object/authenticated/{BUCKET}/{name}")
+        status, content = self.request("GET", f"object/authenticated/{BUCKET}/{name}", limit=stored_byte_limit(metadata.get("mime_type")))
         if status == 404:
             raise failure(404, "file_not_found", "ไม่พบไฟล์ที่จัดเก็บ")
         if (status != 200 or len(content) != metadata.get("file_size")

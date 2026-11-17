@@ -1,3 +1,5 @@
+import { uploadEvidenceFixture } from "./upload-fixtures";
+import { uploadText } from "../../apps/admin/lib/upload-text";
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
@@ -11,7 +13,7 @@ const viewports = [{ width: 1366, height: 768 }, { width: 390, height: 844 }];
 type FilePayload = { name: string; mimeType: string; buffer: Buffer };
 type Asset = { id: string; binding_id: string; original_filename: string; asset_role: string; alt_text: { th: string }; rights_status: string; updated_at: string };
 
-// Small real PNGs, made locally. Every fixture has a unique checksum; no real logos.
+// Small synthetic PNGs with unique pixels even after metadata removal.
 function png(width = 64, height = 32) {
   function chunk(type: string, data: Buffer) {
     const value = Buffer.concat([Buffer.from(type), data]);
@@ -28,6 +30,8 @@ function png(width = 64, height = 32) {
   ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 2;
   const scanlines = Buffer.alloc((width * 3 + 1) * height, 255);
   for (let y = 0; y < height; y++) scanlines[y * (width * 3 + 1)] = 0;
+  const pixels = Buffer.from(randomUUID().replaceAll('-', ''), 'hex');
+  pixels.copy(scanlines, 1, 0, Math.min(pixels.length, width * 3));
   return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('tEXt', Buffer.from(`Synthetic\0${randomUUID()}`)), chunk('IDAT', deflateSync(scanlines)), chunk('IEND', Buffer.alloc(0))]);
 }
 
@@ -216,6 +220,7 @@ for (const viewport of viewports) {
       for (const file of files) await page.getByLabel(`เลือกอนุมัติ ${file.name}`, { exact: true }).check();
       await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (3)', exact: true }).click();
       const rights = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
+      await rights.getByRole('button', { name: uploadText.evidence_load, exact: true }).click();
       const notes = viewport.width === 1366 ? '' : `หมายเหตุทดสอบ ${data.prefix}`;
       const reason = `อนุมัติใช้โลโก้โดยผู้เผยแพร่${notes ? ` · ${notes}` : ''}`;
       await expect(rights.getByRole('button', { name: 'ยืนยันอนุมัติ 3 ไฟล์', exact: true })).toBeEnabled();
@@ -388,6 +393,7 @@ test('batch rights retry reconciles a lost response with equivalent timestamp no
   for (const name of ['rights-white.png', 'rights-mono.png']) await page.getByLabel(`เลือกอนุมัติ ${name}`, { exact: true }).check();
   await page.getByRole('button', { name: 'อนุมัติใช้โลโก้ที่เลือก (2)', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้โลโก้', exact: true });
+  await dialog.getByRole('button', { name: uploadText.evidence_load, exact: true }).click();
   await dialog.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)', { exact: true }).fill('ทดสอบคำตอบสูญหายโดยไม่บันทึกสิทธิ์ซ้ำ');
   await dialog.getByText('กำหนดช่วงเวลาใช้งาน (ไม่บังคับ)', { exact: true }).click();
   await dialog.getByLabel('เริ่มใช้สิทธิ์ (เวลาไทย)', { exact: true }).fill('2026-10-02T10:00');
@@ -401,4 +407,42 @@ test('batch rights retry reconciles a lost response with equivalent timestamp no
   expect(reviews.map(review => review.id)).toEqual(['synthetic-rights-white.png', 'synthetic-rights-mono.png']);
   expect(reviews[0].body).toEqual(reviews[1].body);
   expect(reviews[0].body.effective_from).toBe('2026-10-02T03:00:00.000Z');
+});
+
+test('W9 batch rights keeps stock evidence out of approval and displays private credit',async({page})=>{
+ const data=await retryFixture(page,'upload');
+ await drop(page,page.locator('.brand-logo-slots'),[
+  {name:'stock-white.png',mimeType:'image/png',buffer:png()},
+  {name:'normal-mono.png',mimeType:'image/png',buffer:png()},
+ ]);
+ const upload=page.getByRole('dialog',{name:'ตรวจสอบโลโก้ก่อนอัปโหลด',exact:true});
+ await upload.getByRole('button',{name:'ยืนยันอัปโหลดและผูกโลโก้',exact:true}).click();
+ await expect(upload).toContainText('ผูกแล้ว 2 จาก 2 ไฟล์');await upload.getByRole('button',{name:'ปิด',exact:true}).click();
+ let reads=0;const reviewed:string[]=[];
+ await page.route(`**${api}/assets/*`,route=>{
+  if(route.request().method()!=='GET')return route.fallback();
+  const id=new URL(route.request().url()).pathname.split('/').at(-1)!;
+  const found=data.assets.find(asset=>asset.id===id);if(!found)return route.fallback();
+  const context=route.request().headers()['x-upload-context'];
+  if(!context)return route.fulfill({json:{data:found}});
+  expect(JSON.parse(context)).toEqual({v:1,kind:'brand',ref:data.brand.public_brand_id,purpose:'logo_primary'});
+  reads++;
+  return route.fulfill({json:{data:found,meta:{upload:{...uploadEvidenceFixture,suggestions:{...uploadEvidenceFixture.suggestions,
+   values:{...uploadEvidenceFixture.suggestions.values,...(id.includes('stock')?{stock:'present',stock_evidence:['stock_1']}:{}),
+    credit_evidence:[{field:'exif_copyright',text:'Synthetic rights evidence'}]}}}}}});
+ });
+ await page.route(`**${api}/assets/*/review`,route=>{
+  const id=new URL(route.request().url()).pathname.split('/').at(-2)!;reviewed.push(id);
+  expect(id).not.toContain('stock');return route.fulfill({json:{data:data.assets.find(asset=>asset.id===id)}});
+ });
+ await session(page,'publisher');await page.reload();
+ for(const name of ['stock-white.png','normal-mono.png'])await page.getByLabel('เลือกอนุมัติ '+name,{exact:true}).check();
+ await page.getByRole('button',{name:'อนุมัติใช้โลโก้ที่เลือก (2)',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'อนุมัติใช้โลโก้',exact:true});
+ expect(reads).toBe(0);
+ const confirm=dialog.getByRole('button',{name:'ยืนยันอนุมัติ 2 ไฟล์',exact:true});await expect(confirm).toBeDisabled();
+ await dialog.getByRole('button',{name:uploadText.evidence_load,exact:true}).click();
+ await expect(dialog).toContainText(uploadText.stock);await expect(dialog).toContainText('Synthetic rights evidence');
+ await expect(dialog.getByRole('button',{name:uploadText.use,exact:true})).toHaveCount(0);
+ await dialog.getByRole('button',{name:'ยืนยันอนุมัติ 1 ไฟล์',exact:true}).click();await expect.poll(()=>reviewed.length).toBe(1);expect(reviewed).toEqual(['synthetic-normal-mono.png']);
 });

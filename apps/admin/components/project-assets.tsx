@@ -6,6 +6,10 @@ import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "
 import type { LocalRole } from "@/lib/local-session";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { uploadContextHeader, uploadFileError, type UploadContext, type UploadEvidence } from "../lib/upload-context";
+import { uploadText } from "../lib/upload-text";
+import { UploadResult, UploadEvidencePanel, readUploadEvidence, FileMetadataSuggestions } from "./upload-evidence";
+import { categoryLabels } from "./media-common";
 import "./project-assets.css";
 import { assetFetch, useHostedSession } from "./hosted-session";
 import { AssetImage, AssetFileLink, localAssetUrl, privateAssetBlob } from "./private-assets";
@@ -19,7 +23,7 @@ export type Asset = {
   rights_status: Rights; rights_notes: string | null; updated_at: string;
   effective_from: string | null; effective_to: string | null;
   reviewed_by: string | null; reviewed_at: string | null; review_reason: string | null;
-  storage_path: string | null;
+  storage_path: string | null; media_category?: string | null;
 };
 export type AssetBinding = Pick<Asset, "id" | "original_filename" | "mime_type" | "rights_status" | "public_url"> & {
   binding_id: string; asset_role: AssetRole; alt_text: { th?: string }; display_order: number;
@@ -42,7 +46,7 @@ function supportsPurpose(asset: Pick<Asset, "mime_type">, purpose: AssetRole) {
 }
 type AssetOwner = { updated_at: string; assets?: AssetBinding[]; public_project_id?: string; public_brand_id?: string; public_name?: { th?: string } };
 const acceptedTypes = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
-const maxFileSize = 10 * 1024 * 1024;
+const maxFileSize = 30 * 1024 * 1024;
 const isSample = (asset: { public_url: string | null }) => Boolean(asset.public_url?.startsWith("/demo-assets/"));
 const fileUrl = localAssetUrl;
 
@@ -83,7 +87,10 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [purpose, setPurpose] = useState<AssetRole>("hero");
+  const [recentUpload, setRecentUpload] = useState<UploadEvidence | null>(null);
+  useEffect(() => { setRecentUpload(null); }, [project.public_project_id, project.public_brand_id, model?.public_model_id]);
   const [dialog, setDialog] = useState<{ type: "upload" } | { type: "bind" | "review" | "approve"; asset: Asset } | { type: "remove"; binding: AssetBinding } | null>(null);
+  const rightsContext = (asset: Asset): UploadContext => project.public_brand_id ? { v: 1, kind: "brand", ref: project.public_brand_id, purpose: "logo_primary" } : model ? { v: 1, kind: "model", project_ref: project.public_project_id!, ref: model.public_model_id, category: asset.media_category ?? null, purpose: "model_image" } : { v: 1, kind: "project", ref: project.public_project_id!, category: asset.media_category ?? null, purpose: "media" };
   const canEdit = permissions.can(project.public_brand_id ? "brands" : "projects", "edit");
   const canReview = permissions.can(project.public_brand_id ? "brands" : "projects", "approve");
   const [workflowOwners, setWorkflowOwners] = useState<Set<string>>(() => new Set()), [logoBusy, setLogoBusy] = useState(false);
@@ -163,22 +170,24 @@ export function ProjectAssets<T extends AssetOwner>({ project, role, disabled, o
       <h3 className="asset-section-title">ไฟล์ของ{subject} <span className="count">{bindings.length}</span></h3>
       {isBrand ? <BrandLogoManager project={project} disabled={disabled || workflowBusy || Boolean(dialog) || preparingReview} canEdit={canEdit} canReview={canReview} onChanged={onProjectChanged} onEditingChange={setLogoBusy} renderBinding={boundAsset} /> : !bindings.length ? <p className="asset-empty muted">ยังไม่มีไฟล์ประกอบ{subject} {isProject ? "เลือกประเภทด้านบน แล้วอัปโหลดไฟล์ใหม่หรือเปิดคลังสื่อเพื่อใช้ไฟล์เดิม" : "เลือกไฟล์จากคลังแล้วกำหนดบทบาท"}</p> : <div className="asset-grid bound-assets">{bindings.map(boundAsset)}</div>}
     </div>
+    <UploadResult value={recentUpload} />
     {dialog?.type === "upload" && isProject && <ProjectUploadDialog project={project} purpose={purpose} onProjectChanged={onProjectChanged} onCancel={saved => { setDialog(null); if (saved) setNotice(`เพิ่มไฟล์ในข้อมูลร่างแล้ว ${saved} ไฟล์ ผู้เผยแพร่ต้องตรวจสิทธิ์ก่อนเผยแพร่`); if (libraryOpen) void loadLibrary(); }} />}
-    {dialog?.type === "upload" && !isProject && <UploadDialog subject={subject} onCancel={() => setDialog(null)} onUploaded={async (asset, reused) => {
+    {dialog?.type === "upload" && !isProject && <UploadDialog subject={subject} owner={model ? { kind: "model", project_ref: project.public_project_id!, ref: model.public_model_id } : { kind: "brand", ref: project.public_brand_id! }} onCancel={() => setDialog(null)} onUploaded={async (asset, reused, upload) => {
+      setRecentUpload(upload);
       setDialog(isProject ? { type: "bind", asset } : null); setLibraryOpen(!isProject); setSearch(asset.original_filename);
       setNotice(reused ? `พบไฟล์เดิมในคลัง: ${asset.original_filename} — ใช้รายการเดิมและคงสถานะสิทธิ์เดิม ยังไม่ได้ผูกกับ${subject}` : `อัปโหลด ${asset.original_filename} แล้ว — รอตรวจสิทธิ์และยังไม่ได้ผูกกับ${subject}`);
       await loadLibrary();
     }} />}
     {dialog?.type === "bind" && <BindDialog project={project} model={model} asset={dialog.asset} initialRole={isProject ? purpose : undefined} onCancel={() => { setDialog(null); if (isProject) setLibraryOpen(true); }} onSaved={data => projectSaved(data, "เพิ่มไฟล์ในข้อมูลร่างแล้ว ผู้เผยแพร่ต้องตรวจสิทธิ์และเผยแพร่ก่อนนำไปใช้งาน") } onReload={async () => { await refreshAfterReview(); setDialog(null); }} />}
-    {dialog?.type === "approve" && <BatchLogoRights assets={[dialog.asset]} noun="ไฟล์" onChanged={refreshAfterReview} onCancel={() => setDialog(null)} />}
-    {dialog?.type === "review" && <RightsDialog asset={dialog.asset} onCancel={() => setDialog(null)} onSaved={async asset => { await refreshAfterReview(); setDialog(null); setNotice(asset.rights_status === "revoked" ? "ถอนสิทธิ์ไฟล์แล้ว แบรนด์และโครงการที่ใช้ไฟล์นี้อาจหยุดแสดงผ่าน API" : "บันทึกผลตรวจสิทธิ์แล้ว การเผยแพร่ยังขึ้นกับช่วงสิทธิ์และความพร้อมของข้อมูล"); }} onReload={async () => { await loadLibrary(); setDialog(null); }} />}
+    {dialog?.type === "approve" && <BatchLogoRights assets={[dialog.asset]} contextFor={rightsContext} noun="ไฟล์" onChanged={refreshAfterReview} onCancel={() => setDialog(null)} />}
+    {dialog?.type === "review" && <RightsDialog asset={dialog.asset} uploadContext={rightsContext(dialog.asset)} onCancel={() => setDialog(null)} onSaved={async asset => { await refreshAfterReview(); setDialog(null); setNotice(asset.rights_status === "revoked" ? "ถอนสิทธิ์ไฟล์แล้ว แบรนด์และโครงการที่ใช้ไฟล์นี้อาจหยุดแสดงผ่าน API" : "บันทึกผลตรวจสิทธิ์แล้ว การเผยแพร่ยังขึ้นกับช่วงสิทธิ์และความพร้อมของข้อมูล"); }} onReload={async () => { await loadLibrary(); setDialog(null); }} />}
     {dialog?.type === "remove" && <RemoveDialog binding={dialog.binding} project={project} model={model} onCancel={() => setDialog(null)} onSaved={data => projectSaved(data, "นำไฟล์ออกจากข้อมูลร่างแล้ว ไฟล์ยังอยู่ในคลังสื่อ และข้อมูลที่เผยแพร่ยังไม่เปลี่ยนจนกว่าจะเผยแพร่อีกครั้ง")} onReload={async () => { await refreshAfterReview(); setDialog(null); }} />}
   </section>;
 }
 
 type LogoRole = typeof brandLogoRoles[number];
 type LogoFacts = { width?: number; height?: number; opaque?: boolean };
-type LogoItem = { key: number; file?: File; asset?: Asset; role: LogoRole; alt: string; facts: LogoFacts; status: "ready" | "uploading" | "binding" | "saved" | "failed"; error: string; reconcile?: boolean; previousBindingId?: string };
+type LogoItem = { upload?: UploadEvidence | null; key: number; file?: File; asset?: Asset; role: LogoRole; alt: string; facts: LogoFacts; status: "ready" | "uploading" | "binding" | "saved" | "failed"; error: string; reconcile?: boolean; previousBindingId?: string };
 const logoTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 const logoAlt = (brand: AssetOwner, role: LogoRole) => `โลโก้ ${brand.public_name?.th || brand.public_brand_id || "แบรนด์"} ${roleLabels[role]}`;
 function logoWarnings(role: LogoRole, facts: LogoFacts) {
@@ -263,7 +272,7 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
   async function process(rows: LogoItem[]) {
     if (locked.current || disabled || !canEdit) return;
     const invalid = rows.find(item => !item.alt.trim() || (item.file && (!logoTypes.includes(item.file.type) || !item.file.size || item.file.size > (item.file.type === "image/svg+xml" ? 2 * 1024 * 1024 : maxFileSize))));
-    if (invalid) { patch(invalid.key, { error: !invalid.alt.trim() ? "กรอกคำอธิบายภาษาไทยก่อนเพิ่มโลโก้" : "ใช้ PNG, JPEG หรือ WebP ไม่เกิน 10 MiB หรือ SVG ไม่เกิน 2 MiB และไฟล์ต้องมีข้อมูล", status: "failed" }); setError("ตรวจสอบไฟล์และคำอธิบายด้านล่าง"); return; }
+    if (invalid) { patch(invalid.key, { error: !invalid.alt.trim() ? "กรอกคำอธิบายภาษาไทยก่อนเพิ่มโลโก้" : "ใช้ PNG, JPEG หรือ WebP ไม่เกิน 30 MiB หรือ SVG ไม่เกิน 2 MiB และไฟล์ต้องมีข้อมูล", status: "failed" }); setError("ตรวจสอบไฟล์และคำอธิบายด้านล่าง"); return; }
     locked.current = true; setPending(true); setAttempted(true); setError("");
     try {
       for (const original of rows) {
@@ -279,7 +288,7 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
           }
           if (!item.asset && item.file) {
             patch(item.key, { status: "uploading", error: "" });
-            const result = await uploadAsset(item.file); item = { ...item, asset: result.asset, facts: { ...item.facts, width: result.asset.width ?? item.facts.width, height: result.asset.height ?? item.facts.height } }; patch(item.key, { asset: result.asset, facts: item.facts });
+            const result = await uploadAsset(item.file, { v: 1, kind: "brand", ref: project.public_brand_id!, purpose: item.role }); item = { ...item, asset: result.asset, facts: { ...item.facts, width: result.asset.width ?? item.facts.width, height: result.asset.height ?? item.facts.height } }; patch(item.key, { asset: result.asset, facts: item.facts, upload: result.upload });
             if (result.asset.mime_type === "image/svg+xml") { item.facts = { ...item.facts, ...await inspectStoredLogo(result.asset) }; patch(item.key, { facts: item.facts }); }
           }
           if (!item.asset) throw new Error("ไม่พบไฟล์ที่จะผูกกับแบรนด์");
@@ -336,13 +345,13 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
   function closeBatch() { setBulk(false); replaceItems([]); setError(""); }
   function rowsView() {
     return <div className="project-upload-queue brand-logo-confirm-table" role="list" aria-label="รายการโลโก้ที่ตรวจสอบ">{items.map(item => <article className={`project-upload-item ${item.status === "saved" ? "saved" : ""}`} key={item.key} aria-label={item.file?.name || item.asset?.original_filename} role="listitem">
-      {item.asset ? <Preview asset={item.asset} /> : item.file ? <UploadPreview file={item.file} /> : null}<div className="project-upload-details"><strong>{item.file?.name || item.asset?.original_filename}</strong>{item.file?.type === "image/svg+xml" && !item.asset && <p className="field-help">SVG จะแสดงตัวอย่างหลังตรวจความปลอดภัยบนเซิร์ฟเวอร์แล้ว ยังไม่ยืนยันขนาดหรือความโปร่งใส การตรวจความปลอดภัยอาจทำให้ภาพเรียบง่ายลง หากภาพเปลี่ยนให้ใช้ PNG, JPEG หรือ WebP</p>}
+      {item.asset ? <Preview asset={item.asset} /> : item.file ? <UploadPreview file={item.file} /> : null}<div className="project-upload-details"><UploadResult value={item.upload} /><strong>{item.file?.name || item.asset?.original_filename}</strong>{item.file?.type === "image/svg+xml" && !item.asset && <p className="field-help">SVG จะแสดงตัวอย่างหลังตรวจความปลอดภัยบนเซิร์ฟเวอร์แล้ว ยังไม่ยืนยันขนาดหรือความโปร่งใส การตรวจความปลอดภัยอาจทำให้ภาพเรียบง่ายลง หากภาพเปลี่ยนให้ใช้ PNG, JPEG หรือ WebP</p>}
         {bulk ? <><div className="form-field"><label htmlFor={`logo-role-${item.key}`}>บทบาท · {item.file?.name}</label><select id={`logo-role-${item.key}`} value={item.role} disabled={pending || attempted} onChange={event => { const role = event.target.value as LogoRole; patch(item.key, { role, alt: logoAlt(project, role), error: "" }); }}>{brandLogoRoles.map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></div><div className="form-field"><label htmlFor={`logo-alt-${item.key}`}>คำอธิบายภาพ (ภาษาไทย) · {item.file?.name}</label><textarea id={`logo-alt-${item.key}`} rows={2} maxLength={1000} value={item.alt} disabled={pending || attempted} onChange={event => patch(item.key, { alt: event.target.value, error: "" })} /></div></> : <p>{roleLabels[item.role]} · {item.alt}</p>}
         {logoWarnings(item.role, item.facts).map(warning => <p className="inline-warning" key={warning}>คำแนะนำ: {warning} · ยังบันทึกได้</p>)}{item.error && <p className="field-error">{item.error}</p>}<p className="project-upload-status" role="status">{item.status === "saved" ? "ผูกโลโก้ในข้อมูลร่างแล้ว" : item.status === "uploading" ? "กำลังอัปโหลดและตรวจสอบไฟล์…" : item.status === "binding" ? "กำลังผูกโลโก้…" : item.asset ? "อัปโหลดแล้ว รอผูกโลโก้" : "รอยืนยันอัปโหลด"}</p>{item.status === "failed" && <button type="button" className="button secondary" disabled={pending || duplicates} onClick={() => void process([item])}>ลองอีกครั้ง · {item.file?.name || item.asset?.original_filename}</button>}{bulk && !attempted && <button type="button" className="button secondary" disabled={pending} onClick={() => replaceItems(itemRef.current.filter(row => row.key !== item.key))}>นำออกจากรายการ · {item.file?.name}</button>}
       </div></article>)}</div>;
   }
   return <>
-    {canEdit && <div className={`brand-logo-dropzone ${dragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); if (!blocked) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); void chooseFiles(Array.from(event.dataTransfer.files)); }}><strong>วางโลโก้หลายไฟล์ที่นี่ แล้วตรวจบทบาทก่อนอัปโหลด</strong><label className="button secondary">เลือกโลโก้หลายไฟล์<input type="file" multiple accept={logoTypes.join(",")} className="visually-hidden" aria-label="เลือกโลโก้หลายไฟล์" disabled={blocked} onChange={event => { void chooseFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} /></label><p className="field-help">PNG, JPEG, WebP ไม่เกิน 10 MiB · SVG ไม่เกิน 2 MiB · การแทนที่เก็บประวัติการผูกเดิมไว้</p></div>}
+    {canEdit && <div className={`brand-logo-dropzone ${dragging ? "dragging" : ""}`} onDragOver={event => { event.preventDefault(); if (!blocked) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); void chooseFiles(Array.from(event.dataTransfer.files)); }}><strong>วางโลโก้หลายไฟล์ที่นี่ แล้วตรวจบทบาทก่อนอัปโหลด</strong><label className="button secondary">เลือกโลโก้หลายไฟล์<input type="file" multiple accept={logoTypes.join(",")} className="visually-hidden" aria-label="เลือกโลโก้หลายไฟล์" disabled={blocked} onChange={event => { void chooseFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} /></label><p className="field-help">PNG, JPEG, WebP ไม่เกิน 30 MiB · SVG ไม่เกิน 2 MiB · การแทนที่เก็บประวัติการผูกเดิมไว้</p></div>}
     {canReview && <div className="brand-logo-batch-toolbar"><span>เลือกโลโก้ที่ตรวจแล้วเพื่ออนุมัติใช้งาน ระบบบันทึกผู้อนุมัติและเวลาของแต่ละไฟล์</span><button className="button primary" disabled={disabled || preparing || !selected.length} onClick={() => void openRights()}>อนุมัติใช้โลโก้ที่เลือก ({selected.length})</button></div>}
     {!bulk && error && <div className="notice error" role="alert">{error}</div>}{preparing && <p role="status">กำลังตรวจสอบไฟล์…</p>}
     <div className="brand-logo-slots" onDragOver={event => { if (canEdit) event.preventDefault(); }} onDrop={event => { if (!canEdit) return; event.preventDefault(); void chooseFiles(Array.from(event.dataTransfer.files)); }}>{brandLogoRoles.map(role => {
@@ -352,11 +361,11 @@ function BrandLogoManager<T extends AssetOwner>({ project, disabled, canEdit, ca
     {!bulk && items.length > 0 && <div aria-live="polite">{rowsView()}{!pending && remaining.length > 0 && <button className="button secondary" onClick={() => { if (window.confirm("ไฟล์ที่อัปโหลดแล้วจะยังอยู่ในคลัง ต้องการยกเลิกรายการที่ยังไม่เสร็จหรือไม่?")) { replaceItems([]); setError(""); } }}>ยกเลิกรายการที่ยังไม่เสร็จ</button>}</div>}
     {bulk && <AssetDialog title="ตรวจสอบโลโก้ก่อนอัปโหลด" dirty={remaining.length > 0} pending={pending} error={error} onCancel={closeBatch} onSubmit={event => { event.preventDefault(); if (!duplicates) void process(remaining); }} submitLabel={remaining.length ? attempted ? "ลองอีกครั้งเฉพาะไฟล์ที่ยังไม่สำเร็จ" : "ยืนยันอัปโหลดและผูกโลโก้" : "ผูกโลโก้ครบแล้ว"} submitDisabled={!remaining.length || duplicates} cancelLabel="ปิด" discardMessage="ไฟล์ที่บันทึกแล้วจะยังอยู่ในข้อมูลร่างและคลัง ต้องการปิดรายการที่ยังไม่เสร็จหรือไม่?"><p>{attempted ? "บทบาทและคำอธิบายชุดนี้คงเดิมระหว่างลองใหม่ ตรวจผลแยกแต่ละไฟล์ด้านล่าง" : "บทบาทเป็นเพียงคำแนะนำ ตรวจแต่ละไฟล์และคำอธิบายก่อนยืนยัน ยังไม่มีไฟล์ถูกอัปโหลด"}</p><p className="project-upload-summary" role="status">ผูกแล้ว {savedCount} จาก {items.length} ไฟล์</p>{duplicates && <p className="inline-warning" role="alert">เลือกหนึ่งไฟล์ต่อบทบาท เพื่อไม่ให้ไฟล์ในชุดนี้แทนที่กัน</p>}{rowsView()}<p className="field-help">การแทนที่เก็บการผูกเดิมในประวัติ ข้อมูลที่เผยแพร่อยู่ยังไม่เปลี่ยน</p></AssetDialog>}
     {libraryRole && <AssetDialog title={`เลือกจากคลัง · ${roleLabels[libraryRole]}`} dirty={false} pending={preparing} error={libraryError} onCancel={() => setLibraryRole(null)} onSubmit={event => event.preventDefault()} submitLabel="เลือกไฟล์จากรายการ" submitDisabled><p>{roleLabels[libraryRole]} · {alts[libraryRole]}</p><p className="field-help">กดเลือกแล้วผูกกับช่องนี้ทันที สถานะสิทธิ์เดิมไม่เปลี่ยน</p><div className="form-field"><label htmlFor="logo-library-search">ค้นหาชื่อโลโก้ในคลัง</label><input id="logo-library-search" type="search" value={librarySearch} onChange={event => setLibrarySearch(event.target.value)} /></div>{libraryLoading ? <p role="status">กำลังโหลดคลังสื่อ…</p> : libraryError ? <button type="button" className="button secondary" onClick={() => void openLibrary(libraryRole)}>ลองโหลดคลังสื่ออีกครั้ง</button> : <div className="library-grid">{library.filter(asset => asset.original_filename.toLocaleLowerCase("th").includes(librarySearch.toLocaleLowerCase("th"))).map(asset => <article className="library-asset" key={asset.id} aria-label={asset.original_filename}><Preview asset={asset} /><div className="library-asset-body"><strong>{asset.original_filename}</strong><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} />{logoWarnings(libraryRole, { width: asset.width ?? undefined, height: asset.height ?? undefined }).map(warning => <p className="field-help" key={warning}>คำแนะนำ: {warning}</p>)}<button type="button" className="button primary" disabled={preparing} onClick={() => void chooseAsset(asset)}>เลือกใช้เป็น{roleLabels[libraryRole]}</button></div></article>)}</div>}</AssetDialog>}
-    {rights && <BatchLogoRights assets={rights} onChanged={rightsChanged} onCancel={() => { setRights(null); setSelected([]); }} />}
+    {rights && <BatchLogoRights assets={rights} contextFor={() => ({ v: 1, kind: "brand", ref: project.public_brand_id!, purpose: "logo_primary" })} onChanged={rightsChanged} onCancel={() => { setRights(null); setSelected([]); }} />}
   </>;
 }
 
-function BatchLogoRights({ assets, onChanged, onCancel, noun = "โลโก้" }: { assets: Asset[]; noun?: string; onChanged: () => Promise<void>; onCancel: () => void }) {
+function BatchLogoRights({ assets, contextFor, onChanged, onCancel, noun = "โลโก้" }: { assets: Asset[]; contextFor: (asset: Asset) => UploadContext; noun?: string; onChanged: () => Promise<void>; onCancel: () => void }) {
   const [notes, setNotes] = useState("");
   const [from, setFrom] = useState(""); const [to, setTo] = useState("");
   const [pending, setPending] = useState(false); const [attempted, setAttempted] = useState(false); const [error, setError] = useState("");
@@ -364,9 +373,21 @@ function BatchLogoRights({ assets, onChanged, onCancel, noun = "โลโก้"
   const [reconciled, setReconciled] = useState<string[]>([]);
   const doneRef = useRef(new Set<string>()); const uncertain = useRef(new Set<string>());
   const snapshots = useRef(new Map(assets.map(asset => [asset.id, asset])));
-  const remaining = assets.filter(asset => !done.includes(asset.id));
+  const [evidence, setEvidence] = useState<Record<string, UploadEvidence | null> | null>(null);
+  const [readingEvidence, setReadingEvidence] = useState(false);
+  const remaining = assets.filter(asset => !done.includes(asset.id) && evidence?.[asset.id]?.suggestions.values.stock !== "present");
+  async function loadEvidence() {
+    if (readingEvidence || pending) return;
+    setReadingEvidence(true); setError("");
+    try {
+      const loaded: Record<string, UploadEvidence | null> = {};
+      for (const asset of assets) loaded[asset.id] = await readUploadEvidence(asset.id, contextFor(asset));
+      setEvidence(loaded);
+    } catch { setEvidence(null); setError(uploadText.evidence_error); }
+    finally { setReadingEvidence(false); }
+  }
   async function submit(event: FormEvent) {
-    event.preventDefault(); if (pending) return;
+    event.preventDefault(); if (pending || readingEvidence || !evidence) return;
     const start = from ? new Date(`${from}:00+07:00`) : null; const end = to ? new Date(`${to}:00+07:00`) : null;
     if (start && !Number.isFinite(start.getTime()) || end && !Number.isFinite(end.getTime()) || start && end && end <= start) { setError("ตรวจวันเริ่มและสิ้นสุดสิทธิ์ให้ถูกต้อง"); return; }
     const reason = `อนุมัติใช้${noun}โดยผู้เผยแพร่${notes.trim() ? ` · ${notes.trim()}` : ""}`;
@@ -374,6 +395,8 @@ function BatchLogoRights({ assets, onChanged, onCancel, noun = "โลโก้"
     for (const asset of remaining) {
       if (doneRef.current.has(asset.id)) continue;
       try {
+        const latestEvidence = await readUploadEvidence(asset.id, contextFor(asset));
+        if (latestEvidence?.suggestions.values.stock === "present") { setEvidence(previous => ({ ...previous, [asset.id]: latestEvidence })); throw new Error(uploadText.stock); }
         const expected = snapshots.current.get(asset.id)!;
         const fields = { decision: "approved", rights_notes: expected.rights_notes?.trim() ? expected.rights_notes : `ผู้เผยแพร่อนุมัติใช้${noun}ผ่านระบบ Hub`,
           change_reason: reason, effective_from: start?.toISOString() ?? expected.effective_from ?? null, effective_to: end?.toISOString() ?? expected.effective_to ?? null };
@@ -391,10 +414,11 @@ function BatchLogoRights({ assets, onChanged, onCancel, noun = "โลโก้"
     try { await onChanged(); } catch { setError("บันทึกผลที่สำเร็จแล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาโหลดหน้าใหม่"); }
     setPending(false);
   }
-  return <AssetDialog title={`อนุมัติใช้${noun}`} dirty={!attempted && Boolean(notes || from || to)} pending={pending} error={error} onCancel={onCancel} onSubmit={submit} submitLabel={attempted ? remaining.length ? "ลองอนุมัติเฉพาะไฟล์ที่ยังไม่สำเร็จ" : "อนุมัติครบแล้ว" : `ยืนยันอนุมัติ ${assets.length} ไฟล์`} submitDisabled={!remaining.length} cancelLabel="ปิด">
+  return <AssetDialog title={`อนุมัติใช้${noun}`} dirty={!attempted && Boolean(notes || from || to)} pending={pending} error={error} onCancel={onCancel} onSubmit={submit} submitLabel={attempted ? remaining.length ? "ลองอนุมัติเฉพาะไฟล์ที่ยังไม่สำเร็จ" : "อนุมัติครบแล้ว" : `ยืนยันอนุมัติ ${remaining.length} ไฟล์`} submitDisabled={!remaining.length || !evidence || readingEvidence} cancelLabel="ปิด">
     <p>การกดยืนยันถือเป็นการอนุมัติใช้{noun}ของผู้เผยแพร่ ระบบบันทึกผู้อนุมัติ เวลา และผลอนุมัติแยกทุกไฟล์</p>
     <p className="field-help">มีผลกับทุกแบรนด์หรือโครงการที่ใช้ไฟล์เดียวกัน การเผยแพร่ข้อมูลยังเป็นอีกขั้นตอนหนึ่ง</p>
-    <ul className="brand-logo-rights-results">{assets.map(asset => <li key={asset.id} className="brand-logo-approval-file"><Preview asset={asset} /><div><strong>{asset.original_filename}</strong><p role="status">{done.includes(asset.id) ? reconciled.includes(asset.id) ? "พบผลอนุมัติที่ตรงกันแล้ว ไม่บันทึกซ้ำ" : `อนุมัติใช้${noun}แล้ว` : failed[asset.id] || "รออนุมัติ"}</p>{asset.effective_from || asset.effective_to ? <p className="small-text muted">ช่วงเวลาเดิม: {dateLabel(asset.effective_from)} – {dateLabel(asset.effective_to)}</p> : null}</div></li>)}</ul>
+    <button type="button" className="button secondary" disabled={pending || readingEvidence} onClick={() => void loadEvidence()}>{uploadText.evidence_load}</button>
+    <ul className="brand-logo-rights-results">{assets.map(asset => <li key={asset.id} className="brand-logo-approval-file"><Preview asset={asset} /><div><strong>{asset.original_filename}</strong>{evidence && <FileMetadataSuggestions evidence={evidence[asset.id]} />}<p role="status">{done.includes(asset.id) ? reconciled.includes(asset.id) ? "พบผลอนุมัติที่ตรงกันแล้ว ไม่บันทึกซ้ำ" : `อนุมัติใช้${noun}แล้ว` : failed[asset.id] || "รออนุมัติ"}</p>{asset.effective_from || asset.effective_to ? <p className="small-text muted">ช่วงเวลาเดิม: {dateLabel(asset.effective_from)} – {dateLabel(asset.effective_to)}</p> : null}</div></li>)}</ul>
     <div className="form-field"><label htmlFor="logo-approval-note">หมายเหตุเพิ่มเติม (ไม่บังคับ)</label><textarea id="logo-approval-note" rows={2} maxLength={900} value={notes} disabled={pending || attempted} onChange={event => setNotes(event.target.value)} /></div>
     <details className="brand-logo-approval-dates"><summary>กำหนดช่วงเวลาใช้งาน (ไม่บังคับ)</summary><div className="field-grid"><div className="form-field"><label htmlFor="logo-rights-from">เริ่มใช้สิทธิ์ (เวลาไทย)</label><input id="logo-rights-from" type="datetime-local" value={from} disabled={pending || attempted} onChange={event => setFrom(event.target.value)} /></div><div className="form-field"><label htmlFor="logo-rights-to">สิ้นสุดสิทธิ์ (เวลาไทย)</label><input id="logo-rights-to" type="datetime-local" value={to} disabled={pending || attempted} onChange={event => setTo(event.target.value)} /></div></div><p className="field-help">เวลา Asia/Bangkok · ช่องที่เว้นว่างจะคงช่วงเวลาเดิมของแต่ละไฟล์ หลังเริ่มอนุมัติจะเก็บค่าเดิมระหว่างลองใหม่</p></details>
   </AssetDialog>;
@@ -437,15 +461,16 @@ export function AssetDialog({ title, dirty, pending, error, conflict, onCancel, 
   return <dialog ref={dialog} className="action-dialog asset-dialog" aria-labelledby="asset-dialog-title" onCancel={event => { event.preventDefault(); cancel(); }}><form onSubmit={onSubmit} noValidate><h2 id="asset-dialog-title" tabIndex={focusTitle ? -1 : undefined}>{title}</h2>{(error || reloadError) && <div className="notice error model-error-summary" ref={summary} role="alert" tabIndex={-1}><strong>{reloadError || error}</strong>{conflict && <><p>ข้อมูลที่กรอกยังอยู่ กรุณาคัดลอกสิ่งที่ต้องการเก็บก่อนโหลดข้อมูลล่าสุด</p><button type="button" className="button secondary" disabled={pending || reloading} onClick={() => void reload()}>{reloading ? "กำลังโหลด…" : "โหลดข้อมูลล่าสุด"}</button></>}</div>}{children}<div className="dialog-actions"><button type="button" className="button secondary" disabled={pending || reloading} onClick={cancel}>{cancelLabel}</button><button type="submit" className={`button ${danger ? "danger" : "primary"}`} aria-busy={pending} disabled={pending || reloading || submitDisabled}>{pending ? "กำลังดำเนินการ…" : submitLabel}</button></div></form></dialog>;
 }
 
-export async function uploadAsset(file: File): Promise<{ asset: Asset; reused: boolean }> {
-  const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name) }, body: file, cache: "no-store" });
+export async function uploadAsset(file: File, context: UploadContext): Promise<{ asset: Asset; reused: boolean; upload: UploadEvidence | null }> {
+  const issue = uploadFileError(file, context); if (issue) throw new Error(issue);
+  const response = await assetFetch("v1/admin/assets", { method: "POST", headers: { "Content-Type": file.type, "X-Filename": encodeURIComponent(file.name), "X-Upload-Context": uploadContextHeader(context) }, body: file, cache: "no-store" });
   const body = await response.json().catch(() => null);
   if (!response.ok && body?.error?.invalidate_access === true) window.dispatchEvent(new Event("hub-content-access-invalidated"));
   if (!response.ok || !body?.data?.id) throw new Error(body?.error?.message ?? "อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
-  return { asset: body.data, reused: Boolean(body.meta?.reused) };
+  return { asset: body.data, reused: Boolean(body.meta?.reused), upload: body.meta?.upload ?? null };
 }
 
-type UploadItem = { key: number; file: File; alt: string; asset?: Asset; status: "ready" | "uploading" | "binding" | "saved" | "failed"; error: string; note?: string };
+type UploadItem = { upload?: UploadEvidence | null; key: number; file: File; alt: string; asset?: Asset; status: "ready" | "uploading" | "binding" | "saved" | "failed"; error: string; note?: string };
 
 function UploadPreview({ file }: { file: File }) {
   const [url, setUrl] = useState("");
@@ -462,6 +487,8 @@ function ProjectUploadDialog<T extends AssetOwner>({ project, purpose, onProject
   project: T; purpose: AssetRole; onProjectChanged: (project: T) => void; onCancel: (saved: number) => void;
 }) {
   const [items, setItems] = useState<UploadItem[]>([]);
+  const [category, setCategory] = useState("");
+  const uploadContext: UploadContext = { v: 1, kind: "project", ref: project.public_project_id!, category: category || null, purpose };
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [needsReload, setNeedsReload] = useState(false);
@@ -476,9 +503,10 @@ function ProjectUploadDialog<T extends AssetOwner>({ project, purpose, onProject
   const attached = (data: T, asset: Asset) => data.assets?.find(binding => binding.id === asset.id && binding.asset_role === purpose && !binding.public_model_id);
 
   function validate(item: UploadItem) {
+    if (!category || category === "legal_document") return uploadText.binding_category;
     if (!acceptedTypes.includes(item.file.type)) return "รองรับเฉพาะไฟล์ PNG, JPEG, WebP และ PDF";
     if (!supportsPurpose({ mime_type: item.file.type }, purpose)) return purpose === "brochure" ? "โบรชัวร์รองรับไฟล์ PDF" : "ภาพหลักและภาพย่อรองรับไฟล์ PNG, JPEG หรือ WebP";
-    if (!item.file.size || item.file.size > maxFileSize) return "ไฟล์ต้องมีข้อมูลและมีขนาดไม่เกิน 10 MiB";
+    if (uploadFileError(item.file, uploadContext)) return uploadFileError(item.file, uploadContext)!;
     if (!item.alt.trim()) return "กรอกคำอธิบายภาษาไทยสำหรับไฟล์นี้";
     return "";
   }
@@ -512,9 +540,9 @@ function ProjectUploadDialog<T extends AssetOwner>({ project, purpose, onProject
       if (!asset) {
         patchItem(item.key, { status: "uploading", error: "" });
         try {
-          const result = await uploadAsset(item.file);
+          const result = await uploadAsset(item.file, uploadContext);
           asset = result.asset;
-          patchItem(item.key, { asset, note: result.reused ? "ใช้ไฟล์เดิมในคลังและคงสถานะสิทธิ์เดิม" : undefined });
+          patchItem(item.key, { asset, upload: result.upload, note: result.reused ? "ใช้ไฟล์เดิมในคลังและคงสถานะสิทธิ์เดิม" : undefined });
         } catch (cause) {
           failures += 1;
           patchItem(item.key, { status: "failed", error: cause instanceof Error ? cause.message : "อัปโหลดไม่สำเร็จ" });
@@ -547,22 +575,26 @@ function ProjectUploadDialog<T extends AssetOwner>({ project, purpose, onProject
 
   return <AssetDialog title={`เพิ่มไฟล์โครงการ · ${roleLabels[purpose]}`} dirty={remaining.length > 0} pending={pending} error={error} onCancel={() => onCancel(savedCount)} onSubmit={submit} cancelLabel="ปิด" discardMessage="ไฟล์ที่บันทึกแล้วจะยังอยู่ในโครงการ ไฟล์ที่อัปโหลดแล้วจะยังอยู่ในคลัง แต่รายการที่ยังไม่เสร็จในหน้าต่างนี้จะถูกทิ้ง ต้องการปิดหรือไม่?" submitLabel={remaining.length ? attempted ? "ลองอีกครั้งเฉพาะไฟล์ที่ยังไม่สำเร็จ" : "อัปโหลดและเพิ่มไฟล์" : items.length ? "เพิ่มไฟล์ครบแล้ว" : "อัปโหลดและเพิ่มไฟล์"} submitDisabled={!remaining.length || needsReload}>
     <p className="project-media-dialog-context"><strong>{roleLabels[purpose]} · เลือกได้หลายไฟล์</strong><span>ใส่คำอธิบายแยกแต่ละไฟล์ แล้วบันทึกทั้งหมดเข้าโครงการ ไฟล์เดิมจะยังอยู่</span></p>
+    <UploadCategory value={category} onChange={setCategory} disabled={pending || items.some(item => Boolean(item.asset))} />
     <div className="upload-dropzone"><div className="form-field"><label htmlFor="upload-file">เลือกไฟล์ภาพหรือ PDF</label><input id="upload-file" type="file" multiple accept={purpose === "brochure" ? "application/pdf" : ["hero", "thumbnail"].includes(purpose) ? "image/png,image/jpeg,image/webp" : "image/png,image/jpeg,image/webp,application/pdf"} disabled={pending || needsReload} onChange={event => {
       const files = Array.from(event.target.files ?? []);
       setItems(previous => [...previous, ...files.map(file => ({ key: nextKey.current++, file, alt: "", status: "ready" as const, error: "" }))]);
       event.target.value = "";
       setError("");
-    }} /><p className="field-help">{purpose === "brochure" ? "PDF" : ["hero", "thumbnail"].includes(purpose) ? "PNG, JPEG หรือ WebP" : "PNG, JPEG, WebP หรือ PDF"} · ไม่เกิน 10 MiB ต่อไฟล์ · เลือกเพิ่มได้โดยไม่ล้างรายการเดิม<br />ภาพไม่เกิน 40 ล้านพิกเซล ไม่มีภาพเคลื่อนไหว · PDF ไม่เกิน 200 หน้า</p></div></div>
+    }} /><p className="field-help">{purpose === "brochure" ? "PDF" : ["hero", "thumbnail"].includes(purpose) ? "PNG, JPEG หรือ WebP" : "PNG, JPEG, WebP หรือ PDF"} · {uploadText.limits} · เลือกเพิ่มได้โดยไม่ล้างรายการเดิม<br />ภาพไม่เกิน 40 ล้านพิกเซล ไม่มีภาพเคลื่อนไหว · PDF ไม่เกิน 200 หน้า</p></div></div>
     {items.length > 0 && <p className="project-upload-summary" role="status" aria-live="polite">เพิ่มแล้ว {savedCount} จาก {items.length} ไฟล์{pending ? " · กำลังดำเนินการทีละไฟล์…" : ""}</p>}
     <div className="project-upload-queue">{items.map(item => <article key={item.key} className={`project-upload-item ${item.status === "saved" ? "saved" : ""}`} aria-label={item.file.name}>
-      <UploadPreview file={item.file} /><div className="project-upload-details"><strong>{item.file.name}</strong><span className="small-text muted">{sizeLabel(item.file.size)}</span><div className="form-field"><label htmlFor={`upload-alt-${item.key}`}>คำอธิบายภาพ (ภาษาไทย) · {item.file.name}</label><textarea id={`upload-alt-${item.key}`} rows={2} maxLength={1000} value={item.alt} disabled={pending || item.status === "saved"} aria-invalid={Boolean(item.error)} aria-describedby={item.error ? `upload-error-${item.key}` : undefined} onChange={event => patchItem(item.key, { alt: event.target.value, error: "" })} /></div>{item.error && <p id={`upload-error-${item.key}`} className="field-error">{item.error}</p>}{item.note && <p className="field-help">{item.note}</p>}<p className="project-upload-status" role="status">{item.status === "saved" ? "เพิ่มในโครงการแล้ว" : item.status === "uploading" ? "กำลังอัปโหลดและตรวจสอบไฟล์…" : item.status === "binding" ? "กำลังบันทึกในโครงการ…" : item.asset ? "อัปโหลดแล้ว รอเพิ่มในโครงการ" : "รออัปโหลด"}</p>{item.status !== "saved" && <button type="button" className="button secondary" disabled={pending || needsReload} onClick={() => setItems(previous => previous.filter(row => row.key !== item.key))}>นำออกจากรายการ</button>}</div>
+      <UploadPreview file={item.file} /><div className="project-upload-details"><UploadResult value={item.upload} /><strong>{item.file.name}</strong><span className="small-text muted">{sizeLabel(item.file.size)}</span><div className="form-field"><label htmlFor={`upload-alt-${item.key}`}>คำอธิบายภาพ (ภาษาไทย) · {item.file.name}</label><textarea id={`upload-alt-${item.key}`} rows={2} maxLength={1000} value={item.alt} disabled={pending || item.status === "saved"} aria-invalid={Boolean(item.error)} aria-describedby={item.error ? `upload-error-${item.key}` : undefined} onChange={event => patchItem(item.key, { alt: event.target.value, error: "" })} /></div>{item.error && <p id={`upload-error-${item.key}`} className="field-error">{item.error}</p>}{item.note && <p className="field-help">{item.note}</p>}<p className="project-upload-status" role="status">{item.status === "saved" ? "เพิ่มในโครงการแล้ว" : item.status === "uploading" ? "กำลังอัปโหลดและตรวจสอบไฟล์…" : item.status === "binding" ? "กำลังบันทึกในโครงการ…" : item.asset ? "อัปโหลดแล้ว รอเพิ่มในโครงการ" : "รออัปโหลด"}</p>{item.status !== "saved" && <button type="button" className="button secondary" disabled={pending || needsReload} onClick={() => setItems(previous => previous.filter(row => row.key !== item.key))}>นำออกจากรายการ</button>}</div>
     </article>)}</div>
     {needsReload && <button type="button" className="button secondary" disabled={pending} onClick={() => void reload()}>โหลดข้อมูลล่าสุดเพื่อทำต่อ</button>}
     <p className="field-help">ไฟล์ใหม่จะรอตรวจสิทธิ์ก่อนเผยแพร่ ถ้าพบไฟล์ซ้ำจะใช้รายการและสถานะสิทธิ์เดิม ไฟล์ที่บันทึกสำเร็จแล้วจะยังอยู่แม้ปิดหน้าต่างนี้</p>
   </AssetDialog>;
 }
 
-function UploadDialog({ subject = "โครงการ", purpose, onCancel, onUploaded }: { subject?: string; purpose?: AssetRole; onCancel: () => void; onUploaded: (asset: Asset, reused: boolean) => Promise<void> }) {
+function UploadDialog({ subject, owner, onCancel, onUploaded }: { subject: string; owner: { kind: "model"; project_ref: string; ref: string } | { kind: "brand"; ref: string }; onCancel: () => void; onUploaded: (asset: Asset, reused: boolean, upload: UploadEvidence | null) => Promise<void> }) {
+  const [purpose, setPurpose] = useState<AssetRole>(owner.kind === "brand" ? "logo_primary" : "model_image");
+  const [category, setCategory] = useState("");
+  const context: UploadContext = owner.kind === "brand" ? { v: 1, ...owner, purpose } : { v: 1, ...owner, category: category || null, purpose };
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -571,15 +603,17 @@ function UploadDialog({ subject = "โครงการ", purpose, onCancel, on
     if (!file) { setError("เลือกไฟล์ภาพหรือ PDF ก่อนอัปโหลด"); return; }
     if (!acceptedTypes.includes(file.type)) { setError("รองรับเฉพาะไฟล์ PNG, JPEG, WebP และ PDF"); return; }
     if (purpose && !supportsPurpose({ mime_type: file.type }, purpose)) { setError(purpose === "brochure" ? "โบรชัวร์รองรับไฟล์ PDF" : "ภาพหลักและภาพย่อรองรับไฟล์ PNG, JPEG หรือ WebP"); return; }
-    if (!file.size || file.size > maxFileSize) { setError("ไฟล์ต้องมีข้อมูลและมีขนาดไม่เกิน 10 MiB"); return; }
+    const issue = uploadFileError(file, context); if (issue) { setError(issue); return; }
     setPending(true);
     try {
-      const result = await uploadAsset(file);
-      await onUploaded(result.asset, result.reused);
+      const result = await uploadAsset(file, context);
+      await onUploaded(result.asset, result.reused, result.upload);
     } catch (error) { setError(error instanceof Error ? error.message : "อัปโหลดไฟล์ไม่สำเร็จ"); setPending(false); }
   }
   return <AssetDialog title="อัปโหลดไฟล์เข้าคลังสื่อ" dirty={Boolean(file)} pending={pending} error={error} onCancel={onCancel} onSubmit={upload} submitLabel="อัปโหลดเข้าคลัง" submitDisabled={!file}>
-    {purpose && <p className="project-media-dialog-context"><strong>ขั้นตอน 2 · {roleLabels[purpose]}</strong><span>เมื่ออัปโหลดแล้ว จะไปใส่คำอธิบายและบันทึกกับโครงการต่อ</span></p>}<p className="muted small-text">ใช้เฉพาะไฟล์สำหรับทดสอบในสภาพแวดล้อมนี้ ไฟล์ใหม่จะรอตรวจสิทธิ์และยังไม่ผูกกับ{subject}</p><div className="upload-dropzone"><AssetIcon /><div className="form-field"><label htmlFor="upload-file">เลือกไฟล์ภาพหรือ PDF</label><input id="upload-file" type="file" accept={purpose === "brochure" ? "application/pdf" : purpose && ["hero", "thumbnail"].includes(purpose) ? "image/png,image/jpeg,image/webp" : "image/png,image/jpeg,image/webp,application/pdf"} disabled={pending} onChange={event => { setFile(event.target.files?.[0] ?? null); setError(""); }} /><p className="field-help">{purpose === "brochure" ? "PDF" : purpose && ["hero", "thumbnail"].includes(purpose) ? "PNG, JPEG หรือ WebP" : "PNG, JPEG, WebP หรือ PDF"} · ไม่เกิน 10 MiB ต่อไฟล์<br />ภาพไม่เกิน 40 ล้านพิกเซล ไม่มีภาพเคลื่อนไหว · PDF ไม่เกิน 200 หน้า</p></div></div>{file && <p className="upload-selection">{file.name} · {sizeLabel(file.size)}</p>}{pending && <p className="upload-progress" role="status"><span className="spinner" />กำลังอัปโหลดและตรวจสอบไฟล์…</p>}<p className="field-help">ถ้าพบไฟล์ซ้ำ ระบบจะใช้รายการและสถานะสิทธิ์เดิม ไม่อนุมัติสิทธิ์ให้อัตโนมัติ</p>
+    <label className="form-field">{uploadText.purpose}<select value={purpose} disabled={pending} onChange={event => setPurpose(event.target.value as AssetRole)}>{(owner.kind === "brand" ? [...brandLogoRoles] : ["model_image", "floor_plan", "structural_plan"] as const).map(role => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>
+    {owner.kind === "model" && purpose !== "structural_plan" && <UploadCategory value={category} onChange={setCategory} disabled={pending} />}
+    <p className="muted small-text">ใช้เฉพาะไฟล์สำหรับทดสอบในสภาพแวดล้อมนี้ ไฟล์ใหม่จะรอตรวจสิทธิ์และยังไม่ผูกกับ{subject}</p><div className="upload-dropzone"><AssetIcon /><div className="form-field"><label htmlFor="upload-file">เลือกไฟล์ภาพหรือ PDF</label><input id="upload-file" type="file" accept={purpose === "brochure" ? "application/pdf" : purpose && ["hero", "thumbnail"].includes(purpose) ? "image/png,image/jpeg,image/webp" : "image/png,image/jpeg,image/webp,application/pdf"} disabled={pending} onChange={event => { setFile(event.target.files?.[0] ?? null); setError(""); }} /><p className="field-help">{purpose === "brochure" ? "PDF" : purpose && ["hero", "thumbnail"].includes(purpose) ? "PNG, JPEG หรือ WebP" : "PNG, JPEG, WebP หรือ PDF"} · {uploadText.limits}<br />ภาพไม่เกิน 40 ล้านพิกเซล ไม่มีภาพเคลื่อนไหว · PDF ไม่เกิน 200 หน้า</p></div></div>{file && <p className="upload-selection">{file.name} · {sizeLabel(file.size)}</p>}{pending && <p className="upload-progress" role="status"><span className="spinner" />กำลังอัปโหลดและตรวจสอบไฟล์…</p>}<p className="field-help">ถ้าพบไฟล์ซ้ำ ระบบจะใช้รายการและสถานะสิทธิ์เดิม ไม่อนุมัติสิทธิ์ให้อัตโนมัติ</p>
   </AssetDialog>;
 }
 
@@ -614,7 +648,7 @@ function bangkokInput(value: string | null) {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
-export function RightsDialog({ asset, onCancel, onSaved, onReload }: { asset: Asset; onCancel: () => void; onSaved: (asset: Asset) => Promise<void>; onReload: () => Promise<void> }) {
+export function RightsDialog({ asset, uploadContext, onCancel, onSaved, onReload }: { asset: Asset; uploadContext?: UploadContext; onCancel: () => void; onSaved: (asset: Asset) => Promise<void>; onReload: () => Promise<void> }) {
   const [decision, setDecision] = useState<"approved" | "revoked">(asset.rights_status === "revoked" ? "revoked" : "approved");
   const [notes, setNotes] = useState(asset.rights_notes ?? "");
   const [reason, setReason] = useState("");
@@ -638,7 +672,7 @@ export function RightsDialog({ asset, onCancel, onSaved, onReload }: { asset: As
     } catch (error) { setError(error instanceof Error ? error.message : "บันทึกสิทธิ์ไม่สำเร็จ"); setConflict((error as { status?: number }).status === 409); setPending(false); }
   }
   return <AssetDialog title="ตรวจสอบสิทธิ์ไฟล์" dirty={dirty} pending={pending} error={error} conflict={conflict} onCancel={onCancel} onSubmit={review} onReload={onReload} submitLabel={decision === "revoked" ? "ยืนยันถอนสิทธิ์" : "ยืนยันอนุมัติสิทธิ์"} danger={decision === "revoked"}>
-    <p className="asset-dialog-filename">{asset.original_filename}</p><RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><fieldset className="review-options" disabled={pending}><legend>ผลการตรวจสิทธิ์</legend><label><input type="radio" name="rights-decision" checked={decision === "approved"} onChange={() => setDecision("approved")} />อนุมัติสิทธิ์ใช้งาน</label><label><input type="radio" name="rights-decision" checked={decision === "revoked"} onChange={() => setDecision("revoked")} />ถอนสิทธิ์ใช้งาน</label></fieldset>{decision === "revoked" && <p className="inline-warning" role="status">การถอนสิทธิ์มีผลกับทุกแบรนด์และโครงการที่ใช้ไฟล์นี้ ข้อมูลที่เผยแพร่อยู่อาจหยุดแสดงผ่าน API ทันที หากต้องการแก้เฉพาะรายการเดียวให้นำไฟล์ออกจากข้อมูลร่างของรายการนั้น</p>}<div className="form-field"><label htmlFor="rights-notes">หลักฐานและเงื่อนไขสิทธิ์</label><textarea id="rights-notes" value={notes} disabled={pending} onChange={event => setNotes(event.target.value)} rows={3} maxLength={4000} /><p className="field-help">ระบุเจ้าของสิทธิ์ การอนุญาต หรือเหตุผลที่ไม่มีสิทธิ์ใช้ไฟล์นี้</p></div><div className="field-grid"><div className="form-field"><label htmlFor="rights-from">เริ่มใช้สิทธิ์ (เวลาไทย)</label><input id="rights-from" type="datetime-local" value={from} disabled={pending} onChange={event => setFrom(event.target.value)} /></div><div className="form-field"><label htmlFor="rights-to">สิ้นสุดสิทธิ์ (เวลาไทย)</label><input id="rights-to" type="datetime-local" value={to} disabled={pending} onChange={event => setTo(event.target.value)} /></div></div><p className="field-help">วันที่ใช้ปี ค.ศ. และเวลา Asia/Bangkok · เว้นว่างได้เมื่อไม่มีข้อมูลช่วงสิทธิ์ การไม่ระบุวันสิ้นสุดไม่รับรองสิทธิ์ตลอดไป</p><div className="form-field"><label htmlFor="rights-reason">เหตุผลในการตรวจสิทธิ์</label><textarea id="rights-reason" value={reason} disabled={pending} onChange={event => setReason(event.target.value)} rows={2} maxLength={1000} /></div>
+    <p className="asset-dialog-filename">{asset.original_filename}</p>{uploadContext && <UploadEvidencePanel assetId={asset.id} context={uploadContext} />}<RightsBadge status={asset.rights_status} from={asset.effective_from} to={asset.effective_to} /><fieldset className="review-options" disabled={pending}><legend>ผลการตรวจสิทธิ์</legend><label><input type="radio" name="rights-decision" checked={decision === "approved"} onChange={() => setDecision("approved")} />อนุมัติสิทธิ์ใช้งาน</label><label><input type="radio" name="rights-decision" checked={decision === "revoked"} onChange={() => setDecision("revoked")} />ถอนสิทธิ์ใช้งาน</label></fieldset>{decision === "revoked" && <p className="inline-warning" role="status">การถอนสิทธิ์มีผลกับทุกแบรนด์และโครงการที่ใช้ไฟล์นี้ ข้อมูลที่เผยแพร่อยู่อาจหยุดแสดงผ่าน API ทันที หากต้องการแก้เฉพาะรายการเดียวให้นำไฟล์ออกจากข้อมูลร่างของรายการนั้น</p>}<div className="form-field"><label htmlFor="rights-notes">หลักฐานและเงื่อนไขสิทธิ์</label><textarea id="rights-notes" value={notes} disabled={pending} onChange={event => setNotes(event.target.value)} rows={3} maxLength={4000} /><p className="field-help">ระบุเจ้าของสิทธิ์ การอนุญาต หรือเหตุผลที่ไม่มีสิทธิ์ใช้ไฟล์นี้</p></div><div className="field-grid"><div className="form-field"><label htmlFor="rights-from">เริ่มใช้สิทธิ์ (เวลาไทย)</label><input id="rights-from" type="datetime-local" value={from} disabled={pending} onChange={event => setFrom(event.target.value)} /></div><div className="form-field"><label htmlFor="rights-to">สิ้นสุดสิทธิ์ (เวลาไทย)</label><input id="rights-to" type="datetime-local" value={to} disabled={pending} onChange={event => setTo(event.target.value)} /></div></div><p className="field-help">วันที่ใช้ปี ค.ศ. และเวลา Asia/Bangkok · เว้นว่างได้เมื่อไม่มีข้อมูลช่วงสิทธิ์ การไม่ระบุวันสิ้นสุดไม่รับรองสิทธิ์ตลอดไป</p><div className="form-field"><label htmlFor="rights-reason">เหตุผลในการตรวจสิทธิ์</label><textarea id="rights-reason" value={reason} disabled={pending} onChange={event => setReason(event.target.value)} rows={2} maxLength={1000} /></div>
   </AssetDialog>;
 }
 
@@ -653,4 +687,8 @@ function RemoveDialog<T extends AssetOwner>({ binding, project, model, onCancel,
   }
   const subject = model ? "แบบที่อยู่อาศัย" : project.public_brand_id ? "แบรนด์" : "โครงการ";
   return <AssetDialog title={`นำไฟล์ออกจาก${subject}`} dirty={false} pending={pending} error={error} conflict={conflict} onCancel={onCancel} onSubmit={remove} onReload={onReload} submitLabel={`ยืนยันนำออกจาก${subject}`} danger><p className="asset-dialog-filename">{binding.original_filename}</p><p>นำ{roleLabels[binding.asset_role]}ออกจากข้อมูลร่างของ{subject}นี้เท่านั้น ไฟล์ยังอยู่ในคลังสื่อและยังใช้กับรายการอื่นได้</p><p className="inline-warning">การเปลี่ยนข้อมูลร่างไม่เปลี่ยนเวอร์ชันที่เผยแพร่อยู่ ต้องเลือกไฟล์ที่จำเป็นให้ครบก่อนเผยแพร่ครั้งใหม่</p></AssetDialog>;
+}
+
+export function UploadCategory({ value, onChange, disabled = false }: { value: string; onChange: (value: string) => void; disabled?: boolean }) {
+  return <label className="form-field">{uploadText.category}<select value={value} disabled={disabled} onChange={event => onChange(event.target.value)}><option value="">{uploadText.category_unknown}</option>{Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>;
 }

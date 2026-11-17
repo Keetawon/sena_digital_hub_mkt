@@ -86,8 +86,8 @@ def boundary(monkeypatch, tmp_path):
     bounded = delivery._bounded_bytes
     install = assets.install_thumbnail
 
-    def read(path):
-        value = bounded(path)
+    def read(path, *, max_bytes=None):
+        value = bounded(path, max_bytes=max_bytes)
         change("thumbnail" if path.parent.name == "thumbnails-v1" else "local")
         return value
 
@@ -188,16 +188,33 @@ def test_scope_change_does_not_hide_an_independently_permitted_neighbour(boundar
 
 
 @pytest.mark.parametrize("stage", ["local", "storage"])
-def test_pdf_attachment_and_ascii_local_filename_contract(boundary, stage):
-    content = b"%PDF-synthetic-private-fixture"
+@pytest.mark.parametrize("size,fault,status", [
+    (64, None, 200), (15 * 1024 * 1024, None, 200), (20 * 1024 * 1024, None, 200),
+    (20 * 1024 * 1024 + 1, None, 503), (15 * 1024 * 1024, "checksum", 503),
+    (15 * 1024 * 1024, "scope", 404),
+])
+def test_pdf_attachment_and_ascii_local_filename_contract(boundary, stage, size, fault, status):
+    content = b"%PDF-synthetic-private-fixture".ljust(size, b"x")
     metadata = {**boundary.metadata[ASSET], "mime_type": "application/pdf", "original_filename": "document.pdf",
         "checksum": hashlib.sha256(content).hexdigest(), "file_size": len(content)}
     metadata["storage_path"] = metadata["checksum"] + ".pdf"
     boundary.metadata[ASSET] = metadata
     boundary.content = content
-    assets.storage_path(metadata["storage_path"]).write_bytes(content)
+    if fault == "checksum":
+        boundary.content = b"z" * size
+    elif fault == "scope":
+        boundary.stage = stage
+        boundary.change = lambda: boundary.hidden.add(ASSET)
+    assets.storage_path(metadata["storage_path"]).write_bytes(boundary.content)
     response = request_file(boundary, stage)
-    assert response.status_code == 200 and response.content == content
+    assert response.status_code == status
+    assert response.headers["cache-control"] == "no-store"
+    if status != 200:
+        assert content not in response.content and boundary.content not in response.content
+        assert len(boundary.calls) == (2 if fault == "scope" else 1)
+        return
+    assert response.content == content
+    assert boundary.calls == [(delivery.ASSET_FILE_SQL, ASSET)] * 2
     assert response.headers["content-type"] == "application/pdf"
     assert response.headers["content-disposition"] == (
         'attachment; filename="document.pdf"' if stage == "local" else "attachment; filename*=utf-8''document.pdf")
@@ -236,6 +253,10 @@ def test_local_and_thumbnail_read_buffers_are_bounded(monkeypatch):
     with pytest.raises(HTTPException) as error:
         delivery._bounded_bytes(File())
     assert error.value.status_code == 503 and reads == [9]
+    reads.clear()
+    with pytest.raises(HTTPException) as error:
+        delivery._bounded_bytes(File(), max_bytes=4)
+    assert error.value.status_code == 503 and reads == [5]
     for data, metadata in [(b"12345678", {"checksum": "0" * 64, "file_size": 8}),
             (b"12345678", {"checksum": hashlib.sha256(b"12345678").hexdigest(), "file_size": True}),
             (b"123456789", {"checksum": hashlib.sha256(b"123456789").hexdigest(), "file_size": 9})]:

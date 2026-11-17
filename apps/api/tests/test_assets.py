@@ -15,6 +15,7 @@ from sena_hub_api import assets, main
 from sena_hub_api.auth import Actor
 from sena_hub_api.main import create_app
 from test_api import settings, TOKENS
+from upload_route_fixtures import upload_resolution, INTAKE_CONTEXT_HEADER
 
 
 ASSET_ID = "10000000-0000-0000-0000-000000000001"
@@ -167,7 +168,7 @@ def test_stream_is_bounded_without_trusting_content_length(monkeypatch):
         if length:
             headers.append((b"content-length", length.encode()))
         request = Request({"type": "http", "headers": headers}, receive)
-        return await assets.read_upload(request)
+        return await assets.read_upload(request, max_bytes=assets.MAX_BYTES)
 
     for declared in (None, "1", "6"):
         with pytest.raises(HTTPException) as error:
@@ -224,8 +225,12 @@ def test_failed_commit_rechecks_registry_before_removing_new_file(monkeypatch, t
             pass
 
         async def fetchval(self, sql, *args):
-            if "register_uploaded_asset" in sql:
-                return {"asset": {}, "reused": False}
+            if 'asset_upload_context' in sql:
+                return upload_resolution(args[0], 'private_exact')
+            if 'find_uploaded_asset_source' in sql:
+                return None
+            if 'record_asset_upload_source' in sql:
+                return {'asset': {}, 'reused': False, 'reuse_kind': 'none', 'upload': {}}
             assert sql == "SELECT hub.asset_registered_for_cleanup($1)"
             return registered
 
@@ -233,7 +238,7 @@ def test_failed_commit_rechecks_registry_before_removing_new_file(monkeypatch, t
     async def failed_commit(request, actor):
         nonlocal calls
         calls += 1
-        first = calls == 1
+        first = calls == 3
         yield Connection()
         if first:
             raise RuntimeError("simulate ambiguous commit")
@@ -242,10 +247,10 @@ def test_failed_commit_rechecks_registry_before_removing_new_file(monkeypatch, t
     client = TestClient(create_app(settings()), client=("127.0.0.1", 50000), raise_server_exceptions=False)
     content = image_bytes()
     response = client.post("/v1/admin/assets", content=content, headers={
-        "Authorization": f"Bearer {TOKENS['editor']}", "Content-Type": "image/png", "X-Filename": "test.png",
+        "Authorization": f"Bearer {TOKENS['editor']}", "Content-Type": "image/png", "X-Filename": "test.png", "X-Upload-Context": INTAKE_CONTEXT_HEADER,
     })
     assert response.status_code == 500
-    assert calls == 2
+    assert calls == 4
     metadata = assets.validate_file(content, "image/png", "test.png")
     assert (tmp_path / metadata["storage_path"]).exists() is registered
 

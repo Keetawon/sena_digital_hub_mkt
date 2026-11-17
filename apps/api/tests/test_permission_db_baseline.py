@@ -187,6 +187,10 @@ WRITING_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/per
 WRITING_TABLES = {row['name'] for row in WRITING_INVENTORY['new_tables']['entries']}
 WRITING_FUNCTIONS = {row['name'] for row in WRITING_INVENTORY['new_functions']['entries']}
 
+UPLOAD_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/permissions/upload-optimization-db.json').read_text(encoding='utf-8-sig'))
+UPLOAD_TABLES = set(UPLOAD_INVENTORY['tables'])
+UPLOAD_FUNCTIONS = {row['name'] for row in UPLOAD_INVENTORY['functions']}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -310,6 +314,8 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     additions |= BUSINESS_TABLES if name == 'relations' else BUSINESS_FUNCTIONS
                     additions |= SCOPE_TABLES if name == 'relations' else SCOPE_FUNCTIONS
                     additions |= WRITING_TABLES if name == 'relations' else WRITING_FUNCTIONS
+
+                    additions |= UPLOAD_TABLES if name == 'relations' else UPLOAD_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
@@ -331,6 +337,11 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     assert all(r['name'] == 'scope_owner' and r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
                         and r['qual'] == r['with_check'] == 'true' for r in owners)
                     actual = [r for r in actual if r not in restrictive + owners]
+                    uploads = [r for r in actual if r['schema'] + '.' + r['table'] in UPLOAD_TABLES]
+                    assert len(uploads) == 2
+                    assert all(r['name'] == 'upload_owner' and r['roles'] == ['postgres']
+                        and r['cmd'] == 'ALL' and r['qual'] == r['with_check'] == 'true' for r in uploads)
+                    actual = [r for r in actual if r not in uploads]
                     business = [r for r in actual if r['schema'] + '.' + r['table'] in BUSINESS_TABLES]
                     assert len(business) == 2
                     assert all(r['name'] == 'business_owner' and r['roles'] == ['postgres']
@@ -556,7 +567,7 @@ async def assert_reviewed_database_boundary(db):
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
-    classified |= BUSINESS_TABLES | SCOPE_TABLES | WRITING_TABLES
+    classified |= BUSINESS_TABLES | SCOPE_TABLES | WRITING_TABLES | UPLOAD_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -578,6 +589,8 @@ async def assert_reviewed_database_boundary(db):
     assert all(not tables[name]['grants'] for name in BUSINESS_TABLES), 'Business catalog uses guarded commands only'
     assert all(not tables[name]['grants'] for name in SCOPE_TABLES), 'Content scopes and membership are owner-only storage'
     assert all(not tables[name]['grants'] for name in WRITING_TABLES), 'Writing state is accessible only through exact guarded commands'
+
+    assert all(not tables[name]['grants'] for name in UPLOAD_TABLES), 'Upload provenance and file evidence are owner-only storage'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the

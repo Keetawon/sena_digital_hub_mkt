@@ -1,3 +1,4 @@
+import { uploadText } from "../../apps/admin/lib/upload-text";
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { workspaceText } from '../../apps/admin/lib/unified-workspace';
@@ -240,7 +241,14 @@ test.describe('H1 disposable managed-permission simulation', () => {
       const name = `h1-white-${randomUUID()}.svg`;
       const uploaded = page.waitForResponse(response => response.url() === `${process.env.HUB_API_URL}/v1/admin/assets` && response.request().method() === 'POST');
       await slot.getByLabel('เลือกไฟล์ · โลโก้สีขาว', { exact: true }).setInputFiles({ name, mimeType: 'image/svg+xml', buffer: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="240"><script>alert(1)</script><rect width="600" height="240" fill="white"/><title>${name}</title></svg>`) });
-      expect((await uploaded).status()).toBe(201);
+      const uploadedResponse = await uploaded;
+      expect(uploadedResponse.status()).toBe(201);
+      expect(JSON.parse(uploadedResponse.request().headers()['x-upload-context'])).toEqual({ v: 1, kind: 'brand', ref: brands[0].public_brand_id, purpose: 'logo_white' });
+      const uploadResult = (await uploadedResponse.json()).meta.upload;
+      expect(uploadResult.original.size).toBeGreaterThan(0);
+      expect(uploadResult.stored.size).toBeGreaterThan(0);
+      expect(uploadResult.suggestions).toMatchObject({ source: 'file_metadata', confirmed: false });
+      await expect(page.locator('.upload-result').first()).toContainText(uploadText.original);
       await expect(slot.locator('.asset-caption > .small-text.muted')).toHaveText(name);
       await expect(slot.locator('img')).toHaveAttribute('src', /^blob:/);
       await slot.locator('img').scrollIntoViewIfNeeded();

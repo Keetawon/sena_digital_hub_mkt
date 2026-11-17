@@ -144,6 +144,8 @@ async def seed(db) -> dict:
         await db.fetchval("SELECT hub.mark_demo_fields('model',$1,$2)", model['id'],
             ['source','public_name.th','bedrooms','bathrooms','usable_area_sqm','parking_spaces','match_status'])
 
+    # Fixed synthetic replay fixture, not a future operator-upload entry. Its caller
+    # owns the whole owner-creation transaction; preserve the established fixture hashes.
     selections = []
     for kind in ("hero", "thumbnail", "logo"):
         content = synthetic_png(kind)

@@ -1,3 +1,5 @@
+import { projectUpload, uploadHeaders } from "./upload-fixtures";
+import { uploadText } from "../../apps/admin/lib/upload-text";
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { approveLegacySource, confirmPublication, persona, preparePublication, publishingGrant, workflowText } from './content-workflow-fixtures';
 import { expect, test, type Page } from '@playwright/test';
@@ -125,6 +127,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     await expect(uploadButton).toBeFocused();
     await uploadButton.click();
     let dialog = page.getByRole('dialog');
+    await dialog.getByRole('combobox', { name: uploadText.category, exact: true }).selectOption("exterior");
     await dialog.getByLabel('เลือกไฟล์ภาพหรือ PDF', { exact: true }).setInputFiles({ name: filename, mimeType: 'image/png', buffer: bytes });
     // Project uploads collect captions first and append to the chosen slot.
     await dialog.getByLabel(`คำอธิบายภาพ (ภาษาไทย) · ${filename}`, { exact: true }).fill('ภาพจำลองเพื่อทดสอบการเผยแพร่');
@@ -132,15 +135,25 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     await expect(dialog).toContainText('เพิ่มแล้ว 1 จาก 1 ไฟล์');
     let asset: Asset = (await (await page.request.get('/api/hub/v1/admin/assets')).json()).data.find((item: Asset) => item.original_filename === filename);
     expect(asset).toBeTruthy(); data.created.push(asset.id);
-    expect(asset.checksum).toBe(createHash('sha256').update(bytes).digest('hex'));
+    expect(asset.checksum).toMatch(/^[a-f0-9]{64}$/);
     expect(asset.rights_status).toBe('pending');
     expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     const preview = await page.request.get(`/api/hub/v1/admin/assets/${asset.id}/file`);
-    expect(preview.ok()).toBeTruthy(); expect(await preview.body()).toEqual(bytes);
+    expect(preview.ok()).toBeTruthy();
+    const storedBytes = await preview.body();
+    expect(asset.checksum).toBe(createHash('sha256').update(storedBytes).digest('hex'));
+    const detail = await page.request.get('/api/hub/v1/admin/assets/' + asset.id);
+    expect((await detail.json()).meta?.upload).toBeUndefined();
+    const evidence = await page.request.get('/api/hub/v1/admin/assets/' + asset.id, { headers: projectUpload(data.project.public_project_id, 'exterior', 'hero') });
+    const uploadEvidence = (await evidence.json()).meta.upload;
+    expect(uploadEvidence.original.size).toBe(bytes.length);
+    expect(uploadEvidence.stored.size).toBe(storedBytes.length);
+    expect(uploadEvidence.suggestions).toMatchObject({ source: 'file_metadata', confirmed: false });
+    expect(JSON.stringify(uploadEvidence)).not.toMatch(/checksum|storage_path|latitude|longitude/);
     await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();
     await expect(dialog).toHaveCount(0);
 
-    const duplicate = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': 'image/png', 'X-Filename': encodeURIComponent(`อีกชื่อ-${filename}`) }, data: bytes });
+    const duplicate = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...projectUpload(data.project.public_project_id, 'exterior', 'hero'), 'Content-Type': 'image/png', 'X-Filename': encodeURIComponent(`อีกชื่อ-${filename}`) }, data: bytes });
     expect(duplicate.status()).toBe(200);
     expect((await duplicate.json()).data.id).toBe(asset.id);
     expect((await duplicate.json()).meta.reused).toBe(true);
@@ -183,7 +196,7 @@ test('upload, duplicate reuse, rights approval and published file lifecycle', as
     const review = await preparePublication(page, [{ system: 'release', entity_type: 'project', entity_id: project.id }], 'ทดสอบเผยแพร่รูปที่ผ่านการตรวจสิทธิ์');
     await confirmPublication(page, review);
     const published = await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`);
-    expect(published.status()).toBe(200); expect(await published.body()).toEqual(bytes);
+    expect(published.status()).toBe(200); expect(await published.body()).toEqual(storedBytes);
     expect(published.headers()['cache-control']).toBe('no-store');
     expect(published.headers()['x-content-type-options']).toBe('nosniff');
 
@@ -208,7 +221,7 @@ test('PDF download, invalid file types, viewer permissions and binding conflicts
   const filename = `เอกสารทดสอบ-${randomUUID()}.pdf`;
   try {
     await page.goto(`/?project=${data.project.public_project_id}`); await role(page, 'editor');
-    const upload = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': 'application/pdf', 'X-Filename': encodeURIComponent(filename) }, data: pdf() });
+    const upload = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...projectUpload(data.project.public_project_id, 'brochure', 'brochure'), 'Content-Type': 'application/pdf', 'X-Filename': encodeURIComponent(filename) }, data: pdf() });
     expect(upload.status()).toBe(201);
     const asset: Asset = (await upload.json()).data; data.created.push(asset.id);
     await role(page, 'viewer');
@@ -234,15 +247,15 @@ test('PDF download, invalid file types, viewer permissions and binding conflicts
     expect((await page.request.post(`${base}/assets`, { headers, data: valid })).status()).toBe(409);
     expect((await page.request.get(`/api/hub/v1/assets/ast_${asset.checksum}/file`)).status()).toBe(404);
     for (const [type, name, body] of [['image/svg+xml', 'fake.svg', '<svg/>'], ['image/png', 'fake.png', '<html>not an image</html>']]) {
-      const invalid = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': type, 'X-Filename': name }, data: body });
+      const invalid = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...projectUpload(data.project.public_project_id), 'Content-Type': type, 'X-Filename': name }, data: body });
       expect([415, 422]).toContain(invalid.status());
     }
-    expect((await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': 'image/png', 'X-Filename': 'huge.png' }, data: Buffer.alloc(10 * 1024 * 1024 + 1) })).status()).toBe(413);
+    expect((await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...uploadHeaders({ v: 1, kind: 'intake' }), 'Content-Type': 'image/png', 'X-Filename': 'huge.png' }, data: Buffer.alloc(10 * 1024 * 1024 + 1) })).status()).toBe(413);
     await role(page, 'viewer');
     await expect(page.getByRole('button', { name: 'อัปโหลดไฟล์', exact: true })).toHaveCount(0);
     await library(page);
     await expect(entry(page, filename).getByRole('button', { name: 'เลือกใช้กับโครงการ', exact: true })).toHaveCount(0);
-    const denied = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, 'Content-Type': 'image/png', 'X-Filename': 'viewer.png' }, data: png() });
+    const denied = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...projectUpload(data.project.public_project_id), 'Content-Type': 'image/png', 'X-Filename': 'viewer.png' }, data: png() });
     expect(denied.status()).toBe(403);
     expect((await page.request.post(`/api/hub/v1/admin/assets/${asset.id}/review`, { headers, data: { updated_at: asset.updated_at, decision: 'approved', rights_notes: 'test', change_reason: 'test' } })).status()).toBe(403);
   } finally { await data.cleanup(); }

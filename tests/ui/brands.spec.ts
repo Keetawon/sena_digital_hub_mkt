@@ -55,6 +55,8 @@ async function createBrand(page: Page, data: Awaited<ReturnType<typeof fixture>>
   await page.getByLabel('ค้นหาแบรนด์ต้นทาง', { exact: true }).fill(data.sourceId);
   const source = page.locator('#brand-source-picker li').filter({ has: page.getByRole('heading', { name: data.name, exact: true }) });
   await source.getByRole('button', { name: 'นำแบรนด์นี้เข้าระบบ', exact: true }).click();
+  await expect(page).toHaveURL(url => /^\/website\/brand\/[^/]+$/.test(url.pathname) && url.searchParams.get('tab') === 'data' && url.searchParams.get('section') === 'identity');
+  await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByLabel('ชื่อแบรนด์ที่ใช้เผยแพร่')).toHaveValue('');
   return detail(page, entityRef(page, 'brand')!);
 }

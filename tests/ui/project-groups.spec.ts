@@ -1,3 +1,4 @@
+import { uploadText } from '../../apps/admin/lib/upload-text';
 import { workflowText } from './content-workflow-fixtures';
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
@@ -134,6 +135,9 @@ test('publisher approves an attached project file while content is incomplete, w
   await page.getByRole('button', { name: 'อนุมัติใช้ไฟล์', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'อนุมัติใช้ไฟล์', exact: true });
   await expect(dialog.getByLabel('หมายเหตุเพิ่มเติม (ไม่บังคับ)')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: uploadText.evidence_load, exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์', exact: true })).toBeEnabled();
   await dialog.getByRole('button', { name: 'ยืนยันอนุมัติ 1 ไฟล์' }).click();
   await expect(dialog.getByText('อนุมัติใช้ไฟล์แล้ว', { exact: true })).toBeVisible();
   expect(writes).toHaveLength(1);

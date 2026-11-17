@@ -49,6 +49,7 @@ async function openFixture(page: Page, initial: CommercialType[] = [], role = 'e
         can_return: false, can_withdraw: false, can_save_approve: false, approval_requires_reason: false, history: [] } } });
     }
     if (path === 'assets' && request.method() === 'POST') {
+      expect(JSON.parse(request.headers()['x-upload-context'])).toMatchObject({ v: 1, kind: 'commercial_type', project_ref: project.public_project_id });
       const uploaded = asset(`asset-${library.length}`, decodeURIComponent(request.headers()['x-filename']));
       library.push(uploaded); await route.fulfill({ json: { data: uploaded } }); return;
     }

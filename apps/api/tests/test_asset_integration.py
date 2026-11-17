@@ -1,137 +1,193 @@
-"""Generated local fixtures only; no demo project edits or publication changes."""
+"""Real committed asset lifecycle on the guarded disposable DB and file store."""
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
 import json
-import os
-from pathlib import Path
-from urllib.parse import quote, urlparse
-from uuid import UUID, uuid4
+from urllib.parse import quote
+from uuid import uuid4
 
-import asyncpg
-from fastapi.testclient import TestClient
 from PIL import Image, PngImagePlugin
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import DecodedStreamObject, NameObject
 import pytest
 
 from sena_hub_api import assets
-from sena_hub_api.auth import ROLES, Settings
-from sena_hub_api.main import create_app
+from test_permission_baseline import disposable_operator
+from test_permission_content import call
+from test_permission_foundations import permission_accounts, h
+from test_website_content import project_fixture
 
 
 @pytest.mark.integration
-def test_local_upload_dedup_rights_private_files_and_cleanup():
-    database_url = os.getenv("HUB_TEST_DATABASE_URL", "")
-    parsed = urlparse(database_url)
-    config_path = Path(__file__).resolve().parents[3] / ".local" / "development.json"
-    if (parsed.scheme != "postgresql" or parsed.hostname != "127.0.0.1" or parsed.port != 55432
-            or parsed.path != "/sena_hub_local" or parsed.username != "hub_runtime" or not config_path.is_file()):
-        pytest.skip("Requires this workspace's generated local PostgreSQL and owner cleanup config")
-    local = json.loads(config_path.read_text(encoding="utf-8"))
-    if parsed.password != local.get("runtimePassword"):
-        pytest.skip("Runtime DSN does not match this workspace's local fixture database")
+def test_disposable_upload_dedup_rights_and_private_file_lifecycle(permission_accounts, monkeypatch, tmp_path):
+    client, ids = permission_accounts
+    monkeypatch.setattr(assets, "STORAGE_ROOT", tmp_path / "assets")
 
-    tokens = {role: f"asset-integration-{role}-" + "x" * 40 for role in ROLES}
-    config = Settings(database_url, "demo", "local", tokens)
-    headers = {role: {"Authorization": f"Bearer {token}"} for role, token in tokens.items()}
-    marker = str(uuid4())
+    async def make_project():
+        operator = await disposable_operator()
+        try:
+            return await project_fixture(operator, ids["editor"])
+        finally:
+            await operator.close()
+
+    project = asyncio.run(make_project())
+    other_project = asyncio.run(make_project())
+    project_path = f"/v1/admin/projects/{project['public_project_id']}"
+    marker = uuid4()
+    # Uniqueness must survive metadata stripping. These are synthetic pixels and
+    # visible page marks, not a UUID hidden only in removable PNG/PDF metadata.
+    pixels = (marker.bytes * 3)[:36]
     png = io.BytesIO()
-    metadata = PngImagePlugin.PngInfo()
-    metadata.add_text("local-test-fixture", marker)
-    Image.new("RGB", (4, 3), "green").save(png, format="PNG", pnginfo=metadata)
+    info = PngImagePlugin.PngInfo()
+    info.add_text("local-test-fixture", str(marker))
+    Image.frombytes("RGB", (4, 3), pixels).save(png, format="PNG", pnginfo=info)
     pdf = io.BytesIO()
     writer = PdfWriter()
-    writer.add_blank_page(width=100, height=100)
-    writer.add_metadata({"/Title": f"local-test-{marker}"})
+    page = writer.add_blank_page(width=100, height=100)
+    marks = DecodedStreamObject()
+    marks.set_data("\n".join(
+        f"{value / 255:.6f} g {(index % 4) * 20} {(index // 4) * 20} 20 20 re f"
+        for index, value in enumerate(marker.bytes)
+    ).encode("ascii"))
+    page[NameObject("/Contents")] = writer._add_object(marks)
+    writer.add_metadata({"/Title": "Synthetic asset lifecycle title"})
     writer.write(pdf)
-    contents = [(png.getvalue(), "image/png", f"ภาพทดสอบ-{marker}.png"),
-                (pdf.getvalue(), "application/pdf", f"เอกสารทดสอบ-{marker}.pdf")]
-    checksums = [hashlib.sha256(content).hexdigest() for content, _, _ in contents]
+    contents = [
+        (png.getvalue(), "image/png", f"ภาพทดสอบ-{marker}.png", "floor_plan", 4, 3),
+        (pdf.getvalue(), "application/pdf", f"เอกสารทดสอบ-{marker}.pdf", "brochure", None, None),
+    ]
+    asset_ids = set()
 
-    async def cleanup():
-        # Owner access is solely for removing this run's random checksum fixtures.
-        connection = await asyncpg.connect(host="127.0.0.1", port=55432, database="sena_hub_local",
-                                           user="postgres", password=local["adminPassword"])
-        try:
-            async with connection.transaction():
-                await connection.execute("SELECT set_config('app.actor_id', $1, true)", str(UUID(int=2)))
-                for checksum in checksums:
-                    await connection.execute("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", checksum)
-                    await connection.execute("DELETE FROM hub.entity_assets WHERE asset_id IN (SELECT id FROM hub.assets WHERE checksum=$1)", checksum)
-                    # A concurrent user's reference is a reason to retain, never delete.
-                    removed = await connection.fetchval("""DELETE FROM hub.assets a WHERE checksum=$1
-                        AND NOT EXISTS (SELECT 1 FROM hub.entity_assets b WHERE b.asset_id=a.id)
-                        AND NOT EXISTS (SELECT 1 FROM hub.brand_assets b WHERE b.asset_id=a.id)
-                        RETURNING storage_path""", checksum)
-                    if removed:
-                        assets.storage_path(removed).unlink(missing_ok=True)
-        finally:
-            await connection.close()
+    for content, mime, filename, purpose, width, height in contents:
+        context = {"v": 1, "kind": "project", "ref": project["public_project_id"],
+                   "category": purpose, "purpose": purpose}
+        upload_headers = {**h("editor"), "Content-Type": mime, "X-Filename": quote(filename),
+                          "X-Upload-Context": json.dumps(context, separators=(",", ":"), ensure_ascii=True)}
 
-    try:
-        with TestClient(create_app(config), client=("127.0.0.1", 50000)) as client:
-            def upload(item):
-                content, mime, filename = item
-                return client.post("/v1/admin/assets", content=content,
-                                   headers={**headers["editor"], "Content-Type": mime, "X-Filename": quote(filename)})
+        def upload():
+            return client.post("/v1/admin/assets", content=content, headers=upload_headers)
 
-            # Independent requests must share one file and registry identity under contention.
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                responses = list(executor.map(upload, [contents[0], contents[0]]))
-            assert sorted(response.status_code for response in responses) == [200, 201], [response.text for response in responses]
-            image_asset = next(response.json()["data"] for response in responses if response.status_code == 201)
-            assert {response.json()["data"]["id"] for response in responses} == {image_asset["id"]}
-            uploaded_pdf = upload(contents[1])
-            assert uploaded_pdf.status_code == 201, uploaded_pdf.text
-            pdf_asset = uploaded_pdf.json()["data"]
+        # Admission has separate deterministic tests; actual SQL contention has
+        # concurrent_upload_optimization.mjs. This lifecycle requires real commits.
+        uploaded = upload()
+        assert uploaded.status_code == 201, uploaded.text
+        assert uploaded.headers["cache-control"] == "no-store"
+        asset = uploaded.json()["data"]
+        upload_evidence = uploaded.json()["meta"]["upload"]
+        assert asset["rights_status"] == "pending" and asset["reviewed_by"] is None
+        assert asset["owner_id"] == str(ids["editor"])
+        assert asset["original_filename"] == filename
+        original = {"size": len(content), "mime_type": mime, "width": width, "height": height}
+        assert upload_evidence["original"] == original
+        assert upload_evidence["stored"] == {"size": asset["file_size"], "mime_type": asset["mime_type"],
+                                              "width": asset["width"], "height": asset["height"]}
+        assert upload_evidence["suggestions"]["confirmed"] is False
+        assert "checksum" not in upload_evidence["original"]
+        asset_ids.add(asset["id"])
+        asset_path = f"/v1/admin/assets/{asset['id']}"
+        assert client.get(f"{asset_path}/file", headers=h("viewer")).status_code == 404
+        denied = client.get(asset_path, headers={**h("viewer"), "X-Upload-Context": upload_headers["X-Upload-Context"]})
+        assert denied.status_code == 404 and "meta" not in denied.json()
+        assert upload_evidence["source_id"] not in denied.text and "Synthetic asset lifecycle title" not in denied.text
+        owner_preview = client.get(f"{asset_path}/file", headers=h("editor"))
+        assert owner_preview.status_code == 200, owner_preview.text
+        stored = owner_preview.content
+        assert len(stored) == asset["file_size"]
+        assert hashlib.sha256(stored).hexdigest() == asset["checksum"]
+        assert stored != content, "Marketing fixture metadata must be stripped"
+        assert assets.readable_file(asset).read_bytes() == stored
+        if mime == "image/png":
+            with Image.open(io.BytesIO(stored)) as image:
+                assert image.size == (4, 3) and image.tobytes() == pixels
+                assert "local-test-fixture" not in image.info
+        else:
+            document = PdfReader(io.BytesIO(stored))
+            assert len(document.pages) == 1
+            assert "/Title" not in (document.metadata or {})
 
-            for asset, item in zip([image_asset, pdf_asset], contents):
-                assert asset["rights_status"] == "pending" and asset["reviewed_by"] is None
-                assert asset["owner_id"] == str(UUID(int=1))
-                assert asset["file_size"] == len(item[0])
-                asset_path = f"/v1/admin/assets/{asset['id']}"
-                # Only the uploader sees a new unbound file. Bind it before
-                # another staff member previews or reviews its rights.
-                assert client.get(f"{asset_path}/file", headers=headers["viewer"]).status_code == 404
-                assert client.get(f"{asset_path}/file", headers=headers["editor"]).status_code == 200
-                project = next(p for p in client.get('/v1/admin/projects', headers=headers['editor']).json()['data']
-                               if p['rem_project_id'] == 'DEMO-001')
-                bound = client.post(f"/v1/admin/projects/{project['public_project_id']}/assets", headers=headers['editor'], json={
-                    'asset_id': asset['id'], 'asset_role': 'floor_plan', 'alt_text': {'th': 'Synthetic fixture'}, 'updated_at': project['updated_at']})
-                assert bound.status_code == 200, bound.text
-                asset = client.get(asset_path, headers=headers['editor']).json()['data']
-                preview = client.get(f"{asset_path}/file", headers=headers["viewer"])
-                assert preview.status_code == 200, preview.text
-                assert preview.content == item[0]
-                assert preview.headers["content-type"].startswith(item[1])
-                assert preview.headers["content-disposition"].startswith("attachment" if item[1] == "application/pdf" else "inline")
-                assert preview.headers["cache-control"] == "no-store"
-                assert preview.headers["x-content-type-options"] == "nosniff"
-                assert "sandbox" in preview.headers["content-security-policy"]
-                assert client.get(f"/v1/assets/ast_{asset['checksum']}/file", headers=headers["service_consumer"]).status_code == 404
-                review_body = {"updated_at": asset["updated_at"], "decision": "approved", "rights_notes": "ไฟล์สร้างขึ้นสำหรับทดสอบเท่านั้น",
-                               "effective_from": None, "effective_to": None, "change_reason": "ทดสอบอนุมัติสิทธิ์"}
-                assert client.post(f"{asset_path}/review", json=review_body, headers=headers["editor"]).status_code == 403
-                reviewed = client.post(f"{asset_path}/review", json=review_body, headers=headers["publisher"])
-                assert reviewed.status_code == 200, reviewed.text
-                assert reviewed.json()["data"]["rights_status"] == "approved"
-                assert reviewed.json()["data"]["reviewed_by"] == str(UUID(int=2))
-                stale = client.post(f"{asset_path}/review", json=review_body, headers=headers["publisher"])
-                assert stale.status_code == 409, stale.text
-                duplicate = upload(item)
-                assert duplicate.status_code == 200 and duplicate.json()["meta"]["reused"]
-                assert duplicate.json()["data"] == reviewed.json()["data"]
-                assert client.get(f"/v1/assets/ast_{asset['checksum']}/file", headers=headers["service_consumer"]).status_code == 404
-                revoked = client.post(f"{asset_path}/review", headers=headers["publisher"], json={
-                    **review_body, "updated_at": reviewed.json()["data"]["updated_at"], "decision": "revoked", "change_reason": "สิ้นสุดการทดสอบ",
-                })
-                assert revoked.status_code == 200, revoked.text
-                assert upload(item).json()["data"]["rights_status"] == "revoked"
-                assert client.get(f"{asset_path}/file", headers=headers["viewer"]).status_code == 200
+        async def source_mapping():
+            async with client.app.state.pool.acquire() as connection:
+                return await call(connection, ids["editor"], "select hub.find_uploaded_asset_source($1,$2,$3)",
+                                  hashlib.sha256(content).hexdigest(), mime, context)
 
-            listing = client.get("/v1/admin/assets", headers=headers["viewer"])
-            assert listing.status_code == 200
-            assert {image_asset["id"], pdf_asset["id"]} <= {item["id"] for item in listing.json()["data"]}
-    finally:
-        asyncio.run(cleanup())
+        mapping = client.portal.call(source_mapping)
+        assert mapping["asset"] == asset
+        assert mapping["original"] == {**original, "checksum": hashlib.sha256(content).hexdigest()}
+        assert mapping["source_id"] == upload_evidence["source_id"]
+        duplicate = upload()
+        assert duplicate.status_code == 200, duplicate.text
+        assert duplicate.json()["meta"]["reused"] is True
+        assert duplicate.json()["data"] == asset
+        assert duplicate.json()["meta"]["upload"]["source_id"] == upload_evidence["source_id"]
+        assert duplicate.json()["meta"]["upload"]["evidence_id"] != upload_evidence["evidence_id"]
+
+        # Bind only this run's new project, then verify ordinary View and rights
+        # authority. No DEMO project, published snapshot or account grant changes.
+        current = client.get(project_path, headers=h("editor")).json()["data"]
+        bound = client.post(f"{project_path}/assets", headers=h("editor"), json={
+            "asset_id": asset["id"], "asset_role": purpose, "alt_text": {"th": "Synthetic fixture"},
+            "updated_at": current["updated_at"],
+        })
+        assert bound.status_code == 200, bound.text
+        detail = client.get(asset_path, headers=h("editor"))
+        assert detail.status_code == 200 and "meta" not in detail.json()
+        assert "Synthetic asset lifecycle title" not in detail.text
+        asset = detail.json()["data"]
+        evidence_get = client.get(asset_path, headers={**h("editor"), "X-Upload-Context": upload_headers["X-Upload-Context"]})
+        assert evidence_get.status_code == 200, evidence_get.text
+        evidence = evidence_get.json()["meta"]["upload"]
+        assert evidence_get.json()["data"] == asset
+        assert set(evidence) == {"source_id", "evidence_id", "original", "stored", "pipeline_version",
+                                 "extraction_version", "processing", "suggestions"}
+        assert evidence["source_id"] == upload_evidence["source_id"]
+        assert evidence["evidence_id"] == duplicate.json()["meta"]["upload"]["evidence_id"]
+        assert evidence["original"] == original and evidence["stored"] == upload_evidence["stored"]
+        assert set(evidence["suggestions"]) == {"source", "confirmed", "values"}
+        assert evidence["suggestions"]["source"] == "file_metadata" and evidence["suggestions"]["confirmed"] is False
+        if mime == "application/pdf":
+            assert evidence["suggestions"]["values"]["caption"] == "Synthetic asset lifecycle title"
+        changed_context = {**context, "purpose": "media"}
+        persisted = client.get(asset_path, headers={**h("editor"), "X-Upload-Context": json.dumps(changed_context)})
+        assert persisted.status_code == 200 and persisted.json()["meta"]["upload"] == evidence
+        other_context = {**context, "ref": other_project["public_project_id"]}
+        isolated = client.get(asset_path, headers={**h("editor"), "X-Upload-Context": json.dumps(other_context)})
+        assert isolated.status_code == 200 and isolated.json() == {"data": asset, "meta": {"upload": None}}
+        assert evidence["source_id"] not in isolated.text and "Synthetic asset lifecycle title" not in isolated.text
+        preview = client.get(f"{asset_path}/file", headers=h("viewer"))
+        assert preview.status_code == 200, preview.text
+        assert preview.content == stored
+        assert preview.headers["content-type"].startswith(mime)
+        assert preview.headers["content-disposition"].startswith("attachment" if mime == "application/pdf" else "inline")
+        assert preview.headers["cache-control"] == "no-store"
+        assert preview.headers["x-content-type-options"] == "nosniff"
+        assert "sandbox" in preview.headers["content-security-policy"]
+        public_path = f"/v1/assets/ast_{asset['checksum']}/file"
+        assert client.get(public_path, headers=h("service_consumer")).status_code == 404
+        review_body = {"updated_at": asset["updated_at"], "decision": "approved", "rights_notes": "Synthetic fixture rights",
+                       "effective_from": None, "effective_to": None, "change_reason": "Synthetic rights approval"}
+        assert client.post(f"{asset_path}/review", json=review_body, headers=h("editor")).status_code == 403
+        reviewed = client.post(f"{asset_path}/review", json=review_body, headers=h("publisher"))
+        assert reviewed.status_code == 200, reviewed.text
+        assert reviewed.json()["data"]["rights_status"] == "approved"
+        assert reviewed.json()["data"]["reviewed_by"] == str(ids["publisher"])
+        stale = client.post(f"{asset_path}/review", json=review_body, headers=h("publisher"))
+        assert stale.status_code == 409, stale.text
+        duplicate = upload()
+        assert duplicate.status_code == 200 and duplicate.json()["meta"]["reused"] is True
+        assert duplicate.json()["data"] == reviewed.json()["data"]
+        assert client.get(public_path, headers=h("service_consumer")).status_code == 404
+        revoked = client.post(f"{asset_path}/review", headers=h("publisher"), json={
+            **review_body, "updated_at": reviewed.json()["data"]["updated_at"],
+            "decision": "revoked", "change_reason": "Synthetic rights revocation",
+        })
+        assert revoked.status_code == 200, revoked.text
+        duplicate = upload()
+        assert duplicate.status_code == 200 and duplicate.json()["data"] == revoked.json()["data"]
+        assert client.get(f"{asset_path}/file", headers=h("viewer")).status_code == 200
+        assert client.portal.call(source_mapping)["original"]["checksum"] == hashlib.sha256(content).hexdigest()
+
+    listing = client.get("/v1/admin/assets", headers=h("viewer"))
+    assert listing.status_code == 200
+    assert asset_ids <= {item["id"] for item in listing.json()["data"]}
+    # The verified disposable runner removes this run's DB and tmp_path store.
+    # Never delete immutable provenance or deregister assets by original hashes.

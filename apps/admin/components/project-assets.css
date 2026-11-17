@@ -77,3 +77,5 @@
 .brand-logo-approval-dates { margin: 16px 0; }
 .brand-logo-approval-dates summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
 @media (max-width: 720px) { .brand-logo-slots { grid-template-columns: minmax(0, 1fr); } }
+
+.upload-evidence, .file-metadata-suggestions { min-width: 0; overflow-wrap: anywhere; }

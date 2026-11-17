@@ -77,6 +77,8 @@ try {
   console.log('PASS: cached project progress refresh, expiry, source summaries and staff boundary');
   await connection.query(await readFile(new URL('../supabase/tests/asset_library.sql', import.meta.url), 'utf8'));
   console.log('PASS: asset rights, binding isolation and published file eligibility');
+  await connection.query(await readFile(new URL('../supabase/tests/upload_optimization.sql', import.meta.url), 'utf8'));
+  console.log('PASS: W9 private provenance, current-context evidence, denied collisions and unchanged legacy identity');
   await connection.query(await readFile(new URL('../supabase/tests/brands.sql', import.meta.url), 'utf8'));
   console.log('PASS: brand/company identity, requests, immutable brand publication and dependent project eligibility');
   await connection.query(await readFile(new URL('../supabase/tests/brand_logo_svg.sql', import.meta.url), 'utf8'));

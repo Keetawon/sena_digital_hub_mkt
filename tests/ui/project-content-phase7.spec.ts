@@ -1,3 +1,4 @@
+import { projectUpload, uploadHeaders } from "./upload-fixtures";
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { submitItem, approveItem, workflowText } from './content-workflow-fixtures';
@@ -52,7 +53,7 @@ for (const width of [1280, 390]) {
     await page.goto(`/content?project=${p.public_project_id}&tab=facilities`);
 
     for (const [index, color] of ['#1c4c55', '#74426b'].entries()) {
-      const upload = await page.request.post(`${api}/assets`, { headers: { ...headers, 'Content-Type': 'image/svg+xml', 'X-Filename': `c4-${width}-${index}.svg` },
+      const upload = await page.request.post(`${api}/assets`, { headers: { ...headers, ...uploadHeaders({ v: 1, kind: 'media_target', project_ref: p.public_project_id, target_type: 'facility', target_key: code, category: 'facility', usage: 'gallery' }), 'Content-Type': 'image/svg+xml', 'X-Filename': `c4-${width}-${index}.svg` },
         data: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="${color}"/><text x="10" y="90" fill="white">Synthetic ${randomUUID()}</text></svg>`) });
       expect(upload.ok()).toBeTruthy();const asset = (await upload.json()).data;
       await put(page, `${base}/media/assets/${asset.id}`, asset.media_revision ?? 0, { media_category: 'facility', tags: [code], caption: { th: `ภาพสมมติ ${index}`, en: `Synthetic image ${index}` }, alt_text: { th: 'ภาพสมมติสำหรับทดสอบ' }, metadata_state: 'confirmed' });

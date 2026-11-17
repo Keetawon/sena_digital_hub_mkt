@@ -400,6 +400,27 @@ the disposable harness is unchanged.
 quick-gate set until they pass. Then run the full gate once more. Never rerun
 the full gate for each fix attempt.
 
+Owner-approved exception, 17 November 2026: after a correction limited to
+explicitly listed non-H1 browser spec files and delivery documentation, the
+final gate may reuse previously passed API, database and H1 stages. First
+verify the same Git base and unchanged application, migration, dependency and
+lockfile, API/DB/H1 test, shared helper, fixture/seed, harness and profile inputs,
+plus runtime versions and the approved local environment. Do not open, copy or
+hash credential files. Record the comparison and exclusions in an admission
+receipt; any mismatch, unexplained environment change or broader correction
+requires the ordinary full gate.
+
+Preserve the original run state, commands, logs, exact totals and hashes. Label
+each reused stage explicitly; a failed run stays failed. Failed, incomplete or
+unrun stages cannot be reused. Existing reported test skips stay visible and
+must not be represented as passes. After the affected complete specs pass at
+both widths, freeze the final source and run fresh typecheck, offline build,
+production import/isolation checks, both complete browser suites in separate
+serial disposable harnesses, credential scan, diff/index checks and broad scan.
+Verify the combined evidence before committing. This exception authorizes no
+timeout increase, automatic retry, removed test, viewport-coverage reduction,
+parallel runtime worker or hosted action.
+
 **Reporting:** always name the tier and give real output. For example:
 "Quick gate: 41 passed (test_finance.py, ads-finance.spec.ts). Full gate: not yet
 run." Never write "all tests passed" unless the full gate ran on the final code.

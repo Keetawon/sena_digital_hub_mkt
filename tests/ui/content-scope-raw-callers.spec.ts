@@ -1,3 +1,4 @@
+import { uploadFileError, uploadContextHeader } from "../../apps/admin/lib/upload-context";
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -60,6 +61,7 @@ function harness(caller: Caller, files = [new File(['synthetic'], 'allowed.png',
   const state = { events: [] as Event[], data: null as unknown, error: '', selected: files, pending: false, libraryLoads: 0,
     calls: [] as { path: string; init?: RequestInit }[], response: Response.json({ data: { id: 'allowed-asset', text: 'Allowed neighbour' }, meta: { reused: true } }) };
   const globals: Record<string, unknown> = {
+    uploadFileError, uploadContextHeader, uploadContext: { v: 1, kind: "intake" }, setUploadResults() {},
     query: 'limit=10', disabled: false, workflowBusy: false, pending: false, canEdit: true, files, fileRef: { current: { value: 'selected-files' } },
     window: { dispatchEvent(event: Event) { state.events.push(event); } },
     setData(value: unknown) { state.data = value; if (value !== null) terminal.release(); },
@@ -73,11 +75,12 @@ function harness(caller: Caller, files = [new File(['synthetic'], 'allowed.png',
     state.calls.push({ path, init }); requested.release(); return state.response;
   };
   globals.fetch = transport; globals.assetFetch = transport;
+  if (caller === "commercial") globals.uploadAsset = compile(actualCode("asset"), globals);
   const execute = compile(actualCode(caller), globals);
   let cleanup: (() => void) | undefined;
   function start(): Promise<unknown> {
     if (caller === 'home') { cleanup = execute() as () => void; return terminal.promise.then(() => state.data); }
-    return Promise.resolve(caller === 'knowledge' ? execute('projects/PROJECT-A') : caller === 'asset' ? execute(files[0]) : execute({ preventDefault() {} }));
+    return Promise.resolve(caller === 'knowledge' ? execute('projects/PROJECT-A') : caller === 'asset' ? execute(files[0], { v: 1, kind: 'intake' }) : execute({ preventDefault() {} }));
   }
   return { state, globals, requested: requested.promise, start, cancel: () => cleanup?.() };
 }
@@ -111,7 +114,7 @@ for (const caller of ['home', 'knowledge', 'commercial', 'asset'] as const) {
       }
       if (outcome === 'success') {
         if (caller === 'home' || caller === 'knowledge') expect(completed.value).toEqual(body.data);
-        if (caller === 'asset') expect(completed.value).toEqual({ asset: body.data, reused: true });
+        if (caller === 'asset') expect(completed.value).toEqual({ asset: body.data, reused: true, upload: null });
         if (caller === 'commercial') { expect(fixture.state.selected).toEqual([]); expect(fixture.state.libraryLoads).toBe(1); }
       } else {
         expect(fixture.state.data).toBeNull();
@@ -180,7 +183,7 @@ test('single-file dialog retains the selected file on an ordinary failure and on
   const file = new File(['synthetic'], 'retry.png', { type: 'image/png' });
   const state = { calls: 0, completed: 0, pending: false, error: '' };
   const execute = compile(actualCode('asset-dialog'), {
-    file, purpose: undefined, acceptedTypes: ['image/png'], maxFileSize: 10 * 1024 * 1024,
+    file, purpose: undefined, context: { v: 1, kind: "intake" }, uploadFileError, acceptedTypes: ['image/png'], maxFileSize: 10 * 1024 * 1024,
     setError(value: string) { state.error = value; }, setPending(value: boolean) { state.pending = value; },
     uploadAsset: async (selected: File) => { expect(selected).toBe(file); state.calls++; if (state.calls === 1) throw new Error('Synthetic ordinary failure'); return { asset: { id: 'allowed' }, reused: true }; },
     onUploaded: async () => { state.completed++; },

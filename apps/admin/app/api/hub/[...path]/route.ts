@@ -6,9 +6,11 @@ import { h1AllowsApi, h1Unavailable, hostedConfig, isHostedMode } from "@/lib/ho
 import { contentAllowsApi, contentAllowsQuery } from "@/lib/content-routes";
 import { capabilityKey, contentScopeExpired } from "@/lib/hub-permissions";
 import { contentScopeText } from "@/lib/content-scope-text";
+import { parseUploadContext, uploadFileLimit } from "@/lib/upload-context";
+import { uploadText } from "@/lib/upload-text";
 
 const id = "[a-zA-Z0-9_-]{1,128}";
-const maxUploadBytes = 10 * 1024 * 1024;
+let uploadBusy = false;
 const uploadTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml", "application/pdf"]);
 const allowed = {
   GET: new RegExp(`^v1/(?:admin/(?:assets(?:/${id}(?:/(?:file|thumbnail))?)?|sources/(?:projects|brands)|brands(?:/${id}(?:/versions)?)?|brand-requests|projects(?:/${id}(?:/(?:versions|source-models|models/${id}|commercial-types))?)?)|assets/${id}/file|(?:projects|brands)(?:/${id})?)$`),
@@ -29,7 +31,7 @@ class ContentAuthorityChanged extends Error {
   constructor(readonly status: number, message = contentScopeText.scope_loss) { super(message); }
 }
 
-async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+async function proxyRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }, admission: { owned: boolean }) {
   const error = (message: string, status: number) => NextResponse.json({ error: { message } }, { status, headers: { "Cache-Control": "no-store" } });
   const hosted = isHostedMode();
   const configuration = hosted ? hostedConfig() : null;
@@ -139,15 +141,37 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
   const upload = method === "POST" && path === "v1/admin/assets";
   let body: string | ArrayBuffer | undefined;
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  const evidence = method === "GET" && new RegExp(`^v1/admin/assets/${id}$`).test(path);
+  let uploadLimit = 0;
+  if (upload || evidence && request.headers.has("x-upload-context")) {
+    try {
+      const raw = request.headers.get("x-upload-context"), selected = parseUploadContext(raw);
+      headers["X-Upload-Context"] = raw!;
+      if (upload) uploadLimit = uploadFileLimit(selected, request.headers.get("content-type") ?? "");
+    } catch { return error(uploadText.context_invalid, 422); }
+    if (upload && !uploadLimit) return error(uploadText.unsupported, 415);
+  }
   if (archiveFile && request.headers.has("range")) {
     const range = request.headers.get("range")!;
     if (!/^bytes=(?:\d{1,12}-\d{0,12}|-\d{1,12})$/.test(range)) return error("ไม่รองรับช่วงข้อมูลไฟล์นี้", 416);
     headers.Range = range;
   }
+  const bearer = token;
+  let authorityKey: string | null = null;
+  async function currentContentAuthority() {
+    // Read current authority before upload admission, after awaited bytes,
+    // and at each complete assistant frame; never use a cached caller.
+    const fresh = await readHubAccount(base.origin, bearer);
+    if (!fresh.account || fresh.account.status !== "ACTIVE" || !fresh.account.id || contentScopeExpired(fresh.account)) throw new ContentAuthorityChanged(fresh.account ? 403 : fresh.status);
+    const key = capabilityKey(fresh.account);
+    if (authorityKey !== null && authorityKey !== key) throw new ContentAuthorityChanged(403);
+    return key;
+  }
   if (method !== "GET") {
-    const limit = upload ? maxUploadBytes : assistantWrite ? 20_000 : 100_000;
+    const limit = upload ? uploadLimit : assistantWrite ? 20_000 : 100_000;
     const length = request.headers.get("content-length");
-    if (length && (!/^\d+$/.test(length) || Number(length) > limit)) return error("ข้อมูลมีขนาดเกินกำหนด", 413);
+    if (length && !/^\d+$/.test(length)) return error(uploadText.context_invalid, 400);
+    if (length && Number(length) > limit) return error("ข้อมูลมีขนาดเกินกำหนด", 413);
     if (upload) {
       const type = request.headers.get("content-type") ?? "";
       if (!uploadTypes.has(type)) return error("รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF", 415);
@@ -156,10 +180,26 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       headers["Content-Type"] = type;
       headers["X-Filename"] = filename;
     } else headers["Content-Type"] = "application/json";
+    if (upload) {
+      // Only an authenticated, current caller with valid headers may take the
+      // slot. A denied request never owns or releases another request's slot.
+      try { authorityKey = await currentContentAuthority(); }
+      catch (failure) {
+        if (failure instanceof ContentAuthorityChanged || failure instanceof HubApiUnavailable) return NextResponse.json({ error: { code: "content_authority_changed", message: failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage, invalidate_access: true } }, { status: failure instanceof ContentAuthorityChanged ? failure.status : 503, headers: { "Cache-Control": "private, no-store" } });
+        throw failure;
+      }
+      if (uploadBusy) return NextResponse.json({ error: { code: "upload_busy", message: uploadText.busy } }, { status: 429, headers: { "Retry-After": "1", "Cache-Control": "private, no-store" } });
+      uploadBusy = true;
+      admission.owned = true;
+    }
     const chunks: Uint8Array[] = [];
     const reader = request.body?.getReader();
     let size = 0;
     if (!reader) return error("ไม่พบข้อมูลที่ส่งมา", 400);
+    const bodyAbort = upload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : null;
+    const cancelBody = () => { void reader.cancel().catch(() => {}); };
+    bodyAbort?.addEventListener("abort", cancelBody, { once: true });
+    if (bodyAbort?.aborted) cancelBody();
     try {
       while (true) {
         const chunk = await reader.read();
@@ -169,7 +209,8 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
         chunks.push(chunk.value);
       }
     } catch { return error("รับข้อมูลไม่ครบ กรุณาลองส่งอีกครั้ง", 400); }
-    finally { reader.releaseLock(); }
+    finally { bodyAbort?.removeEventListener("abort", cancelBody); reader.releaseLock(); }
+    if (bodyAbort?.aborted) return error(uploadText.invalid_file, 400);
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
@@ -178,17 +219,6 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
       body = new TextDecoder().decode(bytes);
       try { JSON.parse(body); } catch { return error("รูปแบบข้อมูลไม่ถูกต้อง", 400); }
     }
-  }
-  const bearer = token;
-  let authorityKey: string | null = null;
-  async function currentContentAuthority() {
-    // Never use the request-cached caller here: this runs after awaited bytes
-    // and at each complete assistant frame, with current server authority.
-    const fresh = await readHubAccount(base.origin, bearer);
-    if (!fresh.account || fresh.account.status !== "ACTIVE" || !fresh.account.id || contentScopeExpired(fresh.account)) throw new ContentAuthorityChanged(fresh.account ? 403 : fresh.status);
-    const key = capabilityKey(fresh.account);
-    if (authorityKey !== null && authorityKey !== key) throw new ContentAuthorityChanged(403);
-    return key;
   }
   const streamAbort = assistantRun ? new AbortController() : null;
   const cancelStream = () => streamAbort?.abort();
@@ -200,7 +230,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     const upstream = await fetch(new URL(`${path}${request.nextUrl.search}`, `${base.origin}/`), {
       method, body, cache: "no-store", redirect: "error",
       headers,
-      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : AbortSignal.timeout(upload ? 30_000 : path === "v1/me" ? 10_000 : 15_000),
+      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : upload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(path === "v1/me" ? 10_000 : 15_000),
     });
     if (hosted && (upstream.status === 401 || path === "v1/me" && upstream.status >= 500)) {
       releaseStream(); await upstream.body?.cancel().catch(() => {});
@@ -284,6 +314,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     if (privateContent && (failure instanceof ContentAuthorityChanged || failure instanceof HubApiUnavailable)) return NextResponse.json({ error: { code: "content_authority_changed", message: failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage, invalidate_access: true } }, { status: failure instanceof ContentAuthorityChanged ? failure.status : 503, headers: { "Cache-Control": "private, no-store" } });
     return error(hosted ? unavailableMessage : "เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", hosted ? 503 : 502);
   }
+}
+
+async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+  const admission = { owned: false };
+  // Hold only this request's admitted slot through its complete upstream response.
+  try { return await proxyRequest(request, context, admission); }
+  finally { if (admission.owned) uploadBusy = false; }
 }
 
 export { proxy as GET, proxy as PATCH, proxy as POST, proxy as PUT };

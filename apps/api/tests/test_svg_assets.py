@@ -1,3 +1,4 @@
+from upload_route_fixtures import upload_resolution, SVG_CONTEXT_HEADER
 import hashlib
 from contextlib import asynccontextmanager
 import xml.etree.ElementTree as ET
@@ -143,10 +144,14 @@ def test_svg_endpoint_stores_only_clean_bytes_and_serves_csp(monkeypatch, tmp_pa
             pass
 
         async def fetchval(self, query, *args):
-            if "register_uploaded_asset" in query:
+            if 'asset_upload_context' in query:
+                return upload_resolution(args[0], 'sanitized_svg')
+            if 'find_uploaded_asset_source' in query:
+                return None
+            if 'record_asset_upload_source' in query:
                 reused = bool(saved)
                 saved.update(args[0], id=ASSET_ID, rights_status="pending")
-                return {"asset": saved.copy(), "reused": reused}
+                return {'asset': saved.copy(), 'reused': reused, 'reuse_kind': 'stored' if reused else 'none', 'upload': {}}
             assert "asset_file" in query
             return saved
 
@@ -156,7 +161,7 @@ def test_svg_endpoint_stores_only_clean_bytes_and_serves_csp(monkeypatch, tmp_pa
 
     monkeypatch.setattr(main, "database", database)
     client = TestClient(create_app(settings()), client=("127.0.0.1", 50000))
-    headers = {"Authorization": f"Bearer {TOKENS['editor']}", "Content-Type": MIME, "X-Filename": "synthetic.svg"}
+    headers = {"Authorization": f"Bearer {TOKENS['editor']}", "Content-Type": MIME, "X-Filename": "synthetic.svg", "X-Upload-Context": SVG_CONTEXT_HEADER}
     raw = logo('<script>alert(1)</script><rect width="512" height="512" fill="#14532d" onload="evil()"/>')
     first = client.post("/v1/admin/assets", content=raw, headers=headers)
     assert first.status_code == 201 and first.json()["data"]["rights_status"] == "pending"
@@ -184,5 +189,5 @@ def test_svg_does_not_relax_upload_permission(role, monkeypatch, tmp_path):
     monkeypatch.setattr(assets, "STORAGE_ROOT", tmp_path / "never-created")
     client = TestClient(create_app(settings()), client=("127.0.0.1", 50000))
     response = client.post("/v1/admin/assets", content=logo(), headers={
-        "Authorization": f"Bearer {TOKENS[role]}", "Content-Type": MIME, "X-Filename": "synthetic.svg"})
+        "Authorization": f"Bearer {TOKENS[role]}", "Content-Type": MIME, "X-Filename": "synthetic.svg", "X-Upload-Context": SVG_CONTEXT_HEADER})
     assert response.status_code == 403 and not assets.STORAGE_ROOT.exists()

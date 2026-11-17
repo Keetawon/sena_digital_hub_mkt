@@ -1,9 +1,11 @@
+import { projectUpload, syntheticPrivatePng } from "./upload-fixtures";
 import {expect,test,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
 import {mediaAiText as text} from '../../apps/admin/components/media-ai-text';
+import {workflowText} from '../../apps/admin/lib/content-workflow';
 
 const headers={Origin:'http://127.0.0.1:3000'},api='/api/hub/v1/admin';
 async function read(page:Page,url:string){const r=await page.request.get(url);expect(r.ok()).toBeTruthy();return (await r.json()).data;}
@@ -25,11 +27,12 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
   const base=`${api}/projects/${project.public_project_id}/media`,stamp=randomUUID(),ids:string[]=[];
   const db=await operator(),original=(await db.query('select monthly_cap_usd,provider_configured,worker_seen_at from hub.media_ai_settings join hub.media_worker_status using(singleton)')).rows[0];
   const name=`ai-footer-${width}-${stamp}.svg`;
+  const heldName = (index: number) => 'held-' + index + '-' + (index === 1 ? name.replace(/\.svg$/, '.png') : name);
   try{
     await db.query('update hub.media_ai_settings set monthly_cap_usd=0; update hub.media_worker_status set provider_configured=false');
     for(const [index,category,exposure] of [[0,'exterior','web_only'],[1,'legal_document','internal'],[2,'brochure','web_only'],[3,'exterior','internal'],[4,'exterior','web_only']] as const){
-      const upload=await page.request.post(`${api}/assets`,{headers:{...headers,'Content-Type':'image/svg+xml','X-Filename':index?`held-${index}-${name}`:name},
-        data:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#18523d"/><text x="1" y="15">${stamp}-${index}</text></svg>`)});
+      const upload=await page.request.post(`${api}/assets`,{headers:{...headers,...projectUpload(project.public_project_id,category),'Content-Type':category==='legal_document'?'image/png':'image/svg+xml','X-Filename':index?heldName(index):name},
+        data:category==='legal_document'?syntheticPrivatePng():Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#18523d"/><text x="1" y="15">${stamp}-${index}</text></svg>`)});
       expect(upload.ok()).toBeTruthy();const asset=(await upload.json()).data;ids.push(asset.id);
       await db.query("select set_config('app.actor_id',$1,false)",[asset.created_by]);
       expect((await page.request.put(`${base}/assets/${asset.id}`,{headers,data:{expected_revision:0,changes:{media_category:category,marketing_publication:category!=='legal_document',ai_exposure:exposure}}})).ok()).toBeTruthy();
@@ -42,7 +45,7 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
     await page.goto(`/media?project=${project.public_project_id}&tab=library`);
     const card=()=>page.locator('.media-card').filter({has:page.getByRole('heading',{name,exact:true})});
     await expect(card().getByRole('button',{name:text.state_not_configured,exact:true})).toBeDisabled();
-    for(const index of [1,2,3,4])await expect(page.locator('.media-card').filter({hasText:`held-${index}-${name}`}).locator('.media-ai-footer')).toHaveCount(0);
+    for(const index of [1,2,3,4])await expect(page.locator('.media-card').filter({hasText:heldName(index)}).locator('.media-ai-footer')).toHaveCount(0);
     await db.query('update hub.media_ai_settings set monthly_cap_usd=5; update hub.media_worker_status set provider_configured=true,worker_seen_at=clock_timestamp()');
     await page.reload();const ready=card().getByRole('button',{name:text.button_label,exact:true});await expect(ready).toBeEnabled();
     const buttons=card().getByRole('button');expect(await buttons.last().textContent()).toBe(text.button_label);
@@ -50,8 +53,13 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
     await card().getByRole('button',{name:'แก้ไขข้อมูลภาพ',exact:true}).click();
     const footer=page.locator('.media-ai-footer');
     await expect(footer).toHaveCount(1);
-    const save=page.getByRole('button',{name:'อัปโหลดและบันทึกข้อมูล',exact:true});
-    expect((await footer.boundingBox())!.y).toBeGreaterThan((await save.boundingBox())!.y);
+    const editor=page.locator('section').filter({has:page.getByRole('heading',{name:'แก้ไขข้อมูลภาพ',exact:true})});
+    await expect(editor.locator('.content-workflow [role="status"]').filter({hasText:workflowText.loading})).toHaveCount(0);
+    await expect.poll(()=>editor.evaluate(root=>{
+      const footer=root.querySelector('.media-ai-footer')!;
+      const save=root.querySelector('.content-actions > button')!;
+      return footer.getBoundingClientRect().top-save.getBoundingClientRect().bottom;
+    })).toBeGreaterThanOrEqual(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     expect(await footer.getByRole('button').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
     await page.screenshot({path:`artifacts/hosted-content-rollout/h5e-ai-editor-${width}.png`,fullPage:true});

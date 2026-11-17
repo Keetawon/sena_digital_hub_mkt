@@ -463,6 +463,11 @@
       "name": "202611130092_home_faq_projection.sql",
       "canonical_sha256": "100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1",
       "executed_sha256": "100ba0aa1a4798556116641131555fd5a83eaa70b90cb3e8c08c158062b0e0b1"
+    },
+    {
+      "name": "202611130093_upload_optimization.sql",
+      "canonical_sha256": "184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6",
+      "executed_sha256": "184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6"
     }
   ]
 }

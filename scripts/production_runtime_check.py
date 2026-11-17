@@ -58,6 +58,14 @@ def check(mode):
             importlib.import_module(module)
             imported.append(module)
         if mode in {'imports', 'api'}:
+            step = 'native/upload_decoder'
+            native = importlib.import_module('pyvips')
+            native.cache_set_max(0)
+            native.cache_set_max_mem(0)
+            native.cache_set_max_files(0)
+            if native.Image.black(1, 1).avg() != 0:
+                raise RuntimeError('Native upload decoder self-check failed')
+            imported.append('pyvips')
             from sena_hub_api.auth import Settings
             from sena_hub_api.main import create_app
             settings = Settings(database_url='postgresql://127.0.0.1/import_only',

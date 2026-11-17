@@ -1,3 +1,5 @@
+import * as uploadContext from "../../apps/admin/lib/upload-context";
+import { uploadText } from "../../apps/admin/lib/upload-text";
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -27,7 +29,8 @@ function account(): HubAccount {
 }
 
 function harness(hosted = false) {
-  const state = { account: account(), authorityStatus: 200, now: Date.parse('2026-11-05T03:00:00Z'), meReads: 0, contentReads: 0, invalidations: 0,
+  const state = { authenticate: async (): Promise<string | null> => "editor", account: account(), authorityStatus: 200, now: Date.parse('2026-11-05T03:00:00Z'), meReads: 0, contentReads: 0, invalidations: 0,
+    upstream: [] as { url: URL; init?: RequestInit }[],
     resource: (_url: URL): Response | Promise<Response> => Response.json({ data: { text: privateText } }) };
   const fetched = signal();
   const fakeFetch = async (input: string | URL | Request, init?: RequestInit) => {
@@ -37,15 +40,16 @@ function harness(hosted = false) {
       state.meReads++;
       return Response.json(state.authorityStatus === 200 ? { data: structuredClone(state.account) } : { error: {} }, { status: state.authorityStatus });
     }
-    state.contentReads++; fetched.release();
+    state.upstream.push({ url, init }); state.contentReads++; fetched.release();
     return state.resource(url);
   };
   // Execute the actual route and actual uncached /me reader. Only environment
   // identity adapters and network transport are synthetic; no config is loaded.
   const modules: Record<string, unknown> = {
     'next/server': next,
+    '@/lib/upload-context': uploadContext, '@/lib/upload-text': { uploadText },
     '@/lib/content-routes': { contentAllowsApi, contentAllowsQuery },
-    '@/lib/local-session': { getLocalRole: async () => 'editor', getRoleToken: () => 'synthetic-bearer', hasSameLocalOrigin: () => true,
+    '@/lib/local-session': { getLocalRole: () => state.authenticate(), getRoleToken: () => 'synthetic-bearer', hasSameLocalOrigin: () => true,
       isLocalMode: () => !hosted, isLoopback: (host: string) => host === '127.0.0.1', localRequestOrigin: () => true },
     '@/lib/hosted-session': { getHostedIdentity: async () => ({ token: 'synthetic-bearer' }) },
     '@/lib/hosted-config': { h1AllowsApi, h1Unavailable, hostedConfig: () => ({ apiOrigin: 'http://127.0.0.1:8000', adminOrigin: origin }), isHostedMode: () => hosted },
@@ -71,7 +75,8 @@ function harness(hosted = false) {
     method, headers: { Origin: origin, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}),
   }), { params: Promise.resolve({ path: path.split('?')[0].split('/') }) });
   const helper = load('request', 'apps/admin/components/hub-request.ts') as { request<T>(path: string): Promise<T> };
-  return { state, fetched: fetched.promise, call, request: helper.request };
+  const raw = (request: Request, path = "v1/admin/assets") => route[request.method](request, { params: Promise.resolve({ path: path.split("/") }) });
+  return { raw, state, fetched: fetched.promise, call, request: helper.request };
 }
 
 function delayedBody(contentType: string, body: string) {
@@ -236,4 +241,83 @@ test('allowed assistant frames preserve frame boundaries and complete normally',
   const response = await fixture.call('v1/admin/assistant/runs', 'POST', { message: 'Synthetic prompt' });
   expect(await response.text()).toBe(text);
   expect(fixture.state.meReads).toBe(3);
+});
+
+
+const uploadRaw = (fixture: ReturnType<typeof harness>, header: string | null, extra: Record<string,string> = {}, body: BodyInit = 'synthetic', signal?: AbortSignal) =>
+  fixture.raw(new next.NextRequest(origin + '/api/hub/v1/admin/assets', { method:'POST',
+    headers:{ Origin:origin, 'Content-Type':'image/png', 'X-Filename':'synthetic.png', ...(header === null ? {} : {'X-Upload-Context':header}), ...extra },
+    body, signal, ...(body instanceof ReadableStream ? {duplex:'half'} : {}) } as RequestInit));
+test('upload proxy rejects missing/duplicate contexts and length overflow before upstream', async () => {
+ const f=harness();
+ for(const header of [null,'{"v":1,"kind":"intake","kind":"intake"}','{"v":1,"kind":"intake"}, {"v":1,"kind":"intake"}']) expect((await uploadRaw(f,header)).status).toBe(422);
+ expect((await uploadRaw(f,'{"v":1,"kind":"intake"}',{'Content-Length':String(10*1024*1024+1)})).status).toBe(413);
+ expect((await uploadRaw(f,'{"v":1,"kind":"intake"}',{'Content-Length':'wrong'})).status).toBe(400);
+ expect(f.state.contentReads).toBe(0);
+});
+test('upload proxy forwards original valid ASCII and evidence remains explicit opt-in', async () => {
+ const f=harness(), raw='{ "v":1, "kind":"intake" }';
+ expect((await uploadRaw(f,raw)).status).toBe(200);
+ expect(new Headers(f.state.upstream[0].init!.headers).get('x-upload-context')).toBe(raw);
+ expect(Buffer.from(f.state.upstream[0].init!.body as ArrayBuffer).toString()).toBe('synthetic');
+ const path='v1/admin/assets/'+uuid;
+ await f.raw(new next.NextRequest(origin+'/api/hub/'+path),path);
+ expect(new Headers(f.state.upstream[1].init!.headers).has('x-upload-context')).toBe(false);
+ await f.raw(new next.NextRequest(origin+'/api/hub/'+path,{headers:{'X-Upload-Context':raw}}),path);
+ expect(new Headers(f.state.upstream[2].init!.headers).get('x-upload-context')).toBe(raw);
+});
+test('upload proxy has one nonqueued slot and releases it after completion', async () => {
+ const f=harness(), held=signal(), header='{"v":1,"kind":"intake"}';
+ f.state.resource=async()=>{await held.promise;return Response.json({data:{id:uuid}});};
+ const first=uploadRaw(f,header); await f.fetched;
+ const second=await uploadRaw(f,header);
+ expect(second.status).toBe(429);expect(second.headers.get('retry-after')).toBe('1');
+ expect(second.headers.get('cache-control')).toContain('no-store');expect(f.state.contentReads).toBe(1);
+ held.release();expect((await first).status).toBe(200);expect((await uploadRaw(f,header)).status).toBe(200);
+});
+test('cancelled upload body cancels reading and releases its slot without upstream', async () => {
+ const f=harness(), reading=signal(), abort=new AbortController();let cancelled=false;
+ const body=new ReadableStream({pull(){reading.release();},cancel(){cancelled=true;}});
+ const pending=uploadRaw(f,'{"v":1,"kind":"intake"}',{},body,abort.signal);
+ await reading.promise;abort.abort();
+ expect((await pending).status).toBe(400);expect(cancelled).toBe(true);expect(f.state.contentReads).toBe(0);
+ expect((await uploadRaw(f,'{"v":1,"kind":"intake"}')).status).toBe(200);
+});
+
+test('unauthenticated uploads stay 401 and cannot take or release an admitted slot', async () => {
+ const f=harness(), header='{"v":1,"kind":"intake"}';
+ f.state.authenticate=async()=>null;
+ expect((await uploadRaw(f,header)).status).toBe(401);
+ expect(f.state.meReads).toBe(0);expect(f.state.contentReads).toBe(0);
+ f.state.authenticate=async()=>"editor";
+ const held=signal();f.state.resource=async()=>{await held.promise;return Response.json({data:{id:uuid}});};
+ const owner=uploadRaw(f,header);await f.fetched;
+ f.state.authenticate=async()=>null;
+ expect((await uploadRaw(f,header)).status).toBe(401);
+ f.state.authenticate=async()=>"editor";
+ expect((await uploadRaw(f,header)).status).toBe(429);
+ expect((await uploadRaw(f,null)).status).toBe(422);
+ expect((await uploadRaw(f,header)).status).toBe(429);
+ expect(f.state.contentReads).toBe(1);
+ held.release();expect((await owner).status).toBe(200);
+ expect((await uploadRaw(f,header)).status).toBe(200);
+});
+test('pending unauthenticated lookup does not reserve upload admission', async () => {
+ const f=harness(), held=signal(), entered=signal(), header='{"v":1,"kind":"intake"}';
+ f.state.authenticate=async()=>{entered.release();await held.promise;return null;};
+ const denied=uploadRaw(f,header);await entered.promise;
+ f.state.authenticate=async()=>"editor";
+ expect((await uploadRaw(f,header)).status).toBe(200);
+ held.release();expect((await denied).status).toBe(401);
+ expect((await uploadRaw(f,header)).status).toBe(200);
+});
+test('current authority denial cannot acquire or release another upload slot', async () => {
+ const f=harness(), header='{"v":1,"kind":"intake"}', held=signal();
+ f.state.resource=async()=>{await held.promise;return Response.json({data:{id:uuid}});};
+ const owner=uploadRaw(f,header);await f.fetched;
+ f.state.authorityStatus=401;
+ expect((await uploadRaw(f,header)).status).toBe(401);
+ f.state.authorityStatus=200;
+ expect((await uploadRaw(f,header)).status).toBe(429);
+ held.release();expect((await owner).status).toBe(200);
 });

@@ -15,7 +15,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
-from .assets import MAX_BYTES
+from .assets import stored_byte_limit
 from .auth import Settings, failure
 from .hosted_assets import HostedAssets
 
@@ -135,11 +135,11 @@ class R2Assets:
         return "originals/" + name
 
     def read(self, metadata):
-        return self._read(self._asset_key(metadata), metadata.get("checksum"), metadata.get("file_size"), MAX_BYTES)
+        return self._read(self._asset_key(metadata), metadata.get("checksum"), metadata.get("file_size"), stored_byte_limit(metadata.get("mime_type")))
 
     def install(self, content, metadata):
         return self._install(self._asset_key(metadata), content, metadata.get("checksum"),
-                             metadata.get("file_size"), metadata["mime_type"], MAX_BYTES)
+                             metadata.get("file_size"), metadata["mime_type"], stored_byte_limit(metadata.get("mime_type")))
 
     @staticmethod
     def _knowledge_key(evidence):

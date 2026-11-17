@@ -83,6 +83,8 @@ export async function seedHubContentContract(client) {
   const brand = (await client.query('select hub.create_brand_from_rem($1) id', [f.brand])).rows[0].id;
   const project = (await client.query('select hub.create_project_from_rem($1) id', [f.project])).rows[0].id;
   await client.query('select hub.update_brand_draft(id,$2,updated_at) from hub.brands where id=$1', [brand, { public_name: { th: f.brandName, en: 'Synthetic DW contract brand' }, description: { th: 'ข้อมูลสังเคราะห์สำหรับทดสอบสัญญาเท่านั้น' }, slug: 'synthetic-hub-export-brand' }]);
+  // Metadata-only historical contract fixture: invented hashes and no stored bytes.
+  // It cannot enter the file processor; real operator uploads use the W9 API.
   const assets = {};
   for (const role of ['logo_primary', 'logo_white', 'logo_mono', 'favicon', 'hero', 'thumbnail']) {
     const checksum = createHash('sha256').update(`${f.marker}:${role}`).digest('hex');

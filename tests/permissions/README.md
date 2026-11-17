@@ -111,3 +111,15 @@ object scope remain mandatory. The only provider is the local stub. Proposals
 never write content; explicit acceptance uses the ordinary revision-checked
 draft writer and retains in-review locks. No account, grant, template, permission
 bit, assistant tool or public/export surface is added.
+
+W9 adds `upload-optimization-db.json` for the exact 0093 inventory: two immutable
+owner-only FORCE RLS provenance/evidence tables, four runtime entries and six
+closed helpers. Existing upload/read/review routes keep their authority and
+object-scope checks. The finite context header identifies an authorized owner;
+it never supplies permissions or processing facts. Private evidence is opt-in
+and excluded from generic history, public/export and assistant projections.
+Original-first reuse preserves stored identity and rights history; later-use
+guards keep legal/unknown files private and retained stock evidence excludes
+bulk rights approval. The existing legacy registration ACL remains unchanged.
+No account, grant, template, business permission or historical manifest changes.
+See the W9 permission card in docs/36 and upload requirements in docs/47.

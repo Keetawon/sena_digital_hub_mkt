@@ -7282,3 +7282,658 @@ preparation are preserved; inventory is `worktrees-preserved.txt` in the R5 comp
 Next: W9 integration and its checks/full gate; then the approved home
 implementation and validation; then W8 retained fixtures, all UAT checks and
 owner acceptance. W8 is pending and is not inferred from automated success.
+
+
+### W9 reviewed candidate integrated; quick checks started — 16 November 2026
+
+After the separate P1/W7/home-correction product commits and delivery receipt were pushed and
+the remote verified, integrate the reviewed W9 candidate from
+`ws/w9-api-integration`: 60 prepared paths, six reviewed overlap merges and
+three lead-owned pin/inventory additions, followed by this log, for **64
+explicit paths**. The W7 controls, migrations 0091/0092 and prior permission
+inventories remain preserved. Prepared source hashes and integration details
+are in `artifacts/unified-workspace/w9-takeover-20261113/`.
+
+W9 adds bounded upload processing, original/stored deduplication, private
+evidence and safe metadata suggestions, plus finite upload UI contexts and
+per-file results. The reviewed permission card describes two new private
+relations and closed helpers; existing accounts/grants and legacy registration
+access are unchanged. No historical backfill runs. Migration 0093 is
+`supabase/migrations/202611130093_upload_optimization.sql`, SHA-256
+`48a1ff71b16e0d6ecd6df5eee3b6a9a28068c9a1842617b2c260fb842ba11d2f`.
+The shared Thai copy catalogue includes the reviewed W9 labels.
+
+The root holds the sole test lease for serial W9 quick checks: frozen
+dependencies, typecheck and offline build, ten isolated resource cases and
+15 synthetic storage fixtures, complete disposable DB and API checks, the
+16 affected browser specs at both widths, full local H1 and four width/theme
+capture combinations. The resource figures, storage averages and runtime
+results are pending; earlier syntax/pure checks are not full acceptance.
+The later full gate will rerun all stages with no P1/W7 stage reuse. The
+workstation has no Linux runtime; the future authorized Linux release build
+must separately verify the native dependency. No hosted setting or resource
+changes. Deliver W9 with its own gates, then implement and validate the approved home-composition design; W8 runtime/UAT follows. The retained unfiltered 103-project limitation remains open until resolved. W8 retained fixtures and all 61 UAT cases remain pending runtime.
+
+
+### W9 first quick attempt: syntax correction and measured resources - 16 November 2026
+
+The first integrated W9 quick run used base b51ca184b87667ca1c8818686c7160969f2d11b2.
+Dependencies, admin typecheck, offline build, all ten resource cases and all
+15 storage fixtures passed. Disposable database setup stopped while applying
+0093: syntax error at end of input, SQL position 28648. No database test
+suite, API suite, browser suite, H1 or capture stage ran after that failure.
+
+Before editing, all 64 source paths and ten artifact inputs matched their
+freeze, the index was empty, and the runner/processes/listeners were released.
+The complete failed evidence and original changed-file bytes are preserved in
+artifacts/unified-workspace/w9-takeover-20261113/quick-attempt-1-20261116/.
+Failure receipt SHA-256:
+811f5ce8ad0ead27bddea3118abe1f7a070d426693c26900b1abb4c945b621b9.
+
+A bounded read-only review found two SQL CASE expressions inside PL/pgSQL IF
+conditions, at lines 383 and 451, requiring parentheses. Exactly four
+parenthesis characters were added; byte comparison confirmed no other change
+to 0093. Every value, comparison, exception and permission rule stays the same.
+The canonical/executed profile hashes were refreshed. New 0093 SHA-256:
+a2728f6197a3551f5e8c4de379aac462bb4fab2df95a4b68b94d44bf065ab825.
+Delivered migrations 0089-0092 remain byte-identical.
+
+The first attempt's largest individual processing call took
+25.391208 seconds, below the unchanged
+30-second upload deadline. Fixture creation, HTTP and queue overhead are
+separate. All four 100-million-pixel cases retained their exact expected
+samples, released native references and left the native cache empty.
+Peak memory is substantial: PQ reached 9,703,759,872 committed bytes; HLG
+reached 6,831,665,152 working-set bytes. These maxima are from different cases.
+After release, working set was at most 58,040,320 bytes across the ten cases.
+These are Windows observations, not Linux or hosted capacity acceptance.
+The later authorized rollout must validate native Linux behavior and API
+memory headroom, as well as the 30 MB image / 50 MB PDF request-body limits.
+No hosted setting, resource or timeout was changed.
+
+The 15 synthetic fixtures completed: 12 marketing images averaged
+1,572,987.666667 stored bytes; two marketing PDFs averaged 36,222 bytes; the
+private exact PDF remained 3,076 bytes. These are separate arithmetic fixture
+averages, not a forecast of production storage. The original summary remains
+with the failed-attempt evidence.
+
+The lead holds the sole test lease for a fresh W9 quick attempt on the same
+64-path lease. Run the failing database stage first, then the remaining quick
+set once on the corrected source. Earlier failed evidence remains archived;
+the new state/logs have not overwritten it. W9 full validation, delivery,
+the approved home implementation and all W8 runtime acceptance remain pending.
+
+### W9 second quick attempt: approved PDF table bound - 16 November 2026
+
+The syntax-corrected attempt applied 0093 and reached the W9 SQL suite, after
+26 preceding SQL PASS lines. It then failed on the existing 15 MiB marketing
+PDF fixture: the new recorder admitted the approved size, but the older
+`hub.assets.assets_file_size_check` still limited every row to 10 MiB. This
+is a failed DB stage; no later quick stage or full validation ran in this attempt.
+All 64 source paths, ten artifact inputs, the base and empty index matched
+before editing. The runner and test listeners had exited. Evidence is preserved
+under `artifacts/unified-workspace/w9-takeover-20261113/quick-attempt-2-20261116/`;
+failure receipt SHA-256:
+`edc5618651ae5916403ca09e6d1d9a015fd38ebd66725a037ac69aca7d53212d`.
+
+Uncommitted 0093 now gives the shared table its approved PDF envelope: 20 MiB
+for PDF and the existing 10 MiB for other MIME types, retaining nullable legacy
+metadata. The existing legacy registrar still rejects more than 10 MiB. The
+new recorder still applies the private-exact 10 MiB and sanitized-SVG 2 MiB
+limits before the owner-only helper. No function, grant, RLS policy, historical
+row, API contract or timeout changed for this correction. A read-only authority
+sweep confirmed ordinary callers cannot write the table or invoke that helper;
+trusted owner writes remain privileged. The docs/36 card states the table and
+entry-point distinction. Delivered migrations 0089-0092 remain unchanged.
+
+Retain the original 15 MiB regression and add rollback-only boundary probes:
+marketing PDF 20 MiB accepted and one byte over rejected; legacy and private
+PDF 10 MiB accepted and one byte over rejected; direct image and PDF writes
+above their table bounds rejected by the named constraint. Runtime results are
+pending. New 0093 SHA-256:
+`184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6`.
+Both profile hash references are refreshed; old attempt receipts stay unchanged.
+
+The root retains the sole test lease: rerun DB first, followed by the remaining
+serial W9 quick checks on a fresh 64-path freeze. No hosted change, commit,
+full-gate acceptance or UAT is claimed. W9 delivery still precedes the approved
+home implementation and W8; the accumulated home performance blocker is OPEN.
+
+### W9 third quick attempt: bounded readers and fixture corrections - 16 November 2026
+
+The third attempt passed disposable DB (95 Node checks, 46 SQL suites and
+25 concurrency scenarios), frozen dependencies, typecheck, offline build,
+all ten resource cases and all 15 storage fixtures. API completed with
+2,826 passed, four failed, 11 existing skips, 13 warnings and 822 passed
+subtests in 4,066.99 seconds. UI, H1 and captures did not run. The filtered
+50-project home regression passed in this attempt; the separate unfiltered
+103-project home blocker remains OPEN.
+
+Before editing, all 64 source paths and ten artifact inputs matched the
+freeze, HEAD remained b51ca184b87667ca1c8818686c7160969f2d11b2, the index
+was empty, and the runner, test processes and listeners had exited. Preserve
+all 28 evidence files and the pre-repair bytes under
+`artifacts/unified-workspace/w9-takeover-20261113/quick-attempt-3-20261116/`.
+Failure receipt SHA-256:
+`d8c12938e16c330aaa6572331d8746ecba1828efa81248cda432d2a282146890`.
+
+The four failures were fixture mismatches with the approved W9 behavior:
+two bounded-reader tests patched module constants after Python had captured
+their default arguments; pass their explicit small test bounds. The real
+Knowledge approval fixture lacked a media category and correctly received
+`knowledge_category_required`; make known-category fixtures explicit and add
+the unknown-category private-exact denial. Check staged pending uploads by
+original-source identity, preserve successful prior approval and prove a
+stale finalization rolls back the entire rights/link transaction. The upload
+conflict fixture constructed an exception without its server message; use
+the server-error constructor and retain the exact stable error code and
+no-install assertions. No permission or error contract is relaxed.
+
+The reader sweep also found staff original delivery still capped every file
+at 10 MiB. Apply the existing MIME-specific stored limit so approved marketing
+PDFs up to 20 MiB can be read. Retain bounded reads, checksums, exact size,
+no-store, final authorization and the thumbnail limit. Local and hosted
+storage doubles cover 15/20 MiB, one byte over, corruption and scope revocation.
+This is part of the approved W9 stored-reader contract; no migration, timeout,
+permission rule or hosted setting changes. Migrations 0089-0093 are unchanged
+by these repairs. The permission card now points to this log for runtime status.
+
+Expand the lead-owned W9 explicit inventory from 64 to 68 paths by adding
+`apps/api/sena_hub_api/content_asset_delivery.py`,
+`apps/api/tests/test_content_asset_delivery.py`,
+`apps/api/tests/test_content_scope_read_boundaries.py` and
+`apps/api/tests/test_knowledge.py`. Other repaired files already belong to W9.
+The original integration receipt stays historical; a separate correction
+inventory records these additions and the before/after hashes.
+
+Resource measurements for this attempt: maximum individual processing call
+20.784754 seconds under the unchanged 30-second deadline; peak committed
+memory 9,615,347,712 bytes; peak working set 7,312,461,824 bytes; released
+working set at most 56,553,472 bytes. The maxima come from different cases.
+All four 100-million-pixel cases released native references and cache entries.
+The 12 marketing images averaged 1,572,987.666667 stored bytes, the two
+marketing PDFs 36,222 bytes, and the private exact PDF remained 3,076 bytes.
+These Windows fixture measurements are not Linux or hosted capacity acceptance.
+
+The root holds the sole test lease for a fresh serial quick sequence on the
+68-path freeze: run the six affected API files first, then the complete quick
+set, including the full API suite required for the shared reader change.
+Do not reuse a failed-attempt stage as final-source acceptance. The complete
+W9 full gate, delivery, approved home implementation and W8 UAT remain pending.
+No hosted change or W9 commit has occurred.
+
+
+### W9 fourth quick attempt: browser fixture corrections — 16 November 2026
+
+The fourth attempt passed six focused API files (247 tests, two subtests, one
+warning), disposable DB (95 Node checks, 46 SQL suites, 25 concurrency scenarios),
+dependencies, typecheck, offline build, ten resource cases, 15 storage fixtures,
+and the full API suite: 2,840 passed, 11 existing skips, 13 warnings and 822
+passed subtests in 3,926.79 seconds. UI 1280 then stopped with 139 passed and
+16 failed of 155. UI 390, H1 and captures did not run. No full gate or delivery.
+
+Before editing, all 68 source paths and ten artifact inputs matched the freeze,
+HEAD remained b51ca184b87667ca1c8818686c7160969f2d11b2, and the index was empty.
+At 09:57:38 UTC the runner, test processes and ports had exited. All 27 run
+files, 68 pre-repair source files and 51 browser evidence files are preserved in
+`artifacts/unified-workspace/w9-takeover-20261113/quick-attempt-4-20261116/`.
+Failure receipt SHA-256:
+`7bdf6168050e33dbab70d1ba684c89b555b83d6f81a856ffbf7f0c8919fd38e4`.
+
+Five already-leased specs receive bounded fixture/assertion corrections. Ten
+failures shared three exact-label category selectors; select the combobox by
+its existing accessible name, preserving selected values. Four logo failures
+used identical pixels distinguished only by metadata that W9 correctly strips;
+give distinct synthetic files distinct pixels, retaining genuine reuse checks.
+The private-evidence mock must distinguish ordinary asset detail reads from
+explicit contextual evidence opt-in; no evidence read is counted or returned
+before opt-in. A footer test measured two rectangles across an intervening
+image/workflow layout change; wait for workflow loading and measure atomically,
+strengthening the check to footer top at or below save-button bottom. No CSS,
+product behavior, permission, migration, copy or timeout change is justified.
+
+Failure-loop validation: run these five specs at both widths, then the 16-spec
+affected selection at both widths, typecheck/offline build, local H1 and captures.
+The earlier successful API/DB/resource/dependency/storage results are historical
+quick evidence for byte-unchanged product/API-test sources, with exact origins
+and hashes recorded separately; do not relabel the failed run green. The final
+full gate must rerun all stages on the final source set. No W9.1 capacity change
+is included in W9.
+
+Owner now keeps TEST on the shared production-warehouse VPS. The 4 MP candidate
+is rejected; W9.1 must evaluate at least 24 MP on local Linux, including JPEG
+shrink-on-load, killable bounded native work, streaming and placement alternatives,
+and aggregate PDF bounds. New hosted packages need separate approval. The 2.25
+GiB TEST caps are approved in principle only; exact configuration/apply/verify/
+rollback approval is still required. No second-host purchase or provisioning.
+Until protections are applied/verified and a maintenance window is approved,
+no W6+ hosted rollout, migrations, imports or UAT bulk operation is admitted.
+
+Read-only ownership metadata places the other `postgres` container in the ETL
+network with ETL storage and separate application/admin containers; it is not
+proven TEST-only and is excluded from cap changes. The first mapping collector
+retains its partial STOP at journal-search exit 1. A subsequent sanitized job
+observation hit the strict no-new-swapping condition: 61 swap-in pages, zero
+swap-out, zero swap growth and zero direct reclaim/allocation stalls. Warehouse
+health was good and no retained kernel OOM/pressure matches were found. Further
+VPS observation is stopped pending owner direction; no watcher, mutation or
+load test was started. Evidence remains under
+`.local/hosted-capacity-w9-20261116/interim/`. Historical capacity receipts remain
+unchanged; the docs/46 rule is prepared in its isolated documentation worktree.
+
+The root retains the sole test lease for the browser repair checks and remaining
+W9 validation. The revised order is W9 delivery, interim TEST protections,
+W9.1 design and approved home implementation, W8 UAT, then a separately approved
+hosted rollout within the approved window. The 103-project home blocker remains
+OPEN; no hosted capacity acceptance or UAT success is inferred from W9 gates.
+
+### W9 quick evidence completed; ready for fresh full gate — 16 November 2026
+
+The five browser-fixture corrections passed 27 focused tests at each width.
+The affected 16-spec selection passed 155 at 1280 and 155 at 390; typecheck and
+offline webpack build passed. Local H1 passed 69 Node checks, 10 smoke checks,
+and browser groups 77 normal, three flags and seven outage checks (87 browser
+tests). No application, permission, migration or timeout change was needed.
+
+Capture generation then failed eight cases: a nested `has` locator redundantly
+included its ancestor card/region, and the brand detail mock parsed a missing
+evidence context on ordinary GET requests. All 68 source and 11 artifact inputs
+matched before repair. The failed state, logs, generated source and screenshots
+remain in `artifacts/unified-workspace/w9-takeover-20261113/capture-failure-20261116/`;
+failure receipt SHA-256:
+`f7e4fcd559c75cb31abe9399dc8ed241544db394a7370366e7fea80f701e7adf`.
+Only the capture artifact changed: use a relative exact-caption row selector and
+return ordinary asset detail without evidence before explicit opt-in. Expected
+messages, contextual headers, stock exclusion and no-write assertions remain.
+
+The capture-only retry completed at 10:46:20 UTC: eight passed, 20 original
+viewport screenshots and matching sidecars, individually inspected at 1280/390
+in light/dark. Evidence:
+`artifacts/unified-workspace/w9/capture/evidence/w9-capture-repair-20261116104520/`.
+Visual review SHA-256:
+`1ba00edae30f3ea355df673609caebb442f5255d722312c921f0a4f5eb63a44d`.
+These are synthetic presentation captures, not processing/storage/permission
+or UAT acceptance. Scrolled mobile captures show the selected control; offscreen
+fields are established by assertions and sidecars, not claimed visible.
+
+The final quick receipt combines 15 successful byte-unchanged stages from
+attempt four, five successful browser-repair stages and two fresh capture
+stages, plus the two focused browser checks. Both failed runs retain their
+failed status. Attempt four supplied 247 focused API passes plus two subtests;
+95 Node DB checks, 46 SQL suites and 25 concurrency scenarios; and full API
+2,840 passed, 11 existing skips, 13 warnings and 822 subtests. All ten resource
+cases and 15 storage fixtures passed. Full-gate acceptance reuses none of them.
+
+Current Windows resource evidence: largest committed-memory peak 9,704,144,896
+bytes; largest working-set peak 6,840,782,848 bytes; released working set at most
+55,918,592 bytes. Maxima belong to different cases. The slowest individual
+processing call was 26.349084 seconds, leaving about 3.65 seconds of the unchanged
+30-second deadline before HTTP/storage overhead. All four 100-million-pixel
+cases released native references and left an empty cache. Stored averages remain
+1,572,987.666667 bytes for 12 marketing images, 36,222 for two marketing PDFs,
+and 3,076 for the byte-exact private PDF. This is local Windows acceptance only;
+Linux capacity and hosted admission are pending, with no timeout increase.
+
+Complete final-source browser collection contains 737 tests in 81 files at each
+width; collection is not a runtime pass. Capture proof SHA-256:
+`8829e9f4109aac689b2a54b59ce1e2e8b91490f02aa0135cc646684c05b5e032`.
+At 10:48:08 UTC no test runner or bound test port remained. The index is empty,
+HEAD remains b51ca184b87667ca1c8818686c7160969f2d11b2, and the final source set is
+68 paths. Only this post-quick log append differs from the capture source proof.
+
+Owner conditionally approved the exact interim cap diff, including Restart=no
+and OOMPolicy=kill. Apply only after W9 delivery, realistic admin-render evidence
+supporting its 384 MiB cap, fresh read-only admission and an approved quiet
+interval. Verify each cap, slice hierarchy and process OOM score +1000. An OOM
+or crash leaves TEST down for operator action and must be reported; no automatic
+restart. The ETL PostgreSQL container remains excluded and untouched.
+
+Owner clarified that swap-in alone is recorded but is not a STOP without
+swap-out/growth, allocation stalls, direct reclaim, cgroup high/max/OOM events,
+kernel OOM or warehouse health degradation. One passive observation at 10:46 UTC
+recorded 160 swap-in pages and none of those STOP conditions; warehouse health
+remained good. Receipts stay in `.local/hosted-capacity-w9-20261116/interim/`.
+No hosted mutation, resident watcher or load test occurred. A fixed maintenance
+window is not approved. W9.1 first attributes excess copies/float buffers, then
+measures at least 24 MP locally on Linux under proposed caps; no W9 change here.
+
+The root holds the sole test lease for the fresh twelve-stage W9 full gate.
+All stages run again on the final freeze. Delivery remains conditional on that
+gate and its verification. Next: interim protections, W9.1 and approved home
+performance work, W8 UAT, then separately approved hosted rollout in its window.
+The 103-project home blocker remains OPEN; W8 remains NOT_RUN.
+
+
+### W9 full gate interrupted; fresh restart — 17 November 2026
+
+The 16 November full gate did not complete. Its durable state still said running
+at the API stage, but at 02:41:41 UTC on 17 November PID 35980 and all test
+processes/listeners were absent. The API log ends at 22%, without a final pytest
+summary or disposable completion marker. Typecheck, offline build and production
+imports/isolation (four checks) passed; no later stage is accepted. The last API
+log write was 17:58:38 Bangkok on 16 November, followed by local Windows sleep
+event 42 at 17:58:56. This is a correlated machine interruption, not a recorded
+product failure or proof of the exact process-termination mechanism.
+
+All 68 frozen source paths, 438 evidence files and four operators matched the
+16 November freeze. HEAD remains b51ca184b87667ca1c8818686c7160969f2d11b2 and the
+index is empty. Original state/logs stay unchanged; the complete interrupted
+attempt and pre-append log are preserved under
+`artifacts/unified-workspace/w9-takeover-20261113/full-interruption-20261117/`.
+No application, spec, schema, permission, timeout or hosted change is needed.
+
+The root retains the sole test lease for `artifacts/unified-workspace/w9-full-20261117/`.
+Run all twelve full stages fresh, with no reuse. The original quick acceptance
+receipt stays immutable. A separately named restart admission retains the same
+quick evidence and final-source browser inventory; only this append changes the
+68-path source map. The old failed/interrupted attempts remain historical and
+are pinned by the new freeze. W9 delivery, interim cap admission, local Linux
+measurements, home performance implementation and W8 UAT are still pending.
+The laptop must remain awake through the local gate; no power setting is changed.
+
+### W9 blocked at framework security build check — 17 November 2026
+
+The 09:45 Bangkok full restart passed typecheck and stopped during build at
+09:46 with exit 1. Compilation, TypeScript and static generation succeeded;
+Next.js then raised SecurityFatalError for the existing pinned 16.4.3 dependency.
+No API, DB, H1 or browser stage ran in this attempt. At 09:54 the runner and test
+ports were absent. All 68 source paths and frozen evidence/operators matched.
+The failed state, logs and pre-append source log are preserved in
+`artifacts/unified-workspace/w9-takeover-20261113/full-build-failure-20261117/`;
+failure receipt SHA-256:
+`9e07968827d52803bbba69a963d36ae9afb395e1fd97112be6dc753181f3c394`.
+
+Public advisory GHSA-mfr8-8qww-v76h identifies 16.4.5 as patched. Its specific
+cache-call combination is absent from the current source, but other fixes in
+that release concern response forwarding and the image optimizer; complete
+inapplicability is not established. No hosted exposure or exploitation is claimed.
+No advisory suppression, retry acknowledgement or automatic upgrade was performed.
+
+A minimal two-file patch is prepared under
+`artifacts/unified-workspace/w9-takeover-20261113/next-security-proposal-20261117/`.
+It changes only apps/admin/package.json and apps/admin/package-lock.json to
+Next.js 16.4.5 and matching compiler/environment packages, preserving all other
+versions. Patch SHA-256:
+`c02c2d1d3683bfde9c134eddca4d86f141e4c3dd220bd63ff77e2c220fb41d65`.
+These paths are outside the 68-path lease, so the proposed 68-to-70 expansion
+requires owner approval before application. Main dependencies remain unchanged;
+only the required log records this failed gate. No gate is running and no W9
+delivery or hosted change occurred. Quick checks and a fresh full gate follow
+only after the concrete correction is approved and integrated.
+
+### W9 framework correction approved; 70-path lease — 17 November 2026
+
+Owner explicitly approved the proposed two-file 16.4.3-to-16.4.5 dependency
+patch and the 68-to-70 path lease. Applied only apps/admin/package.json and
+apps/admin/package-lock.json from the reviewed candidate, with exact before/after
+hash checks. Patch SHA-256 remains
+`c02c2d1d3683bfde9c134eddca4d86f141e4c3dd220bd63ff77e2c220fb41d65`.
+The matching framework environment/compiler packages change; all unrelated
+versions remain pinned. No runtime source, test, permission, migration, API
+contract, timeout, advisory-suppression configuration or hosted setting changed.
+
+The correction receipt and pre-change dependency files/log/capture manifest are
+under `artifacts/unified-workspace/w9-takeover-20261113/quick-security-repair-20261117/`.
+Correction receipt SHA-256:
+`e58c0529c754712b91e0f7f39735b7697c31ed65d2101c39c57f23ba86674dea`.
+Earlier failed/interrupted states and quick acceptance receipts remain unchanged.
+The 17 November build failure is not relabelled passed.
+
+The root holds the sole test lease for the dependency correction's serial quick
+checks: frozen admin dependency install, typecheck, offline build, all 16 affected
+browser specs at 1280 and 390, H1 and fresh captures. Review the new images and
+complete browser inventory before the fresh twelve-stage full gate. Earlier
+backend/resource/storage quick evidence applies only to byte-unchanged inputs;
+no previous UI/H1/capture result accepts the changed framework. All full stages
+run again on the final 70-path freeze. W9 is not delivered and hosted stays unchanged.
+
+### W9 framework repair quick gate passed; fresh full gate — 17 November 2026
+
+The approved framework correction completed all eight fresh quick stages at
+03:54:56 UTC (10:54 Bangkok): frozen admin dependencies, typecheck, offline
+webpack build, the affected 16-spec browser selection at 1280 and 390, local H1,
+capture preparation and captures. Both browser runs passed 155 tests. H1 passed
+69 Node checks, 10 smoke checks and browser groups of 77 normal, three flags and
+seven outage tests. Capture checks passed eight tests in 26.1 seconds. The
+installed framework is 16.4.5; the previous security build failure stays failed
+in its preserved evidence. No suppression or timeout change was used.
+
+All 70 source paths and 13 artifact inputs matched the quick freeze before this
+log append. At 03:55:59 UTC the runner, test processes and test ports were absent;
+the index remains empty and the base remains
+`b51ca184b87667ca1c8818686c7160969f2d11b2`. Quick proof SHA-256:
+`107d790f1b7c1dedc61f6e673a3188671e9b639057333313bb6644b412d746ed`.
+The new evidence is under
+`artifacts/unified-workspace/w9-takeover-20261113/quick-security-repair-20261117/`.
+
+Twenty fresh original images were reviewed across 1280/390 and light/dark:
+`artifacts/unified-workspace/w9/capture/evidence/w9-security-repair-20261117035402/`.
+Visual receipt SHA-256:
+`c14b9ad3bdf5e5e0dfeb1e2184120d3f99e469112379ae60ba69db8abb648078`.
+The lead reviewed the ten desktop originals; an independent reviewer inspected
+the ten mobile originals and their sidecars. Opt-in, declared size reduction,
+explicit Use, draft caption, private stock evidence and one-file confirmation
+are legible, with no horizontal overflow. Some controls and explanations are
+outside these scrolled viewports. The disabled assistant badge overlaps lower
+content in intermediate-scroll mobile captures without covering the inspected
+load, caption Use or changed-caption controls; these images do not prove
+end-scroll clearance. They are mocked presentation evidence, not processing,
+storage, permission, Linux capacity or UAT acceptance.
+
+The complete browser inventory remains 737 tests in 81 files at each width;
+collection alone is not a runtime pass. Its new receipts and preserved capture
+manifest/generated files are under `security-final-evidence-20261117/` in the
+takeover folder. The new admission combines 15 retained backend/resource/storage
+quick stages for unchanged inputs with eight fresh security-repair stages.
+Earlier browser/H1/capture and focused checks remain historical only. Retained
+backend totals are 247 focused API tests plus two subtests; 95 Node DB checks,
+46 SQL suites and 25 concurrency scenarios; full API 2,840 passed, 11 existing
+skips, 13 warnings and 822 subtests. Ten resource cases and 15 storage fixtures
+remain the previously recorded Windows evidence, with no hosted acceptance.
+No full stage is reused. Preserve every earlier failed/interrupted attempt.
+
+A separate passive hosted observation triggered the owner's STOP rule. Between
+the 09:56 and 10:43 Bangkok samples, swap-out increased by 551 pages and swap use
+grew by 1,792 KiB. The brief second read itself had only 12 swap-in pages and no
+growth; that short interval does not negate the cross-sample finding. Comparable
+Hub cgroups recorded no high/max/OOM event increments; allocation stalls and
+direct reclaim did not increase. Warehouse health remained good and no OOM
+was recorded in the inspected state/journal. The cause is not established.
+Further VPS checks are stopped and all hosted mutations remain blocked.
+Evidence and exact comparison:
+`.local/hosted-capacity-w9-20261116/interim/swap-stop-20261117.md` and
+`observations/20261117T025621Z-to-034315Z-comparison.json`. No hosted change,
+load test, watcher or warehouse mutation occurred. The local gate is unaffected.
+
+The root holds the sole test lease for the fresh twelve-stage full gate in
+`artifacts/unified-workspace/w9-full-security-20261117/`. Freeze the final 70-path
+source and new admission, then run every stage again. Delivery is pending that
+gate and its verification; no W9 commit or push is claimed. Next remain interim
+protections with local Linux admission and an approved quiet interval, W9.1 and
+the approved home slice, then W8 UAT. The unfiltered 103-project home blocker
+remains OPEN, W8 remains NOT_RUN, and hosted rollout is not authorized.
+
+### W9 full browser failure; two legacy evidence-load tests corrected — 17 November 2026
+
+The 11:00 Bangkok full run passed typecheck, offline build, four production
+import/isolation checks, the complete API suite, disposable DB and local H1.
+API: 2,840 passed, 11 existing skips, 13 warnings and 822 subtests in 3,591.11
+seconds. DB: 95 Node checks, 46 SQL suites and 25 concurrency scenarios. H1:
+69 Node checks, 10 smoke checks, and 77 normal/three flags/seven outage browser
+checks. The desktop full browser stage finished at 12:34 Bangkok with 734
+passed and three failed of 737 in 25.0 minutes. Mobile full UI and the later
+credential/diff/broad scans did not run. This full gate failed; no delivery.
+
+All three failures omit W9's existing explicit evidence-load prerequisite:
+the two viewport cases in `tests/ui/brand-review.spec.ts` expect logo approval
+enabled immediately, and `tests/ui/project-groups.spec.ts` clicks attached-file
+approval while still disabled. The shared dialog correctly waits for evidence
+to be loaded. A sweep of all local browser specs found exactly these two stale
+callers; the other logo batch tests already load evidence explicitly.
+
+At 05:35:40 UTC the runner, test processes and ports were released. All 70
+source paths, evidence/operator pins, unchanged migrations, empty index and live
+base were verified before editing. Preserve 101 files, including the complete
+failed attempt, all original source files, the two additional original specs
+and browser failure artifacts, under
+`artifacts/unified-workspace/w9-takeover-20261113/full-ui-failure-20261117/`.
+Failure receipt SHA-256:
+`d717110e13b33fe12850e3820793cd15964278826a4926d6c383459161c58f51`.
+The original failed state and logs remain unchanged.
+
+Under the lead-owned W9 failure loop, expand the explicit path inventory from
+70 to 72 by adding those two specs. The reviewed correction adds exactly seven
+lines: import existing copy, assert confirmation disabled before loading,
+explicitly load evidence, then require enabled confirmation. Every pre-existing
+line, expected message, permission assertion and no-write/one-review assertion
+is preserved, including original line endings. Existing successful asset GET
+mocks already support the legacy-null evidence response; no fabricated metadata
+or mock authority is added. No application behavior, permission rule, API
+contract, migration, timeout, Thai label or hosted setting changes.
+
+Patch SHA-256:
+`63cbe5b3e9acc859a5253ac5f7e942f469ce5d14ba21b4eb077efbeb0a774857`.
+Proposal and sweep are under `full-ui-review-20261117/`; exact applied hashes
+and pre-change bytes are under `quick-legacy-ui-repair-20261117/` in the takeover
+folder. This is a W9 test correction, not a further W6 selector lease change.
+
+The root holds the sole test lease for typecheck and both complete corrected
+specs at 1280 and 390. Retain the successful security quick build, H1, captures
+and other affected browser selection only as explicitly retained evidence for
+unchanged inputs. Recollect the complete UI inventory on the new 72-path source
+before the next full gate. Every full stage runs fresh; no successful stage
+from this failed full run substitutes for final-source acceptance. The VPS swap
+STOP, Linux/cap admission, home blocker and W8 NOT_RUN status remain unchanged.
+
+### W9 legacy browser correction quick gate passed — 17 November 2026
+
+The correction completed at 12:41:51 Bangkok: typecheck passed, and both complete
+corrected specs passed 11 tests at 1280 (23.8 seconds) and 11 at 390 (24.3 seconds).
+All three previously failing cases now pass with the evidence-load prerequisite
+and their original permission/write assertions intact. At 05:42:54 UTC the
+runner, test processes and ports were released. The base is unchanged and the
+index is empty. The 72 source paths and 14 artifact inputs matched their quick
+freeze before this append. Proof SHA-256:
+`f3f2c1a9f1fefe5d00d3bad29aea3b5874bcf0d83e0b7e53147658e36b876767`.
+Applied-correction receipt SHA-256:
+`13c04736396db5988705acd011e96dbec627d7c79a299e29a6b3fbf88232bd6a`.
+
+Fresh complete browser collection still contains 737 tests in 81 files at each
+width; collection is not a runtime pass. Retain the dated security-repair visual
+review only after checking all 92 capture source files, generated fixtures and
+20 image/sidecar pairs against their recorded hashes. Every byte matched; no
+new capture or visual review is claimed. Inventory and retention receipts are
+under `artifacts/unified-workspace/w9-takeover-20261113/legacy-ui-final-evidence-20261117/`.
+The new admission explicitly distinguishes 23 retained quick stages from the
+three fresh test-correction stages. The failed full run remains 734 passed and
+three failed; its successful backend stages are not reused as full acceptance.
+
+The root holds the sole test lease for the fresh twelve-stage full gate in
+`artifacts/unified-workspace/w9-full-legacy-ui-20261117/`, after freezing its
+reviewed 72-path source and admission. All full stages run again. W9 delivery
+is still pending; no commit, hosted mutation, Linux capacity or UAT acceptance
+is claimed. The recorded VPS swap STOP and subsequent-work prerequisites remain.
+
+### W9 mobile full-gate failure and staged readiness correction — 17 November 2026
+
+The 12:45 Bangkok full run ended at 15:04 with two mobile failures. API:
+2,840 passed, 11 existing skips, 13 warnings and 822 subtests in 4,258.31
+seconds. DB: 95 Node checks, 46 SQL suites and 25 concurrency scenarios.
+H1: 69 Node checks, 10 smoke checks and 87 browser checks (77/3/7).
+Typecheck, offline build and four production checks passed. Complete browser
+results: 737 passed at 1280 in 27.8 minutes; 735 passed and two failed at 390
+in 28.4 minutes. Credential, diff, index-diff and broad scans did not run.
+This failed run is not delivery evidence for a completed gate.
+
+The process/port lease was released and the 72-path source, base, empty index,
+evidence and operators matched the freeze before editing. Preserve 99 files
+under `artifacts/unified-workspace/w9-takeover-20261113/full-mobile-failure-20261117/`,
+including the full attempt, original source and browser traces. Failure receipt:
+`ac302a9cf3107d4834da2437075ce870b654f52f539849fc8da6b59e1ecfdbb2`.
+
+Both failures start a nested-editor assertion before its outer navigation and
+workspace projection finish. Brand registration returned 201; its workspace
+request returned 200 in 4,510 ms, about 193 ms after the original five-second
+assertion expired. The later 403 detail reads began after teardown restored
+the publishing grant, so they do not establish a registration permission failure.
+The website-media viewer path returned 200 throughout: projection 2,619 ms,
+media 1,972 ms and website queue 130 ms. Its exact heading appeared 35.5 ms
+after the assertion expired. These observed latencies remain recorded; this
+test repair is not performance acceptance and does not close the home blocker.
+
+Expand the W9 inventory from 72 to 73 by adding `tests/ui/brands.spec.ts`.
+The four added assertions check the brand destination, selected Data tab,
+and selected Media tab after each website-media navigation. All original
+expectations, permission/write checks, fixtures and timeout values stay intact.
+There is no application, API, migration, permission or hosted change. Exact
+patch and correction hashes are in `quick-readiness-repair-20261117/`.
+
+The proposed docs/11 exception for verified API/DB/H1 stage reuse is awaiting
+owner approval. No stage is reused under that proposal yet, and the current
+full-rerun rule remains in force. Hosted swap STOP, Linux/cap admission,
+the open home performance blocker and W8 NOT_RUN remain unchanged.
+The root holds the sole test lease for typecheck and both complete corrected
+specs at 1280 and 390, in separate disposable harnesses.
+
+### W9 staged-readiness quick gate passed — 17 November 2026
+
+The two corrected complete browser specs passed seven tests at 1280 and seven
+at 390 (1.3 minutes per suite), with typecheck passed. The three-stage run
+finished at 16:05:23 Bangkok. No timeout value or original assertion changed;
+removing the four added readiness lines reproduces both pre-change spec files
+byte for byte. This focused success does not replace the pending complete
+browser gate or establish page performance acceptance.
+
+All 73 source paths and 18 artifact inputs matched the quick freeze, the base
+remained unchanged, and the index was empty. No local runtime process or known
+test-port listener remained at verification. Receipt:
+`artifacts/unified-workspace/w9-takeover-20261113/quick-readiness-repair-20261117/completion-receipt.json`.
+Receipt SHA-256: `d5ccb3967b987b368f6fa5d28f0a323e6801495be44a0ff0820d9b01b1772f11`.
+
+The sole test lease is released. No further full runner has been launched.
+The owner decision on the narrowly scoped docs/11 stage-reuse proposal is
+pending; no API/DB/H1 result has yet been reused as final acceptance. W9 is
+uncommitted. Hosted STOP and every later-slice prerequisite remain unchanged.
+
+### Owner approved narrow gate-stage reuse — 17 November 2026
+
+Owner response: "Yep Approve" to the proposal for reusing passed backend stages
+after browser-test-only corrections. Record the exception in docs/11 before
+use. Its scope is exactly the proposed non-H1 browser specs and delivery
+documentation; broader changes still require the ordinary full gate. No test,
+timeout, viewport coverage, runtime concurrency or hosted rule is relaxed.
+
+The final inventory grows from 73 to 74 paths only to include the approved
+docs/11 policy. Relative to the previous 72-path full run, the only changed
+paths are docs/11, this log, `tests/ui/brands.spec.ts` and
+`tests/ui/website-content-review.spec.ts`. Reuse admission must verify all
+remaining source inputs, runtime continuity, original successful stage logs
+and their hashes before the new gate starts. Credential files are excluded
+from inspection and hashing. Preserve the original failed full state.
+
+The candidate retained stages are the 12:45 Bangkok run's API (2,840 passed,
+11 existing skips, 13 warnings, 822 subtests), DB (95 Node, 46 SQL and 25
+concurrency) and H1 (69 Node, 10 smoke and 87 browser). They will be labelled
+reused individually. Typecheck, offline build, production checks, both complete
+737-test browser suites and all four final scans run fresh. Failed mobile and
+previous desktop browser evidence do not substitute for either new browser run.
+
+Admission, final freeze, fresh logs and combined verification belong under
+`artifacts/unified-workspace/w9-full-reuse-20261117/`. The root holds the sole
+test lease for this serial gate after reuse admission passes. W9 delivery is
+pending. The VPS swap STOP, unapplied interim caps, missing local Linux capacity
+acceptance, open home performance blocker and W8 NOT_RUN status are unchanged.
+
+Reuse runtime admission: current Node 24.19.0, Python 3.12.14, PostgreSQL 17.10,
+uv 0.12.9, browser-test library 1.63.0 and framework 16.4.5 match the unchanged
+declared dependencies; all 65 installed Python distributions match the lock.
+The 12 sampled executable/package files predate the original full-run start.
+The sole lead records no install, runtime/browser update, app configuration or
+environment change since that start. Historical executable hashes were not
+recorded: continuity is based on locked inputs, prior log/trace metadata,
+sampled timestamps and this session attestation, not retrospective hash proof.
+Current runtime files are now pinned and rechecked before every fresh stage.
+H1's prior generated-build/environment checks are retained under those limits;
+the new build and credential scans run fresh. No credential file was inspected
+or hashed. Runtime receipt SHA-256:
+`ce6513daa0b2c78c8461b264e60b39b395b04bc694fa2be39dc5bf48adbc2d65`.

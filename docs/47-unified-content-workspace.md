@@ -744,6 +744,42 @@ W9 upload copy (owner decision, 6 November 2026):
 | upload_image_output_limit | ภาพหลังปรับขนาดยังเกิน 10 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง |
 | upload_pdf_output_limit | PDF หลังปรับขนาดยังเกิน 20 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง |
 | upload_pdf_reexport | ไม่สามารถลบข้อมูลแฝงของ PDF ได้อย่างปลอดภัย กรุณาส่งออก PDF ใหม่แล้วอัปโหลดอีกครั้ง |
+| upload_purpose | บทบาทของไฟล์ |
+| upload_category | ประเภทไฟล์ก่อนอัปโหลด |
+| upload_category_unknown | ยังไม่ระบุประเภท · เก็บเป็นไฟล์ส่วนตัว |
+| upload_unsupported | ประเภทไฟล์ไม่รองรับสำหรับรายการนี้ |
+| upload_limits | ภาพไม่เกิน 30 MB · PDF ไม่เกิน 50 MB · ไฟล์ส่วนตัวไม่เกิน 10 MB · SVG ไม่เกิน 2 MB |
+| upload_media | ภาพและเอกสาร |
+| upload_files | เลือกหลายไฟล์ |
+| upload_batch_limit | เลือกได้ไม่เกิน 20 ไฟล์ |
+| upload_file_suggestions | คำแนะนำจากไฟล์ · ยังไม่ยืนยัน |
+| upload_use | ใช้ |
+| upload_evidence_load | ดูข้อมูลจากไฟล์ |
+| upload_evidence_none | ไม่มีข้อมูลจากไฟล์สำหรับรายการนี้ |
+| upload_evidence_error | โหลดข้อมูลจากไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง |
+| upload_caption | คำบรรยายจากไฟล์ |
+| upload_credit | เครดิตจากไฟล์ |
+| upload_taken_at | วันที่ถ่ายจากไฟล์ |
+| upload_offset_unknown | ไม่ทราบเขตเวลา |
+| upload_image_kind | ลักษณะภาพจากไฟล์ |
+| upload_tags | แท็กจากไฟล์ |
+| upload_keywords | คำสำคัญที่ยังไม่ตรงกับแท็ก |
+| upload_stock | พบข้อมูลภาพสต็อก · ไม่ใช้การอนุมัติสิทธิ์แบบชุด |
+| upload_stock_evidence | หลักฐานภาพสต็อกจากไฟล์ |
+| upload_credit_evidence | หลักฐานเครดิตจากไฟล์ |
+| upload_proximity | ตำแหน่งภาพเทียบกับโครงการ |
+| upload_near | ใกล้โครงการ |
+| upload_far | ไกลโครงการ |
+| upload_unknown | ยังไม่ทราบ |
+| upload_unconfirmed | การใช้คำแนะนำเปลี่ยนเฉพาะข้อมูลที่กำลังแก้ไข ยังไม่ยืนยันข้อมูลหรือสิทธิ์ |
+| upload_credit_too_long | เครดิตยาวเกินช่องนี้ กรุณาเลือกข้อความที่ต้องการใช้ |
+| upload_photo | ภาพถ่าย |
+| upload_render | ภาพจำลอง |
+| upload_binding_category | เลือกประเภทไฟล์สำหรับใช้กับโครงการก่อนอัปโหลด ขั้นตอนนี้ไม่รองรับไฟล์ที่ยังไม่ระบุประเภทหรือเอกสารกฎหมาย |
+| upload_stock_1 | Shutterstock |
+| upload_stock_2 | Getty |
+| upload_stock_3 | iStock |
+| upload_stock_4 | Adobe Stock |
 | file_metadata_suggestions | ข้อเสนอจากข้อมูลในไฟล์ |
 | file_metadata_source | จากข้อมูลในไฟล์ |
 | file_metadata_use | นำมาใช้ |
@@ -755,6 +791,23 @@ W9 upload copy (owner decision, 6 November 2026):
 | file_metadata_location_unknown | ไม่ทราบความใกล้โครงการ |
 | file_metadata_offset_unknown | ไม่ทราบเขตเวลาที่ถ่าย |
 | file_metadata_unmapped_tags | คำสำคัญจากไฟล์ที่ยังไม่ตรงกับป้ายกำกับ |
+| knowledge_category_required | ไฟล์นี้เป็นไฟล์ส่วนตัว กรุณาระบุบริบทและประเภทไฟล์ก่อนนำไปใช้ภายนอก |
+| knowledge_rights_ineligible | รายการเปลี่ยนแปลงหรือพบหลักฐานที่ต้องตรวจสิทธิ์รายไฟล์ กรุณาโหลดใหม่ |
+| knowledge_upload_context_limit | ไฟล์มีขนาดเกินขีดจำกัดของบริบทที่ได้รับอนุญาต |
+| knowledge_integrity | ไฟล์หรือรายการเดิมไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว |
+| upload_svg_limit | SVG ไม่เกิน 2 MB ต่อไฟล์ |
+| upload_context_invalid | กรุณาระบุรายการและประเภทไฟล์ก่อนอัปโหลด |
+| upload_busy | กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง |
+| upload_invalid_file | ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง |
+| upload_color_export | กรุณาส่งออกภาพเป็น sRGB แล้วอัปโหลดอีกครั้ง |
+| upload_identity_conflict | ไฟล์นี้มีประเภทการใช้งานเดิมที่ไม่ตรงกัน กรุณาให้ผู้ดูแลตรวจสอบ |
+| upload_context_changed | ข้อมูลรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วอัปโหลดอีกครั้ง |
+| upload_new_file_review_help | · ไฟล์ใหม่รอตรวจสิทธิ์ อัปโหลดแล้วจึงกำหนดรายละเอียดในคลัง |
+| upload_logo_input_limit | ใช้ PNG, JPEG หรือ WebP ไม่เกิน 30 MiB หรือ SVG ไม่เกิน 2 MiB และไฟล์ต้องมีข้อมูล |
+| upload_logo_replace_help | PNG, JPEG, WebP ไม่เกิน 30 MiB · SVG ไม่เกิน 2 MiB · การแทนที่เก็บประวัติการผูกเดิมไว้ |
+| upload_add_files_help | · เลือกเพิ่มได้โดยไม่ล้างรายการเดิม |
+| upload_supported_types | รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF |
+| upload_stored_mismatch | ไฟล์ที่จัดเก็บไม่ตรงกับไฟล์ที่ตรวจสอบแล้ว |
 
 W3.1 overview and exposure copy:
 

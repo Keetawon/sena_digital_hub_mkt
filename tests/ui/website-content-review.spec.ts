@@ -1,3 +1,4 @@
+import { projectUpload, uploadHeaders } from "./upload-fixtures";
 import { workspaceText } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { createHash, randomUUID } from 'node:crypto';
@@ -35,7 +36,7 @@ for (const width of [1280, 390]) {
     try {
       await db.query('insert into staging.knowledge_batches(manifest_sha256,manifest) values($1,$2)', [batch, { purpose: 'synthetic website browser test' }]);
       for (const [index, name] of ['agreement-first', 'pending-ai'].entries()) {
-        const uploaded = await page.request.post(`${api}/assets`, { headers: { ...headers, 'Content-Type': 'image/svg+xml', 'X-Filename': `${name}-${width}.svg` },
+        const uploaded = await page.request.post(`${api}/assets`, { headers: { ...headers, ...projectUpload(project.public_project_id, 'interior'), 'Content-Type': 'image/svg+xml', 'X-Filename': `${name}-${width}.svg` },
           data: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#177A75"/><text x="10" y="80" fill="white">Synthetic ${stamp}-${index}</text></svg>`) });
         expect(uploaded.ok()).toBeTruthy();
         const asset = (await uploaded.json()).data; assetIds.push(asset.id);
@@ -54,10 +55,12 @@ for (const width of [1280, 390]) {
     } finally { await db.end(); }
     await persona(page, 'viewer');
     await page.goto(`/media?project=${project.public_project_id}&tab=website`);
+    await expect(page.locator('#workspace-tab-media')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('heading', { name: 'รูปจากเว็บไซต์ (รอยืนยัน)', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /ยืนยัน \d+ ภาพที่เลือก/ })).toHaveCount(0);
     expect((await page.request.post(`${media}/website/confirm`, { headers, data: { items: [] } })).status()).toBe(403);
     await persona(page, 'editor'); await page.goto(`/media?project=${project.public_project_id}&tab=website`);
+    await expect(page.locator('#workspace-tab-media')).toHaveAttribute('aria-selected', 'true');
     const queue = page.locator('.website-media'), cards = queue.locator('.media-card');
     await expect(cards.first()).toContainText(`agreement-first-${width}.svg`);
     await expect(cards.first()).toContainText('ตรงกัน 100%');

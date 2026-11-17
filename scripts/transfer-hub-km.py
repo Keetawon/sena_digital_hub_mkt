@@ -187,7 +187,8 @@ async def import_rows(db,actor,digest,manifest,data):
         if patch:
             updated=await db.fetchval('select updated_at from hub.projects where id=$1',row['project_id'])
             await db.fetchval('select hub.update_model($1,$2,$3,$4)',row['project_id'],row['public_model_id'],patch,updated);model_updates+=1
-    # Original uploads use the normal upload guard, and preserve draft binding semantics.
+    # Historical immutable-package replication: preserve original bytes/identities.
+    # Future operator uploads use the W9 API; never optimize or backfill this package.
     asset_map={}
     for a in content['assets']:
         metadata={k:v for k,v in a.items() if k!='id'};metadata['file_size']=int(metadata['file_size'])

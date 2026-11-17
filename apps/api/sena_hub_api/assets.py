@@ -61,7 +61,7 @@ def decode_filename(header: str | None) -> str:
     return name
 
 
-async def read_upload(request: Request) -> tuple[bytes, str, str]:
+async def read_upload(request: Request, *, max_bytes: int = MAX_BYTES, too_large: str = "ไฟล์ต้องมีขนาดไม่เกิน 10 MiB") -> tuple[bytes, str, str]:
     mime = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if mime not in FORMATS:
         raise failure(415, "unsupported_file", "รองรับเฉพาะ PNG, JPEG, WebP, SVG และ PDF")
@@ -69,13 +69,13 @@ async def read_upload(request: Request) -> tuple[bytes, str, str]:
     declared = request.headers.get("content-length")
     if declared is not None and (not re.fullmatch(r"[0-9]{1,20}", declared) or int(declared) < 1):
         raise failure(400, "invalid_length", "ขนาดไฟล์ที่ระบุไม่ถูกต้อง")
-    if declared is not None and int(declared) > MAX_BYTES:
-        raise failure(413, "file_too_large", "ไฟล์ต้องมีขนาดไม่เกิน 10 MiB")
+    if declared is not None and int(declared) > max_bytes:
+        raise failure(413, "file_too_large", too_large)
     content = bytearray()
     try:
         async for chunk in request.stream():
-            if len(content) + len(chunk) > MAX_BYTES:
-                raise failure(413, "file_too_large", "ไฟล์ต้องมีขนาดไม่เกิน 10 MiB")
+            if len(content) + len(chunk) > max_bytes:
+                raise failure(413, "file_too_large", too_large)
             content.extend(chunk)
     except ClientDisconnect:
         raise failure(400, "upload_incomplete", "การส่งไฟล์ไม่สมบูรณ์ กรุณาลองใหม่") from None
@@ -117,10 +117,14 @@ def validate_pdf(content: bytes) -> None:
         raise ValueError("PDF page count exceeds limits")
 
 
-def validate_file(content: bytes, mime: str, filename: str) -> dict:
+def stored_byte_limit(mime: str) -> int:
+    return 20 * 1024 * 1024 if mime == 'application/pdf' else MAX_BYTES
+
+
+def validate_file(content: bytes, mime: str, filename: str, *, max_bytes: int = MAX_BYTES) -> dict:
     width = height = None
     try:
-        if not content or len(content) > MAX_BYTES or mime not in FORMATS:
+        if not content or len(content) > max_bytes or mime not in FORMATS:
             raise ValueError("Invalid file")
         if mime == "application/pdf":
             validate_pdf(content)
@@ -205,7 +209,7 @@ def readable_file(metadata: dict) -> Path:
         raise failure(404, "file_not_found", "ไม่พบไฟล์ที่จัดเก็บ")
     if (path.name != f"{metadata.get('checksum')}.{FORMATS[metadata['mime_type']][1]}"
             or path.stat().st_size != metadata.get("file_size")
-            or path.stat().st_size > MAX_BYTES
+            or path.stat().st_size > stored_byte_limit(metadata.get("mime_type"))
             or hashlib.sha256(path.read_bytes()).hexdigest() != metadata.get("checksum")):
         raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่สมบูรณ์ กรุณาให้ผู้ดูแลตรวจสอบ")
     return path
@@ -258,6 +262,13 @@ def thumbnail_failure(metadata: dict) -> dict | None:
 
 
 def render_thumbnail(content: bytes, mime: str) -> Image.Image:
+    """Keep private source metadata out of decoder logs, including legal files."""
+    from .upload_optimization import _private_decoding
+    with _private_decoding():
+        return _render_thumbnail(content, mime)
+
+
+def _render_thumbnail(content: bytes, mime: str) -> Image.Image:
     """Render only bounded static source bytes; never open a supplied URL or path."""
     if mime == 'image/svg+xml':
         import resvg_py

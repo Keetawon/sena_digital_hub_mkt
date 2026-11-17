@@ -1,12 +1,13 @@
 """Pre-intake review; hosted TEST allows private files, never chatbot execution."""
 from __future__ import annotations
 import asyncio,hashlib,io,json,re
+import asyncpg
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated,Literal
 from uuid import UUID
 from fastapi import Depends,Request,HTTPException
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse,Response
 from pydantic import BaseModel,ConfigDict,Field,StrictBool
 from .auth import Actor,failure
 from .provider_budget import ProviderBudgetExceeded
@@ -17,6 +18,9 @@ from .knowledge_progress import summarize
 from .staff_media import THUMBNAILS_SQL
 from .r2_assets import KNOWLEDGE_MAX_BYTES
 from .content_permissions import require_content
+from .upload_admission import UploadAdmissionError, run_upload_work, upload_slot
+from .upload_pipeline import prepare_authorized_upload
+from .upload_optimization import UploadProcessingError
 
 ROOT=Path(__file__).resolve().parents[3]
 PROGRAMMES={'LIVNEX':'LivNex','LIVNEX_GOLD':'LivNex Gold','RENTNEX':'RentNex','RENTNEX_BENEFIT':'RentNex Benefit','RENTNEX_INVEST':'RentNex Invest'}
@@ -124,15 +128,44 @@ def bulk_eligible(row):
     review=row.get('review') or {};evidence=row['evidence'];flags=evidence.get('classification',{})
     return (row['kind']=='asset' and review.get('decision')=='accepted' and review.get('sena_owned') is True
         and bool(review.get('applies_to_project_ids')) and all(flags.get(k)=='absent' for k in ('people','third_party_marks','stock_imagery'))
+        and row.get('file_stock_present') is not True
         and not evidence.get('file_validation_error') and evidence.get('validated_metadata') is not None)
 
-def local_candidate_bytes(evidence):
+async def knowledge_pack_eligibility(row,request,actor,database):
+    if not bulk_eligible(row):return False
+    caps=getattr(request.state,'account',{}).get('capabilities',{})
+    if caps.get('tabs',{}).get('knowledge',{}).get('approve') is not True:return True
+    # Existing finite rights projection only; each candidate lock ends before
+    # the next item. No bytes, decoder, storage or raw suggestions enter a pack.
+    try:
+        async with database(request,actor) as db:
+            current=await db.fetchval('SELECT hub.lock_knowledge_asset($1)',UUID(str(row['id'])))
+    except asyncpg.PostgresError as error:
+        if error.sqlstate in {'42501','P0002'}:return False
+        raise
+    return bool(current and bulk_eligible(current) and current['evidence']==row['evidence']
+                and current['review']['revision']==row['review']['revision'])
+
+
+async def cleanup_unregistered_knowledge_file(database,request,actor,metadata):
+    # A failed commit can be ambiguous. Delete only our new local file after a
+    # locked proof of no registry row; otherwise retain a private orphan.
+    try:
+        async with database(request,actor) as db:
+            await db.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',metadata['checksum'])
+            if not await db.fetchval('SELECT hub.asset_registered_for_cleanup($1)',metadata['checksum']):
+                await run_upload_work(lambda:assets.storage_path(metadata['storage_path']).unlink(missing_ok=True))
+    except Exception:
+        pass
+
+
+def local_candidate_bytes(evidence,max_bytes=KNOWLEDGE_MAX_BYTES):
     # Buffer a bounded original before the final authorization read. FileResponse
     # would open/stream the private file after the route had already returned.
     path=file_path(evidence)
     if not path.is_file():raise HTTPException(404)
     try:
-        with path.open('rb') as source:return source.read(KNOWLEDGE_MAX_BYTES+1)
+        with path.open('rb') as source:return source.read(max_bytes+1)
     except OSError:raise HTTPException(503) from None
 
 def checked_candidate_bytes(content,evidence):
@@ -149,7 +182,7 @@ def private_thumbnail(content,evidence):
         raise failure(404,'knowledge_file_not_found','ไฟล์นี้ยังไม่มีภาพย่อที่ตรวจสอบแล้ว')
     data,checked=assets.prepare_upload(content,metadata['mime_type'],metadata.get('original_filename','candidate'))
     if checked['checksum']!=metadata.get('checksum'):
-        raise failure(503,'knowledge_integrity','ไฟล์ไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
+        raise failure(503,'knowledge_integrity','ไฟล์หรือรายการเดิมไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
     with assets.render_thumbnail(data,checked['mime_type']) as picture:
         picture.thumbnail((320,320))
         output=io.BytesIO();picture.save(output,'WEBP',quality=80)
@@ -197,8 +230,9 @@ def register_knowledge_routes(app,authentication,database,settings):
         card=card or {'name':{'th':PROGRAMMES.get(project_id,'คำศัพท์และชื่อเรียกกลาง')},'status':{'raw':None,'label':'รอตรวจขอบเขตการใช้'},'mode':'DRAFT_PREVIEW'}
         rows=projection['items'];followup=projection['followup'];faq_controls=projection['faq_controls']
         data=[]
+        # PACK_SQL's read transaction has ended; eligibility locks are short and separate.
         for record in rows:
-            row=dict(record);row['bulk_rights_eligible']=bulk_eligible(row)
+            row=dict(record);row['bulk_rights_eligible']=await knowledge_pack_eligibility(row,request,actor,database)
             # No filesystem paths in browser payloads.
             row['evidence']={k:v for k,v in row['evidence'].items() if k not in {'locations','validated_metadata'}}
             if row['kind']=='faq':row.update(faq_controls.get(str(row['id']),{'read_only':True,'cluster_ids':[]}))
@@ -252,32 +286,89 @@ def register_knowledge_routes(app,authentication,database,settings):
     @app.post('/v1/admin/knowledge/rights/approve')
     async def rights(body:Rights,request:Request,actor:Actor=Depends(staff)):
         if not body.confirmed or len({i.candidate_id for i in body.items})!=len(body.items):raise failure(422,'knowledge_confirmation','กรุณายืนยันรายการไฟล์ที่ไม่ซ้ำกัน')
-        async with database(request,actor) as db:
-            approved=[]
-            # One DB transaction; a single ineligible/stale item rolls back every rights decision.
-            for selected in sorted(body.items,key=lambda i:str(i.candidate_id)):
-                record=await db.fetchval('SELECT hub.lock_knowledge_asset($1)',selected.candidate_id)
-                if not record or not bulk_eligible(dict(record)) or record['review']['revision']!=selected.expected_revision:
-                    raise failure(409,'knowledge_rights_ineligible','รายการเปลี่ยนแปลงหรือยังไม่ผ่านการยืนยันของ MKT กรุณาโหลดใหม่')
-                evidence=record['evidence'];meta=dict(evidence['validated_metadata'])
-                data=(await asyncio.to_thread(request.app.state.hosted_assets.read_knowledge,evidence)
-                      if settings.environment=='hosted-test' else file_path(evidence).read_bytes())
-                if hashlib.sha256(data).hexdigest()!=evidence['sha256']:raise failure(409,'knowledge_integrity','ไฟล์ไม่ตรงกับหลักฐานที่นำเข้า')
-                if settings.environment=='hosted-test':
-                    data,checked=await asyncio.to_thread(assets.prepare_upload,data,meta['mime_type'],meta['original_filename'])
-                    if checked['checksum']!=meta['checksum']:raise failure(409,'knowledge_integrity','ผลตรวจไฟล์เปลี่ยนแล้ว กรุณาตรวจหลักฐานใหม่')
-                    meta.update(storage_provider=request.app.state.hosted_assets.provider,storage_bucket=request.app.state.hosted_assets.bucket)
-                await db.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',evidence['sha256'])
-                result=await db.fetchval('SELECT hub.register_uploaded_asset($1::jsonb)',meta)
-                asset=result['asset']
-                if settings.environment=='hosted-test':
-                    await asyncio.to_thread(request.app.state.hosted_assets.install,data,{**meta,'source_system':'hub-hosted-test'})
-                    await asyncio.to_thread(assets.install_thumbnail,data,meta)
-                else:assets.install_file(data,meta)
-                await db.fetchval("SELECT hub.review_asset($1,$2,'approved',$3,NULL,NULL,$3)",UUID(asset['id']),datetime.fromisoformat(asset['updated_at']),body.reason)
-                await db.execute('SELECT hub.knowledge_link_approved_asset($1,$2,$3)',selected.candidate_id,UUID(asset['id']),selected.expected_revision)
-                approved.append(str(selected.candidate_id))
-        return {'data':{'approved':approved,'published':False}}
+        staged=[]
+        hosted=request.app.state.hosted_assets if settings.environment=='hosted-test' else None
+        try:
+            with upload_slot():
+                # Stage one bounded file at a time. No transaction spans byte reads
+                # or decoding; rights remain one all-or-nothing transaction below.
+                for selected in sorted(body.items,key=lambda i:str(i.candidate_id)):
+                    context={'v':1,'kind':'knowledge','candidate_id':str(selected.candidate_id)}
+                    async with database(request,actor) as db:
+                        record=await db.fetchval('SELECT hub.lock_knowledge_asset($1)',selected.candidate_id)
+                        if not record or not bulk_eligible(record) or record['review']['revision']!=selected.expected_revision:
+                            raise failure(409,'knowledge_rights_ineligible','รายการเปลี่ยนแปลงหรือพบหลักฐานที่ต้องตรวจสิทธิ์รายไฟล์ กรุณาโหลดใหม่')
+                        evidence=record['evidence'];meta=evidence['validated_metadata']
+                        resolved=await db.fetchval('SELECT hub.asset_upload_context($1,$2)',context,meta['mime_type'])
+                    expected_size=evidence.get('bytes',meta.get('file_size'))
+                    if type(expected_size) is not int or not 0<expected_size<=resolved['input_limit']:
+                        raise failure(413,'file_too_large','ไฟล์มีขนาดเกินขีดจำกัดของบริบทที่ได้รับอนุญาต')
+                    data=(await run_upload_work(hosted.read_knowledge,evidence) if hosted else
+                          await run_upload_work(local_candidate_bytes,evidence,resolved['input_limit']))
+                    data=await run_upload_work(checked_candidate_bytes,data,evidence)  # Preserve imported raw SHA.
+                    async with database(request,actor) as db:
+                        existing=await db.fetchval('SELECT hub.find_uploaded_asset_source($1,$2,$3)',evidence['sha256'],meta['mime_type'],context)
+                    prepared=await run_upload_work(prepare_authorized_upload,data,meta['mime_type'],meta['original_filename'],resolved,existing)
+                    metadata=dict(prepared.metadata)
+                    if hosted and existing is None:metadata.update(storage_provider=hosted.provider,storage_bucket=hosted.bucket)
+                    created=False
+                    def install_local():
+                        nonlocal created
+                        created=assets.install_file(prepared.content,metadata)
+                    try:
+                        async with database(request,actor) as db:
+                            result=await db.fetchval('SELECT hub.record_asset_upload_source($1,$2,$3,$4,$5,$6)',
+                                metadata,prepared.original,prepared.processing,prepared.suggestions,context,resolved['context_stamp'])
+                            if result['reuse_kind']=='original':
+                                await run_upload_work(hosted.read if hosted else assets.readable_file,result['asset'])
+                            elif prepared.content is None:
+                                raise failure(503,'knowledge_integrity','ไฟล์หรือรายการเดิมไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
+                            elif hosted:
+                                await run_upload_work(hosted.install,prepared.content,{**metadata,'source_system':'hub-hosted-test'})
+                                await run_upload_work(assets.install_thumbnail,prepared.content,metadata)
+                            else:
+                                await run_upload_work(install_local)
+                    except BaseException as error:
+                        if created:await asyncio.shield(cleanup_unregistered_knowledge_file(database,request,actor,metadata))
+                        # Only the recorder's proven historical stored collision
+                        # permits the existing exact-byte path. No new legacy row.
+                        if (not isinstance(error,asyncpg.PostgresError) or error.sqlstate!='P0092' or metadata['checksum']!=evidence['sha256']
+                            or meta.get('checksum')!=evidence['sha256']):raise
+                        async with database(request,actor) as db:
+                            current=await db.fetchval('SELECT hub.asset_upload_context($1,$2)',context,meta['mime_type'])
+                            if current['context_stamp']!=resolved['context_stamp']:
+                                raise failure(409,'upload_context_changed','ข้อมูลรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วอัปโหลดอีกครั้ง')
+                            await db.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',metadata['checksum'])
+                            result=await db.fetchval('SELECT hub.register_uploaded_asset($1)',metadata)
+                            if not result['reused']:raise failure(409,'knowledge_integrity','ไฟล์หรือรายการเดิมไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
+                            await run_upload_work(hosted.read if hosted else assets.readable_file,result['asset'])
+                            result['reuse_kind']='legacy'
+                    if result['reuse_kind']!='legacy' and resolved['processing_class']=='private_exact':
+                        raise failure(409,'knowledge_category_required','ไฟล์นี้เป็นไฟล์ส่วนตัว กรุณาระบุบริบทและประเภทไฟล์ก่อนนำไปใช้ภายนอก')
+                    if prepared.suggestions.get('values',{}).get('stock')=='present':
+                        raise failure(409,'knowledge_rights_ineligible','รายการเปลี่ยนแปลงหรือพบหลักฐานที่ต้องตรวจสิทธิ์รายไฟล์ กรุณาโหลดใหม่')
+                    staged.append((selected,evidence,result['asset']))
+                    # Retain identities only; do not accumulate up to 50 file bodies.
+                    del data,prepared
+                actor=await staff(request,await authentication(request))
+                async with database(request,actor) as db:
+                    approved=[];reviewed=set()
+                    for selected,evidence,asset in staged:
+                        current=await db.fetchval('SELECT hub.lock_knowledge_asset($1)',selected.candidate_id)
+                        if (not current or not bulk_eligible(current) or current['review']['revision']!=selected.expected_revision
+                            or current['evidence']!=evidence):
+                            raise failure(409,'knowledge_rights_ineligible','รายการเปลี่ยนแปลงหรือพบหลักฐานที่ต้องตรวจสิทธิ์รายไฟล์ กรุณาโหลดใหม่')
+                        if asset['id'] not in reviewed:
+                            await db.fetchval("SELECT hub.review_asset($1,$2,'approved',$3,NULL,NULL,$3)",UUID(asset['id']),datetime.fromisoformat(asset['updated_at']),body.reason)
+                            reviewed.add(asset['id'])
+                        await db.execute('SELECT hub.knowledge_link_approved_asset($1,$2,$3)',selected.candidate_id,UUID(asset['id']),selected.expected_revision)
+                        approved.append(str(selected.candidate_id))
+                return {'data':{'approved':approved,'published':False}}
+        except UploadAdmissionError:
+            return JSONResponse({'error':{'code':'upload_busy','message':'กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง'}},
+                                429,headers={'Retry-After':'1','Cache-Control':'no-store'})
+        except UploadProcessingError:
+            raise failure(422,'invalid_upload_file','ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง') from None
 
     @app.post('/v1/admin/knowledge/preview')
     async def preview(body:Preview,request:Request,actor:Actor=Depends(staff)):

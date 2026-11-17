@@ -182,7 +182,7 @@ def test_local_file_read_is_bounded_and_integrity_checked(monkeypatch):
         def open(self, mode): assert mode == 'rb'; return Stream(b'1234567890')
     monkeypatch.setattr(knowledge, 'KNOWLEDGE_MAX_BYTES', 8)
     monkeypatch.setattr(knowledge, 'file_path', lambda evidence: File())
-    content = knowledge.local_candidate_bytes({})
+    content = knowledge.local_candidate_bytes({}, max_bytes=knowledge.KNOWLEDGE_MAX_BYTES)
     assert len(content) == 9 and lengths == [9]
     with pytest.raises(HTTPException) as error:
         knowledge.checked_candidate_bytes(content, {'sha256': hashlib.sha256(content).hexdigest(), 'bytes': len(content)})

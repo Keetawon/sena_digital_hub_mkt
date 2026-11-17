@@ -1,4 +1,7 @@
 "use client";
+import { UploadResult, FileMetadataSuggestions, UploadEvidencePanel } from "./upload-evidence";
+import { uploadFileError, type UploadContext, type UploadEvidence } from "../lib/upload-context";
+import { uploadText } from "../lib/upload-text";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { workspaceHref, workspaceText } from "@/lib/unified-workspace";
 import { useHubPermissions } from "./accounts";
@@ -22,7 +25,7 @@ import { mediaAiText } from "./media-ai-text";
 type Workspace = { project: { id: string; public_project_id: string; name: { th?: string }; updated_at: string }; assets: MediaAsset[]; links: MediaLink[]; clips: Clip[]; context: MediaContext; tags: MediaTag[]; requirements: Rule[];
   checklist: { items: Coverage[]; recommended_score: number; required_missing: number; broken_links: Clip[]; unknown_coverage: { key: string; label: { th?: string } }[] } };
 type Job = MediaAiJob;
-type Card = { id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string; aiNotice?: string };
+type Card = { upload?: UploadEvidence | null; id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string; aiNotice?: string };
 const tabs = { checklist: "ภาพที่ยังขาด", website: "รูปจากเว็บไซต์ (รอยืนยัน)", upload: "อัปโหลดหลายไฟล์", library: "ภาพและเอกสาร", clips: "คลิปและทัวร์ 360", rules: "แท็กและเกณฑ์ภาพ" };
 const jobLabels: Record<string, string> = { queued: "รอประมวลผล", running: "กำลังประมวลผล", done: "เสร็จแล้ว", failed: "ไม่สำเร็จ", superseded: "ข้อมูลหรือสิทธิ์เปลี่ยน กรุณาสั่งใหม่", budget_exhausted: mediaAiText.state_budget };
 const jobErrors: Record<string, string> = { provider_unavailable: "ยังไม่ได้เปิดบริการคำแนะนำ", provider_error: "บริการตอบกลับไม่สำเร็จ", invalid_result: "ผลไม่ผ่านการตรวจ", manual_required: "ผู้ให้บริการนี้ต้องกรอกและตรวจเอง", file_unavailable: "อ่านไฟล์ภาพไม่ได้", source_changed: "ข้อมูลหรือสิทธิ์เปลี่ยน", permission_revoked: "สิทธิ์ถูกเปลี่ยน", budget_exhausted: mediaAiText.state_budget };
@@ -121,6 +124,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     else change(card.id, { link, saved: card.metadataSaved || JSON.stringify(card.metadata) === JSON.stringify(metadataOf(card.asset!)), error: "" });
     await onChanged();
   }
+  const uploadContext = (metadata: Metadata, target: LinkContext): UploadContext => ({ v: 1, kind: "media_target", project_ref: data.project.public_project_id, target_type: target.target_type, target_key: target.target_key, category: metadata.media_category || null, usage: target.usage });
   async function save() {
     if (busy || workflowBusy || !canEdit) return;
     setBusy(true); setError("");
@@ -128,7 +132,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
       let card = { ...original };
       try {
         if (!canEdit) throw new Error("สิทธิ์แก้ไขถูกเปลี่ยน ข้อมูลที่พิมพ์ยังอยู่");
-        if (!card.asset && card.file) { card.asset = (await uploadAsset(card.file)).asset as MediaAsset; change(card.id, { asset: card.asset }); }
+        if (!card.asset && card.file) { const result = await uploadAsset(card.file, uploadContext(card.metadata, card.context)); card.asset = result.asset as MediaAsset; card.upload = result.upload; change(card.id, { asset: card.asset, upload: card.upload }); }
         if (!card.asset) throw new Error("ยังไม่มีไฟล์");
         if (!card.metadataSaved) {
           // Recover only an exact acknowledged revision after a lost response;
@@ -167,9 +171,11 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     {error && <p className="notice error" role="alert">{error}</p>}
     {!initialAsset && <fieldset disabled={busy || workflowBusy || !canEdit}><legend>บริบทเริ่มต้นของไฟล์ใหม่</legend><TargetFields value={context} onChange={setContext} context={data.context} project={data.project.id} tags={data.tags} canPromotions={canPromotions} />
       <details><summary>ข้อมูลที่จะใช้กับไฟล์ใหม่ / ไฟล์ที่เลือก</summary><MetadataFields id="batch" value={batch} onChange={setBatch} tags={data.tags} /></details>
-      <label className="content-input">เลือกหลายไฟล์ (สูงสุด 20 ไฟล์ ครั้งละไม่เกิน 10 MB ต่อไฟล์)<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" onChange={event => {
+      <p className="field-help">{uploadText.limits}</p><label className="content-input">{uploadText.files} · {uploadText.batch_limit}<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" onChange={event => {
         const files = Array.from(event.target.files ?? []); event.target.value = "";
-        if (files.length + cards.length > 20 || files.some(file => file.size > 10 * 1024 * 1024)) { setError("เลือกได้ไม่เกิน 20 ไฟล์ และไม่เกิน 10 MB ต่อไฟล์"); return; }
+        if (files.length + cards.length > 20) { setError(uploadText.batch_limit); return; }
+        const invalid = files.map(file => uploadFileError(file, uploadContext(batch, context))).find(Boolean);
+        if (invalid) { setError(invalid); return; }
         setCards(previous => [...previous, ...files.map(file => ({ id: crypto.randomUUID(), file, metadata: structuredClone(batch), context: structuredClone(context), metadataSaved: false, saved: false, selected: true, error: "" }))]); setError("");
       }} /></label>
       <button type="button" className="button secondary" disabled={!cards.some(card => card.selected && !card.saved)} onClick={() => setCards(previous => previous.map(card => card.selected && !card.saved ? { ...card, metadata: structuredClone(batch), context: structuredClone(context), metadataSaved: false } : card))}>แทนที่ข้อมูลและบริบทของไฟล์ที่เลือก</button>
@@ -177,6 +183,8 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     <div className="media-grid">{cards.map((card, index) => <article className="media-card" key={card.id} aria-label={`ไฟล์ ${index + 1}`}>
       <h3>{card.asset?.original_filename ?? card.file?.name}</h3>{card.asset ? <Preview asset={card.asset} /> : card.file && <LocalPreview file={card.file} />}
       <p role="status">{card.saved ? "บันทึกแล้ว" : card.asset ? "อัปโหลดไฟล์แล้ว รอบันทึกข้อมูลหรือการผูก" : "ยังไม่อัปโหลด"}</p>
+      <UploadResult value={card.upload} />
+      {card.asset && <fieldset disabled={busy || workflowBusy || !canEdit}>{card.upload ? <FileMetadataSuggestions evidence={card.upload} value={card.metadata} tags={data.tags} onChange={metadata => change(card.id, { metadata, metadataSaved: false, saved: false })} /> : <UploadEvidencePanel assetId={card.asset.id} context={uploadContext(card.metadata, card.context)} value={card.metadata} tags={data.tags} onChange={metadata => change(card.id, { metadata, metadataSaved: false, saved: false })} />}</fieldset>}
       {card.error && <p className="notice error" role="alert">{card.error}</p>}{card.aiNotice && <p className="field-help" role="status">{card.aiNotice}</p>}
       {!card.saved && <fieldset disabled={busy || workflowBusy || !canEdit}><legend>ข้อมูลไฟล์ {index + 1}</legend><label className="media-check"><input type="checkbox" checked={card.selected} onChange={event => change(card.id, { selected: event.target.checked })} />เลือกเพื่อใช้ข้อมูลชุดเดียวกัน</label>
         <MetadataFields id={`card-${card.id}`} value={card.metadata} onChange={metadata => change(card.id, { metadata, metadataSaved: false })} tags={data.tags} />
