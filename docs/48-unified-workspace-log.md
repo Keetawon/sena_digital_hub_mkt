@@ -7937,3 +7937,87 @@ H1's prior generated-build/environment checks are retained under those limits;
 the new build and credential scans run fresh. No credential file was inspected
 or hashed. Runtime receipt SHA-256:
 `ce6513daa0b2c78c8461b264e60b39b395b04bc694fa2be39dc5bf48adbc2d65`.
+
+### W9 delivered locally with approved stage reuse — 17 November 2026
+
+Product commit `c9791afda7a67724a7611a0ad6253316ceae757e` was pushed and origin/main verified. Exactly 74
+reviewed paths were committed from base `b51ca184b87667ca1c8818686c7160969f2d11b2`. Every changed
+Git blob and the full commit tree matched freeze `3c65eed7ff916861b621b287e9a1e57d0a2817d07e776341a7bb6d62ff16f1d6`; staging used only
+its explicit inventory. This delivery receipt is a separate commit.
+
+Migration 0093 (`202611130093_upload_optimization.sql`) SHA-256:
+`184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6`.
+Migrations 0089–0092 are unchanged. W9 adds optimized uploads, stripped private
+metadata suggestions, original/stored checksum deduplication and explicit
+rights-evidence loading. Existing assets retain their identities and bytes.
+
+The owner-approved docs/11 exception combines nine fresh stages with three
+reused stages; it does not turn the original failed full run into a pass.
+
+| Suite | Evidence | Result |
+| --- | --- | --- |
+| Typecheck / offline build | Fresh | Passed |
+| Production import/isolation | Fresh | 4 passed |
+| Complete browser at 1280 | Fresh | 737 passed |
+| Complete browser at 390 | Fresh | 737 passed |
+| Credential / broad scans | Fresh | Passed; no credential files read |
+| Working-tree / empty-index diff checks | Fresh | Passed; staged EOF exception below |
+| API | Reused from `w9-full-legacy-ui-20261117` | 2840 passed, 11 existing skips, 13 warnings, 822 subtests |
+| Database | Reused from that same run | 95 Node, 46 SQL, 25 concurrency |
+| Local H1 | Reused from that same run | 69 Node, 10 smoke, 87 browser (77/3/7) |
+
+Before reuse, all source/dependency/test/fixture/harness/profile inputs outside
+the two non-H1 browser corrections and delivery docs were verified unchanged.
+Runtime continuity uses the documented locked-package comparison, prior
+log/trace metadata, pre-start sampled timestamps and sole-lead attestation;
+historical executable hashes were not recorded. Current runtime files are
+pinned and rechecked. The original failed run, traces and exact stage logs
+remain preserved. No timeout, permission rule or API contract changed in the
+test corrections; the final four added readiness assertions preserve every
+original spec line. Their focused checks passed seven tests per width.
+
+Retained quick evidence includes 155 affected browser tests per width, the
+11-per-width legacy evidence-load correction, ten isolated Windows resource
+cases and 15 storage fixtures. These results are distinct from the fresh
+complete-browser totals. Stored-byte averages on synthetic fixtures:
+
+| Group | Fixtures | Average stored bytes |
+| --- | ---: | ---: |
+| marketing_images | 12 | 1572987.6666666667 |
+| marketing_pdfs | 2 | 36222.0 |
+| private_exact_pdfs | 1 | 3076.0 |
+
+The accepted Windows peak commit was 9,704,144,896 bytes, largest working set
+6,840,782,848 bytes, and slowest processing call 26.349083799985237 seconds
+against the unchanged 30-second processing deadline. These are not Linux or
+hosted capacity acceptance. Twenty retained screenshots/sidecars at both widths
+and themes remain source-matched and visually reviewed; eight capture tests
+passed. They are mocked presentation evidence, not live upload performance.
+
+Combined evidence, exact source/log hashes, retained resource/storage details,
+capture review paths, failed-run archives and worktrees:
+`artifacts/unified-workspace/w9-full-reuse-20261117/delivery-evidence.json`, SHA-256 `a92781567d2ea64e53915af91032105dcb7d50811d042eb32f8c7d4bcefd8fd2`. Fresh stage logs and combined
+verification: `artifacts/unified-workspace/w9-full-reuse-20261117/`.
+No worktree or branch was removed; uncommitted preparations remain preserved.
+
+Hosted TEST is unchanged. The VPS swap STOP, conditional unapplied caps,
+unapproved quiet window and unavailable local Linux capacity acceptance remain.
+The accumulated unfiltered 103-project home timeout is OPEN, and W8 remains
+NOT_RUN. Next: interim TEST protections after admission/window conditions,
+W9.1 and the approved home composition implementation, then W8 UAT and a
+separately approved hosted rollout. No VPS load/stress test is permitted.
+
+Owner-approved formatting exception: preserve the tested bytes and accept only
+these three staged warnings (the staged check returned 2, not a clean pass):
+
+- `apps/api/tests/test_upload_permission_inventory.py:97: new blank line at EOF.`
+- `supabase/migrations/202611130093_upload_optimization.sql:665: new blank line at EOF.`
+- `supabase/tests/upload_optimization.sql:374: new blank line at EOF.`
+
+The earlier working-tree check omitted then-untracked files, and its index check
+ran empty. The later staged check stopped delivery before a commit. The owner
+explicitly approved keeping the files and notifying the orchestrator. No source
+or migration hash changed, and no Git configuration or other warning was waived.
+Original stopped delivery evidence remains intact. Exact approval and resume
+evidence: `artifacts/unified-workspace/w9-full-reuse-20261117/delivery-final-evidence.json`, SHA-256 `db1148907ff58905115c4e4dc1b1a851b3dc7a9564fddbeef53e92544cb3c38e`.
+Future gates must include new files in formatting checks before freezing source.
