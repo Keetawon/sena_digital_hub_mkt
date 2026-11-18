@@ -1,5 +1,148 @@
 # 46 — Hosted TEST content rollout
 
+## Shared production host: current admission — 18 November 2026
+
+This section records the owner's latest decisions and supersedes older capacity
+STOP/admission wording. Historical receipts remain unchanged. The production
+warehouse is `sena-warehouse-postgres`; the additional ETL `postgres` container
+is not proven TEST-only. Never change either container, its limits, schedules,
+configuration or data. Hub TEST must fail first. No VPS load/stress test is ever
+permitted; upload capacity measurements use local Linux only. Existing operator,
+credential, protected-state and database-restore STOP rules still apply.
+
+### Pressure thresholds for every operation window
+
+The owner released the 17 November STOP: 551 swap-out pages (about 2 MiB) over
+47 minutes and 1,792 KiB swap-used growth are below the revised thresholds.
+Preserve `interim/swap-stop-20261117.md` as historical evidence, not an active
+blocker. Resume short, low-frequency passive observations through the existing
+admitted route. No resident watcher, counter reset or host modification.
+
+STOP if any of the following occurs during an operation:
+
+- `MemAvailable` is below **3.84 GiB** at any sample.
+- Swap-used growth from the operation baseline exceeds **64 MiB**, or swap-out
+  rate exceeds **100 MiB per five minutes**. Use the actual page size and elapsed
+  time; do not assume that a long-window average rules out a short burst.
+- Any allocation-stall or direct-reclaim counter increases, or available memory
+  PSI `some avg10` exceeds **10**.
+- Any new `high`, `max` or OOM event in a Hub TEST cgroup, any kernel OOM,
+  or warehouse unhealthy/not running/`OOMKilled`.
+
+Record all deltas below these thresholds, including swap-in; they are not a
+STOP. Record missing PSI as unavailable, not zero. Retain timestamps, boot and
+cgroup identities, counter coverage, resets/restarts and sampling gaps. Apply
+the same rule to admission, the operation and its five-minute settled tail.
+Every rollout/postflight must record warehouse health and OOM state, host
+pressure, and Hub TEST current/peak memory within its limits. Never flush swap,
+drop caches or change production to obtain admission.
+
+### Interim W1–W5 caps: approved diff, not yet applied
+
+W9 delivery is verified: product `c9791af`, receipt `45ca776`, handoff `be5d20f`.
+The conditional approval remains tied to
+`.local/hosted-capacity-w9-20261116/interim/proposed-config.diff`, SHA-256
+`b0d532a7b2e46d7a2719aff58334e4dfa52d2abf8a716fe13da21d3a428c7b87`.
+
+| TEST unit/allowance | MemoryHigh MiB | MemoryMax MiB | Swap MiB |
+|---|---:|---:|---:|
+| API and in-process broker | 1024 | 1280 | 0 |
+| Media worker | 96 | 128 | 0 |
+| Admin web | 256 | 384 | 0 |
+| Broker socket/helper | 4 | 8 | 0 |
+| Certificate helper | 96 | 128 | 0 |
+| One operation helper, inside the parent | 320 | 376 | 0 |
+| Aggregate parent | 2048 | 2304 | 0 |
+
+1280 + 128 + 384 + 8 + 128 + 376 = **2304 MiB (2.25 GiB)**. The earlier host
+snapshot gives 15.362297 − 7.519035 warehouse active cache − 2.25 TEST − 1.5
+OS/other allowance = **4.093262 GiB** reserve, above 3.84 GiB. This is planning
+arithmetic, not a warehouse cache reservation or a current admission result.
+Warehouse full working-set peaks and CPU/I/O still matter on the shared host.
+
+The exact diff retains `OOMScoreAdjust=1000`, `OOMPolicy=kill`, `Restart=no`,
+cleared forced-restart overrides and the socket's API-lifetime binding. A TEST
+crash/OOM leaves it down: report it; do not restart automatically. Verify the
+slice hierarchy, effective caps and every application/Exec-command PID's +1000
+score after applying. The previously disclosed short-lived systemd-internal
+socket setup helper does not inherit the execution-context score; do not modify
+shared systemd or claim otherwise. Both PostgreSQL containers remain excluded.
+
+The owner decoupled interim-cap admission from local Linux capacity/failure
+experiments. Required admission is now:
+
+1. Fresh read-only admission under the thresholds above and the existing route.
+2. An owner-approved quiet interval supported by actual job observations.
+3. Read the admin cgroup `memory.peak` before and after the **owner** opens the
+   main demo pages normally inside that interval. Record the same cgroup/PID,
+   current memory, events and route outcomes; do not reset the lifetime peak or
+   simulate load. If the observed peak exceeds **256 MiB**, propose a rebalanced
+   allocation inside 2304 MiB and obtain approval before applying.
+
+No W9.1 upload measurement or local web-load/failure rehearsal blocks these
+three admission conditions. Exact absent-path/property checks, reviewed apply
+order, syntax validation and fail-safe verification remain part of execution.
+Stop admin, worker, socket and API in the reviewed order; install only the six
+hash-matched approved files; reload the unit manager; verify the parent before
+starting socket/API, worker and admin. No release, schema or environment switch.
+Verify health/login, anonymous denial/no-store, warehouse health, limits, scores
+and pressure through the settled tail. After activation failure, stop TEST and
+retain protection; never automatically restore its old larger envelope.
+
+### Production schedules and quiet-interval decision
+
+Retained 9–16 November observations are evidence of past starts/terminal events,
+not current clearance. Host timezone is UTC; this table is Bangkok (UTC+7).
+
+| Job | Scheduled start | Delay/observed duration |
+|---|---|---|
+| Customer summary | hourly :20 | observed up to 7m45s |
+| Solar refresh | 06:00, 11:00, 17:00 | random 0–5m; observed 50s |
+| Project group | 06:10 | observed 4m53s |
+| Solar short form | 06:15, 11:15, 17:15 | random 0–5m; observed 23s |
+| Search-ad solar refresh | 06:30, 11:30, 17:30 | random 0–10m; observed 13m07s |
+| Analytics solar refresh | 06:45, 11:45, 17:45 | random 0–15m; observed 11m30s |
+| Advertising refresh | 11:40 | observed 20m56s |
+| Warroom / social refresh | 03:00 / 03:20 | random 0–5m; observed 2m05s / 4m13s |
+| Pipeline health | 5m after boot, then 15m after activation | random 0–1m; observed 4s |
+| Advertising cron | hourly :00 and :05 | retained pairs up to 6.910s / 8.641s |
+| TEST certificate renewal | 01:00, 07:00, 13:00, 19:00 | random 0–30m |
+
+Other three-minute, :09/:39, half-hourly/hourly, backup and maintenance jobs
+also exist. Terminal rows may be failures and do not prove detached descendants
+ended. Calendar timers may catch up; manual starts and retries remain possible.
+Observe actual starts/ends and next triggers read-only over representative days,
+then present a fixed interval for owner approval. No interval is approved yet.
+Deploys, migrations, imports, backups and UAT bulk steps must avoid production
+job windows and fit cleanup plus a five-minute settled tail. Unknown completion
+is not clearance. Do not reschedule or stop production to manufacture a gap.
+
+### Local Linux work and remaining order
+
+The owner selected WSL2 Ubuntu-24.04 for W9.1 and authorized setup inside that
+distro. Propose WSL memory/swap before applying and leave at least 8 GB outside
+WSL for Windows. `.wslconfig` is per Windows account and affects all its WSL2
+distros; `/etc/wsl.conf` controls this distro's systemd setting. Preserve unrelated
+settings, never copy credential/environment files, use exact W9 source and
+lockfile versions, and serialize measurements with every other local test run.
+No Windows feature install, host package install or unrelated distro change is
+inferred. See [WSL configuration](https://learn.microsoft.com/en-us/windows/wsl/wsl-config).
+
+W9.1 must preserve the 24 MP product floor and 4096 output edge, bound PDF
+aggregate work, trace excess allocations, and measure killable processing,
+JPEG decode scaling and streaming alternatives locally. W9's slowest accepted
+processing call is **26.349 seconds against 30 seconds**; W9.1 must bring it well
+below that limit, not increase the deadline. No hosted package or rollout is
+approved by local setup.
+
+Order: **interim caps → W9.1 and the approved home performance slice → W8 UAT
+→ separately approved hosted rollout in an approved window**. W6+ hosted
+rollouts, migrations, imports and UAT bulk remain blocked until caps and the
+window are verified. Receipts and current admission plan remain under
+`.local/hosted-capacity-w9-20261116/interim/`; the uncommitted older preparation
+in `ws/w9-1-rollout-plan` is preserved and its superseded requirements are not
+additional approval conditions.
+
 Owner authorization: 27 October 2026. Repository `Keetawon/sena_digital_hub_mkt`,
 branch `main`, starting commit `b2b15e0`. The repository contains migrations
 1–76; the authorized hosted upgrade is 57–76. Work proceeds in package order

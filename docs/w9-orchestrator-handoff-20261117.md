@@ -58,17 +58,36 @@ original spec line; their focused checks passed seven tests at each width.
 
 ## Next work and active boundaries
 
-1. Interim TEST protections, only after required local Linux measurements,
-   fresh permitted admission and an owner-approved quiet interval.
+1. Interim TEST protections after fresh permitted admission, an owner-approved
+   quiet interval, and the owner's normal demo-page visits with admin memory
+   peaks recorded before/after. Local Linux experiments are no longer a cap
+   admission prerequisite (owner correction, 18 November).
 2. W9.1 memory reduction and the approved home composition implementation.
 3. W8 UAT, then a separately approved hosted rollout.
 
-The VPS swap-out/swap-growth STOP remains open. The caps are conditionally
-approved but unapplied; no quiet window is approved. WSL is not installed on
-the current laptop and no Docker/Podman executable was found. Local Linux
-capacity and realistic admin-render acceptance remain outstanding. Do not use
-the shared VPS for load, stress, upload-processing or failure experiments; its
-warehouse is production and remains read-only.
+The owner released the 17 November swap STOP. [Docs/46](46-hosted-content-rollout.md)
+now records the calibrated 3.84 GiB available-memory reserve, 64 MiB swap-growth
+and 100 MiB/five-minute swap-out thresholds, plus stalls/reclaim, PSI, cgroup
+events, kernel OOM and warehouse-health STOPs. Smaller deltas are recorded.
+The 18 November 07:37 Bangkok passive sample passed: 13.81 GiB available,
+zero swap-out/stalls/reclaim/cgroup increments, swap use down 8 MiB, warehouse
+healthy, no retained kernel OOM match. PSI is unavailable. This short sample
+is not a maintenance-window admission.
+
+Caps remain conditionally approved and unapplied. Admin's lifetime peak is
+199.7 MiB; the owner-operated demo interval still needs before/after readings
+and a peak no greater than its proposed 256 MiB MemoryHigh. No quiet interval
+is approved yet. The latest three-day journal review pairs 2,599 runs without
+unmatched starts, but background cron completion and the moving health timer
+still require clearance before proposing an executable interval.
+
+The owner reports installing WSL2 Ubuntu-24.04 and authorizes setup inside it.
+This tool session still reports WSL not installed and sees no distro registration;
+do not reinstall Windows features or infer that Linux setup succeeded. Proposed
+WSL ceiling is 12 GiB with zero swap, leaving about 11.8 GiB for Windows; owner
+approval remains pending. The account-wide `.wslconfig` scope was disclosed.
+Do not use the shared VPS for load, stress, upload-processing or failure
+experiments; its warehouse is production and remains read-only.
 
 The unfiltered 103-project home timeout is still OPEN. W8's 61 cases remain
 NOT_RUN. Windows upload measurements and mocked screenshots are not Linux,

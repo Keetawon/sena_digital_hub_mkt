@@ -8031,3 +8031,78 @@ The owner requested that the orchestrator read the note through GitHub.
 exception, fresh/reused suite totals and outstanding hosted/Linux/home/UAT
 boundaries. This follow-up changes documentation only; it does not modify the
 tested product bytes or authorize a hosted operation.
+
+### Revised hosted admission and local Linux setup — 18 November 2026
+
+Owner verified W9 product `c9791af`, receipt `45ca776` and handoff `be5d20f`.
+The owner released the 17 November swap STOP and replaced the zero-swap-delta
+rule with operation-window thresholds: MemAvailable below 3.84 GiB; swap-used
+growth above 64 MiB; swap-out above 100 MiB per five minutes; any allocation
+stall/direct reclaim; available memory PSI some avg10 above 10; new Hub TEST
+cgroup high/max/OOM events; kernel OOM; or warehouse health/OOM failure.
+Smaller deltas are recorded. Historical receipts remain unchanged.
+
+Docs/46 now contains the current warehouse protection rules, exact conditional
+2304 MiB cap allocation, schedules and revised admission. Interim caps no longer
+depend on local Linux upload, render or failure experiments. Admission needs
+fresh read-only checks, an owner-approved quiet interval and admin memory.peak
+before/after the owner opens main demo pages normally. A peak above 256 MiB
+requires an approved rebalance inside 2304 MiB. The approved six-file diff,
+Restart=no, OOMPolicy=kill, +1000 application scores, zero TEST swap and fail-safe
+sequence remain unchanged. Neither PostgreSQL container may be modified.
+
+The retained passive collector was adapted to the new thresholds in a separate
+local version; 20 pure policy boundary checks and remote-source syntax passed.
+At **07:37 Bangkok**, one short read-only observation completed:
+
+| Evidence | Result |
+|---|---:|
+| Minimum sampled available RAM | 14,827,188,224 bytes (13.81 GiB) |
+| Swap-in / swap-out | 2,663 / 0 pages |
+| Swap-used change | −8 MiB |
+| Allocation stalls / direct reclaim / sampled Hub pressure-event increments | 0 |
+| Warehouse before/after | healthy, running, OOMKilled=false |
+| Retained kernel OOM matches | 0 |
+| Memory PSI | unavailable, not treated as zero |
+| Admin cgroup lifetime peak before/after | 209,362,944 bytes (199.7 MiB) |
+
+The sample spans 1.108 seconds and does not prove an unsampled peak or admit a
+maintenance window. No owner demo-page visit took place in this observation.
+The three-day journal lookback retained 5,606 normalized events and 4,382 cron
+rows without hitting collection bounds. Offline pairing found 2,599 runs, zero
+ambiguous sequences and zero unmatched starts. Terminal rows include failures;
+they are not success or detached-descendant completion claims. A second short
+passive read at 07:41 identified the frequent cron entries as a conditional
+`cgid` command and `cleansessions`, the latter with background syntax. It had
+zero pressure deltas and healthy warehouse state. Moving health-timer and
+background-job clearance remain; no fixed quiet interval has been admitted.
+
+Evidence under `.local/hosted-capacity-w9-20261116/interim/`:
+`observations/20261118T003708Z-v3.json`,
+`job-observation-summary-20261118T003708Z.json`,
+`observations/20261118T004120Z-cron-identities.json`,
+`pressure-policy-20261118.py`, `observe-jobs-v3.py`,
+`local-linux-admission-plan.md` and `wsl-setup-20261118.md`.
+Receipts retain exact commands and source hashes without credential values.
+
+The owner selected WSL2 Ubuntu-24.04 and authorized distro-only setup with W9
+lockfile versions, systemd/cgroup v2 and serial measurements. Proposed memory
+is 12 GiB with swap=0, leaving approximately 11.8 GiB outside WSL; approval is
+pending. The account-wide `.wslconfig` scope was explained. The current tool
+session still sees only an inbox launcher reporting WSL not installed, no
+registered Ubuntu, no WSL service or alternate executable. The owner has been
+asked to reconcile this visibility discrepancy. No reinstall, Windows feature,
+WSL configuration, distro package or runtime change was made.
+
+The W9 lock SHA-256 is
+`17f64ee3f45c67cf245a9f2c0356f0bc1c7d3ec1c9a5dfef18b9fb31321675cc`;
+the setup plan pins exact product source and excludes credential/environment
+files. W9's slowest accepted processing call is 26.349 seconds against 30;
+W9.1 must bring it well below that deadline. No Linux capacity result is claimed.
+
+No local port-bound test or harness, hosted mutation, package install, service
+restart, source/migration change or worktree removal occurred. Product gates
+were not rerun for these documentation and read-only operator changes. The
+older uncommitted docs preparation remains untouched. Next: clear the quiet
+interval and owner page-reading evidence, apply/verify interim caps, then W9.1
+and the approved home slice, W8 UAT, and separately approved hosted rollout.
