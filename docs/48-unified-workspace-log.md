@@ -8106,3 +8106,135 @@ were not rerun for these documentation and read-only operator changes. The
 older uncommitted docs preparation remains untouched. Next: clear the quiet
 interval and owner page-reading evidence, apply/verify interim caps, then W9.1
 and the approved home slice, W8 UAT, and separately approved hosted rollout.
+
+### Accepted Linux setup and first W9.1 measurements — 18 November 2026
+
+The owner accepted `LINUX_SETUP_VERIFIED_NO_CAPACITY_CLAIM` and explicitly
+decoupled local W9.1 measurements from hosted caps. Ubuntu-24.04 is now accessible;
+the prior visibility blocker is resolved. Approved account-wide `.wslconfig`:
+memory=12GB, swap=0; SHA-256
+`d347746ebe8069b22689a08bb423c4729953658a9dfac5a9e5cbbec940d7464b`.
+Existing systemd 255 and cgroup v2 required no sudo/configuration change.
+Frozen production/measurement installs match W9's lock, including Python
+3.12.14, Pillow 12.3.0, pyvips 3.1.0/libvips 8.18.7, pypdf 6.18.1 and
+pypdfium2 5.14.0. Setup passed 63 guarded imports and four isolation tests.
+No credential/environment files were read or copied into the distro.
+
+Setup receipt: `/home/keetawatw/w9-1-lab/receipts/setup-receipt.json`, SHA-256
+`330b72acaa9b9ddd88269d16ab4f943a7abc2e80f8bb13a83ee296da138addf4`.
+All 72 explicit source exports from product `c9791af` were reverified unchanged;
+manifest SHA-256
+`b3bc8d7e124eb9a39e2044c9705327337d5e009a9b316b807e9d909fe158d709`.
+The lab, fixtures, scratch candidates and detailed receipts remain inside
+`/home/keetawatw/w9-1-lab`; product files were not edited.
+
+No other local test process/listener or active probe was found at admission.
+Every generation, processing, decode and cancellation probe used a serial
+transient user service: four CPU affinity entries, CPUQuota=400%,
+MemoryMax=2304M (**2415919104 bytes**), MemorySwapMax=0, TasksMax=128,
+KillMode=control-group, OOMPolicy=kill and TimeoutStopSec=1s. Exact requested and
+observed limits/commands are in each receipt. Current RuntimeMaxSec=30s includes
+startup; initial 1 MP smoke used 60s. No local test port or hosted request was
+used. An unsupported systemd property caused one rejected launch before work;
+that launch is preserved. No product timeout was raised.
+
+**Initial local results, not capacity acceptance:**
+
+| Unprofiled processing case | Cgroup peak MiB | Local seconds | Outcome |
+|---|---:|---:|---|
+| 24 MP JPEG | 399.92 | 0.999 | 4096 edge retained |
+| Noisy 24 MP JPEG | 338.31 | 1.390 | 4096 edge retained |
+| SDR16 RGBA 24 MP | 558.93 | 2.245 | Completed |
+| PQ16 RGBA 24 MP | 1157.49 | 8.444 | Completed |
+| HLG16 RGBA 24 MP | 919.88 | 6.908 | Completed |
+| PDF: one noisy 24 MP JPEG | 399.41 | 2.257 | Completed |
+| PDF: 200 pages sharing one 24 MP image | 227.34 | 1.347 | Completed |
+| PDF: ten distinct 24 MP image payloads | 246.07 | 4.706 | Completed |
+| PDF: 200 pages, 128 distinct 24 MP payloads | 459.29 | — | 30s watchdog |
+
+The large PDF is inside the existing 50 MiB/200-page limits. Its payloads differ
+by valid JPEG DC quantization tables. Earlier fixtures with separate XObjects
+but identical bytes are deduplicated by the writer and do not prove unique-image
+aggregate capacity. Allocation profiling itself made an ordinary PDF exceed
+30s; the unprofiled 2.257s result above resolves that diagnostic overhead.
+The distinct large PDF still timed out without profiling. Failed attempts remain.
+
+At 24 MP, PNG sanitation's inflated sample result is 192004000 bytes; Python
+traced peak around inflation was 386951584 bytes, roughly two expanded buffers.
+At 100 MP, sanitation reached 1577.6 MiB cgroup / 1534.9 MiB traced Python peak.
+Native encoding adds the retained RGBA16 source, double-precision HDR graph
+buffers and concurrent region work. The graph's construction alone did not
+materialize those buffers. This identifies major contributors to the historical
+~97 committed bytes/pixel, not an exact reconstruction of Windows allocations.
+Windows commit/working set, Linux RSS and cgroup peaks remain distinct metrics.
+
+Two native threads reduced PQ24 to **819.52 MiB / 14.524s** locally (HLG24:
+650.00 MiB / 10.199s). One-thread diagnostic PQ24 took 25.139s, too close to the
+deadline. A scratch cache of bounded 256x16 tiles at selected shared HDR nodes
+reached **881.44 MiB / 9.073s** for PQ24 and 744.14 MiB / 6.848s for HLG24.
+Thirteen successful HDR baseline/candidate comparisons matched output hashes,
+dimensions, MIME, size and sampled alpha; the full fidelity matrix was not run.
+A naive sequential decoder failed after the alpha scan consumed the stream;
+reopening avoided that error but increased memory and caused a bounded OOM.
+That alternative is rejected. The unchanged PQ100 baseline hit 2304 MiB and
+was OOM-killed; the cache candidate stayed at 2142.21 MiB but timed out at 30s.
+The 26.349s historical case's improvement target remains **OPEN**.
+
+JPEG shrink-on-load correctly leaves 6000x4000 unshrunk. At 10000x10000 it
+decodes to 5000x5000 without undershooting 4096; process peak RSS decreased from
+442.3 to 156.4 MiB. This is decode-only evidence. Cancellation at the native
+encode boundary and in an idle child deliberately ignoring SIGTERM forced a
+kill/reap in 1.224s and 1.174s including supervisor overhead. Subsequent noisy
+and ordinary image probes passed. All 62 launched groups were empty after
+cleanup; no probe unit remained and the serial lock was available at completion.
+This proves scratch containment, not integrated API cancellation/parent health.
+
+Inventory: **38 processing probes** (29 completed, three decoder errors, two
+OOM kills, four watchdog timeouts); four decode probes completed; two
+cancellation probes reaped; 17 fixture generations completed, one generation
+timeout and one rejected launch. These are experimental outcomes, not a claim
+of 63 passing tests. Product quick/full gates were not run for scratch probes
+or these documentation changes; delivered W9 evidence is unchanged.
+
+Every timing is a laptop estimate, not proof of the hosted deadline. Cache state
+was not controlled; file-page charges can differ between fresh processes.
+Parent/IPC/storage/validation/thumbnail and full HTTP request costs, the complete
+fidelity/cold/warm matrix and the PDF aggregate envelope remain unmeasured.
+The 881.44 MiB cache candidate plus the proposed 384 MiB API-parent allowance
+leaves only 14.56 MiB below 1280 MiB: this is not a safe acceptance margin.
+No shared-host FITS verdict, cap rebalance, package approval or new PDF threshold
+is inferred. Continue streamed sanitation/bounded HDR and integrated child
+measurements locally; the 24 MP floor and 4096 edge remain unchanged.
+
+Indexed receipt: `/home/keetawatw/w9-1-lab/receipts/initial-measurements-20261118.json`,
+SHA-256 `464395df89b12a5e61e3a398a0f2052d86c536b5fadf7c3435c21baf036151fb`.
+It contains every receipt hash, command, cap, outcome and output comparison.
+Readable report in the same receipt directory, SHA-256
+`8e52d040e60f409a63707d976a55e9125e50d66d3b0debb12335afb1553ec460`;
+also `.local/hosted-capacity-w9-20261116/interim/w9-1-initial-linux-measurements-20261118.md`.
+Primary unprofiled batches: `measurements/20261118T075822Z`, `20261118T080128Z`,
+`20261118T075424Z`, `20261118T075606Z`, `20261118T075923Z`, `20261118T080244Z`
+and `20261118T080338Z`. Cancellation: `20261118T080046Z`.
+
+### Owner page-check reservation approved, caps still unapplied — 18 November 2026
+
+The owner approved reserving **19 November 2026, 09:40–09:59 Bangkok**, with
+fresh read-only admission before any start signal. Capture before/after MainPID,
+cgroup identity, current/lifetime-peak memory and events for **API, admin, media
+worker and broker units**; distinguish shared API/broker accounting and absent
+socket metrics. Home's API composition peak matters for the proposed 1280M cap.
+No peak reset, synthetic traffic or signed-in operator browser is authorized.
+
+Ten existing routes are listed in
+`.local/hosted-capacity-w9-20261116/interim/quiet-window-proposal-20261118.md`.
+Use one tab, normally 20 seconds per route. A still-loading page may finish or
+error up to 60 seconds; record outcome/time and continue without reload/retry.
+Stop on two pages exceeding 60 seconds or the overall six-minute budget;
+unvisited routes remain incomplete evidence. Require **12 clear minutes**:
+six-minute sequence + five-minute settled tail + one-minute reserve.
+Earlier actual job completion and five settled minutes still apply. The moving
+15–16-minute health cadence may make that gap impossible; skip if fresh evidence
+cannot establish it. No production job is delayed or changed. The approved
+reservation is not admitted clearance, and **no caps may be applied in this
+session**. Cap application needs its own approved window. Docs/46 and the
+orchestrator handoff reflect these corrections; hosted TEST remains unchanged.

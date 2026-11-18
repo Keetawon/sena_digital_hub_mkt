@@ -73,10 +73,13 @@ experiments. Required admission is now:
 
 1. Fresh read-only admission under the thresholds above and the existing route.
 2. An owner-approved quiet interval supported by actual job observations.
-3. Read the admin cgroup `memory.peak` before and after the **owner** opens the
-   main demo pages normally inside that interval. Record the same cgroup/PID,
-   current memory, events and route outcomes; do not reset the lifetime peak or
-   simulate load. If the observed peak exceeds **256 MiB**, propose a rebalanced
+3. Read MainPID, cgroup identity, current/lifetime-peak memory and memory events
+   for **API, admin, media worker and broker units** before and after the **owner**
+   opens main demo pages normally inside that interval. Identify shared broker/API
+   accounting and unavailable socket metrics explicitly. Record route outcomes;
+   do not reset lifetime peaks. The API composition path's peak must be assessed
+   against its proposed 1024/1280 MiB high/max limits. Do not simulate load.
+   If admin's observed peak exceeds **256 MiB**, propose a rebalanced
    allocation inside 2304 MiB and obtain approval before applying.
 
 No W9.1 upload measurement or local web-load/failure rehearsal blocks these
@@ -112,21 +115,51 @@ Other three-minute, :09/:39, half-hourly/hourly, backup and maintenance jobs
 also exist. Terminal rows may be failures and do not prove detached descendants
 ended. Calendar timers may catch up; manual starts and retries remain possible.
 Observe actual starts/ends and next triggers read-only over representative days,
-then present a fixed interval for owner approval. No interval is approved yet.
+then present a fixed interval for owner approval. No executable interval has
+been admitted; the approved reservation below still needs fresh clearance.
 Deploys, migrations, imports, backups and UAT bulk steps must avoid production
 job windows and fit cleanup plus a five-minute settled tail. Unknown completion
 is not clearance. Do not reschedule or stop production to manufacture a gap.
 
+**Owner-approved reservation:** 19 November 2026, 09:40–09:59
+Bangkok for the owner's normal page-reading peak check. The full reservation is
+not proven quiet. Admit only a subwindow after actual job/descendant completion
+and five settled minutes, with at least twelve minutes before the next relevant
+trigger and reservation end. The moving health timer and :39 background cron
+can invalidate this occurrence; skip it if clearance is unavailable. The
+three-minute conditional cron also requires an activity check. A 15–16-minute
+health cadence normally cannot fit five settled minutes followed by this
+twelve-minute gap; skip if fresh clearance is insufficient. No production
+schedule changes are permitted. Exact ten URLs, one-tab/20-second instructions,
+six-minute visit budget, five-minute observation tail and separate cap-apply
+step are in `.local/hosted-capacity-w9-20261116/interim/quiet-window-proposal-20261118.md`.
+An error-page render does not prove a successful large-payload render's peak.
+At 20 seconds a still-loading page may finish or report an error up to 60 seconds;
+record its outcome/time and continue without reload or retry. Stop on two pages
+exceeding 60 seconds, or the overall six-minute budget. Record unvisited routes
+and do not claim complete acceptance for an incomplete sequence. No cap
+application is authorized in this session; its own window requires approval.
+
 ### Local Linux work and remaining order
 
-The owner selected WSL2 Ubuntu-24.04 for W9.1 and authorized setup inside that
-distro. Propose WSL memory/swap before applying and leave at least 8 GB outside
-WSL for Windows. `.wslconfig` is per Windows account and affects all its WSL2
-distros; `/etc/wsl.conf` controls this distro's systemd setting. Preserve unrelated
-settings, never copy credential/environment files, use exact W9 source and
-lockfile versions, and serialize measurements with every other local test run.
-No Windows feature install, host package install or unrelated distro change is
-inferred. See [WSL configuration](https://learn.microsoft.com/en-us/windows/wsl/wsl-config).
+The owner approved and accepted WSL2 Ubuntu-24.04 setup with account-wide
+`.wslconfig` memory=12GB and swap=0, leaving approximately 11.8 GiB outside its
+ceiling on this laptop. Actual Windows free memory still needs checking. Existing
+distro systemd and cgroup v2 were verified without a privileged configuration
+change. The W9 product tree and lockfile were exported explicitly without
+credential/environment files. Frozen production and measurement environments
+match the lock; the accepted setup receipt is
+`/home/keetawatw/w9-1-lab/receipts/setup-receipt.json`, status
+`LINUX_SETUP_VERIFIED_NO_CAPACITY_CLAIM`. Setup is not capacity acceptance.
+
+The owner explicitly authorized **local measurements before hosted interim
+caps** on 18 November. Serialize them with every other local test run; each probe
+uses a transient cgroup with four CPUs, MemoryMax=2304M (2,415,919,104 bytes),
+MemorySwapMax=0, and a recorded limit receipt. Laptop wall time is a local estimate
+only, never proof of the hosted 30-second deadline. Memory is the primary result.
+All experiments remain inside the local distro; no hosted load, package install,
+release or configuration change follows from them. See
+[WSL configuration](https://learn.microsoft.com/en-us/windows/wsl/wsl-config).
 
 W9.1 must preserve the 24 MP product floor and 4096 output edge, bound PDF
 aggregate work, trace excess allocations, and measure killable processing,
@@ -135,8 +168,9 @@ processing call is **26.349 seconds against 30 seconds**; W9.1 must bring it wel
 below that limit, not increase the deadline. No hosted package or rollout is
 approved by local setup.
 
-Order: **interim caps → W9.1 and the approved home performance slice → W8 UAT
-→ separately approved hosted rollout in an approved window**. W6+ hosted
+Order: **local W9.1 measurements may proceed now; interim caps → W9.1 delivery
+and the approved home performance slice → W8 UAT → separately approved hosted
+rollout in an approved window**. W6+ hosted
 rollouts, migrations, imports and UAT bulk remain blocked until caps and the
 window are verified. Receipts and current admission plan remain under
 `.local/hosted-capacity-w9-20261116/interim/`; the uncommitted older preparation

@@ -59,10 +59,12 @@ original spec line; their focused checks passed seven tests at each width.
 ## Next work and active boundaries
 
 1. Interim TEST protections after fresh permitted admission, an owner-approved
-   quiet interval, and the owner's normal demo-page visits with admin memory
-   peaks recorded before/after. Local Linux experiments are no longer a cap
+   quiet interval, and the owner's normal demo-page visits with API, admin,
+   media-worker and broker PID/cgroup/current/peak/event evidence before/after.
+   Local Linux experiments are no longer a cap
    admission prerequisite (owner correction, 18 November).
 2. W9.1 memory reduction and the approved home composition implementation.
+   Local W9.1 measurements are separately authorized now, before hosted caps.
 3. W8 UAT, then a separately approved hosted rollout.
 
 The owner released the 17 November swap STOP. [Docs/46](46-hosted-content-rollout.md)
@@ -77,15 +79,39 @@ is not a maintenance-window admission.
 Caps remain conditionally approved and unapplied. Admin's lifetime peak is
 199.7 MiB; the owner-operated demo interval still needs before/after readings
 and a peak no greater than its proposed 256 MiB MemoryHigh. No quiet interval
-is approved yet. The latest three-day journal review pairs 2,599 runs without
+has been admitted. The owner approved reserving **19 November 09:40–09:59
+Bangkok** for normal page reading only: six-minute sequence, five-minute tail,
+one-minute reserve. Slow pages may take up to 60 seconds each, without retries;
+stop on the second over-60-second page or the six-minute overall budget. Record
+unvisited routes rather than claiming complete peak acceptance. The required
+twelve-minute gap after prior settling may not fit the 15–16-minute health
+cadence; skip if fresh clearance is insufficient. No cap application in that
+session; its own window needs approval. The latest journal review pairs 2,599 runs without
 unmatched starts, but background cron completion and the moving health timer
-still require clearance before proposing an executable interval.
+still require clearance before an executable interval.
 
-The owner reports installing WSL2 Ubuntu-24.04 and authorizes setup inside it.
-This tool session still reports WSL not installed and sees no distro registration;
-do not reinstall Windows features or infer that Linux setup succeeded. Proposed
-WSL ceiling is 12 GiB with zero swap, leaving about 11.8 GiB for Windows; owner
-approval remains pending. The account-wide `.wslconfig` scope was disclosed.
+The owner accepted Ubuntu-24.04 setup with the approved account-wide 12 GiB
+WSL ceiling and zero swap. Existing systemd/cgroup v2 work, frozen W9 lock
+versions are installed, 63 production imports and four isolation tests passed.
+All 72 exported product files remain unchanged. No credentials were copied.
+
+Initial serial Linux measurements are recorded in the latest docs/48 entry.
+Every probe used four CPUs, MemoryMax=2304M and swap=0. Unprofiled 24 MP peaks:
+JPEG 399.92 MiB, noisy JPEG 338.31, SDR16 558.93, PQ16 1157.49, HLG16 919.88.
+A bounded HDR-cache scratch candidate reduced PQ24 to 881.44 MiB (9.073s local),
+but PQ100 still timed out at 30s. The unchanged PQ100 baseline was OOM-killed
+at 2304 MiB. A 200-page PDF with 128 distinct 24 MP JPEG payloads also timed out
+unprofiled. Thirteen successful HDR candidate/baseline output comparisons were
+equal; this is not the full fidelity suite. Two kill/reap probes left no child
+processes, and subsequent image probes passed. API parent/IPC/whole-request
+costs, the aggregate PDF envelope and the full acceptance matrix remain open.
+These are laptop measurements, **not hosted deadline or capacity acceptance**.
+No product code, migration, timeout, acceptance rule or hosted setting changed.
+
+Summary receipt: `/home/keetawatw/w9-1-lab/receipts/initial-measurements-20261118.json`,
+SHA-256 `464395df89b12a5e61e3a398a0f2052d86c536b5fadf7c3435c21baf036151fb`.
+The local Markdown report is
+`.local/hosted-capacity-w9-20261116/interim/w9-1-initial-linux-measurements-20261118.md`.
 Do not use the shared VPS for load, stress, upload-processing or failure
 experiments; its warehouse is production and remains read-only.
 
