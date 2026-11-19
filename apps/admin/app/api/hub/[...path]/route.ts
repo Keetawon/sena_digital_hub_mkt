@@ -308,7 +308,10 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
       return new NextResponse(privateBody ?? upstream.body, { status: upstream.status, headers: downloadHeaders });
     }
     const data = privateBody === null ? await upstream.json() : JSON.parse(new TextDecoder().decode(privateBody));
-    return NextResponse.json(data, { status: upstream.status, headers: { "Cache-Control": hosted ? "private, no-store" : "no-store" } });
+    const responseHeaders = new Headers({ "Cache-Control": hosted ? "private, no-store" : "no-store" });
+    const retryAfter = upstream.headers.get("Retry-After");
+    if (upstream.status === 429 && retryAfter !== null) responseHeaders.set("Retry-After", retryAfter);
+    return NextResponse.json(data, { status: upstream.status, headers: responseHeaders });
   } catch (failure) {
     releaseStream(); streamAbort?.abort();
     if (privateContent && (failure instanceof ContentAuthorityChanged || failure instanceof HubApiUnavailable)) return NextResponse.json({ error: { code: "content_authority_changed", message: failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage, invalidate_access: true } }, { status: failure instanceof ContentAuthorityChanged ? failure.status : 503, headers: { "Cache-Control": "private, no-store" } });
@@ -324,3 +327,16 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 }
 
 export { proxy as GET, proxy as PATCH, proxy as POST, proxy as PUT };
+
+
+// Preserve the framework method responses without changing route-specific caching.
+export function DELETE() {
+  return new NextResponse(null, { status: 405, headers: { "Cache-Control": "no-store" } });
+}
+
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: {
+    "Allow": "GET, HEAD, OPTIONS, PATCH, POST, PUT",
+    "Cache-Control": "no-store",
+  } });
+}

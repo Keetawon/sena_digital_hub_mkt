@@ -8238,3 +8238,878 @@ cannot establish it. No production job is delayed or changed. The approved
 reservation is not admitted clearance, and **no caps may be applied in this
 session**. Cap application needs its own approved window. Docs/46 and the
 orchestrator handoff reflect these corrections; hosted TEST remains unchanged.
+
+
+### W9.1 input limits: supervised Linux evidence, PDF decision required — 18 November 2026
+
+Owner replaced the HDR-cache/PNG-streaming direction with input admission:
+JPEG 100 MP; PNG any depth 24 MP; reject PQ/HLG before decode; PDF 50 MiB /
+200 pages / 240 MP weighted unique image budget; one upload at a time.
+No further HDR-cache or PNG-streaming optimization was added.
+
+Prepared in isolated branch `ws/w9-1-input-limits`, based on
+`2a0937b04336ba1996dddfa24a771d8b4802d3b1`, at
+`C:/Users/keetawatw/.codex/worktrees/b70c/sena_digital_hub_mkt`.
+**Uncommitted measurement candidate, not delivered; do not integrate.**
+Main remains unchanged. No permission, migration, account, hosted configuration
+or hosted service change. Existing W9 source snapshot is unchanged.
+
+Both upload adapters use a clean-environment child for processing, validation
+and thumbnail, while parent authorization/final SQL rechecks/install remain.
+JPEG draft preserves the 4096 edge and original evidence. New processing is
+identified as upload-v2; existing reuse keeps its actual stored version.
+An OS lock across API processes sharing storage gives zero queued wait:
+HTTP 429 upload_busy, Retry-After: 1, no-store, before the second body is read.
+Timeout/cancellation/disconnect, including cancellation during process startup,
+retain admission until kill/reap and IPC cleanup. Child deadline 20s and Linux
+RLIMIT_AS 896 MiB are hard boundaries, not an RSS guarantee. Windows job-object
+verification remains pending. Thai errors are in docs/47 §8.5; docs/36 records
+no permission change.
+
+Every probe ran serially in a transient cgroup with **4 CPUs / CPUQuota400% /
+MemoryMax2304M (2415919104 bytes) / MemorySwapMax0**, TasksMax128, OOMPolicy=kill,
+KillMode=control-group. Full-request watchdog 30s; test-unit ceiling 300s.
+The 1024 MiB API high threshold is a comparison, not the probe's MemoryHigh.
+Full ASGI requests include body, parent, child, IPC, validation, thumbnail and
+local installation, with synthetic account/SQL fixtures. These do not measure
+real DB/R2/network latency or concurrent ordinary API work.
+
+Final measured source manifest SHA-256:
+`65276f4c610b3286e7ee1e4c340e0ec70d26330e1b0afc93d3ea8d2403ba80e1`,
+snapshot `/home/keetawatw/w9-1-lab/candidate-snapshots/20261118T093232Z`.
+
+| Final-source full request | Peak MiB | Local seconds | Outcome |
+| --- | ---: | ---: | --- |
+| JPEG 100 MP, noisy | 621.34 | 4.589 | 201; 4096 edge |
+| PNG 24 MP, 16-bit RGBA Adam7 | 830.96 | 6.107 | 201; 4096 edge |
+| PNG 24 MP, linear 16-bit RGBA | 628.88 | 7.209 | 201 |
+| PDF 240 MP, 100+100+40 MP objects, 200 pages | 945.18 | 4.551 | 422 upload_processing_memory |
+| PDF 240 MP, ten distinct 24 MP payloads | 364.96 | 6.478 | 201 |
+| PDF 48 MP, 200 pages, exactly 50 MiB | 769.29 | 4.069 | 201 |
+| PDF 72 MP, 200 pages, exactly 50 MiB | 957.07 | 4.649 | 201 |
+| PDF 48 MP weighted depth/mask | 317.23 | 3.242 | 201 |
+| WebP 24 MP | 604.46 | 5.280 | 201 |
+| Existing WebP 100 MP path | 143.71 | 1.630 | Decoder initialization rejected |
+| PQ / HLG PNG 24 MP | 146.70 / 146.70 | 1.869 / 2.136 | Header rejection |
+
+All timings are laptop estimates. Largest successful PNG leaves 193.04 MiB
+below API high; concurrent API parent growth can consume that margin. The
+proposed 384 MiB parent allowance is not represented by a busy-production
+fixture. No hosted FITS/capacity acceptance is claimed, and the historical
+26.3s case is not an unchanged-workload comparison after limiting inputs.
+
+**Owner decision needed:** 240 MP is unsafe for this implementation. A bounded
+diagnostic identifies MemoryError during the large PDF image resize. Propose
+**48 MP weighted aggregate**, retaining 50 MiB / 200 pages; the 72 MP near-file-
+ceiling case has only 66.93 MiB headroom. **240 remains in the candidate until
+approved.** Existing stream-expansion guards still reject oversized Flate /
+high-depth streams; 48 MP is not a bypass or a guarantee that every complex
+PDF is supported. Vector/fonts/content complexity remains separately bounded
+by the child memory/time limits.
+
+Existing WebP100 was outside the owner's new format list and remains unchanged.
+It is rejected under the bounded decoder; WebP24 passed. Propose an explicit
+24 MP WebP limit separately. Do not silently lower it or claim its 100 MP
+capacity. PDF counting uses width×height×ceil(bits/8), minimum one, counts
+mask objects separately and shared references once; separate objects are
+conservatively separate even for identical encoded bytes. Inline/form images
+are covered and encoded JPEG dimensions must match the dictionary.
+
+Final focused regression set **47 passed / 0 failed / 0 errors / 0 skips**:
+header11, Knowledge12, full-route3, supervision9, baseline admission/pipeline11,
+JPEG draft1 (three size/orientation cases). This is port-free focused evidence,
+not the full API or programme gate. Full API, production/full gates, existing
+HDR test updates to the new rejection policy, complete fidelity/privacy,
+Windows isolation and UI rendering verification remain before delivery.
+
+Invocation inventory: 24 green test selections, 12 red/harness-failed selections;
+27 completed full-phase requests and 21 rejections; 21 successful fixture
+generations. Eight full-phase invocations were diagnostic attempts: four
+script-quoting failures (excluded from decoder evidence) and four corrected
+diagnostics. Ordinary requests therefore completed27/rejected13. One later
+generation launch collided with a same-second directory before a unit started;
+the runner now uses microseconds. All failed receipts are retained.
+Every launched unit was reaped; no high/max/OOM event, stale transaction or
+private IPC remained; API health stayed200 after every response/rejection.
+
+Evidence index `/home/keetawatw/w9-1-lab/receipts/input-limits-20261118.json`,
+SHA-256 `e138b830a4ab8555a97ee133e8265a8c6bf14a15b4af362ddee5e9f6f97b7e84`.
+Copy plus full review/messages/commands:
+`.local/hosted-capacity-w9-20261116/w9-1-input-limits-20261118/receipt-index.json`
+and `review.md` in the main checkout. Final tests:
+`measurements-limits/20261118T093233535592Z`; final requests:
+`measurements-limits/20261118T093325233979Z`. Each receipt includes exact
+systemd properties/command, source/harness hashes, counters and cleanup.
+
+The **19 November 09:40–09:59 Bangkok** owner page-check reservation remains
+unchanged. No caps will be applied there; fresh clearance and the approved
+service measurements/sequence/tail remain required. No hosted operation was
+performed by these local probes.
+
+## W9.1 owner corrections and revised PDF measurements — 18 November 2026
+
+Branch ws/w9-1-input-limits, base 2a0937b04336ba1996dddfa24a771d8b4802d3b1.
+Uncommitted; owner requires a report before commit. No hosted action.
+
+The preceding 48 MP aggregate proposal is **rejected/superseded**. Keep the
+240 MP weighted aggregate, add 48 MP per image including attached masks, and
+keep 50 MiB / 200 pages. WebP24 MP is approved. The rare interlaced PNG16
+18.85% margin is an accepted known risk, not hosted capacity acceptance.
+
+Two fresh complete supervised requests include parent, child, IPC, validation,
+thumbnail and local installation, each in a transient cgroup with 4 CPUs,
+CPUQuota400%, MemoryMax2304M (2415919104 bytes), MemorySwapMax0, TasksMax128,
+OOMPolicy=kill and KillMode=control-group. Both fixtures have 200 pages, exactly
+52428800 bytes and 240000000 weighted image pixels.
+
+| PDF fixture | Unique payloads/objects | Peak MiB | Local seconds | API-high headroom |
+| --- | ---: | ---: | ---: | ---: |
+| 5 x 48 MP | 5 / 5 | 787.43 | 5.396 | 236.57 MiB (23.10%) |
+| 10 x 24 MP | 10 / 10 | 556.43 | 5.066 | 467.57 MiB (45.66%) |
+
+Each JPEG payload is distinct; references repeat over 200 pages. Valid PDF
+comments pad the approximately 3.8 MB image PDFs to exactly 50 MiB, exercising
+the full input/body/IPC footprint; this is not 50 MiB of high-entropy image data.
+The inherited output-size, expanded-stream, complexity and child-time limits
+remain. These laptop timings do not establish the VPS deadline or headroom
+during concurrent ordinary API traffic.
+
+Both returned201; health before/after200, transaction depth0, IPC clean,
+no cgroup high/max/OOM events and no remaining child/cgroup PID. No lower
+per-image or aggregate limit is proposed from these results.
+Source manifest 2e005c2964799362f55fa5f128e594bcbdad50e3c3150048cfec9e85c4d012bf.
+WSL evidence: measurements-limits/20261118T101951423926Z; fixture generation:
+20261118T101935304243Z. Receipt copies/index under
+.local/hosted-capacity-w9-20261116/w9-1-input-limits-20261118/revision-pdf48/.
+
+Header regression13 and full-route3 passed after the corrected limits.
+Client retry timing/error contracts:7 passed; initial missing-module red
+retained. Typecheck passed after correcting one missing UI-copy import.
+The initial offline build passed; a subsequent status-rendering correction
+requires a fresh build before browser checks. Browser coverage now includes
+waiting/success without duplicate writes, expiry with preserved inputs, and the
+media workspace flow. HDR acceptance tests now assert header rejection while
+retaining legal-guard and independent transfer arithmetic coverage.
+
+At 17:24 Bangkok the full API quick gate started in this worktree's disposable
+harness and holds the sole local port-bound lease. No other runtime tests or
+Linux probes may start until it exits. Log:
+artifacts/unified-workspace/w9-1/gates/api-quick-20261118.log.
+Final full gate, both browser widths, H1 and final receipt remain pending.
+The 19 November 09:40–09:59 owner page-check reservation is unchanged.
+
+## W9.1 paused by owner — 18 November 2026, 17:58 Bangkok
+
+Owner requested pause. The active API quick run was interrupted at59% after
+one reported failure; its final failure summary and totals were not emitted.
+This is **incomplete/failed evidence, not a reusable passed stage**. Retain
+artifacts/unified-workspace/w9-1/gates/api-quick-20261118.log for diagnosis.
+Owned test processes stopped; ports55432/8000/3000 were verified free.
+The review worker was interrupted. No commit, push or hosted change occurred.
+
+The read-only review found encoded PDF dimensions that could bypass the
+dictionary-based charge, plus duplicate charging of shared inline images.
+A guarded implementation and22 regression methods are prepared, untested,
+in ws/w9-1-review at D:/Personal/workspace/sena_hub_wt/w9-1-review.
+They have not been integrated into ws/w9-1-input-limits. File hashes:
+- apps/api/sena_hub_api/upload_limits.py:
+  15ec45575f693758bf0645b2ca253afab8593a785b62750a1d3c28ebacabbc2d
+- apps/api/tests/test_upload_pdf_headers.py:
+  c7350e72c868a8877396dad12ccf72efc2e7387ce762b6c566f6f69175f95481
+
+Resume with fresh admission. Copy/run only the new regression file against the
+unchanged primary implementation to record red; review/integrate the guard and
+run green. Final source requires renewed supervised measurements and gates.
+The prepared deferred-api-contract.py and serial gate runner have not run.
+Latest typecheck passed; the offline build predates the final Retry-After proxy
+correction and must be rebuilt. Seven client tests passed before an eighth
+extreme-header test was added; that added test remains unrun.
+
+Resume checkpoint is .local/operations/current-w91-checkpoint.json in the
+worktree, with a copy in the approved hosted-capacity receipt directory's
+w9-1-input-limits-20261118/current-checkpoint.json. Both worktrees are preserved.
+The19 November09:40–09:59 owner page-check reservation remains unchanged,
+with fresh admission required and no cap application authorized in that session.
+
+## W9.1 resumed: local measurements verified, delivery gate pending — 19 November 2026
+
+Owner resumed work. Branch `ws/w9-1-input-limits`, base
+`2a0937b04336ba1996dddfa24a771d8b4802d3b1`; still uncommitted. The interrupted
+18 November API run remains incomplete and cannot be reused. Report before
+commit remains required. No hosted change, permission, migration or dependency
+change is included.
+
+Integrated the prepared PDF header guard after its regression red. Follow-up
+review found duplicate PNG size headers, conflicting JPEG frame headers, and
+attached masks without a subtype escaping aggregate accounting. Five focused
+regressions reproduced those gaps; the corrected guard now rejects ambiguous
+headers before decoding and counts every unique attached mask. The 27 header
+regressions pass. The library configuration test now uses its context API;
+the old PNG-bomb test expects the approved pixel-limit error. A small shared
+exception module preserves error identity across the existing reload test.
+Independent read-only review found no remaining concrete blocker in these
+corrections, child cleanup/admission or client retry/header forwarding.
+
+A repeated valid 24 MP interlaced RGBA16 request exposed an intermittent
+`upload_processing_memory` rejection under the unchanged 896 MiB child
+address-space cap. The captured stack identified output sanitation inflating
+samples while retaining the native pixel graph. For transparent output, which
+cannot take the JPEG fallback, that graph is now released before sanitation.
+Opaque behavior, codecs, dimensions, all limits and the 20-second child deadline
+are unchanged. This narrow lifetime correction follows the owner's exception
+allowing optimization when an admitted limit fails; no HDR-cache or PNG-streaming
+work resumed. Three repetitions and the final full request passed, with six
+PNG comparisons retaining identical stored bytes, MIME, dimensions and thumbnail
+size. Full fidelity regressions also pass; failed attempts remain evidence.
+
+Final source manifest:
+`e9fc41e5682e39e69c4827be8748bc4f5433f4d463403230b398e470757a9b72`.
+Every probe used a transient cgroup with four CPUs, CPUQuota400%,
+MemoryMax2304M (2415919104 bytes), MemorySwapMax0 and TasksMax128.
+These are whole supervised requests with parent, child, IPC, validation,
+thumbnail and local installation; authority/SQL are synthetic fixtures.
+Timings are laptop estimates, never a VPS deadline or concurrent-traffic claim.
+
+| Final-source admitted case | Maximum observed peak MiB | Local request seconds |
+| --- | ---: | ---: |
+| JPEG100 MP, noisy | 649.24 | 2.537 |
+| JPEG100 MP, CMYK | 486.34 | 1.943 |
+| JPEG100 MP, progressive | 512.38 | 2.348 |
+| PNG24 MP, RGBA16 interlaced, four repetitions | 711.36 | 3.174–3.426 |
+| PNG24 MP, linear16, two repetitions | 503.27 | 3.996–4.164 |
+| WebP24 MP | 604.70 | 2.232 |
+| PDF5 unique48 MP, 200 pages, 50 MiB | 802.57 | 3.278 |
+| PDF10 unique24 MP, 200 pages, 50 MiB | 607.87 | 3.116 |
+| PDF48 MP weighted depth/mask | 316.91 | 1.484 |
+
+The worst PDF leaves 221.43 MiB (21.62%) below the proposed 1024 MiB API high;
+the repeated interlaced PNG leaves 312.64 MiB (30.53%). These finite fixtures
+do not prove every encoded input or hosted concurrency is safe. The 50 MiB
+PDFs retain the disclosed valid-comment padding, not 50 MiB of high-entropy
+JPEG data. The inherited 75 MB expanded-stream guard still rejects the large
+Flate fixture; no stream bound was relaxed. Both HDR cases reject before
+decode with the approved export-as-8-bit-sRGB message. All final requests
+preserved health200, no active transaction, clean IPC and empty reaped cgroups,
+with no high/max/OOM event.
+
+Focused Linux suites: optimization86, input headers13, PDF headers27,
+full request5, supervision9, Knowledge contract12, baseline11 and JPEG draft1:
+**164 passed, zero failures/errors/skips**. Client retry8 passed, and admin
+typecheck passed. A collector teardown ENODEV interrupted one earlier collection;
+the successful worker result alone was not used as completed collector evidence.
+The collector now records disappearing cgroup reads, retaining final worker
+counters and cleanup; the repeated collection completed.
+
+Evidence in WSL: `measurements-limits/20261119T015345109026Z` (suites),
+`20261119T015307924882Z` (PNG repetitions), and `20261119T015503455410Z`
+(final full requests). Sanitized copies, every earlier failure and an indexed
+summary are under
+`.local/hosted-capacity-w9-20261116/w9-1-input-limits-20261118/resume-20261119/`.
+Index SHA-256:
+`b8360baecb410340bb49236817195c64bfc9b93935ff514cabc8e5b77ba3afaf`.
+`final-local-summary.json` checks exact outputs, bounds, totals and cleanup.
+
+Next: affected browser selection at both widths and local H1, then the full API
+and final serial delivery gate on frozen source. No full-gate pass is claimed.
+The 09:40–09:59 Bangkok owner page-check reservation remains conditional on
+fresh clearance; no cap application is authorized. A passive 08:54 reading
+found the warehouse healthy, no pressure STOP and about13.79 GiB available;
+PSI was unavailable. The health timer continues its short cadence and its last
+service runs ended failed, so this reading does not admit a quiet page-check gap.
+Receipt: `interim/observations/20261119T015410Z-v3.json`.
+
+### W9.1 browser/proxy failure loop — 19 November 2026, 09:16 Bangkok
+
+The first frozen quick run (`quick-ui-20261119-085830`) passed client8,
+typecheck, offline build and desktop107. Mobile finished106 passed/one failed:
+the existing library helper checked button count before the role-change render
+was ready. It now waits for either the open button or the already-open search
+control; expected permission/rights assertions and timeouts are unchanged.
+H1 did not run after that failure.
+
+Visual review found both original dark-named captures used light colors.
+The test now emulates the browser's real color scheme and asserts that mode;
+the four earlier captures are retained under that run's
+`invalid-theme-captures/` and are not dark-mode evidence.
+
+The run also exposed the inherited page proxy's 10 MiB body-clone truncation.
+The new real50 MiB PDF regression returned422 instead of201 against the old
+routing, with the framework truncation warning; its namespace matcher test
+also failed as expected. Evidence: `gates/proxy-red-20261119/`.
+Hub API routes now bypass only the redundant page proxy. Their existing route
+handler continues identity/cookie refresh, allowlists, CSRF, current scope
+rechecks, upload admission and bounded reads. Narrow Next response headers
+retain private/no-store across the namespace, including framework responses.
+No global buffer increase, new hosted setting or permission change was made.
+Hosted asset uploads already use the direct API; this corrects the Hub-proxied
+path. The framework behavior matches its
+[proxy body-limit documentation](https://nextjs.org/docs/app/api-reference/config/next-config-js/proxyClientMaxBodySize).
+
+Matcher boundary2 and typecheck passed. A fresh offline build and both focused
+asset flows passed, including the complete50 MiB original size, stored-file
+checksum, private evidence projection and pending rights, in
+`gates/proxy-green-20261119/`. The broader affected selection now also includes
+`content-scope-proxy.spec.ts` and `intake-proxy.spec.ts`, followed by both
+widths and local H1. The full API stage will stop on its first failure, while a
+green run still executes the complete inventory; no test is excluded or skipped.
+No full delivery gate, commit, push or hosted change is claimed.
+
+
+### W9.1 response-header correction — 19 November 2026, 09:29 Bangkok
+
+The renewed quick gate (quick-ui-20261119-091643) ended with desktop139
+passed/two failed. Client10, typecheck and offline build passed; mobile and
+H1 were not reached. All frozen source hashes and the base matched after
+completion and before editing. One new assertion mistakenly used PUT, which
+has an existing allowlist handler returning404 on the asset collection; it
+now uses the unimplemented DELETE method to test the framework405 response.
+
+The other failure exposed a real regression in the intermediate correction:
+configured namespace Cache-Control overrides route-specific headers. A
+focused real HTTP check proved it removed the stream's no-transform directive
+as well as changing the exact download header. The red run retained both
+failures and one passing complete50 MiB upload (cache-red-20261119).
+
+The namespace header is removed. API descendants still bypass the redundant
+page proxy, while bare /api/hub retains its original behavior. Explicit
+empty DELETE405 and OPTIONS204 responses add no-store and preserve the
+existing body and Allow semantics (GET, HEAD, OPTIONS, PATCH, POST, PUT).
+They do not read request bytes or call upstream. Existing legacy download
+assertions remain unchanged, and the real streaming test now requires
+no-transform. There is no permission rule or application API contract change.
+The affected quick selection now contains thirteen complete specs, including
+the assistant proxy spec, at each viewport, followed by local H1.
+
+Desktop waiting screenshots were visually reviewed: both1280 captures now
+use their intended light/dark palette and show the Thai retry status.
+Mobile captures from the earlier run remain invalid-theme evidence until
+replaced and visually reviewed. No full gate, commit or hosted change claimed.
+
+
+### W9.1 sequential upload assertion — 19 November 2026
+
+Quick run quick-ui-20261119-092921 passed client10, typecheck, offline build
+and desktop164. Mobile ended163 passed/one failed in the bulk logo lifecycle;
+H1 was not reached. The previous cache/download/streaming corrections passed
+at both widths and independent read-only review found no remaining defect in
+that bounded correction.
+
+The synthetic trace proves the first two sequential uploads returned201 in
+2174.577ms and2051.279ms; their bindings returned200 in152.545ms and186.472ms.
+The third upload started4.575s after the first. The legacy assertion demanded
+the whole three-job batch finish within its single five-second assertion.
+It now awaits each completed-file status with the same existing assertion
+timeout, then retains the exact three-of-three text, request order, roles,
+rights, audit and publication assertions. No timeout value, automatic retry
+or application behavior changed. Evidence excludes headers and bodies:
+quick-ui-20261119-092921/logo-request-timings.json.
+
+The failed run remains failed. Because the correction changes only this
+spec, its quick repair reruns the entire brand-logo spec at both widths,
+then the previously unrun local H1; it does not rerun unrelated passing specs.
+The ordinary final full gate still follows on the final frozen source.
+
+All frozen hashes matched before this test-only edit. A separate serial
+Linux follow-up addresses the disclosed PDF evidence limitation: generate
+five48MP and ten24MP unique noisy JPEG objects, each PDF at50MiB with at
+least40MiB of actual image payload. No application source or input limit
+changes for these probes. Earlier flat-color/padding evidence remains intact.
+
+
+### W9.1 PDF headroom decision required — 19 November 2026
+
+Stronger full supervised requests retain 50MiB,200 pages and240MP aggregate,
+but now contain44,113,128/five and44,115,072/ten bytes of unique noisy JPEG
+payload instead of predominantly padding. Five48MP images completed201 in
+11.451s locally at1140.65MiB:116.65MiB above the1024MiB API high reference.
+Ten24MP images completed201 in9.962s at879.64MiB, leaving144.36MiB/14.10%.
+These supersede the earlier flat-color cases as the worst measured PDFs;
+earlier receipts are retained. Largest-image size is not the sole driver:
+encoded payload also contributes to total memory.
+
+All probes used four CPUs,2304M maximum and zero swap. Child896MiB address
+space and20s deadline are unchanged. Health before/after200, transaction
+depth0, clean IPC, reaped units and zero cgroup high/max/OOM events were
+verified. The high threshold is a comparison reference, not an applied
+MemoryHigh; these laptop times are not hosted deadline acceptance.
+No application source changed. All84 exported API files match the measured
+source manifest e9fc41e5682e39e69c4827be8748bc4f5433f4d463403230b398e470757a9b72.
+
+Per the owner's condition, delivery/full-gate freeze is withheld pending
+the per-image decision. Proposed:24MP weighted per PDF image including masks,
+with240MP aggregate,50MiB,200 pages and standalone-image limits unchanged.
+The14.10% measured margin is explicitly a risk, not capacity acceptance.
+The product still has48MP; no lower value has been implemented.
+
+Review:
+.local/hosted-capacity-w9-20261116/w9-1-input-limits-20261118/resume-20261119/pdf-limit-decision.md.
+Indexed copied evidence: pdf-payload-followup/index.json in that directory,
+SHA-256 b73a62c5f5dca4e3dbcf7e5fd5e4c47842d6e55dc43f4855811dd9ecb0771d7f.
+Generation run20261119T024756855879Z and requests20261119T024902289373Z.
+The focused logo repair and previously unrun H1 remain independent checks;
+they do not imply final delivery acceptance.
+
+### Hosted owner page-check occurrence skipped — 19 November 2026
+
+The09:29:42 passive reading scheduled the health job for09:42:11 Bangkok.
+From the09:40 reservation start only2m11s precede that job. Even instantaneous
+completion followed by five settled minutes and the required twelve-minute
+operation would end09:59:11, beyond the09:59 reservation end. Its15–16-minute
+cadence also cannot supply seventeen minutes. The occurrence was skipped;
+no start signal, signed-in browser, cap application or hosted mutation.
+
+Warehouse before/after remained healthy/running/not-OOMKilled. Minimum sampled
+MemAvailable14,698,459,136 bytes; swap-in12 pages, no swap-out/growth, allocation
+stall/direct-reclaim increase, cgroup pressure event or kernel OOM. PSI was
+unavailable. Service PID/cgroup identities were stable. These short passive
+samples do not replace the owner's realistic page-render peak evidence.
+Health and some production job units reported failed last-run states; no
+diagnosis/restart/configuration/schedule change was attempted.
+
+Receipt: .local/hosted-capacity-w9-20261116/interim/observations/20261119T022942Z-page-window.json.
+Decision: interim/page-check-decision-20261119.md. Caps and hosted rollout
+remain blocked pending valid page evidence and a separately approved window.
+
+
+### W9.1 focused repair green; delivery held — 19 November 2026, 10:03 Bangkok
+
+Quick repair quick-logo-20261119-095319 completed with exit0 at10:02:26.
+Client10, typecheck and offline build passed. The complete brand-logo spec
+passed10 at1280 and10 at390. Local H1 passed69 operator checks,10 API checks,
+and87 browser checks (main77, flags3, outage7), with zero failures/skips;
+its populated upgrade, runtime-role and migration attestation checks passed.
+This is local loopback H1 only, not hosted TEST traffic.
+
+The preceding broader run retained desktop164 passed and mobile163 passed/
+one failed. The diagnosed sequential-progress assertion is now corrected
+and its entire spec passed at both widths. That failed run is not relabelled
+green and no full browser/full API delivery pass is claimed. The earlier
+interrupted full API stage is still ineligible for reuse.
+
+All frozen files and base2a0937b04336ba1996dddfa24a771d8b4802d3b1 matched
+after the repair gate and before this receipt was appended. Exact totals
+and log hashes are in gates/quick-logo-20261119-095319/verification.json.
+All four upload waiting captures were visually reviewed for correct theme,
+readable Thai status and mobile wrapping:
+artifacts/unified-workspace/w9-1/upload-waiting-{1280,390}-{light,dark}.png.
+
+Current blocker: owner decision on the24MP weighted per-image PDF proposal.
+The code remains48MP per image and240MP aggregate. The stronger48MP case
+exceeded the1024MiB target; the24MP case left14.10% measured margin.
+No full delivery gate, staging, commit, push or hosted change. Once the owner
+decides, apply only the approved limit/copy/tests, verify final measurements
+as needed, run the full API and serial delivery gate, then report before commit.
+The approved home-composition slice and W8 UAT remain subsequent work.
+
+
+### W9.1 PDF24 approval applied — 19 November 2026
+
+The owner approved24MP weighted per PDF image plus attached masks, preserving
+240MP aggregate,50MiB and200 pages, and all standalone-image limits. The14.10%
+margin measured below the1024MiB high reference is accepted as a known risk
+for poor compression; about400MiB remains to the proposed1280MiB hard cap.
+Single-job admission prevents overlapping heavy uploads. This acceptance is
+not hosted capacity acceptance, and no caps or hosted state changed.
+
+Tests were updated first. Against the old48MP code, the focused Linux red run
+20261119T040524218195Z ran headers13 (three failing subcases), PDF headers27
+(two failures), and full request5 (three failing subcases), with no test
+errors/skips. Failures were the intended new per-image boundary/message.
+The aggregate, masks without subtype, JPX embedded masks/depth, shared
+references and200-page counting checks retain their independent coverage.
+
+The production change is one per-image constant and its Thai rejection/help
+copy in the API, admin and docs/47 section8.5. No weighting, aggregate, byte,
+page, standalone, permission, schema, migration, timeout or admission change.
+Final-source PDF measurements and full API/serial delivery gate follow.
+No commit or hosted change.
+
+
+### W9.1 final PDF24 verification and full-gate admission — 19 November 2026
+
+Final-source focused Linux checks passed: headers13, PDF headers27 and
+full supervised request5 (45 passed, zero failures/errors/skips).
+Source manifest SHA-256:
+02216515640587c5d91038e10dd682f0d649dd190b22e7b7b8a137bd4aba629c.
+All84 exported API files still match this source.
+
+Run20261119T041241771105Z exercised full supervised requests serially:
+- ten unique noisy24MP images,240MP aggregate,200 pages,50MiB:
+  930.51MiB cgroup peak,8.699s request /12.348s whole unit locally, HTTP201;
+- ten flat24MP images with the same aggregate/pages/bytes:
+  607.81MiB,4.770s request, HTTP201;
+- weighted24MP depth-plus-mask:224.03MiB,2.032s, HTTP201;
+- weighted24MP Flate image:466.07MiB,3.090s, HTTP201;
+- five noisy48MP images/240MP/200 pages/50MiB:
+  correctly rejected422 with pdf_image_pixel_limit and the Thai24MP message,
+  422.66MiB,1.562s;
+- weighted48MP depth-plus-mask: same correct rejection,145.00MiB,1.243s.
+
+Every transient cgroup used affinity0-3, CPUQuota400%, MemoryMax2304M
+(2,415,919,104 bytes), MemorySwapMax0. The child remains896MiB address-space/
+20s deadline. All outcomes kept health200 before/after, transaction depth0,
+empty IPC, no remaining cgroup processes and zero high/max/OOM events.
+The1024MiB high value is a comparison reference, not an applied measurement
+MemoryHigh. SQL/auth are synthetic; ordinary API traffic, real DB and R2
+latency remain outside these measurements. Laptop timings are not VPS claims.
+
+Known-risk update: the final noisy PDF peak leaves93.49MiB /9.13% below1024MiB,
+and349.49MiB below the proposed1280MiB hard cap. This is narrower than the
+earlier879.64MiB /14.10% result explicitly accepted by the owner. Preserve
+both results and disclose the new worst measured value before commit; do not
+represent the earlier acceptance as hosted capacity acceptance or silently
+extend it to the changed margin. No input limit, cap or timeout was altered.
+
+Evidence:
+.local/hosted-capacity-w9-20261116/w9-1-input-limits-20261118/resume-20261119/pdf24-final-20261119/
+index.json SHA-256:
+fbca3d36e2edf0c6e62c41c81e74e3668cce154083512285d618516619c5c858.
+The first full gate was admitted on the frozen final source, including a fresh complete
+API stage, DB, both complete browser widths in separate disposable harnesses,
+H1, production isolation, scans and diff checks. No earlier stage is reused.
+No staging, commit, push or hosted change. Report before commit.
+
+Hosted owner page check: the owner deferred it;14:40 is not reserved.
+The health-job compatibility review was subsequently approved for the owner page
+check only, as recorded in the following entry.
+
+
+### W9.1 full-gate path failure and fixture repair — 19 November 2026
+
+Full gate full-20261119-111535 ended at11:40:17 Bangkok in API:1 failed,
+1600 passed,8 skipped,1 warning in1339.51s. Client10, typecheck, offline
+build and production4 had passed. DB, UI1280/390, H1 and final scans were
+unrun. Preserve this as a failed/incomplete gate, not delivery evidence.
+
+The failure was test_hub_demo.py::test_package_bytes_are_frozen_validated_and_path_bounded.
+Its generated Windows destination was exactly260 characters; os.replace
+raised WinError3. A filesystem-only synthetic probe reproduced the same
+failure at260 and succeeded at233. All1010 frozen paths and the Git base
+were verified after the failure, before editing. Both runtime lanes and
+ports were free.
+
+Only this test now asks tmp_path_factory for the short basename pkg.
+It remains inside the same pytest/disposable run; every original assertion,
+fixture byte, path-boundary check, application function, timeout and guard
+is unchanged. No product path behavior, permission or API change.
+This adds apps/api/tests/test_hub_demo.py to this slice's explicit paths.
+
+The complete affected spec passed31 with one existing opt-in skip in1.71s:
+gates/demo-path-repair-20261119.log. The normal harness cleaned up.
+Reproduction: .local/operations/path-probe-18027827/receipt.json.
+No product correction or rerun of unchanged PDF measurements is needed.
+Restart the ordinary full gate on the renewed final freeze; no stage reuse.
+
+The first attempt to append the final PDF receipt encountered Windows default
+text decoding before writing. The receipt was preserved in gate artifacts;
+this UTF-8 append occurs only after the freeze ended. Frozen source stayed
+unchanged throughout the failed gate. No staging, commit, push or hosted change.
+
+### Owner page-check exception approved; DW note only — 19 November 2026
+
+The owner approved the health-job overlap exception exactly as described in
+.local/hosted-capacity-w9-20261116/interim/health-job-admission-review-20261119.md,
+for the owner page check only, with its missing health-job memory peak
+explicitly accepted as an evidence gap. The monitor is production DW work:
+bounded systemd/journal/container/disk metadata checks, no SQL/refresh/import/
+backup invocation. Median retained runtime1.4s; maximum3.8793s.
+Source SHA-2563ce5e37f2a492ae6a07b96aeef5e3e12d2604be28576cd016a0238b2072c3ba9.
+
+Reservation:19 November14:45-14:59 Bangkok. The owner will wait signed in
+on one tab from14:40. Fresh admission must establish actual completion of
+excluded heavy jobs/descendants and five settled minutes; start no later
+than14:47 with twelve clear minutes, otherwise skip. Capture all Hub service
+identities/current/lifetime-peaks/events before and after; keep five-minute
+tail and full system pressure STOP policy. Record overlapping natural health
+runs. No cap application or hosted change. No automatic exemption for any
+other job, including conditional housekeeping or alert timers.
+
+The owner will raise the DW monitor's observed exit2 problem status with
+the DW side. Hub work must not diagnose, restart or change it. This is a
+no-action report; no underlying production cause is asserted.
+
+Approval receipt: interim/owner-page-check-approval-20261119.md.
+Read-only evidence: interim/observations/20261119T041659Z-health-identity.json,
+20261119T041820Z-health-actions.json and20261119T042042Z-health-command-shapes.json.
+W8 coverage reconciliation is prepared in
+artifacts/unified-workspace/w8/w91-coverage-review-20261119.md; no UAT executed.
+
+### W9.1 full-gate SVG inventory failure — 19 November 2026
+
+Full gate full-20261119-114434 ended at12:42:35 Bangkok. API:2595 passed,
+one failed,11 skipped,6 warnings and2 subtests passed in3371.84s. Client10,
+typecheck, offline build and production4 passed; DB, both UI widths, H1 and
+final scans were not reached. The failed run remains failed and incomplete.
+
+All1010 frozen paths and the base matched before editing; both runtime lanes
+were idle. The failing SVG endpoint test counted .upload-processing.lock as
+a second uploaded asset. Its upload, deduplication, MIME, CSP, sanitation,
+rights and no-store assertions had passed. The lock must remain persistent
+to preserve safe cross-process admission; deleting it is not a correction.
+
+Only apps/api/tests/test_svg_assets.py now excludes that exact control file
+from the asset inventory. It still requires exactly one original, byte-for-byte
+served content and exactly one thumbnail. A sweep found other root inventories
+use direct installation without upload admission; IPC checks inspect only their
+own work directory. No other storage-inventory correction is indicated.
+This test joins the slice's explicit paths. Product code, timeouts and limits
+are unchanged. Run the complete SVG spec and affected upload/API selection
+before another ordinary full gate. No stage reuse; no commit or hosted change.
+
+### W9.1 Windows temporary-path fixture correction — 19 November 2026
+
+The wider upload/API quick selection ended396 passed,17 failed,2 existing
+POSIX-only skips,3 warnings and849 subtests passed in76.94s. The complete SVG
+spec passed. All new failures reached the same pre-processing canonical-path
+guard: Windows tempfile returned the short username alias KEETAW~1, while
+resolve() returned the full username. A filesystem-only synthetic probe
+confirmed unequal aliases for the same owned temporary directory.
+
+The application's normal storage root derives from its resolved source path
+or the disposable harness path; the new full-request and supervision fixtures
+substituted a noncanonical temporary alias. Canonicalize only their
+owned temporary-root assignments, including the synthetic second process.
+All assertions, child lifetime checks, guard behavior, input limits and
+deadlines remain unchanged. No product fix or PDF capacity rerun is needed.
+The failed quick log is retained as upload-repair-20261119.log. Rerun the
+same complete affected selection before the final full gate; no stage reuse.
+
+### W9.1 upload fixture repair verified; full gate renewed — 19 November 2026
+
+The same complete affected upload/asset API selection passed405, with2 existing
+POSIX-only skips,3 warnings and857 subtests passed in87.00s. The disposable
+harness completed and cleaned up. Log: gates/upload-repair-canonical-20261119.log.
+The preceding failed quick run remains retained and failed.
+
+A serial Linux rerun of the changed fixtures passed supervision9 and full
+request5 (14 total, zero failures/errors/skips), including both POSIX lifetime
+cases. Every transient cgroup used four CPUs, CPUQuota400%, MemoryMax2304M
+and zero swap. All child groups were reaped and high/max/OOM counters stayed0.
+Run20261119T055428319812Z, source snapshot55febc9fbdf2ddfd4715f649e5130ac5c229dd870f10f170a72657af79575e2f.
+Copied receipts: resume-20261119/linux-fixture-repair-20261119/ under the existing
+local capacity evidence folder. These are test results, not new capacity claims.
+
+A hash comparison against the final PDF measurement manifest confirmed all
+measured product/dependency bytes unchanged. Only two fixture sources and
+docs/47 differ among that exported inventory. Existing PDF capacity evidence
+remains applicable to product bytes; the930.51MiB/9.13% risk disclosure remains.
+The intermediate local repair helper stopped on an incorrect expected match
+count after changing only the shared fixture; the count was corrected and all
+eight supervision roots plus the synthetic subprocess root were then resolved.
+No production guard was weakened. Independent read-only review found no
+additional concrete inherited upload/Knowledge assertion conflict.
+
+Start a new ordinary full freeze and serial gate, with no stage reuse.
+No staging, commit, push or hosted change. Report before commit remains required.
+
+### W9.1 owner pause, hosted-check skip and resume — 19 November 2026
+
+The owner paused the local gate at13:11. Run full-20261119-125608 stopped
+during API at34% progress, with no final API totals; it is incomplete and
+ineligible for reuse. Client10, typecheck, offline build and production4 had
+passed within that attempt. No DB/browser/H1/final-scan pass is claimed.
+The pre-interruption state, logs and owner-pause.json remain intact.
+
+All1010 frozen source paths and base2a0937b04336ba1996dddfa24a771d8b4802d3b1
+matched both at pause and resume. Windows test ports/processes and the Linux
+measurement lease were idle. The owner resumed after15:38 Bangkok. Retain
+the green affected quick selection405 passed/2 POSIX skips/857 subtests and
+the serial Linux14 passed/zero skips; no product bytes changed while paused.
+Append these deferred receipts before the next source freeze, then run the
+ordinary full gate afresh without reused stages. Report before commit.
+
+During the preceding freeze, the owner additionally approved sena-line-alert
+overlap for the19November14:45–14:59 page check, explicitly accepting its
+unmeasured peak alongside the health monitor. No other job was exempt, and
+the owner prohibited further exception proposals today. The occurrence was
+then skipped before14:40: the non-exempt conditional cgid job recurs every
+three minutes, and no-op outcomes through the required gap were not proved.
+Fourteen paired runs gave a maximum180.335068s gap versus1020s required.
+Session deactivation/current-process evidence confirms past scope completion,
+not a future no-op or quiet period. No start signal or page-peak acceptance.
+
+The last13:09 passive host sample had no pressure STOP and a healthy warehouse.
+No signed-in operator browser, cap application, hosted mutation, commit or push.
+Both page-check exceptions were limited to the now-expired occurrence.
+The owner will raise the DW health monitor's exit2 with the DW side; Hub work
+did not diagnose or change it. Approval/decision/provenance receipts remain
+under .local/hosted-capacity-w9-20261116/interim/ and are indexed in docs/46.
+
+The current worst measured noisy PDF remains930.51MiB,9.13% below the1024MiB
+reference, with8.699s local request time. Disclose the narrower margin than
+the earlier accepted14.10% before commit; no hosted capacity acceptance.
+
+### W9.1 resume preflight: Git line-ending setting — 19 November 2026
+
+The resume preflight stopped before starting any test. The effective shared
+repository core.autocrlf value was false, overriding the Windows installation's
+true default; repository configuration metadata changed at15:38:19. No actor
+or cause is inferred. Existing worktree CRLF files still matched every paused
+source hash, but an unqualified diff check treated their CR bytes as trailing
+whitespace. A per-command core.autocrlf=true diff check passed.
+
+Only the ignored gate helper now supplies that option on its two Git diff
+checks. No repository/global configuration or product line ending was changed,
+and migration -text attributes remain untouched. The helper will be included
+in the renewed freeze. All runtime stages remain fresh; no earlier gate reused.
+
+### W9.1 API passed; populated-upgrade fixture checkout correction — 19 November 2026
+
+Full gate full-20261119-154714 passed client10, typecheck, offline build,
+production4 and API2893 with13 existing skips,8 warnings and857 passing
+subtests in4857.78s. It then failed in DB's populated content upgrade test.
+The two earlier DB sub-suites passed66 and23; the upgrade test failed1.
+The SQL/concurrency/export remainder, full browsers, H1 and final scans were
+not reached. This remains a failed/incomplete gate, with no stage reuse.
+
+Before editing, all1010 frozen paths and base2a0937b04336ba1996dddfa24a771d8b4802d3b1
+matched. The upgrade test rejected the exact-byte checksum of
+tests/fixtures/pre-workspace/sample-brands.sql. Its45 LF line endings had
+been converted to CRLF by checkout: working SHA09a689f53d6c1662708b4880bb9fcb78ab3ec49b9d1fadbb139ec477b3d972a3.
+Normalizing only those endings reproduces the committed blob exactly,
+SHA218b1b80a11b1dc04feca8812d8c8369f217636d5937224dc577262a071985ae,
+which is also the unchanged test's expected hash.
+
+Add only that fixture path to .gitattributes with -text, following the
+existing exact-byte migration/fixture policy. Restore its working bytes
+from the verified HEAD blob. Its SQL and committed content are unchanged;
+the checksum assertion remains exact. No migration, permission, application
+function, timeout, dependency or shared Git configuration changed.
+.gitattributes joins the explicit delivery paths. The byte-correction
+receipt is gates/full-20261119-154714/fixture-byte-repair.json.
+
+Rerun the complete DB quick gate before renewing the ordinary final freeze.
+The browser-only reuse exception does not cover this fixture correction;
+no earlier full-gate stage is claimed reused. No commit, push or hosted change.
+
+### W9.1 fixture correction DB quick gate passed — 19 November 2026
+
+The complete DB quick gate passed:95 Node checks (66+23+1+5),46 SQL suites,
+25 concurrency scenarios and the local DW-login isolation check. Zero
+failures, cancellations or skips. The populated-upgrade exact-byte check
+passed without changing its expected hash. The disposable harness cleaned up.
+Log: gates/db-fixture-repair-20261119.log,
+SHA2566469a75f2d6f0fa14cb8a3dc98c99b0af8476a00dcfc81abc87e399f4ea61aea.
+Runtime17:15:40–17:18:26 Bangkok.
+
+Comparison with the failed full freeze shows exactly three raw-byte changes:
+.gitattributes, the verified HEAD bytes of the pinned fixture, and this log.
+All application, dependency, migration, API-test and browser inputs are
+unchanged. No new Linux capacity run is warranted for this checkout repair.
+The next ordinary full gate runs every stage again, with no reused stage.
+The root holds the sole serial test lease for it.
+
+The owner now authorizes reporting and then committing/pushing W9.1 and the
+home slice to main automatically after each complete green gate, within the
+approved scope. Target is Friday20November if possible; Saturday remains
+acceptable for home, with its Monday UAT cases deferred. Stop and ask on a
+new gate failure, output-equivalence difference, timing-target miss or scope
+change. No hosted action is authorized. The final PDF margin remains9.13%
+below the1024MiB reference and must be disclosed as a risk, not hosted
+capacity acceptance.
+
+Home ownership is resolved: the completed commissioned review handed its
+uncommitted0094 CASE/materialization/profile and test edits to this lead.
+Its prep-review.md was read and the diff reviewed. All candidate claims remain
+unverified/NOT_RUN. Home execution follows W9.1 gates. No source from that
+worktree is part of this W9.1 freeze.
+
+### W9.1 evening resume after owner pause — 19 November 2026
+
+The owner paused full-20261119-172111 at 17:54 Bangkok during API at 59%.
+Client 10, typecheck, offline build and production 4 passed in that attempt;
+API has no final totals. DB, full browsers, H1 and final scans were unrun.
+The attempt remains interrupted/incomplete and ineligible for reuse. Its
+original state, logs and owner-pause.json are preserved. Cleanup left zero
+test processes/listeners and an idle Linux measurement lane.
+
+The owner resumed at approximately 19:51. All 1010 frozen source/helper paths
+and base 2a0937b04336ba1996dddfa24a771d8b4802d3b1 matched. Initial admission
+stopped before testing because WSL returned
+Wsl/Service/CreateInstance/CreateVm/HCS/ERROR_NO_SYSTEM_RESOURCES.
+Windows then reported 2674 MiB free physical memory. No retry, app termination,
+service restart, setting change or guard bypass was performed.
+
+After the owner confirmed Ubuntu opened successfully, fresh admission at
+19:54 found zero Windows test processes/listeners and an idle Linux lane;
+free physical memory was 5199.2 MiB. The source matched again before this log
+append. Preserve the admission receipt in
+.local/operations/w91-resume-admission-20261119-1952.md.
+
+The root now resumes the sole serial test lease for a fresh ordinary full
+gate, with no reused stages. The 43 explicit changed paths remain scoped to
+W9.1 and its documented test/checkout corrections. The prior API 2893 and
+complete DB quick results remain historical evidence, not a completed gate.
+The owner-approved report/commit/push-on-green sequence remains in force;
+home execution follows W9.1 delivery. No hosted action is authorized.
+
+### W9.1 browser fixture repair approved — 19 November 2026
+
+Full gate full-20261119-195523 remains failed: client 10, typecheck,
+offline build, production 4, API 2893 passed / 13 existing skips / 8 warnings /
+857 passing subtests in 4851.45s, and DB 95 Node checks / 46 SQL suites /
+25 concurrency scenarios / local DW-login isolation passed. Desktop finished
+728 passed and 13 failed in 30.6m. All failures are in
+content-scope-raw-callers.spec.ts; mobile, H1 and final scans were not reached.
+Original state, commands, logs and all 13 traces are preserved. Before editing,
+all 1010 frozen paths and base 2a0937b matched; both runtime lanes were idle.
+
+The owner approved the exact three-line fixture patch, SHA-256
+b3caf5c5e3660c3d619fbbf1b95945b9895eaca040178aa4c658146145d226ae.
+It supplies retryBusyUpload, setUploadWaiting and setWaiting to callbacks
+extracted from production source. No assertion, expected value, timeout or
+product code changes. The explicit lease grows from 43 to 44 paths by adding
+tests/ui/content-scope-raw-callers.spec.ts. Approval also permits test-only
+retry coverage if missing; existing project-multi-media.spec.ts already covers
+429 Retry-After followed by success (both themes) and the 60-second budget
+followed by the Thai busy error, retained file/caption and no upload/write.
+No additional test edit is needed.
+
+Run those two complete specs at 1280 and 390, then refresh the final freeze.
+Subject to the docs/11 source/runtime comparison, reuse only API and DB from
+full-20261119-195523, explicitly labelled; run client, typecheck, offline build,
+production, both complete browser suites, H1 and final scans fresh. Do not
+reuse the failed desktop or unrun mobile/H1 stages. Preserve original failed
+state. A further failure requiring a product change or scope decision stops
+for the owner; approved test-only repairs may continue. Report and commit/push
+on a complete green gate, then immediately start the home proof. No hosted
+change. The final PDF 930.51 MiB peak / 9.13% high-threshold margin remains a
+known local risk, not hosted capacity acceptance.
+
+### W9.1 complete desktop result and overview synchronization repair — 19 November 2026
+
+Full-reuse-20261119-221359 remains failed: fresh client 10, typecheck,
+offline build and production 4 passed. Desktop finished 740 passed / 1 failed
+in 27.7m. All 24 raw-caller checks, including the original 13 failures, passed;
+Retry-After success in both themes and 60-second Thai busy-error coverage also
+passed. Mobile, H1 and final scans were not reached. API 2893 / 13 skips /
+857 passing subtests and DB 95 Node / 46 SQL / 25 concurrency were explicitly
+reused from full-20261119-195523 after a passing source/runtime admission.
+The failed run and its logs remain unchanged, not claimed complete.
+
+The sole failure is unified-workspace.spec.ts's many-gap overview test.
+Its mocked overview responds immediately, while the real header inventory
+request was still loading when the five-second zero-status assertion expired.
+The retained trace records two content-workflow/items responses, both 200,
+at 4951.243 and 4956.784 ms. The first theme passed; the second hit the
+assertion boundary. The final error snapshot shows the inventory loaded with
+35 items, without a persistent header status. This is synchronization evidence,
+not a new inventory performance acceptance claim.
+
+Under the owner's instruction to continue test-only repairs and stop for a
+product change or scope decision, add an explicit wait for the exact project
+inventory response before the existing checks, matching the existing H1
+pattern. Also assert that response is 200. All original assertions, expected
+values and timeout limits remain unchanged; no mock or application edit is
+added. tests/ui/unified-workspace.spec.ts becomes explicit path 45.
+Before editing, all 1012 frozen files/base matched and Windows test processes
+and listeners were absent. Evidence is preserved in the original gate and
+.local/operations/w91-overview-inventory-failure-20261119/ in main.
+
+Run all three complete affected specs at both widths, then a new final freeze
+and both full browser stages again. Only API/DB from the original fully passed
+stages remain eligible for reuse, subject to source/runtime comparison with
+the two corrected non-H1 specs and this log excluded. H1 and scans stay fresh.
+The ignored metadata collector now verifies every quick-freeze input exactly;
+its earlier package-version export issue was corrected before this run.
+No product, migration, permission, dependency, timeout or hosted change.

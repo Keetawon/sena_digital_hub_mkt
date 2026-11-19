@@ -7,7 +7,7 @@ import re
 
 from . import assets
 from .upload_optimization import (PIPELINE_VERSION, UploadContext, UploadProcessingError,
-    _private_decoding, extract_reused_suggestions, optimize_image, optimize_pdf)
+    _private_decoding, extract_reused_suggestions, optimize_image, optimize_pdf, preflight_upload)
 
 _STORED_KEYS = ('original_filename', 'mime_type', 'storage_path', 'checksum', 'file_size',
                 'asset_type', 'width', 'height', 'language', 'storage_bucket', 'storage_provider')
@@ -21,6 +21,8 @@ class UploadResult:
     original: dict
     processing: dict
     suggestions: dict = field(repr=False)
+    thumbnail: bytes | None = field(default=None, repr=False)
+    thumbnail_error: str | None = None
 
 
 def _evidence(value: dict) -> dict:
@@ -49,6 +51,7 @@ def _evidence(value: dict) -> dict:
 def prepare_authorized_upload(content: bytes, mime: str, filename: str, resolved: dict,
                               existing: dict | None = None) -> UploadResult:
     """resolved is the private SQL projection, never an HTTP or caller payload."""
+    preflight_upload(content, mime)
     kind = resolved['processing_class']
     context = resolved['context']
     processing_context = UploadContext(

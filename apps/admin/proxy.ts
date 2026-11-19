@@ -72,4 +72,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|demo-assets/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"] };
+export const config = { matcher: ["/((?!api/hub/|_next/static|_next/image|favicon.ico|demo-assets/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"] };

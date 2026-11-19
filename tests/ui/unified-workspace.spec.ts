@@ -29,7 +29,12 @@ test('W3.1 many-gap overview is compact, contextual, keyboard expandable and lim
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+    const inventoryLoaded = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === `${api}/content-workflow/items` && url.searchParams.get('level') === 'project' && url.searchParams.get('id') === id;
+    });
     await page.goto(`/website/project/${id}?tab=overview`);
+    expect((await inventoryLoaded).status()).toBe(200);
     const required = page.getByRole('region', { name: text.readiness, exact: true });
     await expect(required.locator('h2')).toContainText('240');
     await expect(page.locator('.workspace-heading [role="status"]')).toHaveCount(0);

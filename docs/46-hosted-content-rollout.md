@@ -3988,3 +3988,78 @@ local and undeployed while those failures are repaired. This rollout did not edi
 any of W6's 101 frozen source paths. The extracted release source was moved outside
 the repo after W6's operator inventory detected it; that failure/resume is logged
 separately in docs/48.
+
+
+## Owner page-check health-monitor exception — 19 November 2026
+
+This approved exception applies only to the owner's normal page-render check,
+not deployments, migrations, backups, imports, cap application or bulk UAT.
+
+The production DW pipeline health monitor may overlap the page sequence and
+five-minute tail. Its inspected source runs synchronous systemd queries,
+single-record journal reads, container inspection and disk-usage checks; it
+does not invoke SQL, refresh, import or backup work. Retained median runtime
+is1.4s and maximum3.8793s. Its memory peak is unavailable, explicitly accepted
+by the owner as an evidence gap for this check. System-wide pressure STOPs
+still cover it. Record each overlapping natural run's start, end and result;
+never delay, stop, restart or change the monitor.
+
+All heavy-job exclusions remain:06:00/11:00/17:00 refresh groups, the:20
+customer job,:30 backup housekeeping,:39 cleansessions and descendants,
+certificate windows and unexpected work. Require actual completion and five
+settled minutes. Other jobs, including conditional housekeeping and alert
+timers, receive no new exemption. Keep the full existing pressure policy,
+all Hub MainPID/cgroup/current/lifetime-peak/events capture before and after,
+five-minute tail and one-minute reserve. Never reset peaks.
+
+The owner approved19 November2026,14:45-14:59 Bangkok, with one signed-in
+tab waiting from14:40. Give a start signal only after fresh admission and no
+later than14:47, with twelve clear minutes remaining until the next excluded
+work and reservation end. Skip otherwise. Follow the ten URLs and unchanged
+six-minute/slow-page sequence in the local proposal. No cap application or
+other hosted change is authorized by this reservation.
+
+Owner no-action note: the monitor's observed exit2 indicates a reported
+problem status. The owner will raise it with the DW side. Hub work must not
+diagnose or change it.
+
+Review, approval and exact read-only command/evidence receipts are under
+.local/hosted-capacity-w9-20261116/interim/:
+health-job-admission-review-20261119.md,
+owner-page-check-approval-20261119.md, and observations/20261119T041659Z-health-identity.json,
+20261119T041820Z-health-actions.json,20261119T042042Z-health-command-shapes.json.
+No hosted change occurred during this review.
+
+### Additional monitor approval and skipped occurrence — 19 November 2026
+
+The owner also approved sena-line-alert overlap exactly as proposed in
+interim/line-alert-exception-proposal-20261119.md, only for the19November
+14:45–14:59 owner page check. Its unavailable memory peak is an accepted
+evidence gap for that check, covered by the system-wide pressure STOP policy.
+This supersedes the alert exclusion above only for that named job/occurrence.
+No other job is exempt; the owner directed a skip if another recurring job
+blocks the gap, with no further exception proposal today.
+
+The occurrence was skipped before the owner's14:40 waiting time. The separate
+three-minute conditional cgid job remained excluded. Fourteen observed paired
+runs had a maximum finish-to-next-start gap of180.335068s, below the1020s
+required for five settled minutes plus the twelve-minute operation. Its cron
+session scopes demonstrably deactivated, with no remaining matching processes,
+but the evidence does not establish the conditional action's no-op outcome.
+No permission to overlook that uncertainty was inferred.
+
+The13:09 passive reading found the warehouse healthy/running/not-OOMKilled,
+no pressure STOP, swap-out/growth0 and no stall/direct-reclaim/Hub event increase.
+These are short passive samples, not page-render peak acceptance. No start
+signal, signed-in operator browser, cap application or hosted mutation occurred.
+The owner was told not to wait at14:40. The reservation and both monitor
+exceptions expired with that occurrence; they do not authorize another window.
+
+Evidence under .local/hosted-capacity-w9-20261116/interim/:
+owner-line-alert-approval-20261119.md,
+page-check-afternoon-decision-20261119.json,
+observations/20261119T060240Z-window-provenance.json and
+observations/20261119T060910Z-cgid-condition.json. Exact read-only commands,
+source identities, session/cgroup provenance and pressure counters are retained.
+The DW health monitor's exit2 remains a no-action note for the owner's DW team;
+no diagnosis, restart, schedule or configuration change was attempted.

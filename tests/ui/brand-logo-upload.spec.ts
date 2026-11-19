@@ -201,6 +201,9 @@ for (const viewport of viewports) {
       expect((await data.detail()).assets).toHaveLength(0);
       await expect(dialog).toContainText('512'); // A small square remains a warning, not a rejection.
       await dialog.getByRole('button', { name: 'ยืนยันอัปโหลดและผูกโลโก้', exact: true }).click();
+      for (let index = 0; index < files.length; index++) {
+        await expect(dialog.getByText('ผูกโลโก้ในข้อมูลร่างแล้ว', { exact: true }).nth(index)).toBeVisible();
+      }
       await expect(dialog).toContainText('ผูกแล้ว 3 จาก 3 ไฟล์');
       expect(uploaded).toEqual(files.map(file => file.name));
       await dialog.getByRole('button', { name: 'ปิด', exact: true }).click();

@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 import json
+import os
 from threading import Lock
 from typing import TypeVar
 from uuid import UUID
@@ -87,9 +88,33 @@ def parse_upload_context(values: Sequence[str]) -> dict:
 def upload_slot() -> Iterator[None]:
     if not _SLOT.acquire(blocking=False):
         raise UploadAdmissionError('upload_busy')
+    descriptor = None
     try:
+        from . import assets
+        root = assets.STORAGE_ROOT.absolute()
+        if root.resolve() != root:
+            raise UploadAdmissionError('upload_busy')
+        root.mkdir(parents=True, exist_ok=True)
+        path = root / '.upload-processing.lock'
+        if path.is_symlink():
+            raise UploadAdmissionError('upload_busy')
+        descriptor = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                if os.fstat(descriptor).st_size == 0:
+                    os.write(descriptor, b'0')
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise UploadAdmissionError('upload_busy') from None
         yield
     finally:
+        if descriptor is not None:
+            os.close(descriptor)
         _SLOT.release()
 
 

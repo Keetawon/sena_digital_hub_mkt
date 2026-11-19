@@ -22,7 +22,7 @@ from .accounts import register_account_routes
 from .auth import Actor, Authentication, Settings, failure
 from . import assets as asset_files
 from .upload_admission import UploadAdmissionError, parse_upload_context, run_upload_work, upload_slot
-from .upload_pipeline import prepare_authorized_upload
+from .upload_supervision import prepare_supervised_upload, processing_failure
 from .upload_optimization import UploadProcessingError
 from .facilities import register_facility_routes
 from .commercial_types import register_commercial_routes
@@ -316,7 +316,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_middleware(CORSMiddleware, allow_origins=[settings.admin_origin],
                            allow_credentials=False, allow_methods=["GET", "POST", "PATCH"],
                            allow_headers=["Authorization", "Content-Type", "X-Filename", "X-Upload-Context"],
-                           expose_headers=["Content-Disposition"])
+                           expose_headers=["Content-Disposition", "Retry-After"])
 
     @app.middleware("http")
     async def no_cache(request, call_next):
@@ -446,14 +446,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 checksum = await run_upload_work(lambda data: hashlib.sha256(data).hexdigest(), content)
                 async with database(request, actor) as connection:
                     existing = await connection.fetchval('select hub.find_uploaded_asset_source($1,$2,$3)', checksum, mime, context)
-                prepared = await run_upload_work(prepare_authorized_upload, content, mime, filename, resolved, existing)
+                prepared = await prepare_supervised_upload(content, mime, filename, resolved, existing, disconnected=request.is_disconnected)
                 metadata = dict(prepared.metadata)
                 if hosted_assets and existing is None:
                     metadata.update(storage_provider=hosted_assets.provider, storage_bucket=hosted_assets.bucket)
                 created = False
                 def install_local():
                     nonlocal created
-                    created = asset_files.install_file(prepared.content, metadata)
+                    created = asset_files.install_file(prepared.content, metadata, (prepared.thumbnail, prepared.thumbnail_error))
                 try:
                     async with database(request, actor) as connection:
                         result = await connection.fetchval('select hub.record_asset_upload_source($1,$2,$3,$4,$5,$6)',
@@ -466,7 +466,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 raise failure(503, 'file_unavailable', 'ไฟล์ที่จัดเก็บไม่ตรงกับไฟล์ที่ตรวจสอบแล้ว')
                             if hosted_assets:
                                 await run_upload_work(hosted_assets.install, prepared.content, {**metadata, 'source_system': 'hub-hosted-test'})
-                                await run_upload_work(asset_files.install_thumbnail, prepared.content, metadata)
+                                await run_upload_work(asset_files.install_thumbnail, prepared.content, metadata, (prepared.thumbnail, prepared.thumbnail_error))
                             else:
                                 await run_upload_work(install_local)
                 except BaseException:
@@ -479,17 +479,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return JSONResponse({'error': {'code': 'upload_busy', 'message': 'กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง'}},
                                 429, headers={'Retry-After': '1', 'Cache-Control': 'no-store'})
         except UploadProcessingError as error:
-            messages = {
-                'image_input_too_large': 'ภาพไม่เกิน 30 MB ต่อไฟล์',
-                'pdf_input_too_large': 'PDF ไม่เกิน 50 MB ต่อไฟล์',
-                'legal_input_too_large': 'เอกสารกฎหมายหรือไฟล์ที่ยังไม่ระบุประเภทต้องไม่เกิน 10 MB',
-                'image_output_too_large': 'ภาพหลังปรับขนาดยังเกิน 10 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง',
-                'pdf_output_too_large': 'PDF หลังปรับขนาดยังเกิน 20 MB กรุณาลดขนาดไฟล์แล้วอัปโหลดอีกครั้ง',
-                'pdf_reexport_required': 'ไม่สามารถลบข้อมูลแฝงของ PDF ได้อย่างปลอดภัย กรุณาส่งออก PDF ใหม่แล้วอัปโหลดอีกครั้ง',
-                'image_color_space_requires_export': 'กรุณาส่งออกภาพเป็น sRGB แล้วอัปโหลดอีกครั้ง',
-            }
-            code = error.args[0] if error.args and error.args[0] in messages else 'invalid_upload_file'
-            raise failure(422, code, messages.get(code, 'ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง')) from None
+            raise processing_failure(error) from None
         except asyncpg.PostgresError as error:
             if error.sqlstate in {'P0091', 'P0092'}:
                 raise failure(409, 'upload_identity_conflict', 'ไฟล์นี้มีประเภทการใช้งานเดิมที่ไม่ตรงกัน กรุณาให้ผู้ดูแลตรวจสอบ') from None

@@ -53,9 +53,9 @@ class Fixture:
             'JSONResponse': lambda content, status_code=200, headers=None: NS(content=content, status_code=status_code, headers=headers),
             'PACK_SQL': 'PACK_SQL', 'PROGRAMMES': {},
             'asyncpg': NS(PostgresError=DatabaseFailure), 'UploadAdmissionError': type('Admission', (Exception,), {}),
-            'UploadProcessingError': type('Processing', (Exception,), {}), 'settings': NS(environment='local'),
+            'UploadProcessingError': type('Processing', (Exception,), {}), 'processing_failure': lambda error: Failure(422,'invalid_upload_file'), 'settings': NS(environment='local'),
             'database': self.database, 'staff': self.staff, 'authentication': self.authentication,
-            'local_candidate_bytes': self.read, 'prepare_authorized_upload': self.prepare,
+            'local_candidate_bytes': self.read, 'prepare_supervised_upload': self.prepare,
             'run_upload_work': self.work, 'upload_slot': self.admission,
             'assets': NS(install_file=self.install, readable_file=self.verify)}
         tree = ast.parse(SOURCE.read_text(encoding='utf-8'))
@@ -145,16 +145,16 @@ class Fixture:
         assert any('asset_upload_context' in event for event in self.events)
         return self.raw
 
-    def prepare(self, raw, mime, filename, resolved, existing):
+    async def prepare(self, raw, mime, filename, resolved, existing, **kwargs):
         assert self.depth == 0
         self.events.append('prepare')
         assert any('find_uploaded_asset_source' in event for event in self.events)
         return NS(content=None if existing else b'processed output',
             metadata={'checksum': self.digest, 'storage_path': self.digest + '.jpg'},
-            original={'checksum': self.digest}, processing={},
+            original={'checksum': self.digest}, processing={}, thumbnail=None, thumbnail_error='render_failed',
             suggestions={'values': {'stock': 'present'} if self.mode == 'new_stock' else {}})
 
-    def install(self, content, metadata):
+    def install(self, content, metadata, prepared_thumbnail=None):
         assert self.depth == 1
         self.events.append('install')
         return True
@@ -172,7 +172,8 @@ class Fixture:
         return actor
 
     def run(self):
-        return asyncio.run(self.env['rights'](self.body, NS(), 'actor'))
+        async def disconnected(): return False
+        return asyncio.run(self.env['rights'](self.body, NS(is_disconnected=disconnected), 'actor'))
 
 
 class KnowledgeUploadChecks(unittest.TestCase):
@@ -274,6 +275,12 @@ class KnowledgeUploadChecks(unittest.TestCase):
                 code = node.args[1].value
                 self.assertEqual(node.args[2].value, labels[aliases.get(code, code)])
                 found.add(code)
+        from sena_hub_api.upload_supervision import PROCESSING_MESSAGES, processing_failure
+        for code in ('jpeg_pixel_limit','png_pixel_limit','png_hdr_requires_export','pdf_pixel_limit',
+                     'upload_processing_memory','upload_processing_timeout','upload_processing_failed'):
+            self.assertEqual(PROCESSING_MESSAGES[code], labels[code])
+        self.assertEqual(processing_failure(ValueError('synthetic')).detail['message'],labels['upload_invalid_file'])
+        found.add('invalid_upload_file')
         self.assertEqual(found, required)
         response = Fixture('busy').run()
         self.assertEqual(response.content['error']['message'], labels['upload_busy'])

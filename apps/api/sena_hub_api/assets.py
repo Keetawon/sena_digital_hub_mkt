@@ -175,7 +175,7 @@ def storage_path(name: str) -> Path:
     return path
 
 
-def install_file(content: bytes, metadata: dict) -> bool:
+def install_file(content: bytes, metadata: dict, prepared_thumbnail: tuple[bytes | None, str | None] | None = None) -> bool:
     """Atomic no-overwrite install. Caller holds the checksum's DB advisory lock."""
     path = storage_path(metadata["storage_path"])
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -184,14 +184,14 @@ def install_file(content: bytes, metadata: dict) -> bool:
         if path.exists():
             if path.stat().st_size != len(content) or hashlib.sha256(path.read_bytes()).hexdigest() != metadata["checksum"]:
                 raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่สมบูรณ์ กรุณาให้ผู้ดูแลตรวจสอบ")
-            install_thumbnail(content, metadata)
+            install_thumbnail(content, metadata, prepared_thumbnail)
             return False
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".upload-", delete=False) as output:
             temporary = Path(output.name)
             output.write(content)
             output.flush()
             os.fsync(output.fileno())
-        install_thumbnail(content, metadata)
+        install_thumbnail(content, metadata, prepared_thumbnail)
         os.link(temporary, path)  # Atomic creation that never replaces an existing original.
         return True
     except FileExistsError:
@@ -303,17 +303,23 @@ def _render_thumbnail(content: bytes, mime: str) -> Image.Image:
         return ImageOps.exif_transpose(original).convert('RGBA')
 
 
-def install_thumbnail(content: bytes, metadata: dict) -> bool:
+def install_thumbnail(content: bytes, metadata: dict, prepared: tuple[bytes | None, str | None] | None = None) -> bool:
     """Generate once at intake/backfill; keep a valid original when rendering fails."""
     path = thumbnail_path(metadata)
     failure_path = thumbnail_failure_path(metadata)
     if path.exists():
         return False
     try:
-        with render_thumbnail(content, metadata.get('mime_type')) as picture:
-            picture.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE), Image.Resampling.LANCZOS)
-            output = io.BytesIO()
-            picture.save(output, 'WEBP', quality=80, method=4)
+        if prepared is not None:
+            data, reason = prepared
+            if data is None or reason is not None:
+                raise ThumbnailRenderError('render_failed')
+        else:
+            with render_thumbnail(content, metadata.get('mime_type')) as picture:
+                picture.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE), Image.Resampling.LANCZOS)
+                output = io.BytesIO()
+                picture.save(output, 'WEBP', quality=80, method=4)
+            data = output.getvalue()
     except Exception as error:
         record_thumbnail_failure(metadata, str(error) if isinstance(error, ThumbnailRenderError) else 'render_failed', error)
         return False
@@ -321,7 +327,7 @@ def install_thumbnail(content: bytes, metadata: dict) -> bool:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.thumbnail-', delete=False) as stream:
-            temporary = Path(stream.name); stream.write(output.getvalue()); stream.flush(); os.fsync(stream.fileno())
+            temporary = Path(stream.name); stream.write(data); stream.flush(); os.fsync(stream.fileno())
         try:
             os.link(temporary, path)
         except FileExistsError:

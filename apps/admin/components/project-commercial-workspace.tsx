@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useHubPermissions } from "./accounts";
 import { ContentWorkflow } from "./content-workflow";
 import { request } from "./hub-request";
+import { uploadText } from "../lib/upload-text";
 import { uploadAsset } from "./project-assets";
 import { newMetadata, type MediaAsset } from "./media-common";
 import { BilingualInput, ContentLabel, ExposureInput, TranslationReviewPanel, errorMessage, type ContentField, type Exposure, type Locales, type Translation } from "./content-common";
@@ -95,10 +96,11 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
     const ok = await act(() => request(editing.id ? `${base}/${kind}/${editing.id}` : `${base}/${kind}`, editing.id ? "PUT" : "POST", { updated_at: editing.stamp, record: { kind, ...values } }), "บันทึกร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ");
     if (ok) setEditing(null);
   }
+  const [uploadWaiting, setUploadWaiting] = useState(false);
   async function upload(file?: File) {
     if (!file || !canEdit || !editing) return;
     await act(async () => {
-      const result = await uploadAsset(file, { v: 1, kind: "disclosure", project_ref: projectId, ref: editing.id ?? null });
+      const result = await uploadAsset(file, { v: 1, kind: "disclosure", project_ref: projectId, ref: editing.id ?? null }, setUploadWaiting);
       const asset = result.asset as MediaAsset; setUploadEvidence(result.upload);
       if (asset.media_category !== "legal_document") await request(`v1/admin/projects/${encodeURIComponent(projectId)}/media/assets/${asset.id}`, "PUT", { expected_revision: asset.media_revision ?? 0, changes: { ...newMetadata(), media_category: "legal_document", ai_exposure: "internal", marketing_publication: false, image_kind: null } });
       change("legal_document_asset_id", asset.id);
@@ -108,7 +110,7 @@ export function ProjectCommercialWorkspace({ projectId, fields, onEditingChange,
   return <section className="content-section" aria-label="ข้อมูลขายและกฎหมาย"><h2>ข้อมูลขายและกฎหมายของเฟสนี้</h2><p>ค่าว่างหมายถึงยังไม่ทราบ</p>
     <p><a href={`/content?project=${encodeURIComponent(projectId)}&tab=investor`}>ข้อมูลสำหรับผู้ลงทุนและประมาณการผลตอบแทน</a></p>
     <nav className="content-tabs" aria-label="ประเภทข้อมูลขาย">{(Object.entries(groups) as [Kind, typeof group][]).map(([key, info]) => <button key={key} disabled={busy || workflowBusy || Boolean(editing) || translationEditing} aria-current={kind === key ? "page" : undefined} onClick={() => { setKind(key); setError(""); setNotice(""); }}>{info.title}</button>)}</nav>
-    {error && <p role="alert" className="notice error">{error} ข้อมูลที่กรอกยังอยู่ หากข้อมูลเปลี่ยน ให้ยกเลิกแล้วเปิดฉบับล่าสุด</p>}{notice && <p role="status" className="notice success">{notice}</p>}
+    {uploadWaiting && <p role="status">{uploadText.waiting}</p>}{error && <p role="alert" className="notice error">{error} ข้อมูลที่กรอกยังอยู่ หากข้อมูลเปลี่ยน ให้ยกเลิกแล้วเปิดฉบับล่าสุด</p>}{notice && <p role="status" className="notice success">{notice}</p>}
     {!data ? <p role="status">กำลังโหลดข้อมูล…</p> : <>
       {kind === "disclosures" && <aside className="content-machine"><strong>ข้อมูลสำหรับตรวจเทียบ</strong><p>พื้นที่ {String(data.comparison.land_area_sqwah ?? "ยังไม่ทราบ")} ตร.ว. · อาคาร {String(data.comparison.building_count ?? "ยังไม่ทราบ")} · ยูนิต {String(data.comparison.unit_total ?? "ยังไม่ทราบ")}</p><p>รายละเอียดอาคารและจำนวนต้องตรงกับทะเบียน หากใช้ค่าต่างต้องระบุเหตุผลให้ผู้อนุมัติตรวจ</p><p>เอกสาร Legal เห็นเฉพาะผู้แก้ไข/ผู้อนุมัติโครงการ ไม่ส่งไปเว็บไซต์หรือ AI · ปีใช้ ค.ศ.</p></aside>}
       {kind === "programmes" && <p className="inline-warning">ยูนิตที่เสนอจาก REM: ยังไม่มีข้อมูล · รอ IT ยืนยัน ห้ามกรอกเอง</p>}

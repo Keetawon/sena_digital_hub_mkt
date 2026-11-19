@@ -799,6 +799,17 @@ W9 upload copy (owner decision, 6 November 2026):
 | upload_context_invalid | กรุณาระบุรายการและประเภทไฟล์ก่อนอัปโหลด |
 | upload_busy | กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง |
 | upload_invalid_file | ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง |
+| webp_pixel_limit | ภาพ WebP ต้องมีขนาดไม่เกิน 24 ล้านพิกเซล กรุณาลดความละเอียดแล้วอัปโหลดอีกครั้ง |
+| pdf_image_pixel_limit | ภาพแต่ละภาพใน PDF ต้องมีขนาดไม่เกิน 24 ล้านพิกเซลเมื่อรวมความลึกสีและมาสก์ กรุณาลดความละเอียดแล้วส่งออก PDF ใหม่ |
+| upload_pixel_limits | JPEG ไม่เกิน 100 ล้านพิกเซล · PNG และ WebP ไม่เกิน 24 ล้านพิกเซล · ไม่รองรับภาพเคลื่อนไหวหรือ PNG แบบ HDR · PDF ไม่เกิน 200 หน้า ภาพละ 24 ล้านพิกเซล รวม 240 ล้านพิกเซล โดยนับความลึกสีและมาสก์ด้วย |
+| upload_waiting | กำลังรอให้อัปโหลดไฟล์อื่นเสร็จ ระบบจะลองให้อัตโนมัติภายใน 60 วินาที |
+| jpeg_pixel_limit | ภาพ JPEG ต้องมีขนาดไม่เกิน 100 ล้านพิกเซล กรุณาลดความละเอียดแล้วอัปโหลดอีกครั้ง |
+| png_pixel_limit | ภาพ PNG ต้องมีขนาดไม่เกิน 24 ล้านพิกเซล กรุณาลดความละเอียดแล้วอัปโหลดอีกครั้ง |
+| png_hdr_requires_export | ไม่รองรับภาพ PNG แบบ HDR กรุณาส่งออกเป็นภาพ 8-bit sRGB แล้วอัปโหลดอีกครั้ง |
+| pdf_pixel_limit | ภาพภายใน PDF มีขนาดรวมเกิน 240 ล้านพิกเซล กรุณาลดความละเอียดของภาพแล้วส่งออก PDF ใหม่ |
+| upload_processing_memory | ไฟล์นี้ใช้หน่วยความจำในการประมวลผลมากเกินไป กรุณาลดความซับซ้อนหรือส่งออกไฟล์ใหม่ |
+| upload_processing_timeout | ประมวลผลไฟล์ไม่เสร็จภายในเวลาที่กำหนด กรุณาลดความซับซ้อนหรือส่งออกไฟล์ใหม่ |
+| upload_processing_failed | ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาส่งออกไฟล์ใหม่แล้วอัปโหลดอีกครั้ง |
 | upload_color_export | กรุณาส่งออกภาพเป็น sRGB แล้วอัปโหลดอีกครั้ง |
 | upload_identity_conflict | ไฟล์นี้มีประเภทการใช้งานเดิมที่ไม่ตรงกัน กรุณาให้ผู้ดูแลตรวจสอบ |
 | upload_context_changed | ข้อมูลรายการเปลี่ยนไปแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วอัปโหลดอีกครั้ง |
@@ -993,6 +1004,49 @@ For every non-legal PDF, remove the document information dictionary, XMP metadat
 
 3) TESTS
 Fixtures with each metadata kind: capture date with and without offset; credit and copyright; stock identifier; DigitalSourceType AI marker; caption and keywords; GPS near, far and missing project coordinates; serial number, contact details, face regions and an embedded thumbnail that differs from the main image. Assert the suggestions, assert that none of the excluded fields survive anywhere (stored file, database, logs, API responses), assert the stored image has no metadata or embedded thumbnail, assert suggestions never reach public payloads or AI calls, assert non-legal PDFs lose their metadata with identical page count and text, and assert legal PDFs are byte-exact.
+
+W9.1 shared-host input decision (18 November 2026): JPEG remains at 100 MP;
+PNG at any bit depth is limited to 24 MP; PQ/HLG PNG must be exported as
+8-bit sRGB. Header checks precede pixel decoding, including supplied originals
+for reuse and stricter private-exact contexts. Existing assets are unchanged.
+WebP is limited to 24 MP before decoder initialization.
+PDF remains 50 MiB / 200 pages, with a 240 MP aggregate of unique reachable
+image objects, including masks and inline images. Each pixel is weighted by
+ceil(bits per component / 8), minimum one; shared references count once,
+separate objects conservatively count separately. Reject mismatched encoded
+JPEG dimensions. Owner correction on 19 November: each image including attached
+masks has a 24 MP weighted bound. The aggregate remains 240 MP; 50 MiB and
+200 pages are unchanged. Standalone JPEG100 MP and PNG/WebP24 MP are unchanged.
+The owner rejected an aggregate reduction.
+
+The owner accepts the measured 14.10% margin below the 1024 MiB API high
+reference as a known risk for the ten24MP noisy50MiB PDF: 879.64 MiB peak,
+leaving about400 MiB below the proposed1280 MiB hard cap. Single-job admission
+prevents overlapping heavy uploads. This is not hosted capacity acceptance;
+ordinary API traffic and real DB/network costs still require hosted admission.
+The final-source repeat peaked at930.51 MiB (9.13% below1024 MiB;349.49 MiB
+below1280 MiB). Preserve both observations and disclose the narrower margin
+before commit; it is not silently covered by the earlier14.10% acceptance.
+
+One active upload across API processes sharing the storage root; zero server-queued
+wait, HTTP 429 upload_busy and Retry-After: 1 before a second body is read.
+The shared admin upload client retries 429 responses for a 60-second retry
+window beginning at the first busy response, honoring seconds or HTTP-date
+Retry-After (one-second fallback/minimum). No new attempt starts at or after
+the deadline; a request already accepted keeps its normal processing deadline.
+The existing status area announces the Thai waiting message; after expiry the
+last server error is shown and selected inputs remain. Non-429 errors are not
+retried. CORS exposes Retry-After to the existing hosted admin origin.
+The API retains authority, final rechecks and installation. A clean-environment
+child does decoding, validation and thumbnail rendering with a 20-second
+deadline and hard 896 MiB address-space boundary on Linux (a virtual-memory
+limit, not an RSS claim). Cancellation/timeout kills and reaps the child before
+admission is released. Safe JPEG draft never undershoots the 4096 output edge.
+No new package, migration, permission or hosted configuration is authorized.
+HDR cache and PNG streaming optimization are stopped unless an admitted case
+fails. Local full-request evidence includes parent, child, IPC, validation,
+thumbnail and storage; synthetic SQL does not establish hosted timing or DB
+capacity. Delivery/acceptance status is recorded in docs/48.
 
 ## 9. Pending questions to register
 

@@ -188,7 +188,8 @@ def test_partial_failure_is_honest_and_resume_receipt_contains_no_secret(monkeyp
     if failure_stage == 'worker': assert result['error_code'] == 'DEMO_QUEUE_CONFLICT'
 
 
-def test_package_bytes_are_frozen_validated_and_path_bounded(tmp_path, monkeypatch):
+def test_package_bytes_are_frozen_validated_and_path_bounded(tmp_path_factory, monkeypatch):
+    tmp_path = tmp_path_factory.mktemp('pkg')
     monkeypatch.setattr(demo, 'ROOT', tmp_path)
     monkeypatch.setattr(demo, 'RECEIPT_ROOT', tmp_path / '.local/hub-demo')
     source = ROOT / 'supabase/tests/fixtures/ads_actuals'

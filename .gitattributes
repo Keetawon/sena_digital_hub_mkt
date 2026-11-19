@@ -2,3 +2,5 @@
 supabase/migrations/*.sql -text
 supabase/hosted-test/*.sql -text
 supabase/tests/fixtures/dw_projects/* -text
+# The populated-upgrade fixture is pinned by its exact byte hash.
+tests/fixtures/pre-workspace/sample-brands.sql -text
