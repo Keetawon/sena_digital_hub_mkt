@@ -9113,3 +9113,93 @@ the two corrected non-H1 specs and this log excluded. H1 and scans stay fresh.
 The ignored metadata collector now verifies every quick-freeze input exactly;
 its earlier package-version export issue was corrected before this run.
 No product, migration, permission, dependency, timeout or hosted change.
+
+
+### W9.1 delivered — 20 November 2026
+
+Product commit: `8f7e05244d3e8584424072f7d3f03e2a05ec7e10` on `ws/w9-1-input-limits`, based on
+`2a0937b04336ba1996dddfa24a771d8b4802d3b1`. This receipt is a separate documentation commit;
+the owner authorized fast-forward delivery to main and push after green gates.
+The lead will verify the remote head and immediately take the home proof lease.
+No hosted rollout, account/configuration change, migration or capacity acceptance.
+
+The 45 explicit product paths implement the approved header limits, killable
+single-job child and bounded client retry. JPEG remains 100 MP; PNG/WebP 24 MP;
+HDR PNG is rejected with Thai export guidance. PDF stays 50 MiB / 200 pages,
+24 MP weighted per image including attached masks and 240 MP weighted aggregate.
+The 4096 output edge and 24 MP floor remain. Busy is 429 with Retry-After: 1,
+zero server queue and an admin retry window of at most 60 seconds. No permission
+rule, public API signature, dependency or migration change. Thai copy is in
+docs/47 section 8.5; docs/36 records no permission change.
+
+Final combined gate: `artifacts/unified-workspace/w9-1/gates/full-reuse-20261119-225215/`.
+Status completed, exit 0. All 1012 frozen paths verified before delivery;
+freeze SHA-256 `164741f948f4538754d721b58f618cfc84d691b67a194b74bf933ec12a9a0952`.
+The explicit index matched all 45 paths and their Git-filtered source content.
+
+| Suite | Result | Evidence |
+|---|---|---|
+| Upload retry/proxy unit checks | 10 passed, zero skips | Fresh upload-client.log |
+| Admin typecheck / offline webpack build | Passed | Fresh typecheck.log / build.log |
+| Frozen production imports/isolation | 4 passed | Fresh production.log |
+| API | 2893 passed, 13 existing skips, 8 warnings, 857 passing subtests; 4851.45 s | Reused full-20261119-195523/api.log |
+| Database | 95 Node checks (66+23+1+5), 46 SQL suites, 25 concurrency scenarios across 12 scripts, local DW-login isolation; zero failures/skips | Reused full-20261119-195523/db.log |
+| Complete browser 1280 | 741 passed, zero failures/skips; 27.5 min | Fresh ui-1280.log |
+| Complete browser 390 | 741 passed, zero failures/skips; 28.3 min | Fresh ui-390.log |
+| Local H1 | 69 operator + 10 API + 87 browser checks (77 main + 3 flags + 7 outage); zero failures/skips | Fresh h1.log |
+| Credential/broad scan | 909 source + 71 browser files; zero matches; credential files not read | Fresh credential-broad.json |
+| Diff / index checks | Passed | Fresh diff.log / index-diff.log |
+
+API and DB alone were reused under docs/11's owner-approved browser-only
+exception. Admission verified the same base and runtime versions, 1007 unchanged
+original source/helper inputs and identical inventory. Only the two corrected
+non-H1 specs and this delivery log were excluded. All application, migration,
+dependency, API/DB/H1 tests, shared runtime helpers, fixture/seed and profile
+inputs matched. No credential file was opened, copied or hashed. The failed
+original runs remain failed; no failed, interrupted or unrun stage was reused.
+The strict comparison, commands and original log hashes are in reuse-admission.json;
+verification.json records every final/reused log hash and screenshot hash.
+
+Browser repair deviations: supply three missing sandbox dependencies in
+content-scope-raw-callers.spec.ts; wait for the exact real inventory response
+in unified-workspace.spec.ts before its existing header assertion. The original
+13 failures and subsequent single synchronization failure are preserved in
+their failed gates. Every original assertion, expected value and timeout value
+remains unchanged; the latter fix also asserts HTTP 200. The three complete
+affected specs passed 58 at each width before the final freeze. All 24 raw-caller
+checks pass in both final full suites. Real Retry-After then success and the
+60-second Thai busy error with retained file/caption pass at both widths.
+Earlier API fixture/checkout corrections and interrupted attempts remain recorded
+above. The 4951.243/4956.784 ms inventory responses are not a performance acceptance.
+
+Fresh visual evidence was reviewed in both themes and widths:
+`artifacts/unified-workspace/w9-1/upload-waiting-{1280,390}-{light,dark}.png`.
+The waiting message is readable and wraps within the viewport. Final evidence,
+the original reused gate and both browser failure/quick runs were copied to the
+same artifact paths in main with SHA-256 verification; only explicit nonsecret
+logs/manifests/screenshots were copied. Copy index:
+`.local/operations/w91-delivery-evidence-copy.json`. Original traces remain in
+the preserved failure directories under `.local/operations/` and in the W9.1
+worktree. Windows test processes/listeners were absent and the Linux lane idle
+after the gate. Retain the worktree for these receipts; no worktree was removed.
+
+Final Linux evidence remains local only: 4 CPUs, MemoryMax 2304 MiB, swap 0;
+the worst admitted 10 x 24 MP noisy 50 MiB PDF peaked at 930.51 MiB, with
+8.699 s request time / 12.348 s unit time. The remaining margin is 9.13 percent
+below the 1024 MiB reference (not an applied probe MemoryHigh), narrower than
+the earlier accepted 14.10 percent; 349.49 MiB remains below the proposed
+1280 MiB API hard cap. Record this as an OPEN risk, not hosted capacity or VPS
+deadline acceptance. Ordinary concurrent reads and admin proxy buffering are
+not covered by that isolated measurement. Hosted caps/window admission and UAT
+remain separate and pending; hosted TEST remains unchanged.
+
+Next: the unverified home candidate remains on ws/home-missing-fact at ffa58a6
+with the owner-reviewed dirty 0094/profile/test preparation. Its eight handoff
+hashes still match and its three dirty product files have been preserved under
+.local/operations/home-handoff-preserved-20261119/ in main. Integrate against
+delivered W9.1 without discarding that work; prove ambient, accumulated
+103-project/70-FAQ/112-context and ordinary-49 whole-home equivalence, retain
+the original unfiltered regression and prove 300-project whole HTTP below 5 s.
+Then run the home full gate. A difference, missed target or scope decision
+stops delivery. Friday 20 November remains the target; Saturday/fallback and
+deferred Monday home UAT remain as the owner directed. W8 is not claimed run.
