@@ -68,7 +68,7 @@ WORKSPACE_FUNCTIONS = {
     'hub.workspace_faq_target', 'hub.workspace_faq_visible', 'hub.workspace_field_target',
     'hub.workspace_history_action', 'hub.workspace_history_contexts', 'hub.workspace_history_event',
     'hub.workspace_history_fields', 'hub.workspace_history_matches', 'hub.workspace_history_visible',
-    'hub.workspace_legacy_faq_candidates', 'hub.workspace_name', 'hub.workspace_page',
+    'hub.workspace_legacy_faq_candidates', 'hub.workspace_missing_fact_cells', 'hub.workspace_name', 'hub.workspace_page',
     'hub.workspace_phase', 'hub.workspace_preview', 'hub.workspace_projects',
     'hub.workspace_resolve', 'hub.workspace_target', 'hub.workspace_tree',
 }

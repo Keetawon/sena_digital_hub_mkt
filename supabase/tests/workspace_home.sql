@@ -9,7 +9,8 @@ do $$ declare name text;begin
   'hub.workspace_project_bu()','hub.workspace_faq_allowed(uuid)','hub.workspace_review_rows()',
   'hub.workspace_context(text,text)','hub.workspace_scope_matches(text,text,text[],text,text)',
   'hub.workspace_native_rows()','hub.workspace_native_publishable(jsonb)','hub.workspace_content_tasks(text,text)',
-  'hub.workspace_project_readiness(text)','hub.workspace_brand_readiness(text)'] loop
+  'hub.workspace_project_readiness(text)','hub.workspace_brand_readiness(text)',
+  'hub.workspace_missing_fact_cells(uuid,text)'] loop
   assert not has_function_privilege('hub_app',name,'execute') and not has_function_privilege('service_consumer',name,'execute'),
    'Private workspace helper is callable: '||name;
  end loop;

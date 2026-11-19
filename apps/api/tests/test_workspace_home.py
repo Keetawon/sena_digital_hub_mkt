@@ -80,7 +80,8 @@ def test_private_helpers_are_not_callable(permission_accounts):
         db = await runtime()
         try:
             for sql in ("select hub.workspace_project_bu()", "select hub.content_scope_allowed('project','unknown','view')",
-                        'select hub.workspace_review_rows()', 'select hub.workspace_content_tasks()'):
+                        'select hub.workspace_review_rows()', 'select hub.workspace_content_tasks()',
+                        "select hub.workspace_missing_fact_cells('00000000-0000-0000-0000-000000000000'::uuid, null)"):
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await call(db, ids['viewer'], sql)
             for actor in ('agency', 'pending', 'service_consumer'):

@@ -468,6 +468,11 @@
       "name": "202611130093_upload_optimization.sql",
       "canonical_sha256": "184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6",
       "executed_sha256": "184f33d3dec7fcb4a9f5e8076d6790bf69b9b0c04754a22ccc4c86e4b994b9b6"
+    },
+    {
+      "name": "202611190094_home_missing_fact.sql",
+      "canonical_sha256": "bd0f3aa976f3656759039f0c2e0d22f03317aa07f7ca4d8ff7b4d670e70235f6",
+      "executed_sha256": "bd0f3aa976f3656759039f0c2e0d22f03317aa07f7ca4d8ff7b4d670e70235f6"
     }
   ]
 }
