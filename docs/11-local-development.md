@@ -678,3 +678,11 @@ migration hash pins and clean apply retain their existing checks. Hosted DW
 protection, cap/window admission and backups are unchanged. Keep the single
 serial test lease. Report focused results, commit and open risks; never label
 focused evidence as a full gate or owner UAT acceptance.
+
+The owner's later 20 November scheduling decision moves that same single full
+gate ahead of an earlier Saturday/Sunday hosted rollout, once final main also
+includes the approved preview and Project Group corrections. Do not add another
+per-change full gate. Hosted execution still requires its concrete plan/window
+approval and the protections in docs/46; real-data import additionally waits for
+verified active caps. Monday's primary review is planned on hosted real data,
+with local-only fixture cases retained separately.

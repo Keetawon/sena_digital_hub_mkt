@@ -1,10 +1,14 @@
-# Monday 23 November local UAT
+# Local fixture lane for Monday 23 November UAT
 
 Owner walkthrough remains NOT RUN. This runbook prepares the existing isolated
 H1 simulation; it never connects to the hosted VPS, warehouse, hosted Auth or R2.
 Use [the 61-case pack](49-unified-workspace-uat.md) and record each actual outcome.
-The owner-approved fast lane places the one combined full gate after UAT fixes,
-before Wednesday rollout. Security/public-output checks remain mandatory.
+The latest 20 November decision moves the primary review to hosted TEST with
+real data after the earlier release is ready. One combined full gate now runs
+before that rollout on final main. This runbook remains the isolated local lane
+for synthetic/fake-clock/BUD and other cases listed in
+[the hosted/local case map](54-marketing-real-data-review.md). Security/public
+output checks remain mandatory. No local tests run during owner UAT sessions.
 
 ## Start and finish
 

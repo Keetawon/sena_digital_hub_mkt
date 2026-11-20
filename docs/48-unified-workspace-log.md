@@ -9564,3 +9564,36 @@ source paths reverified; credential scan passed with zero matches. Evidence:
 
 These focused checks precede the separate Project Group commit; the one combined
 pre-rollout full gate is still pending. All UAT outcomes remain NOT RUN.
+
+Project Group product commit `f07f7cb4f6be76827f03c2770889f1ba4fbbf85e` was
+pushed and verified on origin/main. Its nine explicit paths include the copy
+catalogue, permission card and log. The preview commit remains separate.
+
+### Earlier marketing release — local migration rehearsal, 20 November 2026
+
+The 88→94 local rehearsal passed on product commit `f07f7cb`, bootstrapped from
+the exact W5 tree `4b00099`. Six forced boundaries after 89–94 and a complete
+rollback preserved prefix 88 and original typed rows/catalog. A fresh populated
+disposable then committed to prefix 94; exact-history replay returned
+already_applied without running migration bodies. Expected persistent writes
+were twelve inserts (three settings/state singletons, three audit rows and six
+history rows), with no preexisting-row updates or deletes. Auth checks passed.
+Both owned disposable databases stopped and were removed. No hosted request,
+credential read, source/migration edit or public publication occurred.
+
+This is explicitly a small H1 corpus, not full hosted-content compatibility or
+old-application-on-94 acceptance. The hosted same-transaction preservation
+reader, executable rollout operator and matching-Linux artifact remain pending.
+Receipt: `performance-review-20261120/artifacts/rollout-plan-20261120/evidence/rehearsal-88-94-01/summary.json`;
+lead log: `.local/hosted-content-rollout/marketing-20261120/local-rehearsal-88-94-01.log`.
+Source manifest SHA-256:
+`e8a47fe53c92361871a3064df200623531c03248ec0745158f48dffdd6d36bf7`;
+operator manifest SHA-256:
+`fcd1e3c7ffb1cd82362da23541cc3e49e7159a7b9ba5510688d25914beaa0ab7`.
+
+Docs/52 records the measurement-only performance baseline and ranked proposals;
+the separate Promotions measurement waits for the test lease. Docs/53 is the
+consolidated release draft, not deployment approval. Docs/54 contains the Thai
+marketing checklist and hosted/local mapping; all 61 UAT outcomes remain NOT
+RUN. The combined full gate passed on `f07f7cb`; see docs/53 for exact results.
+No product optimization or hosted mutation is included. These eight docs use LF.

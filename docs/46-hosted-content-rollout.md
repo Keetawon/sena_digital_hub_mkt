@@ -10,6 +10,35 @@ configuration or data. Hub TEST must fail first. No VPS load/stress test is ever
 permitted; upload capacity measurements use local Linux only. Existing operator,
 credential, protected-state and database-restore STOP rules still apply.
 
+### Earlier rollout and marketing review — owner decision 20 November
+
+The owner moved the next release earlier than Wednesday, subject to one
+pre-rollout full gate on final main, including preview corrections and any
+approved Project Group review additions. Prepare one concrete rollout plan
+for approval, including the frozen packages, TEST database backup, rollback,
+smoke checks and an admissible Saturday-afternoon or Sunday candidate window.
+No new window or package installation is approved by this scheduling decision.
+
+The application/schema rollout may proceed before interim caps if their
+window has not yet happened. This is a specific exception to the earlier
+caps-before-rollout ordering; all standing job, pressure, backup, restore and
+warehouse protections remain. Saturday's page-check/cap reservations stand.
+**Real-data import must wait until caps are active and verified**, after a
+successful rollout, local dry-run inventory and another TEST database backup.
+Run it serially inside the maintenance-helper allowance, using existing
+intake/staging paths, with idempotent/resumable receipts and TEST R2 only.
+Collected website items remain awaiting confirmation; image rights remain
+pending. Never auto-approve, auto-publish or broaden public/web API exposure.
+Reconcile earlier hosted imports before creating or replaying any object.
+
+Use the existing hosted environment; secret settings are reported set/unset.
+Daily W6 BU synchronization stays disabled (DW steps 2/4 unfinished).
+Report actual REM source/freshness; Monday uses hosted real data after readiness.
+List local-only cases separately and report before every hosted step.
+The later approved canonical job/unit/source baseline in [docs/53](53-hosted-marketing-release.md)
+replaces volatile ExecStart hashes only; drift or missing identity is a STOP.
+Missing PSI is a reported gap, not passed; apply every other pressure STOP signal.
+
 ### Standing lightweight-job overlap rule — owner approved 20 November
 
 Until Hub moves to its own server, the following identified, unchanged jobs

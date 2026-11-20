@@ -1,11 +1,12 @@
 # 49 — ชุดทดสอบรับงานพื้นที่ข้อมูลเว็บไซต์และ AI
 
 > เตรียมสำหรับวันจันทร์ 23 พฤศจิกายน 2026 ตามคำสั่งเจ้าของวันที่ 20 พฤศจิกายน
-> ใช้ focused tests + DB + affected API ระหว่างเตรียมและแก้ UAT; full gate รวมหนึ่งครั้ง
-> หลังแก้ UAT ก่อน rollout วันพุธ 25 พฤศจิกายน ข้อกำหนด full gate ก่อน UAT ในร่างเก่า
-> ถูกแทนที่เฉพาะลำดับงานนี้ สิทธิ์/RLS/public output/hash/clean apply ยังตรวจครบ
+> คำสั่งล่าสุดวันที่ 20 พฤศจิกายนย้ายรอบหลักไป hosted TEST ด้วยข้อมูลจริงหลัง rollout สำเร็จ
+> ใช้ focused tests + DB + affected API ระหว่างเตรียม; full gate รวมหนึ่งครั้งบน main สุดท้าย
+> ก่อน rollout ที่เลื่อนเร็วขึ้น สิทธิ์/RLS/public output/hash/clean apply ยังตรวจครบ
 > ทุกกรณี U01–U61 ยัง NOT RUN; owner acceptance ยัง PENDING
 > คู่มือเริ่มระบบและ fixture: [Monday local UAT runbook](50-local-uat-runbook.md)
+> [เช็กลิสต์การตลาดและตาราง hosted/local ครบ 61 กรณี](54-marketing-real-data-review.md)
 
 
 สถานะ: **ร่างเตรียม UAT เท่านั้น — ยังไม่ทดสอบ (NOT RUN) ทั้ง 61 กรณี U01–U61**
