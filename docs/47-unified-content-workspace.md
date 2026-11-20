@@ -960,6 +960,39 @@ styling; no new key is introduced for it.
 | home_buds_empty | ยังไม่มี BUD ให้แสดง |
 | home_brands_empty | ยังไม่มีแบรนด์ให้แสดง |
 
+Project-group review reuses loaded progress rows and the existing on-demand
+progress-detail read. Counts keep their current permission and filter boundaries;
+DW REM-group counts and confirmed website phase counts remain distinct. Phase
+links preserve the exact public project and REM IDs. Intake review counts are not
+FAQ completeness. Non-admin Knowledge viewers use the scoped phase FAQ workflow;
+the existing raw intake route remains limited by its current page guard. This
+slice adds no API read, aggregation, source field, permission or write action.
+
+| Key | Thai label |
+| --- | --- |
+| group_review_phase_id | รหัสเฟส REM: |
+| group_review_hub_project | โครงการใน Hub: |
+| group_review_hub_unmapped | ยังไม่มีโครงการใน Hub |
+| group_review_rem_group | รหัสกลุ่ม REM: |
+| group_review_group_snapshot | วันที่สำเนากลุ่มการตลาด: |
+| group_review_snapshot_missing | ยังไม่มีวันที่สำเนากลุ่มในข้อมูลที่โหลด |
+| group_review_filtered_members | สมาชิกตามสิทธิ์และตัวกรอง |
+| group_review_filtered_projects | โครงการตามสิทธิ์และตัวกรอง |
+| group_review_count_hint | สมาชิกในรายการนี้นับตามสิทธิ์และตัวกรอง จำนวนเฟสจาก DW นับตามกลุ่ม REM ส่วนเฟสหน้าเว็บไซต์นับตามกลุ่มที่ยืนยันแล้ว |
+| group_review_phase_review | ตรวจข้อมูลของเฟส |
+| group_review_phase_review_hint | เปิดข้อมูลที่มีอยู่ของเฟสนี้ โดยคงแหล่งอ้างอิงและวันที่สำเนาตามที่บันทึกไว้ |
+| group_review_identity | ชื่อ ที่อยู่ และต้นทาง |
+| group_review_facts | ข้อเท็จจริง |
+| group_review_buildings | อาคาร |
+| group_review_faq | คำตอบ FAQ |
+| group_review_media | ภาพและเอกสาร |
+| group_review_intake | ข้อมูลนำเข้า |
+| group_review_intake_reviewed | ตรวจแล้ว |
+| group_review_intake_staged | นำเข้าแล้ว |
+| group_review_intake_hint | จำนวนรายการนำเข้าและการตรวจ ไม่ใช่จำนวนคำตอบ FAQ ที่พร้อมใช้ |
+| group_review_counts_missing | ยังไม่มีจำนวนในข้อมูลที่โหลด |
+| group_review_open_review | เปิดตรวจข้อมูล |
+
 ### 8.6 Upload optimization
 
 The following owner decision and addendum are recorded verbatim. The addendum

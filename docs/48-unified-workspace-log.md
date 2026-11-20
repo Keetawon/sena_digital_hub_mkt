@@ -9538,3 +9538,29 @@ files, zero matches, no credential files read) passed. Evidence:
 This is focused fast-lane evidence, not the combined pre-rollout full gate or
 owner UAT. Preview source is ready for its own explicit-path commit. Project
 Group additions remain separate and will receive their own focused checks.
+
+Preview product commit `ed99bcf5d80f368f6d37ff3f682a9e563ce3bb16` was pushed and
+verified as origin/main. Its explicit 24 paths include the copy catalogue,
+no-permission-change card and delivery log; no unrelated path was staged.
+
+### Project Group review — focused verification passed, 20 November 2026
+
+Loaded rows now expose exact REM phase/Hub mapping, REM/marketing group IDs,
+existing mismatch/source-date evidence and phase-specific source, buildings,
+FAQ and media links. Filtered membership is not presented as a full REM count.
+KM reviewed/staged counts are not FAQ coverage; marketers follow their permitted
+scoped FAQ route, with raw intake retained only for existing eligible admins.
+No extra API read, background gap refresh, write action, schema, permission or
+public-output change. Full REM/Hub reconciliation and an all-core FAQ/media
+matrix remain proposals; absent source fields are not inferred.
+
+Typecheck/offline build passed; affected project-progress API module: 36 passed,
+one existing warning. DB: 95 Node checks, 46 SQL suites, 25 concurrency scenarios,
+zero failures. Five browser specs: 44 passed at 1280 and 44 at 390, including
+exact whitespace-preserving phase links, filtered counts, Knowledge denial,
+actual-admin raw intake and zero additional background reads/writes. Seven
+source paths reverified; credential scan passed with zero matches. Evidence:
+.local/project-group-review-20261120/verification.json and stage logs.
+
+These focused checks precede the separate Project Group commit; the one combined
+pre-rollout full gate is still pending. All UAT outcomes remain NOT RUN.

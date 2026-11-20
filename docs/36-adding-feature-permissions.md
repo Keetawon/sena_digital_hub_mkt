@@ -321,3 +321,14 @@ are hidden using the existing page-access predicate; direct requests retain
 their existing denial. Counts are explained, not redefined. Fast-lane focused
 checks plus DB and affected API suites precede delivery; the combined full
 gate remains due before the earlier hosted rollout requested on 20 November.
+
+### Project Group marketing review — 20 November 2026
+
+**No permission change.** Reuse loaded progress/source fields and existing
+phase workspaces. Counts explicitly retain their permission/filter scope;
+marketing, REM-snapshot and confirmed-website membership remain distinct.
+FAQ/intake links require existing Knowledge View; raw intake additionally uses
+the existing actual-admin page check. Project/source/media links use Projects
+View. No new API read, background gap refresh, endpoint, schema, source field,
+grant, group assignment or public output is introduced. Existing write actions
+and source immutability are unchanged.

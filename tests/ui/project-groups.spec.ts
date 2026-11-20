@@ -4,6 +4,7 @@ import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
+import { projectGroupReviewText as review } from '../../apps/admin/lib/project-group-review-copy';
 
 const stamp = '2026-10-05T00:00:00Z';
 const base = '/api/hub/v1/admin/';
@@ -175,4 +176,84 @@ test('marketing names are shown in rows and filters while REM differences are fl
   await page.getByLabel('กลุ่มการตลาด', {exact:true}).selectOption('MARKETING-G ');
   await expect(page.locator('.project-summary-row')).toHaveCount(1);
   await expect(page.locator('.project-summary-row')).toContainText('SPACE');
+});
+
+test('group review preserves filtered counts, exact phase links and read-only requests', async ({ page }) => {
+  const { rows, writes } = await fixture(page, 'editor');
+  const publicId = 'PUB + 01', phase = '  REM+001  ', group = 'MARKETING-G ';
+  rows.splice(0, rows.length,
+    item(publicId, { rem_project_id: phase, name: 'Review phase', marketing_project_group_id: group,
+      knowledge: { reviewed: 2, staged: 5 }, group_provenance: { source_snapshot_at: stamp, first_seen_at: stamp, manifest_sha256: 'synthetic-group-evidence' } }),
+    item('ONLY-REM', { public_project_id: null, name: 'Review source', new_from_rem: true, marketing_project_group_id: group }),
+    item('HIDDEN', { name: 'Other phase', marketing_project_group_id: group }));
+  const reads: string[] = [];
+  page.on('request', request => { if (request.method() === 'GET' && request.url().includes('/api/hub/v1/admin/')) reads.push(request.url()); });
+  const query = new URLSearchParams({ view: 'groups', group_state: 'marketing_reference', group, rem_brand: '00025', prem_status: '2', pq: 'Review' });
+  await page.goto('/website?' + query);
+  await expect(page.locator('.project-summary-row')).toHaveCount(2);
+  await expect(page.getByRole('status').filter({ hasText: review.filtered_projects })).toContainText('2 ' + review.filtered_projects);
+  await expect(page.locator('.project-group-context')).toContainText(review.count_hint);
+  const row = page.locator('.project-summary-row').filter({ hasText: 'Review phase' });
+  await expect(row).toContainText(review.phase_id);
+  await expect(row).toContainText(publicId);
+  await expect(row).toContainText(review.rem_group);
+  await expect(row).toContainText(review.intake_reviewed + ' 2');
+  await expect(row).toContainText(review.intake_staged + ' 5');
+  await expect(row.locator('a[href^="/knowledge"]')).toHaveCount(0);
+  const unmapped = page.locator('.project-summary-row').filter({ hasText: 'Review source' });
+  await expect(unmapped).toContainText(review.hub_unmapped);
+  await expect(unmapped.locator('a[href^="/website/project/"]')).toHaveCount(0);
+  expect(reads.filter(url => new URL(url).searchParams.has('detail'))).toHaveLength(0);
+  await row.getByRole('button', { name: 'รายการตรวจ Review phase', exact: true }).click();
+  const details = page.locator('.project-detail-row');
+  await expect(details).toContainText(review.group_snapshot);
+  await expect(details).toContainText(stamp);
+  const links = details.getByRole('navigation', { name: review.phase_review, exact: true });
+  for (const [label, tab, section] of [[review.identity, 'data', 'identity'], [review.facts, 'data', 'facts'], [review.buildings, 'data', 'buildings'], [review.faq, 'faq', null], [review.media, 'media', 'library']] as const) {
+    const destination = new URL((await links.getByRole('link', { name: label, exact: true }).getAttribute('href'))!, 'http://127.0.0.1:3000');
+    expect(decodeURIComponent(destination.pathname)).toBe('/website/project/' + publicId);
+    expect(destination.searchParams.get('phase')).toBe(phase);
+    expect(destination.searchParams.get('tab')).toBe(tab);
+    expect(destination.searchParams.get('section')).toBe(section);
+  }
+  await expect(details.locator('a[href^="/knowledge"]')).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.toString()).toBe(query.toString());
+  expect(reads.filter(url => new URL(url).searchParams.has('detail'))).toHaveLength(1);
+  expect(reads.filter(url => /\/(?:faq-coverage|faq-composition|sources\/projects)(?:[/?]|$)|\/projects\/[^/?]+\/(?:content|media)/.test(url))).toEqual([]);
+  expect(writes).toEqual([]);
+});
+
+test('group cards label their filtered member count without inventing a REM denominator', async ({ page }) => {
+  const { writes } = await fixture(page, 'viewer');
+  await page.goto('/website?view=groups&pq=P01&prem_status=2');
+  const groups = page.locator('.project-group-list');
+  await expect(groups.locator('li')).toHaveCount(1);
+  await expect(groups).toContainText('1 ' + review.filtered_members);
+  await expect(page.locator('.project-groups')).toContainText(review.count_hint);
+  expect(writes).toEqual([]);
+});
+
+test('group review does not expose FAQ or intake links without Knowledge view', async ({ page }) => {
+  const { rows, writes } = await fixture(page, 'editor');
+  Object.assign(rows[0], { knowledge: { reviewed: 7, staged: 9 }, checklist: { required: [{ field: 'knowledge', message: 'Synthetic intake gap', passed: false }], recommended: [], passed: 0, total: 1, percent: 0, ready: false } });
+  const account = (await (await page.request.get('/api/hub/v1/me')).json()).data;
+  account.capabilities.tabs.knowledge = { view: false, edit: false, approve: false };
+  await page.route('**/api/hub/v1/me', route => route.fulfill({ json: { data: account } }));
+  await page.goto('/website?view=groups&group_state=marketing_reference&group=MARKETING-G&pq=P01');
+  const row = page.locator('.project-summary-row');
+  await expect(row).not.toContainText(review.intake_reviewed + ' 7');
+  await row.getByRole('button', { name: 'รายการตรวจ โครงการ P01', exact: true }).click();
+  const details = page.locator('.project-detail-row');
+  await expect(details).toContainText('Synthetic intake gap');
+  await expect(details.getByRole('link', { name: review.faq, exact: true })).toHaveCount(0);
+  await expect(details.locator('a[href*="tab=faq"], a[href^="/knowledge"]')).toHaveCount(0);
+  await expect(details.getByRole('link', { name: review.identity, exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
+test('actual administrators retain the permitted raw intake review link', async ({ page }) => {
+  const { rows } = await fixture(page, 'admin');
+  Object.assign(rows[0], { knowledge: { reviewed: 2, staged: 5 } });
+  await page.goto('/website?view=projects&pq=P01');
+  await expect(page.locator('.project-summary-row a[href="/knowledge?project=P01"]')).toContainText(review.intake_reviewed + ' 2');
 });

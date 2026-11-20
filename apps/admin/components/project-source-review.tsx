@@ -1,3 +1,5 @@
+import { projectGroupReviewText as review } from "@/lib/project-group-review-copy";
+
 export type SourceReview = {
   status_raw: string | null; status_label: string; is_deleted: boolean | string | null; default_scope: boolean;
   flags: string[]; exceptions: { code: string; keys: Record<string, unknown> }[];
@@ -12,9 +14,11 @@ export type ProjectGroupInfo = {
 export function ProjectGroupSummary({ value, details = false }: { value: ProjectGroupInfo; details?: boolean }) {
   return <div className="small-text">
     <p className="source-code">กลุ่มการตลาด: {value.marketing_project_group_id ? `${value.marketing_project_group_id} · ${value.marketing_group_name_th || "ยังไม่มีชื่อกลุ่ม"}` : "ยังไม่ระบุกลุ่ม"}</p>
+    <p className="source-code">{review.rem_group} <code>{value.rem_project_group_id ? JSON.stringify(value.rem_project_group_id) : "—"}</code></p>
+    {value.group_provenance?.source_snapshot_at ? <p className="field-help">{review.group_snapshot} {value.group_provenance.source_snapshot_at}</p> : details && <p className="field-help">{review.snapshot_missing}</p>}
     {value.group_mismatch && <p className="field-help">รหัสกลุ่มไม่ตรงกัน · REM: <code>{value.rem_project_group_id}</code></p>}
     {details && <details><summary>รายละเอียดกลุ่มต้นทาง</summary><p>รหัสกลุ่ม REM: <code>{JSON.stringify(value.rem_project_group_id ?? null)}</code></p>
-      {value.group_provenance && <><p>วันที่สำเนาชื่อกลุ่ม: {value.group_provenance.source_snapshot_at}</p><p className="source-code">ชุดหลักฐาน: {value.group_provenance.manifest_sha256}</p></>}
+      {value.group_provenance && <p className="source-code">ชุดหลักฐาน: {value.group_provenance.manifest_sha256}</p>}
     </details>}
     {value.group_evidence_status === "changed" && <p className="field-help">ชื่อหรือสมาชิกกลุ่มต้นทางเปลี่ยน · รอตรวจสอบ</p>}
     {value.group_evidence_status === "missing" && <p className="field-help">ไม่พบกลุ่มในชุดข้อมูลล่าสุด · เก็บหลักฐานเดิม</p>}

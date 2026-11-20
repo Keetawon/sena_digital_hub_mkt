@@ -3,6 +3,9 @@ import { useHubPermissions } from "./accounts";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
+import { canOpenPage } from "@/lib/hub-permissions";
+import { workspaceHref } from "@/lib/unified-workspace";
+import { projectGroupReviewText as review } from "@/lib/project-group-review-copy";
 import { request } from "./hub-request";
 import { EntityThumbnail, type Thumbnail } from "./entity-thumbnail";
 import { CompletenessBar } from "./completeness-bar";
@@ -38,17 +41,31 @@ const tiles = [{ value: "all", key: "all", label: "ทั้งหมด" }, { v
   { value: "published", key: "published", label: "เผยแพร่แล้ว" }, { value: "needs_attention", key: "needs_attention", label: "ต้องดูแล" }];
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "Asia/Bangkok" }).format(new Date(value)) : "—";
 const groupLabels = { core: "ข้อมูลหลัก", media: "รูปภาพ", models: "แบบบ้าน", brand: "แบรนด์", extra: "ข้อมูลเสริม" };
-function Checks({ row, returnTo, onStart }: { row: ProgressRow; returnTo: string; onStart: (id: string) => void }) {
+function Checks({ row, returnTo, onStart, knowledgeTarget }: { row: ProgressRow; returnTo: string; onStart: (id: string) => void; knowledgeTarget: string | null }) {
   return <div className="project-check-groups">{(["required", "recommended"] as const).map(level => <section key={level} aria-label={level === "required" ? "ต้องมีก่อนเผยแพร่" : "ควรเติมภายหลัง"}>
     <h3>{level === "required" ? "ต้องมีก่อนเผยแพร่" : "ควรเติมภายหลัง"}</h3>
     {Object.entries(groupLabels).map(([group, label]) => <div key={group}><h4>{label}</h4><ul>{(row.checklist?.[level] ?? []).filter(item => (item.group ?? "core") === group).map((item, index) => <li key={`${item.field}-${index}`}>
       <span aria-label={item.passed ? "ครบแล้ว" : "ยังขาด"}>{item.passed ? "✓" : "○"}</span><span>{item.message}</span>
-      {item.field === "knowledge" || item.field === "nearby" ? <a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}${item.field === "nearby" ? "&kind=nearby" : ""}`}>ไปแก้<span className="sr-only"> {item.message}</span></a> : row.public_project_id ? <a href={projectHref(row.public_project_id, returnTo, item.field)}>ไปแก้<span className="sr-only"> {item.message}</span></a> : <button className="button text-button" onClick={() => onStart(row.rem_project_id)}>ไปแก้<span className="sr-only"> {item.message}</span></button>}
+      {item.field === "knowledge" || item.field === "nearby" ? knowledgeTarget && <a href={knowledgeTarget + (item.field === "nearby" && knowledgeTarget.startsWith("/knowledge?") ? "&kind=nearby" : "")}>{review.open_review}<span className="sr-only"> {item.message}</span></a> : row.public_project_id ? <a href={projectHref(row.public_project_id, returnTo, item.field)}>ไปแก้<span className="sr-only"> {item.message}</span></a> : <button className="button text-button" onClick={() => onStart(row.rem_project_id)}>ไปแก้<span className="sr-only"> {item.message}</span></button>}
     </li>)}</ul>{!(row.checklist?.[level] ?? []).some(item => (item.group ?? "core") === group) && <p className="muted small-text">ไม่มีรายการ</p>}</div>)}
   </section>)}</div>;
 }
 function status(row: ProgressRow) {
   return row.new_from_rem ? "ใหม่จาก REM" : row.needs_attention ? "ต้องดูแล" : row.published && row.has_unpublished_changes ? "มีการแก้ไขที่ยังไม่เผยแพร่" : row.published ? "เผยแพร่แล้ว" : row.withdrawn ? "ถอนการเผยแพร่แล้ว" : row.filling ? "กำลังกรอก" : "รอผู้เผยแพร่";
+}
+
+function PhaseReviewLinks({ row, canProject, canKnowledge }: { row: ProgressRow; canProject: boolean; canKnowledge: boolean }) {
+  if (!row.public_project_id) return null;
+  const target = { level: "project" as const, id: row.public_project_id, phase: row.rem_project_id };
+  return <><p className="field-help">{review.phase_review_hint}</p><nav className="content-actions" aria-label={review.phase_review}>
+    {canProject && <>
+      <a className="button secondary" href={workspaceHref({ ...target, tab: "data", section: "identity" })}>{review.identity}</a>
+      <a className="button secondary" href={workspaceHref({ ...target, tab: "data", section: "facts" })}>{review.facts}</a>
+      <a className="button secondary" href={workspaceHref({ ...target, tab: "data", section: "buildings" })}>{review.buildings}</a>
+    </>}
+    {canKnowledge && <a className="button secondary" href={workspaceHref({ ...target, tab: "faq" })}>{review.faq}</a>}
+    {canProject && <a className="button secondary" href={workspaceHref({ ...target, tab: "media", section: "library" })}>{review.media}</a>}
+  </nav></>;
 }
 
 export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: (sourceId: string) => void }) {
@@ -91,6 +108,13 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
     }
   }
   const canEdit = permissions.can("projects", "edit");
+  const canKnowledge = permissions.can("knowledge");
+  const canRawIntake = Boolean(permissions.account && canOpenPage(permissions.account, "/knowledge", new URLSearchParams()));
+  function knowledgeHref(row: ProgressRow) {
+    if (!canKnowledge) return null;
+    return canRawIntake ? `/knowledge?project=${encodeURIComponent(row.rem_project_id)}` : row.public_project_id
+      ? workspaceHref({ level: "project", id: row.public_project_id, phase: row.rem_project_id, tab: "faq" }) : null;
+  }
   function filterBy(values: Record<string, string | number | null>) { update({ ...values, pp: null, gp: null }); }
   function pagination(position: string) { return <WorkspacePagination id={`projects-${position}`} page={current} pages={pages} size={size} onChange={(next, count) => {
     update({ pp: next, ps: count }); if (position === "bottom") { table.current?.focus({ preventScroll: true }); table.current?.scrollIntoView({ block: "start" }); }
@@ -98,7 +122,7 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
   return <section className="brand-dashboard project-dashboard" aria-labelledby="project-progress-title">
     <nav className="project-workspace-nav" aria-label="มุมมองโครงการ"><a className="button secondary" href="/?view=projects" aria-current={!groupsView ? "page" : undefined}>ทุกโครงการ</a><a className="button secondary" href="/?view=groups" aria-current={groupsView ? "page" : undefined}>ตามกลุ่มโครงการ</a><a className="button secondary" href="/?view=brands">เริ่มจากแบรนด์</a></nav>
     {groupsView && <WorkspaceBack fallback="/?view=groups" label="กลุ่มโครงการทั้งหมด" />}
-    {selectedGroupState && <div className="project-group-context"><h2 className="source-code">{groupLabel(selectedGroupState as GroupStatus, selectedGroup, facets?.groups?.find(([id]) => id === selectedGroup)?.[1])}</h2><p>{selectedGroupState === "marketing_reference" ? "สมาชิกตามกลุ่มการตลาดจาก DW" : selectedGroupState === "conflict" ? "ตัวตนหรือกลุ่มต้นทางขัดแย้ง ตรวจทีละโครงการก่อนยืนยันสมาชิก" : "ยังไม่มีกลุ่มการตลาด โครงการยังเปิดตรวจและจัดเตรียมข้อมูลได้"}</p>{brandId && <p>แบรนด์: {brandOptions.find(([id]) => id === brandId)?.[1] || brandId} · แสดงเฉพาะสมาชิกของแบรนด์นี้</p>}</div>}
+    {selectedGroupState && <div className="project-group-context"><h2 className="source-code">{groupLabel(selectedGroupState as GroupStatus, selectedGroup, facets?.groups?.find(([id]) => id === selectedGroup)?.[1])}</h2><p>{selectedGroupState === "marketing_reference" ? "สมาชิกตามกลุ่มการตลาดจาก DW" : selectedGroupState === "conflict" ? "ตัวตนหรือกลุ่มต้นทางขัดแย้ง ตรวจทีละโครงการก่อนยืนยันสมาชิก" : "ยังไม่มีกลุ่มการตลาด โครงการยังเปิดตรวจและจัดเตรียมข้อมูลได้"}</p><p className="field-help">{review.count_hint}</p>{brandId && <p>แบรนด์: {brandOptions.find(([id]) => id === brandId)?.[1] || brandId} · แสดงเฉพาะสมาชิกของแบรนด์นี้</p>}</div>}
     <h2 id="project-progress-title">ความคืบหน้าโครงการ</h2>
     <DashboardTiles tiles={tiles} counts={counts} selected={filter} onSelect={value => filterBy({ pstatus: value })} loading={loading || Boolean(error)} label="ภาพรวมโครงการ" />
     <label className="brand-confirm-check"><input type="checkbox" checked={includeOther} onChange={event => filterBy({ pother: event.target.checked ? "1" : null })} />แสดงโครงการปิด ถูกลบ และไม่ทราบสถานะ</label>
@@ -112,18 +136,21 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
     <div className="brand-dashboard-actions"><button className="button secondary" disabled={loading} onClick={() => void load()}>โหลดความคืบหน้าใหม่</button></div>
     {loading ? <div role="status" aria-label="กำลังโหลดโครงการ" className="hub-skeleton-list">กำลังโหลดโครงการ…{Array.from({ length: 5 }, (_, i) => <div key={i} className="hub-skeleton-row" aria-hidden="true"><span className="hub-skeleton tall" /><span className="hub-skeleton" /><span className="hub-skeleton" /><span className="hub-skeleton short" /></div>)}</div> : error ? <p role="alert" className="notice error">{error}</p> : <>
       {groupsView && !selectedGroupState ? <ProjectGroups key={`${brandId}-${filter}-${sourceStatus}-${search}-${includeOther}`} brandId={brandId} returnTo={href} /> : <>
-        <p role="status" className="small-text muted">แสดง {rows.length ? start + 1 : 0}–{Math.min(start + size, total)} จาก {total} โครงการ · เรียงตามความพร้อมเผยแพร่ แล้วตามความครบถ้วน</p>
+        <p role="status" className="small-text muted">แสดง {rows.length ? start + 1 : 0}–{Math.min(start + size, total)} จาก {total} {review.filtered_projects} · เรียงตามความพร้อมเผยแพร่ แล้วตามความครบถ้วน</p>
+        {canKnowledge && <p className="field-help">{review.intake_hint}</p>}
         {pagination("top")}
         <p className="field-help project-progress-scroll-help">หัวตารางและชื่อโครงการตรึงไว้ · กดลูกศรเพื่อดูรายการตรวจ</p>
-        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความพร้อมเผยแพร่และความครบถ้วนของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 7 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "ความพร้อมเผยแพร่", "ความครบถ้วน", "รอใคร", "ปรับปรุงล่าสุด", "อนุมัติโดย / แหล่งข้อมูล", "ความรู้"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.map(row => {
+        <div className="brand-table-scroll brand-dashboard-table-scroll project-progress-scroll" ref={table} role="region" tabIndex={0} aria-label="ตารางความคืบหน้าโครงการ"><table className="brand-completeness-table project-progress-table"><caption className="sr-only">ความพร้อมเผยแพร่และความครบถ้วนของแต่ละโครงการ</caption><colgroup>{Array.from({ length: 7 }, (_, index) => <col key={index} />)}</colgroup><thead><tr>{["โครงการ", "ความพร้อมเผยแพร่", "ความครบถ้วน", "รอใคร", "ปรับปรุงล่าสุด", "อนุมัติโดย / แหล่งข้อมูล", review.intake].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>{rows.map(row => {
           const open = expanded.has(row.rem_project_id), id = `project-checks-${encodeURIComponent(row.rem_project_id)}`;
           const checklist = row.checklist, ready = checklist?.ready ?? (!row.filling && !row.new_from_rem);
           const missing = row.required_missing ?? checklist?.required?.filter(item => !item.passed).length ?? Object.values(row.gaps).flat().length;
+          const intakeHref = knowledgeHref(row);
+          const intakeCount = row.knowledge ? <>{review.intake_reviewed} {row.knowledge.reviewed} · {review.intake_staged} {row.knowledge.staged}</> : review.counts_missing;
           return <Fragment key={row.rem_project_id}><tr className="brand-table-row project-summary-row">
           <td data-label="โครงการ"><div className="project-row-identity">
             <button className="project-expand" aria-label={`รายการตรวจ ${row.name}`} aria-expanded={open} aria-controls={id} onClick={() => void toggleRow(row)}>{open ? "▾" : "▸"}</button>
             <EntityThumbnail name={row.name} image={row.thumbnail} fallback={row.brand_logo} brandKey={row.rem_brand_id} />
-            <div>{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{row.rem_project_id} · {row.brand_name || "ยังไม่ระบุแบรนด์"}</p><p className="small-text">{row.source_review?.status_label || "ไม่ทราบสถานะ"} ({row.source_review?.status_raw ?? "null"})</p>
+            <div>{row.public_project_id ? <a href={projectHref(row.public_project_id, href)}>{row.name}</a> : <strong>{row.name}</strong>}<p className="source-code">{review.phase_id} <code>{JSON.stringify(row.rem_project_id)}</code> · {row.brand_name || "ยังไม่ระบุแบรนด์"}</p><p className="source-code">{row.public_project_id ? <>{review.hub_project} <code>{row.public_project_id}</code></> : review.hub_unmapped}</p><p className="small-text">{row.source_review?.status_label || "ไม่ทราบสถานะ"} ({row.source_review?.status_raw ?? "null"})</p>
             <ProjectGroupSummary value={row} />
             {row.public_project_id ? <a className="project-row-action" href={projectHref(row.public_project_id, href)}>{canEdit ? "เปิดแก้ไข" : permissions.can("projects", "approve") ? "เปิดตรวจโครงการ" : "ดูโครงการ"}</a> : <button className="button text-button project-row-action" onClick={() => onStart(row.rem_project_id)}>{canEdit ? "เริ่มกรอก" : "ดูต้นทาง"}</button>}</div></div>
           </td>
@@ -132,8 +159,8 @@ export function ProjectDashboard({ role, onStart }: { role: LocalRole; onStart: 
           <td data-label="รอใคร">{row.waiting_on.map(role => role === "editor" ? "ผู้แก้ไข" : "ผู้เผยแพร่").join(" / ") || "—"}</td>
           <td data-label="ปรับปรุงล่าสุด">{date(row.updated_at)}</td>
           <td data-label="อนุมัติโดย / แหล่งข้อมูล">{row.website_sources?.length ? <PublicWebsiteSource sources={row.website_sources} /> : "—"}</td>
-          <td data-label="ความรู้">{permissions.can("knowledge") ? <a href={`/knowledge?project=${encodeURIComponent(row.rem_project_id)}`}>ตรวจแล้ว {row.knowledge?.reviewed ?? 0}/{row.knowledge?.staged ?? 0}</a> : "—"}</td>
-          </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={7}>{details[row.rem_project_id] ? <Checks row={details[row.rem_project_id]} returnTo={href} onStart={onStart} /> : <p role={detailErrors[row.rem_project_id] ? "alert" : "status"}>{detailErrors[row.rem_project_id] || "กำลังโหลดรายการตรวจ…"}</p>}<p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
+          <td data-label={review.intake}>{canKnowledge ? intakeHref ? <a href={intakeHref}>{intakeCount}</a> : intakeCount : "—"}</td>
+          </tr>{open && <tr className="project-detail-row" id={id}><td colSpan={7}><PhaseReviewLinks row={row} canProject={permissions.can("projects")} canKnowledge={canKnowledge} />{details[row.rem_project_id] ? <Checks row={details[row.rem_project_id]} returnTo={href} onStart={onStart} knowledgeTarget={intakeHref} /> : <p role={detailErrors[row.rem_project_id] ? "alert" : "status"}>{detailErrors[row.rem_project_id] || "กำลังโหลดรายการตรวจ…"}</p>}<p>แบบบ้านยืนยัน {row.confirmed_models}/{row.total_models} · สิ่งอำนวยความสะดวก {row.amenities ? `${row.amenities.collected}/${row.amenities.total}` : "ยังไม่เริ่ม"}</p>
             <ProjectSourceReview value={row.source_review} />{row.attention.length > 0 && <ul>{row.attention.map((item, index) => <li key={index}><a href={projectHref(row.public_project_id!, href, item.field)}>{item.message}</a></li>)}</ul>}
             <p className="small-text muted">{row.age_days == null ? "ไม่ทราบวันนำเข้า" : `${row.age_basis === "first_import" ? "นำเข้าครั้งแรก" : row.age_basis === "mirror_import" ? "ใช้เวลานำเข้าสำเนาครั้งแรก" : "พบใน REM ครั้งแรก"} · ${date(row.first_seen_at)} · ${row.age_days} วัน`}</p>
             <ProjectGroupSummary value={row} details />

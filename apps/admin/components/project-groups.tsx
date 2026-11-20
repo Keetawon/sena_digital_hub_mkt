@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { request } from "./hub-request";
 import type { ProgressRow } from "./project-dashboard";
+import { projectGroupReviewText as review } from "@/lib/project-group-review-copy";
 import { pageNumber, pageSizeNumber, useListQuery, WorkspacePagination } from "./workspace-navigation";
 import "./project-groups.css";
 
@@ -41,9 +42,10 @@ export function ProjectGroups({ brandId = null, returnTo, otherOverride }: { bra
   if (!data) return <p role="status">กำลังโหลดกลุ่มโครงการ…</p>;
   return <div className="project-groups">
     <p className="field-help">จัดตามกลุ่มการตลาดจาก DW · ชื่อกลุ่มมีหลักฐานต้นทาง ไม่เปลี่ยนการจับคู่โครงการ</p>
+    <p className="field-help">{review.count_hint}</p>
     {!data.rows.length ? <p>ไม่มีโครงการในขอบเขตที่เลือก</p> : <>
       <ul className="project-group-list">{data.rows.map(group => <li key={JSON.stringify([group.state, group.id])}>
-        <div><strong className="source-code">{groupLabel(group.state, group.id, group.name_th)}</strong><p>{group.count} โครงการ · เผยแพร่แล้ว {group.published} · กำลังกรอก {group.filling} · รอผู้เผยแพร่ {group.awaiting_publisher}</p>
+        <div><strong className="source-code">{groupLabel(group.state, group.id, group.name_th)}</strong><p>{group.count} {review.filtered_members} · เผยแพร่แล้ว {group.published} · กำลังกรอก {group.filling} · รอผู้เผยแพร่ {group.awaiting_publisher}</p>
           {group.id && group.id !== group.id.trim() && <p className="field-help">รหัสมีช่องว่าง: <code>{JSON.stringify(group.id)}</code> · เก็บรหัสต้นทางตามเดิม</p>}
           <p className="small-text muted">{group.names.join(" · ")}{group.count > 2 ? ` และอีก ${group.count - 2} โครงการ` : ""}</p>
           {group.brand_count > 1 && <p className="field-help">กลุ่มนี้มีสมาชิกต่างแบรนด์{brandId ? " · แสดงเฉพาะแบรนด์ที่เลือก" : ""}</p>}

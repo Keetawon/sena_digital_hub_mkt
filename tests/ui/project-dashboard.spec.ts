@@ -1,6 +1,7 @@
 import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { progressFixture } from './progress-fixture';
 import { expect, test, type Page } from '@playwright/test';
+import { projectGroupReviewText as review } from '../../apps/admin/lib/project-group-review-copy';
 
 test('public website source remark is visible in the approval/source column', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
@@ -60,7 +61,7 @@ test('publishability, completeness and keyboard disclosure are separate and filt
   await expect(first).toContainText('ขาดข้อบังคับ 1');
   await expect(first).toContainText('ความครบถ้วน 50%');
   await expect(first.getByRole('progressbar')).toHaveAttribute('value', '1');
-  await expect(first.getByRole('link', { name: 'ตรวจแล้ว 3/10' })).toHaveAttribute('href', '/knowledge?project=A');
+  await expect(first.getByRole('link', { name: `${review.intake_reviewed} 3 · ${review.intake_staged} 10` })).toHaveAttribute('href', '/website/project/A?tab=faq&phase=A');
   const expand = first.getByRole('button', { name: /รายการตรวจ/ });
   await expand.focus(); await page.keyboard.press('Enter');
   await expect(expand).toHaveAttribute('aria-expanded', 'true');
