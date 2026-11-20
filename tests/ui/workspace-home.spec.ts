@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { workspaceCopy as copy } from '../../apps/admin/lib/workspace-copy';
+import { workspaceText } from '../../apps/admin/lib/unified-workspace';
 import { expectAssistantClearance } from './assistant-clearance';
 
 const origin = 'http://127.0.0.1:3000';
@@ -17,6 +18,25 @@ async function enter(page: Page, role = 'viewer') {
   expect((await page.request.post('/api/local-session', { headers: { Origin: origin }, data: { role } })).ok()).toBeTruthy();
   await page.route('**/api/hub/v1/admin/content/home?*', route => route.fulfill({ json: { data: home } }));
 }
+
+test('home substitutes missing-fact templates and preserves authored task labels', async ({ page }) => {
+  await enter(page);
+  await page.route('**/api/hub/v1/admin/content/home?*', route => route.fulfill({ json: { data: {
+    ...home, task_total: 3, tasks: [
+      { ...home.tasks[0], id: 'fact:1', category: 'fact_missing', label: { th: '{project} missing fact' }, project_name: { th: 'Selected $& project' } },
+      { ...home.tasks[0], category: 'publish', label: { th: '{project} authored title' }, project_name: { th: 'Selected $& project' } },
+      { ...home.tasks[0], id: 'gap:1', category: 'unanswered', label: { th: '{project} user question' }, project_name: { th: 'Selected $& project' } },
+    ],
+  } } }));
+  await page.goto('/home');
+  await expect(page.getByRole('region', { name: new RegExp(copy.tasks) })).toContainText(workspaceText.home_tasks_hint);
+  await expect(page.getByRole('link', { name: 'Selected $& project missing fact', exact: true })).toHaveAttribute('href', home.tasks[0].href);
+  await expect(page.locator('.workspace-home-examples button').first()).toHaveText(copy.ask_prefix + 'Selected $& project missing fact');
+  for (const label of ['{project} authored title', '{project} user question']) {
+    await expect(page.getByRole('link', { name: label, exact: true })).toBeVisible();
+    await expect(page.locator('.workspace-home-examples').getByRole('button', { name: copy.ask_prefix + label, exact: true })).toBeVisible();
+  }
+});
 
 for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as const) {
   test(`workspace home and search keep exact targets, keyboard focus and no overflow ${width} ${colorScheme}`, async ({ page }) => {

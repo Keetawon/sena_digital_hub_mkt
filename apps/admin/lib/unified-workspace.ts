@@ -130,6 +130,8 @@ export const workspaceText = {
   "legacyMedia": "จากเว็บเดิม รอยืนยัน",
   "source": "ดูหน้าอ้างอิง",
   "tasks": "งานของฉัน",
+  "home_tasks_hint": "นับงานตามสิทธิ์และตัวกรอง ไม่ได้นับ FAQ ที่ยังไม่มีคำตอบทุกข้อ",
+  "project_tasks_hint": "งานในหน้านี้ รวมคำถามที่ยังไม่มีคำตอบ รอข้อเท็จจริง หรือรอตรวจ",
   "scope": "ขอบเขต",
   "activity": "บันทึกการใช้งาน",
   "cancel": "ยกเลิก",
@@ -143,6 +145,8 @@ export const workspaceText = {
   "tree_empty": "ยังไม่มีรายการให้แสดง",
   "fact_unavailable": "ยังไม่มีข้อมูลนี้",
   "faq_empty": "ยังไม่มีคำถามให้แสดง",
+  "faq_question_pending": "รออนุมัติคำถาม",
+  "faq_question_pending_explanation": "คำถามมาตรฐานนี้ยังรออนุมัติ จึงยังสร้างคำตอบไม่ได้ เปิดคำถามมาตรฐานเพื่อดำเนินการตามขั้นตอนอนุมัติ",
   "activity_log_empty": "ยังไม่มีรายการในบันทึกการใช้งาน",
   "retry": "ลองใหม่",
   "search": "ค้นหา",
@@ -204,6 +208,10 @@ export const tabLabels: Record<WorkspaceTab, string> = {
 };
 export function workspaceName(value: LocalizedName | string | null | undefined) {
   return typeof value === "string" ? value : value?.th || value?.en || "\u2014";
+}
+export function workspaceQuestionLabel(value: LocalizedName | string, project?: LocalizedName | string | null) {
+  const name = typeof project === "string" ? project : project?.th || project?.en;
+  return name?.trim() ? workspaceName(value).replaceAll("{project}", () => name) : workspaceName(value);
 }
 export function workspaceApi(level: string, id: string) {
   return `v1/admin/content/workspace/${encodeURIComponent(level)}/${encodeURIComponent(id)}`;

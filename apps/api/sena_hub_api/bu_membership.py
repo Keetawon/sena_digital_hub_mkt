@@ -190,7 +190,7 @@ def register_bu_membership_routes(app, authentication, database):
     async def staff(request: Request, actor: Actor = Depends(authentication)):
         account = getattr(request.state, 'account', {})
         if account.get('status') != 'ACTIVE' or actor.role not in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'}:
-            raise failure(403, 'bu_notice_permission', 'Active staff account required')
+            raise failure(403, 'bu_notice_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
         return actor
 
     @app.get('/v1/admin/content/bu-notices')

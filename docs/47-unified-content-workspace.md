@@ -573,8 +573,34 @@ Implementation copy for the screens above. Copy these UTF-8 strings into the
 interface; this catalogue adds no permission or workflow behavior. Existing
 editors retain their existing copy unless a label above supersedes it.
 
+The preview corrections reuse `permission_required` for workspace, staff-notice,
+business-content, workflow and publication permission denials. Upload entry points
+reuse `upload_pixel_limits`. The logo uses the permitted landing destination's
+existing navigation label (`navigation_home` or `navigation_registry` for staff
+and agency accounts). Project FAQ cards, overview tasks targeting a FAQ question,
+and Home missing-fact task labels substitute `{project}` from the already loaded
+project or selected phase name. Other authored task labels and unanswered-question
+labels retain their literal text. Stored question templates, approval requirements
+and task counts remain unchanged.
+
+Preview Phase A read list: the overview makes one existing
+`GET /v1/admin/faq/questions` read when it has held FAQ question targets and the
+caller has Knowledge view. The result is keyed by page scope, capabilities and
+held question keys, and reset on context changes. Only an exact question key with
+bank status `proposed` receives the pending badge; failures leave tasks usable
+without a guessed status. The FAQ deep-link explanation reuses its existing bank
+read and links to the existing question-bank workflow. Approved unanswered
+questions retain their existing answer action. No permission, rule or API contract
+changes are introduced.
+
 | Key | Thai label |
 | --- | --- |
+| navigation_home | หน้าแรก |
+| navigation_registry | ทะเบียนแคมเปญ |
+| faq_question_pending | รออนุมัติคำถาม |
+| faq_question_pending_explanation | คำถามมาตรฐานนี้ยังรออนุมัติ จึงยังสร้างคำตอบไม่ได้ เปิดคำถามมาตรฐานเพื่อดำเนินการตามขั้นตอนอนุมัติ |
+| home_tasks_hint | นับงานตามสิทธิ์และตัวกรอง ไม่ได้นับ FAQ ที่ยังไม่มีคำตอบทุกข้อ |
+| project_tasks_hint | งานในหน้านี้ รวมคำถามที่ยังไม่มีคำตอบ รอข้อเท็จจริง หรือรอตรวจ |
 | assistant_context_choose | เลือกบริบท |
 | local_testing | พื้นที่ทดสอบในเครื่อง |
 | local_testing_note |  · แยกป้ายข้อมูลจำลองและสำเนา REM · ยังไม่เชื่อม DW สด |

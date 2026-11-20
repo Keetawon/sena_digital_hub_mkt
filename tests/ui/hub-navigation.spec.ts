@@ -49,6 +49,7 @@ async function reveal(page: Page, group: string) {
 test('shared Hub menu connects projects, brands and every registry screen', async ({ page }) => {
   await enter(page, 'admin');
   await activeSection(page, 'หน้าแรก');
+  await expect(page.locator('.hub-brand-logo:visible')).toHaveAttribute('href', '/home');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   await menu.getByRole('link', { name: 'ข้อมูลเว็บไซต์', exact: true }).click();
   await expect(page).toHaveURL(/\/website$/);
@@ -181,6 +182,12 @@ test('agency keeps direct registry access and never receives financial, publicat
   for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่น', 'เผยแพร่', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
   await expect(menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true })).toHaveCount(0);
   for (const name of ['หน้าแรก', 'ข้อมูลเว็บไซต์']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
+  const logo = page.locator('.hub-brand-logo:visible');
+  await expect(logo).toHaveAttribute('href', '/ads/registry');
+  await expect(logo).toHaveAccessibleName('ทะเบียนแคมเปญ');
+  await logo.click();
+  await expect(page).toHaveURL(/\/ads\/registry$/);
+  expect((await page.request.get('/home')).status()).toBe(403);
 });
 
 test('sidebar hierarchy uses the same section labels and guided links in desktop and mobile', async ({ page }) => {

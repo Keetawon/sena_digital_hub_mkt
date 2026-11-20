@@ -1,11 +1,120 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { expectAssistantClearance } from './assistant-clearance';
-import { legacyWorkspaceHref } from '../../apps/admin/lib/unified-workspace';
+import { legacyWorkspaceHref, workspaceQuestionLabel } from '../../apps/admin/lib/unified-workspace';
 import { fitsWorkspace, workspaceHref, workspaceProjection, workspaceText as text } from './unified-workspace-helpers';
 
 const api = '/api/hub/v1/admin', origin = 'http://127.0.0.1:3000';
 const headers = { Origin: origin };
+
+test('question labels replace project tokens literally only when project context exists', () => {
+  const template = { th: '{project} · {project} · {brand}' };
+  expect(workspaceQuestionLabel(template, { th: 'Phase $&' })).toBe('Phase $& · Phase $& · {brand}');
+  expect(workspaceQuestionLabel(template)).toBe(template.th);
+  expect(workspaceQuestionLabel(template, {})).toBe(template.th);
+  expect(workspaceQuestionLabel({ en: '{project}' }, { en: 'Fallback project' })).toBe('Fallback project');
+  expect(template.th).toBe('{project} · {project} · {brand}');
+});
+
+test('overview and FAQ question labels use the selected project name without changing the target', async ({ page }) => {
+  const project = await projectFixture(page), id = project.public_project_id;
+  const projection = workspaceProjection(project), phase = projection.selected_phase!;
+  projection.entity.name = { th: 'Parent project' };
+  projection.phases[0].name = { th: 'Selected $& project' };
+  const target = { level: 'project' as const, id, tab: 'faq' as const, phase, question_key: 'project_overview' };
+  const label = { th: '{project} overview' };
+  projection.overview.tasks = [
+    { code: 'project_overview', label, state: 'missing', target },
+    { code: 'authored_title', label: { th: '{project} authored title' }, state: 'RETURNED', target: { level: 'project', id, tab: 'data', phase, section: 'narrative' } },
+  ];
+  await page.route(`**/content/workspace/project/${id}?**`, route => route.fulfill({ json: { data: projection } }));
+  await page.route(`**/content/workspace/project/${id}/faq?**`, route => route.fulfill({ json: { data: {
+    page_scope: { type: 'project', id: phase }, selected_phase: phase, next_cursor: null,
+    items: [{ question_key: 'project_overview', label, is_core: true, answer_kind: 'text', display_state: 'missing', own_answer: null, effective_answer: null, facts: [], legacy_clusters: [], applicability: { state: 'applicable' }, targets: {} }],
+  } } }));
+  await page.goto(workspaceHref({ level: 'project', id, tab: 'overview', phase }));
+  const tasks = page.getByRole('region', { name: text.tasks, exact: true });
+  await expect(tasks.locator('summary')).toHaveCount(2);
+  for (const summary of await tasks.locator('summary').all()) await summary.click();
+  await expect(tasks.getByRole('link', { name: '{project} authored title', exact: true })).toBeVisible();
+  const question = tasks.getByRole('link', { name: 'Selected $& project overview', exact: true });
+  await expect(question).toHaveAttribute('href', workspaceHref(target));
+  await question.click();
+  await expect(page.locator('.workspace-faq-card h3')).toHaveText('Selected $& project overview');
+});
+
+test('pending FAQ tasks show approval status before opening the named explanation and question bank', async ({ page }) => {
+  const project = await projectFixture(page), id = project.public_project_id;
+  const projection = workspaceProjection(project), phase = projection.selected_phase!;
+  projection.phases[0].name = { th: 'Selected $& project' };
+  const bank = await read(page, api + '/faq/questions');
+  const pendingKey = 'project_overview', heldKey = 'project_location';
+  bank.items = bank.items.map((item: { question_key: string }) => item.question_key === pendingKey ? { ...item, status: 'proposed', question_template: { th: '{project} pending question' } } : item.question_key === heldKey ? { ...item, status: 'approved' } : item);
+  let bankReads = 0;
+  await page.route('**/faq/questions', route => { bankReads++; return route.fulfill({ json: { data: bank } }); });
+  const target = (question_key: string) => ({ level: 'project' as const, id, tab: 'faq' as const, phase, question_key });
+  projection.overview.tasks = [
+    { code: pendingKey, label: { th: '{project} pending question' }, state: 'hold', target: target(pendingKey) },
+    { code: heldKey, label: { th: '{project} held approved question' }, state: 'hold', target: target(heldKey) },
+  ];
+  await page.route(`**/content/workspace/project/${id}?**`, route => route.fulfill({ json: { data: projection } }));
+  await page.route(`**/content/workspace/project/${id}/faq?**`, route => route.fulfill({ json: { data: { page_scope: { type: 'project', id: phase }, selected_phase: phase, items: [], next_cursor: null } } }));
+  await page.goto(workspaceHref({ level: 'project', id, tab: 'overview', phase }));
+  const tasks = page.getByRole('region', { name: text.tasks, exact: true });
+  await expect(tasks).toContainText(text.project_tasks_hint);
+  await tasks.locator('summary').click();
+  const pendingTask = tasks.locator('li').filter({ has: page.getByRole('link', { name: 'Selected $& project pending question', exact: true }) });
+  await expect(pendingTask).toContainText(text.faq_question_pending);
+  await expect(tasks.locator('li').filter({ has: page.getByRole('link', { name: 'Selected $& project held approved question', exact: true }) })).not.toContainText(text.faq_question_pending);
+  expect(bankReads).toBe(1);
+  await pendingTask.getByRole('link').click();
+  const explanation = page.locator('[data-workspace-question="project_overview"]');
+  await expect(explanation.getByRole('heading')).toHaveText('Selected $& project pending question');
+  await expect(explanation).toContainText(text.faq_question_pending_explanation);
+  await expect(explanation.getByRole('button', { name: text.newFaq, exact: true })).toHaveCount(0);
+  await expect(page.locator('.workspace-faq').getByText(text.faq_empty, { exact: true })).toHaveCount(0);
+  const workflowLink = explanation.getByRole('link', { name: text.bank, exact: true });
+  await expect(workflowLink).toHaveAttribute('href', '/settings?section=bank');
+  await workflowLink.click();
+  await expect(page).toHaveURL(/\/settings\?section=bank$/);
+  await expect(page.getByRole('button', { name: 'แก้ไขคำถาม project_overview', exact: true })).toBeVisible();
+});
+
+test('a failed question-bank read never guesses that a held task awaits approval', async ({ page }) => {
+  const project = await projectFixture(page), id = project.public_project_id;
+  const projection = workspaceProjection(project), phase = projection.selected_phase!;
+  projection.overview.tasks = [{ code: 'project_overview', label: { th: 'Held question' }, state: 'hold', target: { level: 'project', id, tab: 'faq', phase, question_key: 'project_overview' } }];
+  await page.route(`**/content/workspace/project/${id}?**`, route => route.fulfill({ json: { data: projection } }));
+  await page.route('**/faq/questions', route => route.fulfill({ status: 503, json: { error: { message: 'Synthetic unavailable bank' } } }));
+  const failed = page.waitForResponse(response => new URL(response.url()).pathname === api + '/faq/questions');
+  await page.goto(workspaceHref({ level: 'project', id, tab: 'overview', phase }));
+  expect((await failed).status()).toBe(503);
+  const tasks = page.getByRole('region', { name: text.tasks, exact: true });
+  await tasks.locator('summary').click();
+  await expect(tasks.getByRole('link', { name: 'Held question', exact: true })).toBeVisible();
+  await expect(tasks.getByText(text.faq_question_pending, { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Synthetic unavailable bank', { exact: true })).toHaveCount(0);
+});
+
+test('held FAQ tasks never read question-bank status without Knowledge view', async ({ page }) => {
+  const project = await projectFixture(page), id = project.public_project_id;
+  const projection = workspaceProjection(project), phase = projection.selected_phase!;
+  projection.tabs = projection.tabs.filter(tab => tab !== 'faq');
+  projection.overview.tasks = [{ code: 'project_overview', label: { th: 'Held question' }, state: 'hold', target: { level: 'project', id, tab: 'faq', phase, question_key: 'project_overview' } }];
+  const account = await read(page, '/api/hub/v1/me');
+  account.capabilities.tabs.knowledge = { view: false, edit: false, approve: false };
+  await page.route('**/api/hub/v1/me', route => route.fulfill({ json: { data: account } }));
+  await page.route(`**/content/workspace/project/${id}?**`, route => route.fulfill({ json: { data: projection } }));
+  let bankReads = 0;
+  await page.route('**/faq/questions', route => { bankReads++; return route.fulfill({ json: { data: { items: [{ question_key: 'project_overview', status: 'proposed' }] } } }); });
+  await page.goto(workspaceHref({ level: 'project', id, tab: 'overview', phase }));
+  const tasks = page.getByRole('region', { name: text.tasks, exact: true });
+  await tasks.locator('summary').click();
+  await expect(tasks.getByRole('link', { name: 'Held question', exact: true })).toBeVisible();
+  await expect(tasks.getByText(text.faq_question_pending, { exact: true })).toHaveCount(0);
+  await expect(page.locator('#workspace-tab-faq')).toHaveCount(0);
+  expect(bankReads).toBe(0);
+});
 
 test('W3.1 many-gap overview is compact, contextual, keyboard expandable and limited to five changes', async ({ page }) => {
   const project = await projectFixture(page), id = project.public_project_id;
@@ -191,6 +300,7 @@ for (const width of [1280, 390]) {
     await page.goto(`/website/project/${id}?tab=faq`);
     const cards = page.locator('.workspace-faq-card');
     await expect(cards.first()).toContainText('Synthetic missing core'); await expect(cards.nth(1)).toContainText('Inherited source answer');
+    await expect(cards.first()).not.toContainText(text.faq_question_pending);
     await expect(cards.nth(1)).toContainText('Synthetic author'); await expect(cards.nth(1)).toContainText('Synthetic approver');
     await expect(cards.nth(1).getByRole('link', { name: new RegExp(text.editSource) })).toHaveAttribute('href', /\/website\/brand\/exact-brand\?tab=faq&faq=faq-source/);
     await fitsWorkspace(page); await page.screenshot({ path: `artifacts/unified-workspace/w3/faq-${width}.png`, fullPage: true });

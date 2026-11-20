@@ -13,6 +13,7 @@ import { ProjectContentWorkspace } from "./project-content-workspace";
 import { ProjectMediaWorkspace } from "./project-media-workspace";
 import { WebsiteContentSources } from "./website-content-sources";
 import { FaqWorkspace } from "./faq-workspace";
+import type { QuestionBank } from "./faq-bank";
 import { BusinessWorkspace } from "./business-workspace";
 import { ContentBuNotices } from "./content-bu-notices";
 import { ExposureChip } from "./content-exposure";
@@ -21,13 +22,14 @@ import type { SubmissionOutcome } from "@/lib/content-workflow";
 import { ContentSource } from "./content-source";
 import { ContentHistory, ContentTimeline } from "./content-history";
 import { ContextualPromotions, PromotionOverview } from "./contextual-promotions";
-import { legacyWorkspaceHref, workspaceApi, workspaceHref, workspaceName, workspaceText as text, workspaceTabs, tabLabels, type WorkspaceEntity, type WorkspaceItem, type WorkspaceLevel, type WorkspaceTab } from "@/lib/unified-workspace";
+import { legacyWorkspaceHref, workspaceApi, workspaceHref, workspaceName, workspaceQuestionLabel, workspaceText as text, workspaceTabs, tabLabels, type WorkspaceEntity, type WorkspaceItem, type WorkspaceLevel, type WorkspaceTab } from "@/lib/unified-workspace";
 import "./unified-workspace.css";
-type OverviewItem = WorkspaceItem & { priority?: "required" | "recommended" };
+type OverviewItem = WorkspaceItem & { priority?: "required" | "recommended"; questionPending?: boolean };
 function ItemLinks({ items }: { items: OverviewItem[] }) {
   return <ul className="workspace-items">{items.map((item, index) => <li key={item.code + index}>
     <a href={workspaceHref(item.target)}>{item.context && <>{text[`context_${item.context.kind}`]} {workspaceName(item.context.label)} · </>}{workspaceName(item.label)}</a>
     {item.priority && <span>{text[item.priority]}</span>}{item.state && text[item.state.toUpperCase() as keyof typeof text] && <span>{text[item.state.toUpperCase() as keyof typeof text]}</span>}
+    {item.questionPending && <span>{text.faq_question_pending}</span>}
     {item.due && <time dateTime={item.due}>{contentDate(item.due)}</time>}
   </li>)}</ul>;
 }
@@ -38,7 +40,7 @@ function ItemGroup({ name, items }: { name: string; items: OverviewItem[] }) {
     {items.length > 5 && <button type="button" className="button secondary" aria-expanded={all} onClick={() => setAll(value => !value)}>{all ? text.show_less : text.view_all} ({items.length})</button>}
   </details>;
 }
-function Items({ title, items, emptyLabel }: { title: string; items: OverviewItem[]; emptyLabel: string }) {
+function Items({ title, items, emptyLabel, hint }: { title: string; items: OverviewItem[]; emptyLabel: string; hint?: string }) {
   const groups = new Map<string, { name: string; items: OverviewItem[] }>();
   for (const item of items) {
     const section = item.target.section, key = item.target.tab + ":" + (section ?? "");
@@ -46,6 +48,7 @@ function Items({ title, items, emptyLabel }: { title: string; items: OverviewIte
     group.items.push(item); groups.set(key, group);
   }
   return <section className="workspace-panel" aria-label={title}><h2>{title} <span className="workspace-count">{items.length} {text.item_count}</span></h2>
+    {hint && <p className="workspace-task-hint">{hint}</p>}
     {items.length ? Array.from(groups, ([key, group]) => <ItemGroup key={key} {...group} />) : <p>{emptyLabel}</p>}
   </section>;
 }
@@ -63,6 +66,8 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
   const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
   const [data, setData] = useState<WorkspaceEntity | null>(null), [error, setError] = useState(""), [editing, setEditing] = useState(false), [primaryDirty, setPrimaryDirty] = useState(false), [primaryBusy, setPrimaryBusy] = useState(false), [primaryPending, setPrimaryPending] = useState(false), [retry, setRetry] = useState(0);
   const [suggestionEditing, setSuggestionEditing] = useState(false);
+  const [dataIdentity, setDataIdentity] = useState("");
+  const [pendingQuestions, setPendingQuestions] = useState<{ key: string; questions: string[] } | null>(null);
   const [headerBusy, setHeaderBusy] = useState(false), [inventoryRevision, setInventoryRevision] = useState(0), [editorRevision, setEditorRevision] = useState(0);
   const businessEditing = useCallback((value: boolean) => { setEditing(value); setPrimaryBusy(value); setPrimaryPending(value); }, []);
   const location = useContentLocation(primaryDirty || editing || suggestionEditing || headerBusy), root = useRef<HTMLDivElement>(null);
@@ -71,7 +76,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
   const path = workspaceApi(level, id) + (phase ? "?phase=" + encodeURIComponent(phase) : "");
   const activeIdentity = path + authority, active = useRef(activeIdentity); active.current = activeIdentity;
   const refreshSummary = useCallback(async () => {
-    try { const value = await request<WorkspaceEntity>(path); if (active.current === activeIdentity) { setData(value); setError(""); } }
+    try { const value = await request<WorkspaceEntity>(path); if (active.current === activeIdentity) { setData(value); setDataIdentity(activeIdentity); setError(""); } }
     catch (error) { if (active.current === activeIdentity) setError(errorMessage(error)); }
   }, [path, activeIdentity]);
   const onWorkflowChanged = useCallback(() => { setInventoryRevision(value => value + 1); void refreshSummary(); }, [refreshSummary]);
@@ -88,12 +93,22 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
     url.hash = ""; window.history.replaceState(null, "", url);
   }, [level, id]);
   useEffect(() => {
-    let live = true; setData(null); setError(""); setEditing(false); setPrimaryDirty(false); setPrimaryBusy(false); setPrimaryPending(false); setSuggestionEditing(false); setHeaderBusy(false);
-    request<WorkspaceEntity>(path).then(value => { if (live) setData(value); }).catch(e => { if (live) setError(errorMessage(e)); });
+    let live = true; setData(null); setDataIdentity(""); setError(""); setEditing(false); setPrimaryDirty(false); setPrimaryBusy(false); setPrimaryPending(false); setSuggestionEditing(false); setHeaderBusy(false);
+    request<WorkspaceEntity>(path).then(value => { if (live) { setData(value); setDataIdentity(activeIdentity); } }).catch(e => { if (live) setError(errorMessage(e)); });
     return () => { live = false; };
-  }, [path, authority, retry]);
+  }, [path, activeIdentity, retry]);
   const tabs = workspaceTabs.filter(tab => data?.tabs.includes(tab) && (tab !== "promotions" || permissions.can("promotions") && permissions.can("projects") && (level !== "brand" || permissions.can("brands"))));
   const tab = tabs.includes(queryTab as WorkspaceTab) ? queryTab as WorkspaceTab : tabs[0] ?? "overview";
+  const heldQuestionKeys = JSON.stringify([...new Set(data?.overview.tasks.filter(item => item.state === "hold" && item.target.tab === "faq" && item.target.question_key).map(item => item.target.question_key) ?? [])].sort());
+  const pendingQuestionKey = tab === "overview" && section !== "preview" && dataIdentity === activeIdentity && permissions.can("knowledge") && heldQuestionKeys !== "[]"
+    ? JSON.stringify([activeIdentity, heldQuestionKeys, inventoryRevision, retry]) : "";
+  useEffect(() => {
+    let live = true; setPendingQuestions(null);
+    if (pendingQuestionKey) request<QuestionBank>("v1/admin/faq/questions").then(bank => {
+      if (live) setPendingQuestions({ key: pendingQuestionKey, questions: bank.items.filter(item => item.status === "proposed").map(item => item.question_key) });
+    }).catch(() => {});
+    return () => { live = false; };
+  }, [pendingQuestionKey]);
   const targetField = location.params.get("field"), targetQuestion = location.params.get("question"), targetItem = location.params.get("binding") ?? location.params.get("item") ?? location.params.get("asset") ?? location.params.get("building") ?? location.params.get("unit_type") ?? location.params.get("facility"), targetCluster = location.params.get("cluster"), targetMediaRole = location.params.get("media_role");
   useEffect(() => {
     if (!data || !root.current) return;
@@ -131,7 +146,13 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
   const projectSource = Boolean(publicProject && hasSourceTabs && permissions.can("projects"));
   const projectFaq = level === "project" && data.selected_phase;
   const scope = { type: projectFaq ? "project" : data.entity.scope_type, id: projectFaq || data.entity.scope_id, name: workspaceName(projectFaq ? selected?.name ?? data.entity.name : data.entity.name) };
-  const context = { level, id, phase: data.selected_phase };
+  const projectName = selected?.name ?? (level === "project" ? data.entity.name : undefined);
+  const context = { level, id, phase: data.selected_phase, projectName: level === "project" || level === "unit_type" ? projectName : undefined };
+  const tasks = data.overview.tasks.map(item => ({ ...item,
+    label: item.target.tab === "faq" && item.target.question_key && item.target.level === "project"
+      ? workspaceQuestionLabel(item.label, data.phases.find(phase => phase.rem_project_id === item.target.phase)?.name ?? projectName) : item.label,
+    questionPending: Boolean(item.state === "hold" && item.target.tab === "faq" && item.target.question_key && pendingQuestions?.key === pendingQuestionKey && pendingQuestions.questions.includes(item.target.question_key)),
+  }));
   const primaryTab = tab === "unit-types" ? "models" : tab === "media" ? "media" : tab === "history" ? "versions" : section === "supplementary" ? "extra" : "content";
   const showPrimary = tab === "unit-types" || tab === "history" || tab === "data" && (!section || ["identity", "supplementary"].includes(section)) || tab === "media" && (section === "canonical" || level === "brand");
   const primary = <></>;
@@ -166,7 +187,7 @@ export function EntityWorkspace({ level, id, role }: { level: WorkspaceLevel; id
       {tab === "overview" && (section === "preview" ? <PagePreview endpoint={webPage && sourceVersion ? `v1/admin/web/pages/${encodeURIComponent(webPage)}/versions/${encodeURIComponent(sourceVersion)}?locale=th` : `${workspaceApi(level, id)}/preview?locale=th${data.selected_phase ? "&phase=" + encodeURIComponent(data.selected_phase) : ""}`} /> : <>
         {data.overview.preview_target && <p><a className="button secondary" href={workspaceHref(data.overview.preview_target)}>{text.preview}</a></p>}
         {(level === "project" || level === "brand") && permissions.can("promotions") && permissions.can("projects") && permissions.can(level === "brand" ? "brands" : "projects") && <PromotionOverview summary={data.overview.promotions} level={level} id={id} phase={level === "project" ? data.selected_phase : null} />}
-        <div className="workspace-overview"><Items title={text.readiness} emptyLabel={text.readiness_empty} items={[...data.overview.readiness.required.map(item => ({ ...item, priority: "required" as const })), ...data.overview.readiness.recommended.map(item => ({ ...item, priority: "recommended" as const }))]} /><Items title={text.tasks} emptyLabel={text.tasks_empty} items={data.overview.tasks} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline compact items={data.overview.changes_since_publication.slice(0, 5)} /> : <p>{text.since_publication_empty}</p>}<a className="workspace-history-link" href={workspaceHref({ level, id, tab: "history" })}>{text.view_history}</a></section></div>
+        <div className="workspace-overview"><Items title={text.readiness} emptyLabel={text.readiness_empty} items={[...data.overview.readiness.required.map(item => ({ ...item, priority: "required" as const })), ...data.overview.readiness.recommended.map(item => ({ ...item, priority: "recommended" as const }))]} /><Items title={text.tasks} emptyLabel={text.tasks_empty} items={tasks} hint={level === "project" ? text.project_tasks_hint : undefined} /><section className="workspace-panel" aria-label={text.since_publication}><h2>{text.since_publication}</h2>{data.overview.changes_since_publication.length ? <ContentTimeline compact items={data.overview.changes_since_publication.slice(0, 5)} /> : <p>{text.since_publication_empty}</p>}<a className="workspace-history-link" href={workspaceHref({ level, id, tab: "history" })}>{text.view_history}</a></section></div>
       </>)}
       {tab === "data" && <><nav className="workspace-section-states" aria-label={text.data}>{data.sections.filter(item => item.tab === "data").map(item => <a key={item.key} href={workspaceHref(item.target)}>{workspaceName(item.label ?? sectionLabel(item.key))} <ExposureChip exposure={item.ai_exposure} /> · {text[item.state as keyof typeof text] ?? item.state}{item.suggestion_count > 0 && <> · {text.suggestions} {item.suggestion_count}</>}</a>)}</nav>
         {publicProject ? <ProjectContentWorkspace projectId={publicProject} embedded primary={primary} supplementary={primary} navigationBlocked={primaryBusy} navigationPending={primaryPending} onEditingChange={setEditing} onWorkflowChanged={onWorkflowChanged} />

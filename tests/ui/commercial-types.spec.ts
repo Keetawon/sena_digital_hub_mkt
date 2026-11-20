@@ -2,6 +2,7 @@ import { fulfilWorkspaceProjection } from './unified-workspace-helpers';
 import { openWorkspaceTab } from './unified-workspace-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import type { CommercialType, CommercialAsset } from '../../apps/admin/components/commercial-types';
+import { uploadText } from '../../apps/admin/lib/upload-text';
 
 const time = '2026-09-20T08:00:00Z';
 const nextTime = '2026-09-20T08:01:00Z';
@@ -131,6 +132,7 @@ test('multiple uploads are separate library files and plans retain house floor a
   const { project, writes, library } = await openFixture(page, [type()]);
   const panel = page.locator('#commercial-types');
   await panel.getByRole('button', { name: 'ดูรายละเอียด Garden', exact: true }).click();
+  await expect(panel.locator('.ct-upload')).toContainText(uploadText.pixel_limits);
   await panel.getByLabel('อัปโหลดภาพหรือแปลนหลายไฟล์').setInputFiles([
     { name: 'floor-one.pdf', mimeType: 'application/pdf', buffer: Buffer.from('synthetic fixture one') },
     { name: 'floor-two.pdf', mimeType: 'application/pdf', buffer: Buffer.from('synthetic fixture two') },

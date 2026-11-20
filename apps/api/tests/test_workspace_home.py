@@ -20,6 +20,33 @@ def test_workspace_requires_active_internal_source_view(permission_accounts, rol
     assert client.get(path, headers=h(role)).status_code == 403
 
 
+@pytest.mark.parametrize('path,code', [
+    ('/v1/admin/content/home', 'forbidden'),
+    ('/v1/admin/content/search', 'forbidden'),
+    ('/v1/admin/content/bu-notices', 'bu_notice_permission'),
+    ('/v1/admin/content/businesses', 'content_permission'),
+    ('/v1/admin/content-workflow/items?level=project&id=synthetic', 'content_permission'),
+    ('/v1/admin/publication-queue', 'content_permission'),
+])
+def test_ui_permission_guards_use_shared_thai_copy(permission_accounts, path, code):
+    client, _ = permission_accounts
+    response = client.get(path, headers=h('agency'))
+    assert response.status_code == 403
+    assert response.json()['error'] == {'code': code, 'message': 'ไม่มีสิทธิ์ดำเนินการนี้'}
+
+
+def test_content_action_permission_guards_use_shared_thai_copy(permission_accounts):
+    client, ids = permission_accounts
+    publication = client.post('/v1/admin/publication-queue/prepare', headers=h('viewer'), json={
+        'selections': [{'system': 'web', 'page_key': 'project:synthetic'}], 'reason': 'Synthetic permission check'})
+    assert publication.status_code == 403
+    assert publication.json()['error'] == {'code': 'content_permission', 'message': 'ไม่มีสิทธิ์ดำเนินการนี้'}
+    asyncio.run(set_bit(ids['editor'], 'knowledge', can_view=False, can_edit=False, can_approve=False))
+    business = client.get('/v1/admin/content/businesses/residential/content', headers=h('editor'))
+    assert business.status_code == 403
+    assert business.json()['error'] == {'code': 'content_permission', 'message': 'ไม่มีสิทธิ์ดำเนินการนี้'}
+
+
 def test_search_filters_sources_before_results_and_retains_neighbour(permission_accounts):
     client, ids = permission_accounts
     response = client.get('/v1/admin/content/search', params={'q': 'DEMO'}, headers=h('viewer'))

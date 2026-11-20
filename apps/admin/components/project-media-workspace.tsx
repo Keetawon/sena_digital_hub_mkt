@@ -171,7 +171,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     {error && <p className="notice error" role="alert">{error}</p>}
     {!initialAsset && <fieldset disabled={busy || workflowBusy || !canEdit}><legend>บริบทเริ่มต้นของไฟล์ใหม่</legend><TargetFields value={context} onChange={setContext} context={data.context} project={data.project.id} tags={data.tags} canPromotions={canPromotions} />
       <details><summary>ข้อมูลที่จะใช้กับไฟล์ใหม่ / ไฟล์ที่เลือก</summary><MetadataFields id="batch" value={batch} onChange={setBatch} tags={data.tags} /></details>
-      <p className="field-help">{uploadText.limits}</p><label className="content-input">{uploadText.files} · {uploadText.batch_limit}<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" onChange={event => {
+      <p className="field-help">{uploadText.limits}<br />{uploadText.pixel_limits}</p><label className="content-input">{uploadText.files} · {uploadText.batch_limit}<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" onChange={event => {
         const files = Array.from(event.target.files ?? []); event.target.value = "";
         if (files.length + cards.length > 20) { setError(uploadText.batch_limit); return; }
         const invalid = files.map(file => uploadFileError(file, uploadContext(batch, context))).find(Boolean);

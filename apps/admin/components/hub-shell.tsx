@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { QuestionProvider } from "./pending-question";
 import { HubAssistant } from "./hub-assistant";
 import { HubNavigation } from "./hub-navigation";
-import { hubGroups, hubPages, hubPermissionTab, hubCurrentMenuKey, hubMenuItem, type HubSection } from "./hub-navigation-data";
+import { hubGroups, hubPages, hubPermissionTab, hubCurrentMenuKey, hubMenuItem, workspaceLanding, type HubSection } from "./hub-navigation-data";
 import { BrandReviewProvider } from "./brand-review";
 import { SignOut, useHostedSession } from "./hosted-session";
 import { deferredH1Sections, h1Unavailable } from "@/lib/hosted-config";
@@ -77,10 +77,12 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const presentation = hubPages.find(item => item.id === section);
   const catalog = permissions.capabilities.catalog?.find(tab => tab.tab === hubPermissionTab(section));
   const page = presentation && { ...presentation, label: menuItem?.label ?? ("permissionTab" in presentation ? presentation.label : catalog?.label_th ?? presentation.label) };
+  const landing = workspaceLanding(permissions.capabilities);
+  const landingLabel = landing === "/home" ? workspaceCopy.home : hubPages.find(item => item.href === landing)?.label ?? workspaceCopy.home;
   const sidebar = <>
     {narrow && <button className="hub-menu-close" type="button" onClick={closeMenu}>ปิดเมนู <span aria-hidden="true">×</span></button>}
     <div className="hub-brand-header">
-      <a className="hub-brand-logo" href="/home" aria-label="หน้าแรก"><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></a>
+      <a className="hub-brand-logo" href={landing} aria-label={landingLabel}><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></a>
       {!narrow && <button ref={sidebarToggle} type="button" className="hub-sidebar-toggle" aria-label={rail ? "ขยายเมนู" : "ย่อเมนู"} title={rail ? "ขยายเมนู" : "ย่อเมนู"} aria-expanded={!rail} aria-controls={menuId} onClick={toggleSidebar}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={rail ? "m9 5 7 7-7 7" : "m15 5-7 7 7 7"} /></svg><span className="hub-nav-tooltip" role="tooltip">{rail ? "ขยายเมนู" : "ย่อเมนู"}</span></button>}
     </div>
     <HubNavigation current={currentMenu} location={location} />

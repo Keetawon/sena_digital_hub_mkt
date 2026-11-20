@@ -9384,3 +9384,157 @@ is skipped, with a replacement slot proposed that day. Docs/51 and the local
 admission plan are reconciled. Configuration diff/hash remains unchanged.
 Result: policy and reservations recorded, no fresh hosted admission or hosted
 change performed. This does not record page-check results or applied caps.
+
+### Informal owner preview - active local lease, 20 November 2026
+
+Owner requested a local preview before Monday, explicitly not UAT. Starting
+the docs/50 retained runtime from current main 0d493b5 with its synthetic seed,
+Auth and storage; the runtime source matches the verified build. Fresh native
+process/port admission was clear and the Linux measurement lane was idle.
+Run: informal-preview-20261120; lease: lead-owner-preview. No UAT case result
+is recorded. The lead holds the sole local test lease until owned cleanup is
+verified after the owner says done, or before the pre-rollout full gate.
+No hosted connection or change. Local URL/readiness and shutdown state are in
+.local/operations/current-preview.json; no password is stored in that receipt.
+Ready: http://127.0.0.1:55367/login. Login and API health returned 200. The
+common synthetic seed is loaded; the retained runtime remains running for the
+owner. No UAT case outcome, screenshot acceptance or hosted result is recorded.
+
+### Informal preview stopped and worktree cleanup - 20 November 2026
+
+Owner finished the preview. Owned processes/listeners and disposable database
+were removed; clock and ordinary grants were restored. The extra synthetic
+preview image disappeared with that database. Monday starts from a fresh seed.
+Receipt: .local/operations/current-preview.json (stopped-cleaned). Owner reported
+successful login, home (0.67 s), project tabs, upload acceptance/rejection and
+agency isolation. These are informal observations; all 61 UAT cases remain
+NOT RUN. FAQ task labels/links, differing counters, agency navigation, Thai
+errors and upload-limit copy are being addressed under the approved fast lane.
+
+Cleanup: original 75 worktrees classified as 3 clean/CR-at-EOL-only and 72 with
+real tracked/staged/untracked preparation (44 with real tracked/staged changes).
+No branch tip was outside origin/main history; working content was checked
+separately. Two new isolated reviews brought the inventory to 77. Verified 69
+complete archives, then removed those 69 worktrees and normally deleted their
+fully merged branches; normal prune completed. Eight protected/active worktrees
+remain, including home-missing-fact and two credential-bearing worktrees. Safe
+partial archives of the latter were retained; protected files were not opened
+or copied. Main and shared dependencies were preserved. No cleanup test needed.
+Index, patches, read-back-verified tar files, removal results and retained paths:
+.local/worktree-archive-20261120/REPORT.md and index.json (186,050,560 tar bytes).
+
+CRLF cause: system autocrlf=true is overridden by repository autocrlf=false
+while existing working files are CRLF. Proposed one-line alignment is
+git config --local core.autocrlf true; it has not been applied. No main
+renormalization; migration/fixture -text protections remain unchanged.
+
+### Phase A performance baseline - local lease, 20 November 2026
+
+Lead holds the single lease for an instrumented offline build followed by a
+fresh synthetic loopback baseline on current main 0d493b5, before product fixes.
+Native process/port checks were clear; WSL had no test processes. This is
+measurement only: no product optimization, hosted load or UAT acceptance.
+Artifacts: performance-review-20261120/artifacts/performance-phase-a/ in the
+protected review worktree. Windows sampled working-set peaks and local timings
+are estimates, not Linux/VPS cap acceptance. SQL driver elapsed includes driver
+overhead; it is not database-engine execution time. Monday/Wednesday retain
+priority; one combined full gate remains due before Wednesday rollout.
+
+Baseline completed on unchanged product source 0d493b5: 55 page observations,
+39 distinct endpoints, 1,760 retained direct/proxy samples, all HTTP 200.
+Sampled Windows API/admin peaks: 158.78/249.60 MiB; build tree 1,648.53 MiB.
+Home300 measurement: 300 projects/70 FAQs/nine units/309 contexts; three current
+whole-function calls 7.925/8.478/9.873 s, identical payload hashes, zero composer
+calls. Five-second target remains OPEN; no optimization implemented. Missing-fact
+helper total was only 694 ms in the separate profile; readiness, media and
+repeated authority work dominate the remaining cost. Fixture rollback and
+owned cleanup passed. These are local estimates, not hosted capacity acceptance.
+Full method, ranked candidates and exact-output proof plans: docs/52. A separate
+Promotions-tab addendum remains to be measured on the preview-fix candidate.
+
+### Earlier hosted marketing review - owner decision, 20 November 2026
+
+Owner requested a Project Group review inventory and small read-only additions
+using existing APIs, followed by an earlier combined hosted rollout. The single
+pre-rollout full gate now follows final preview/Project Group corrections rather
+than waiting until Tuesday. One concrete plan/window/package approval is still
+required before hosted execution. Rollout may precede caps under this specific
+owner exception; real-data import must wait for active, verified caps, successful
+rollout, dry-run reconciliation and its own TEST database backup. Saturday's
+approved page-check/cap windows and every warehouse/pressure/job rule remain.
+Daily W6 BU sync stays disabled; DW steps 2/4 are not complete. Docs/46 and docs/11
+record the scheduling decision. No hosted action has been taken.
+
+Source inventory found distinct marketing, REM-snapshot and confirmed-website
+group counts; they must not be presented as interchangeable. Existing per-phase
+source/building/media evidence can be linked without new contracts. A complete
+group reconciliation and side-effect-free all-core FAQ aggregate remain proposal
+items. Real-data inventory is reconciling existing October transfer receipts
+before any repeat import. Its additional protected detached worktree,
+real-data-review-20261120, was created after cleanup; live worktree count is now
+nine, including three current review worktrees. The original cleanup counts
+and archived content are unchanged. Monday's hosted/local case split and Thai
+marketing checklist will be attached to the consolidated rollout plan.
+
+### Preview focused-check corrections — 20 November 2026
+
+Initial typecheck/offline build passed. Affected API selection: 229 passed and
+one invalid new fixture failed because it disabled Knowledge View while keeping
+Edit, violating the existing account_permission_check. The test-only correction
+clears View/Edit/Approve together; expected messages/statuses/assertions are
+unchanged. The whole affected module then passed 35 tests (one existing warning);
+the other six unchanged modules' 195 passes are retained. Product guards and
+permission rules were not changed by the correction.
+
+The DB suite passed. Initial desktop browser selection: 75 passed, two failed.
+The agency logo now correctly points to the registry, so an old unscoped link
+selector also matched it; scope that same visibility assertion to the main menu.
+The new task-count hint pushed the unchanged compact overview height check from
+its 2200 px bound to 2216 px. Give the hint plain muted small text with zero
+paragraph margin, without clipping, fixed height or a relaxed assertion. An
+intermediate spacing attempt remained 2 px over and is retained as failed.
+The final whole unified-workspace spec passed all 26 desktop cases, including
+the original compactness check. The complete seven-spec mobile selection is
+running; no completed focused-gate claim is made yet.
+
+Evidence: .local/preview-fixes-20261120/, including original failures, API recheck,
+ui-correction-01 and ui-correction-02. Test-only fixture/selector corrections
+use the owner's standing preapproval. No hosted change or UAT result.
+
+### Earlier release preparation — read-only platform, 20 November 2026
+
+At 12:31/12:32 Bangkok, the existing passive operator observed no pressure STOP
+and a healthy warehouse. First sample: 4,162 swap-in pages, zero swap-out,
+swap-used decrease 13,369,344 bytes; no allocation/direct-reclaim/Hub event
+increase. Second sample: no counter increases, minimum sampled available
+14,958,542,848 bytes (about 13.93 GiB). PSI unavailable; endpoint samples do
+not establish unsampled peaks or admit a quiet interval.
+
+Read-only version/hash commands confirm Linux x86_64, glibc 2.34, Node 24.19.0,
+CPython 3.13.16, and API/admin working directories in the current documented
+4b00099-media-00f0f23e0fe3 release. The TEST parent slice remains inactive;
+Saturday's cap/page-check conditions still apply. No database/R2 request,
+environment/credential-file read, package/service/config change or host load
+test was performed. Node/Python binary hashes and exact command trace are in
+.local/hosted-content-rollout/marketing-20261120/20261120T053246Z-platform.json;
+preceding observation: interim/observations/20261120T053140Z-page-window.json.
+
+The single rollout plan is being prepared in docs/53; the Thai marketing
+checklist and all 61 hosted/local case assignments are in docs/54. UAT outcomes
+remain NOT RUN. These drafts are not approval or a completed rollout receipt.
+
+### Preview corrections — focused verification passed, 20 November 2026
+
+Final typecheck/offline build passed. API: 230 unique cases passed across the
+retained 195 unchanged cases and corrected 35-case workspace-home module. DB:
+95 Node checks, 46 SQL suites and 25 concurrency scenarios passed. Desktop:
+51 unchanged other-spec passes retained plus 26 final unified-workspace cases;
+mobile: all 77 selected cases passed in the final run. Original failed runs are
+preserved; no assertion, height bound, timeout or permission rule was relaxed.
+Final 22-path source verification and credential scan (918 source/71 browser
+files, zero matches, no credential files read) passed. Evidence:
+.local/preview-fixes-20261120/verification.json and its linked logs.
+
+This is focused fast-lane evidence, not the combined pre-rollout full gate or
+owner UAT. Preview source is ready for its own explicit-path commit. Project
+Group additions remain separate and will receive their own focused checks.

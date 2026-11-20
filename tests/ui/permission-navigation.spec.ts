@@ -123,7 +123,7 @@ test('direct management URLs use tab boxes while agencies retain the registry bo
   expect((await page.request.get('/website?view=brands')).status()).toBe(403);
   await page.goto('/');
   await openMobileMenu(page);
-  await expect(page.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'เมนูหลัก', exact: true }).getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   expect((await page.request.get('/ads/registry')).status()).toBe(200);
   await expect(page.getByLabel('เลือกบัญชีทดสอบ')).toHaveValue('agency_kin');
   await closeMobileMenu(page);

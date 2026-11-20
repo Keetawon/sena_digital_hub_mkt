@@ -54,9 +54,9 @@ def register_publication_queue_routes(app, authentication, database):
         capabilities = getattr(request.state, 'account', {}).get('capabilities', {})
         knowledge = capabilities.get('tabs', {}).get('knowledge', {})
         if knowledge.get('view') is not True:
-            raise failure(403, 'content_permission', 'Content permission required')
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
         if request.method != 'GET' and capabilities.get('special_actions', {}).get('knowledge.publish_web') is not True:
-            raise failure(403, 'content_permission', 'Publication permission required')
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
         return actor
 
     async def call(request, actor, statement, *args):

@@ -56,7 +56,7 @@ def register_workspace_home_routes(app, authentication, database):
         if account.get('status') != 'ACTIVE' or not caps.get('published_consumer') or not any(
                 caps.get('tabs', {}).get(tab, {}).get('view') is True
                 for tab in ('projects', 'brands', 'knowledge', 'promotions', 'releases')):
-            raise failure(403, 'forbidden', 'Workspace permission required')
+            raise failure(403, 'forbidden', 'ไม่มีสิทธิ์ดำเนินการนี้')
         return actor
 
     @app.get('/v1/admin/content/search')

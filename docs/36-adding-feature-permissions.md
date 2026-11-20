@@ -304,3 +304,20 @@ existing home task loop. Existing entry guards, source visibility and public
 composition are unchanged. No grant, role, permission bit or API contract is
 added. The helper is revoked from PUBLIC and included in the private-function
 inventory and direct-call denial checks; the original home ACL is preserved.
+
+### Informal preview corrections — 20 November 2026
+
+**No permission change.** Task labels, explanatory hints, pending-question
+badges, navigation destinations and Thai error/upload copy retain the existing
+API status codes, entry guards and source scopes. A held FAQ task receives the
+pending badge only when the existing Knowledge-view question-bank read reports
+that exact question as proposed. The FAQ destination first completes its scoped
+lookup, then explains pending approval; it never offers an answer action for a
+proposed question. Existing approved-question actions remain unchanged.
+
+The question bank uses its existing view/edit/approval workflow. No grant,
+schema, migration, new endpoint or public output is added. Agency Home links
+are hidden using the existing page-access predicate; direct requests retain
+their existing denial. Counts are explained, not redefined. Fast-lane focused
+checks plus DB and affected API suites precede delivery; the combined full
+gate remains due before the earlier hosted rollout requested on 20 November.

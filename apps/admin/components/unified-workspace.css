@@ -22,6 +22,7 @@
 .workspace-gap-counts { display: block; font-size: var(--text-small); }
 .workspace-panel { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
 .workspace-panel h2 { margin-top: 0; }
+.workspace-task-hint { margin: 0; color: var(--muted); font-size: var(--text-small); }
 .workspace-count { display: block; font-size: var(--text-small); color: var(--muted); font-weight: 400; }
 .workspace-gap-group { border-bottom: 1px solid var(--line); }
 .workspace-gap-group > summary { min-height: 44px; padding: 10px 0; cursor: pointer; overflow-wrap: anywhere; }

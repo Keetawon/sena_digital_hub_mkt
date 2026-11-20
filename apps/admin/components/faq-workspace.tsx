@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActorName, useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { businessWorkspaceText } from "@/lib/business-workspace-text";
-import { workspaceApi, workspaceHref, workspaceName, workspaceText, type WorkspaceLevel, type WorkspaceTarget } from "@/lib/unified-workspace";
+import { workspaceApi, workspaceHref, workspaceName, workspaceQuestionLabel, workspaceText, type WorkspaceLevel, type WorkspaceTarget } from "@/lib/unified-workspace";
 import { ContentWorkflow } from "./content-workflow";
 import { ExposureChip } from "./content-exposure";
 import { request } from "./hub-request";
@@ -32,7 +32,7 @@ function locales(value: Locales | unknown): Locales {
   return value && typeof value === "object" ? value as Locales : {};
 }
 export type FixedFaqScope = { type: string; id: string; name?: string };
-export type FaqEntityContext = { level: WorkspaceLevel; id: string; phase?: string | null };
+export type FaqEntityContext = { level: WorkspaceLevel; id: string; phase?: string | null; projectName?: Locales };
 export function FaqWorkspace({ embedded = false, scope, entity, initialSection, onEditingChange, onWorkflowChanged }: { embedded?: boolean; scope?: FixedFaqScope; entity?: FaqEntityContext; initialSection?: "contacts" | "bank" | "glossary"; onEditingChange?: (value: boolean) => void; onWorkflowChanged?: () => void } = {}) {
   const permissions = useHubPermissions(), canEdit = permissions.can("knowledge", "edit");
   const { catalog, error: catalogError } = useFieldCatalog();
@@ -116,7 +116,7 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
       {tab === "glossary" && <FaqGlossary onChanged={changed} onEditingChange={setEditing} />}
       {tab === "contacts" && <ContentContacts items={contacts} catalog={catalog} apiBase="v1/admin/faq/corporate-contacts" canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
       {tab === "drafts" && <section className="content-section"><div className="content-toolbar"><h2>{selected ? "รายละเอียดคำตอบ" : "คำตอบ FAQ"}</h2>{!selected && canEdit && <button className="button primary" onClick={() => location.navigate({ faq: "new" })}>เพิ่มคำตอบ FAQ</button>}{selected && <button className="button secondary" disabled={pending || workflowBusy || editing} onClick={() => location.navigate({ faq: null })}>กลับรายการคำตอบ</button>}</div>
-        {!selected ? embedded && scope && entity ? <EntityFaqQuestions scope={scope} entity={entity} questionKey={questionKey} onOpen={id => location.navigate({ faq: id })} onCreate={question => location.navigate({ faq: "new", question })} /> : <><label className="content-input">ค้นหาคำตอบ<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label><div className="content-card-list">{items.filter(item => `${item.question?.th} ${item.scope_id}`.includes(search)).map(item => <article className="content-card" key={item.id}><h3>{item.question?.th || "คำตอบจากข้อมูลเดิม"}</h3><p className="content-state">{stateLabel(item.state)} · {scopeLabels[item.scope_type]} {scopeOptions(item.scope_type).find(ref => ref.id === item.scope_id)?.name ?? item.scope_id}</p><p>{item.short_answer?.th}</p><button className="button secondary" onClick={() => location.navigate({ faq: item.id })}>เปิดคำตอบ {item.question?.th}</button></article>)}</div>{!items.length && <p className="content-empty">ยังไม่มีคำตอบ เริ่มจากอนุมัติคำถามมาตรฐานแล้วสร้างร่างคำตอบ</p>}</> : <>
+        {!selected ? embedded && scope && entity ? <EntityFaqQuestions scope={scope} entity={entity} bank={bank} questionKey={questionKey} onOpen={id => location.navigate({ faq: id })} onCreate={question => location.navigate({ faq: "new", question })} /> : <><label className="content-input">ค้นหาคำตอบ<input type="search" value={search} onChange={event => setSearch(event.target.value)} /></label><div className="content-card-list">{items.filter(item => `${item.question?.th} ${item.scope_id}`.includes(search)).map(item => <article className="content-card" key={item.id}><h3>{item.question?.th || "คำตอบจากข้อมูลเดิม"}</h3><p className="content-state">{stateLabel(item.state)} · {scopeLabels[item.scope_type]} {scopeOptions(item.scope_type).find(ref => ref.id === item.scope_id)?.name ?? item.scope_id}</p><p>{item.short_answer?.th}</p><button className="button secondary" onClick={() => location.navigate({ faq: item.id })}>เปิดคำตอบ {item.question?.th}</button></article>)}</div>{!items.length && <p className="content-empty">ยังไม่มีคำตอบ เริ่มจากอนุมัติคำถามมาตรฐานแล้วสร้างร่างคำตอบ</p>}</> : <>
           {current && <p className="content-state">{stateLabel(current.state)} · ฉบับ {current.version.version_no}</p>}
           <nav className="content-tabs" aria-label="ส่วนคำตอบ">{Object.entries(editTabs).map(([key, label]) => <button key={key} aria-current={editTab === key ? "page" : undefined} disabled={pending || workflowBusy || editing || dirty && ["english", "history", "sources"].includes(key)} onClick={() => setEditTab(key as keyof typeof editTabs)}>{label}</button>)}</nav>
           {editTab === "answer" && (draft ? <form ref={form} inert={workflowBusy} onSubmit={event => { event.preventDefault(); void save(); }}><fieldset disabled={pending || !canEdit || frozen}>
@@ -162,21 +162,23 @@ type ScopeQuestion = {
 type UnmatchedCluster = { id: string; label: Locales; question_key: string | null; state: string; holds: string[]; target: WorkspaceTarget };
 type ScopeQuestions = { page_scope: { type: string; id: string }; selected_phase: string | null; items: ScopeQuestion[]; next_cursor: string | null; unmatched_clusters?: UnmatchedCluster[]; unmatched_next_cursor?: string | null };
 const scopeQuestionStates: Record<string, string> = {"missing":"ยังไม่มีคำตอบ","waiting_for_fact":"รอข้อเท็จจริง","legacy_suggestion":"ข้อเสนอจากเว็บเดิม","not_applicable":"ไม่ใช้กับโครงการนี้","hold":"พักไว้ตรวจ"};
-function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { scope: FixedFaqScope; entity: FaqEntityContext; questionKey: string | null; onOpen: (id: string) => void; onCreate: (question: string) => void }) {
+function EntityFaqQuestions({ scope, entity, bank, questionKey, onOpen, onCreate }: { scope: FixedFaqScope; entity: FaqEntityContext; bank: QuestionBank; questionKey: string | null; onOpen: (id: string) => void; onCreate: (question: string) => void }) {
   const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
   const { catalog } = useFieldCatalog();
   const [data, setData] = useState<ScopeQuestions | null>(null), [search, setSearch] = useState(""), [term, setTerm] = useState("");
   const [error, setError] = useState(""), [pending, setPending] = useState(false), [retry, setRetry] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState<ScopeQuestion | null>(null), [selectedPending, setSelectedPending] = useState(false), [selectedError, setSelectedError] = useState("");
+  const [selectedReadKey, setSelectedReadKey] = useState("");
   const params = new URLSearchParams({ q: term, limit: "50", locale: "th" }); if (entity.phase) params.set("phase", entity.phase);
   const path = workspaceApi(entity.level, entity.id) + "/faq?" + params;
   const exact = new URLSearchParams({ question_key: questionKey ?? "", locale: "th" }); if (entity.phase) exact.set("phase", entity.phase);
   const selectedPath = questionKey ? workspaceApi(entity.level, entity.id) + "/faq?" + exact : "";
+  const selectedIdentity = selectedPath ? JSON.stringify([selectedPath, authority, retry]) : "";
   useEffect(() => {
-    let live = true; setSelectedQuestion(null); setSelectedError(""); setSelectedPending(Boolean(selectedPath));
-    if (selectedPath) request<ScopeQuestions>(selectedPath).then(value => { if (live) setSelectedQuestion(value.items.find(item => item.question_key === questionKey) ?? null); }).catch(error => { if (live) setSelectedError(errorMessage(error)); }).finally(() => { if (live) setSelectedPending(false); });
+    let live = true; setSelectedQuestion(null); setSelectedReadKey(""); setSelectedError(""); setSelectedPending(Boolean(selectedPath));
+    if (selectedPath) request<ScopeQuestions>(selectedPath).then(value => { if (live) { setSelectedQuestion(value.items.find(item => item.question_key === questionKey) ?? null); setSelectedReadKey(selectedIdentity); } }).catch(error => { if (live) setSelectedError(errorMessage(error)); }).finally(() => { if (live) setSelectedPending(false); });
     return () => { live = false; };
-  }, [selectedPath, questionKey, authority, retry]);
+  }, [selectedPath, questionKey, selectedIdentity]);
   const pageGeneration = useRef(0);
   useEffect(() => {
     pageGeneration.current += 1;
@@ -202,6 +204,8 @@ function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { 
     catch (e) { if (generation === pageGeneration.current) setError(errorMessage(e)); } finally { if (generation === pageGeneration.current) setPending(false); }
   }
   const shownItems = [...(data?.items ?? []), ...(selectedQuestion && !data?.items.some(item => item.question_key === selectedQuestion.question_key) ? [selectedQuestion] : [])];
+  const pendingQuestion = questionKey && selectedReadKey === selectedIdentity && data && !pending && !selectedPending && !error && !selectedError && !shownItems.some(item => item.question_key === questionKey)
+    ? bank.items.find(item => item.question_key === questionKey && item.status === "proposed") : undefined;
   return <div className="workspace-faq">
     <p className="content-state">{scopeLabels[scope.type]} · {scope.name ?? scope.id}{scope.type === "project" && scope.name && <> · {scope.id}</>}</p>
     <form className="workspace-search" onSubmit={event => { event.preventDefault(); setTerm(search.trim()); }}><label>{workspaceText.searchFaq}<input type="search" value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label><button className="button secondary">{workspaceText.search}</button></form>
@@ -210,19 +214,25 @@ function EntityFaqQuestions({ scope, entity, questionKey, onOpen, onCreate }: { 
     {selectedPending && <p role="status">{workspaceText.loading}</p>}
     {pending && !data && <p role="status">{workspaceText.loading}</p>}
     {shownItems.map(item => <article className="workspace-faq-card" id={`question-${item.question_key}`} data-workspace-question={item.question_key} tabIndex={-1} key={item.question_key}>
-      <h3>{workspaceName(item.label)}</h3><p className="workspace-faq-states">{item.is_core && <span>{workspaceText.required}</span>}<span>{item.display_state === "handoff" ? kindLabels.handoff : scopeQuestionStates[item.display_state] ?? stateLabel(item.content_state ?? item.own_answer?.state ?? "DRAFT")}</span></p>
+      <h3>{workspaceQuestionLabel(item.label, entity.projectName)}</h3><p className="workspace-faq-states">{item.is_core && <span>{workspaceText.required}</span>}<span>{item.display_state === "handoff" ? kindLabels.handoff : scopeQuestionStates[item.display_state] ?? stateLabel(item.content_state ?? item.own_answer?.state ?? "DRAFT")}</span></p>
       {item.effective_answer && <><ExposureChip exposure={item.effective_answer.ai_exposure} /><p className="content-preserve">{workspaceName(item.effective_answer.short_answer)}</p>
         {item.display_state === "inherited" && <p className="content-state">{workspaceText.inheritedFrom}{scopeLabels[item.effective_answer.source.scope_type]} · {workspaceName(item.effective_answer.source.name)}</p>}
         <p>{item.effective_answer.author?.name}{item.effective_answer.approver?.name && <> · {item.effective_answer.approver.name}</>}</p></>}
       <div className="workspace-faq-facts">{item.facts.map(fact => <p key={fact.field_key}>{fact.available ? fact.text || String(fact.value ?? "") : fact.target ? <a href={workspaceHref(fact.target)}>{catalog?.items.find(field => field.field_key === fact.field_key)?.label.th ?? workspaceText.data}</a> : workspaceText.fact_unavailable}{fact.unit && <> {fact.unit}</>}{fact.as_of && <> · {contentDate(fact.as_of)}</>}</p>)}</div>
       <div className="content-actions">
-        {item.own_answer && <button className="button secondary" onClick={() => onOpen(item.own_answer!.id)}>{workspaceText.faq} · {workspaceName(item.label)}</button>}
+        {item.own_answer && <button className="button secondary" onClick={() => onOpen(item.own_answer!.id)}>{workspaceText.faq} · {workspaceQuestionLabel(item.label, entity.projectName)}</button>}
         {!item.own_answer && item.targets.create_override && item.display_state !== "not_applicable" && permissions.can("knowledge", "edit") && <button className="button secondary" onClick={() => onCreate(item.question_key)}>{item.display_state === "inherited" && scope.type === "project" ? workspaceText.override : workspaceText.newFaq}</button>}
         {item.targets.edit_source && item.effective_answer && <a className="button secondary" href={workspaceHref(item.targets.edit_source, { faq: item.effective_answer.id })}>{workspaceText.editSource} · {workspaceText.affected_projects} {item.effective_answer.source.affected_project_count}</a>}
         {item.legacy_clusters.map(cluster => <div key={cluster.id}><ul className="intake-holds">{cluster.holds.map(hold => <li key={hold}>{holdLabels[hold] ?? hold}</li>)}</ul><a className="button secondary" href={workspaceHref(cluster.target, { cluster: cluster.id })}>{workspaceText.suggestions}</a></div>)}
       </div>
     </article>)}
-    {data && !shownItems.length && !selectedPending && <p>{term.trim() ? workspaceText.empty : workspaceText.faq_empty}</p>}
+    {pendingQuestion && <article className="workspace-faq-card" data-workspace-question={pendingQuestion.question_key} tabIndex={-1}>
+      <h3>{workspaceQuestionLabel(pendingQuestion.question_template, entity.projectName)}</h3>
+      <p className="workspace-faq-states"><span>{workspaceText.faq_question_pending}</span></p>
+      <p>{workspaceText.faq_question_pending_explanation}</p>
+      <a className="button secondary" href="/settings?section=bank">{workspaceText.bank}</a>
+    </article>}
+    {data && !shownItems.length && !selectedPending && !pendingQuestion && <p>{term.trim() ? workspaceText.empty : workspaceText.faq_empty}</p>}
     {data?.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{workspaceText.more}</button>}
     {Boolean(data?.unmatched_clusters?.length) && <section aria-label={workspaceText.suggestions} className="workspace-unmatched-clusters"><h2>{workspaceText.suggestions}</h2>
       {data!.unmatched_clusters!.map(cluster => <article className="content-card" key={cluster.id} data-workspace-cluster={cluster.id}>

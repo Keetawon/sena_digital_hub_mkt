@@ -12,7 +12,7 @@ import { useHostedSession } from "./hosted-session";
 import { openWorkspaceAssistant } from "./hub-assistant";
 import { WorkspaceSearch, workspaceLabel } from "./workspace-search";
 import { FaqCoverage } from "./faq-coverage";
-import { workspaceText, workspaceHref } from "@/lib/unified-workspace";
+import { workspaceText, workspaceHref, workspaceQuestionLabel } from "@/lib/unified-workspace";
 import { request } from "./hub-request";
 import type { WorkspaceTarget } from "@/lib/unified-workspace";
 import "./workspace-home.css";
@@ -27,6 +27,7 @@ type Home = {
   tasks: Task[]; task_total: number; selected_gap: Task | null; offset: number; limit: number;
 };
 const taskLabels = { returned: copy.returned_task, approval: copy.approval_task, publish: copy.publish_task, expiring: copy.expiring_task, fact_missing: copy.missing_fact_task, review_due: copy.review_task, unanswered: copy.unanswered_task };
+const taskLabel = (task: Task) => task.category === "fact_missing" ? workspaceQuestionLabel(workspaceLabel(task.label), task.project_name) : workspaceLabel(task.label);
 const date = (value: string) => new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeZone: "Asia/Bangkok" }).format(new Date(value));
 
 function HomeContent({ hosted }: { hosted: boolean }) {
@@ -70,7 +71,7 @@ function HomeContent({ hosted }: { hosted: boolean }) {
   const pageLink = (offset: number) => { const next = new URLSearchParams(query); next.set("offset", String(offset)); return `/home?${next}`; };
   return <div className="workspace-home">
     <section className="workspace-home-hero"><h1>{copy.greeting}</h1><WorkspaceSearch hosted={hosted} home />
-      {data && data.tasks.length > 0 && <div className="workspace-home-examples">{data.tasks.slice(0, 3).map(task => <button className="button secondary" type="button" key={task.id} disabled={hosted} title={hosted ? copy.assistant_disabled : undefined} onClick={event => openWorkspaceAssistant(`${copy.task_question}: ${workspaceLabel(task.label)}`, task.context.project ? { project_id: task.context.project } : task.context.brand ? { brand_id: task.context.brand } : {}, event.currentTarget)}>{copy.ask_prefix}{workspaceLabel(task.label)}</button>)}</div>}
+      {data && data.tasks.length > 0 && <div className="workspace-home-examples">{data.tasks.slice(0, 3).map(task => <button className="button secondary" type="button" key={task.id} disabled={hosted} title={hosted ? copy.assistant_disabled : undefined} onClick={event => openWorkspaceAssistant(`${copy.task_question}: ${taskLabel(task)}`, task.context.project ? { project_id: task.context.project } : task.context.brand ? { brand_id: task.context.brand } : {}, event.currentTarget)}>{copy.ask_prefix}{taskLabel(task)}</button>)}</div>}
     </section>
     {(canCoverage || coverage) && <section className="workspace-home-card" aria-label={workspaceText.coverage}>
       {canCoverage && <a href="/home?section=coverage">{workspaceText.coverage}</a>}
@@ -86,9 +87,10 @@ function HomeContent({ hosted }: { hosted: boolean }) {
         <label>{copy.tasks}<select value={params.get("task") ?? ""} onChange={event => router.push(link("task", event.target.value))}><option value="">{copy.all}</option>{Object.entries(taskLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
       </div>
       <section className="workspace-home-card" aria-labelledby="workspace-tasks"><h2 id="workspace-tasks">{copy.tasks} <small>({data.task_total})</small></h2>
+        <p className="content-state">{workspaceText.home_tasks_hint}</p>
         {!data.tasks.length ? <p>{params.get("bud") || params.get("brand") || params.get("task") ? copy.empty : copy.tasks_empty}</p> : <ul>{data.tasks.map(task => <li key={task.id} id={task.id} className="workspace-home-gap" tabIndex={task.question_text_available === false ? -1 : undefined}>
           <p className="workspace-home-meta">{taskLabels[task.category]}{task.project_name && ` · ${workspaceLabel(task.project_name)}`}{task.due && ` · ${copy.date}: ${date(task.due)}`}</p>
-          <a href={task.href}>{workspaceLabel(task.label)}</a>
+          <a href={task.href}>{taskLabel(task)}</a>
           {task.question_text_available === false && <p>{copy.unanswered_note}{task.last_seen && ` · ${date(task.last_seen)}`}</p>}
         </li>)}</ul>}
       </section>

@@ -73,7 +73,7 @@ def require_workflow(request: Request) -> None:
     capabilities = getattr(request.state, 'account', {}).get('capabilities', {})
     tabs = capabilities.get('tabs', {})
     if not any(tabs.get(tab, {}).get('view') is True for tab in ('projects', 'brands', 'knowledge', 'promotions')):
-        raise failure(403, 'content_permission', 'Content permission required')
+        raise failure(403, 'content_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
 
 
 def publication_targets(value: dict) -> dict:

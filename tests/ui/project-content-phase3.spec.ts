@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { uploadText } from '../../apps/admin/lib/upload-text';
 
 const headers = { Origin: 'http://127.0.0.1:3000' }, api = '/api/hub/v1/admin';
 async function persona(page: Page, role: string) { expect((await page.request.post('/api/local-session', { headers, data: { role } })).ok()).toBeTruthy(); }
@@ -76,6 +77,7 @@ for (const width of [1280, 390]) {
       await fits(page); await page.screenshot({ path: `artifacts/project-content-phase3/checklist-${width}.png`, fullPage: true });
       await page.getByRole('link', { name: 'เติมภาพ · ภาพส่วนกลางที่มี', exact: true }).first().click();
       await expect(page.getByRole('heading', { name: 'เตรียมภาพก่อนอัปโหลด' })).toBeVisible();
+      await expect(page.getByText(uploadText.pixel_limits, { exact: false })).toBeVisible();
       const defaults = page.getByRole('group', { name: 'บริบทเริ่มต้นของไฟล์ใหม่', exact: true });
       await expect(defaults.getByLabel('ใช้กับ', { exact: true })).toHaveValue('facility');
       await defaults.getByLabel('เลือกรายการจากข้อมูลโครงการ').selectOption('pool');

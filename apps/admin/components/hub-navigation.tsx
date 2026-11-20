@@ -5,7 +5,7 @@ import "./hub-navigation.css";
 
 import { hubPages, hubServices, hubUtilities, hubPermissionTab, type HubMenuItem } from "./hub-navigation-data";
 import { useHubPermissions } from "./accounts";
-import { isContentAdmin } from "@/lib/hub-permissions";
+import { canOpenPage, isContentAdmin } from "@/lib/hub-permissions";
 import { useBrandReviews } from "./brand-review";
 
 type Item = { key: string; href: string; label: string; icon: string };
@@ -51,6 +51,7 @@ export function HubNavigation({ current, location }: { current: string; location
   const internalAdmin = isContentAdmin(accounts.account);
   function resolve(item: HubMenuItem): Item | null {
     if (item.adminOnly && !internalAdmin) return null;
+    if (item.key === "home" && (!accounts.account || !canOpenPage(accounts.account, "/home", new URLSearchParams()))) return null;
     const target = item.targets.find(target => target.section === "accounts" ? accounts.admin : accounts.can(hubPermissionTab(target.section)));
     if (!target) return null;
     const page = hubPages.find(page => page.id === target.section)!;

@@ -18,14 +18,14 @@ def register_business_content_routes(app, authentication, database):
         tabs = account.get('capabilities', {}).get('tabs', {})
         if account.get('status') != 'ACTIVE' or actor.role not in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'} or not any(
                 tabs.get(tab, {}).get('view') is True for tab in ('knowledge', 'brands', 'projects')):
-            raise failure(403, 'content_permission', 'Content permission required')
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
         return actor
 
     async def content_staff(request: Request, actor: Actor = Depends(staff)):
         knowledge = request.state.account.get('capabilities', {}).get('tabs', {}).get('knowledge', {})
         level = 'view' if request.method == 'GET' else 'edit'
         if knowledge.get('view') is not True or knowledge.get(level) is not True:
-            raise failure(403, 'content_permission', 'Content permission required')
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์ดำเนินการนี้')
         return actor
 
     async def call(request, response, actor, query, *args):
