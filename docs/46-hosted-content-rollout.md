@@ -4081,3 +4081,19 @@ Take and read back the protected backup before hosted migrations; verify every
 committed migration hash and clean apply, then follow the existing promotion,
 postflight and rollback operators. No VPS load/stress test. The below-five-second
 300-project home target remains open after UAT; 0094 is an interim improvement.
+
+### Saturday cap proposal and Monday preparation - 20 November 2026
+
+The concrete Saturday 21 November proposal is in [docs/51](51-hosted-test-cap-window.md):
+09:45-09:59 Bangkok owner page check, then separately 10:45-10:59 cap application
+only after accepted peak evidence, window approval and fresh admission. Both
+remain NOT ADMITTED: the recurring cgid job lacks a proven safe gap; the two
+19 November overlap exceptions have expired. The approved six-file diff and
+2304 MiB aggregate are unchanged. No hosted action was performed.
+
+Monday local pack/runbook: [docs/49](49-unified-workspace-uat.md) and
+[docs/50](50-local-uat-runbook.md). One combined full gate follows UAT fixes before
+Wednesday rollout, including home 0094. Existing DW BUD-feed decision/readiness
+(Q77) remains a prerequisite; local synthetic feeds do not satisfy it or authorize
+warehouse TLS/HBA/configuration changes. Backups, migration pins/clean apply,
+warehouse health/pressure checks and all hosted STOP rules remain mandatory.

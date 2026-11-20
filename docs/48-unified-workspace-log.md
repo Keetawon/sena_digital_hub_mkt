@@ -9314,3 +9314,54 @@ set-based follow-up stay OPEN post-UAT; no complete accumulated old-path home
 equality or hosted performance acceptance is claimed. No hosted change.
 The lead will commit the 13 explicit home/documentation paths and verify the
 remote main head; the final hash follows in a short delivery receipt.
+
+### Home 0094 delivered to origin/main - 20 November 2026
+
+Product: ab7a7bf3e80b9c4ae15f7c20906c688bc528f132. Main fast-forwarded and
+remote head verified. The 13 explicit paths passed the focused gate above.
+No full gate per change; one combined gate remains due before Wednesday.
+The 300-project target is OPEN post-UAT. No hosted change. Home and W9.1
+worktrees are retained for their evidence; none was removed.
+
+### W8 Monday preparation - active local lease, 20 November 2026
+
+Source ab7a7bf. Updated U42/U52 (plus U41/U54) to W9.1 limits; all 61 cases
+remain NOT RUN. Twenty runtime module syntax checks and seven pure checks
+passed. Seventeen synthetic upload files/header expectations and a matching
+offline admin build passed. Artifacts: unified-workspace/w8/monday-20261123/.
+
+The retained runtime starts and authenticates real synthetic identities. Initial
+BUD setup failed its five-second browser-quiescence guard while a real home GET
+was still pending. Each failed generation restored the clock/grants and cleaned
+up. Pre-approved test-only synchronization now waits for navigation network
+completion with an additional wait capped at 15 seconds; assertions, expected
+values, quiescence guard and product timeouts are unchanged. Safe events and
+fixture filename/line diagnostics are retained without OTP/auth payloads.
+The lead holds the single local lease for the corrected runtime rehearsal.
+No UAT acceptance or full fixture readiness is claimed yet.
+
+### W8 preparation receipt and Saturday proposal - 20 November 2026
+
+Result: Monday local pack/runbook prepared in docs/49-50; all 61 owner cases
+remain NOT RUN. Source ab7a7bf. Offline build, 17 synthetic upload/header cases,
+20 runtime syntax checks and seven pure scripts passed. BUD setup verified 101
+references and 198 history effects, with exact ordinary grant/scope restoration.
+Writing and publication setup/restoration and three fresh lifecycle generations
+passed. U42/U52 now use the approved W9.1 limits; U41/U54 include 4096 output
+and bounded busy retry. Case-specific retained gaps remain explicit in docs/50.
+
+Test-only deviations: wait for navigation network completion (15-second cap)
+before the unchanged five-second quiescence check; wait briefly for listener
+closure before the unchanged false-listener assertion. Safe diagnostics/logging
+were added without OTP/auth payloads. No assertion/expected value, permission
+or product timeout changed. The prior BUD run's cleanup failure is preserved;
+native review confirmed owned processes absent and the corrected lifecycle
+passed fresh. No failed overall run was relabeled passed. Evidence and exact
+helper/source pins: artifacts/unified-workspace/w8/monday-20261123/.
+
+Saturday cap plan: docs/51. Proposed windows are not approved or admitted;
+the recurring cgid job and expired overlap exceptions still prevent a proven
+quiet interval. No host changes, new grants or warehouse work. The 300-project
+home target stays OPEN post-UAT; one final combined gate is due before Wednesday.
+All rehearsal resources were cleaned up and the local test lease was released.
+Home/W9.1 worktrees remain for evidence; none was removed.
