@@ -1,6 +1,6 @@
 # 46 — Hosted TEST content rollout
 
-## Shared production host: current admission — 18 November 2026
+## Shared production host: current admission — 20 November 2026
 
 This section records the owner's latest decisions and supersedes older capacity
 STOP/admission wording. Historical receipts remain unchanged. The production
@@ -9,6 +9,52 @@ is not proven TEST-only. Never change either container, its limits, schedules,
 configuration or data. Hub TEST must fail first. No VPS load/stress test is ever
 permitted; upload capacity measurements use local Linux only. Existing operator,
 credential, protected-state and database-restore STOP rules still apply.
+
+### Standing lightweight-job overlap rule — owner approved 20 November
+
+Until Hub moves to its own server, the following identified, unchanged jobs
+may overlap **every Hub operation window**, including owner page checks, cap
+application and hosted rollout. This replaces the date-limited 19 November
+exceptions and the earlier cgid gap blocker; it does not itself admit a window.
+
+| Covered job | Retained identity |
+|---|---|
+| `*/3` LiteSpeed cgid permission-check cron, `if find /usr/local/lsws/cgid ... then ... fi` | Command SHA-256 `c248d4fc0a87064a34ba1d4bb09d6565bebf053c61b9ba0fad118c5f6b6eefb9` |
+| `sena-pipeline-health.service` | Existing DW metadata monitor; `check_pipeline_health.py` SHA-256 `3ce5e37f2a492ae6a07b96aeef5e3e12d2604be28576cd016a0238b2072c3ba9` |
+| `sena-line-alert.service` | Existing DW notification job; `alert_pipeline_failure.py` SHA-256 `b5623f6401af49cc5ea10908ee13f8939d46c651b1fc70f9216bc8b755c8d510`; helper `line_notifier.py` SHA-256 `22e65fa047bd5cd0ab8214e17feb2333ea49871a7a511a5b06e4912cf5321df9` |
+
+Before admission, verify command and job identity against the retained receipts
+under `.local/hosted-capacity-w9-20261116/interim/observations/`:
+`20261119T060910Z-cgid-condition.json`, `20261119T041659Z-health-identity.json`,
+`20261119T051940Z-alert-outline.json` and `20261119T052035Z-alert-helper-outline.json`.
+The service receipts' raw `ExecStart` hashes include the systemd representation;
+distinguish configured executable/arguments from volatile run accounting. Do not
+silently accept changed commands, source or identity, or replace the baseline.
+If a command hash/identity changes or cannot be established, the job is no longer
+covered: **skip the occurrence and report**.
+
+Record every overlapping natural run's identity, start, end and outcome through
+the operation and tail. Never start, delay, stop, reschedule or modify these jobs,
+or trigger an alert. Missing end/outcome evidence remains explicit. Their
+unmeasured memory peaks remain evidence gaps; the system pressure policy applies.
+The observed DW monitor exit 2 remains an owner/DW-side issue, not Hub diagnosis.
+
+All other work remains excluded: 06:00/11:00/17:00 refresh groups, hourly :20
+customer job, :30 backup housekeeping, :39 cleansessions and descendants,
+certificate windows and unexpected work. Require actual completion plus five
+settled minutes after excluded work. Keep the full pressure STOP policy, Hub
+peak capture, five-minute tail and no DW changes. Do not let an overlap exception
+hide a pressure event or an unexpected descendant doing different work.
+
+**Approved Saturday 21 November 2026, Bangkok:** 09:45–09:59 owner page check
+(owner signed in on one tab from 09:40, waiting for the start signal), followed
+by 10:45–10:59 cap application per [docs/51](51-hosted-test-cap-window.md).
+Each occurrence requires fresh admission. Apply caps only after the page check
+is complete and admin lifetime peak is **at most 256 MiB**, with all other
+docs/51 conditions met. Above 256 MiB, present a rebalance proposal and do not
+apply. Skip either occurrence if admission fails and propose the next slot that
+same day; a replacement slot is not automatically approved. These are approved
+reservations, not completed page checks, admitted intervals or applied caps.
 
 ### Pressure thresholds for every operation window
 
@@ -121,7 +167,7 @@ Deploys, migrations, imports, backups and UAT bulk steps must avoid production
 job windows and fit cleanup plus a five-minute settled tail. Unknown completion
 is not clearance. Do not reschedule or stop production to manufacture a gap.
 
-**Owner-approved reservation:** 19 November 2026, 09:40–09:59
+**Historical reservation, superseded by the current policy above:** 19 November 2026, 09:40–09:59
 Bangkok for the owner's normal page-reading peak check. The full reservation is
 not proven quiet. Admit only a subwindow after actual job/descendant completion
 and five settled minutes, with at least twelve minutes before the next relevant
@@ -4097,3 +4143,12 @@ Wednesday rollout, including home 0094. Existing DW BUD-feed decision/readiness
 (Q77) remains a prerequisite; local synthetic feeds do not satisfy it or authorize
 warehouse TLS/HBA/configuration changes. Backups, migration pins/clean apply,
 warehouse health/pressure checks and all hosted STOP rules remain mandatory.
+
+### Owner approval received - 20 November 2026
+
+The standing overlap policy at the start of this document supersedes the
+preceding proposal's cgid blocker and expired exceptions. Both Saturday windows
+are now approved under that policy and docs/51, subject to fresh admission and
+the completed page check/admin peak condition. No hosted check or change was
+performed when recording this decision. Skip failed occurrences and propose the
+next same-day slot; do not extend a window without approval.

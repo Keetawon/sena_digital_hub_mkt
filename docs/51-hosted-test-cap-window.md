@@ -1,30 +1,32 @@
-# Saturday 21 November: proposed cap sequence
+# Saturday 21 November: approved conditional cap sequence
 
-PLAN ONLY. No new reservation is approved and no hosted change was made.
+WINDOWS APPROVED; FRESH ADMISSION PENDING. No hosted change was made.
 W9 and W9.1 are delivered locally. The exact six-file proposed-config.diff
 remains conditionally approved; its values and fail-safe behavior are unchanged.
 
-Proposed Bangkok reservations: **09:45–09:59 owner page check**, followed by
-**10:45–10:59 cap application only if the page check is complete and accepted**.
-These avoid the scheduled 06:00/11:00/17:00 refresh groups. They are not yet
-evidenced quiet intervals. Both need separate owner window approval and fresh
-read-only admission through the existing docs/46 route. If there is insufficient
+Owner-approved Bangkok reservations: **09:45–09:59 owner page check**, followed
+by **10:45–10:59 cap application only if the page check is complete and admin
+peak is at most 256 MiB**, with all other conditions below met. The owner will
+be signed in on one tab from 09:40 and wait for the operator's start signal.
+These avoid the scheduled 06:00/11:00/17:00 refresh groups. Both still require
+fresh read-only admission through the existing docs/46 route. If there is insufficient
 time to verify and finish the five-minute tail, do not begin application.
 
-## Current blocker and admission
+## Standing overlap rule and fresh admission
 
-The 19 November check was skipped: the non-exempt conditional cgid job recurred
-about every three minutes. Fourteen paired observations gave a largest gap of
-180.335 seconds, versus 1020 seconds for five-minute settling plus twelve clear
-minutes. Its conditional no-op outcome/descendant completion was not established.
-The health-monitor and line-alert overlap exceptions applied only to the
-19 November page check; neither extends to Saturday or cap application.
+The owner approved a standing exception for **all Hub operations** until Hub
+moves to its own server: the unchanged `*/3` LiteSpeed cgid permission-check
+cron (command SHA-256 `c248d4fc0a87064a34ba1d4bb09d6565bebf053c61b9ba0fad118c5f6b6eefb9`),
+`sena-pipeline-health` and `sena-line-alert` may overlap page checks, cap application
+and hosted rollout. Use the exact identities/receipts in docs/46's current
+admission policy. The 19 November skip remains historical evidence; its cgid
+gap blocker and date-limited exceptions no longer govern current admission.
 
-Therefore **Saturday execution is currently NOT ADMITTED**. Before seeking a
-usable window, a short read-only review must establish actual outcomes and
-descendants of the cgid job and current schedule. If it still prevents clearance,
-skip and report; do not delay jobs, silently exempt them, shorten settling, or
-apply caps anyway. Any new overlap exception is a separate owner decision.
+Verify command hashes and identity before admission. Any change or inability
+to establish identity removes that job's coverage: skip and report. Record
+each overlapping natural run's start, end and outcome, including the tail.
+Never start, delay, stop, reschedule or modify these jobs. No other job is exempt.
+The exceptions do not waive pressure STOPs or cover different unexpected work.
 The DW monitor's observed exit 2 remains an owner/DW-side issue, not Hub work.
 
 Avoid :20 customer, :30 backup housekeeping, :39 cleansessions and descendants,
@@ -33,6 +35,8 @@ plus five settled minutes. For the page check, start by 09:47 with twelve clear
 minutes to the next excluded job and the reservation end. Unknown completion
 or resource coverage means skip. Read no environment/credential files; install
 no watcher and reset no peak/event counters.
+If either occurrence fails fresh admission, skip it and propose the next slot
+the same day. Do not roll automatically into a later, unapproved window.
 
 ## Owner page sequence and evidence
 

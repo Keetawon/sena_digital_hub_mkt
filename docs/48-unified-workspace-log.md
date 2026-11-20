@@ -9365,3 +9365,22 @@ quiet interval. No host changes, new grants or warehouse work. The 300-project
 home target stays OPEN post-UAT; one final combined gate is due before Wednesday.
 All rehearsal resources were cleaned up and the local test lease was released.
 Home/W9.1 worktrees remain for evidence; none was removed.
+
+### Standing overlap policy and Saturday approval - 20 November 2026
+
+Owner accepted home ab7a7bf and UAT preparation c53ad50. Current admission in
+docs/46 now permits the identified, unchanged cgid permission-check cron,
+sena-pipeline-health and sena-line-alert to overlap every Hub operation until
+Hub moves to its own server. Record every natural overlap; never control the
+jobs. Command/identity drift removes coverage: skip and report. All other job
+exclusions, actual completion plus five settled minutes, pressure STOPs, Hub
+peak capture and DW protection remain unchanged.
+
+Saturday 21 November Bangkok windows approved: owner page check 09:45-09:59
+(owner signed in from 09:40, awaiting start signal), then caps 10:45-10:59 only
+after a complete check and admin peak at most 256 MiB. Above that, propose a
+rebalance and do not apply. Both require fresh admission; a failed occurrence
+is skipped, with a replacement slot proposed that day. Docs/51 and the local
+admission plan are reconciled. Configuration diff/hash remains unchanged.
+Result: policy and reservations recorded, no fresh hosted admission or hosted
+change performed. This does not record page-check results or applied caps.
