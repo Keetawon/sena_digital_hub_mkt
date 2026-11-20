@@ -179,7 +179,7 @@ def test_svg_endpoint_stores_only_clean_bytes_and_serves_csp(monkeypatch, tmp_pa
         assert f"{file_id}.svg" in response.headers["content-disposition"]
         assert "synthetic.svg" not in response.headers["content-disposition"]
     assert b"script" not in response.content and b"onload" not in response.content
-    originals = [item for item in tmp_path.iterdir() if item.is_file()]
+    originals = [item for item in tmp_path.iterdir() if item.is_file() and item.name != ".upload-processing.lock"]
     assert len(originals) == 1 and response.content == originals[0].read_bytes()
     assert len(list((tmp_path / 'thumbnails-v1').glob('*.webp'))) == 1
 

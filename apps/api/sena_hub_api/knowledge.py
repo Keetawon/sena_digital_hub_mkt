@@ -19,7 +19,7 @@ from .staff_media import THUMBNAILS_SQL
 from .r2_assets import KNOWLEDGE_MAX_BYTES
 from .content_permissions import require_content
 from .upload_admission import UploadAdmissionError, run_upload_work, upload_slot
-from .upload_pipeline import prepare_authorized_upload
+from .upload_supervision import prepare_supervised_upload, processing_failure
 from .upload_optimization import UploadProcessingError
 
 ROOT=Path(__file__).resolve().parents[3]
@@ -308,13 +308,13 @@ def register_knowledge_routes(app,authentication,database,settings):
                     data=await run_upload_work(checked_candidate_bytes,data,evidence)  # Preserve imported raw SHA.
                     async with database(request,actor) as db:
                         existing=await db.fetchval('SELECT hub.find_uploaded_asset_source($1,$2,$3)',evidence['sha256'],meta['mime_type'],context)
-                    prepared=await run_upload_work(prepare_authorized_upload,data,meta['mime_type'],meta['original_filename'],resolved,existing)
+                    prepared=await prepare_supervised_upload(data,meta['mime_type'],meta['original_filename'],resolved,existing,disconnected=request.is_disconnected)
                     metadata=dict(prepared.metadata)
                     if hosted and existing is None:metadata.update(storage_provider=hosted.provider,storage_bucket=hosted.bucket)
                     created=False
                     def install_local():
                         nonlocal created
-                        created=assets.install_file(prepared.content,metadata)
+                        created=assets.install_file(prepared.content,metadata,(prepared.thumbnail,prepared.thumbnail_error))
                     try:
                         async with database(request,actor) as db:
                             result=await db.fetchval('SELECT hub.record_asset_upload_source($1,$2,$3,$4,$5,$6)',
@@ -325,7 +325,7 @@ def register_knowledge_routes(app,authentication,database,settings):
                                 raise failure(503,'knowledge_integrity','ไฟล์หรือรายการเดิมไม่ตรงกับหลักฐานที่ตรวจสอบแล้ว')
                             elif hosted:
                                 await run_upload_work(hosted.install,prepared.content,{**metadata,'source_system':'hub-hosted-test'})
-                                await run_upload_work(assets.install_thumbnail,prepared.content,metadata)
+                                await run_upload_work(assets.install_thumbnail,prepared.content,metadata,(prepared.thumbnail,prepared.thumbnail_error))
                             else:
                                 await run_upload_work(install_local)
                     except BaseException as error:
@@ -367,8 +367,8 @@ def register_knowledge_routes(app,authentication,database,settings):
         except UploadAdmissionError:
             return JSONResponse({'error':{'code':'upload_busy','message':'กำลังจัดการไฟล์อื่น กรุณาลองอัปโหลดอีกครั้ง'}},
                                 429,headers={'Retry-After':'1','Cache-Control':'no-store'})
-        except UploadProcessingError:
-            raise failure(422,'invalid_upload_file','ไม่สามารถประมวลผลไฟล์นี้ได้ กรุณาตรวจรูปแบบไฟล์แล้วลองอีกครั้ง') from None
+        except UploadProcessingError as error:
+            raise processing_failure(error) from None
 
     @app.post('/v1/admin/knowledge/preview')
     async def preview(body:Preview,request:Request,actor:Actor=Depends(staff)):

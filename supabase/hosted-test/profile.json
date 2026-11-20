@@ -471,8 +471,8 @@
     },
     {
       "name": "202611190094_home_missing_fact.sql",
-      "canonical_sha256": "bd0f3aa976f3656759039f0c2e0d22f03317aa07f7ca4d8ff7b4d670e70235f6",
-      "executed_sha256": "bd0f3aa976f3656759039f0c2e0d22f03317aa07f7ca4d8ff7b4d670e70235f6"
+      "canonical_sha256": "dec0f4ba977d1ab67fb58cc9494675b3970ed3a28962d15fa73d03abcafd5327",
+      "executed_sha256": "dec0f4ba977d1ab67fb58cc9494675b3970ed3a28962d15fa73d03abcafd5327"
     }
   ]
 }

@@ -159,6 +159,8 @@ def test_cors_only_allows_configured_origin(signing_key):
     assert allowed.status_code == 200
     assert allowed.headers["access-control-allow-origin"] == headers["Origin"]
     assert "access-control-allow-credentials" not in allowed.headers
+    actual = client.get("/health", headers={"Origin": headers["Origin"]})
+    assert "retry-after" in {name.strip().lower() for name in actual.headers["access-control-expose-headers"].split(",")}
     denied = client.options("/v1/admin/assets", headers={**headers, "Origin": "https://other.invalid"})
     assert denied.status_code == 400
     assert "access-control-allow-origin" not in denied.headers

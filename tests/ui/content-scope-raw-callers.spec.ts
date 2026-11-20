@@ -1,4 +1,5 @@
 import { uploadFileError, uploadContextHeader } from "../../apps/admin/lib/upload-context";
+import { retryBusyUpload } from "../../apps/admin/lib/upload-retry";
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -62,6 +63,7 @@ function harness(caller: Caller, files = [new File(['synthetic'], 'allowed.png',
     calls: [] as { path: string; init?: RequestInit }[], response: Response.json({ data: { id: 'allowed-asset', text: 'Allowed neighbour' }, meta: { reused: true } }) };
   const globals: Record<string, unknown> = {
     uploadFileError, uploadContextHeader, uploadContext: { v: 1, kind: "intake" }, setUploadResults() {},
+    retryBusyUpload, setUploadWaiting() {},
     query: 'limit=10', disabled: false, workflowBusy: false, pending: false, canEdit: true, files, fileRef: { current: { value: 'selected-files' } },
     window: { dispatchEvent(event: Event) { state.events.push(event); } },
     setData(value: unknown) { state.data = value; if (value !== null) terminal.release(); },
@@ -184,6 +186,7 @@ test('single-file dialog retains the selected file on an ordinary failure and on
   const state = { calls: 0, completed: 0, pending: false, error: '' };
   const execute = compile(actualCode('asset-dialog'), {
     file, purpose: undefined, context: { v: 1, kind: "intake" }, uploadFileError, acceptedTypes: ['image/png'], maxFileSize: 10 * 1024 * 1024,
+    setWaiting() {},
     setError(value: string) { state.error = value; }, setPending(value: boolean) { state.pending = value; },
     uploadAsset: async (selected: File) => { expect(selected).toBe(file); state.calls++; if (state.calls === 1) throw new Error('Synthetic ordinary failure'); return { asset: { id: 'allowed' }, reused: true }; },
     onUploaded: async () => { state.completed++; },

@@ -25,7 +25,7 @@ import { mediaAiText } from "./media-ai-text";
 type Workspace = { project: { id: string; public_project_id: string; name: { th?: string }; updated_at: string }; assets: MediaAsset[]; links: MediaLink[]; clips: Clip[]; context: MediaContext; tags: MediaTag[]; requirements: Rule[];
   checklist: { items: Coverage[]; recommended_score: number; required_missing: number; broken_links: Clip[]; unknown_coverage: { key: string; label: { th?: string } }[] } };
 type Job = MediaAiJob;
-type Card = { upload?: UploadEvidence | null; id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string; aiNotice?: string };
+type Card = { upload?: UploadEvidence | null; id: string; file?: File; asset?: MediaAsset; metadata: Metadata; context: LinkContext; metadataSaved: boolean; link?: MediaLink; saved: boolean; selected: boolean; error: string; aiNotice?: string; waiting?: boolean };
 const tabs = { checklist: "ภาพที่ยังขาด", website: "รูปจากเว็บไซต์ (รอยืนยัน)", upload: "อัปโหลดหลายไฟล์", library: "ภาพและเอกสาร", clips: "คลิปและทัวร์ 360", rules: "แท็กและเกณฑ์ภาพ" };
 const jobLabels: Record<string, string> = { queued: "รอประมวลผล", running: "กำลังประมวลผล", done: "เสร็จแล้ว", failed: "ไม่สำเร็จ", superseded: "ข้อมูลหรือสิทธิ์เปลี่ยน กรุณาสั่งใหม่", budget_exhausted: mediaAiText.state_budget };
 const jobErrors: Record<string, string> = { provider_unavailable: "ยังไม่ได้เปิดบริการคำแนะนำ", provider_error: "บริการตอบกลับไม่สำเร็จ", invalid_result: "ผลไม่ผ่านการตรวจ", manual_required: "ผู้ให้บริการนี้ต้องกรอกและตรวจเอง", file_unavailable: "อ่านไฟล์ภาพไม่ได้", source_changed: "ข้อมูลหรือสิทธิ์เปลี่ยน", permission_revoked: "สิทธิ์ถูกเปลี่ยน", budget_exhausted: mediaAiText.state_budget };
@@ -132,7 +132,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
       let card = { ...original };
       try {
         if (!canEdit) throw new Error("สิทธิ์แก้ไขถูกเปลี่ยน ข้อมูลที่พิมพ์ยังอยู่");
-        if (!card.asset && card.file) { const result = await uploadAsset(card.file, uploadContext(card.metadata, card.context)); card.asset = result.asset as MediaAsset; card.upload = result.upload; change(card.id, { asset: card.asset, upload: card.upload }); }
+        if (!card.asset && card.file) { const result = await uploadAsset(card.file, uploadContext(card.metadata, card.context), waiting => change(card.id, { waiting })); card.asset = result.asset as MediaAsset; card.upload = result.upload; change(card.id, { asset: card.asset, upload: card.upload }); }
         if (!card.asset) throw new Error("ยังไม่มีไฟล์");
         if (!card.metadataSaved) {
           // Recover only an exact acknowledged revision after a lost response;
@@ -182,7 +182,7 @@ function MediaUpload({ data, base, initialAsset, canEdit, canPromotions, query, 
     </fieldset>}
     <div className="media-grid">{cards.map((card, index) => <article className="media-card" key={card.id} aria-label={`ไฟล์ ${index + 1}`}>
       <h3>{card.asset?.original_filename ?? card.file?.name}</h3>{card.asset ? <Preview asset={card.asset} /> : card.file && <LocalPreview file={card.file} />}
-      <p role="status">{card.saved ? "บันทึกแล้ว" : card.asset ? "อัปโหลดไฟล์แล้ว รอบันทึกข้อมูลหรือการผูก" : "ยังไม่อัปโหลด"}</p>
+      <p role="status">{card.waiting ? uploadText.waiting : card.saved ? "บันทึกแล้ว" : card.asset ? "อัปโหลดไฟล์แล้ว รอบันทึกข้อมูลหรือการผูก" : "ยังไม่อัปโหลด"}</p>
       <UploadResult value={card.upload} />
       {card.asset && <fieldset disabled={busy || workflowBusy || !canEdit}>{card.upload ? <FileMetadataSuggestions evidence={card.upload} value={card.metadata} tags={data.tags} onChange={metadata => change(card.id, { metadata, metadataSaved: false, saved: false })} /> : <UploadEvidencePanel assetId={card.asset.id} context={uploadContext(card.metadata, card.context)} value={card.metadata} tags={data.tags} onChange={metadata => change(card.id, { metadata, metadataSaved: false, saved: false })} />}</fieldset>}
       {card.error && <p className="notice error" role="alert">{card.error}</p>}{card.aiNotice && <p className="field-help" role="status">{card.aiNotice}</p>}

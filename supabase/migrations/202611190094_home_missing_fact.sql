@@ -10,7 +10,7 @@ begin;
 
 create or replace function hub.workspace_missing_fact_cells(project_uuid uuid, unit_public_id text)
 returns jsonb
-language plpgsql stable security definer set search_path=pg_catalog,pg_temp as $$
+language plpgsql volatile security definer set search_path=pg_catalog,pg_temp as $$
 declare
   _p hub.projects;
   _unit_uuid uuid;
@@ -77,33 +77,11 @@ begin
         or (lf.scope_type = 'project_group' and _group_ref is not null and lf.scope_id = _group_ref)
         or (lf.scope_type = 'programme')
         or (lf.scope_type = 'brand' and _brand_ref is not null and lf.scope_id = _brand_ref)
-        or (lf.scope_type = 'business' and hub.business_project_matches(lf.scope_id, _p.rem_project_id))
+        or (case when lf.scope_type = 'business'
+                 then hub.business_project_matches(lf.scope_id, _p.rem_project_id)
+                 else false end)
         or (lf.scope_type = 'corporate')
       )
-  ),
-  applicable_candidates as (
-    select
-      ac.faq_id,
-      ac.scope_type,
-      ac.scope_id,
-      ac.version_id,
-      ac.version_no,
-      ac.question_key,
-      ac.fact_keys,
-      ac.review_due,
-      ac.effective_to,
-      ac.ai_exposure,
-      ac.rank
-    from active_candidates ac
-    cross join lateral (
-      select case
-        when ac.applicability_rule is not null and ac.applicability_rule <> '{}'::jsonb
-        then hub.faq_rule_projects(ac.applicability_rule, ac.scope_type, ac.scope_id)
-        else ac.applies_to_project_ids
-      end as phase_ids
-    ) r
-    where (_p.rem_project_id = any(r.phase_ids))
-       or (ac.scope_type = 'corporate' and coalesce(cardinality(r.phase_ids), 0) = 0 and (ac.applicability_rule is null or ac.applicability_rule = '{}'::jsonb))
   ),
   eligible_questions as (
     select
@@ -115,9 +93,12 @@ begin
       qk.web_sort
     from hub.faq_questions qk
     where qk.status = 'approved'
-      and (cardinality(qk.property_types) = 0 or (_form is not null and _form = any(qk.property_types)))
+      and (cardinality(qk.property_types) > 0 and (_form is null or not _form = any(qk.property_types))) is not true
   ),
-  matched_candidates as (
+  -- Resolve rule applicability only for candidates of an eligible question, as
+  -- the composer does. The fence keeps the rule call in this select list, so
+  -- it runs once per matched candidate and never for other questions' answers.
+  resolved_candidates as materialized (
     select
       eq.question_key,
       eq.question_template,
@@ -132,10 +113,36 @@ begin
       c.fact_keys as c_fact_keys,
       c.review_due,
       c.effective_to,
-      c.ai_exposure as c_ai_exposure
+      c.ai_exposure as c_ai_exposure,
+      c.applicability_rule,
+      case
+        when c.applicability_rule is not null and c.applicability_rule <> '{}'::jsonb
+        then hub.faq_rule_projects(c.applicability_rule, c.scope_type, c.scope_id)
+        else c.applies_to_project_ids
+      end as phase_ids
     from eligible_questions eq
-    join applicable_candidates c on c.question_key = eq.question_key
+    join active_candidates c on c.question_key = eq.question_key
     where (c.scope_type <> 'corporate' or eq.show_on_project_pages)
+  ),
+  matched_candidates as (
+    select
+      rc.question_key,
+      rc.question_template,
+      rc.q_ai_exposure,
+      rc.q_fact_keys,
+      rc.web_sort,
+      rc.faq_id,
+      rc.version_id,
+      rc.version_no,
+      rc.scope_type,
+      rc.rank,
+      rc.c_fact_keys,
+      rc.review_due,
+      rc.effective_to,
+      rc.c_ai_exposure
+    from resolved_candidates rc
+    where ((_p.rem_project_id = any(rc.phase_ids))
+       or (rc.scope_type = 'corporate' and cardinality(rc.phase_ids) = 0 and rc.applicability_rule = '{}'::jsonb)) is distinct from false
   ),
   ranked as (
     select
@@ -161,7 +168,6 @@ begin
       array(
         select distinct u.k
         from unnest(coalesce(w.c_fact_keys, '{}'::text[]) || coalesce(w.q_fact_keys, '{}'::text[])) as u(k)
-        where u.k is not null and u.k <> ''
         order by u.k
       ) as keys
     from winners w
@@ -191,13 +197,13 @@ begin
 
   foreach _key in array _needed_keys loop
     _slot := hub.faq_fact_slot(_p.id, _key, 'th', unit_public_id, false);
-    _avail_map := _avail_map || jsonb_build_object(_key, coalesce((_slot->>'available')::boolean, false));
+    _avail_map := _avail_map || jsonb_build_object(jsonb_build_array(_key)::text, coalesce((_slot->>'available')::boolean, false));
   end loop;
 
   for _q_rec in select value from jsonb_array_elements(_winner_list) loop
     _missing := '{}'::text[];
     for _key in select jsonb_array_elements_text(_q_rec->'combined_keys') loop
-      if not coalesce((_avail_map->>_key)::boolean, false) then
+      if not coalesce((_avail_map->>(jsonb_build_array(_key)::text))::boolean, false) then
         _missing := array_append(_missing, _key);
       end if;
     end loop;
@@ -218,11 +224,11 @@ revoke all on function hub.workspace_missing_fact_cells(uuid,text) from public;
 
 -- Dynamic update of hub.workspace_home to use the new projection helper
 do $$
-declare definition text;
+declare definition text; anchor text := 'preview:=hub.compose_project_faq(p.id,''th'',faq_scope.public_id,false,false);';
 begin
  definition := replace(pg_get_functiondef('hub.workspace_home(text,text,integer,integer,text,uuid)'::regprocedure), E'\r\n', E'\n');
- if position('preview:=hub.compose_project_faq(p.id,''th'',faq_scope.public_id,false,false);' in definition) = 0 then
-  raise exception 'workspace_home definition does not contain compose_project_faq call';
+ if (length(definition) - length(replace(definition, anchor, ''))) / length(anchor) <> 1 then
+  raise exception 'workspace_home definition must contain exactly one compose_project_faq call';
  end if;
  definition := hub.content_definition_replace(definition,
   'preview:=hub.compose_project_faq(p.id,''th'',faq_scope.public_id,false,false);',

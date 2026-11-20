@@ -26,7 +26,9 @@ from PIL import Image, ImageCms, ImageOps, IptcImagePlugin, JpegImagePlugin
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import ArrayObject, ContentStream, DictionaryObject, IndirectObject, NameObject
 
-PIPELINE_VERSION = "upload-v1"
+from .upload_errors import UploadProcessingError
+
+PIPELINE_VERSION = "upload-v2"
 MIB = 1024 * 1024
 IMAGE_INPUT_BYTES = 30 * MIB
 IMAGE_OUTPUT_BYTES = 10 * MIB
@@ -80,10 +82,6 @@ def _private_decoding():
         yield
     finally:
         _PRIVATE_DECODING.reset(token)
-
-
-class UploadProcessingError(ValueError):
-    """Only fixed error codes leave this module; never decoder/metadata text."""
 
 
 @dataclass(frozen=True)
@@ -943,8 +941,13 @@ def _png_native_transform(content: bytes, *, profile: bytes | None, orientation:
             image = image.cast("float").resize(scale, kernel="lanczos3")
     image = image.rint().cast("ushort" if output_depth == 16 else "uchar")
     encoded = image.pngsave_buffer(bitdepth=output_depth, compression=9, keep=0)
-    encoded, _ = _strip_png_metadata(encoded)
+    width, height = image.width, image.height
     opaque = source_opaque and (not image.hasalpha() or image[-1].min() == peak)
+    if not opaque:
+        # Transparent output cannot use the JPEG fallback. Release its native
+        # pixel graph before sanitation inflates the encoded output samples.
+        image = color = alpha = None
+    encoded, _ = _strip_png_metadata(encoded)
     quality, mime = None, "image/png"
     if opaque and (force_jpeg or len(encoded) > 4 * MIB):
         # JPEG has an explicitly authorized 8-bit output; PNG never does.
@@ -956,7 +959,12 @@ def _png_native_transform(content: bytes, *, profile: bytes | None, orientation:
         quality, mime = 90, "image/jpeg"
     if len(encoded) > IMAGE_OUTPUT_BYTES:
         raise UploadProcessingError("image_output_too_large")
-    return encoded, mime, quality, image.width, image.height
+    return encoded, mime, quality, width, height
+
+
+def preflight_upload(content: bytes, mime: str) -> None:
+    from .upload_limits import preflight_upload as inspect_headers
+    inspect_headers(content, mime)
 
 
 def optimize_image(content: bytes, mime: str, context: UploadContext) -> ProcessedUpload:
@@ -967,6 +975,7 @@ def optimize_image(content: bytes, mime: str, context: UploadContext) -> Process
         raise UploadProcessingError("invalid_image")
     if len(content) > IMAGE_INPUT_BYTES:
         raise UploadProcessingError("image_input_too_large")
+    preflight_upload(content, mime)
     try:
         with IMAGE_PROCESSING_LOCK, _private_decoding(), warnings.catch_warnings():
             warnings.simplefilter("error")
@@ -977,11 +986,16 @@ def optimize_image(content: bytes, mime: str, context: UploadContext) -> Process
                     raise UploadProcessingError("animated_image")
                 check.verify()
             with Image.open(io.BytesIO(content)) as picture:
-                picture.load()
-                suggestions = _suggestions(picture, content, context)
                 original = {"checksum": hashlib.sha256(content).hexdigest(), "size": len(content),
                             "mime_type": mime, "width": picture.width, "height": picture.height}
-                small = max(picture.size) <= MAX_EDGE and len(content) <= 2 * MIB
+                edge = max(picture.size)
+                small = edge <= MAX_EDGE and len(content) <= 2 * MIB
+                if picture.format == "JPEG" and edge > MAX_EDGE:
+                    # Decoder powers of two must never undershoot the output edge.
+                    target = tuple(max(1, (side * MAX_EDGE + edge - 1) // edge) for side in picture.size)
+                    picture.draft(picture.mode, target)
+                picture.load()
+                suggestions = _suggestions(picture, content, context)
                 preserve_encoding = (small and picture.getexif().get(274, 1) == 1
                                      and not picture.info.get("icc_profile") and picture.mode in ("RGB", "RGBA", "L"))
                 png_force_jpeg = False
@@ -1060,6 +1074,8 @@ def optimize_image(content: bytes, mime: str, context: UploadContext) -> Process
                     "output_format": format.lower(), "metadata_stripped": True,
                     "pdf_images_recompressed": False, "kept_original_because_no_gain": False,
                 }, suggestions, output.width, output.height)
+    except MemoryError:
+        raise
     except UploadProcessingError:
         raise
     except Exception:
@@ -1349,6 +1365,7 @@ def optimize_pdf(content: bytes, context: UploadContext) -> ProcessedUpload:
         raise UploadProcessingError("legal_processing_forbidden")
     if not content or len(content) > (10 * MIB if context.legal else PDF_INPUT_BYTES):
         raise UploadProcessingError("legal_input_too_large" if context.legal else "pdf_input_too_large")
+    preflight_upload(content, "application/pdf")
     try:
         with IMAGE_PROCESSING_LOCK, _private_decoding(), warnings.catch_warnings():
             warnings.simplefilter("error")
@@ -1418,6 +1435,8 @@ def optimize_pdf(content: bytes, context: UploadContext) -> ProcessedUpload:
                 "kept_original_because_no_gain": False,
                 "kept_image_encoding_because_no_gain": not use_compressed,
             }, suggestions)
+    except MemoryError:
+        raise
     except UploadProcessingError:
         raise
     except Exception:

@@ -263,3 +263,44 @@ Preparation history uses these explicit paths (main paths are relative to the ma
 - Isolated worker: `D:/Personal/workspace/sena_hub_wt/w9-contract-final/artifacts/worker-preparation/w9-privacy-tests-handoff-20261113.md`.
 
 Those reports explain preparation chronology; this consolidated appendix is the final contract. New requests for historical backfill/byte replacement, public legal files, broader authority or cross-worker admission require separate scope. No new owner decision is introduced here.
+
+## W9.1 input admission and supervised processing — 18 November 2026
+
+**No permission change.** Owner-approved new-input resource limits and child
+isolation use the existing shared upload route and owning tab/context. View,
+Edit, Approve, agencies, external users, denied/neighbor scopes and Knowledge
+rights fallback are unchanged. No account, grant, catalog, route, schema,
+migration or published projection is added. Authority/context are resolved
+before admission/body receipt and rechecked by the existing recorder before
+installation. Original reuse preserves stored identity/version and current
+access. No database transaction is held during decoding.
+
+Header rejection is 422 with the fixed Thai copy in docs/47 §8.5. Busy remains
+429 with Retry-After: 1 and no-store, with zero queue. One OS slot across local
+API processes sharing storage lasts until the child is reaped. The child has
+no settings, DB or storage credentials; bounded IPC carries only authorized
+input/context/result. Existing byte/active-content/privacy checks and stored
+thumbnail failure behavior remain. No hosted change or capacity acceptance
+is asserted; full-route, isolation, cancellation, disposal and final API gates
+must be recorded before product delivery.
+
+The approved admin 429 retry is client-only (60-second retry window); the
+server still has zero queue. Retry-After is exposed to the existing allowed
+admin origin. Authentication, invalidation and all non-429 errors retain their
+existing handling. No permission change.
+
+The W9.1 admin-proxy correction sends the Hub API namespace directly to its
+existing guarded route handler, avoiding the page proxy's truncated body clone.
+Identity/cookie refresh, route/query allowlists, CSRF, scope rechecks, upload
+admission and byte limits remain in that handler. Existing response-specific
+cache directives are retained. Explicit empty DELETE/OPTIONS responses preserve
+the framework's status, body and Allow behavior while adding no-store; bare
+/api/hub keeps its original page-proxy handling. No permission change.
+
+### Home projection 0094 — no permission change
+
+The private missing-fact helper replaces only the composition call inside the
+existing home task loop. Existing entry guards, source visibility and public
+composition are unchanged. No grant, role, permission bit or API contract is
+added. The helper is revoked from PUBLIC and included in the private-function
+inventory and direct-call denial checks; the original home ACL is preserved.

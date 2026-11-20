@@ -78,8 +78,10 @@ async function role(page: Page, value: 'editor' | 'publisher' | 'viewer') {
 async function library(page: Page) {
   await openWorkspaceTab(page, 'media');
   const open = page.getByRole('button', { name: 'เปิดคลังสื่อ', exact: true });
+  const search = page.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true });
+  await expect(open.or(search)).toBeVisible();
   if (await open.count()) await open.click();
-  await expect(page.getByLabel('ค้นหาชื่อไฟล์ในคลัง', { exact: true })).toBeVisible();
+  await expect(search).toBeVisible();
 }
 
 function entry(page: Page, filename: string) {
@@ -258,5 +260,54 @@ test('PDF download, invalid file types, viewer permissions and binding conflicts
     const denied = await page.request.post('/api/hub/v1/admin/assets', { headers: { ...headers, ...projectUpload(data.project.public_project_id), 'Content-Type': 'image/png', 'X-Filename': 'viewer.png' }, data: png() });
     expect(denied.status()).toBe(403);
     expect((await page.request.post(`/api/hub/v1/admin/assets/${asset.id}/review`, { headers, data: { updated_at: asset.updated_at, decision: 'approved', rights_notes: 'test', change_reason: 'test' } })).status()).toBe(403);
+  } finally { await data.cleanup(); }
+});
+
+function paddedPdf(totalBytes: number) {
+  const original = pdf();
+  const xref = original.indexOf(Buffer.from("\nxref\n")) + 1;
+  if (xref < 1) throw new Error("Missing synthetic PDF xref");
+  let padding = totalBytes - original.length;
+  let tail = original.subarray(xref);
+  for (let pass = 0; pass < 3; pass++) {
+    tail = Buffer.from(original.subarray(xref).toString("ascii").replace(/startxref\n\d+\n/, `startxref\n${xref + padding}\n`));
+    padding = totalBytes - xref - tail.length;
+  }
+  if (padding < 2) throw new Error("Synthetic PDF padding too small");
+  return Buffer.concat([original.subarray(0, xref), Buffer.from("%"), Buffer.alloc(padding - 2, 32), Buffer.from("\n"), tail]);
+}
+
+test("the admin proxy preserves a complete 50 MiB marketing PDF", async ({page}) => {
+  const data = await fixture();
+  try {
+    await page.goto(`/?project=${data.project.public_project_id}`);
+    await role(page, "editor");
+    const content = paddedPdf(50 * 1024 * 1024);
+    expect(content.byteLength).toBe(50 * 1024 * 1024);
+    const response = await page.request.post("/api/hub/v1/admin/assets", {
+      headers: {...headers, ...projectUpload(data.project.public_project_id, "brochure", "brochure"),
+        "Content-Type": "application/pdf", "X-Filename": `full-size-${randomUUID()}.pdf`},
+      data: content,
+    });
+    expect(response.status()).toBe(201);
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    const result = await response.json();
+    data.created.push(result.data.id);
+    expect(result.meta.upload.original.size).toBe(content.byteLength);
+    expect(JSON.stringify(result.meta.upload)).not.toMatch(/checksum|storage_path/);
+    const stored = await page.request.get(`/api/hub/v1/admin/assets/${result.data.id}/file`);
+    expect(stored.status()).toBe(200);
+    expect(result.data.checksum).toBe(createHash("sha256").update(await stored.body()).digest("hex"));
+    expect(result.data.rights_status).toBe("pending");
+    const unsupported = await page.request.delete("/api/hub/v1/admin/assets", {headers, data:"{}"});
+    expect(unsupported.status()).toBe(405);
+    expect(unsupported.headers()["cache-control"]).toContain("no-store");
+    expect(await unsupported.text()).toBe("");
+    expect(unsupported.headers()["allow"]).toBeUndefined();
+    const options = await page.request.fetch("/api/hub/v1/admin/assets", {method:"OPTIONS"});
+    expect(options.status()).toBe(204);
+    expect(options.headers()["allow"]).toBe("GET, HEAD, OPTIONS, PATCH, POST, PUT");
+    expect(options.headers()["cache-control"]).toContain("no-store");
+    expect(await options.text()).toBe("");
   } finally { await data.cleanup(); }
 });

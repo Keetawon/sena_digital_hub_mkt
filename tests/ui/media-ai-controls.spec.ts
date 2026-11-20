@@ -1,3 +1,4 @@
+import {uploadText} from "../../apps/admin/lib/upload-text";
 import { projectUpload, syntheticPrivatePng } from "./upload-fixtures";
 import {expect,test,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
@@ -110,9 +111,19 @@ for(const width of [1280,390])test(`Per-image AI controls, budget, permissions a
       buffer:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="42" height="31"><text x="1" y="15">${stamp}-budget</text></svg>`)});
     const uploadCard=page.locator('.media-card').filter({has:page.getByRole('heading',{name:uploadName,exact:true})});
     await uploadCard.getByRole('checkbox',{name:/ภาพการตลาดเพื่อเผยแพร่/}).check();
-    const saved=page.waitForResponse(response=>response.request().method()==='POST'&&response.url().endsWith(`${api}/assets`));
+    let uploadAttempts = 0;
+    await page.route(`**${api}/assets`, route => {
+      if(route.request().method()!=='POST') return route.fallback();
+      uploadAttempts++;
+      if(uploadAttempts===1) return route.fulfill({status:429,headers:{'Retry-After':'3'},json:{error:{code:'upload_busy',message:uploadText.busy}}});
+      return route.fallback();
+    });
+    const saved=page.waitForResponse(response=>response.status()===201&&response.request().method()==='POST'&&response.url().endsWith(`${api}/assets`));
     await page.getByRole('button',{name:'อัปโหลดและบันทึกข้อมูล',exact:true}).click();
+    await expect(uploadCard.getByRole('status').filter({hasText:uploadText.waiting})).toBeVisible();
     const uploaded=(await (await saved).json()).data;ids.push(uploaded.id);
+    expect(uploadAttempts).toBe(2);
+    await page.unroute(`**${api}/assets`);
     await expect(uploadCard).toContainText(text.upload_budget_notice);
     await expect(page.locator('.media-ai-footer').getByRole('button',{name:text.state_budget,exact:true})).toBeDisabled();
     expect((await db.query("select status,attempts from hub.media_jobs where subject_id=$1",[uploaded.id])).rows).toEqual([]);

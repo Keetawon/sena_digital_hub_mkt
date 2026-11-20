@@ -663,3 +663,18 @@ Hosted operation is separately guarded by the owner-approved procedure and
 receipts in [46 — hosted content rollout](46-hosted-content-rollout.md). A fresh
 protected verified backup and full before/after fingerprints precede each write
 batch. These tools never confirm metadata, approve rights, publish or call AI.
+
+### Owner fast lane through the Wednesday rollout — 20 November 2026
+
+For this interval, run focused checks for each change, the database suite and
+affected API tests. Do not run a full gate for each change. Run one combined
+full gate on the final release source, including UAT fixes, before the planned
+Wednesday 25 November hosted rollout. This supersedes the per-slice full-gate
+requirement above for this interval only. Test-only corrections preserving
+assertions and expected values are pre-approved; record each correction.
+
+Permissions/RLS, agency/viewer visibility, public publication/API output,
+migration hash pins and clean apply retain their existing checks. Hosted DW
+protection, cap/window admission and backups are unchanged. Keep the single
+serial test lease. Report focused results, commit and open risks; never label
+focused evidence as a full gate or owner UAT acceptance.

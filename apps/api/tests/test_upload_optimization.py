@@ -362,7 +362,7 @@ class SmallImageChecks(unittest.TestCase):
             with self.assertRaisesRegex(pipeline.UploadProcessingError, "^animated_image$"):
                 pipeline.optimize_image(content, mime, CONTEXT)
         content, _ = dimension_header_bomb()
-        with self.assertRaisesRegex(pipeline.UploadProcessingError, "^invalid_image$"):
+        with self.assertRaisesRegex(pipeline.UploadProcessingError, "^png_pixel_limit$"):
             pipeline.optimize_image(content, "image/png", CONTEXT)
 
     def test_unknown_or_legal_context_never_enters_optimizer(self):
@@ -1540,32 +1540,28 @@ class HighDepthImageChecks(unittest.TestCase):
 
 
 
-    def test_hdr_srgb16_matches_independent_scalar_reference_vectors(self):
-        for primaries, transfer, full_range, samples, expected in HDR_SRGB16_REFERENCE:
-            with self.subTest(primaries=primaries, transfer=transfer, full_range=full_range, samples=samples):
+    def assert_hdr_rejected(self, source):
+        with patch.object(pipeline, "_png_hdr_to_sdr", side_effect=AssertionError("HDR must not decode")), \
+                patch.object(Image, "open", side_effect=AssertionError("HDR must reject from headers")):
+            with self.assertRaisesRegex(pipeline.UploadProcessingError, "^png_hdr_requires_export$"):
+                pipeline.optimize_image(source, "image/png", CONTEXT)
+
+    def test_hdr_reference_vectors_reject_before_decode(self):
+        for primaries, transfer, full_range, samples, _ in HDR_SRGB16_REFERENCE:
+            with self.subTest(primaries=primaries, transfer=transfer, full_range=full_range):
                 source = png_sixteen_bit_fixture((1, 1), 6, [samples + (65534,)],
                     chunks=[(b"cICP", bytes((primaries, transfer, 0, full_range)))])
-                result = pipeline.optimize_image(source, "image/png", CONTEXT)
-                actual = self.decode(result.content)[1][0]
-                for a, b in zip(actual[:3], expected): self.assertLessEqual(abs(a - b), 8)
-                self.assertEqual(actual[3], 65534)
-                self.assert_private_removed(result)
+                self.assert_hdr_rejected(source)
 
-    def test_hdr_all_specified_primary_range_combinations_and_channel_types(self):
+    def test_hdr_all_primary_range_channel_combinations_reject(self):
         for primaries in (1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 22):
             for transfer in (16, 18):
                 for full_range in (0, 1):
                     for kind, samples in ((0, (32768,)), (2, (32768, 16384, 49151)),
                                           (4, (32768, 4609)), (6, (32768, 16384, 49151, 4609))):
                         with self.subTest(primaries=primaries, transfer=transfer, full_range=full_range, kind=kind):
-                            source = png_sixteen_bit_fixture((1, 1), kind, [samples],
-                                chunks=[(b"cICP", bytes((primaries, transfer, 0, full_range)))])
-                            result = pipeline.optimize_image(source, "image/png", CONTEXT)
-                            pixel = self.decode(result.content)[1][0]
-                            self.assertEqual(len(pixel), 4 if kind in (4, 6) else 3)
-                            if kind in (4, 6): self.assertEqual(pixel[3], 4609)
-                            self.assertTrue(all(0 <= value <= 65535 for value in pixel))
-                            self.assert_private_removed(result)
+                            self.assert_hdr_rejected(png_sixteen_bit_fixture((1, 1), kind, [samples],
+                                chunks=[(b"cICP", bytes((primaries, transfer, 0, full_range)))]))
 
     def test_hdr_narrow_pq_entire_code_domain_is_finite_and_matches_decimal_edges(self):
         from array import array
@@ -1599,60 +1595,26 @@ class HighDepthImageChecks(unittest.TestCase):
             self.assertLess(decoded.getpoint(0, 0)[0], 0)
             self.assertGreater(decoded.getpoint(255, (peak + 1) // 256 - 1)[0], 10000)
 
-            # Reference-display clipping is after transfer/primary conversion;
-            # neutral overshoot reaches the same display white, alpha is full-range.
-            info = PngImagePlugin.PngInfo(); info.add(b"cICP", bytes((9, 16, 0, 0)))
-            samples = [(peak,) * 3 + (peak - 1,), (235 * shift,) * 3 + (1,), (0, 0, 0, 17)]
-            if depth == 16:
-                source = png_sixteen_bit_fixture((3, 1), 6, samples, chunks=[(b"cICP", bytes((9, 16, 0, 0)))])
-                result = pipeline.optimize_image(source, "image/png", CONTEXT)
-                pixels = self.decode(result.content)[1]
-            else:
-                source_image = Image.new("RGBA", (3, 1)); source_image.putdata(samples)
-                source_bytes = io.BytesIO(); source_image.save(source_bytes, "PNG", pnginfo=info)
-                result = pipeline.optimize_image(source_bytes.getvalue(), "image/png", CONTEXT)
-                with Image.open(io.BytesIO(result.content)) as output: pixels = list(output.getdata())
-            self.assertEqual(pixels[0][:3], pixels[1][:3])
-            self.assertEqual(pixels[2][:3], (0, 0, 0))
-            self.assertEqual([p[3] for p in pixels], [peak - 1, 1, 17])
 
-    def test_hdr_pq_bridge_preserves_highlight_steps_and_source_low_bits(self):
+    def test_hdr_highlight_and_low_bit_samples_reject(self):
         samples = (32768, 32769, 49151, 55000, 60000, 65535)
-        source = png_sixteen_bit_fixture((6, 1), 6, [(v,) * 3 + (65534,) for v in samples],
-            chunks=[(b"cICP", bytes((9, 16, 0, 1)))])
-        result = pipeline.optimize_image(source, "image/png", CONTEXT)
-        pixels = self.decode(result.content)[1]
-        values = [pixel[0] for pixel in pixels]
-        self.assertTrue(all(a < b for a, b in zip(values, values[1:])), values)
-        self.assertTrue(any(v % 257 for v in values))
-        self.assertTrue(all(p[3] == 65534 for p in pixels))
-        self.assertNotEqual(dict(pipeline._png_chunks(source))[b"IDAT"], dict(pipeline._png_chunks(result.content))[b"IDAT"])
+        for transfer in (16, 18):
+            self.assert_hdr_rejected(png_sixteen_bit_fixture((6, 1), 6,
+                [(v,) * 3 + (65534,) for v in samples], chunks=[(b"cICP", bytes((9, transfer, 0, 1)))]))
 
-    def test_hdr_alpha_transparency_keys_resize_orientation_and_jpeg_exception(self):
+    def test_hdr_alpha_transparency_orientation_interlacing_reject(self):
         for transfer in (16, 18):
             exif = Image.Exif(); exif[274] = 6
             samples = [(4609, 32768, 60000)] * 6
             chunks = [(b"cICP", bytes((9, transfer, 0, 1))), (b"eXIf", exif.tobytes()[6:])]
-            source = png_sixteen_bit_fixture((3, 2), 6, [p + (4609,) for p in samples], chunks=chunks, interlaced=True)
-            with patch.object(pipeline, "MAX_EDGE", 2):
-                result = pipeline.optimize_image(source, "image/png", CONTEXT)
-            self.assertEqual((result.width, result.height), (1, 2))
-            self.assertTrue(all(pixel[3] == 4609 for pixel in self.decode(result.content)[1]))
-            key = struct.pack(">3H", *samples[0])
-            source = png_sixteen_bit_fixture((2, 1), 2, [samples[0], (4610, 32768, 60000)],
-                chunks=[*chunks, (b"tRNS", key)])
-            with patch.object(pipeline, "MIB", 1):
-                result = pipeline.optimize_image(source, "image/png", CONTEXT)
-            self.assertEqual(result.mime_type, "image/png")
-            self.assertEqual([pixel[3] for pixel in self.decode(result.content)[1]], [0, 65535])
+            self.assert_hdr_rejected(png_sixteen_bit_fixture((3, 2), 6,
+                [p + (4609,) for p in samples], chunks=chunks, interlaced=True))
+            self.assert_hdr_rejected(png_sixteen_bit_fixture((2, 1), 2,
+                [samples[0], (4610, 32768, 60000)], chunks=[*chunks, (b"tRNS", struct.pack(">3H", *samples[0]))]))
             for alpha in (65535, 65534):
-                source = png_sixteen_bit_fixture((1, 1), 6, [samples[0] + (alpha,)], chunks=chunks)
-                with patch.object(pipeline, "MIB", 1):
-                    result = pipeline.optimize_image(source, "image/png", CONTEXT)
-                self.assertEqual(result.mime_type, "image/jpeg" if alpha == 65535 else "image/png")
-                if alpha == 65534: self.assertEqual(self.decode(result.content)[1][0][3], alpha)
+                self.assert_hdr_rejected(png_sixteen_bit_fixture((1, 1), 6, [samples[0] + (alpha,)], chunks=chunks))
 
-    def test_hdr_eight_bit_palette_and_rgba_preserve_alpha(self):
+    def test_hdr_eight_bit_palette_and_rgba_reject(self):
         for transfer in (16, 18):
             info = PngImagePlugin.PngInfo(); info.add(b"cICP", bytes((9, transfer, 0, 1)))
             for mode in ("RGBA", "P"):
@@ -1662,13 +1624,9 @@ class HighDepthImageChecks(unittest.TestCase):
                     image.putpalette([128, 64, 192, 255, 255, 255] + [0] * 762); image.putdata([0, 1])
                 out = io.BytesIO()
                 image.save(out, "PNG", pnginfo=info, **({"bits": 1, "transparency": bytes((17, 254))} if mode == "P" else {}))
-                result = pipeline.optimize_image(out.getvalue(), "image/png", CONTEXT)
-                pixels = list(Image.open(io.BytesIO(result.content)).getdata())
-                self.assertEqual([p[3] for p in pixels], [17, 254])
-                self.assertNotEqual(pixels[0][:3], (128, 64, 192))
-                self.assertEqual(dict(pipeline._png_chunks(result.content))[b"IHDR"][8], 8)
+                self.assert_hdr_rejected(out.getvalue())
 
-    def test_hdr_metadata_precedence_privacy_legal_exemption_and_output_limit(self):
+    def test_hdr_rejection_precedes_lower_metadata_but_preserves_legal_guard(self):
         profile = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
         lower = [(b"iCCP", b"profile\0\0" + zlib.compress(profile)), (b"sRGB", b"\0"),
                  (b"gAMA", struct.pack(">I", 100000)),
@@ -1677,24 +1635,14 @@ class HighDepthImageChecks(unittest.TestCase):
                  (b"tEXt", b"Comment\0SYNTHETIC_HDR_PRIVATE_EXCLUDE")]
         for transfer in (16, 18):
             cicp = (b"cICP", bytes((9, transfer, 0, 1)))
-            clean = png_sixteen_bit_fixture((1, 1), 6, [(16384, 32768, 49151, 65534)], chunks=[cicp])
-            source = png_sixteen_bit_fixture((1, 1), 6, [(16384, 32768, 49151, 65534)], chunks=[cicp, *lower])
-            result = pipeline.optimize_image(source, "image/png", CONTEXT)
-            self.assertEqual(result.content, pipeline.optimize_image(clean, "image/png", CONTEXT).content)
-            self.assertNotIn(b"SYNTHETIC_HDR_PRIVATE_EXCLUDE", result.content)
-            self.assertTrue({kind for kind, _ in pipeline._png_chunks(result.content)} <= {b"IHDR", b"IDAT", b"IEND", b"sRGB"})
-            self.assert_private_removed(result)
-            with patch.object(pipeline, "IMAGE_OUTPUT_BYTES", len(result.content) - 1):
-                with self.assertRaisesRegex(pipeline.UploadProcessingError, "^image_output_too_large$"):
-                    pipeline.optimize_image(source, "image/png", CONTEXT)
-            with patch.object(pipeline, "_png_hdr_to_sdr", side_effect=AssertionError("legal must not render")):
+            for chunks in ([cicp], [cicp, *lower]):
+                source = png_sixteen_bit_fixture((1, 1), 6, [(16384, 32768, 49151, 65534)], chunks=chunks)
+                self.assert_hdr_rejected(source)
                 for context in (pipeline.UploadContext(), pipeline.UploadContext(processing_class="private_exact"),
                                 pipeline.UploadContext(category="legal_document", processing_class="marketing_raster"),
                                 pipeline.UploadContext(disclosure_evidence=True, processing_class="marketing_raster")):
                     with self.assertRaisesRegex(pipeline.UploadProcessingError, "^legal_processing_forbidden$"):
                         pipeline.optimize_image(source, "image/png", context)
-
-
 
 if __name__ == "__main__":
     unittest.main()

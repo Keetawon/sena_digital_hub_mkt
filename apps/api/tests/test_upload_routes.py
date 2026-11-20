@@ -66,14 +66,14 @@ def upload_route(monkeypatch, tmp_path):
         finally:
             state.tx -= 1
 
-    original_prepare = main.prepare_authorized_upload
-    def prepare(*args):
+    original_prepare = main.prepare_supervised_upload
+    async def prepare(*args, **kwargs):
         assert state.tx == 0, 'decoding must not hold the database transaction'
         state.encoded += 1
-        return original_prepare(*args)
+        return await original_prepare(*args, **kwargs)
 
     monkeypatch.setattr(main, 'database', database)
-    monkeypatch.setattr(main, 'prepare_authorized_upload', prepare)
+    monkeypatch.setattr(main, 'prepare_supervised_upload', prepare)
     client = TestClient(main.create_app(settings()), client=('127.0.0.1', 50000))
     return client, state
 

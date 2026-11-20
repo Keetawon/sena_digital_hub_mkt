@@ -240,3 +240,48 @@ for (const width of [1280,390]) test('W9 private evidence requires opt-in and Us
  expect(fixture.writes).toEqual([]);expect(fixture.uploads).toEqual([]);expect(evidenceReads).toBe(1);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+for (const theme of ["light", "dark"] as const) {
+  test(`busy upload waits then saves once in ${theme}`, async ({ page }) => {
+    const fixture = await openFixture(page);
+    await page.emulateMedia({colorScheme:theme});
+    expect(await page.evaluate(() => matchMedia("(prefers-color-scheme: dark)").matches)).toBe(theme === "dark");
+    const name = `busy-${theme}.png`;
+    const dialog = await selectFiles(page, [file(name)]);
+    await captionAll(page, [name]);
+    await page.clock.install({time:new Date("2026-11-18T00:00:00Z")}); await page.clock.pauseAt(new Date("2026-11-18T00:00:01Z"));
+    let attempts = 0;
+    await page.route("**/api/hub/v1/admin/assets", async route => {
+      if (route.request().method() !== "POST") return route.fallback();
+      attempts++;
+      if (attempts === 1) return route.fulfill({status:429,headers:{"Retry-After":"3"},json:{error:{code:"upload_busy",message:uploadText.busy}}});
+      return route.fallback();
+    });
+    await dialog.getByRole("button", {name:"อัปโหลดและเพิ่มไฟล์",exact:true}).click();
+    await expect(dialog.getByRole("status").filter({hasText:uploadText.waiting})).toBeVisible();
+    await page.screenshot({path:`artifacts/unified-workspace/w9-1/upload-waiting-${page.viewportSize()!.width}-${theme}.png`});
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.clock.fastForward(2999); expect(attempts).toBe(1);
+    await page.clock.fastForward(1);
+    await expect(dialog).toContainText("เพิ่มแล้ว 1 จาก 1 ไฟล์");
+    expect(attempts).toBe(2); expect(fixture.uploads).toEqual([name]);
+    expect(fixture.writes.filter(write => write.path.endsWith("/assets"))).toHaveLength(1);
+  });
+}
+test("busy upload stops after sixty seconds and preserves the selected file", async ({page}) => {
+  const fixture = await openFixture(page), name = "busy-expired.png";
+  const dialog = await selectFiles(page,[file(name)]); await captionAll(page,[name]);
+  await page.clock.install({time:new Date("2026-11-18T00:00:00Z")}); await page.clock.pauseAt(new Date("2026-11-18T00:00:01Z"));
+  let attempts = 0;
+  await page.route("**/api/hub/v1/admin/assets", route => {
+    if(route.request().method() !== "POST") return route.fallback();
+    attempts++; return route.fulfill({status:429,headers:{"Retry-After":"60"},json:{error:{code:"upload_busy",message:uploadText.busy}}});
+  });
+  await dialog.getByRole("button",{name:"อัปโหลดและเพิ่มไฟล์",exact:true}).click();
+  await expect(dialog.getByRole("status").filter({hasText:uploadText.waiting})).toBeVisible();
+  await page.clock.fastForward(60000);
+  await expect(dialog).toContainText(uploadText.busy);
+  await expect(dialog.getByRole("status").filter({hasText:uploadText.waiting})).toHaveCount(0);
+  await expect(dialog.getByLabel(`คำอธิบายภาพ (ภาษาไทย) · ${name}`,{exact:true})).toHaveValue(`คำอธิบาย ${name}`);
+  expect(attempts).toBe(1); expect(fixture.uploads).toEqual([]); expect(fixture.writes).toEqual([]);
+});
