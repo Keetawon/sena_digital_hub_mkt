@@ -9637,3 +9637,57 @@ policy marker to preserve legacy public visibility. Estimated 1–2 working days
 after rollout; focused DB/API/UI proof and separate hosted approval required.
 No product code, migration, grant, hosted account or release-candidate change.
 The product remains `f07f7cb` with its previously completed combined full gate.
+
+## 23 November 2026 afternoon ? owner admission decisions
+
+- Docs-only `640a305908223725123a7f4c522a83efce43cfa6` pushed and verified on
+  origin/main. Its five files are UTF-8 LF; application/migration source is unchanged.
+- Owner approved health source `ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`,
+  provenance warehouse `1714c97583595c3a3a90c4782b2f481a71aa2461`. Old baselines
+  stay in history; line-alert/cgid/units/canonical commands are unchanged.
+  Current baseline receipt SHA-256 `cc994db467a1a8eaa810646e8483809b906314d5b2fb9ffa2f005eb66e107265`.
+- Strict inert-root-scope classification is approved, with no process cleanup.
+  The prepared collector checks actual system sleep executable, root UID,
+  descendants, RSS and charged memory; 10 pure checks and 3 integrated job-guard
+  checks passed without hosted calls. Receipt bounds and unknowns remain explicit.
+- Retained 29 scope start times were compared with 51 known Hub attempt/observation
+  timestamps: none within 120 seconds. This selected history supplies no direct
+  Hub session-ownership proof; ownership remains unproved and no cleanup is proposed.
+- Owner approved 24 November 09:45 page check, 10:45 caps, 13:45 staging and 14:45
+  backup/migrations 89?94/promotion windows, each ending at :59 Bangkok. Prior
+  success, fresh admission and all STOP rules remain mandatory; no automatic
+  rollover. Staging/release also require a successful library read and sealed R8.
+  Warehouse deployment freeze through 24 November 16:00 does not waive identity checks.
+- Docs/54 now states role 5 cannot publish content that person edited, translated
+  or approved; another existing publisher must do so. No permission/product change.
+- One further library attempt is scheduled for 15:45 Bangkok under the existing
+  route. R8 is prepared locally but remains unsealed until genuine library success.
+  Evidence is under `.local/hosted-content-rollout/marketing-20261123/`.
+
+### 15:45 read-only outcome ? STOP, no library read or retry
+
+- Same-route SSH connected. Current approved health/line-alert/helper sources,
+  canonical commands, service-unit hashes and cgid identity all match the fresh
+  metadata. The new STOP is `foreign_root_scope_not_inert`, not identity drift.
+- 29 abandoned scopes passed the individual strict classification: summed RSS
+  57,614,336 bytes and cgroup charge 4,149,248 bytes. Ownership is unproved from
+  the retained timestamp comparison; no cleanup is proposed.
+- Two newer running root scopes contain `sshd-session`: `session-29855.scope`
+  (15:15:30 Bangkok) and `session-29856.scope` (15:15:38). They correlate with
+  existing interactive Windows SSH clients PID 16964 and 36476, started at
+  15:15:30 and 15:15:36. Their purpose remains unproved; neither is this
+  scheduled operator. No process/scope was stopped or modified.
+- All 31 scopes: summed RSS 99,303,424 bytes, charge 6,434,816 bytes. The
+  aggregate refusal also fired, but the two non-sleep scopes independently
+  require STOP under the owner's rule. Exact names, start times, per-scope
+  memory and correlation are in the receipt; RSS can double-count shared pages.
+- Short passive sample 2.779 seconds: MemAvailable at least 14,852,120,576 bytes;
+  swap-in/out/growth, allocation stalls, direct reclaim and Hub pressure-event
+  increases zero. Warehouse healthy/running/not-OOMKilled. PSI unavailable;
+  no admitted interval or five-minute tail is claimed.
+- Zero library records, zero hosted mutations, zero retries. R8 remains
+  unsealed; no package build/archive/extraction ran. Tuesday reservations remain
+  conditional, with staging/promotion blocked until the required evidence exists.
+- Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-3/receipt.md`;
+  raw SHA-256 `ff2ae23c0a3453ead27a7c5fe74bb2540af76754980a9f45cb4e02f7d40e5221`.
+  The approved attempt is consumed. Report and wait; no extra connection.

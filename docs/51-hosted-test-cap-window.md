@@ -1,3 +1,17 @@
+# Current reservation ? Tuesday 24 November 2026
+
+Owner approval on 23 November replaces the expired 21 November reservations
+with **24 November 09:45?09:59 Bangkok** for the owner page check (signed in
+from 09:40), then **10:45?10:59** for caps only after the prior check succeeds.
+The unchanged procedure below, exact approved diff and pressure STOPs apply.
+Use the current health/line-alert/cgid baselines and strict inert-root-scope
+classification in docs/46; record count, start times, memory and attribution.
+No automatic replacement slot after a skip. Report before and after each window.
+The subsequent staging and release reservations/conditions are in docs/53.
+
+The original 21 November plan below is retained as historical procedure; its
+calendar dates do not authorize an additional occurrence.
+
 # Saturday 21 November: approved conditional cap sequence
 
 WINDOWS APPROVED; FRESH ADMISSION PENDING. No hosted change was made.

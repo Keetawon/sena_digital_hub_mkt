@@ -7,6 +7,37 @@ must be attached before execution. [Docs/46](46-hosted-content-rollout.md) owns
 admission/STOP rules; [docs/51](51-hosted-test-cap-window.md) owns the separately
 approved Saturday page-check and cap reservations.
 
+## Afternoon owner approval — 23 November 2026
+
+The four Tuesday 24 November windows below are now **conditionally approved**,
+superseding their earlier proposal-only status. Their order, timings, containment,
+backup/rollback, full-gate evidence and STOP conditions are unchanged. A skipped
+window never rolls into another slot. The 13:45 and 14:45 steps require a
+successful library receipt and sealed R8 package; missing real containment/timing
+or other required proof still means skip. Report before and after each step.
+
+The owner approved the new health source baseline and strict inert-root-scope
+classification in docs/46, plus one further same-route read-only attempt today.
+The earlier 14:45 STOP and package-not-ready statements below remain historical
+evidence, not the current approval status. No library/package success is assumed.
+Warehouse-side deployments are frozen until 24 November 16:00 Bangkok; any
+observed identity drift still stops the operation and is reported with provenance.
+
+### Latest library outcome ? 23 November 15:45 Bangkok
+
+The approved attempt connected and stopped before library inspection because
+`session-29855.scope` and `session-29856.scope` contain live `sshd-session`
+processes. The 29 abandoned sleep-only scopes passed individually; approved
+job/source identities match, and the short pressure sample had no STOP trigger.
+The two newer scopes correlate with pre-existing interactive terminal tunnels
+started at 15:15; their purpose is unproved. No process was touched or retry made.
+See docs/48 and `marketing-20261123/owner-approved-attempt-3/receipt.md` under
+`.local/hosted-content-rollout/` for the full scope/memory/timestamp inventory.
+
+R8 remains unsealed, with no library facts or archive/extraction success receipt.
+The Tuesday windows remain approved **conditionally**; this result does not
+satisfy the staging/release prerequisites. No window shifts automatically.
+
 ## Current preparation and proposed windows - 23 November 2026
 
 Product source stays `f07f7cb4f6be76827f03c2770889f1ba4fbbf85e`; the combined

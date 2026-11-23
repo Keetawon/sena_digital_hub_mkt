@@ -75,6 +75,47 @@ this provenance does not release the STOP. No library query or retry ran.
 Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-2/receipt.md`.
 The 21 November page-check/cap reservations have expired; none rolled forward.
 
+### Afternoon owner decisions — 23 November 2026
+
+The owner approved health source SHA-256
+`ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`,
+provenance warehouse commit `1714c97583595c3a3a90c4782b2f481a71aa2461`.
+The owner's review identifies weekend relay-overdue handling with no new
+imports, queries or resource use. This releases the preceding health identity
+STOP only. The old health baseline remains in the historical table and receipts.
+Line-alert, cgid, notification helper, service units and canonical command
+baselines are unchanged. The current machine-readable baseline is
+`.local/hosted-content-rollout/marketing-20261123/job-command-baseline-owner-approved-20261123-afternoon.json`.
+Any other drift or unproved identity remains a STOP with read-only local
+warehouse `git log/show` provenance where available; provenance is not approval.
+Warehouse deployments are owner-frozen until 24 November 16:00 Bangkok;
+verify identities anyway, never infer compliance from that freeze.
+
+A foreign root session scope is inert for admission only when **every process
+is the real system `sleep`, has negligible memory, and has no descendant of any
+other kind**. Any other process or incomplete identity/memory/descendant evidence
+remains a STOP. The local operator conservatively bounds negligible memory at
+4 MiB RSS per process, 8 MiB charged per scope, and 64 MiB total RSS and charged
+memory across admitted scopes. These are classification bounds, not host limits.
+Every receipt lists scope count, names, scope/process start times, individual
+and total memory, and correlation with retained Hub SSH attempt timestamps.
+Report attribution as proven, time-correlated or unproved; proximity alone does
+not prove Hub ownership. Never kill, stop or change these processes/scopes.
+Propose any cleanup separately, only with its ownership evidence.
+
+One further same-route read-only library attempt is approved today after these
+decisions are recorded. No retry, route/credential change or hosted mutation.
+Success permits R8 local packaging, ELF closure, archive and bounded extraction;
+any STOP ends that attempt and requires reporting before further hosted work.
+
+The four **24 November Bangkok** reservations in docs/53 are conditionally
+approved: 09:45–09:59 owner page check (signed in from 09:40), 10:45–10:59 caps,
+13:45–13:59 staged extraction without switching, 14:45–14:59 fresh backup,
+transactional migrations 89–94, promotion and smoke. Each requires prior-window
+success, fresh admission and all standing STOP rules; staging and promotion
+also require a successful library receipt and sealed package. No skipped window
+automatically moves to a later slot. Report before and after every window.
+
 ### Standing lightweight-job overlap rule — owner approved 20 November
 
 Until Hub moves to its own server, the following identified, unchanged jobs
