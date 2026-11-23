@@ -23,6 +23,29 @@ evidence, not the current approval status. No library/package success is assumed
 Warehouse-side deployments are frozen until 24 November 16:00 Bangkok; any
 observed identity drift still stops the operation and is reported with provenance.
 
+### Latest outcome - 23 November 17:45 Bangkok
+
+The new attempt passed its immediate local SSH preflight (zero clients) and
+connected once. All approved identities matched and all 30 foreign root scopes
+were inert. Admission stopped because `sena-gads-solar-refresh.service` was
+still running (MainPID 342588, nine tasks, started 17:34:51, no exit timestamp).
+No library read, retry, hosted change or local R8 build followed. The exact
+receipt is `marketing-20261123/owner-approved-attempt-4/receipt.md` under
+`.local/hosted-content-rollout/`. The operator is stopped, awaiting direction.
+
+R8 remains unsealed; Tuesday staging/promotion prerequisites are unmet. The
+conditionally approved windows remain unchanged and do not roll forward.
+
+### Evening follow-up - owner tunnels closed
+
+The owner identified the two blocking scopes as personal database forwarding
+tunnels and confirmed closure. A local check at 17:03 found no SSH client to
+TEST. One further library attempt today is approved, targeted at 17:45 subject
+to fresh admission and a repeated local SSH check. Live foreign SSH scopes still
+stop; no exemption or cleanup is authorized. No library success is assumed.
+For Tuesday, the owner will have no VPS SSH tunnels open 09:40-16:00 and will
+wait signed in on one browser tab from 09:40. All window prerequisites stand.
+
 ### Latest library outcome ? 23 November 15:45 Bangkok
 
 The approved attempt connected and stopped before library inspection because

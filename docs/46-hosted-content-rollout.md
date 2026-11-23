@@ -116,6 +116,28 @@ success, fresh admission and all standing STOP rules; staging and promotion
 also require a successful library receipt and sealed package. No skipped window
 automatically moves to a later slot. Report before and after every window.
 
+### Evening owner decision - 23 November 2026
+
+The owner identified session-29855/29856 as owner-side forwarding tunnels
+(local SSH PIDs 16964/36476, local-to-remote ports 15432 to 5432 and 13306 to 3306)
+and confirmed closing them. This resolves their ownership, not a new exemption.
+Live foreign `sshd-session` scopes remain a STOP. Record source port, start time
+and any matching local client; never stop or modify a scope/process.
+
+Before the next approved library attempt, check local SSH process metadata and
+TCP endpoints for `72.62.253.205`. Any existing client except the operator's own
+admitted route stops the attempt **before connecting**. No command-line or
+credential contents are recorded. The one fresh same-route read today is approved;
+no retry, route or credential change. R8 may proceed locally only after success.
+The first local check at 17:03 Bangkok found no matching SSH client; repeat it
+immediately before connecting. The attempted read is targeted at 17:45, subject
+to the 17:00 refresh jobs' actual completion and the existing settled-gap rule.
+
+The four 24 November windows remain conditional and unchanged. The owner will
+keep SSH tunnels to this VPS closed from 09:40 through 16:00 and will be signed
+in on one browser tab from 09:40. Fresh admission is still required; this promise
+does not replace process, job, identity, pressure or readiness evidence.
+
 ### Standing lightweight-job overlap rule — owner approved 20 November
 
 Until Hub moves to its own server, the following identified, unchanged jobs

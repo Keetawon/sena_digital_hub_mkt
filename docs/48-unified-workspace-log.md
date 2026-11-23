@@ -9691,3 +9691,41 @@ The product remains `f07f7cb` with its previously completed combined full gate.
 - Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-3/receipt.md`;
   raw SHA-256 `ff2ae23c0a3453ead27a7c5fe74bb2540af76754980a9f45cb4e02f7d40e5221`.
   The approved attempt is consumed. Report and wait; no extra connection.
+
+## 23 November evening - tunnels identified and fresh read approved
+
+Owner identified the two 15:15 live scopes as personal forwarding tunnels
+15432 to 5432 and 13306 to 3306 and confirmed closing them. The older 29 scope
+ownerships remain unproved. No cleanup or live-SSH exemption is approved.
+The initial local check at 17:03 found no SSH client to TEST. The next operator
+must repeat that check before connecting, record source ports if a foreign live
+SSH scope is found, and stop without retry on any failed condition.
+
+Docs-only `d71d4d3385111ff06bc396c84f0ce9c3dba3ef60` was pushed and verified on
+origin/main; five files UTF-8 LF, no product change. One further library attempt
+is approved today, targeted at 17:45 after fresh admission; R8 remains unsealed
+until success. The Tuesday windows are unchanged, with owner tunnels closed
+09:40-16:00 and one signed-in browser tab from 09:40. No hosted mutation occurred.
+
+### 17:45 evening library attempt - active production refresh STOP
+
+- Immediate local preflight at 17:45:02 Bangkok: zero SSH clients / matching
+  TEST connections. One same-route connection then succeeded. All approved
+  job/source/unit/command/cgid identities matched; no live foreign SSH scope.
+- All 30 foreign root scopes met the inert rule: summed RSS 59,719,680 bytes,
+  cgroup charge 4,395,008 bytes. Owner-confirmed session-29855 is now an orphaned
+  system sleep only; session-29856 is absent. No scope/process was modified.
+- STOP: `sena-gads-solar-refresh.service`, MainPID 342588, TasksCurrent 9,
+  activating/start, populated cgroup, started 17:34:51 Bangkok and no exit
+  timestamp. This excluded production refresh had not completed or settled.
+  Result=success is not treated as completion while its process remains active.
+- Passive sample 2.943 seconds: MemAvailable at least 14,699,958,272 bytes;
+  swap-in/out/growth, stalls/direct reclaim and Hub pressure-event increases
+  zero. Warehouse healthy/running/not-OOMKilled. PSI unavailable remains a gap.
+- Zero library records, zero mutations, zero retries, no admitted interval/tail.
+  R8 remains unsealed; no package/archive/extraction run. Report and wait under
+  the owner's instruction. Tuesday windows remain conditional, without rollover.
+- Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-4/receipt.md`;
+  raw SHA-256 `3e41278f69216b75882bc620c894ce138464ebe206185e55871de069302c986d`.
+  Exact scope names/start times/memory, timestamp correlation and read commands
+  are retained there and in the raw observation. No further connection is armed.
