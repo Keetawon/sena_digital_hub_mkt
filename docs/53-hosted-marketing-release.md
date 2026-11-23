@@ -7,6 +7,78 @@ must be attached before execution. [Docs/46](46-hosted-content-rollout.md) owns
 admission/STOP rules; [docs/51](51-hosted-test-cap-window.md) owns the separately
 approved Saturday page-check and cap reservations.
 
+## Current preparation and proposed windows - 23 November 2026
+
+Product source stays `f07f7cb4f6be76827f03c2770889f1ba4fbbf85e`; the combined
+full gate below remains its evidence. Documentation changes do not alter that
+candidate. Linux frozen installs, typecheck/build, production imports and two
+native peer checks passed in local package attempt R7. Static closure over 46
+ELF files stopped because target observations lack `libz.so.1` and
+`libresolv.so.2`; no sealed archive or bounded extraction receipt exists yet.
+The requested checks are package ownership plus `ZLIB_1.2.3.4` and `GLIBC_2.2.5`.
+
+The 23 November line-alert baseline was approved and recorded in docs/46;
+the old baseline below remains historical. The single fresh library attempt
+connected at 14:45 and stopped before library inspection because the health
+script changed. Observed SHA-256:
+`ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`, matching
+warehouse commit `1714c97583595c3a3a90c4782b2f481a71aa2461` at 12:54:08 Bangkok.
+Health re-baselining is not approved. Short pressure sample: no STOP trigger,
+warehouse healthy, PSI unavailable; no admitted interval, retry or mutation.
+Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-2/receipt.md`.
+The prepared R8 local package helper cannot run without a successful genuine
+library receipt. Never substitute inferred target libraries or invent a receipt.
+
+The fresh passive data also retains 29 abandoned root session scopes containing
+orphaned `sleep` processes. The broad foreign-scope guard would refuse populated
+scopes, but did not reach that check in this attempt. Their classification is
+unresolved; no new job exemption or process cleanup is approved. Review this
+admission issue before spending another single-attempt authorization.
+
+Remaining operator evidence is explicit: switch v3 has 19 local failure-path
+checks, caller v2 has 12, and boundary guard v4 has 38 synthetic checks plus two
+assembled-source syntax checks and one static profile check. These passed;
+actual hosted namespace/containment and successful guard/promotion timing are
+still unproved. The prepared switch requires verified caps. The owner's pre-cap
+rollout exception remains available, but that switch path is not prepared;
+this concrete sequence therefore uses verified caps first.
+
+**Proposed Tuesday 24 November, Bangkok; no reservation or execution approved:**
+
+| Window | Concrete operation | Required completion |
+| --- | --- | --- |
+| 09:45–09:59 | Owner page sequence in docs/51; owner signed in from 09:40 | Fresh admission, all Hub PID/cgroup/current/peak/events before/after, at most six minutes of ordinary pages, five-minute tail; admin peak at most 256 MiB and all other cap conditions |
+| 10:45–10:59 | Exact previously reviewed cap diff, verify hierarchy, all limits, +1000 scores, Restart=no and OOMPolicy=kill | Page check accepted; no rebalance needed; no ETL/warehouse change; five-minute tail |
+| 13:45–13:59 | Stage sealed Linux archive without switching; bounded extraction and serial imports/native self-checks/scans | Package/member/source hashes, real helper containment and timing proof, current-release/configuration identity and exact three-file diff; current app continues serving |
+| 14:45–14:59 | Fresh TEST DB backup/full readback and protected configuration backup; maintenance, transactional 89–94, immediate promotion and postflight | Verified backup younger than 15 minutes, populated-row/Auth preservation, shared 180-second migration/promotion budget with measured promotion reserve, successful smoke and five-minute tail |
+
+Each window depends on the prior result and fresh admission. The :39 cleanup
+and descendants must actually finish with five settled minutes; only the three
+approved, identity-matching lightweight jobs may overlap. Fourteen minutes
+allows at most eight active minutes, five tail minutes and one reserve minute.
+Missing identity, pressure signal, compatible job gap, measured operation
+budget or readiness receipt means skip; no automatic later slot. The old
+21/22 November candidates below are expired history.
+
+Package scope remains frozen **pyvips 3.1.0, pyvips-binary 8.18.7, Next 16.4.5**
+inside the release artifact. Use existing host Python/Node; no system package
+installation, unbounded VPS build or new protected setting is proposed. Apply
+only the six immutable migrations listed below. Preserve cap files during
+switch/rollback. On failure after schema commit retain maintenance/down and
+report before any restore; no automatic old-app restart against schema 94.
+Verify TLS/HTTPS, health/login 200, anonymous 401/no-store, deployed scans,
+unchanged R2 objects, expected worker/broker state, all Hub peaks/events and
+healthy warehouse without OOM/pressure. No hosted load/upload probe.
+
+**This is not an executable approval packet yet.** First resolve the current
+identity STOP, library/ELF closure, archive/extraction and real containment/timing
+evidence, and attach exact nonsecret configuration diff/source seals. Report the
+completed packet for one owner approval; do not treat this calendar proposal as
+permission. Real-data reconciliation/import remains a separate reported step
+after rollout and verified caps, with a fresh backup and no automatic publication.
+Pilot role mapping in docs/54 is documentation only. The promotion simplification
+in docs/55 is the first follow-up after rollout and is excluded from this release.
+
 ## Scope and order
 
 Deliver W6, W7, 0092, W9/W9.1, 0094, the approved preview corrections and small

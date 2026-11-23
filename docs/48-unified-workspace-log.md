@@ -9597,3 +9597,43 @@ consolidated release draft, not deployment approval. Docs/54 contains the Thai
 marketing checklist and hosted/local mapping; all 61 UAT outcomes remain NOT
 RUN. The combined full gate passed on `f07f7cb`; see docs/53 for exact results.
 No product optimization or hosted mutation is included. These eight docs use LF.
+
+### Owner baseline, pilot roles and follow-up design - 23 November 2026
+
+Result: line-alert source/unit re-baselined with owner approval; exact committed
+bytes match warehouse commit `31586e84d8a44a79b4e5e031b4c86fb479fa8470`.
+The previous baseline and STOP receipt remain intact. Docs/46 records the two
+new hashes and the read-only local `git log/show` provenance procedure.
+
+The one fresh same-route SSH attempt at 14:45 connected but stopped before
+library inspection: health-script SHA-256 changed to
+`ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`.
+Local committed bytes match `1714c97583595c3a3a90c4782b2f481a71aa2461`
+(23 November, 12:54:08 Bangkok). This is provenance, not approval. Canonical
+commands and the newly approved line-alert identities matched. Short pressure
+sample had no STOP, warehouse healthy, PSI unavailable. Zero retries/mutations;
+zero library records. Receipt SHA-256:
+`8898091c914817a3e689cb3d580c9b2bc9ca50995ff9e04d9225304b51276640` under
+`.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-2/`.
+Twenty-nine orphan-sleep session scopes also remain an unresolved admission
+classification; no exemption or cleanup. Native closure/archive/extraction and
+the executable rollout approval packet remain blocked. Docs/53 proposes fresh
+24 November windows using the prepared capped switch, not an approved rollout.
+
+Docs/54 now contains the seven Thai pilot roles and exact per-account checkbox
+and explicit-project-scope instructions. Local synthetic proof: **12 passed**
+(two existing positive cases, eight invalid-grid cases, two pilot probes), one
+existing deprecation warning. Roles 4 and 6 save successfully through the real
+API and runtime SQL: view + web publication without approval, and an existing
+admin with view-only content + user management. Ads remain ungranted. Initial
+probe-only response-shape errors are retained; corrected probes compare all
+tabs and normalized action ordering. No existing assertion or product rule
+changed. Evidence: `.local/pilot-roles-20261123/receipt.json` and final log/XML.
+Applying an admin template does not convert an existing underlying account role.
+
+Docs/55 is a design only for one source-document confirmation of promotions,
+using existing evidence/audit plus a proposed review kind and internal version
+policy marker to preserve legacy public visibility. Estimated 1–2 working days
+after rollout; focused DB/API/UI proof and separate hosted approval required.
+No product code, migration, grant, hosted account or release-candidate change.
+The product remains `f07f7cb` with its previously completed combined full gate.

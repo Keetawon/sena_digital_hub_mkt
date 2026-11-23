@@ -1,6 +1,6 @@
 # 46 — Hosted TEST content rollout
 
-## Shared production host: current admission — 20 November 2026
+## Shared production host: current admission — 23 November 2026
 
 This section records the owner's latest decisions and supersedes older capacity
 STOP/admission wording. Historical receipts remain unchanged. The production
@@ -38,6 +38,42 @@ List local-only cases separately and report before every hosted step.
 The later approved canonical job/unit/source baseline in [docs/53](53-hosted-marketing-release.md)
 replaces volatile ExecStart hashes only; drift or missing identity is a STOP.
 Missing PSI is a reported gap, not passed; apply every other pressure STOP signal.
+
+### Approved line-alert baseline update — 23 November 2026
+
+The owner confirmed the observed line-alert changes are an intended DW deployment.
+Read-only `git log/show` in the local warehouse repository proved both committed
+byte hashes match commit `31586e84d8a44a79b4e5e031b4c86fb479fa8470`, preceded by
+`7943d6af450bd9279e986ebb57db9281ca7b173f`. Git records 22 November **2026** at
+20:14:57 Bangkok. The change adds once-per-day state and
+`StateDirectory=sena-warehouse-monitoring`; Hub changes none of it.
+
+| Current approved identity | SHA-256 |
+| --- | --- |
+| `alert_pipeline_failure.py` | `2663a98113c5b99298e9a8e35292fd7547b1529f6b73af34b39e44af6faef27e` |
+| `/etc/systemd/system/sena-line-alert.service` | `6fcc9f1d96aabb8b783126b58cc536c919d3b2bc1e04e3e3adfb0fc0541fe482` |
+
+Canonical line-alert command hash remains
+`26066a4dbce2b5108bf36edfb230e70d60b5727d21221c9af40f27b2ac5084f3`.
+Health, notification helper and cgid baselines remain unchanged. The new signed-off
+record is `.local/hosted-content-rollout/marketing-20261123/job-command-baseline-owner-approved-20261123.json`;
+the 20 November baseline and the 23 November STOP receipt remain unchanged in history.
+The historical table below is superseded only for these two identities.
+
+For future exception identity drift, Hub may use **only read-only `git log/show`**
+in `D:/Personal/workspace/sena_idea_mkt_data_warehouse` to identify committed bytes
+matching the observed hash and include that provenance in its STOP report.
+Provenance alone never approves a new baseline. Any other drift or unproved
+identity remains a STOP. Never edit that repository, its services or containers.
+
+The one fresh read at 14:45 Bangkok stopped on a different identity:
+`check_pipeline_health.py` now hashes to
+`ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`,
+matching local warehouse commit `1714c97583595c3a3a90c4782b2f481a71aa2461`
+(23 November, 12:54:08 Bangkok). The approved health hash remains unchanged;
+this provenance does not release the STOP. No library query or retry ran.
+Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-2/receipt.md`.
+The 21 November page-check/cap reservations have expired; none rolled forward.
 
 ### Standing lightweight-job overlap rule — owner approved 20 November
 
