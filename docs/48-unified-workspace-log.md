@@ -9907,3 +9907,59 @@ but an accepted local build and bounded extraction are absent. Page check/caps
 remain scheduled and conditional. Current-baseline boundary-guard integration,
 actual containment and migration/promotion timing proof remain separate gaps.
 No hosted mutation, credential access, product change or full-gate rerun occurred.
+
+## 24 November morning - R8 local build and extraction accepted; boundary proof pending
+
+Owner approved one new laptop-only build at 4096 MiB, four CPUs, swap zero,
+30 minutes, TasksMax 128, OOMPolicy=kill, Restart=no and OOM score +1000.
+The single attempt passed at 05:50 Bangkok: all 62 child steps, frozen imports
+and closure over 46 ELF files. Peak was 2,494,828,544 bytes (2379.25 MiB).
+Before/after high/max/oom/oom_kill deltas were zero. Diagnostics were retained
+before the unchanged assertions: 134 per-stage snapshots, with the cumulative
+peak first observed after offline_font_build. Earlier attempts remain intact.
+This does not retrospectively identify their missing failure counters.
+
+The first extraction stopped at 337,428,480 bytes (321.80 MiB), with 132 high
+events and zero max/oom/oom_kill events. Its local harness supplied a regular
+archive file descriptor, unlike the hosted pipe. A separate harness-only
+successor supplies a bounded 1 MiB pipe and advises dropping consumed source
+cache in the same cgroup. The receiver, assertions and limits are unchanged;
+the exact cause of the earlier peak is not proved. Three focused harness
+checks passed. No build rerun was made.
+
+The final extraction passed at 06:00 Bangkok: peak 298,377,216 bytes
+(284.55 MiB), zero high/max/oom/oom_kill deltas, 376 MiB maximum / 320 MiB high,
+half a CPU, no swap and ten minutes. Extraction did not execute application
+self-checks; frozen/relocated checks belong to the accepted build receipt.
+
+Release `f07f7cb-media-dd33d4d7f14b`, product `f07f7cb`, package versions and
+completed product full gate are unchanged. Archive: 272,290,559 bytes,
+923,640,496 unpacked bytes, 24,292 members; SHA-256
+`c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3`.
+Build receipt SHA-256:
+`d05ccedd009ccd9c03fe0e0c99ce51da858811fa9f96c38dab164cecfea26c58`.
+Extraction receipt SHA-256:
+`8cd9dcded38df81ad44fbba0b9e8cd8e38daa301e17275be211279b0833d4099`.
+
+Current-baseline boundary guard v5 passed 38 existing synthetic checks,
+21 baseline/scope checks and 3 transport-scope checks, plus two assembled
+syntax checks and one static profile check. Live foreign SSH still stops;
+only exactly verified own transport and proved inert scopes are accepted.
+Source seal: `c969bab4edb92308b963e7bc68f14c890c63c8449f495d917e791683f5547205`.
+Actual local namespace proof awaits owner sudo. Full boundary integration,
+hosted containment and migration/promotion timing remain open: **NOT MET**
+for release readiness at this checkpoint. Do not substitute synthetic inputs
+for genuine maintenance/admission receipts or claim local timing is hosted proof.
+
+No hosted call/mutation, credential access, product/migration/version change or
+capacity acceptance. No local build is allowed 09:40-10:00. The independently
+approved 09:45 page check and conditional 10:45 caps remain scheduled; the
+page observer passed nine window cases and four structural checks, with no
+hosted execution. At 13:00 report MET only with all required accepted receipts;
+otherwise skip 13:45/14:45 and propose Wednesday windows for owner approval.
+
+Receipt: [R8 local package](receipts/20261124-r8-local-package.json).
+Exact originals and failed-attempt evidence remain under
+`.local/hosted-content-rollout/marketing-20261124/`: `package-r8-fix2/`,
+`extraction-r8-stream/`, `retained-linux-receipts/`, `boundary-guard-v5/` and
+`owner-page-check/`. Six focused diagnostics checks passed before the build.

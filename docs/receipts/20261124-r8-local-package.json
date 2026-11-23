@@ -1,0 +1,176 @@
+{
+  "status": "LOCAL_BUILD_AND_EXTRACTION_ACCEPTED_BOUNDARY_PENDING",
+  "hosted_calls": 0,
+  "hosted_capacity_acceptance": false,
+  "git_commit": "f07f7cb4f6be76827f03c2770889f1ba4fbbf85e",
+  "release": "f07f7cb-media-dd33d4d7f14b",
+  "full_source_manifest_sha256": "e8a47fe53c92361871a3064df200623531c03248ec0745158f48dffdd6d36bf7",
+  "runtime_source_seal": "dd33d4d7f14bbf2a8d626775a77ca7369366145eabbd7e702c52a94edf57e934",
+  "full_gate_sha256": "fb65cf531ce6425b0ea5ca30bfee318783c8499a58c04108f209c1d51ab67f1f",
+  "archive_sha256": "c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3",
+  "archive_bytes": 272290559,
+  "unpacked_bytes": 923640496,
+  "member_count": 24292,
+  "build": {
+    "attempts_under_morning_approval": 1,
+    "memory_max_bytes": 4294967296,
+    "cpu_quota_percent": 400,
+    "memory_swap_max_bytes": 0,
+    "runtime_max_seconds": 1800,
+    "memory_peak_bytes": 2494828544,
+    "event_deltas": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "stage_snapshot_count": 134,
+    "first_stage_snapshot_at_peak": {
+      "stage": "offline_font_build",
+      "edge": "after",
+      "exit_code": 0,
+      "monotonic_ns": 194589581336,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-build-local-f07f7cb-r8-fix2.service",
+      "memory_peak": 2494828544,
+      "memory_current": 1611345920,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memory_stat": {
+        "anon": 38649856,
+        "file": 1467174912,
+        "kernel": 103583744,
+        "file_dirty": 43347968,
+        "file_writeback": 0,
+        "slab": 82487600
+      },
+      "memory_max": "4294967296",
+      "memory_swap_max": "0",
+      "cpu_max": "400000 100000"
+    },
+    "child_checks": 62
+  },
+  "first_extraction": {
+    "result": "STOP_memory_peak_exceeds_reviewed_budget",
+    "memory_peak_bytes": 337428480,
+    "high_events": 132,
+    "max_events": 0,
+    "oom_events": 0,
+    "oom_kill_events": 0
+  },
+  "accepted_extraction": {
+    "memory_max_bytes": 394264576,
+    "memory_high_bytes": 335544320,
+    "cpu_quota_percent": 50,
+    "memory_swap_max_bytes": 0,
+    "runtime_max_seconds": 600,
+    "memory_peak_bytes": 298377216,
+    "event_deltas": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "receiver_sha256": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "self_checks_executed": false,
+    "harness": "Bounded pipe in same cgroup; source-file cache-discard advice each 1 MiB; receiver unchanged"
+  },
+  "pins": {
+    "build.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-fix2/receipts/build.json",
+      "sha256": "d05ccedd009ccd9c03fe0e0c99ce51da858811fa9f96c38dab164cecfea26c58",
+      "bytes": 681
+    },
+    "build-memory.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-fix2/receipts/build.memory.json",
+      "sha256": "dcd7e8c1baa3fd4ee3d4c2af26af3a2fe0e9d25afe258ab4c08478452a9c1591",
+      "bytes": 982
+    },
+    "build-memory-before.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-fix2/receipts/build.memory-before.json",
+      "sha256": "73cce4c2974b44697db11d319babcb71117231f57b052ecc75a1010fe4d6baf8",
+      "bytes": 443
+    },
+    "build-stages.jsonl": {
+      "original_path": "/home/keetawatw/hub-release-build/candidate-f07f7cb-r8-fix2/stage-memory.jsonl",
+      "sha256": "901396165aec236dae2ea19d31a8bf52493c3a9604ccc4dac9eb6fea3fcfdb7c",
+      "bytes": 79527
+    },
+    "package-receipt.json": {
+      "original_path": "/home/keetawatw/hub-release-build/candidate-f07f7cb-r8-fix2/package-receipt.json",
+      "sha256": "2d7628383142cf57ed57763a8f00344f773b4cf7b76407c3d75dcfbf5d3f374d",
+      "bytes": 13059
+    },
+    "elf-inventory.json": {
+      "original_path": "/home/keetawatw/hub-release-build/candidate-f07f7cb-r8-fix2/elf-inventory.json",
+      "sha256": "31a373515a199882f3d1318477cfb09b46c64e879c116bc042ad905ea8dca136",
+      "bytes": 31427
+    },
+    "first-extraction-memory.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-fix2/receipts/rehearsal.memory.json",
+      "sha256": "7e8537209d9713b970001e25b05c7d320d9dc330b2b725e897f34b5c112c60c5",
+      "bytes": 987
+    },
+    "first-extraction-result.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-fix2/logs/receiver.stdout.json",
+      "sha256": "e3245af79df34e15d24125f6c232ce96c50c6e427dca43613bf21e6a510f1810",
+      "bytes": 131
+    },
+    "extraction.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-stream/receipts/rehearsal.json",
+      "sha256": "8cd9dcded38df81ad44fbba0b9e8cd8e38daa301e17275be211279b0833d4099",
+      "bytes": 695
+    },
+    "extraction-memory.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-stream/receipts/rehearsal.memory.json",
+      "sha256": "8b014304a149e48be0f438cdf4f70471fd0e19056faed72b4c5d4e68ca75f726",
+      "bytes": 985
+    },
+    "extraction-receiver.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-stream/logs/receiver.stdout.json",
+      "sha256": "8a5663523583f0d9e4bb2c47cac6c10fa6d8d4f5e45a7810dcc397905641c647",
+      "bytes": 1072
+    },
+    "extraction-input-stream.json": {
+      "original_path": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-stream/receipts/input-stream.json",
+      "sha256": "dc3955cba3a60c84fcfe74515c4bef0a5a404e31210c988fb59780ece48d7947",
+      "bytes": 165
+    }
+  },
+  "boundary_guard_status": "PENDING_ACTUAL_CONTAINMENT_AND_TIMING",
+  "deployment_go_no_go": "NOT_MET_PENDING_BOUNDARY_PROOF",
+  "recorded_at": "2026-11-23T23:21:56.466348+00:00",
+  "local_checks": {
+    "memory_diagnostics": 6,
+    "bounded_pipe_harness": 3,
+    "boundary_existing": 38,
+    "boundary_current_baseline": 21,
+    "boundary_transport_scope": 3,
+    "boundary_assembled_syntax": 2,
+    "boundary_static_profile": 1,
+    "page_window_cases": 9,
+    "page_window_structure": 4
+  },
+  "boundary_guard_source_seal_sha256": "c969bab4edb92308b963e7bc68f14c890c63c8449f495d917e791683f5547205",
+  "boundary_guard_limitations": [
+    "Actual namespace component proof awaits owner sudo in WSL.",
+    "Full current-baseline boundary collection, migration/promotion timing and hosted containment remain unproved.",
+    "Local component checks do not establish hosted capacity or release admission."
+  ],
+  "fixed_windows_bangkok": {
+    "page_check": "2026-11-24 09:45-09:59",
+    "caps": "2026-11-24 10:45-10:59",
+    "go_no_go": "2026-11-24 13:00",
+    "stage": "2026-11-24 13:45-13:59",
+    "release": "2026-11-24 14:45-14:59"
+  }
+}

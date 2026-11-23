@@ -7,6 +7,27 @@ must be attached before execution. [Docs/46](46-hosted-content-rollout.md) owns
 admission/STOP rules; [docs/51](51-hosted-test-cap-window.md) owns the page-check
 and cap procedure. The approved Tuesday reservations below replace skipped slots.
 
+
+### 24 November morning - accepted local package, remaining boundary proof
+
+The owner-approved single 4096 MiB laptop build passed, followed by bounded
+376/320 MiB extraction. Build peak 2379.25 MiB; accepted extraction peak
+284.55 MiB; both retained zero high/max/OOM event increases. The earlier
+321.80 MiB extraction STOP remains preserved; only its local input harness
+changed to a bounded pipe, with receiver, limits and assertions unchanged.
+No hosted call, package/version/source change or capacity acceptance occurred.
+
+Release `f07f7cb-media-dd33d4d7f14b`; accepted archive SHA-256
+`c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3`.
+[Exact receipts and limitations](receipts/20261124-r8-local-package.json)
+supersede the earlier pending-build status, without rewriting that history.
+Current-baseline guard checks pass, but actual containment and full boundary /
+migration-to-promotion timing proof remain open. Readiness is **NOT MET** at
+this checkpoint. The 13:00 decision requires all accepted proof receipts;
+otherwise neither afternoon window starts and Wednesday slots need approval.
+The 09:45 page check and conditional 10:45 caps are independent of this build.
+No local build during 09:40-10:00; no automatic window rollover.
+
 ## Afternoon owner approval — 23 November 2026
 
 The four Tuesday 24 November windows below are now **conditionally approved**,
