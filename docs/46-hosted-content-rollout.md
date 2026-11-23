@@ -4280,3 +4280,84 @@ are now approved under that policy and docs/51, subject to fresh admission and
 the completed page check/admin peak condition. No hosted check or change was
 performed when recording this decision. Skip failed occurrences and propose the
 next same-day slot; do not extend a window without approval.
+
+## Night library-only re-admission - 23 November 2026
+
+Owner approved one fresh same-route library attempt, with up to three more only
+when a STOP is solely an active scheduled excluded job or descendant. Attempts
+must be at least 20 minutes apart and finish by 23:00 Bangkok on 23 November.
+Every attempt repeats local SSH preflight and full fresh admission. Any other
+STOP ends attempts; no route or credential change. This rule does not apply to
+the fixed Tuesday windows, which never roll automatically.
+
+Plan around :20/:30/:39 and refresh groups. The production Gads solar job runs
+at 06:30/11:30/17:30 Bangkok with up to ten minutes randomized delay, performing
+a dbt build and MariaDB export. Require actual completion plus five settled
+minutes, including descendants; no schedule or process change is authorized.
+
+Current outcome: the 19:50 attempt stopped with an admission-parser TypeError
+after a timer-deadline query, before library inspection. This is not the sole
+scheduled-active-job condition, so tonight's retries ended. No hosted mutation.
+Receipt: `.local/hosted-content-rollout/marketing-20261123/night-library/attempt-1/receipt.md`.
+R8 is still unsealed; Tuesday staging/promotion prerequisites remain unmet.
+
+### Renewed night approval and fail-closed preflight - 23 November
+
+Owner approved the exact timer-parser proposal after the 19:50 STOP. A new
+operator accepts a strict uint64 scalar or single-element array, rejects unset
+or malformed values, preserves the remaining-time check, and records value and
+shape. The old operator and failed receipt remain unchanged.
+
+Local SSH inventory must fail closed: denial, error, incomplete process identity,
+inconsistent process inventories or unproved connection inventory stops before
+connecting. A printed zero from a failed inventory is never a pass. The new
+operator verifies command success and complete inventory metadata; every actual
+attempt repeats this check. The owner's workstation check is not substituted
+for the fresh operator check.
+
+One new same-route read-only attempt is approved tonight, ending by 23:00.
+Only a scheduled-excluded-job-or-descendant-only STOP permits up to two further
+attempts, each at least 20 minutes apart. Any other STOP, including parser or
+operator error, ends attempts. This supersedes the exhausted earlier night
+attempt allowance; it changes no Tuesday window and authorizes no hosted write.
+The planned slot is 21:50 Bangkok, subject to full fresh admission. The earlier
+20:46 local waiter was cancelled before connecting: retained certificate renewal
+was due at 20:48:30. A retained package-cache monotonic deadline maps to about
+21:42:16, so 21:50 is preferred to 21:46 for settling. These are planning facts,
+not proof of actual completion. No approved attempt was consumed by rescheduling.
+Success
+permits local R8 packaging and bounded extraction, not a hosted rollout claim.
+### Successful renewed library observation - 23 November 21:50 Bangkok
+
+The renewed operator completed one read-only connection at 21:50:02-21:55:08
+Bangkok, with zero retries or hosted mutations. The fail-closed local inventory
+was complete and found zero SSH clients. Approved identities matched; all 30
+foreign root scopes remained inert before/after (59,719,680 summed RSS bytes,
+4,395,008 charged bytes). Scope names, start times and timestamp attribution
+are retained in the receipt; origin is not inferred from time proximity.
+
+Both requested libraries and symbols are present: zlib 1.2.11-40.el9 x86_64,
+`/usr/lib64/libz.so.1.2.11`, `ZLIB_1.2.3.4`; glibc 2.34-272.el9_8 x86_64,
+`/usr/lib64/libresolv.so.2`, `GLIBC_2.2.5`. The unchanged remaining-time guard
+accepted scalar uint64 timer values; raw numeric values and shapes are retained.
+
+Ten samples covered 305.217 seconds, including the full five-minute tail:
+minimum sampled MemAvailable 14,871,707,648 bytes; two swap-in pages, no swap-out
+or swap-used growth; no allocation stall, direct reclaim or Hub high/max/OOM
+event increase. Warehouse stayed healthy, running and not OOMKilled. PSI remains
+unavailable, not passed. Inactive certificate-unit and not-yet-installed slice
+counters are unavailable; current active Hub counters are retained. No capacity
+or owner page-render acceptance is inferred from lifetime peaks.
+
+The only retained overlaps were the approved cgid cron runs at 21:51 and 21:54,
+both with matching command hash and recorded completion. No exception was added.
+Receipt: `.local/hosted-content-rollout/marketing-20261123/night-library-2/attempt-1/receipt.md`.
+Raw SHA-256: `0a4d0b8d966b90977b8b543467ad5973c934ba7e36e4e5849fbc75471922b861`.
+This unlocks local R8 preparation only; Tuesday steps retain every prerequisite.
+
+The subsequent local package successor completed its child checks and archive,
+but the outer 2304 MiB cgroup guard returned `local_memory_limit_event`.
+It is not an accepted build; bounded extraction has not run. No hosted step
+or further connection followed. A laptop-only 4096 MiB build proposal is pending
+owner approval; VPS caps and the 376 MiB extraction bound are unchanged. Evidence:
+`marketing-20261123/package-r8-fix1/result.json` under the same receipt root.

@@ -9729,3 +9729,181 @@ until success. The Tuesday windows are unchanged, with owner tunnels closed
   raw SHA-256 `3e41278f69216b75882bc620c894ce138464ebe206185e55871de069302c986d`.
   Exact scope names/start times/memory, timestamp correlation and read commands
   are retained there and in the raw observation. No further connection is armed.
+
+## 23 November night - library admission error and retained timing
+
+Docs-only `1e6881b7e877ec7370485c68ebe20e93e10daed3` was pushed and verified
+on origin/main. Product candidate `f07f7cb` and its full-gate evidence remain
+unchanged. The owner resumed the paused work at 19:47 Bangkok.
+
+One fresh connection at 19:50:24 followed a zero-client local SSH preflight.
+Approved job/source/unit/command/cgid identities matched. Thirty foreign root
+scopes were inert: summed RSS 59,719,680 bytes, charge 4,395,008 bytes. Exact
+names/start times/memory and retained timestamp correlation are in the receipt;
+session-29855 is owner-confirmed, other origins remain unproved. No cleanup.
+
+STOP: `read_or_admission_unproved`, exception `TypeError`, following busctl's
+dnf-makecache.timer monotonic-deadline query. Raw reply/remote traceback were
+not retained. Local scalar-response replay reproduces the parser's len(data)
+failure; exact hosted reply remains unproved. A strict scalar/singleton uint64
+parser proposal passed 20 pure checks, unapplied. No further hosted attempt:
+the owner permits retries only for scheduled-active-job-only STOPs.
+
+The 2.290-second passive sample showed minimum MemAvailable 14,896,545,792
+bytes, 4,852 swap-in pages, no swap-out, swap-used decrease 18,087,936 bytes,
+and zero stall/direct-reclaim/Hub event increases. Warehouse healthy, running,
+not OOMKilled. PSI unavailable; no five-minute tail or unsampled peak claim.
+
+One night attempt, zero retries/libraries/mutations. R8 package/archive/native
+closure/extraction remain blocked. Tuesday windows stay conditional and fixed.
+Raw receipt SHA-256 `02a74b58a9ec3b22d20016961f24c37dd53a9520d6ee12d89ba7093b492262ec`; all evidence under
+`.local/hosted-content-rollout/marketing-20261123/night-library/attempt-1/`.
+
+Retained-only timing review: 28 pinned sources, 3,602 deduplicated events; one
+ambiguous pair excluded. Midday Gads median 12.56 min, maximum 14.07 min (7
+runs); latest retained midday refresh finish 12:07:15. With five settled minutes,
+13:45/14:45 have historical margins 1h32m45/2h32m45, not fresh admission.
+All unit counts, dates/outcomes and gaps are in night-library/refresh-duration-
+evidence.json and refresh-duration-review.md; compact table in docs/53.
+
+Timing refinement before commit: that 12:07:15 maximum covered starts during
+11:00-11:59 only. Four retained runs of the separate 12:10 Tads schedule have
+median 24.555 seconds, maximum 84.4 seconds, latest finish 12:12:12. Two other
+Tads starts on 19 November finished by 12:58:25. With five settled minutes,
+those later observations leave about 41m35 before 13:45. They do not predict
+future work or grant an overlap exception. Docs/53 now includes both selections;
+exact sources/outcomes: night-library-2/retained-tads-timing.json. No hosted read.
+
+### Renewed night operator preparation - 23 November
+
+Owner approved the exact parser patch and required fail-closed local SSH
+inventory. A new operator preserves the old failure artifacts. Its parser
+matches the approved patch byte-for-byte before the separate preflight changes:
+20 parser checks and 14 fail-closed inventory checks passed locally, with no
+hosted calls. The inventory tests refuse nonzero command exit, stderr errors,
+missing/inconsistent completeness fields, invalid counts and stale evidence.
+
+Operator SHA-256:
+`00ab7f8e8e5c25a9c83f004f256573c7fcf436f4793dc1ff3ba00fa8eb0f4bdf`.
+Assembled remote SHA-256:
+`544ebf3213a13a9813c9afdcdc1f3db8de61062c134ab7ad2bda45e3b9f48ae8`.
+Evidence: `.local/hosted-content-rollout/marketing-20261123/night-library-2/attempt-1/local-checks.json`.
+The new attempt is scheduled for 20:46 Bangkok; no success is inferred from
+preparation. Only a scheduled-active-job-only STOP allows the owner's two
+additional attempts, at least 20 minutes apart and finished by 23:00.
+
+R8 static review matched 31 pinned inputs, including runtime tools, source and
+the unchanged completed 12-stage full gate. Ubuntu reports no active measurement
+helper and swap zero. No build or extraction has run; fresh serial admission
+and genuine library success remain required. Static receipt:
+`.local/hosted-content-rollout/marketing-20261123/package-r8/static-input-review.json`.
+
+Before any connection, the 20:46 local waiter was cancelled because the retained
+certificate timer was due at 20:48:30. The retained package-cache deadline maps
+to 21:42:15.827 Bangkok; local systemd duration parsing verified the conversion.
+The first fresh attempt is therefore planned for 21:50, keeping the existing
+minute guard, actual-completion/five-minute-settle rule and 23:00 deadline.
+No new hosted attempt has been consumed by these local planning changes.
+Evidence: night-library-2/timer-slot-plan.json. One local shell quoting error
+while preparing a replacement wait script was corrected before it ran; neither
+the approved operator nor its preflight had started, and no connection resulted.
+## 23 November 21:55 - renewed library check passed
+
+Result: `COMPLETED_READ_ONLY_LIBRARY_CHECK`, one connection at 21:50:02 Bangkok,
+zero retries and zero hosted mutations. Complete local SSH inventory passed
+with zero clients. Twenty approved parser checks and fourteen fail-closed
+inventory checks passed before the attempt. All approved identities matched.
+
+| Library | Resolved path | Owning package | Required symbol | SHA-256 |
+| --- | --- | --- | --- | --- |
+| libz.so.1 | /usr/lib64/libz.so.1.2.11 | zlib-1.2.11-40.el9.x86_64 | ZLIB_1.2.3.4 present | 4d3dac7a48e8f147507f818eda0c5afafd0846d163b997ad24b3e2e4c791f039 |
+| libresolv.so.2 | /usr/lib64/libresolv.so.2 | glibc-2.34-272.el9_8.x86_64 | GLIBC_2.2.5 present | 74aedbec5433ded929a141fc26917f1acdf9c6789987eb4bf9df928cee4f5114 |
+
+Timer observations were type `t`, scalar `int`: dnf-makecache
+`3227073844436` and systemd-tmpfiles-clean `3284435359829` monotonic microseconds.
+The same remaining-time check passed. Both before/after scope inventories have
+30 inert root scopes, summed RSS 59,719,680 bytes and charge 4,395,008 bytes.
+Exact names/start times/processes/memory and retained attempt correlation are in
+the receipt. Owner-confirmed tunnel origin is kept separate from other unproved
+origins; no scope or process was changed.
+
+Whole-operation review: ten samples over 305.217 seconds, six tail samples,
+minimum sampled MemAvailable 14,871,707,648 bytes; two swap-in pages, zero
+swap-out/growth, stalls/direct reclaim and Hub high/max/OOM event increases.
+Warehouse healthy throughout retained samples, no OOMKilled. PSI unavailable;
+inactive certificate-unit and not-yet-installed slice counters unavailable.
+Two cgid runs overlapped (21:51 and 21:54), matching the approved hash with
+start/completion retained. No other overlapping job or pressure STOP was found.
+
+Evidence root: `.local/hosted-content-rollout/marketing-20261123/night-library-2/attempt-1/`.
+`receipt.md`, `summary.json`, `whole-operation-review.json` retain the command,
+scope, identity, overlap and per-service peak details. Raw receipt SHA-256:
+`0a4d0b8d966b90977b8b543467ad5973c934ba7e36e4e5849fbc75471922b861`.
+
+Fresh Windows and Ubuntu lease checks passed at 21:55:26/30, with no test/runtime
+listeners or helpers and the measurement lock available. R8 local preparation
+admission SHA-256 `a65391f0c042d4730bb2257fc6acbb798c18892aaf2a711c65fc1549c7890521`;
+build started under four CPUs, 2,304 MiB hard memory, no swap. Package/extraction
+success remains pending its actual receipts. No new full gate or hosted action.
+
+### Local R8 check-launcher correction - 23 November 22:02
+
+The first R8 build stopped at `relocated_installed_modules`, exit 1 without a
+timeout. The bootstrap used runpy without adding the script directory, so its
+sibling `operator_diagnostics` import failed. A bounded local replay reproduced
+the exact 757-byte output SHA-256
+`33d429ebe096db0f3e84885ecd7e98d19dd04e9af816b87a09bb7a77664a8ea8`.
+This was a packaging-check launcher failure, not a failed application assertion.
+
+Under the standing test-only-fix approval, a separate successor adds only that
+script directory to the bootstrap import path. Assertions, expected values,
+product files and the release source are unchanged. The focused check extracts
+the bootstrap from the actual successor: 67 imports and existing self-checks
+pass, zero network/database/provider calls and writes, unchanged memory events;
+4 CPUs, 2,304 MiB hard memory, zero swap, measured cgroup peak 270,106,624 bytes.
+The earlier failed operator/workspace/receipt remain intact. No hosted retry.
+
+Successor builder SHA-256:
+`1b06d4014184b2a832945bd2859e1b48d23f427b95814aaba95a00359355cfdd`.
+Launcher diff SHA-256:
+`ea1699c81cd15b4c3b30548141514726357278ddbf1983e3d4f8f8e74485fd1d`.
+Fresh Windows/Ubuntu lease checks passed at 22:01:49/50. The successor reruns
+the complete local package sequence; no build stage is silently reused.
+Evidence: `.local/hosted-content-rollout/marketing-20261123/package-r8-fix1/`,
+including `focused-check.json`, `preparation.json` and `relocation-launcher.diff`.
+
+### R8 package result - local memory STOP, 23 November 22:04
+
+The successor finished all 62 child steps: frozen installs, type generation,
+typecheck, offline build, production imports, native peer, metadata/closure for
+46 ELF files and relocated imports. It wrote an archive, but the outer phase
+failed `local_memory_limit_event`, exit 1 after 133.194 seconds. The unit summary
+reported rounded peak 2.2 GiB and zero swap. The guard compares max/oom/oom_kill;
+exact deltas and stage attribution were not retained before collection. Do not
+infer zero OOM or attribute the peak to a particular phase. No accepted build
+receipt exists and bounded extraction has not run. No automatic rerun is armed.
+
+The archive is preserved but unaccepted: 272,281,135 bytes, 923,640,568 unpacked
+bytes, 24,292 members. SHA-256 independently rechecked:
+`748f9b0d92976d2a72e26966b0395bd8ed2cf8a6d221e708fc8aff01ca682a9f`.
+Package receipt SHA-256:
+`0139ffc6051c10d8e0a18fba0b749ccb3c7a7f8f280de5ebd97e2046c0b3c012`.
+ELF inventory SHA-256:
+`31a373515a199882f3d1318477cfb09b46c64e879c116bc042ad905ea8dca136`.
+Release `f07f7cb-media-dd33d4d7f14b`, product `f07f7cb`, full source manifest
+`e8a47fe53c92361871a3064df200623531c03248ec0745158f48dffdd6d36bf7`
+and its completed full gate remain unchanged. Runtime source seal is separately
+`dd33d4d7f14bbf2a8d626775a77ca7369366145eabbd7e702c52a94edf57e934`.
+
+Owner decision requested: a new laptop-only build at 4096 MiB, retaining four
+CPUs, zero swap and all event assertions, with failure counters/stage snapshots
+retained before refusal. Extraction stays 376 MiB maximum / 320 MiB high.
+No limit change is applied. Exact proposal/diff and STOP receipt are under
+`.local/hosted-content-rollout/marketing-20261123/package-r8-fix1/`:
+`local-build-memory-review.md`, `local-build-memory.proposed.patch`, `result.json`.
+
+Tuesday 13:45/14:45 prerequisites are NOT MET: library evidence now passes,
+but an accepted local build and bounded extraction are absent. Page check/caps
+remain scheduled and conditional. Current-baseline boundary-guard integration,
+actual containment and migration/promotion timing proof remain separate gaps.
+No hosted mutation, credential access, product change or full-gate rerun occurred.

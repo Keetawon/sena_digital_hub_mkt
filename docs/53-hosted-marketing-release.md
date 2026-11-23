@@ -1,11 +1,11 @@
 # 53 — Earlier hosted TEST release and marketing review
 
-Prepared 20 November 2026. **Draft for one owner approval; not an execution
-receipt.** No hosted mutation has been performed by this preparation. The
+Prepared 20 November 2026, with conditional window approval on 23 November.
+**Not an execution receipt.** No hosted mutation has been performed by this preparation. The
 final source commit, full-gate seal, operator rehearsal and bounded build method
 must be attached before execution. [Docs/46](46-hosted-content-rollout.md) owns
-admission/STOP rules; [docs/51](51-hosted-test-cap-window.md) owns the separately
-approved Saturday page-check and cap reservations.
+admission/STOP rules; [docs/51](51-hosted-test-cap-window.md) owns the page-check
+and cap procedure. The approved Tuesday reservations below replace skipped slots.
 
 ## Afternoon owner approval — 23 November 2026
 
@@ -23,7 +23,100 @@ evidence, not the current approval status. No library/package success is assumed
 Warehouse-side deployments are frozen until 24 November 16:00 Bangkok; any
 observed identity drift still stops the operation and is reported with provenance.
 
-### Latest outcome - 23 November 17:45 Bangkok
+
+### Successful library receipt - 23 November 21:55 Bangkok
+
+The renewed attempt passed: both library paths, owning packages and required
+symbols were observed, with a full five-minute tail and no pressure STOP.
+All approved identities matched; 30 foreign root scopes remained inert.
+PSI remains unavailable and is explicitly not treated as passed. One connection,
+no retry or hosted mutation. Raw receipt SHA-256:
+`0a4d0b8d966b90977b8b543467ad5973c934ba7e36e4e5849fbc75471922b861`.
+Full receipt: `.local/hosted-content-rollout/marketing-20261123/night-library-2/attempt-1/receipt.md`.
+
+R8 local packaging then reached relocated imports and stopped because its check
+launcher omitted the script directory needed for `operator_diagnostics`.
+A local replay reproduced the exact output hash. The one-line launcher-only
+correction passed all 67 imports and existing checks with zero network calls,
+database connections or writes. It changes no assertion or product source.
+The first attempt is preserved. The successor under `package-r8-fix1/` completed
+all 62 child steps, static closure over 46 ELF files and archive creation, then
+failed the outer `local_memory_limit_event` guard at 2304 MiB. The exact event
+breakdown was not retained; the terminal reports rounded peak 2.2 GiB and zero
+swap. This is not an accepted build. Bounded extraction has not run.
+
+The preserved archive SHA-256 is
+`748f9b0d92976d2a72e26966b0395bd8ed2cf8a6d221e708fc8aff01ca682a9f`
+(272,281,135 bytes; 24,292 members). A laptop-only 4096 MiB build proposal is
+pending owner approval, with no assertion changes and extraction still bounded
+at 376 MiB. No cap change or rerun is armed. Receipt/proposal: `package-r8-fix1/`
+under the same local receipt root.
+
+**Tuesday 13:45 and 14:45 prerequisites are not yet met.** The library gap is
+closed; accepted build/extraction, page check/caps, current-baseline guard
+integration and actual containment/timing proof remain. Fixed conditional
+windows do not move automatically. No hosted mutation occurred tonight.
+
+### Earlier renewed night preparation - 23 November
+
+Owner approved the exact timer-parser correction, a fail-closed local SSH
+preflight and one fresh read-only attempt, now planned for 21:50 Bangkok. The new
+operator passed 20 parser and 14 inventory checks; 31 R8 input pins also match.
+This is preparation only. The renewed allowance ends by 23:00 and permits at
+most two additional attempts solely for scheduled active jobs, at least twenty
+minutes apart. Other errors end the attempts. Docs/46 owns the exact rule.
+The old STOP below remains historical evidence. R8 is still unsealed pending
+the new observation and actual local build/archive/extraction.
+The 20:46 local wait was cancelled without a connection after checking the
+retained 20:48:30 certificate timer. The retained package-cache deadline maps
+to 21:42:16, so the replacement slot also leaves settling time after that job.
+Fresh actual completion and every admission rule still apply.
+
+### Earlier outcome - 23 November 19:50 Bangkok
+
+The one night attempt stopped before library inspection with a timer-deadline
+parser TypeError. Identity, inert scopes and the short pressure sample passed;
+complete job admission did not. The raw timer reply is unavailable; a local
+scalar-response fixture reproduces the failure. The parser correction proposal
+passed 20 pure checks and remains unapplied. Under the owner's narrow retry
+rule, this non-job-only STOP ends tonight's attempts. No further runner is armed.
+
+R8 is unsealed; archive/native closure/bounded extraction have not run. The
+13:45/14:45 reservations remain conditional on those prerequisites. No hosted
+change or automatic window rollover. Full receipt and proposed correction:
+`.local/hosted-content-rollout/marketing-20261123/night-library/attempt-1/`.
+
+### Retained midday refresh durations - no new host reads
+
+| Unit | Midday runs | Median minutes | Maximum minutes | Latest finish, Bangkok |
+| --- | ---: | ---: | ---: | --- |
+| Gads solar | 7 | 12.56 | 14.07 | 11:51:36 |
+| GA4 solar | 8 | 10.10 | 10.87 | 12:07:15 |
+| Mads | 9 | 20.32 | 21.96 | 12:01:57 |
+| Project group | 1 | 5.62 | 5.62 | 11:20:08 |
+| Solar | 8 | 0.72 | 0.90 | 11:05:13 |
+| Solar short form | 8 | 0.25 | 0.40 | 11:19:56 |
+| Warroom | 1 | 1.01 | 1.01 | 11:12:22 |
+| Zocial eye | 1 | 2.15 | 2.15 | 11:14:31 |
+| Tads, separate 12:10 schedule | 4 | 0.41 | 1.41 | 12:12:12 |
+
+The first eight rows select starts during 11:00-11:59, with Gads restricted to
+11:30-11:40. Tads selects its separate 12:10-12:19 interval. Samples are partial
+and include terminal failures; single
+samples do not establish a typical runtime. Exact dates/outcomes and 28 source
+hashes are in night-library/refresh-duration-evidence.json. Duplicate snapshots
+and ambiguous starts are excluded. Do not sum overlapping job durations.
+
+Including the separate Tads schedule, latest retained scheduled completion
+12:12:12 plus five settled minutes leaves 1h27m48 before 13:45 and 2h27m48
+before 14:45. Two additional off-schedule Tads starts on 19 November finished
+by 12:58:25, leaving about 41m35 and 1h41m35 after settling. Those later starts
+are not an overlap exemption or a prediction. The reservations are plausible
+against this history, not admitted by it. Fresh actual completion/descendants,
+hourly jobs, certificate timers, identity and pressure checks remain required.
+Refinement: `night-library-2/retained-tads-timing.json` under the same receipt root.
+
+### Earlier outcome - 23 November 17:45 Bangkok
 
 The new attempt passed its immediate local SSH preflight (zero clients) and
 connected once. All approved identities matched and all 30 foreign root scopes
@@ -46,7 +139,7 @@ stop; no exemption or cleanup is authorized. No library success is assumed.
 For Tuesday, the owner will have no VPS SSH tunnels open 09:40-16:00 and will
 wait signed in on one browser tab from 09:40. All window prerequisites stand.
 
-### Latest library outcome ? 23 November 15:45 Bangkok
+### Earlier library outcome - 23 November 15:45 Bangkok
 
 The approved attempt connected and stopped before library inspection because
 `session-29855.scope` and `session-29856.scope` contain live `sshd-session`
@@ -61,7 +154,7 @@ R8 remains unsealed, with no library facts or archive/extraction success receipt
 The Tuesday windows remain approved **conditionally**; this result does not
 satisfy the staging/release prerequisites. No window shifts automatically.
 
-## Current preparation and proposed windows - 23 November 2026
+## Earlier preparation and approved windows - 23 November 2026
 
 Product source stays `f07f7cb4f6be76827f03c2770889f1ba4fbbf85e`; the combined
 full gate below remains its evidence. Documentation changes do not alter that
@@ -77,7 +170,7 @@ connected at 14:45 and stopped before library inspection because the health
 script changed. Observed SHA-256:
 `ef5c4dce1ffd10ec48ac883100d1f58095d26f3d4c98c54c02d15c1343d4b22f`, matching
 warehouse commit `1714c97583595c3a3a90c4782b2f481a71aa2461` at 12:54:08 Bangkok.
-Health re-baselining is not approved. Short pressure sample: no STOP trigger,
+Health re-baselining was not yet approved at that attempt. Short pressure sample: no STOP trigger,
 warehouse healthy, PSI unavailable; no admitted interval, retry or mutation.
 Receipt: `.local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-2/receipt.md`.
 The prepared R8 local package helper cannot run without a successful genuine
@@ -97,7 +190,7 @@ still unproved. The prepared switch requires verified caps. The owner's pre-cap
 rollout exception remains available, but that switch path is not prepared;
 this concrete sequence therefore uses verified caps first.
 
-**Proposed Tuesday 24 November, Bangkok; no reservation or execution approved:**
+**Owner-approved conditional reservations - Tuesday 24 November, Bangkok:**
 
 | Window | Concrete operation | Required completion |
 | --- | --- | --- |
@@ -456,7 +549,7 @@ write branches awaiting reviewed samples/actors, and 21 entirely local cases.
 
 ## Open release risks
 
-- Matching-Linux build/transfer containment and the hosted 88→94 operator are
+- Accepted matching-Linux build/transfer containment and the hosted 88→94 operator are
   pending. The small local populated rehearsal passed, with the limits above;
   no executable hosted approval is requested yet. The proposed shared switch
   budget and post-COMMIT reserve lack a completed timing proof; configured
@@ -464,7 +557,8 @@ write branches awaiting reviewed samples/actors, and 21 entirely local cases.
 - Home300 remains above five seconds (7.925–9.873 seconds locally); 0094 is the
   accepted interim improvement, with profiling work retained after UAT.
 - Local upload measurements and Windows page peaks are not hosted capacity
-  acceptance. Saturday's real owner page check is still required for caps.
+  acceptance. The conditionally approved Tuesday owner page check is still
+  required before the cap window; no earlier skipped slot proves acceptance.
 - Current data/object reconciliation, accounts' actual grants and source
   freshness require the admitted read-only check; old receipts do not prove them.
 - Full REM-vs-Hub group reconciliation and an all-core FAQ aggregate need a
