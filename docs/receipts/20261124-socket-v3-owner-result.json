@@ -1,0 +1,1037 @@
+{
+  "status": "STOP",
+  "started_bangkok": "2026-11-24T13:03:16.715202+07:00",
+  "hosted_calls": 0,
+  "hosted_changes": 0,
+  "systemd_version": "systemd 255 (255.4-1ubuntu8.17)",
+  "target_cap_diff_sha256": "13403eb7f0d308374c38cdf28ade583bfec086992f09f1fdfcd31ef0a7ab13be",
+  "worker_rebalance_tested": false,
+  "local_changes": "New synthetic WSL runtime units and fixture directory only; no account, package, warehouse or credential change.",
+  "exit_code": 1,
+  "elapsed_seconds": 137.96887435200006,
+  "stdout": "{\"status\": \"STOP\", \"reason\": \"post_failure_diagnostics_missing\", \"scenarios\": 5, \"receipt\": \"/home/keetawatw/hub-release-build/cap-socket-v3-20261124/output/controller-result.json\"}\n",
+  "stderr": "",
+  "proof": {
+    "status": "STOP",
+    "hosted_calls": 0,
+    "scenarios": [
+      {
+        "stage": "normal-start",
+        "mode": "serve",
+        "start_exit_code": 0,
+        "started_at": "2026-11-24T06:03:20.184404+00:00",
+        "ready": {
+          "pid": 1785,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 6893568,
+          "memory_current": 6893568,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "api": {
+          "properties": {
+            "Restart": "no",
+            "RestartForceExitStatus": "",
+            "MainPID": "1785",
+            "Result": "success",
+            "NRestarts": "0",
+            "OOMPolicy": "kill",
+            "ExecMainStartTimestampMonotonic": "7169685554",
+            "ExecMainCode": "0",
+            "ExecMainStatus": "0",
+            "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "MemoryPeak": "6893568",
+            "MemoryHigh": "1073741824",
+            "MemoryMax": "1308622848",
+            "MemorySwapMax": "0",
+            "OOMScoreAdjust": "1000",
+            "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+            "Requires": "sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice",
+            "BindsTo": "",
+            "Before": "shutdown.target",
+            "After": "basic.target systemd-journald.socket hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice tmp.mount systemd-tmpfiles-setup.service -.mount sysinit.target",
+            "Triggers": "",
+            "ActiveState": "active",
+            "SubState": "running"
+          },
+          "members": [
+            {
+              "pid": 1785,
+              "oom_score_adj": 1000,
+              "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service"
+            }
+          ],
+          "memory": {
+            "memory.high": "1073741824",
+            "memory.max": "1308622848",
+            "memory.swap.max": "0",
+            "memory.current": "6893568",
+            "memory.peak": "6893568",
+            "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+            "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+          }
+        },
+        "socket": {
+          "properties": {
+            "Result": "success",
+            "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-image-broker.socket",
+            "MemoryPeak": "733184",
+            "MemoryHigh": "4194304",
+            "MemoryMax": "8388608",
+            "MemorySwapMax": "0",
+            "OOMScoreAdjust": "1000",
+            "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+            "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+            "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+            "Before": "hub-cap-rehearsal-v3-20261124-api.service shutdown.target sockets.target",
+            "After": "hub-cap-rehearsal-v3-20261124.slice sysinit.target -.mount systemd-journald.socket",
+            "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+            "ActiveState": "active",
+            "SubState": "running"
+          },
+          "members": [],
+          "memory": {
+            "memory.high": "4194304",
+            "memory.max": "8388608",
+            "memory.swap.max": "0",
+            "memory.current": "610304",
+            "memory.peak": "733184",
+            "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+            "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+          }
+        },
+        "passed": true
+      },
+      {
+        "stage": "startup-failure",
+        "mode": "startup-failure",
+        "start_exit_code": 0,
+        "started_at": "2026-11-24T06:03:20.767591+00:00",
+        "ready": {
+          "pid": 1824,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 6893568,
+          "memory_current": 6893568,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "post": {
+          "pid": 1826,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 7356416,
+          "memory_current": 7356416,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          },
+          "service_result": "exit-code"
+        },
+        "after": {
+          "hub-cap-rehearsal-v3-20261124-api.service": {
+            "properties": {
+              "Restart": "no",
+              "RestartForceExitStatus": "",
+              "MainPID": "0",
+              "Result": "exit-code",
+              "NRestarts": "0",
+              "OOMPolicy": "kill",
+              "ExecMainStartTimestampMonotonic": "7170271903",
+              "ExecMainCode": "1",
+              "ExecMainStatus": "23",
+              "ControlGroup": "",
+              "MemoryPeak": "6893568",
+              "MemoryHigh": "1073741824",
+              "MemoryMax": "1308622848",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Requires": "hub-cap-rehearsal-v3-20261124-image-broker.socket sysinit.target hub-cap-rehearsal-v3-20261124.slice",
+              "BindsTo": "",
+              "Before": "shutdown.target",
+              "After": "systemd-tmpfiles-setup.service tmp.mount systemd-journald.socket -.mount hub-cap-rehearsal-v3-20261124.slice sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket basic.target",
+              "Triggers": "",
+              "ActiveState": "failed",
+              "SubState": "failed"
+            },
+            "members": []
+          },
+          "hub-cap-rehearsal-v3-20261124-image-broker.socket": {
+            "properties": {
+              "Result": "success",
+              "ControlGroup": "",
+              "MemoryPeak": "[not set]",
+              "MemoryHigh": "4194304",
+              "MemoryMax": "8388608",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+              "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+              "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Before": "sockets.target shutdown.target hub-cap-rehearsal-v3-20261124-api.service",
+              "After": "sysinit.target hub-cap-rehearsal-v3-20261124.slice -.mount systemd-journald.socket",
+              "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+              "ActiveState": "inactive",
+              "SubState": "dead"
+            },
+            "members": []
+          }
+        },
+        "passed": true
+      },
+      {
+        "stage": "abrupt-failure",
+        "mode": "serve",
+        "start_exit_code": 0,
+        "started_at": "2026-11-24T06:03:21.709940+00:00",
+        "ready": {
+          "pid": 1847,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 6774784,
+          "memory_current": 6770688,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "before_signal": {
+          "properties": {
+            "Restart": "no",
+            "RestartForceExitStatus": "",
+            "MainPID": "1847",
+            "Result": "success",
+            "NRestarts": "0",
+            "OOMPolicy": "kill",
+            "ExecMainStartTimestampMonotonic": "7171210426",
+            "ExecMainCode": "0",
+            "ExecMainStatus": "0",
+            "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "MemoryPeak": "6774784",
+            "MemoryHigh": "1073741824",
+            "MemoryMax": "1308622848",
+            "MemorySwapMax": "0",
+            "OOMScoreAdjust": "1000",
+            "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+            "Requires": "sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice",
+            "BindsTo": "",
+            "Before": "shutdown.target",
+            "After": "systemd-tmpfiles-setup.service tmp.mount hub-cap-rehearsal-v3-20261124.slice hub-cap-rehearsal-v3-20261124-image-broker.socket systemd-journald.socket sysinit.target basic.target -.mount",
+            "Triggers": "",
+            "ActiveState": "active",
+            "SubState": "running"
+          },
+          "members": [
+            {
+              "pid": 1847,
+              "oom_score_adj": 1000,
+              "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service"
+            }
+          ],
+          "memory": {
+            "memory.high": "1073741824",
+            "memory.max": "1308622848",
+            "memory.swap.max": "0",
+            "memory.current": "6770688",
+            "memory.peak": "6774784",
+            "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+            "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+          }
+        },
+        "post": {
+          "pid": 1851,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 7024640,
+          "memory_current": 7024640,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          },
+          "service_result": "signal"
+        },
+        "after": {
+          "hub-cap-rehearsal-v3-20261124-api.service": {
+            "properties": {
+              "Restart": "no",
+              "RestartForceExitStatus": "",
+              "MainPID": "0",
+              "Result": "signal",
+              "NRestarts": "0",
+              "OOMPolicy": "kill",
+              "ExecMainStartTimestampMonotonic": "7171210426",
+              "ExecMainCode": "2",
+              "ExecMainStatus": "9",
+              "ControlGroup": "",
+              "MemoryPeak": "6774784",
+              "MemoryHigh": "1073741824",
+              "MemoryMax": "1308622848",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Requires": "sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice",
+              "BindsTo": "",
+              "Before": "shutdown.target",
+              "After": "systemd-tmpfiles-setup.service tmp.mount hub-cap-rehearsal-v3-20261124.slice hub-cap-rehearsal-v3-20261124-image-broker.socket systemd-journald.socket sysinit.target basic.target -.mount",
+              "Triggers": "",
+              "ActiveState": "failed",
+              "SubState": "failed"
+            },
+            "members": []
+          },
+          "hub-cap-rehearsal-v3-20261124-image-broker.socket": {
+            "properties": {
+              "Result": "success",
+              "ControlGroup": "",
+              "MemoryPeak": "[not set]",
+              "MemoryHigh": "4194304",
+              "MemoryMax": "8388608",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+              "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+              "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Before": "hub-cap-rehearsal-v3-20261124-api.service shutdown.target sockets.target",
+              "After": "-.mount systemd-journald.socket hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+              "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+              "ActiveState": "inactive",
+              "SubState": "dead"
+            },
+            "members": []
+          }
+        },
+        "passed": true
+      },
+      {
+        "stage": "queued-traffic",
+        "mode": "queued-failure",
+        "start_exit_code": 0,
+        "started_at": "2026-11-24T06:03:22.818765+00:00",
+        "ready": {
+          "pid": 1871,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 6836224,
+          "memory_current": 6836224,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "queued_clients": 4,
+        "post": {
+          "pid": 1891,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 6836224,
+          "memory_current": 6836224,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          },
+          "service_result": "exit-code"
+        },
+        "after": {
+          "hub-cap-rehearsal-v3-20261124-api.service": {
+            "properties": {
+              "Restart": "no",
+              "RestartForceExitStatus": "",
+              "MainPID": "0",
+              "Result": "exit-code",
+              "NRestarts": "0",
+              "OOMPolicy": "kill",
+              "ExecMainStartTimestampMonotonic": "7172219458",
+              "ExecMainCode": "1",
+              "ExecMainStatus": "24",
+              "ControlGroup": "",
+              "MemoryPeak": "6836224",
+              "MemoryHigh": "1073741824",
+              "MemoryMax": "1308622848",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Requires": "hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+              "BindsTo": "",
+              "Before": "shutdown.target",
+              "After": "sysinit.target tmp.mount hub-cap-rehearsal-v3-20261124.slice systemd-tmpfiles-setup.service basic.target -.mount systemd-journald.socket hub-cap-rehearsal-v3-20261124-image-broker.socket",
+              "Triggers": "",
+              "ActiveState": "failed",
+              "SubState": "failed"
+            },
+            "members": []
+          },
+          "hub-cap-rehearsal-v3-20261124-image-broker.socket": {
+            "properties": {
+              "Result": "success",
+              "ControlGroup": "",
+              "MemoryPeak": "[not set]",
+              "MemoryHigh": "4194304",
+              "MemoryMax": "8388608",
+              "MemorySwapMax": "0",
+              "OOMScoreAdjust": "1000",
+              "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+              "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+              "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+              "Before": "hub-cap-rehearsal-v3-20261124-api.service shutdown.target sockets.target",
+              "After": "systemd-journald.socket sysinit.target -.mount hub-cap-rehearsal-v3-20261124.slice",
+              "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+              "ActiveState": "inactive",
+              "SubState": "dead"
+            },
+            "members": []
+          }
+        },
+        "passed": true
+      },
+      {
+        "stage": "child-oom",
+        "mode": "oom",
+        "start_exit_code": 0,
+        "started_at": "2026-11-24T06:03:25.928099+00:00",
+        "ready": {
+          "pid": 1912,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 7098368,
+          "memory_current": 7098368,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "child": {
+          "pid": 1921,
+          "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "oom_score_adj": 1000,
+          "memory_peak": 64241664,
+          "memory_current": 64241664,
+          "events": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0
+          }
+        },
+        "burst_children": [
+          {
+            "pid": 1913,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 60047360,
+            "memory_current": 60047360,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1914,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 64241664,
+            "memory_current": 64241664,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1915,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 61095936,
+            "memory_current": 61095936,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1916,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 64241664,
+            "memory_current": 64241664,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1917,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 61095936,
+            "memory_current": 61095936,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1918,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 60309504,
+            "memory_current": 60309504,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1919,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 57950208,
+            "memory_current": 57950208,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          },
+          {
+            "pid": 1920,
+            "cgroup": "/sys/fs/cgroup/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+            "oom_score_adj": 1000,
+            "memory_peak": 64241664,
+            "memory_current": 64241664,
+            "events": {
+              "low": 0,
+              "high": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_kill": 0,
+              "oom_group_kill": 0
+            },
+            "scheduled_monotonic": 7200.454954542
+          }
+        ],
+        "pressure_timeline": "child-oom-pressure-timeline.json",
+        "observed_wait_seconds": 116.28804926199973,
+        "high_throttle_interval": {
+          "first_monotonic": 7179.528631576,
+          "last_monotonic": 7200.071009664,
+          "seconds": 20.542378087999168,
+          "first_current_bytes": 1074020352,
+          "last_current_bytes": 1139494912,
+          "last_events": {
+            "low": "0",
+            "high": "3373",
+            "max": "0",
+            "oom": "0",
+            "oom_kill": "0",
+            "oom_group_kill": "0"
+          },
+          "scheduled_burst_monotonic": 7200.454954542,
+          "allocator_progress": "child-oom-allocator-progress.ndjson"
+        }
+      }
+    ],
+    "systemd_version": "systemd 255 (255.4-1ubuntu8.17)",
+    "kernel": "6.18.58.1-microsoft-standard-WSL2",
+    "parent_before": {
+      "properties": {
+        "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice",
+        "MemoryPeak": "9900032",
+        "MemoryHigh": "2147483648",
+        "MemoryMax": "2415919104",
+        "MemorySwapMax": "0",
+        "Id": "hub-cap-rehearsal-v3-20261124.slice",
+        "Requires": "hub-cap-rehearsal-v3.slice",
+        "BindsTo": "",
+        "Before": "hub-cap-rehearsal-v3-20261124-controller.service shutdown.target",
+        "After": "hub-cap-rehearsal-v3.slice",
+        "Triggers": "",
+        "ActiveState": "active",
+        "SubState": "active"
+      },
+      "members": [],
+      "memory": {
+        "memory.high": "2147483648",
+        "memory.max": "2415919104",
+        "memory.swap.max": "0",
+        "memory.current": "9101312",
+        "memory.peak": "9900032",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      }
+    },
+    "all_active_caps": {
+      "hub-cap-rehearsal-v3-20261124-api.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "1785",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "7169685554",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service",
+          "MemoryPeak": "6893568",
+          "MemoryHigh": "1073741824",
+          "MemoryMax": "1308622848",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+          "Requires": "sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice",
+          "BindsTo": "",
+          "Before": "hub-cap-rehearsal-v3-20261124-worker.service shutdown.target",
+          "After": "basic.target systemd-journald.socket hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice tmp.mount systemd-tmpfiles-setup.service -.mount sysinit.target",
+          "Triggers": "",
+          "ActiveState": "active",
+          "SubState": "running"
+        },
+        "members": [
+          {
+            "pid": 1785,
+            "oom_score_adj": 1000,
+            "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-api.service"
+          }
+        ],
+        "memory": {
+          "memory.high": "1073741824",
+          "memory.max": "1308622848",
+          "memory.swap.max": "0",
+          "memory.current": "6791168",
+          "memory.peak": "6893568",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+        }
+      },
+      "hub-cap-rehearsal-v3-20261124-worker.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "1790",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "7169848591",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-worker.service",
+          "MemoryPeak": "4665344",
+          "MemoryHigh": "134217728",
+          "MemoryMax": "167772160",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-worker.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "systemd-journald.socket hub-cap-rehearsal-v3-20261124.slice sysinit.target basic.target tmp.mount systemd-tmpfiles-setup.service -.mount hub-cap-rehearsal-v3-20261124-api.service",
+          "Triggers": "",
+          "ActiveState": "active",
+          "SubState": "running"
+        },
+        "members": [
+          {
+            "pid": 1790,
+            "oom_score_adj": 1000,
+            "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-worker.service"
+          }
+        ],
+        "memory": {
+          "memory.high": "134217728",
+          "memory.max": "167772160",
+          "memory.swap.max": "0",
+          "memory.current": "4665344",
+          "memory.peak": "4665344",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+        }
+      },
+      "hub-cap-rehearsal-v3-20261124-admin.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "1791",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "7169866577",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-admin.service",
+          "MemoryPeak": "3420160",
+          "MemoryHigh": "268435456",
+          "MemoryMax": "402653184",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-admin.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "-.mount sysinit.target tmp.mount hub-cap-rehearsal-v3-20261124.slice systemd-tmpfiles-setup.service basic.target systemd-journald.socket",
+          "Triggers": "",
+          "ActiveState": "active",
+          "SubState": "running"
+        },
+        "members": [
+          {
+            "pid": 1791,
+            "oom_score_adj": 1000,
+            "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-admin.service"
+          }
+        ],
+        "memory": {
+          "memory.high": "268435456",
+          "memory.max": "402653184",
+          "memory.swap.max": "0",
+          "memory.current": "4468736",
+          "memory.peak": "4468736",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+        }
+      },
+      "hub-cap-rehearsal-v3-20261124-certificate.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "1792",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "7169878905",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-certificate.service",
+          "MemoryPeak": "4231168",
+          "MemoryHigh": "100663296",
+          "MemoryMax": "134217728",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-certificate.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "systemd-journald.socket systemd-tmpfiles-setup.service basic.target sysinit.target -.mount tmp.mount hub-cap-rehearsal-v3-20261124.slice",
+          "Triggers": "",
+          "ActiveState": "active",
+          "SubState": "running"
+        },
+        "members": [
+          {
+            "pid": 1792,
+            "oom_score_adj": 1000,
+            "cgroup": "0::/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-certificate.service"
+          }
+        ],
+        "memory": {
+          "memory.high": "100663296",
+          "memory.max": "134217728",
+          "memory.swap.max": "0",
+          "memory.current": "4493312",
+          "memory.peak": "4493312",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+        }
+      },
+      "hub-cap-rehearsal-v3-20261124-image-broker.socket": {
+        "properties": {
+          "Result": "success",
+          "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice/hub-cap-rehearsal-v3-20261124-image-broker.socket",
+          "MemoryPeak": "733184",
+          "MemoryHigh": "4194304",
+          "MemoryMax": "8388608",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+          "Before": "hub-cap-rehearsal-v3-20261124-api.service shutdown.target sockets.target",
+          "After": "hub-cap-rehearsal-v3-20261124.slice sysinit.target -.mount systemd-journald.socket",
+          "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+          "ActiveState": "active",
+          "SubState": "running"
+        },
+        "members": [],
+        "memory": {
+          "memory.high": "4194304",
+          "memory.max": "8388608",
+          "memory.swap.max": "0",
+          "memory.current": "610304",
+          "memory.peak": "733184",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+        }
+      }
+    },
+    "parent_with_children": {
+      "properties": {
+        "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice",
+        "MemoryPeak": "36753408",
+        "MemoryHigh": "2147483648",
+        "MemoryMax": "2415919104",
+        "MemorySwapMax": "0",
+        "Id": "hub-cap-rehearsal-v3-20261124.slice",
+        "Requires": "hub-cap-rehearsal-v3.slice",
+        "BindsTo": "",
+        "Before": "hub-cap-rehearsal-v3-20261124-worker.service hub-cap-rehearsal-v3-20261124-certificate.service shutdown.target hub-cap-rehearsal-v3-20261124-controller.service hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124-admin.service hub-cap-rehearsal-v3-20261124-api.service",
+        "After": "hub-cap-rehearsal-v3.slice",
+        "Triggers": "",
+        "ActiveState": "active",
+        "SubState": "active"
+      },
+      "members": [],
+      "memory": {
+        "memory.high": "2147483648",
+        "memory.max": "2415919104",
+        "memory.swap.max": "0",
+        "memory.current": "36016128",
+        "memory.peak": "37015552",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+        "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      }
+    },
+    "reason": "post_failure_diagnostics_missing",
+    "elapsed_seconds": 137.62329309900088,
+    "parent_after_before_cleanup": {
+      "properties": {
+        "ControlGroup": "/hub.slice/hub-cap.slice/hub-cap-rehearsal.slice/hub-cap-rehearsal-v3.slice/hub-cap-rehearsal-v3-20261124.slice",
+        "MemoryPeak": "1320751104",
+        "MemoryHigh": "2147483648",
+        "MemoryMax": "2415919104",
+        "MemorySwapMax": "0",
+        "Id": "hub-cap-rehearsal-v3-20261124.slice",
+        "Requires": "hub-cap-rehearsal-v3.slice",
+        "BindsTo": "",
+        "Before": "shutdown.target hub-cap-rehearsal-v3-20261124-controller.service hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124-api.service",
+        "After": "hub-cap-rehearsal-v3.slice",
+        "Triggers": "",
+        "ActiveState": "active",
+        "SubState": "active"
+      },
+      "members": [],
+      "memory": {
+        "memory.high": "2147483648",
+        "memory.max": "2415919104",
+        "memory.swap.max": "0",
+        "memory.current": "16658432",
+        "memory.peak": "1320751104",
+        "memory.events": "low 0\nhigh 15615\nmax 112\noom 5\noom_kill 3\noom_group_kill 1",
+        "memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      }
+    },
+    "final_units_before_cleanup": {
+      "hub-cap-rehearsal-v3-20261124-api.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "0",
+          "Result": "oom-kill",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "7175317211",
+          "ExecMainCode": "2",
+          "ExecMainStatus": "9",
+          "ControlGroup": "",
+          "MemoryPeak": "1308622848",
+          "MemoryHigh": "1073741824",
+          "MemoryMax": "1308622848",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-api.service",
+          "Requires": "sysinit.target hub-cap-rehearsal-v3-20261124-image-broker.socket hub-cap-rehearsal-v3-20261124.slice",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "tmp.mount systemd-tmpfiles-setup.service hub-cap-rehearsal-v3-20261124-image-broker.socket basic.target -.mount hub-cap-rehearsal-v3-20261124.slice sysinit.target systemd-journald.socket",
+          "Triggers": "",
+          "ActiveState": "failed",
+          "SubState": "failed"
+        },
+        "members": []
+      },
+      "hub-cap-rehearsal-v3-20261124-image-broker.socket": {
+        "properties": {
+          "Result": "success",
+          "ControlGroup": "",
+          "MemoryPeak": "[not set]",
+          "MemoryHigh": "4194304",
+          "MemoryMax": "8388608",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-image-broker.socket",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "hub-cap-rehearsal-v3-20261124-api.service",
+          "Before": "sockets.target hub-cap-rehearsal-v3-20261124-api.service shutdown.target",
+          "After": "sysinit.target hub-cap-rehearsal-v3-20261124.slice systemd-journald.socket -.mount",
+          "Triggers": "hub-cap-rehearsal-v3-20261124-api.service",
+          "ActiveState": "inactive",
+          "SubState": "dead"
+        },
+        "members": []
+      },
+      "hub-cap-rehearsal-v3-20261124-worker.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "0",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "0",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryPeak": "[not set]",
+          "MemoryHigh": "134217728",
+          "MemoryMax": "167772160",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-worker.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "basic.target -.mount tmp.mount systemd-journald.socket sysinit.target hub-cap-rehearsal-v3-20261124-api.service hub-cap-rehearsal-v3-20261124.slice systemd-tmpfiles-setup.service",
+          "Triggers": "",
+          "ActiveState": "inactive",
+          "SubState": "dead"
+        },
+        "members": []
+      },
+      "hub-cap-rehearsal-v3-20261124-admin.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "0",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "0",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryPeak": "[not set]",
+          "MemoryHigh": "268435456",
+          "MemoryMax": "402653184",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-admin.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "sysinit.target -.mount systemd-tmpfiles-setup.service systemd-journald.socket hub-cap-rehearsal-v3-20261124.slice basic.target tmp.mount",
+          "Triggers": "",
+          "ActiveState": "inactive",
+          "SubState": "dead"
+        },
+        "members": []
+      },
+      "hub-cap-rehearsal-v3-20261124-certificate.service": {
+        "properties": {
+          "Restart": "no",
+          "RestartForceExitStatus": "",
+          "MainPID": "0",
+          "Result": "success",
+          "NRestarts": "0",
+          "OOMPolicy": "kill",
+          "ExecMainStartTimestampMonotonic": "0",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0",
+          "ControlGroup": "",
+          "MemoryPeak": "[not set]",
+          "MemoryHigh": "100663296",
+          "MemoryMax": "134217728",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Id": "hub-cap-rehearsal-v3-20261124-certificate.service",
+          "Requires": "hub-cap-rehearsal-v3-20261124.slice sysinit.target",
+          "BindsTo": "",
+          "Before": "shutdown.target",
+          "After": "systemd-tmpfiles-setup.service tmp.mount basic.target sysinit.target -.mount hub-cap-rehearsal-v3-20261124.slice systemd-journald.socket",
+          "Triggers": "",
+          "ActiveState": "inactive",
+          "SubState": "dead"
+        },
+        "members": []
+      }
+    }
+  },
+  "reason": "local_rehearsal_failed",
+  "cleanup_stop_exit_code": 5,
+  "cleanup_owned_hashes_match": true,
+  "remaining_active_synthetic_units": "",
+  "completed_bangkok": "2026-11-24T13:05:33.750729+07:00",
+  "vps_systemd_252_parity": false,
+  "certificate_runtime_capacity_proved": false,
+  "hosted_capacity_acceptance": false
+}
