@@ -1,0 +1,32 @@
+{
+  "status": "LOCAL_OFFLINE_CHECKS_PASSED",
+  "started_at": "2026-11-24T09:22:47.769592+00:00",
+  "finished_at": "2026-11-24T09:22:48.485897+00:00",
+  "elapsed_seconds": 0.7162762000225484,
+  "tests": 120,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_hashes": {
+    "cap_apply.py": "e076cb45b03af8f39d72017d18ceb257e3fea0e0c07223e28a22913ef43328df",
+    "test_cap_apply.py": "ea37ee392585493988bdb485c154ff5fffa80589e31996e5f0618fd49c1d1eea",
+    "run_checks.py": "e416d233037bedb8808b08c62536d78804ec73c4ea9fe06517cc82f80a3253c2",
+    "admit_checks.ps1": "4cf9d1deff58a003ad278dd03cabe52a3bc131598f0e41ecd7f0199cb075a148",
+    "lease_bridge.py": "334865a62b60c9b31d32f1530a6c91e30f15d857749f880155bcf2c389d64144",
+    "observer_adapter.proposed.py": "bd97c92888f6ace370281f9c9148b0378c16efe2f2a36eb33adc17a66bb175b0",
+    "test_observer.py": "89fcbb45d2e8d9b0e6db8a5c884e0b74c95e390e8611c6c9d446fcf4ab19ec29",
+    "caller.proposed.py": "5f61d5a35f7ef2b3a8e0c501ed124f7aa3ec5380c4da5d3af2773702bd24e9e6",
+    "transport.proposed.py": "79a14ba7f1b9215dc678046f18080c8e4012026cbb5939025cce004cefa0d9f1",
+    "test_transport_caller.py": "dfded87caac0d82772e49b5bc3c3b1f0b0a1b9ac695a420e6cc04f250db57554",
+    "scope-history.json": "88344e827ae36f90879371642f40b7baebd45a2313a31235376f6f302e3f179a",
+    "owner-decision-provenance.md": "ffc67edca085f90618c2500ae4529696e60442c808a4f22916e9853bc2fdc2f6",
+    "cap-application.reviewed.json": "6650d560fe09e18a09d2eb3c22176f9d46c361988f02270db23b2fe6df36d3f5"
+  },
+  "source_unchanged": true,
+  "actual_exit_code": 0,
+  "hosted_calls": 0,
+  "service_calls": 0,
+  "bound_ports": 0,
+  "evidence_kind": "LOCAL_MOCKS_ONLY",
+  "output_sha256": "e79932bbcd1b6c80fa41e8839085a65366e801ef9fee2e5e53f67991d5907cfe"
+}

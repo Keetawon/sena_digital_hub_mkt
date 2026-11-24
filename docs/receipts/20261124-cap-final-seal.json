@@ -1,0 +1,65 @@
+{
+    "status":  "SEALED_PREPARED_PENDING_OWNER_GO",
+    "hosted_arming":  false,
+    "owner_go":  false,
+    "execution_authorized":  false,
+    "successor":  "approved-wednesday-cap-packet-v4",
+    "supersedes_only_preparation":  "111-pass successor-v3 and every earlier source/seal remain unchanged",
+    "operator_files":  {
+                           "cap_apply.py":  "e076cb45b03af8f39d72017d18ceb257e3fea0e0c07223e28a22913ef43328df",
+                           "observer_adapter.proposed.py":  "bd97c92888f6ace370281f9c9148b0378c16efe2f2a36eb33adc17a66bb175b0",
+                           "caller.proposed.py":  "5f61d5a35f7ef2b3a8e0c501ed124f7aa3ec5380c4da5d3af2773702bd24e9e6",
+                           "transport.proposed.py":  "79a14ba7f1b9215dc678046f18080c8e4012026cbb5939025cce004cefa0d9f1"
+                       },
+    "scope_history_sha256":  "88344e827ae36f90879371642f40b7baebd45a2313a31235376f6f302e3f179a",
+    "reviewed_packet_sha256":  "6650d560fe09e18a09d2eb3c22176f9d46c361988f02270db23b2fe6df36d3f5",
+    "owner_decision_source":  "docs/receipts/20261124-owner-1615-decisions.md",
+    "owner_decision_sha256":  "ffc67edca085f90618c2500ae4529696e60442c808a4f22916e9853bc2fdc2f6",
+    "checks_sha256":  "0c44829623eca6570c0a1a63ff628ac8b88460c629cb3b1af39a40554116af20",
+    "tests":  120,
+    "failures":  0,
+    "errors":  0,
+    "skips":  0,
+    "actual_exit_code":  0,
+    "evidence_kind":  "LOCAL_MOCKS_ONLY",
+    "pending_owner_decisions":  [
+
+                                ],
+    "blocking_requirements":  [
+
+                              ],
+    "resolved_requirements":  [
+                                  {
+                                      "requirement":  "Cap helper CPUQuota50% and TasksMax32 for existing high/max320/376MiB only",
+                                      "resolution":  "APPROVED_OWNER_20261124_1615"
+                                  },
+                                  {
+                                      "requirement":  "Exact own successful reload correlation; unrelated reload/reexecution STOP",
+                                      "resolution":  "APPROVED_OWNER_20261124_1615"
+                                  },
+                                  {
+                                      "requirement":  "Schema88 uses the identified committed migration receipt plus current live release pointer; no DB query",
+                                      "resolution":  "APPROVED_RETAINED_EVIDENCE_OWNER_20261124_1615"
+                                  }
+                              ],
+    "execution_preconditions":  [
+                                    "One owner GO for the exact Wednesday slot before arming; the same GO authorizes both flags",
+                                    "Fresh complete local SSH inventory and original read-only capture verification",
+                                    "Actual job identities/overlaps, settled heavy work and sufficient clearance",
+                                    "All pressure and high-event STOP rules, live cap/hierarchy/score/no-restart/socket/singleton checks and full tail"
+                                ],
+    "reservation":  {
+                        "window_id":  "20261125-1045-1059-bangkok",
+                        "window_start":  "2026-11-25T10:45:00+07:00",
+                        "window_end":  "2026-11-25T10:59:00+07:00",
+                        "independent_of_staging_and_promotion":  true,
+                        "tonight_cancelled":  true,
+                        "automatic_rescheduling":  false
+                    },
+    "hosted_calls":  0,
+    "new_socket_rehearsal_required":  false,
+    "existing_socket_evidence":  "OWNER_TEST_RISK_ACCEPTANCE_V2_V3_NO_V4",
+    "approved_config_diff_sha256":  "13403eb7f0d308374c38cdf28ade583bfec086992f09f1fdfcd31ef0a7ab13be",
+    "retained_schema_receipt_sha256":  "940213a558f34cf2c400888deb7db38adae1dcea5ee455f8e9179f36dd723e00",
+    "retained_schema_is_fresh":  false
+}
