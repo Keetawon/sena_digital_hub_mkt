@@ -1,0 +1,93 @@
+{
+  "status": "NOT_MET_EXTRACTION_INPUT_PARITY",
+  "observed_at": "2026-11-24T01:47:42.822372+00:00",
+  "hosted_calls": 0,
+  "hosted_operator_modified": false,
+  "operator_executions": 0,
+  "release": "f07f7cb-media-dd33d4d7f14b",
+  "archive_sha256": "c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3",
+  "accepted_local_harness_sha256": "6f8ef4ee176875b21f0b8bb7719ef2f94085a29f38309fff0619273c2f9cced9",
+  "receiver_sha256": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+  "packet_handoff_sha256": "3059b28f06c53770c1e7f42a1485daf8acecfc878dd8eecb995f887abbdd4cdd",
+  "packet_readme_sha256": "5eed6b0ca02dfcc956d7571feb1aba6ed64e58d18bd2ca3fb6ba3ee3c57056ba",
+  "packet_receiver_template_sha256": "a06e30282ea9f07474629427b494042d39df6e1780855e73ecbee25380255c2e",
+  "later_receiver_hash_inventory": {
+    "candidate-v1\\stream_receiver.py": "4a4895024c2d9375468f604c6b8f4cf3e825f365be7067b69edf4b81fdb7a037",
+    "candidate-v2\\stream_receiver.py": "23d1ec2817db9172961e52257e098092ed1cc61fdf980a54b958e92640528154",
+    "candidate-v3\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "candidate-v4\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "candidate-v5\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "candidate-v6\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "candidate-v7\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "candidate-v8\\stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11"
+  },
+  "parity": [
+    {
+      "property": "receiver bytes",
+      "local": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+      "hosted": "same hash in packet",
+      "result": "MATCH"
+    },
+    {
+      "property": "receiver archive/output/compressed-input cache advice",
+      "local": "flush/fsync/discard at bounded intervals in unchanged receiver",
+      "hosted": "same receiver functions",
+      "result": "MATCH"
+    },
+    {
+      "property": "source archive input path",
+      "local": "regular source file opened inside helper; 1 MiB pump to receiver PIPE",
+      "hosted": "documented systemd-run --pipe command with < candidate.tar.gz; no sealed sender/pump launcher",
+      "result": "UNPROVED"
+    },
+    {
+      "property": "source archive discard advice",
+      "local": "posix_fadvise on source file after each 1 MiB transfer",
+      "hosted": "not supplied by receiver; not in documented sender command",
+      "result": "DIFFERS_OR_MISSING"
+    },
+    {
+      "property": "source pump and receiver in same cgroup",
+      "local": "pump parent starts receiver child inside the existing transient helper",
+      "hosted": "no executable sealed pump or full transfer launcher; command template cannot establish charging",
+      "result": "UNPROVED"
+    },
+    {
+      "property": "complete hosted admission",
+      "local": "accepted pinned local extraction receipt",
+      "hosted": "STOP template with null pins and execution_authorized=false",
+      "result": "NOT_EXECUTABLE"
+    }
+  ],
+  "self_checks": {
+    "receipt_value": false,
+    "source": "stream_receiver.py:382 sets false for both local and hosted extraction; stage verifies archive/members/hash/containment and does not import or start the candidate",
+    "local_build_checks": [
+      {
+        "step": "production_imports",
+        "exit_code": 0,
+        "output_sha256": "f4bb30838bcfc5f6b0cc3a03a7fdaa3527269837aa509d43b41b1fc986c9929e"
+      },
+      {
+        "step": "native_peer",
+        "exit_code": 0,
+        "output_sha256": "b116a0045e0d788c9ac4e3f0133067d54fb99b2d3c427da715555516a584678d"
+      },
+      {
+        "step": "relocated_installed_modules",
+        "exit_code": 0,
+        "output_sha256": "f4bb30838bcfc5f6b0cc3a03a7fdaa3527269837aa509d43b41b1fc986c9929e"
+      }
+    ],
+    "effect": "Valid extraction-only evidence for the measured local harness; not hosted staging, runtime-entrypoint, API/worker identity, self-check memory, or capacity acceptance. Final bounded serial runtime checks remain required."
+  },
+  "root_proof": {
+    "status": "RESULT_FILE_NOT_PRESENT",
+    "checked_at": "2026-11-24T01:47:42.822372+00:00",
+    "operator_rerun": false
+  },
+  "readiness": "NOT_MET",
+  "go_no_go_due_bangkok": "2026-11-24 13:00",
+  "afternoon_windows_armed": false,
+  "owner_page_start_signal": "Owner confirmation required before signal, plus fresh successful admission; fixed window unchanged."
+}
