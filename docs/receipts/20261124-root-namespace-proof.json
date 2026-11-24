@@ -1,0 +1,65 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 0.4288717250000005,
+  "stdout_sha256": "11192730ffe5f5b22cc01094a21e0ba3f1c122ca688d7285d4624bc6e3652d60",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "hosted_calls": 0,
+  "local_changes": "New synthetic fixture directory and runtime-only sena-hub-test.slice caps inside WSL; no real credential files, hosted state or existing local Hub units changed.",
+  "proof": {
+    "status": "LOCAL_NAMESPACE_COMPONENT_PROOF_PASSED",
+    "observed_at": "2026-11-24T02:10:22.912309+00:00",
+    "namespace": {
+      "protected_directory": "/etc/sena-hub-test",
+      "read_only_files": [
+        "/etc/sena-hub-test/admin.env",
+        "/etc/sena-hub-test/api.env",
+        "/etc/sena-hub-test/media-worker.env",
+        "/etc/sena-hub-test/r2-test.json",
+        "/etc/sena-hub-test/supabase-ca.crt"
+      ],
+      "writable_parent_mounts": [],
+      "actual_mounts_verified": true
+    },
+    "actual_cgroup": "/sena.slice/sena-hub.slice/sena-hub-test.slice/sena-hub-test-maintenance-guard-local-proof.service",
+    "parent_max_bytes": 2415919104,
+    "parent_high_bytes": 2147483648,
+    "memory_max_bytes": 394264576,
+    "memory_high_bytes": 335544320,
+    "memory_swap_max_bytes": 0,
+    "cpu_quota_percent": 400,
+    "oom_score_adjust": 1000,
+    "child_limits_verified": true,
+    "readonly_write_refused": true,
+    "memory_peak_bytes": 14446592,
+    "before_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "after_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "event_deltas": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "elapsed_seconds": 0.0787295659999998,
+    "real_credentials_used": false,
+    "hosted_calls": 0,
+    "hosted_namespace_or_timing_acceptance": false,
+    "full_boundary_guard_executed": false
+  },
+  "stderr_text": ""
+}
