@@ -1,0 +1,269 @@
+{
+  "status": "LOCAL_EXTRACTION_PARITY_REHEARSAL_PASSED",
+  "started_bangkok": "2026-11-24T10:00:48.085373+07:00",
+  "completed_bangkok": "2026-11-24T10:03:05.836200+07:00",
+  "attempts": 1,
+  "normal_access_wsl_check": "LINUX_LOCAL_LEASE_CLEAR",
+  "outer_elapsed_seconds": 137.750827,
+  "wrapper_elapsed_seconds": 136.625102632,
+  "memory_peak_bytes": 312045568,
+  "memory_peak_mib": 297.58984375,
+  "limits": {
+    "memory_max_mib": 376,
+    "memory_high_mib": 320,
+    "cpu_quota_percent": 50,
+    "swap_bytes": 0,
+    "tasks_max": 32,
+    "runtime_seconds": 600,
+    "oom_score_adjust": 1000,
+    "oom_policy": "kill",
+    "restart": "no"
+  },
+  "phase_receipt": {
+    "status": "LOCAL_PHASE_PASSED",
+    "phase": "rehearsal",
+    "operator_sha256": "0737d79000fa30f09222b65efb4bc116f909bcda8a6d348e26b0587d7e98718e",
+    "admission_sha256": "77f7cde06a93d3dc339f26a7a9f98fe03b7abd5fc2223d11813bc187e6b78573",
+    "full_gate_sha256": "fb65cf531ce6425b0ea5ca30bfee318783c8499a58c04108f209c1d51ab67f1f",
+    "memory_peak": 312045568,
+    "hard_limit_events_unchanged": true,
+    "result": {
+      "receiver_receipt": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/logs/receiver.stdout.json",
+      "receiver_receipt_sha256": "3d1f8bdb754e5a97fb2a0f53b7603cb9c15d1c36032cec5407c8fbe00f694ac4",
+      "memory_peak": 312045568,
+      "candidate_not_promoted": true
+    }
+  },
+  "memory_diagnostics": {
+    "before": {
+      "phase": "rehearsal",
+      "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-rehearsal-local-f07f7cb-r8-parity.service",
+      "events": {
+        "low": "0",
+        "high": "0",
+        "max": "0",
+        "oom": "0",
+        "oom_kill": "0",
+        "oom_group_kill": "0"
+      },
+      "memory_peak": 11100160,
+      "memory_current": 10063872,
+      "memory_max": "394264576",
+      "memory_swap_max": "0",
+      "cpu_max": "50000 100000"
+    },
+    "after_events": {
+      "low": "0",
+      "high": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_kill": "0",
+      "oom_group_kill": "0"
+    },
+    "event_deltas": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "memory_peak": 312045568,
+    "memory_current": 227868672,
+    "memory_stat": {
+      "anon": 8294400,
+      "file": 185630720,
+      "kernel": 33271808,
+      "file_dirty": 2662400,
+      "file_writeback": 0,
+      "slab": 33049248
+    }
+  },
+  "wrapper_diagnostics": {
+    "before": {
+      "events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memory_peak": 23949312,
+      "memory_current": 23248896,
+      "memory_swap_current": 0,
+      "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-rehearsal-local-f07f7cb-r8-parity.service"
+    },
+    "after": {
+      "events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "memory_peak": 312045568,
+      "memory_current": 240766976,
+      "memory_swap_current": 0,
+      "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-rehearsal-local-f07f7cb-r8-parity.service"
+    },
+    "event_deltas": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "elapsed_seconds": 136.625102632,
+    "wrapper_sha256": "e96543164f66e6769ace14198eb355de2a8b5461adcee0a4e307c7056db6da56",
+    "receiver_sha256": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "failure_type": null,
+    "self_checks_executed": false,
+    "source_spool_and_pump_and_receiver_same_cgroup": true,
+    "combined_disk_required_bytes": 2541963438
+  },
+  "receiver_receipt": {
+    "status": "LOCAL_CANDIDATE_EXTRACTED",
+    "release": "f07f7cb-media-dd33d4d7f14b",
+    "operator_sha256": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "archive_sha256": "c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3",
+    "payload_manifest_sha256": "84afe9044378c45b15a24ed3fd0292179046d45eb119985194c64fa1d76b307f",
+    "files_and_directories": 24292,
+    "unpacked_bytes": 923640496,
+    "current_unchanged": null,
+    "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-rehearsal-local-f07f7cb-r8-parity.service",
+    "limits": {
+      "memory.max": 394264576,
+      "memory.high": 335544320
+    },
+    "memory_events_before": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+    "memory_events_after": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+    "hard_limit_events_unchanged": true,
+    "memory_peak": 312045568,
+    "helper_admission": {
+      "sole_active_helper": "sena-hub-test-maintenance-rehearsal-local-f07f7cb-r8-parity.service",
+      "parent_caps_mode": "local_rehearsal"
+    },
+    "self_checks_executed": false
+  },
+  "source_spool": {
+    "bytes": 272290559,
+    "sha256": "c93fd191633cf6d1a59e6d680a46f50e617a933a039927180385ea79308e81c3",
+    "chunk_bytes": 1048576,
+    "fsync_and_discard_each_chunk": true
+  },
+  "pipe_pump": {
+    "bytes": 272290559,
+    "chunk_bytes": 1048576,
+    "source_cache_discard_advised_after_each_chunk": true,
+    "pump_in_same_cgroup": true,
+    "receiver_exit_code": 0
+  },
+  "source_files_sha256": {
+    "staging_wrapper.py": "e96543164f66e6769ace14198eb355de2a8b5461adcee0a4e307c7056db6da56",
+    "stream_receiver.py": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+    "launch-hosted.template.sh": "2ba2645cdc9c7876168a2f4389d9600b9eaacf1c9b93320ebf99a947d58684f8",
+    "wrapper.hosted.template.json": "d06b098b6f8a83f114949badc7f17593fea955ea4e4ecc8bafaee359a53648ff",
+    "receiver.hosted.template.json": "e831971619faef3296d48974b776ecd5b1befa3fd485d6f756764cd1dbdc3438",
+    "after-gate.py": "0737d79000fa30f09222b65efb4bc116f909bcda8a6d348e26b0587d7e98718e",
+    "after-gate.reviewed.json": "77f7cde06a93d3dc339f26a7a9f98fe03b7abd5fc2223d11813bc187e6b78573",
+    "launch-phase.sh": "35289cc4578f092661da45a8cde3765f787df3ebccda1fc6cbea19d007f3432f",
+    "focused-checks-final.json": "26a73aa7d00b52eb1bea81f608a971da55e86f20b246d4a05517a99be5ede70b"
+  },
+  "source_seal_sha256": "476db2e23928498ec16593a773e24f98d5c76eb0c9cbd17d5a1d8be9c4765521",
+  "exact_retained_evidence": [
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/receipts/rehearsal.json",
+      "retained": "receipts__rehearsal.json",
+      "bytes": 695,
+      "sha256": "8b4d2c3a26a7d196888b8ba5a1905b321e29d6820d29757fbd1b75bd520949ce"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/receipts/rehearsal.memory-before.json",
+      "retained": "receipts__rehearsal.memory-before.json",
+      "bytes": 451,
+      "sha256": "856ab9a301effa37737e718e388fc53b6f90856f1d165d0cf4ba283a45456d29"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/receipts/rehearsal.memory.json",
+      "retained": "receipts__rehearsal.memory.json",
+      "bytes": 985,
+      "sha256": "6f629b30c39a190354988f826c0b8e3b46ce6543bbfb3bd856e1a791e07bf0c3"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/receipts/input-stream.json",
+      "retained": "receipts__input-stream.json",
+      "bytes": 165,
+      "sha256": "dc3955cba3a60c84fcfe74515c4bef0a5a404e31210c988fb59780ece48d7947"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/logs/receiver.stdout.json",
+      "retained": "logs__receiver.stdout.json",
+      "bytes": 2305,
+      "sha256": "3d1f8bdb754e5a97fb2a0f53b7603cb9c15d1c36032cec5407c8fbe00f694ac4"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/logs/receiver.stderr.log",
+      "retained": "logs__receiver.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/receipts/before.json",
+      "retained": "transfer__receipts__before.json",
+      "bytes": 359,
+      "sha256": "9ccc0e2fec2952c8576252070733fe19c9252f89452751b9589524a66a935c88"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/receipts/diagnostic.json",
+      "retained": "transfer__receipts__diagnostic.json",
+      "bytes": 1300,
+      "sha256": "8efb70e52ce24f548b229532f0cd9e71eccc11156826901a6ed693d8b9867c81"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/receipts/source-transfer.json",
+      "retained": "transfer__receipts__source-transfer.json",
+      "bytes": 170,
+      "sha256": "84afb35eabea899100df3e1b02d4c661c86795fb136b696bd6c91ffad40ff7c9"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/receipts/input-stream.json",
+      "retained": "transfer__receipts__input-stream.json",
+      "bytes": 165,
+      "sha256": "dc3955cba3a60c84fcfe74515c4bef0a5a404e31210c988fb59780ece48d7947"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/logs/receiver.stdout.json",
+      "retained": "transfer__logs__receiver.stdout.json",
+      "bytes": 1072,
+      "sha256": "c6a7207ffbf9bf6a3866a3144e8b6460f7959080b55723a9d23865c4d0cc4529"
+    },
+    {
+      "source": "/home/keetawatw/hub-release-build/after-gate-f07f7cb-r8-parity/transfer/logs/receiver.stderr.log",
+      "retained": "transfer__logs__receiver.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "local_input_path_parity": true,
+  "parity_basis": "The sealed hosted launcher invokes the same wrapper hash with pipe stdin, bounded source spool, identical 1 MiB discard-advised pump, unchanged receiver and identical child limits. The rehearsal verified shared cgroup membership. Hosted templates remain disabled and undeployed.",
+  "local_transport_difference": "A bounded source-file-to-pipe feeder is charged to the same local helper; the hosted SSH transport is separate and still needs its own containment/timing evidence.",
+  "self_checks_executed": false,
+  "self_checks_explanation": "This receiver validates and extracts sealed package bytes only. Build/import/native/relocated checks passed separately under the 4096 MiB build allowance; they are not evidence of runtime checks under the hosted 376 MiB helper or hosted identity. Separate bounded runtime and host checks remain necessary.",
+  "diagnostics_retained_before_assertions": true,
+  "earlier_attempts_preserved": true,
+  "hosted_calls": 0,
+  "hosted_mutations": 0,
+  "hosted_transport_containment_verified": false,
+  "full_boundary_integration_verified": false,
+  "migration_promotion_timing_verified": false,
+  "hosted_capacity_acceptance": false,
+  "rollout_prerequisites": "NOT_MET",
+  "open_work": [
+    "Full current-baseline boundary integration and actual transport containment proof.",
+    "Measured migration-to-promotion timing and bounded runtime checks.",
+    "Accepted owner page outcomes and remaining docs/51 cap prerequisites."
+  ]
+}

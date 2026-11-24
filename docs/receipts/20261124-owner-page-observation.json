@@ -1,0 +1,1282 @@
+{
+  "status": "READ_ONLY_PAGE_OBSERVATION_COMPLETE_OWNER_OUTCOMES_PENDING",
+  "raw_receipt_sha256": "8f0bb34de4d75b32cb1d667d9ad64218b909959640e573c7209a1c2db4b419a5",
+  "source_path": ".local/hosted-content-rollout/marketing-20261124/owner-page-check/result.json",
+  "sample_count": 18,
+  "first_sample_at": "2026-11-24T02:45:26.737779+00:00",
+  "last_sample_at": "2026-11-24T02:56:31.769807+00:00",
+  "sampled_elapsed_seconds": 665.0320280836895,
+  "minimum_sampled_available_bytes": 14601154560,
+  "swap_used_growth_bytes": -29360128,
+  "swap_in_pages": 19043,
+  "swap_out_pages": 0,
+  "vmstat_deltas": {
+    "pswpin": 19043,
+    "pswpout": 0,
+    "allocstall_dma": 0,
+    "allocstall_dma32": 0,
+    "allocstall_normal": 0,
+    "allocstall_movable": 0,
+    "allocstall_device": 0,
+    "pgsteal_direct": 0,
+    "pgscan_direct": 0,
+    "pgscan_direct_throttle": 0
+  },
+  "psi_available_at_all_samples": false,
+  "service_memory": [
+    {
+      "unit": "sena-hub-test-api.service",
+      "before": {
+        "control_group": "/system.slice/sena-hub-test-api.service",
+        "main_pid": 652646,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 69390336,
+        "memory.peak": 144277504,
+        "memory.swap.current": 58249216
+      },
+      "after": {
+        "control_group": "/system.slice/sena-hub-test-api.service",
+        "main_pid": 652646,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 128692224,
+        "memory.peak": 144277504,
+        "memory.swap.current": 53669888
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 1024,
+      "proposed_max_mib": 1280,
+      "event_deltas": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "peak_mib": 137.59375,
+      "peak_below_proposed_hard_cap": true,
+      "lifetime_peak_above_proposed_high": false
+    },
+    {
+      "unit": "sena-hub-test-media-worker.service",
+      "before": {
+        "control_group": "/system.slice/sena-hub-test-media-worker.service",
+        "main_pid": 789263,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 42405888,
+        "memory.peak": 120782848,
+        "memory.swap.current": 11591680
+      },
+      "after": {
+        "control_group": "/system.slice/sena-hub-test-media-worker.service",
+        "main_pid": 789263,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 42405888,
+        "memory.peak": 120782848,
+        "memory.swap.current": 11591680
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 96,
+      "proposed_max_mib": 128,
+      "event_deltas": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "peak_mib": 115.1875,
+      "peak_below_proposed_hard_cap": true,
+      "lifetime_peak_above_proposed_high": true
+    },
+    {
+      "unit": "sena-hub-test-admin.service",
+      "before": {
+        "control_group": "/system.slice/sena-hub-test-admin.service",
+        "main_pid": 652648,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 138080256,
+        "memory.peak": 209362944,
+        "memory.swap.current": 52678656
+      },
+      "after": {
+        "control_group": "/system.slice/sena-hub-test-admin.service",
+        "main_pid": 652648,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 202383360,
+        "memory.peak": 209362944,
+        "memory.swap.current": 45420544
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 256,
+      "proposed_max_mib": 384,
+      "event_deltas": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "peak_mib": 199.6640625,
+      "peak_below_proposed_hard_cap": true,
+      "lifetime_peak_above_proposed_high": false
+    },
+    {
+      "unit": "sena-hub-test-image-broker.socket",
+      "before": {
+        "control_group": "/system.slice/sena-hub-test-image-broker.socket",
+        "main_pid": null,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 12288,
+        "memory.peak": 356352,
+        "memory.swap.current": 0
+      },
+      "after": {
+        "control_group": "/system.slice/sena-hub-test-image-broker.socket",
+        "main_pid": null,
+        "active_state": "active",
+        "sub_state": "running",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "memory.current": 12288,
+        "memory.peak": 356352,
+        "memory.swap.current": 0
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 4,
+      "proposed_max_mib": 8,
+      "event_deltas": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "peak_mib": 0.33984375,
+      "peak_below_proposed_hard_cap": true,
+      "lifetime_peak_above_proposed_high": false
+    },
+    {
+      "unit": "sena-hub-test-cert-renew.service",
+      "before": {
+        "control_group": "",
+        "main_pid": 0,
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "events": null
+      },
+      "after": {
+        "control_group": "",
+        "main_pid": 0,
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "events": null
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 96,
+      "proposed_max_mib": 128,
+      "event_deltas": null,
+      "peak_mib": null,
+      "peak_below_proposed_hard_cap": null,
+      "lifetime_peak_above_proposed_high": null
+    },
+    {
+      "unit": "sena-hub-test.slice",
+      "before": {
+        "control_group": "",
+        "main_pid": null,
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "events": null
+      },
+      "after": {
+        "control_group": "",
+        "main_pid": null,
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "events": null
+      },
+      "same_pid_and_cgroup": true,
+      "proposed_high_mib": 2048,
+      "proposed_max_mib": 2304,
+      "event_deltas": null,
+      "peak_mib": null,
+      "peak_below_proposed_hard_cap": null,
+      "lifetime_peak_above_proposed_high": null
+    }
+  ],
+  "broker_note": "Application broker shares API process/cgroup; socket accounting has no separate application MainPID and is not counted as another API.",
+  "warehouse_before": {
+    "id": "c37fa383f0101e15dd464c0933a28b3debd0a92957bcc5b51361e186e26546f2",
+    "started_at": "2026-10-17T07:39:36.666963492Z",
+    "restart_count": 0,
+    "running": true,
+    "oom_killed": false,
+    "health": "healthy"
+  },
+  "warehouse_after": {
+    "id": "c37fa383f0101e15dd464c0933a28b3debd0a92957bcc5b51361e186e26546f2",
+    "started_at": "2026-10-17T07:39:36.666963492Z",
+    "restart_count": 0,
+    "running": true,
+    "oom_killed": false,
+    "health": "healthy"
+  },
+  "owner_page_outcomes": null,
+  "owner_start_signal": {
+    "status": "OWNER_START_SIGNAL_GIVEN_AFTER_CONFIRMATION_AND_ADMISSION",
+    "signalled_at_utc": "2026-11-24T02:46:37.0288474Z",
+    "admission_at_utc": "2026-11-24T02:45:30.132370+00:00",
+    "sequence_cutoff_bangkok": "2026-11-24 09:51:30",
+    "tail_target_end_bangkok": "2026-11-24 09:56:30",
+    "owner_completion_and_inflight_outcomes_still_required": true,
+    "hosted_mutations": 0
+  },
+  "cap_admission": false,
+  "hosted_mutations": 0,
+  "retry_count": 0,
+  "gaps": [
+    "PSI unavailable where noted; not treated as passed.",
+    "Lifetime peaks were not reset; inactive certificate/slice accounting may be absent.",
+    "Owner render outcomes and actual finish time still required; errors/unvisited pages are gaps.",
+    "This observation does not prove cap configuration, full boundary integration or migration/promotion timing."
+  ],
+  "scope_observations": {
+    "before": {
+      "count": 30,
+      "total_rss_bytes": 59711488,
+      "total_cgroup_memory_bytes": 4407296,
+      "stop_reasons": [],
+      "bounds": {
+        "rss_per_process_bytes": 4194304,
+        "charged_per_scope_bytes": 8388608,
+        "aggregate_rss_and_charged_each_bytes": 67108864
+      },
+      "reads": "/proc stat,cgroup,status,exe link and cgroup.procs/memory.current; no cmdline, environment or credentials",
+      "scopes": [
+        {
+          "name": "session-10748.scope",
+          "start_utc": "Fri 2026-10-30 03:51:55 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T032603Z.json",
+            "at_utc": "2026-10-30T03:26:03+00:00",
+            "epoch": 1793330763.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -1552.0
+        },
+        {
+          "name": "session-13118.scope",
+          "start_utc": "Mon 2026-11-02 02:00:33 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -229797.0
+        },
+        {
+          "name": "session-13396.scope",
+          "start_utc": "Mon 2026-11-02 08:58:18 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -254862.0
+        },
+        {
+          "name": "session-13952.scope",
+          "start_utc": "Tue 2026-11-03 02:01:06 UTC",
+          "charged_bytes": 135168,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -316230.0
+        },
+        {
+          "name": "session-14705.scope",
+          "start_utc": "Wed 2026-11-04 01:33:26 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -400970.0
+        },
+        {
+          "name": "session-15611.scope",
+          "start_utc": "Thu 2026-11-05 04:08:54 UTC",
+          "charged_bytes": 135168,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -496698.0
+        },
+        {
+          "name": "session-16301.scope",
+          "start_utc": "Fri 2026-11-06 01:43:22 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 455722.725
+        },
+        {
+          "name": "session-18620.scope",
+          "start_utc": "Mon 2026-11-09 02:48:39 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1974272,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 192605.725
+        },
+        {
+          "name": "session-20171.scope",
+          "start_utc": "Wed 2026-11-11 02:50:40 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 19684.725
+        },
+        {
+          "name": "session-20945.scope",
+          "start_utc": "Thu 2026-11-12 02:06:33 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-support-check-1794389822249.json",
+            "at_utc": "2026-11-11T09:37:02.249000+00:00",
+            "epoch": 1794389822.249,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -59370.751
+        },
+        {
+          "name": "session-21161.scope",
+          "start_utc": "Thu 2026-11-12 06:44:02 UTC",
+          "charged_bytes": 163840,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-support-check-1794389822249.json",
+            "at_utc": "2026-11-11T09:37:02.249000+00:00",
+            "epoch": 1794389822.249,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -76019.751
+        },
+        {
+          "name": "session-2197.scope",
+          "start_utc": "Mon 2026-10-19 02:00:37 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1970176,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 823424.0
+        },
+        {
+          "name": "session-24155.scope",
+          "start_utc": "Mon 2026-11-16 04:28:54 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1970176,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261116T100049Z.json",
+            "at_utc": "2026-11-16T10:00:49+00:00",
+            "epoch": 1794823249.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 19915.0
+        },
+        {
+          "name": "session-2432.scope",
+          "start_utc": "Mon 2026-10-19 08:26:30 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 800271.0
+        },
+        {
+          "name": "session-2438.scope",
+          "start_utc": "Mon 2026-10-19 08:38:54 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799527.0
+        },
+        {
+          "name": "session-2441.scope",
+          "start_utc": "Mon 2026-10-19 08:39:37 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799484.0
+        },
+        {
+          "name": "session-2449.scope",
+          "start_utc": "Mon 2026-10-19 08:46:22 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799079.0
+        },
+        {
+          "name": "session-2453.scope",
+          "start_utc": "Mon 2026-10-19 08:50:49 UTC",
+          "charged_bytes": 139264,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 798812.0
+        },
+        {
+          "name": "session-2481.scope",
+          "start_utc": "Mon 2026-10-19 09:11:10 UTC",
+          "charged_bytes": 286720,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 797591.0
+        },
+        {
+          "name": "session-24845.scope",
+          "start_utc": "Tue 2026-11-17 01:41:56 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261117T025621Z-to-034315Z-comparison.json",
+            "at_utc": "2026-11-17T02:56:21+00:00",
+            "epoch": 1794884181.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 4465.0
+        },
+        {
+          "name": "session-25579.scope",
+          "start_utc": "Wed 2026-11-18 00:28:06 UTC",
+          "charged_bytes": 253952,
+          "rss_bytes": 1994752,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261118T003708Z-v3.json",
+            "at_utc": "2026-11-18T00:37:08+00:00",
+            "epoch": 1794962228.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 542.0
+        },
+        {
+          "name": "session-25815.scope",
+          "start_utc": "Wed 2026-11-18 07:45:21 UTC",
+          "charged_bytes": 262144,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261118T004120Z-cron-identities.json",
+            "at_utc": "2026-11-18T00:41:20+00:00",
+            "epoch": 1794962480.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -25441.0
+        },
+        {
+          "name": "session-26417.scope",
+          "start_utc": "Thu 2026-11-19 01:31:39 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261119T015410Z-v3.json",
+            "at_utc": "2026-11-19T01:54:10+00:00",
+            "epoch": 1795053250.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 1351.0
+        },
+        {
+          "name": "session-27205.scope",
+          "start_utc": "Fri 2026-11-20 01:40:34 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261120T053140Z-page-window.json",
+            "at_utc": "2026-11-20T05:31:40+00:00",
+            "epoch": 1795152700.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 13866.0
+        },
+        {
+          "name": "session-29855.scope",
+          "start_utc": "Mon 2026-11-23 08:15:30 UTC",
+          "charged_bytes": 245760,
+          "rss_bytes": 2097152,
+          "all_processes_sleep": true,
+          "origin": "Owner-confirmed earlier forwarding tunnel",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-3/attempt-started.json",
+            "at_utc": "2026-11-23T08:45:00.234061+00:00",
+            "epoch": 1795423500.234061,
+            "precision": "explicit local SSH attempt-start marker"
+          },
+          "attempt_delta_seconds": 1770.234
+        },
+        {
+          "name": "session-3067.scope",
+          "start_utc": "Tue 2026-10-20 03:45:16 UTC",
+          "charged_bytes": 139264,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 730745.0
+        },
+        {
+          "name": "session-3777.scope",
+          "start_utc": "Wed 2026-10-21 02:00:24 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 650637.0
+        },
+        {
+          "name": "session-8496.scope",
+          "start_utc": "Tue 2026-10-27 06:56:56 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1974272,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 114445.0
+        },
+        {
+          "name": "session-9115.scope",
+          "start_utc": "Wed 2026-10-28 01:54:52 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 46169.0
+        },
+        {
+          "name": "session-9892.scope",
+          "start_utc": "Thu 2026-10-29 01:53:51 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261029T020419Z.json",
+            "at_utc": "2026-10-29T02:04:19+00:00",
+            "epoch": 1793239459.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 628.0
+        }
+      ]
+    },
+    "after": {
+      "count": 30,
+      "total_rss_bytes": 59711488,
+      "total_cgroup_memory_bytes": 4407296,
+      "stop_reasons": [],
+      "bounds": {
+        "rss_per_process_bytes": 4194304,
+        "charged_per_scope_bytes": 8388608,
+        "aggregate_rss_and_charged_each_bytes": 67108864
+      },
+      "reads": "/proc stat,cgroup,status,exe link and cgroup.procs/memory.current; no cmdline, environment or credentials",
+      "scopes": [
+        {
+          "name": "session-10748.scope",
+          "start_utc": "Fri 2026-10-30 03:51:55 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T032603Z.json",
+            "at_utc": "2026-10-30T03:26:03+00:00",
+            "epoch": 1793330763.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -1552.0
+        },
+        {
+          "name": "session-13118.scope",
+          "start_utc": "Mon 2026-11-02 02:00:33 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -229797.0
+        },
+        {
+          "name": "session-13396.scope",
+          "start_utc": "Mon 2026-11-02 08:58:18 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -254862.0
+        },
+        {
+          "name": "session-13952.scope",
+          "start_utc": "Tue 2026-11-03 02:01:06 UTC",
+          "charged_bytes": 135168,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -316230.0
+        },
+        {
+          "name": "session-14705.scope",
+          "start_utc": "Wed 2026-11-04 01:33:26 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -400970.0
+        },
+        {
+          "name": "session-15611.scope",
+          "start_utc": "Thu 2026-11-05 04:08:54 UTC",
+          "charged_bytes": 135168,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-postflight-20261030T101036Z.json",
+            "at_utc": "2026-10-30T10:10:36+00:00",
+            "epoch": 1793355036.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -496698.0
+        },
+        {
+          "name": "session-16301.scope",
+          "start_utc": "Fri 2026-11-06 01:43:22 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 455722.725
+        },
+        {
+          "name": "session-18620.scope",
+          "start_utc": "Mon 2026-11-09 02:48:39 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1974272,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 192605.725
+        },
+        {
+          "name": "session-20171.scope",
+          "start_utc": "Wed 2026-11-11 02:50:40 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-preflight-1794385124725.json",
+            "at_utc": "2026-11-11T08:18:44.725000+00:00",
+            "epoch": 1794385124.725,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 19684.725
+        },
+        {
+          "name": "session-20945.scope",
+          "start_utc": "Thu 2026-11-12 02:06:33 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-support-check-1794389822249.json",
+            "at_utc": "2026-11-11T09:37:02.249000+00:00",
+            "epoch": 1794389822.249,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -59370.751
+        },
+        {
+          "name": "session-21161.scope",
+          "start_utc": "Thu 2026-11-12 06:44:02 UTC",
+          "charged_bytes": 163840,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/w1-w5-support-check-1794389822249.json",
+            "at_utc": "2026-11-11T09:37:02.249000+00:00",
+            "epoch": 1794389822.249,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -76019.751
+        },
+        {
+          "name": "session-2197.scope",
+          "start_utc": "Mon 2026-10-19 02:00:37 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1970176,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 823424.0
+        },
+        {
+          "name": "session-24155.scope",
+          "start_utc": "Mon 2026-11-16 04:28:54 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1970176,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261116T100049Z.json",
+            "at_utc": "2026-11-16T10:00:49+00:00",
+            "epoch": 1794823249.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 19915.0
+        },
+        {
+          "name": "session-2432.scope",
+          "start_utc": "Mon 2026-10-19 08:26:30 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 800271.0
+        },
+        {
+          "name": "session-2438.scope",
+          "start_utc": "Mon 2026-10-19 08:38:54 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799527.0
+        },
+        {
+          "name": "session-2441.scope",
+          "start_utc": "Mon 2026-10-19 08:39:37 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799484.0
+        },
+        {
+          "name": "session-2449.scope",
+          "start_utc": "Mon 2026-10-19 08:46:22 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 799079.0
+        },
+        {
+          "name": "session-2453.scope",
+          "start_utc": "Mon 2026-10-19 08:50:49 UTC",
+          "charged_bytes": 139264,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 798812.0
+        },
+        {
+          "name": "session-2481.scope",
+          "start_utc": "Mon 2026-10-19 09:11:10 UTC",
+          "charged_bytes": 286720,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 797591.0
+        },
+        {
+          "name": "session-24845.scope",
+          "start_utc": "Tue 2026-11-17 01:41:56 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261117T025621Z-to-034315Z-comparison.json",
+            "at_utc": "2026-11-17T02:56:21+00:00",
+            "epoch": 1794884181.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 4465.0
+        },
+        {
+          "name": "session-25579.scope",
+          "start_utc": "Wed 2026-11-18 00:28:06 UTC",
+          "charged_bytes": 253952,
+          "rss_bytes": 1994752,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261118T003708Z-v3.json",
+            "at_utc": "2026-11-18T00:37:08+00:00",
+            "epoch": 1794962228.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 542.0
+        },
+        {
+          "name": "session-25815.scope",
+          "start_utc": "Wed 2026-11-18 07:45:21 UTC",
+          "charged_bytes": 262144,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261118T004120Z-cron-identities.json",
+            "at_utc": "2026-11-18T00:41:20+00:00",
+            "epoch": 1794962480.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": -25441.0
+        },
+        {
+          "name": "session-26417.scope",
+          "start_utc": "Thu 2026-11-19 01:31:39 UTC",
+          "charged_bytes": 131072,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261119T015410Z-v3.json",
+            "at_utc": "2026-11-19T01:54:10+00:00",
+            "epoch": 1795053250.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 1351.0
+        },
+        {
+          "name": "session-27205.scope",
+          "start_utc": "Fri 2026-11-20 01:40:34 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-capacity-w9-20261116/interim/observations/20261120T053140Z-page-window.json",
+            "at_utc": "2026-11-20T05:31:40+00:00",
+            "epoch": 1795152700.0,
+            "precision": "retained observation filename, second precision; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 13866.0
+        },
+        {
+          "name": "session-29855.scope",
+          "start_utc": "Mon 2026-11-23 08:15:30 UTC",
+          "charged_bytes": 245760,
+          "rss_bytes": 2097152,
+          "all_processes_sleep": true,
+          "origin": "Owner-confirmed earlier forwarding tunnel",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/marketing-20261123/owner-approved-attempt-3/attempt-started.json",
+            "at_utc": "2026-11-23T08:45:00.234061+00:00",
+            "epoch": 1795423500.234061,
+            "precision": "explicit local SSH attempt-start marker"
+          },
+          "attempt_delta_seconds": 1770.234
+        },
+        {
+          "name": "session-3067.scope",
+          "start_utc": "Tue 2026-10-20 03:45:16 UTC",
+          "charged_bytes": 139264,
+          "rss_bytes": 1986560,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 730745.0
+        },
+        {
+          "name": "session-3777.scope",
+          "start_utc": "Wed 2026-10-21 02:00:24 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 650637.0
+        },
+        {
+          "name": "session-8496.scope",
+          "start_utc": "Tue 2026-10-27 06:56:56 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1974272,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 114445.0
+        },
+        {
+          "name": "session-9115.scope",
+          "start_utc": "Wed 2026-10-28 01:54:52 UTC",
+          "charged_bytes": 122880,
+          "rss_bytes": 1990656,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261028T144421Z.json",
+            "at_utc": "2026-10-28T14:44:21+00:00",
+            "epoch": 1793198661.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 46169.0
+        },
+        {
+          "name": "session-9892.scope",
+          "start_utc": "Thu 2026-10-29 01:53:51 UTC",
+          "charged_bytes": 126976,
+          "rss_bytes": 1982464,
+          "all_processes_sleep": true,
+          "origin": "Unproved; time proximity alone does not establish origin.",
+          "nearest_retained_attempt": {
+            "receipt": ".local/hosted-content-rollout/h5e-https-preflight-20261029T020419Z.json",
+            "at_utc": "2026-10-29T02:04:19+00:00",
+            "epoch": 1793239459.0,
+            "precision": "retained operator receipt filename; not SSH-session identity"
+          },
+          "attempt_delta_seconds": 628.0
+        }
+      ]
+    }
+  },
+  "overlapping_natural_runs": [
+    {
+      "identity": "conditional_cgid",
+      "session": "30544",
+      "command_sha256": "c248d4fc0a87064a34ba1d4bb09d6565bebf053c61b9ba0fad118c5f6b6eefb9",
+      "start_utc": "2026-11-24T02:48:01.743737+00:00",
+      "end_utc": "2026-11-24T02:48:01.749775+00:00",
+      "outcome": "Cron CMDEND observed; exit code not supplied by this journal record."
+    },
+    {
+      "identity": "conditional_cgid",
+      "session": "30545",
+      "command_sha256": "c248d4fc0a87064a34ba1d4bb09d6565bebf053c61b9ba0fad118c5f6b6eefb9",
+      "start_utc": "2026-11-24T02:51:01.811946+00:00",
+      "end_utc": "2026-11-24T02:51:01.820817+00:00",
+      "outcome": "Cron CMDEND observed; exit code not supplied by this journal record."
+    },
+    {
+      "identity": "conditional_cgid",
+      "session": "30546",
+      "command_sha256": "c248d4fc0a87064a34ba1d4bb09d6565bebf053c61b9ba0fad118c5f6b6eefb9",
+      "start_utc": "2026-11-24T02:54:01.922730+00:00",
+      "end_utc": "2026-11-24T02:54:01.938549+00:00",
+      "outcome": "Cron CMDEND observed; exit code not supplied by this journal record."
+    }
+  ],
+  "other_overlap_runs": "No health or line-alert run overlapped the retained operation interval.",
+  "observations_only": true,
+  "runtime_probes_started": 0,
+  "evidence_hashes": {
+    "result.json": "8f0bb34de4d75b32cb1d667d9ad64218b909959640e573c7209a1c2db4b419a5",
+    "events.ndjson": "151eb4c7758e9afc08fb7aa4492411a24eb2a3432bd5f0d4158cce3a18139f30",
+    "observation-summary.json": "9186f3ddc9d6c706a091293c6cfb8c89ad00101db1a0887d7a274cfbc61a02b9",
+    "remote.py": "887f11dfa7a797c2bca40f27c572b5ae93339a3b8bd4636393a077dd86ca178d",
+    "source-seal.json": "2fbbfd4c08e04b9d6da7b4d4f6b25a635235dd97d0a7416c60cb8dc0ce2fda61"
+  }
+}
