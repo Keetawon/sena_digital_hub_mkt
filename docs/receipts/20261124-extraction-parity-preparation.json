@@ -1,0 +1,53 @@
+{
+  "status": "PREPARED_AWAITING_SINGLE_LOCAL_REHEARSAL",
+  "recorded_at": "2026-11-24T01:56:29.034925+00:00",
+  "owner_decision": "Approved preparation and one local rehearsal of the bounded source spool plus same-cgroup pipe pump; no hosted authorization added.",
+  "source_seal_sha256": "476db2e23928498ec16593a773e24f98d5c76eb0c9cbd17d5a1d8be9c4765521",
+  "wrapper_sha256": "e96543164f66e6769ace14198eb355de2a8b5461adcee0a4e307c7056db6da56",
+  "hosted_launcher_template_sha256": "2ba2645cdc9c7876168a2f4389d9600b9eaacf1c9b93320ebf99a947d58684f8",
+  "receiver_sha256": "9e8150f782d4b7a68f38f142bc07d5975baf6be1174fcd8d7c2ae94d19841e11",
+  "focused_checks": {
+    "status": "PARITY_WRAPPER_FOCUSED_CHECKS_PASSED",
+    "passed": 11,
+    "cases": [
+      "pump_ast_exact",
+      "receiver_hash_exact",
+      "existing_assertions_exact",
+      "success",
+      "truncated",
+      "oversize",
+      "hash_mismatch",
+      "advice_failure",
+      "valid_pin",
+      "changed_pin_refused",
+      "oversize_pin_refused"
+    ],
+    "full_rehearsals_run": 0,
+    "hosted_calls": 0,
+    "wrapper_sha256": "e96543164f66e6769ace14198eb355de2a8b5461adcee0a4e307c7056db6da56",
+    "limitations": "Pure focused checks; full cgroup and memory proof pending the single approved rehearsal."
+  },
+  "rehearsal_attempts_consumed": 0,
+  "local_root_proof_result": "Not present at this checkpoint; awaiting owner attempt completion to avoid overlap. No rerun requested or performed.",
+  "limits": {
+    "memory_max_bytes": 394264576,
+    "memory_high_bytes": 335544320,
+    "memory_swap_max_bytes": 0,
+    "cpu_quota_percent": 50,
+    "tasks_max": 32,
+    "runtime_max_seconds": 600,
+    "oom_score_adjust": 1000,
+    "oom_policy": "kill",
+    "restart": "no"
+  },
+  "local_extra_transport_simulator": "Source-file feeder is inside the same measured helper; the common wrapper receives a pipe, spools, then uses the unchanged tested pump and receiver. Hosted SSH transport still needs separate containment/timing proof.",
+  "combined_disk_budget_bytes": 2541963438,
+  "self_checks_executed": false,
+  "self_check_note": "The new wrapper remains extraction-only; bounded serial runtime checks remain a separate prerequisite.",
+  "readiness": "NOT_MET",
+  "hosted_calls": 0,
+  "hosted_mutations": 0,
+  "hosted_templates_execution_authorized": false,
+  "evidence_root": ".local/hosted-content-rollout/marketing-20261124/extraction-parity-v1/",
+  "next": "Read owner root-proof result as-is; after completion and fresh serial local lease, run the single rehearsal outside the page-check blackout. Failure stays visible and stops."
+}
