@@ -1,0 +1,16 @@
+{
+  "status": "LOCAL_DB_BACKUP_COMPONENT_VERIFIED_NOT_COMPLETE",
+  "complete_timing_acceptance": false,
+  "hosted_calls": 0,
+  "prior_stops_preserved": true,
+  "files": {
+    "seal.json": "305c952aec4f7b32513f20ac8eea0eb04b9dbb9a181a7c9012ac0e2898c5f0f3",
+    "offline-checks-1/result.json": "7094b4fe350bc5678449abeb64692ddd25b70641bbc1e2055fd5ecef85f9388e",
+    "execution-1.json": "c3e669ce19daccce83c2793dedcbc1deea4cf891e64fd73b723e32740da0db49",
+    "controller-runs/component-03-20261124/result.json": "837519c0ff0712fc6b661591e03506bee82bf7e191eeca2d00db3ef918aed850",
+    "runs/component-03-20261124/backup-receipt.json": "aa6890f8f8b17a46c187ec75119311498f6fc658d75976c116cc97ff45600ba1",
+    "cleanup-observation/linux.json": "d180c6a34fd29515f9e52e42ffb4efafcf4a76cfcb43fe0badd92fc6fcb40288",
+    "cleanup-observation/windows.json": "91a857b8223c8db567c695284b93be69885a1f0f6a909622a50632f61f0aa852",
+    "component-review.md": "a84ac13503703eb9d2d4b4bce9b210da725f8e85162d912b741a800d38db8aea"
+  }
+}

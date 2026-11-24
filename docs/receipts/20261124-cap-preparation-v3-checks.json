@@ -1,0 +1,30 @@
+{
+  "status": "LOCAL_OFFLINE_CHECKS_PASSED",
+  "started_at": "2026-11-24T08:30:23.380315+00:00",
+  "finished_at": "2026-11-24T08:30:24.000519+00:00",
+  "elapsed_seconds": 0.6201770000043325,
+  "tests": 111,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_hashes": {
+    "cap_apply.py": "a3e87f74f043f34d41fcd5b11232bf5933f10328526109f1d0b78bdc9975bccb",
+    "test_cap_apply.py": "0fed57cd3801da8a1f0b6ec738d468a02b1bacd754e6dc5421552f4d4cccde2e",
+    "run_checks.py": "4c608a2b455b83ff641e5aee0dc4308651c9846c028f726a1e5f108db66b9e30",
+    "admit_checks.ps1": "0a65c2e2b7d618f028fb44038f7327b7536c289e5683026b1e2c851380d6db69",
+    "lease_bridge.py": "7c6812cb063575e47c390db71b145bde27750bb2838746acec3a9452ca665663",
+    "observer_adapter.proposed.py": "bd97c92888f6ace370281f9c9148b0378c16efe2f2a36eb33adc17a66bb175b0",
+    "test_observer.py": "89fcbb45d2e8d9b0e6db8a5c884e0b74c95e390e8611c6c9d446fcf4ab19ec29",
+    "caller.proposed.py": "ec0c42adf9569b625d562c0e421dab8ed5ab88878efffc6f882a744b3097a39a",
+    "transport.proposed.py": "bccdbc58b757fbd8548eb63386fb41de79d91111b2a6c4e98a6222a8b16f1773",
+    "test_transport_caller.py": "d7ffc5ea7ff7b7eec940a0bb10f8c7a4a2e4c03a3f25a761b3b25f3085566b83",
+    "scope-history.json": "88344e827ae36f90879371642f40b7baebd45a2313a31235376f6f302e3f179a"
+  },
+  "source_unchanged": true,
+  "actual_exit_code": 0,
+  "hosted_calls": 0,
+  "service_calls": 0,
+  "bound_ports": 0,
+  "evidence_kind": "LOCAL_MOCKS_ONLY",
+  "output_sha256": "8788d21b25039f4df1f15cbb7642c3047464cca2d4796239cc5abad889e55310"
+}

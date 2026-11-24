@@ -1,0 +1,394 @@
+{
+  "evidence_kind": "SELECTED_FIELDS_FROM_RETAINED_ORIGINAL_NOT_REPLACEMENT",
+  "original_controller_receipt_sha256": "837519c0ff0712fc6b661591e03506bee82bf7e191eeca2d00db3ef918aed850",
+  "status": "LOCAL_DB_BACKUP_COMPONENT_VERIFIED_NOT_COMPLETE",
+  "complete_timing_acceptance": false,
+  "hosted_calls": 0,
+  "source_seal_sha256": "305c952aec4f7b32513f20ac8eea0eb04b9dbb9a181a7c9012ac0e2898c5f0f3",
+  "started_at": "2026-11-24T08:42:14.524Z",
+  "finished_at": "2026-11-24T08:43:22.794Z",
+  "actual_exit_code": 0,
+  "corpus": {
+    "projects": 1,
+    "faqs": 0,
+    "assets": 3
+  },
+  "backup": {
+    "status": "LOCAL_SYNTHETIC_BACKUP_VERIFIED",
+    "sha256": "3fd655f405a61cf0186ef371c58ff2fdcee20aecdb6bf2d144630816d0b702ec",
+    "bytes": 2929136,
+    "elapsed_ms": 7506.198100000001,
+    "full_archive_read_verified": true,
+    "inventory_verified": true,
+    "fixture_run_id": "2fcdda62-1a2b-44b4-a82d-820818a1e4b7"
+  },
+  "identity_checks_before": {
+    "checks": [
+      {
+        "stage": "PG_DEPENDENCY_VERSION",
+        "observed": {
+          "pg_version": {
+            "type": "string",
+            "value": "8.23.0"
+          }
+        },
+        "expected": {
+          "pg_version": {
+            "type": "string",
+            "value": "8.23.0"
+          }
+        }
+      },
+      {
+        "stage": "CONNECTED_PEER",
+        "observed": {
+          "remote_address": {
+            "type": "string",
+            "value": "127.0.0.1"
+          }
+        },
+        "expected": {
+          "remote_address": {
+            "type": "string",
+            "value": "127.0.0.1"
+          }
+        }
+      },
+      {
+        "stage": "SERVER_IDENTITY",
+        "observed": {
+          "host": {
+            "type": "string",
+            "value": "127.0.0.1"
+          },
+          "port": {
+            "type": "number",
+            "value": 41105
+          },
+          "database": {
+            "type": "string",
+            "value": "hub_hosted_test_simulation"
+          },
+          "session_user": {
+            "type": "string",
+            "value": "postgres"
+          },
+          "data_directory": {
+            "type": "string",
+            "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+          },
+          "postmaster_epoch": {
+            "type": "string",
+            "value": "1795509767"
+          },
+          "superuser": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        "expected": {
+          "host": {
+            "type": "string",
+            "value": "127.0.0.1"
+          },
+          "port": {
+            "type": "number",
+            "value": 41105
+          },
+          "database": {
+            "type": "string",
+            "value": "hub_hosted_test_simulation"
+          },
+          "session_user": {
+            "type": "string",
+            "value": "postgres"
+          },
+          "data_directory": {
+            "type": "string",
+            "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+          },
+          "postmaster_epoch": {
+            "type": "string",
+            "value": "1795509767"
+          },
+          "superuser": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      },
+      {
+        "stage": "FIXTURE_MARKER",
+        "observed": {
+          "row_count": 1,
+          "rows": [
+            {
+              "run_id": {
+                "type": "string",
+                "value": "2fcdda62-1a2b-44b4-a82d-820818a1e4b7"
+              },
+              "data_directory": {
+                "type": "string",
+                "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+              }
+            }
+          ]
+        },
+        "expected": {
+          "row_count": 1,
+          "rows": [
+            {
+              "run_id": {
+                "type": "string",
+                "value": "2fcdda62-1a2b-44b4-a82d-820818a1e4b7"
+              },
+              "data_directory": {
+                "type": "string",
+                "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "stage": "MIGRATION_PREFIX",
+        "observed": {
+          "migration_count": {
+            "type": "number",
+            "value": 88
+          }
+        },
+        "expected": {
+          "migration_count": {
+            "type": "number",
+            "value": 88
+          }
+        }
+      },
+      {
+        "stage": "TRANSACTION_MODE",
+        "observed": {
+          "default_transaction_read_only": {
+            "type": "string",
+            "value": "on"
+          }
+        },
+        "expected": {
+          "default_transaction_read_only": {
+            "type": "string",
+            "value": "on"
+          }
+        }
+      }
+    ],
+    "current_stage": "TRANSACTION_MODE",
+    "status": "ALL_IDENTITY_ASSERTIONS_PASSED"
+  },
+  "identity_checks_after": {
+    "checks": [
+      {
+        "stage": "PG_DEPENDENCY_VERSION",
+        "observed": {
+          "pg_version": {
+            "type": "string",
+            "value": "8.23.0"
+          }
+        },
+        "expected": {
+          "pg_version": {
+            "type": "string",
+            "value": "8.23.0"
+          }
+        }
+      },
+      {
+        "stage": "CONNECTED_PEER",
+        "observed": {
+          "remote_address": {
+            "type": "string",
+            "value": "127.0.0.1"
+          }
+        },
+        "expected": {
+          "remote_address": {
+            "type": "string",
+            "value": "127.0.0.1"
+          }
+        }
+      },
+      {
+        "stage": "SERVER_IDENTITY",
+        "observed": {
+          "host": {
+            "type": "string",
+            "value": "127.0.0.1"
+          },
+          "port": {
+            "type": "number",
+            "value": 41105
+          },
+          "database": {
+            "type": "string",
+            "value": "hub_hosted_test_simulation"
+          },
+          "session_user": {
+            "type": "string",
+            "value": "postgres"
+          },
+          "data_directory": {
+            "type": "string",
+            "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+          },
+          "postmaster_epoch": {
+            "type": "string",
+            "value": "1795509767"
+          },
+          "superuser": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        "expected": {
+          "host": {
+            "type": "string",
+            "value": "127.0.0.1"
+          },
+          "port": {
+            "type": "number",
+            "value": 41105
+          },
+          "database": {
+            "type": "string",
+            "value": "hub_hosted_test_simulation"
+          },
+          "session_user": {
+            "type": "string",
+            "value": "postgres"
+          },
+          "data_directory": {
+            "type": "string",
+            "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+          },
+          "postmaster_epoch": {
+            "type": "string",
+            "value": "1795509767"
+          },
+          "superuser": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      },
+      {
+        "stage": "FIXTURE_MARKER",
+        "observed": {
+          "row_count": 1,
+          "rows": [
+            {
+              "run_id": {
+                "type": "string",
+                "value": "2fcdda62-1a2b-44b4-a82d-820818a1e4b7"
+              },
+              "data_directory": {
+                "type": "string",
+                "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+              }
+            }
+          ]
+        },
+        "expected": {
+          "row_count": 1,
+          "rows": [
+            {
+              "run_id": {
+                "type": "string",
+                "value": "2fcdda62-1a2b-44b4-a82d-820818a1e4b7"
+              },
+              "data_directory": {
+                "type": "string",
+                "value": "/home/keetawatw/hub-local-timing-v2/component-03-20261124/prefix88/.local/hosted-test-simulation/run-BtrFhJ"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "stage": "MIGRATION_PREFIX",
+        "observed": {
+          "migration_count": {
+            "type": "number",
+            "value": 88
+          }
+        },
+        "expected": {
+          "migration_count": {
+            "type": "number",
+            "value": 88
+          }
+        }
+      },
+      {
+        "stage": "TRANSACTION_MODE",
+        "observed": {
+          "default_transaction_read_only": {
+            "type": "string",
+            "value": "on"
+          }
+        },
+        "expected": {
+          "default_transaction_read_only": {
+            "type": "string",
+            "value": "on"
+          }
+        }
+      }
+    ],
+    "current_stage": "TRANSACTION_MODE",
+    "status": "ALL_IDENTITY_ASSERTIONS_PASSED"
+  },
+  "rollback_and_attestation_ms": 1441.068465000004,
+  "commit_and_attestation_ms": 1914.6032449999984,
+  "commit_body_ms": {
+    "before_rows": 125.623,
+    "migrations": 458.501,
+    "after_rows": 123.697,
+    "final_checks": 37.049,
+    "total_body": 764.738
+  },
+  "db_phase_elapsed_ms": 3355.6717100000023,
+  "limits": {
+    "service": {
+      "unit": "sena-hub-test-maintenance-local-db-component-03-20261124.service",
+      "runtime_max_seconds": 900,
+      "tasks_max": 128,
+      "oom_policy": "kill",
+      "restart": "no",
+      "kill_mode": "control-group"
+    },
+    "memory_max_bytes": 2415919104,
+    "swap_max_bytes": 0,
+    "cpu_quota": 4
+  },
+  "linux_peak_bytes": 556421120,
+  "linux_peak_excludes_windows_processes": true,
+  "event_deltas": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+  },
+  "shared_host_ticket_exercised": false,
+  "guard_callbacks_executed": 0,
+  "promotion_executed": false,
+  "promotion_reserve_seconds": null,
+  "mutation_boundary_rehashes_executed": 0,
+  "final_cleanup": {
+    "status": "OWNED_LOCAL_CLEANUP_COMPLETE",
+    "attempt": "component-03-20261124",
+    "database_directory_deleted": true,
+    "temporary_password_files_deleted": true,
+    "hosted_calls": 0
+  }
+}
