@@ -1,0 +1,26 @@
+{
+  "status": "LOCAL_OFFLINE_CHECKS_PASSED",
+  "started_at": "2026-11-24T07:30:38.411319+00:00",
+  "finished_at": "2026-11-24T07:30:38.679381+00:00",
+  "elapsed_seconds": 0.26804619998438284,
+  "tests": 63,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_hashes": {
+    "cap_apply.py": "94c41bde6dd51aa76128a509ac003a2467ef11caf681b119936a8eb7c5973cb5",
+    "test_cap_apply.py": "14ac0802c2bd33836202ddc32e94624c01a58f04f98303d165496cc711ee6480",
+    "run_checks.py": "03d7944851256fb6c477fa111b6155ad13361b41accf0c983970d1c957a327df",
+    "admit_checks.ps1": "a8b1e26e5091fb024a5d7c22e7621fa862218a9a32a6626b4d242bf6e16ceef9",
+    "lease_bridge.py": "d0286ac18ae62e3a80c7af877db59fee37e2deb0f1f8c2269d4c1736af4f2494",
+    "observer_adapter.proposed.py": "66b21458026bcd6e1581a86db56f58ace85442b45ca8a635a45c55823051cd4a",
+    "test_observer.py": "89fcbb45d2e8d9b0e6db8a5c884e0b74c95e390e8611c6c9d446fcf4ab19ec29"
+  },
+  "source_unchanged": true,
+  "actual_exit_code": 0,
+  "hosted_calls": 0,
+  "service_calls": 0,
+  "bound_ports": 0,
+  "evidence_kind": "LOCAL_MOCKS_ONLY",
+  "output_sha256": "97a1865c7eabddf3cfb64a6156aadec734e8829aa2fa233f2303db2940625e29"
+}
