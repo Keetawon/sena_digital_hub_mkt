@@ -1,0 +1,16 @@
+{
+    "scope":  "LOCAL_PREFLIGHT_ONLY",
+    "attempt":  "joined-20261124-02",
+    "started_at":  "2026-11-24T18:02:53.8953791+07:00",
+    "source_sha256":  "aeb8798f8693d061c4fce817c646880e4d54a771ae424ad6abc246d1d0932b70",
+    "hosted_calls":  0,
+    "runtime_started":  false,
+    "status":  "WINDOWS_ADMISSION_CLEAR",
+    "observation":  {
+                        "status":  "COMPLETE_LOCAL_WINDOWS_CLEAR",
+                        "ssh_count":  0,
+                        "process_count":  376,
+                        "listener_count":  40
+                    },
+    "finished_at":  "2026-11-24T18:02:55.3023548+07:00"
+}

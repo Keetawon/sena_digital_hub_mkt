@@ -1,0 +1,129 @@
+{
+  "scope": "LOCAL_JOINED_FIXTURE_PREPARED",
+  "status": "PREPARED_RUNTIME_UNRUN",
+  "attempt": "joined-20261124-02",
+  "created_at": "2026-11-24T11:03:24.869844+00:00",
+  "owner_start_intervals": [
+    [
+      "2026-11-24T16:15:00+07:00",
+      "2026-11-24T21:45:00+07:00"
+    ]
+  ],
+  "files": {
+    "backup-windows.mjs": "e5da2a66b797a85c210a6158d293c1765378f643ceeb57f567a32d0b8a1707d8",
+    "backup_bridge.mjs": "fb7410338ec50a5eca8e3be17d234b906e1bb1dbfaac227cd0916cf62f924250",
+    "batch.mjs": "3c0445d99e0ee99dc5e2b36624f5e70f3df286dc07019e84e75fb07b798e58cc",
+    "boundary_negative_component.py": "c03d072cce08ebf692df0aea7eaa3db4aefd0dc05582bea8404d9816580d031a",
+    "check_joined.py": "fe68762c5018c9bafa2ce9b5e35678d9e0b9d2c9b2a87b7356a3af38acd77692",
+    "dependency-pins.json": "59f9cd4e9a92af97daffb74e759dbf67aeb71ea0ae81565aee349d7d61ceeb4e",
+    "fixture_agent.mjs": "e780950e5e25415fb7ecad5e8f940d2911ea289b46b483f4b152682b09411e6c",
+    "fixture_common.mjs": "65f24382728e0a8ade5fc73fc9e7d3e686c2d8fa5d6d513c071a21b49b6342c3",
+    "fixture_control.py": "221692b577d92a75f27dd0d3bd089fcc6e153d56e7a8ddeddd2e886ea8d68348",
+    "joined_boundary_adapter.py": "b85ca71afdeadee0bbc3b440c510c52a3ed69f17de0fcdf5801c1b13f2097a63",
+    "local_service_entry.py": "44f71bc8b4b976f99f68c1cc6ddcfe231120ed73874f27145079558a1b1e6b9d",
+    "local_worker.py": "d36e1bde7894e006f736a4c3ff6d9bc12017b0834cb2ef0c4a097a3828a62cc0",
+    "owner-launch.sh": "64b293cddb2ddc58921b8f260fdea4c3427e72cb3d37a5bcd43fb9432bf71241",
+    "prepare-visible-disposable.mjs": "813fe71389e1015b6b8a3c2b86c9e2320787f2af7addeb8a6b3c267301541f13",
+    "root_controller.py": "aeb8798f8693d061c4fce817c646880e4d54a771ae424ad6abc246d1d0932b70",
+    "runtime_control.py": "e910c9cd74d1c17bb0fea8e414035dbb106e9674c7d23b14b4c9856c5e84d863",
+    "runtime_units.py": "8f3976929f98d135e12f909229c22577aba358d56ef68d559d96b4dfa798547d",
+    "run_pure_checks.py": "44e6bda2e0d981758f7bc3671a39de32e305b39510cd9821616fe18fc89d0b81",
+    "shared-source-map.json": "15be2d96f8317d6d4c5914957407c7a1c041cb692a7d03b55483007043a48335",
+    "source-pins.json": "a7a6ff44fd97f6561c6f847a1f041eaa492af22a0f4af3f1c9ffdb7eca65acae",
+    "switch_local_io.py": "d96e8e65ff749c2cbce11e8385c7114803578c006281ce3563fa4261c39a7751",
+    "switch_runtime.py": "9faf08a6e09db23f67d33ee919b3627cf0bc466443689f5e26e7af1667e7dac7"
+  },
+  "documentation": {
+    "coverage-and-handoff.md": "f60464b08898d8c5662b183ff2e6d7ded1709afdc4121d7e85061d7f79192d11",
+    "preparation-status.md": "cba64e4d6543e336458e7b62363c03f5a89208ae355228519b3539016be1a704",
+    "cleanup-review.diff": "f2ac4523644068eb6a977dbbe14a1d06294e6954275e85bfc26dc365649af2ed",
+    "seal-preparation-note.md": "c9f12aa50730521727293b03e53e4d95e64668762de3343181e066251e15d9ab",
+    "owner-launch-path-only.diff": "76a0572a59f6600d468c42c9ca3e27a8d9698fe4293925b314fa86c19cd4a5e5",
+    "admission-source-extract.txt": "a50f4abef97cad90b991c76cafb25eb3dab78e4bd94df71c00e69b2400adda84"
+  },
+  "owner_decision": {
+    "path": "D:/Personal/workspace/sena_digital_hub_mkt/docs/receipts/20261124-owner-1615-decisions.md",
+    "sha256": "ffc67edca085f90618c2500ae4529696e60442c808a4f22916e9853bc2fdc2f6"
+  },
+  "checks": {
+    "path": "../joined-v1/checks/attempt2/result.json",
+    "sha256": "571720d64c223524791c6bb254cec8ccd523e6ead44facda2fbc2bccf70f5f20",
+    "contracts_passed": 26,
+    "node_syntax_passed": 6,
+    "bash_syntax_passed": true,
+    "python_ast_files": 12,
+    "runtime_started": false,
+    "reused_identical_source_no_new_run": true
+  },
+  "prior_checks": {
+    "path": "../joined-v1/checks/attempt1/result.json",
+    "sha256": "4d6d47add10b7c484a39d86a81797704a13188512ae917e23f36f24559806c42",
+    "warning_preserved": true
+  },
+  "inherited_crlf_inputs_preserved": [
+    "source-pins.json"
+  ],
+  "limits": {
+    "outer_seconds": 900,
+    "operation_seconds": 840,
+    "active_seconds": 480,
+    "tail_seconds": 300,
+    "cleanup_reserve_seconds": 60,
+    "shared_ticket_seconds": 180,
+    "guard_seconds": 50,
+    "transport_seconds": 55,
+    "boundary_component_seconds": 300,
+    "controller_memory_max_mib": 2304,
+    "database_memory_max_mib": 2304,
+    "hub_aggregate_memory_max_mib": 2304,
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "swap_max": 0
+  },
+  "promotion_reserve_formula": "ceil((2 * measured_elapsed_ms + 10000) / 1000) * 1000",
+  "hosted_calls": 0,
+  "hosted_readiness_claim": false,
+  "hosted_capacity_claim": false,
+  "one_owner_attempt_only": true,
+  "review": {
+    "cleanup_diff_sha256": "f2ac4523644068eb6a977dbbe14a1d06294e6954275e85bfc26dc365649af2ed",
+    "two_cleanup_findings_closed": true,
+    "review_scope": "source only; runtime not executed"
+  },
+  "boundary_component_seal_sha256": "5f1131f1bf4928b151e5981cbe6f448ec29925aa28dea5d1c7ec1ff52f601968",
+  "boundary_session_sha256": "4a3bea7bc073a0bd3c68c197a00e32114af2a29047dedffde9489f936a01935d",
+  "prior_attempt": {
+    "attempt": "joined-20261124-01",
+    "seal_path": "../joined-v1/seal.json",
+    "seal_sha256": "b39badb5cc3a4534a403535ca22e3dc11dc3542ad1f93600598483439ec02dcb",
+    "consumed_marker_sha256": "46e63911c0c9e35a38103274c4524ce7e8f65fdd52a052abcec8722eb096276f",
+    "owner_reported_stop": "a local IDE process",
+    "result_preserved_unmodified": true
+  },
+  "execution_source_byte_identity": {
+    "source": "../joined-v1",
+    "file_count": 22,
+    "all_files_byte_identical": true,
+    "no_assertion_limit_or_admission_change": true
+  },
+  "owner_handoff_launcher": {
+    "path": "owner-attempt2.sh",
+    "sha256": "4a1ce3ab334029a0a9980af5048d37d4892b86280aabff5d590009a8546a99b7",
+    "change": "single invocation cwd path only",
+    "mechanical_diff_sha256": "76a0572a59f6600d468c42c9ca3e27a8d9698fe4293925b314fa86c19cd4a5e5",
+    "copied_owner_launch_sh_must_not_be_invoked": true
+  },
+  "absolute_dependency_preserved": {
+    "path": "../joined-v1/backup_bridge.mjs",
+    "sha256": "fb7410338ec50a5eca8e3be17d234b906e1bb1dbfaac227cd0916cf62f924250",
+    "adapter_sha256": "e5da2a66b797a85c210a6158d293c1765378f643ceeb57f567a32d0b8a1707d8",
+    "new_backup_directories_only": [
+      "../joined-v1/runs/joined-20261124-02-cal",
+      "../joined-v1/runs/joined-20261124-02-main"
+    ]
+  }
+}
