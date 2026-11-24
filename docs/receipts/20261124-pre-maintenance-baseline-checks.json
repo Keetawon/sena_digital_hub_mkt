@@ -1,0 +1,26 @@
+{
+  "status": "LOCAL_OFFLINE_CHECKS_PASSED",
+  "started_at": "2026-11-24T10:48:02.029347+00:00",
+  "finished_at": "2026-11-24T10:48:02.866189+00:00",
+  "elapsed_seconds": 0.8368351000244729,
+  "tests": 48,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_hashes": {
+    "baseline.py": "bd033d2abc9ecef9b5c0441a0e4fa8fc909d7a20d19fa9e67dd443283b9d23fe",
+    "test_baseline.py": "b90ad4566beedd8fcbdb0657e3e0e93de4eec4888aead0633db758f73a45954a",
+    "run_checks.py": "0d2868fe4a6b5c67699f50b1102e47099ba734860598069af70b3bcc4c5f36b9",
+    "admit_checks.ps1": "d22697e32967f26baf93e332411120b6da0acb3fe8ef9682edeab0b4ea616fc5",
+    "lease_bridge.py": "fba0df42e059f4223a1a59e0be28456277cda9e634d77ce0ce4cce3249cb9f6e",
+    "pins.json": "b755a9a7afe2e1233efc6a37bc8d55e0123489e4abd8cffd67b7709df5a3bc3b",
+    "request.proposed.json": "50c9c83dca1f6fe435562de48f7e7a3a52987404d25867b03fa85dd1e4da0049"
+  },
+  "source_unchanged": true,
+  "actual_exit_code": 0,
+  "hosted_calls": 0,
+  "service_calls": 0,
+  "bound_ports": 0,
+  "evidence_kind": "LOCAL_PURE_AND_MOCK_CHECKS_ONLY",
+  "output_sha256": "fe1c49f3d7f06823de61f7b8cea3d2e0be512b12ccd0a16d6640f44eceb7b9ea"
+}

@@ -1,0 +1,162 @@
+--- original/apply.mjs
++++ proposed/apply.mjs
+@@ -9,9 +9,12 @@
+ import {createRequire} from 'node:module';
+ import {fileURLToPath,pathToFileURL} from 'node:url';
+ import path from 'node:path';
++import {PINS,verifySourceBinding} from './manifest-binding.mjs';
+ import {PROJECT,MIGRATIONS,EXPECTED_WRITES,exactHistory,configureReadGuards,verifyReadGuards,apply88to94} from './batch.mjs';
+ 
+ const run=promisify(execFile),operatorRoot=path.dirname(fileURLToPath(import.meta.url));
++const rehearsedOperatorRoot=path.join(operatorRoot,'rehearsed');
++const BINDING_SOURCE_SHA='9c72ef73893e2f944ca6400e2d855e29e733e829642755b520717f59af52f97c';
+ const digest=bytes=>createHash('sha256').update(bytes).digest('hex'),HEX=/^[a-f0-9]{64}$/;
+ const GATE_STAGES=['upload-client','typecheck','build','production','api','db','ui-1280','ui-390','h1','credential-broad','diff','index-diff'];
+ const PLANNING_DOCUMENTS=['docs/11-local-development.md','docs/46-hosted-content-rollout.md',
+@@ -50,8 +53,9 @@
+  const sourceManifest=await pinned(path.join(source,'source-manifest.json'),summary.source_manifest_sha256);
+  assert.equal(sourceManifest.git_commit,summary.final_commit);assert.equal(sourceManifest.git_tree,summary.final_tree);
+  for(const [file,expected] of Object.entries(sourceManifest.files)){relative(file);assert.match(expected,HEX);assert.equal(await hashFile(await regular(path.join(source,file))),expected);}
+- const operators=await pinned(path.join(operatorRoot,'operator-manifest.json'),summary.operator_manifest_sha256);
+- for(const [file,expected] of Object.entries(operators.files)){relative(file);assert.match(expected,HEX);assert.equal(await hashFile(await regular(path.join(operatorRoot,file))),expected);}
++ const operators=await pinned(path.join(rehearsedOperatorRoot,'operator-manifest.json'),summary.operator_manifest_sha256);
++ for(const [file,expected] of Object.entries(operators.files)){relative(file);assert.match(expected,HEX);assert.equal(await hashFile(await regular(path.join(rehearsedOperatorRoot,file))),expected);}
++ assert.equal(await hashFile(path.join(operatorRoot,'batch.mjs')),operators.files['batch.mjs']);
+  const manifest=await json(path.join(proofRoot,'derived-h5i-manifest.json'));
+  const rollback=summary.results.find(row=>row.phase==='complete_rollback');relative(rollback.receipt);
+  const receipt=await json(path.join(proofRoot,rollback.receipt));assert.equal(receipt.status,'rehearsed');assert.equal(receipt.auth_unchanged,true);
+@@ -71,7 +75,7 @@
+  return backup;
+ }
+ async function gateSourceComparison(admission,proof,frozen){
+- const reviewed=await json(path.join(operatorRoot,'gate-source-equivalence.json'));
++ const reviewed=await json(path.join(rehearsedOperatorRoot,'gate-source-equivalence.json'));
+  assert.equal(reviewed.format,'hub-reviewed-gate-source-equivalence-v1');assert.equal(reviewed.status,'reviewed_static_only');
+  assert.equal(reviewed.git_commit,proof.summary.final_commit);assert.equal(reviewed.git_tree,proof.summary.final_tree);
+  assert.equal(reviewed.source_manifest_sha256,proof.summary.source_manifest_sha256);
+@@ -115,10 +119,14 @@
+  assert.ok(Number.isFinite(Date.parse(admission.not_before))&&Date.now()>=Date.parse(admission.not_before));
+  assert.ok(Date.parse(admission.deadline)>Date.parse(admission.not_before)&&Date.parse(admission.deadline)-Date.parse(admission.not_before)<=480000);
+  assert.ok(Date.now()<instant(admission.deadline));
++ assert.equal(await hashFile(path.join(operatorRoot,'manifest-binding.mjs')),BINDING_SOURCE_SHA);
++ assert.equal(admission.payload_manifest_sha256,PINS.payload);
++ const sourceBinding=verifySourceBinding(await readFile(path.join(proof.source,'source-manifest.json')),
++  await readFile(await regular(admission.payload_manifest)),await readFile(path.join(proof.proofRoot,'summary.json')));
+  const maintenance=await pinned(admission.maintenance_receipt,admission.maintenance_sha256),ticket=maintenance.active_budget;
+  assert.equal(maintenance.status,'maintenance');assert.equal(maintenance.release,admission.previous_release);
+- assert.equal(maintenance.source_manifest_sha256,proof.summary.source_manifest_sha256);
+- assert.equal(ticket.source_manifest_sha256,proof.summary.source_manifest_sha256);
++ assert.equal(maintenance.source_manifest_sha256,sourceBinding.application_source_manifest_sha256);
++ assert.equal(ticket.source_manifest_sha256,sourceBinding.application_source_manifest_sha256);
+  assert.match(admission.initial_admission_sha256??'',HEX);assert.equal(ticket.admission_sha256,admission.initial_admission_sha256);
+  assert.match(admission.approval_sha256??'',HEX);assert.equal(ticket.approval_sha256,admission.approval_sha256);
+  assert.equal(ticket.attempt,admission.attempt);assert.equal(maintenance.attempt,admission.attempt);assert.equal(ticket.window_id,admission.window_id);
+@@ -127,7 +135,7 @@
+  assert.equal(ticket.deadline_monotonic-ticket.start_monotonic,180);assert.equal(instant(ticket.deadline_at)-instant(ticket.started_at),180000);
+  assert.ok(instant(ticket.started_at)>=instant(admission.not_before)&&instant(ticket.deadline_at)<=instant(admission.deadline));
+  await verifiedBackup(admission);
+- return {sourceComparison,maintenance};
++ return {sourceComparison,maintenance,sourceBinding};
+ }
+ async function currentAdmission(admission,maintenance){
+  // Reuse a reviewed read-only guard at mutation boundaries, not a polling service.
+@@ -162,7 +170,7 @@
+ async function main(){
+  const args=argumentsFor();stage='source_and_rehearsal';const proof=await sourceAndProof(args);
+  const admission=args['--operation']==='apply'?await json(args['--admission']):null;
+- let sourceComparison,maintenance;if(admission){stage='release_readiness';({sourceComparison,maintenance}=await readiness(admission,proof));}
++ let sourceComparison,maintenance,sourceBinding;if(admission){stage='release_readiness';({sourceComparison,maintenance,sourceBinding}=await readiness(admission,proof));}
+  output=args['--output'];assert.ok(output.startsWith(path.resolve(operatorRoot,'../..')+path.sep));
+  assert.equal((await realpath(path.dirname(output))).toLowerCase(),path.dirname(output).toLowerCase());await mkdir(output);outputCreated=true;
+  process.chdir(proof.proofRoot);
+@@ -202,6 +210,9 @@
+  });
+  commitState='COMMIT_ACKNOWLEDGED';await exactHistory(db,helpers,migrations,94);await boundary();
+  return {status:'committed',commit_state:commitState,identity,result:committed.result,before_admission:beforeAdmission,
++  target:PROJECT,source_binding:sourceBinding,verified_migration_hashes:MIGRATIONS,
++  operator_source_sha256:await hashFile(path.join(operatorRoot,'apply.mjs')),
++  attestation_sha256:await hashFile(path.resolve(committed.receipt_file)),
+   gate_source_comparison:sourceComparison,
+   attestation:path.resolve(committed.receipt_file),source_commit:proof.summary.final_commit,
+   active_deadline:maintenance.active_budget.deadline_at,operation_deadline:new Date(Date.now()+deadlineMono-performance.now()).toISOString(),promotion_reserve_seconds:admission.promotion_reserve_seconds,
+--- /dev/null
++++ proposed/manifest-binding.mjs
+@@ -0,0 +1,78 @@
++// Proposed pure receipt binding; no hosted invocation or database access.
++import assert from 'node:assert/strict';
++import {createHash} from 'node:crypto';
++import {MIGRATIONS,EXPECTED_WRITES,PROJECT} from './batch.mjs';
++export const PINS=Object.freeze({
++ commit:'f07f7cb4f6be76827f03c2770889f1ba4fbbf85e',tree:'08c62dff0e76a14545125c73a7910dba61e017a1',
++ archive:'e8a47fe53c92361871a3064df200623531c03248ec0745158f48dffdd6d36bf7',
++ runtime:'dd33d4d7f14bbf2a8d626775a77ca7369366145eabbd7e702c52a94edf57e934',
++ payload:'84afe9044378c45b15a24ed3fd0292179046d45eb119985194c64fa1d76b307f',
++ rehearsal:'bbbcdbd301a67b16dda15d7258968de4c53afe1c1a5387c75e915bd65ad1b42b',
++ legacyOperator:'7723a91db56ac0ebdd221ae635beef22728ff46d74153de6a0a7824379412355',
++ h5iManifest:'345c1ff65311b6b7dc5c8267cafefdf9f3f849f06afd7bf8dba7fc199ed35f97',
++ legacyApply:'277e06b3d867ce8aa665ed4ad449cf3ecf33f086a3f518061be7ab2bab45c2e1',
++ gate:'fb65cf531ce6425b0ea5ca30bfee318783c8499a58c04108f209c1d51ab67f1f',
++ gateEquivalence:'54c674fc553842f6d06e844cbd6b5d1b0530b1e2f2553cfb4f0de5826f83871a',
++ frozen:'5567ab3aa9b6b0ae9f95dbfd56bd097ead23d176a5fc884627510bb70abe7daf'});
++export const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
++const extras=new Set(['apps/api/pyproject.toml','apps/api/uv.lock','scripts/offline-fonts.cjs',
++ 'scripts/run-hosted-media-worker.py','scripts/production_runtime_check.py','scripts/operator_diagnostics.py',
++ 'scripts/hosted-candidate-self-check.py','scripts/hosted-ai-state-smoke.py','scripts/hosted-write-attestation.mjs','tests/native-image-broker.py']);
++export const included=name=>!name.endsWith('.md')&&(name.startsWith('apps/admin/')||name.startsWith('apps/api/sena_hub_api/')||name.startsWith('scripts/hosted-test/')||extras.has(name));
++const ordered=map=>Object.fromEntries(Object.keys(map).sort().map(key=>[key,map[key]]));
++// This release's source-map encoding is the existing builder's sorted JSON with spaces.
++function runtimeHash(map){
++ for(const [name,digest] of Object.entries(map)){assert.match(name,/^[\x20-\x7e]+$/);assert.match(digest,/^[a-f0-9]{64}$/);}
++ return sha('{'+Object.entries(ordered(map)).map(([key,value])=>JSON.stringify(key)+': '+JSON.stringify(value)).join(', ')+'}');
++}
++export function assertSourceIdentity(archive,payload,summary){
++ assert.equal(archive.format,'hub-rehearsal-source-v1');assert.equal(archive.git_commit,PINS.commit);assert.equal(archive.git_tree,PINS.tree);
++ assert.equal(summary.format,'hub-local-88-94-rehearsal-v1');assert.equal(summary.status,'passed');assert.equal(summary.hosted_execution,false);
++ assert.equal(summary.final_commit,archive.git_commit);assert.equal(summary.final_tree,archive.git_tree);
++ assert.equal(summary.source_manifest_sha256,PINS.archive);assert.equal(summary.operator_manifest_sha256,PINS.legacyOperator);
++ assert.equal(payload.full_source_manifest_sha256,PINS.archive);assert.equal(payload.source_manifest_sha256,PINS.runtime);
++ assert.equal(payload.release,PINS.commit.slice(0,7)+'-media-'+PINS.runtime.slice(0,12));
++ assert.equal(payload.full_gate_sha256,PINS.gate);assert.equal(payload.gate_source_equivalence_sha256,PINS.gateEquivalence);assert.equal(payload.gate_frozen_source_sha256,PINS.frozen);
++ const subset=Object.fromEntries(Object.entries(archive.files).filter(([name])=>included(name)));
++ assert.equal(Object.keys(subset).length,291);assert.deepEqual(ordered(payload.source_files),ordered(subset));assert.equal(runtimeHash(subset),PINS.runtime);
++ const entries=new Map();for(const row of payload.entries){assert.ok(!entries.has(row.path));entries.set(row.path,row);}
++ for(const [name,digest] of Object.entries(subset)){const row=entries.get(name);assert.equal(row?.type,'file');assert.equal(row.sha256,digest);}
++ return {git_commit:PINS.commit,git_tree:PINS.tree,archive_manifest_sha256:PINS.archive,
++  application_source_manifest_sha256:PINS.runtime,payload_manifest_sha256:PINS.payload,
++  original_rehearsal_sha256:PINS.rehearsal,original_operator_manifest_sha256:PINS.legacyOperator,
++  original_apply_sha256:PINS.legacyApply,runtime_source_file_count:291,exact_runtime_source_subset:true};
++}
++export function verifySourceBinding(archiveBytes,payloadBytes,rehearsalBytes){
++ assert.equal(sha(archiveBytes),PINS.archive);assert.equal(sha(payloadBytes),PINS.payload);assert.equal(sha(rehearsalBytes),PINS.rehearsal);
++ return assertSourceIdentity(JSON.parse(archiveBytes),JSON.parse(payloadBytes),JSON.parse(rehearsalBytes));
++}
++export function normalizeCommittedReceipt(resultBytes,attestationBytes,{actualExitCode,resultSha256,attestationSha256,expectedSourceBinding,expectedOperatorSha256,expectedActiveBudget,rehearsedManifestBytes}){
++ // The outer caller must supply the actual captured exit code and pinned original result bytes.
++ assert.equal(actualExitCode,0);assert.equal(sha(resultBytes),resultSha256);assert.equal(sha(attestationBytes),attestationSha256);
++ assert.match(expectedOperatorSha256,/^[a-f0-9]{64}$/);
++ assert.equal(sha(rehearsedManifestBytes),PINS.h5iManifest);
++ const rehearsedManifest=JSON.parse(rehearsedManifestBytes);
++ const result=JSON.parse(resultBytes),attestation=JSON.parse(attestationBytes);
++ assert.equal(result.status,'committed');assert.equal(result.commit_state,'COMMIT_ACKNOWLEDGED');assert.equal(result.source_commit,PINS.commit);
++ assert.equal(result.target,PROJECT);assert.equal(result.operator_source_sha256,expectedOperatorSha256);
++ assert.deepEqual(result.source_binding,expectedSourceBinding);assert.equal(expectedSourceBinding.application_source_manifest_sha256,PINS.runtime);
++ assert.deepEqual(result.verified_migration_hashes,MIGRATIONS);assert.equal(result.attestation_sha256,attestationSha256);
++ assert.ok(Number.isFinite(result.db_budget_remaining_ms)&&result.db_budget_remaining_ms>0);
++ assert.equal(expectedActiveBudget.deadline_monotonic-expectedActiveBudget.start_monotonic,180);
++ assert.equal(expectedActiveBudget.source_manifest_sha256,PINS.runtime);
++ assert.deepEqual(result.before_admission.active_budget,expectedActiveBudget);assert.deepEqual(result.result.admission.active_budget,expectedActiveBudget);
++ assert.equal(result.active_deadline,expectedActiveBudget.deadline_at);
++ assert.equal(result.identity.session_user,'postgres');assert.equal(result.identity.current_user,'postgres');assert.equal(result.identity.database,'postgres');assert.equal(result.identity.role,'none');
++ assert.ok(result.identity.rolsuper===true||result.identity.rolbypassrls===true);
++ assert.equal(result.result.prefix_before,88);assert.equal(result.result.prefix_after,94);assert.equal(result.result.same_transaction_full_rows_unchanged,true);
++ assert.deepEqual(result.result.write_set,EXPECTED_WRITES);assert.equal(attestation.rule,'H5i');assert.equal(attestation.mode,'apply');assert.equal(attestation.prefix,88);
++ assert.equal(attestation.status,'committed');assert.equal(attestation.auth_unchanged,true);assert.equal(attestation.definitions.status,'passed');assert.equal(attestation.privileges.status,'passed');
++ assert.deepEqual([...attestation.write_set].sort((a,b)=>a.relation.localeCompare(b.relation)),EXPECTED_WRITES);assert.ok(!attestation.violation&&!attestation.rolled_back);
++ assert.deepEqual(attestation.catalog.changes,rehearsedManifest.catalog_changes);
++ for(const row of attestation.catalog.changes)assert.ok(!/^\w+:auth(?:\.|$)/.test(row.key));
++ assert.ok(Date.parse(attestation.finished_at)>=Date.parse(attestation.started_at));
++ return {status:'passed',target:PROJECT,before_prefix:88,prefix:94,same_transaction_preservation:'passed',
++  migration_hashes_verified:true,source_manifest_sha256:PINS.runtime,
++  source_binding:expectedSourceBinding,committed_result_sha256:resultSha256,attestation_sha256:attestationSha256,
++  operator_source_sha256:expectedOperatorSha256,normalization:'verified_original_commit_and_attestation_bytes'};
++}

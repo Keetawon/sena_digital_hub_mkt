@@ -1,0 +1,92 @@
+{
+    "local_adaptations":  [
+                              "Owned loopback database target and generated credentials",
+                              "Persistent database clients exist before local process baseline",
+                              "Connection-only worker context; frozen worker loop and SQL unchanged",
+                              "Synthetic external job/configuration/container metadata",
+                              "Actual Hub unit files, caps, cgroups, PIDs and listeners",
+                              "Exact six HTTPS smoke routes mapped to actual local HTTP endpoints",
+                              "Private per-unit NSS identity and bound interpreter paths",
+                              "Synthetic PREVIOUS role uses the same frozen package as CANDIDATE"
+                          ],
+    "hosted_outer":  {
+                         "executed_in_local_join":  false,
+                         "path":  "D:/Personal/workspace/sena_hub_wt/performance-review-20261120/artifacts/rollout-plan-20261120/operators/simple-88-94/apply.mjs",
+                         "sha256":  "277e06b3d867ce8aa665ed4ad449cf3ecf33f086a3f518061be7ab2bab45c2e1",
+                         "new_hosted_successor_prepared_by_lead":  true
+                     },
+    "hosted_calls":  0,
+    "complete_timing_claim":  false,
+    "status":  "PREPARED_SOURCE_MAPPING_NOT_RUNTIME_EVIDENCE",
+    "live_gaps":  [
+                      "Genuine hosted pre-maintenance baseline collector",
+                      "Fresh hosted admission and both mutation-boundary guard calls",
+                      "Target hostname, CA, database identity and TLS checks",
+                      "Live staged self-checks and deployed credential scans",
+                      "Full hosted outer entrypoint and security watcher",
+                      "Actual warehouse/jobs/pressure observations"
+                  ],
+    "shared_sources":  {
+                           "boundary-guard-profile.json":  {
+                                                               "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/boundary-guard-profile.json",
+                                                               "sha256":  "d917f413ae97749826884568131a71ca78e108ff6b183c87e094f20278d20566",
+                                                               "kind":  "unchanged_approved_source"
+                                                           },
+                           "caller.py":  {
+                                             "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/caller.py",
+                                             "sha256":  "a7411b1e7a868fe9121a91acfcbee70fb46db41a24db36b4564a5403fd3ea840",
+                                             "kind":  "unchanged_approved_source"
+                                         },
+                           "passive.py":  {
+                                              "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/passive.py",
+                                              "sha256":  "56d69e7f5d8c3cae84e35c55b487d1b505dda11374f989d3d6a867ae9af7d2cb",
+                                              "kind":  "unchanged_approved_source"
+                                          },
+                           "boundary-core.py":  {
+                                                    "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/boundary-core.py",
+                                                    "sha256":  "3b2c0b2e9176d3ca6c26905b3122fac61527a83ae16e508f522abd96363af78f",
+                                                    "kind":  "unchanged_approved_source"
+                                                },
+                           "boundary-thin_launcher.py":  {
+                                                             "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/boundary-thin_launcher.py",
+                                                             "sha256":  "1a6b98be9f6a2b37109deb37ec2a319b3dce584d58de182bd748831a51a3bffc",
+                                                             "kind":  "unchanged_approved_source"
+                                                         },
+                           "switch.py":  {
+                                             "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/switch.py",
+                                             "sha256":  "9ebd5a2bb967e8b509b9a4665bc2971b8ca6ca9477362bd5116df12ea72db521",
+                                             "kind":  "unchanged_approved_source"
+                                         },
+                           "boundary-remote_mapping.py":  {
+                                                              "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/boundary-remote_mapping.py",
+                                                              "sha256":  "1656ce53dca099c742015ce624b6fc2717dffcb30b6a433fa0a4d50300c058d3",
+                                                              "kind":  "unchanged_approved_source"
+                                                          },
+                           "boundary-guard.py":  {
+                                                     "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/boundary-guard.py",
+                                                     "sha256":  "0739a4c9ce66bc77c67ecf26b8c51a6a37db95d2478e248961f1cb193291a703",
+                                                     "kind":  "unchanged_approved_source"
+                                                 },
+                           "caps.json":  {
+                                             "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/caps.json",
+                                             "sha256":  "940fda38dbe7e4cd5017d8cac88a9bba9bf623083928f7d93c5e395caaf08817",
+                                             "kind":  "unchanged_approved_source"
+                                         },
+                           "pressure.py":  {
+                                               "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/pressure.py",
+                                               "sha256":  "c02c8863cc2015cb8d2739d724149e82797f298e40c051afbcb4763890a18005",
+                                               "kind":  "unchanged_approved_source"
+                                           },
+                           "owner-baseline.json":  {
+                                                       "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/owner-baseline.json",
+                                                       "sha256":  "cc994db467a1a8eaa810646e8483809b906314d5b2fb9ffa2f005eb66e107265",
+                                                       "kind":  "unchanged_approved_source"
+                                                   },
+                           "protected.py":  {
+                                                "path":  "C:/Users/keetawatw/.codex/worktrees/8370/sena_digital_hub_mkt/artifacts/boundary-approved-integration-20261124/fixture/source/protected.py",
+                                                "sha256":  "1dff820a48503bdb74d28b03a8f504ac0953f428b71d07f5e6e8d78ca5c57ef2",
+                                                "kind":  "unchanged_approved_source"
+                                            }
+                       },
+    "scope":  "LOCAL_FIXTURE"
+}

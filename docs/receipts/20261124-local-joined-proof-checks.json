@@ -1,0 +1,92 @@
+{
+  "scope": "PURE_SYNTAX_ONLY",
+  "status": "PURE_SYNTAX_PASSED",
+  "hosted_calls": 0,
+  "runtime_started": false,
+  "database_started": false,
+  "ports_bound": false,
+  "shared_flock_held": true,
+  "source_pins": {
+    "backup-windows.mjs": "e5da2a66b797a85c210a6158d293c1765378f643ceeb57f567a32d0b8a1707d8",
+    "backup_bridge.mjs": "fb7410338ec50a5eca8e3be17d234b906e1bb1dbfaac227cd0916cf62f924250",
+    "batch.mjs": "3c0445d99e0ee99dc5e2b36624f5e70f3df286dc07019e84e75fb07b798e58cc",
+    "boundary_negative_component.py": "c03d072cce08ebf692df0aea7eaa3db4aefd0dc05582bea8404d9816580d031a",
+    "check_joined.py": "fe68762c5018c9bafa2ce9b5e35678d9e0b9d2c9b2a87b7356a3af38acd77692",
+    "dependency-pins.json": "59f9cd4e9a92af97daffb74e759dbf67aeb71ea0ae81565aee349d7d61ceeb4e",
+    "fixture_agent.mjs": "e780950e5e25415fb7ecad5e8f940d2911ea289b46b483f4b152682b09411e6c",
+    "fixture_common.mjs": "65f24382728e0a8ade5fc73fc9e7d3e686c2d8fa5d6d513c071a21b49b6342c3",
+    "fixture_control.py": "221692b577d92a75f27dd0d3bd089fcc6e153d56e7a8ddeddd2e886ea8d68348",
+    "joined_boundary_adapter.py": "b85ca71afdeadee0bbc3b440c510c52a3ed69f17de0fcdf5801c1b13f2097a63",
+    "local_service_entry.py": "44f71bc8b4b976f99f68c1cc6ddcfe231120ed73874f27145079558a1b1e6b9d",
+    "local_worker.py": "d36e1bde7894e006f736a4c3ff6d9bc12017b0834cb2ef0c4a097a3828a62cc0",
+    "owner-launch.sh": "64b293cddb2ddc58921b8f260fdea4c3427e72cb3d37a5bcd43fb9432bf71241",
+    "prepare-visible-disposable.mjs": "813fe71389e1015b6b8a3c2b86c9e2320787f2af7addeb8a6b3c267301541f13",
+    "root_controller.py": "aeb8798f8693d061c4fce817c646880e4d54a771ae424ad6abc246d1d0932b70",
+    "runtime_control.py": "e910c9cd74d1c17bb0fea8e414035dbb106e9674c7d23b14b4c9856c5e84d863",
+    "runtime_units.py": "8f3976929f98d135e12f909229c22577aba358d56ef68d559d96b4dfa798547d",
+    "run_pure_checks.py": "44e6bda2e0d981758f7bc3671a39de32e305b39510cd9821616fe18fc89d0b81",
+    "shared-source-map.json": "15be2d96f8317d6d4c5914957407c7a1c041cb692a7d03b55483007043a48335",
+    "source-pins.json": "a7a6ff44fd97f6561c6f847a1f041eaa492af22a0f4af3f1c9ffdb7eca65acae",
+    "switch_local_io.py": "d96e8e65ff749c2cbce11e8385c7114803578c006281ce3563fa4261c39a7751",
+    "switch_runtime.py": "9faf08a6e09db23f67d33ee919b3627cf0bc466443689f5e26e7af1667e7dac7"
+  },
+  "stages": [
+    {
+      "name": "python-contracts",
+      "exit_code": 0,
+      "elapsed_seconds": 0.417719880999357,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "16f02d57939f2d5c96a76723a8a29d08c240289246265004792e7e105409434e"
+    },
+    {
+      "name": "syntax-backup-windows.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.12536260599881643,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "syntax-backup_bridge.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.12769630899856566,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "syntax-batch.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.07877669500157936,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "syntax-fixture_agent.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.09806600999945658,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "syntax-fixture_common.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.08111974799976451,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "syntax-prepare-visible-disposable.mjs",
+      "exit_code": 0,
+      "elapsed_seconds": 0.18349718900208245,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "shell-syntax",
+      "exit_code": 0,
+      "elapsed_seconds": 0.04099119999955292,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "python_syntax_files": 12
+}

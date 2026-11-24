@@ -1,0 +1,211 @@
+{
+  "status": "PURE_PROPOSAL_CHECKS_PASSED",
+  "tests": 50,
+  "passed": 50,
+  "failed": 0,
+  "hosted_calls": 0,
+  "db_calls": 0,
+  "synthetic_commit_records_not_execution_evidence": true,
+  "rows": [
+    {
+      "name": "actual_manifests_exact_commit_tree_and_291_runtime_files",
+      "status": "passed"
+    },
+    {
+      "name": "archive_bytes_changed",
+      "status": "passed"
+    },
+    {
+      "name": "payload_bytes_changed",
+      "status": "passed"
+    },
+    {
+      "name": "rehearsal_bytes_changed",
+      "status": "passed"
+    },
+    {
+      "name": "reject_commit",
+      "status": "passed"
+    },
+    {
+      "name": "reject_tree",
+      "status": "passed"
+    },
+    {
+      "name": "reject_archive_source",
+      "status": "passed"
+    },
+    {
+      "name": "reject_runtime_omission",
+      "status": "passed"
+    },
+    {
+      "name": "reject_runtime_extra",
+      "status": "passed"
+    },
+    {
+      "name": "reject_runtime_digest",
+      "status": "passed"
+    },
+    {
+      "name": "reject_payload_archive",
+      "status": "passed"
+    },
+    {
+      "name": "reject_payload_entry",
+      "status": "passed"
+    },
+    {
+      "name": "reject_duplicate_payload_entry",
+      "status": "passed"
+    },
+    {
+      "name": "reject_rehearsal_tree",
+      "status": "passed"
+    },
+    {
+      "name": "reject_rehearsal_operator",
+      "status": "passed"
+    },
+    {
+      "name": "reject_gate_pin",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_complete_pure_commit_fixture",
+      "status": "passed"
+    },
+    {
+      "name": "actual_retained_local_h5i_shape_with_synthetic_outer_result",
+      "status": "passed"
+    },
+    {
+      "name": "retained_write_set_order_is_not_mutated",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_write_set_duplicate",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_write_set_count",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_write_set_type",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_stop",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_unknown_commit",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_target",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_operator",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_source_binding",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_migration_pin",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_attestation_binding",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_deadline_exhausted",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_login_identity",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_prefix",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_row_preservation",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_write_set",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_precommit_ticket",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_initial_ticket",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_auth",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_attestation_stop",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_rollback",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_definitions",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_privileges",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_catalog",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_attestation_write_set",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_exit",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_result_bytes",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_attestation_bytes",
+      "status": "passed"
+    },
+    {
+      "name": "normalize_reject_proof_bytes",
+      "status": "passed"
+    },
+    {
+      "name": "legacy_operator_seal_and_batch_bytes_unchanged",
+      "status": "passed"
+    },
+    {
+      "name": "source_and_proof_checks_preserved_with_explicit_legacy_root",
+      "status": "passed"
+    },
+    {
+      "name": "backup_guard_sql_tls_and_cleanup_source_unchanged",
+      "status": "passed"
+    }
+  ]
+}

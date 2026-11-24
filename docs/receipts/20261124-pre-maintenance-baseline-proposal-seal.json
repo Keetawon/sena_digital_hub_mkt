@@ -1,0 +1,19 @@
+{
+    "hosted_calls":  0,
+    "files":  {
+                  "admit_checks.ps1":  "d22697e32967f26baf93e332411120b6da0acb3fe8ef9682edeab0b4ea616fc5",
+                  "baseline.py":  "bd033d2abc9ecef9b5c0441a0e4fa8fc909d7a20d19fa9e67dd443283b9d23fe",
+                  "request.proposed.json":  "50c9c83dca1f6fe435562de48f7e7a3a52987404d25867b03fa85dd1e4da0049",
+                  "pins.json":  "b755a9a7afe2e1233efc6a37bc8d55e0123489e4abd8cffd67b7709df5a3bc3b",
+                  "test_baseline.py":  "b90ad4566beedd8fcbdb0657e3e0e93de4eec4888aead0633db758f73a45954a",
+                  "lease_bridge.py":  "fba0df42e059f4223a1a59e0be28456277cda9e634d77ce0ce4cce3249cb9f6e",
+                  "proposal.md":  "7d378650c30238230db16227fc310f2ce8fc1fb2b8bd6f160bcb7cf97bbfe6f6",
+                  "run_checks.py":  "0d2868fe4a6b5c67699f50b1102e47099ba734860598069af70b3bcc4c5f36b9"
+              },
+    "runtime_tests":  0,
+    "status":  "UNARMED_PROPOSAL_PENDING_REVIEW",
+    "supersedes_proposal":  "v1",
+    "missing_reviewed_mapping":  true,
+    "tests":  "NOT_RUN",
+    "prior_seal_sha256":  "2bc90eeabc8ae0210920b4173cd2f24955d2a18459a331aa92742d78c411ef0b"
+}
