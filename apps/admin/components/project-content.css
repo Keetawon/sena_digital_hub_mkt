@@ -29,7 +29,12 @@
 .content-state { display: inline-block; margin: .5rem 0; padding: .2rem .6rem; background: var(--surface-warm); color: var(--brand); border-radius: .4rem; font-size: .9rem; }
 .content-machine { padding: 1rem; margin: 1rem 0; border-left: 3px solid var(--gold-strong); background: var(--surface-warm); }
 .content-field-info { display: inline-block; max-width: 100%; }
-.content-field-info > summary { display: flex; align-items: center; justify-content: center; list-style: none; width: 44px; height: 44px; border: 1px solid var(--line-strong); border-radius: 50%; font: 600 .95rem Georgia, serif; color: var(--brand); cursor: pointer; }
+.content-field-info > summary { display: flex; align-items: center; justify-content: center; list-style: none; width: 44px; height: 44px; border: 0; border-radius: .4rem; background: transparent; color: var(--muted); cursor: pointer; }
+.content-field-info > summary > span { display: grid; place-items: center; box-sizing: border-box; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; font: 600 12px/1 Georgia, serif; }
+.content-field-info > summary:hover > span, .content-field-info[open] > summary > span { color: var(--action); background: var(--surface-warm); }
+.content-field-info > summary:active > span { color: var(--primary-strong); }
+.content-field-info > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.content-label:has(> .content-field-info) { column-gap: .25rem; }
 .content-field-info > summary::-webkit-details-marker { display: none; }
 .content-field-info > div { padding: 1rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--canvas); width: min(32rem, 100%); margin: .5rem 0; overflow-wrap: anywhere; }
 .content-field-info[open] { flex: 1 1 100%; }
