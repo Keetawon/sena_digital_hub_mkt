@@ -1,0 +1,293 @@
+{
+  "status": "LOCAL_BOUNDED_SELF_CHECKS_PASSED",
+  "evidence_scope": "LOCAL_BOUNDED_SELF_CHECKS",
+  "hosted_calls": 0,
+  "real_credentials_used": false,
+  "hosted_identity_or_capacity_acceptance": false,
+  "stages": [
+    {
+      "name": "imports",
+      "exit_code": 0,
+      "elapsed_seconds": 17.736180439000236,
+      "stdout_sha256": "f4bb30838bcfc5f6b0cc3a03a7fdaa3527269837aa509d43b41b1fc986c9929e",
+      "stdout_bytes": 2110,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0,
+      "memory_before": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "40304640",
+          "memory.peak": "71122944",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "memory_after": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140816384",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "self_check": {
+        "status": "passed",
+        "mode": "imports",
+        "network_calls": 0,
+        "database_connections": 0,
+        "provider_calls": 0,
+        "writes": 0
+      },
+      "imported_module_count": 67
+    },
+    {
+      "name": "api",
+      "exit_code": 0,
+      "elapsed_seconds": 8.90718837500026,
+      "stdout_sha256": "24a35f6e314e3424a8797b2ce97ca5ec1dfd3a7e59102befcb73f55436e34358",
+      "stdout_bytes": 198,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0,
+      "memory_before": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140283904",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "memory_after": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140468224",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "self_check": {
+        "status": "passed",
+        "mode": "api",
+        "network_calls": 0,
+        "database_connections": 0,
+        "provider_calls": 0,
+        "writes": 0
+      },
+      "imported_module_count": 4
+    },
+    {
+      "name": "worker",
+      "exit_code": 0,
+      "elapsed_seconds": 4.788097406000816,
+      "stdout_sha256": "e472875867cd1ee7806cd24739b6330b89c18781cdb6ee5394649892bfe8ea32",
+      "stdout_bytes": 208,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0,
+      "memory_before": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140468224",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "memory_after": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140365824",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "self_check": {
+        "status": "passed",
+        "mode": "worker",
+        "network_calls": 0,
+        "database_connections": 0,
+        "provider_calls": 0,
+        "writes": 0
+      },
+      "imported_module_count": 2
+    },
+    {
+      "name": "native-peer",
+      "exit_code": 0,
+      "elapsed_seconds": 4.468590313999812,
+      "stdout_sha256": "b116a0045e0d788c9ac4e3f0133067d54fb99b2d3c427da715555516a584678d",
+      "stdout_bytes": 74,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_bytes": 0,
+      "memory_before": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140365824",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "memory_after": {
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+        "pid": 2517,
+        "oom_score_adjust": 1000,
+        "cpu_affinity": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "values": {
+          "memory.high": "335544320",
+          "memory.max": "394264576",
+          "memory.swap.max": "0",
+          "memory.current": "140845056",
+          "memory.peak": "271306752",
+          "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+          "cpu.max": "50000 100000",
+          "pids.max": "32"
+        }
+      },
+      "native_cases": 2
+    }
+  ],
+  "before": {
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+    "pid": 2517,
+    "oom_score_adjust": 1000,
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "values": {
+      "memory.high": "335544320",
+      "memory.max": "394264576",
+      "memory.swap.max": "0",
+      "memory.current": "7421952",
+      "memory.peak": "7421952",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.max": "50000 100000",
+      "pids.max": "32"
+    }
+  },
+  "after": {
+    "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/sena-hub-test-maintenance-selfcheck-local-f07f7cb-20261124.service",
+    "pid": 2517,
+    "oom_score_adjust": 1000,
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "values": {
+      "memory.high": "335544320",
+      "memory.max": "394264576",
+      "memory.swap.max": "0",
+      "memory.current": "171982848",
+      "memory.peak": "271306752",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+      "cpu.max": "50000 100000",
+      "pids.max": "32"
+    }
+  },
+  "elapsed_seconds": 36.326520684999196,
+  "completed_at": "2026-11-24T06:23:25.735595+00:00",
+  "event_deltas": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+  }
+}

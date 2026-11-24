@@ -1,0 +1,22 @@
+--- boundary-v6/remote_mapping.py
++++ proposed-successor/remote_mapping.py
+@@ -67,0 +68,10 @@
++
++
++def timer_uint64_or_unset(raw):
++    need(isinstance(raw, dict) and raw.get('type') == 't', 'timer_next_shape_unknown')
++    value = raw.get('data')
++    if isinstance(value, list):
++        need(len(value) == 1, 'timer_next_shape_unknown')
++        value = value[0]
++    need(type(value) is int and 0 <= value <= 2**64 - 1, 'timer_next_shape_unknown')
++    return None if value in (0, 2**64 - 1) else value
+@@ -277,3 +287,5 @@
+-                need(value['type'] == 't' and isinstance(value['data'], int), 'timer_next_shape_unknown')
+-                if 0 < value['data'] < 2**64 - 1:
+-                    candidates.append(value['data'] / 1000000 if property_name.endswith('Realtime') else time.time() + value['data'] / 1000000 - time.monotonic())
++                due = timer_uint64_or_unset(value)
++                result.setdefault('timer_deadline_observations', []).append({'timer': timer, 'property': property_name,
++                    'type': value['type'], 'data_shape': type(value['data']).__name__, 'value': value['data']})
++                if due is not None:
++                    candidates.append(due / 1000000 if property_name.endswith('Realtime') else time.time() + due / 1000000 - time.monotonic())
