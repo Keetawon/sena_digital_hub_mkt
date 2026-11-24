@@ -1,0 +1,14 @@
+{
+    "approval":  {
+                     "execution_authorized":  false,
+                     "source_seal_sha256":  "da82042075e9e62be6e2c3d97edad57f85893ba79a20927d839ec965be51867f",
+                     "window_start":  "2026-11-25T13:45:00+07:00",
+                     "approval_receipt_sha256":  null,
+                     "window_end":  "2026-11-25T13:59:00+07:00",
+                     "operation":  "stage_only",
+                     "window_id":  "20261125-1345-1359-bangkok",
+                     "owner_go":  false
+                 },
+    "previous_release":  "4b00099-media-00f0f23e0fe3",
+    "release":  "f07f7cb-media-dd33d4d7f14b"
+}

@@ -1,0 +1,38 @@
+{
+    "actual_exit_code":  0,
+    "skips":  0,
+    "failures":  0,
+    "owner_go":  false,
+    "errors":  0,
+    "hosted_calls":  0,
+    "tests":  72,
+    "files":  {
+                  "checks-1.json":  {
+                                        "bytes":  1609,
+                                        "sha256":  "c8f7011c7e202ab753852ddcfae7ab76a7132e5ab13d67ded0bbc72c356deb13"
+                                    },
+                  "source-seal.json":  {
+                                           "bytes":  1210,
+                                           "sha256":  "da82042075e9e62be6e2c3d97edad57f85893ba79a20927d839ec965be51867f"
+                                       },
+                  "staging.reviewed.json":  {
+                                                "bytes":  649,
+                                                "sha256":  "8e368b901342eba9110e7fde097bb62ceb79701d9b4768ad3aa21951a69a084a"
+                                            },
+                  "checks-output-1.txt":  {
+                                              "bytes":  6679,
+                                              "sha256":  "dd7e8298b75e7c01d14c3859726414462a85a2b9fc4c082f3b02ce849d396a85"
+                                          },
+                  "windows-test-lease-1.json":  {
+                                                    "bytes":  249,
+                                                    "sha256":  "769cbc7c660770e1c3168e1e173269c5ebdae7c0abb60572f4089959bc7c2c7b"
+                                                },
+                  "handoff.md":  {
+                                     "bytes":  8704,
+                                     "sha256":  "26913f7ee1d25858c5ac8181b4f050d6ff87debe0d7cbcf75e014adefe939696"
+                                 }
+              },
+    "runtime_tests":  0,
+    "execution_authorized":  false,
+    "status":  "STAGING_PREPARATION_SEALED_NOT_ARMED"
+}

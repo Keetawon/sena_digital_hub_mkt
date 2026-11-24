@@ -1,0 +1,18 @@
+{
+    "tests_status":  "NOT_RUN",
+    "status":  "SEALED_PREPARATION_NOT_ARMED",
+    "files":  {
+                  "common.py":  "7c71563441338a070307f79d612358335c4e09346f3b007bdb868cf47a53a844",
+                  "caller.py":  "48634bb868c1e434729ab8e67e657dd4ead949769d54bb38569eef651c0ff159",
+                  "test_staging.py":  "abbc18c275d7f768a2d9145d6843a3b8a87a5196559442b4e1bf0a40ef93d271",
+                  "checkpoint.py":  "6f4dc163607fc2f88801acce658ebaf6a7b29616bc88a46cd7d562934c9c5727",
+                  "transport.py":  "2f8d17c1591da000bb734f779348159f1307d296cce8adab880d68913ae497c3",
+                  "scan.mjs":  "e60260ddad2d4a763709fb4c8acfd449d4797760a884b8feccc7fd713a4b027d",
+                  "admit_checks.ps1":  "0549c394c8abc678b9ec8f5f94b5ffb4213d7bcbf9b79021ba229a60ecb33f62",
+                  "input-pins.json":  "e0b156558f27bd5e8934c5d96c2ad11e0a7533e8a3d68ff28d0363e556e8a44c",
+                  "lease_bridge.py":  "e34d8b284755def4fdca5905c717250e924df7f89f0d658b245f9963664936e7",
+                  "run_checks.py":  "deaf7c6adefbf4f8b30c8c628ec86a49603880651ef9334cf52e093f7c4b294c"
+              },
+    "leaf_sources_unchanged":  true,
+    "hosted_calls":  0
+}

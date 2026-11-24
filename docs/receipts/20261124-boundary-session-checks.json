@@ -1,0 +1,13 @@
+{
+  "status": "PURE_SESSION_CHECKS_PASSED",
+  "tests": 13,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "source_sha256": "4a3bea7bc073a0bd3c68c197a00e32114af2a29047dedffde9489f936a01935d",
+  "expected_red_control": false,
+  "diagnostic_sha256": "9bbe6ae0b634d8e0ab258fd2ff50990abee1ae2dc2c686cae95bbcd4f5ab2563",
+  "root_runtime_executed": false,
+  "hosted_calls": 0,
+  "mocked_unit_inputs_not_integration_evidence": true
+}
