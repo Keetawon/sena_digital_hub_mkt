@@ -1,0 +1,31 @@
+{
+  "scope": "HOSTED_CAP_ADMISSION_STOP_NO_APPLY",
+  "attempt": "20261125-1045-caps",
+  "slot_window": "2026-11-25T10:45:00+07:00/2026-11-25T10:59:00+07:00",
+  "slot_outcome": "SKIPPED_NO_RETRY_NO_MOVE",
+  "admission_started_at": "2026-11-25T10:44:05.0935427+07:00",
+  "local_preflight_observed_at": "2026-11-25T03:44:07.5952963Z",
+  "admission_elapsed_seconds": 1.0184912999975495,
+  "actual_exit_code": 1,
+  "failure": null,
+  "execution_mode": "READ_ONLY_ADMISSION",
+  "hosted_mutations": 0,
+  "credential_files_read": 0,
+  "apply_executed": false,
+  "automatic_retry_or_restart_attempted": false,
+  "reason": "Invalid isoformat string: '2026-11-25T03:44:07.5952963+00:00'",
+  "source_seal_sha256": "2f7c44b05eac8bfec48f9e3dd1dcb4234f8276f6ba6582514fa41c913df86e16",
+  "execution_packet_sha256": "110d919fbc517b7026ad77096839583be01f60f79e00dd2736efe820886ca1c5",
+  "route_sha256": "7bb79109d1eab9ca0e0e5fde516e3caecdb18596e733cbc7f95a6ee7ca9f68dc",
+  "capture_pins": {
+    "invocation_sha256": "762cedc513ff5e6bc7044b313531c46c358aa45bc8f12aade5cdb861538732c8",
+    "stdout_sha256": "a623d894cc77bd6a3a8916262644a62d17c30751bc842acbe02573eeaa83a859",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "post_stop_check": {
+    "apply_directory_present": false,
+    "local_ssh_processes": 0,
+    "remaining_hosted_slots_today": []
+  },
+  "analysis_path": "docs/receipts/20261125-caps-1045-skip-and-audit.md"
+}
