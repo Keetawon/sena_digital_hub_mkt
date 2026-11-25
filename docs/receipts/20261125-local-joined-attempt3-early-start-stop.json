@@ -1,0 +1,33 @@
+{
+  "scope": "LOCAL_JOINED_FIXTURE_ATTEMPT_RECORD",
+  "attempt": "joined-20261124-03",
+  "status": "STOP_BEFORE_START_INTERVAL",
+  "owner_reported_at": "2026-11-25T08:23:00+07:00",
+  "owner_pasted_result": {
+    "status": "STOP",
+    "diagnostic": {
+      "stage": "input",
+      "exception_type": "ValueError",
+      "reason": "owner_local_start_interval",
+      "raw_error_withheld": true,
+      "safe_stack": [
+        {"file": "root_controller.py", "line": 380, "function": "<module>"},
+        {"file": "root_controller.py", "line": 245, "function": "main"},
+        {"file": "root_controller.py", "line": 45, "function": "need"}
+      ]
+    },
+    "hosted_calls": 0
+  },
+  "interpretation": "The sealed controller refused at its start-interval check (line 245) because the launch preceded the first sealed interval 08:30-10:15. That check precedes the outer timer, evidence directory, consumed marker, serial lease, admission and runtime.",
+  "verified_at": "2026-11-25T08:23:21+07:00",
+  "consumed_marker_present": false,
+  "evidence_directory_present": false,
+  "backup_directories_present": false,
+  "controller_unit_present": false,
+  "seal_sha256_unchanged": "086fa5c161737a30f71d70d66dc6c3998bce1e7973e66768a75fec8494870b37",
+  "launcher_sha256_unchanged": "e5d8501a75fe8330187f7f8e411908f0cdb4d925b135c8085f63b42b1853c35f",
+  "runtime_started": false,
+  "hosted_calls": 0,
+  "relaunch_authorized": false,
+  "awaiting_owner_decision": "Whether a launch inside 08:30-10:15 with the unchanged seal counts as the single attempt 3 or as a forbidden rerun."
+}
