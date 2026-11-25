@@ -1,0 +1,114 @@
+--- boundary-approved-integration-20261124/fixture/source/boundary-core.py
++++ boundary-successor-v2/source/boundary-core.py
+@@ -44,7 +44,7 @@
+ 
+ def instant(value):
+     try:
+-        result = datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
++        result = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], value.replace('Z', '+00:00')))
+     except ValueError:
+         need(value.endswith(' UTC'), 'timestamp_not_utc')
+         result = datetime.datetime.strptime(value, '%a %Y-%m-%d %H:%M:%S UTC').replace(tzinfo=datetime.timezone.utc)
+@@ -292,7 +292,7 @@
+         need(all(live['caps']['units'][unit][key] == row[key] for key in names), 'effective_cap_changed')
+     for unit in SERVICES:
+         row = live['services'][unit]
+-        need(row['ActiveState'] in ('inactive', 'failed') and row['MainPID'] == '0', 'maintenance_service_active')
++        need(row['ActiveState'] in ('inactive', 'failed') and (unit == 'sena-hub-test-image-broker.socket' or row['MainPID'] == '0'), 'maintenance_service_active')
+         need(live['service_descendants'][unit] == [], 'maintenance_descendant_remains')
+     need(live['listeners'] == [], 'maintenance_listener_remains')
+ 
+--- boundary-approved-integration-20261124/fixture/source/boundary-guard.py
++++ boundary-successor-v2/source/boundary-guard.py
+@@ -5,6 +5,7 @@
+ import datetime
+ import hashlib
+ import json
++import re
+ import secrets
+ import subprocess
+ import sys
+@@ -159,8 +160,8 @@
+     need(approval['operator_sha256'] == SOURCES['switch'][1] and maintenance['status'] == 'maintenance',
+          'maintenance_source_or_status_unproved')
+     now = datetime.datetime.now(datetime.timezone.utc)
+-    start = datetime.datetime.fromisoformat(approval['window_start'].replace('Z', '+00:00'))
+-    end = datetime.datetime.fromisoformat(approval['window_end'].replace('Z', '+00:00'))
++    start = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], approval['window_start'].replace('Z', '+00:00')))
++    end = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], approval['window_end'].replace('Z', '+00:00')))
+     need(start.tzinfo is not None and end.tzinfo is not None and start <= now < end, 'approved_window_not_current')
+     need(approval['boundary_timing_receipt_sha256'] == args['timing_sha'] and timing_bytes, 'measured_reserve_evidence_missing')
+     reserve = approval['boundary_promotion_reserve_ms']
+--- boundary-approved-integration-20261124/fixture/source/boundary-remote_mapping.py
++++ boundary-successor-v2/source/boundary-remote_mapping.py
+@@ -22,7 +22,7 @@
+ 
+ 
+ def timestamp(value):
+-    parsed = datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
++    parsed = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], value.replace('Z', '+00:00')))
+     need(parsed.tzinfo is not None, 'timestamp_timezone_missing')
+     return parsed.timestamp()
+ 
+--- boundary-approved-integration-20261124/fixture/source/boundary-thin_launcher.py
++++ boundary-successor-v2/source/boundary-thin_launcher.py
+@@ -50,7 +50,7 @@
+     ticket = settings['ticket']
+     boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+     started = time.monotonic()
+-    at = datetime.datetime.fromisoformat(ticket['started_at'].replace('Z', '+00:00')).timestamp()
++    at = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], ticket['started_at'].replace('Z', '+00:00'))).timestamp()
+     need(boot == ticket['boot_id'] and ticket['deadline_monotonic'] - ticket['start_monotonic'] == 180, 'transport_ticket_changed')
+     need(started >= ticket['start_monotonic'] and abs(time.time() - at - (started - ticket['start_monotonic'])) <= 1, 'transport_clock_changed')
+     runtime = min(50, math.floor(ticket['deadline_monotonic'] - started - settings['promotion_reserve_ms'] / 1000) - 2)
+--- boundary-approved-integration-20261124/fixture/source/caller.py
++++ boundary-successor-v2/source/caller.py
+@@ -14,7 +14,7 @@
+ def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':')).encode()
+ def utc():return datetime.datetime.now(datetime.timezone.utc)
+ def instant(value):
+-    result=datetime.datetime.fromisoformat(value.replace('Z','+00:00'));need(result.tzinfo is not None,'timezone_required');return result
++    result=datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],value.replace('Z','+00:00')));need(result.tzinfo is not None,'timezone_required');return result
+ 
+ def remote_argv(properties,unit):
+     need(re.fullmatch(r'sena-hub-test-maintenance-switch-[a-z0-9-]{1,56}\.service',unit),'unit_invalid')
+--- boundary-approved-integration-20261124/fixture/source/switch.py
++++ boundary-successor-v2/source/switch.py
+@@ -31,7 +31,7 @@
+ 
+ def now():return datetime.datetime.now(datetime.timezone.utc)
+ def instant(value):
+-    result=datetime.datetime.fromisoformat(value.replace('Z','+00:00'))
++    result=datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],value.replace('Z','+00:00')))
+     need(result.tzinfo is not None,'timestamp_timezone_missing');return result
+ 
+ def fresh(value,seconds):need(0<=(now()-instant(value)).total_seconds()<seconds,'receipt_not_fresh')
+@@ -306,7 +306,7 @@
+     groups={name:properties(name)['ControlGroup'] for name in SERVICES}
+     for name in SERVICES:run('systemctl','stop',name,timeout=45)
+     for name in SERVICES:
+-        row=properties(name);need(row['ActiveState'] in ('inactive','failed') and row['MainPID']=='0','test_service_still_running')
++        row=properties(name);need(row['ActiveState'] in ('inactive','failed') and (name==SOCKET or row['MainPID']=='0'),'test_service_still_running')
+         for group in (groups[name],row['ControlGroup']):
+             if group:need(not members(group),'owned_descendants_remain')
+     need(not listeners(),'application_listener_remains')
+@@ -314,7 +314,7 @@
+ 
+ def require_down():
+     for name in SERVICES:
+-        row=properties(name);need(row['ActiveState'] in ('inactive','failed') and row['MainPID']=='0','maintenance_not_active')
++        row=properties(name);need(row['ActiveState'] in ('inactive','failed') and (name==SOCKET or row['MainPID']=='0'),'maintenance_not_active')
+         if row['ControlGroup']:need(not members(row['ControlGroup']),'owned_descendants_remain')
+     need(not listeners(),'application_listener_remains')
+ 
+--- boundary-approved-integration-20261124/fixture/source/thin_launcher.py
++++ boundary-successor-v2/source/thin_launcher.py
+@@ -50,7 +50,7 @@
+     ticket = settings['ticket']
+     boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+     started = time.monotonic()
+-    at = datetime.datetime.fromisoformat(ticket['started_at'].replace('Z', '+00:00')).timestamp()
++    at = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], ticket['started_at'].replace('Z', '+00:00'))).timestamp()
+     need(boot == ticket['boot_id'] and ticket['deadline_monotonic'] - ticket['start_monotonic'] == 180, 'transport_ticket_changed')
+     need(started >= ticket['start_monotonic'] and abs(time.time() - at - (started - ticket['start_monotonic'])) <= 1, 'transport_clock_changed')
+     runtime = min(50, math.floor(ticket['deadline_monotonic'] - started - settings['promotion_reserve_ms'] / 1000) - 2)

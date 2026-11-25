@@ -1,0 +1,53 @@
+--- caps-final-v1/cap_apply.py
++++ caps-final-v2/cap_apply.py
+@@ -54,7 +54,7 @@
+ 
+ 
+ def instant(value):
+-    value = dt.datetime.fromisoformat(value.replace('Z', '+00:00'))
++    value = dt.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], value.replace('Z', '+00:00')))
+     need(value.tzinfo is not None, 'timestamp_timezone_missing')
+     return value.timestamp()
+ 
+--- caps-final-v1/observer_adapter.proposed.py
++++ caps-final-v2/observer_adapter.proposed.py
+@@ -34,7 +34,7 @@
+ 
+ 
+ def instant(value):
+-    result = datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
++    result = datetime.datetime.fromisoformat(re.sub(r'\.(\d+)', lambda m: '.' + (m.group(1) + '000000')[:6], value.replace('Z', '+00:00')))
+     need(result.tzinfo is not None, 'timestamp_timezone_missing')
+     return result.timestamp()
+ 
+--- caps-final-v1/caller.proposed.py
++++ caps-final-v2/caller.proposed.py
+@@ -46,7 +46,7 @@
+ 
+ 
+ def instant(value):
+-    result=datetime.datetime.fromisoformat(value.replace('Z','+00:00'))
++    result=datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],value.replace('Z','+00:00')))
+     need(result.tzinfo is not None,'timestamp_timezone_missing')
+     return result.timestamp()
+ 
+@@ -149,7 +149,7 @@
+     namespace={'__name__':'pinned_local_preflight'}
+     exec(compile(source['preflight_py'],'pinned-local-preflight','exec'),namespace)
+     check=type('CapturedLocalInventory',(),{'returncode':0,'stderr':'','stdout':json.dumps(local)})()
+-    evaluated=namespace['evaluate_local_preflight'](check,datetime.datetime.fromisoformat(invocation['prepared_at']))
++    evaluated=namespace['evaluate_local_preflight'](check,datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],invocation['prepared_at'].replace('Z','+00:00'))))
+     need(evaluated['status']=='LOCAL_SSH_PREFLIGHT_PASSED','admission_local_preflight_unproved')
+     expected=assemble_admission(attach_local(packet,local,history),source,own)
+     need(invocation['stdin_sha256']==sha(expected),'admission_stdin_binding_differs')
+--- caps-final-v1/transport.proposed.py
++++ caps-final-v2/transport.proposed.py
+@@ -44,7 +44,7 @@
+ 
+ 
+ def stamp(value):
+-    value=datetime.datetime.fromisoformat(value.replace('Z','+00:00'))
++    value=datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],value.replace('Z','+00:00')))
+     need(value.tzinfo is not None,'window_timezone_missing')
+     return value.timestamp()
+ 

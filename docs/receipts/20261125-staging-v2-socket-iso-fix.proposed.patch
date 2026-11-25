@@ -1,0 +1,36 @@
+--- staging-final-v1/common.py
++++ staging-final-v2/common.py
+@@ -22,7 +22,7 @@
+ def sha(value):return hashlib.sha256(value).hexdigest()
+ def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':')).encode()
+ def stamp(value):
+-    date=datetime.datetime.fromisoformat(value.replace('Z','+00:00'))
++    date=datetime.datetime.fromisoformat(re.sub(r'\.(\d+)',lambda m:'.'+(m.group(1)+'000000')[:6],value.replace('Z','+00:00')))
+     need(date.tzinfo is not None,'timezone_missing')
+     return date.timestamp()
+ def authority(packet,now,phase):
+--- staging-final-v1/checkpoint.py
++++ staging-final-v2/checkpoint.py
+@@ -60,8 +60,10 @@
+     for unit_name in core['ORDER']:
+         row=io.props(unit_name)
+         need(row['ActiveState']=='active','live_hub_not_active')
+-        selected={k:row[k] for k in ('ControlGroup','MainPID','ExecMainStartTimestampMonotonic','NRestarts','ActiveState','SubState')}
+-        if unit_name!=core['SOCKET']:
++        if unit_name==core['SOCKET']:
++            selected={k:row[k] for k in ('ControlGroup','ActiveState','SubState')}
++        else:
++            selected={k:row[k] for k in ('ControlGroup','MainPID','ExecMainStartTimestampMonotonic','NRestarts','ActiveState','SubState')}
+             selected['process']=io.process(int(row['MainPID']))
+         result[unit_name]=selected
+     return result
+@@ -72,7 +74,8 @@
+     # All staging checkpoints preserve every live generation; cap transition phases are not used.
+     def same(stage,old,new,started):
+         for unit_name in core['ORDER']:
+-            need(all(old[unit_name][k]==new[unit_name][k] for k in ('control_group','main_pid')),'live_hub_generation_changed')
++            keys=('control_group',) if unit_name==core['SOCKET'] else ('control_group','main_pid')
++            need(all(old[unit_name][k]==new[unit_name][k] for k in keys),'live_hub_generation_changed')
+     observer['verify_generations']=same
+     class ReadIO(core['LiveIO']):
+         def command(self,args,timeout=30,env=None):
