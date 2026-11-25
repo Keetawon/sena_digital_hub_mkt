@@ -1,0 +1,19 @@
+{
+  "scope": "LOCAL_JOINED_FIXTURE_ATTEMPT_RECORD",
+  "attempt": "joined-20261124-02",
+  "status": "UNRUN_EXPIRED",
+  "recorded_as_stop": false,
+  "launched": false,
+  "owner_start_window_ended": "2026-11-24T21:45:00+07:00",
+  "seal_sha256": "19e3db872497c6c85c4460249ec3513bd13ecea56a450a7b656f53a29a1c562f",
+  "consumed_marker_present": false,
+  "evidence_directory_present": false,
+  "seal_and_directory_unchanged": true,
+  "owner_decision": {
+    "path": "docs/receipts/20261125-owner-0805-decisions.md",
+    "sha256": "e8913e7dcd70884de6465927810e20335147c35d36a22e720806b0673c7da316"
+  },
+  "verified_at": "2026-11-25T08:15:59+07:00",
+  "hosted_calls": 0,
+  "runtime_started": false
+}
