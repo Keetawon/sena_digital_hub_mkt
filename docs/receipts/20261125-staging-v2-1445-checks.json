@@ -1,0 +1,31 @@
+{
+  "status": "LOCAL_OFFLINE_CHECKS_PASSED",
+  "started_at": "2026-11-25T04:10:17.894028+00:00",
+  "finished_at": "2026-11-25T04:10:18.254779+00:00",
+  "elapsed_seconds": 0.36073580000083894,
+  "tests": 74,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "source_hashes": {
+    "common.py": "6531f511e66a87e677868dfad447d66449d9392b472824a28c164523d5b1a4ea",
+    "checkpoint.py": "414cd5387fe75eadf3147662f15f0324414cbf472df1ed99bacc1b4baf9762d1",
+    "transport.py": "2f8d17c1591da000bb734f779348159f1307d296cce8adab880d68913ae497c3",
+    "caller.py": "48634bb868c1e434729ab8e67e657dd4ead949769d54bb38569eef651c0ff159",
+    "scan.mjs": "e60260ddad2d4a763709fb4c8acfd449d4797760a884b8feccc7fd713a4b027d",
+    "test_staging.py": "ebe9bde63dcf99a0112780e01e30bb209c61fcb9c3a422c96715e38abfa9b52b",
+    "run_checks.py": "deaf7c6adefbf4f8b30c8c628ec86a49603880651ef9334cf52e093f7c4b294c",
+    "admit_checks.ps1": "0549c394c8abc678b9ec8f5f94b5ffb4213d7bcbf9b79021ba229a60ecb33f62",
+    "lease_bridge.py": "e34d8b284755def4fdca5905c717250e924df7f89f0d658b245f9963664936e7",
+    "input-pins.json": "f1293eac6759afa2f0375ebd0e67fb66dff6d86e2aebae547cfae1ce75982c7e",
+    "source-seal.json": "1bb856ede772b51d61cd85f73719cf66b37905dc8e810afdd2fb02512e18c337",
+    "staging.reviewed.json": "ea58c3669e0f0f966b98a7775208f41a0a53cf0d0aa835fb36ab30892ec1b478"
+  },
+  "source_unchanged": true,
+  "actual_exit_code": 0,
+  "hosted_calls": 0,
+  "service_calls": 0,
+  "bound_ports": 0,
+  "evidence_kind": "LOCAL_PURE_AND_MOCK_CHECKS_ONLY",
+  "output_sha256": "c45033028b41eaa4830ce95390d639c811897ba7c6c94d0eefff257289819ddf"
+}
