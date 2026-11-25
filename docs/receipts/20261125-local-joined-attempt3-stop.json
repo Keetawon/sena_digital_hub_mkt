@@ -1,0 +1,34 @@
+{
+  "scope": "LOCAL_JOINED_FIXTURE_ATTEMPT_RECORD",
+  "attempt": "joined-20261124-03",
+  "status": "STOP",
+  "owner_reported_at": "2026-11-25T08:33:12+07:00",
+  "owner_pasted_summary": {
+    "status": "STOP",
+    "receipt": "/home/keetawatw/hub-joined-evidence-20261124/joined-20261124-03/result.json",
+    "hosted_calls": 0
+  },
+  "consumed_marker": {
+    "present": true,
+    "started_at": "2026-11-25T01:32:55.606023+00:00",
+    "seal_sha256": "086fa5c161737a30f71d70d66dc6c3998bce1e7973e66768a75fec8494870b37"
+  },
+  "earlier_pre_interval_refusal": "docs/receipts/20261125-local-joined-attempt3-early-start-stop.json",
+  "evidence_files": {
+    "result.json": {"owner": "root", "mode": "0600", "bytes": 2670, "normal_user_read": "permission_denied"},
+    "before-cleanup-diagnostics.json": {"owner": "root", "mode": "0600", "bytes": 2292, "normal_user_read": "permission_denied"}
+  },
+  "stop_reason": "UNKNOWN_PENDING_OWNER_PASTE",
+  "post_run_inventory_at": "2026-11-25T08:33:59+07:00",
+  "post_run_inventory": {
+    "controller_or_test_units_present": false,
+    "runtime_temp_directory_present": false,
+    "attempt3_backup_folders_present": false,
+    "local_runner_processes_present": false,
+    "test_listeners_present": false
+  },
+  "permission_or_ownership_change_attempted": false,
+  "rerun_authorized": false,
+  "consequence": "No passing attempt 3; the 13:45 staging and 14:45 promotion slots are skipped today and do not move. The 10:45 cap slot is independent and unaffected.",
+  "hosted_calls": 0
+}
