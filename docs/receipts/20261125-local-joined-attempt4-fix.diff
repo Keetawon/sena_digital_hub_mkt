@@ -1,0 +1,114 @@
+--- joined-attempt3/runtime_control.py	2026-11-24 18:03:24.744931600 +0700
++++ joined-attempt4/runtime_control.py	2026-11-25 08:47:02.866700200 +0700
+@@ -46,10 +46,15 @@
+ 
+ 
+ def properties(unit):
+-    names='LoadState,ActiveState,MainPID,ControlGroup,ExecMainStartTimestampMonotonic,MemoryHigh,MemoryMax,MemorySwapMax,OOMScoreAdjust,OOMPolicy,Restart,Slice'
++    names='LoadState,ActiveState,MainPID,ControlGroup,ExecMainStartTimestampMonotonic,MemoryHigh,MemoryMax,MemorySwapMax,OOMScoreAdjust,OOMPolicy,Restart,Slice,FragmentPath,DropInPaths'
+     return dict(row.split('=',1) for row in command(['systemctl','show',unit,'--property='+names]).splitlines() if '=' in row)
+ 
+ 
++def slice_absent(unit,row,cgroup=Path('/sys/fs/cgroup/sena.slice')):
++    if row.get('LoadState')=='not-found':return True
++    return unit.endswith('.slice') and row.get('LoadState')=='loaded' and row.get('ActiveState')=='inactive' and not row.get('FragmentPath') and not row.get('DropInPaths') and not cgroup.exists()
++
++
+ def copy_file(source,target,expected):
+     need(source.is_file() and not source.is_symlink(),'package_source_file')
+     before=source.stat(); h=hashlib.sha256()
+@@ -72,8 +77,10 @@
+         self.operator=operator;self.operator_files=operator_files
+         need(not self.root.exists() and not self.root.is_symlink() and not self.base.exists() and not self.base.is_symlink(),'runtime_path_collision')
+         need(not Path('/run/sena-hub-test-media').exists(),'broker_path_collision')
+-        for unit in (*SERVICES,RENEW,'sena-hub-test.slice','sena-hub.slice','sena.slice'):
++        for unit in (*SERVICES,RENEW):
+             need(properties(unit)['LoadState']=='not-found','runtime_unit_collision')
++        for unit in ('sena-hub-test.slice','sena-hub.slice','sena.slice'):
++            need(slice_absent(unit,properties(unit)),'runtime_unit_collision')
+         for virtual in self.rows:
+             need(not runtime_path(virtual).exists() and not Path(virtual).exists(),'unit_file_collision')
+         try:pwd.getpwuid(WORKER_UID);raise ValueError('local_worker_uid_collision')
+--- joined-attempt3/root_controller.py	2026-11-24 18:03:24.722004900 +0700
++++ joined-attempt4/root_controller.py	2026-11-25 08:47:02.870190500 +0700
+@@ -45,6 +45,14 @@
+     if not value:raise ValueError(reason)
+ 
+ 
++def verify_memory_event_deltas(report):
++    keys=['controller_event_deltas']
++    if 'hub_events_before' in report or report.get('status')=='LOCAL_JOINED_TIMING_AND_CONTAINMENT_VERIFIED':
++        keys.append('hub_event_deltas')
++    for key in keys:
++        need(key in report and not any(report[key].get(k,0) for k in ('high','max','oom','oom_kill','oom_group_kill')),'joined_memory_event_increase')
++
++
+ def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':')).encode()
+ def sha(value):return hashlib.sha256(value).hexdigest()
+ def stamp():return datetime.datetime.now(datetime.timezone.utc)
+@@ -354,8 +362,7 @@
+             report['controller_event_deltas']={k:v-report['controller_before']['values']['events'].get(k,0) for k,v in report['controller_after']['values']['events'].items()}
+             if PARENT.exists() and 'hub_events_before' in report:report['hub_event_deltas']={k:v-report['hub_events_before'].get(k,0) for k,v in parent_events().items()}
+             write(output/'before-cleanup-diagnostics.json',report)
+-            for key in ('controller_event_deltas','hub_event_deltas'):
+-                need(key in report and not any(report[key].get(k,0) for k in ('high','max','oom','oom_kill','oom_group_kill')),'joined_memory_event_increase')
++            verify_memory_event_deltas(report)
+         except BaseException as error:clean=False;report['limit_diagnostic']=safe_error(error)
+         import runtime_control
+         runtime_control.CLEANUP_DEADLINE=END-1
+--- joined-attempt3/check_joined.py	2026-11-24 18:03:24.568001100 +0700
++++ joined-attempt4/check_joined.py	2026-11-25 08:47:02.872673900 +0700
+@@ -11,6 +11,7 @@
+ 
+ HERE=Path(__file__).resolve().parent
+ import runtime_units as units
++import runtime_control
+ import root_controller as root
+ import switch_local_io as switch_io
+ import joined_boundary_adapter as boundary_io
+@@ -164,5 +165,45 @@
+             'backup-windows.mjs':'e5da2a66b797a85c210a6158d293c1765378f643ceeb57f567a32d0b8a1707d8'}
+         for name,digest in expected.items():self.assertEqual(hashlib.sha256((HERE/name).read_bytes()).hexdigest(),digest)
+ 
++    def test_slice_absent_accepts_systemd255_implicit_slice_and_rejects_defined_or_active(self):
++        with tempfile.TemporaryDirectory() as folder:
++            absent_cgroup=Path(folder)/'missing.slice'
++            existing_cgroup=Path(folder)/'present.slice'
++            existing_cgroup.mkdir()
++            base={'LoadState':'loaded','ActiveState':'inactive','FragmentPath':'','DropInPaths':''}
++            self.assertTrue(runtime_control.slice_absent('sena-hub-test.slice',base,cgroup=absent_cgroup))
++            self.assertTrue(runtime_control.slice_absent('sena-hub-test.slice',{'LoadState':'not-found'},cgroup=existing_cgroup))
++            for bad in (
++                {**base,'FragmentPath':'/etc/systemd/system/sena-hub-test.slice'},
++                {**base,'DropInPaths':'/etc/systemd/system/sena-hub-test.slice.d/90.conf'},
++                {**base,'ActiveState':'active'},
++            ):
++                self.assertFalse(runtime_control.slice_absent('sena-hub-test.slice',bad,cgroup=absent_cgroup))
++            self.assertFalse(runtime_control.slice_absent('sena-hub-test.slice',base,cgroup=existing_cgroup))
++            self.assertFalse(runtime_control.slice_absent('sena-hub-test-api.service',base,cgroup=absent_cgroup))
++
++    def test_real_systemd_absent_sena_slices_accepted(self):
++        for slice_name in ('sena-hub-test.slice','sena-hub.slice','sena.slice'):
++            row=runtime_control.properties(slice_name)
++            self.assertTrue(runtime_control.slice_absent(slice_name,row))
++        self.assertEqual(runtime_control.properties(units.API)['LoadState'],'not-found')
++
++    def test_memory_event_delta_cleanup_guard(self):
++        zero={'high':0,'max':0,'oom':0,'oom_kill':0,'oom_group_kill':0}
++        early_stop={'status':'STOP','controller_event_deltas':{**zero}}
++        root.verify_memory_event_deltas(early_stop)
++        with self.assertRaises(ValueError):
++            root.verify_memory_event_deltas({'status':'STOP','controller_event_deltas':{**zero,'high':1}})
++        after_hub={'status':'STOP','hub_events_before':{**zero},'controller_event_deltas':{**zero}}
++        with self.assertRaises(ValueError):
++            root.verify_memory_event_deltas(after_hub)
++        root.verify_memory_event_deltas({**after_hub,'hub_event_deltas':{**zero}})
++        with self.assertRaises(ValueError):
++            root.verify_memory_event_deltas({**after_hub,'hub_event_deltas':{**zero,'oom':1}})
++        verified={'status':'LOCAL_JOINED_TIMING_AND_CONTAINMENT_VERIFIED','controller_event_deltas':{**zero}}
++        with self.assertRaises(ValueError):
++            root.verify_memory_event_deltas(verified)
++        root.verify_memory_event_deltas({**verified,'hub_event_deltas':{**zero}})
++
+ 
+ if __name__=='__main__':unittest.main(verbosity=2)

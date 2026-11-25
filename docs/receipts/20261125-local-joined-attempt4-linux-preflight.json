@@ -1,0 +1,17 @@
+{
+  "scope": "LOCAL_PREFLIGHT_ONLY",
+  "attempt": "joined-20261125-04",
+  "status": "LINUX_ADMISSION_AND_SERIAL_LEASE_CLEAR",
+  "hosted_calls": 0,
+  "runtime_started": false,
+  "started_at": "2026-11-25T01:48:38.116612+00:00",
+  "source_sha256": "57b45c1df1ef45613142b93d757f63c526d5ad874d416041952fa28dce9c7be3",
+  "shared_flock_acquired": true,
+  "linux_process_count": 29,
+  "linux_active_units": 29,
+  "linux_listener_count": 3,
+  "attempt4_evidence_absent": true,
+  "attempt4_backup_dirs_absent": true,
+  "shared_flock_released": true,
+  "finished_at": "2026-11-25T01:48:38.156649+00:00"
+}
