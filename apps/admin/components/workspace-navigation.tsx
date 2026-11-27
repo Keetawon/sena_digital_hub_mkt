@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 export function useListQuery() {
@@ -25,7 +26,7 @@ export function listReturnHref(value: string | null, fallback = "/") {
 export function WorkspaceBack({ fallback = "/", label = "โครงการทั้งหมด" }: { fallback?: string; label?: string }) {
   const query = useSearchParams();
   const href = listReturnHref(query.get("return_to"), fallback);
-  return <a className="back-link" href={href}>{href === fallback ? label : "กลับรายการก่อนหน้า"}</a>;
+  return <Link prefetch={false} className="back-link" href={href}>{href === fallback ? label : "กลับรายการก่อนหน้า"}</Link>;
 }
 
 export function projectHref(id: string, returnTo: string, field?: string) {

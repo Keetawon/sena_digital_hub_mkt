@@ -155,11 +155,10 @@ test("authorized hierarchy keeps the fixed business between corporate and exact 
 test("Knowledge-only business sections and contacts use their normal writer and original revisions", async ({ page }) => {
   const fixture = await mock(page); await open(page, "tab=data&section=narrative&field=section.project_intro");
   const section = page.locator('[data-workspace-field="section.project_intro"]'); await expect(section).toBeFocused();
-  await section.locator(":scope > .content-actions button").click();
-  await page.locator("#section-body-th").fill("Edited business narrative");
+  await page.locator("#section-body-section\\.project_intro-th").fill("Edited business narrative");
   await expect(page.getByRole("button", { name: businessText.contacts, exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: new RegExp("^" + workflowText.submit_all) })).toBeDisabled();
-  await section.locator("form button.primary").click(); await expect(section.getByText("Edited business narrative", { exact: true })).toBeVisible();
+  await section.locator("form button.primary").click(); await expect(page.locator("#section-body-section\\.project_intro-th")).toHaveValue("Edited business narrative");
   expect(fixture.calls[0]).toMatchObject({ path: `content/businesses/${code}/sections/section.project_intro`, method: "PUT", body: { expected_revision: 4, changes: { body: { th: "Edited business narrative" }, ai_exposure: "internal" } } });
   await page.getByRole("button", { name: businessText.contacts, exact: true }).click();
   const contact = page.locator(`[data-workspace-item="${ids.contact}"]`); await contact.locator(":scope > button").click();
@@ -187,8 +186,8 @@ test("business header reads every own draft page and keeps independent exact-has
 
 test("business save-and-approve keeps the owning confirmation active and blocks peer navigation", async ({ page }) => {
   const fixture = await mock(page), delayed = gate(); fixture.setCommandGate(delayed); await open(page);
-  const section = page.locator('[data-workspace-field="section.project_intro"]'); await section.locator(":scope > .content-actions button").click();
-  await page.locator("#section-body-th").fill("Approved typed business draft");
+  const section = page.locator('[data-workspace-field="section.project_intro"]');
+  await page.locator("#section-body-section\\.project_intro-th").fill("Approved typed business draft");
   await section.getByRole("button", { name: workflowText.save_approve, exact: true }).click();
   const dialog = page.getByRole("dialog"); await dialog.getByLabel(workflowText.reason, { exact: true }).fill("Business source reviewed");
   await expect(dialog.locator("button.primary")).toBeEnabled(); await dialog.locator("button.primary").click();
@@ -198,28 +197,27 @@ test("business save-and-approve keeps the owning confirmation active and blocks 
   expect(fixture.calls[0]).toMatchObject({ path: "content-workflow/save-approve", body: { kind: "section", identity: { id: ids.section }, expected_hash: "a".repeat(64), reason: "Business source reviewed", changes: { body: { th: "Approved typed business draft" } } } });
   delayed.release(); await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("button", { name: businessText.contacts, exact: true })).toBeEnabled();
-  await expect(section.getByText("Approved typed business draft", { exact: true })).toBeVisible();
+  await expect(page.locator("#section-body-section\\.project_intro-th")).toHaveValue("Approved typed business draft");
 });
 
 test("business source conflict preserves typed text until explicit source reload", async ({ page }) => {
   const fixture = await mock(page); fixture.setStale(true); await open(page);
-  const section = page.locator('[data-workspace-field="section.project_intro"]'); await section.locator(":scope > .content-actions button").click();
-  await page.locator("#section-body-th").fill("Do not lose this business draft");
+  const section = page.locator('[data-workspace-field="section.project_intro"]');
+  await page.locator("#section-body-section\\.project_intro-th").fill("Do not lose this business draft");
   await section.getByRole("button", { name: workflowText.save_approve, exact: true }).click();
   const dialog = page.getByRole("dialog"); await dialog.getByLabel(workflowText.reason, { exact: true }).fill("Review original business source"); await dialog.locator("button.primary").click();
-  await expect(section).toContainText(workflowText.stale_item); await expect(page.locator("#section-body-th")).toHaveValue("Do not lose this business draft");
+  await expect(section).toContainText(workflowText.stale_item); await expect(page.locator("#section-body-section\\.project_intro-th")).toHaveValue("Do not lose this business draft");
   expect(fixture.calls[0].body.expected_hash).toBe("a".repeat(64));
   await dialog.getByRole("button", { name: workflowText.cancel, exact: true }).click();
   fixture.value.content.sections[0].revision = 5; fixture.value.content.sections[0].version.body = loc("Latest business source"); fixture.setStale(false);
   await section.getByRole("button", { name: workflowText.refresh, exact: true }).click();
-  await expect(page.locator("#section-body-th")).toHaveCount(0);
-  const latest = section.getByText("Latest business source", { exact: true });
-  await expect(latest).toHaveCount(2); await expect(latest.nth(0)).toBeVisible(); await expect(latest.nth(1)).toBeVisible();
+  await expect(page.locator("#section-body-section\\.project_intro-th")).toHaveValue("Latest business source");
+  await expect(page.locator("#section-body-section\\.project_intro-en")).toHaveValue("Latest business source");
 });
 
 test("business View cannot edit and a revoked Knowledge source cannot return late data", async ({ page }) => {
   const fixture = await mock(page, { edit: false }); await open(page);
-  await expect(page.locator('[data-business-content] [data-workspace-field] > .content-actions button')).toHaveCount(0);
+  await expect(page.locator('[data-business-content] [data-workspace-field] form')).toHaveCount(0);
   expect(fixture.calls).toEqual([]);
   const delayed = gate(); fixture.setContentGate(delayed);
   await page.reload(); await expect.poll(() => delayed.seen).toBeGreaterThan(0);
@@ -234,9 +232,7 @@ test("business View cannot edit and a revoked Knowledge source cannot return lat
 
 test("business permission revocation keeps typed text in the existing recovery panel", async ({ page }) => {
   const fixture = await mock(page); await open(page);
-  const section = page.locator('[data-workspace-field="section.project_intro"]');
-  await section.locator(":scope > .content-actions button").click();
-  await page.locator("#section-body-th").fill("Unsaved business recovery text");
+  await page.locator("#section-body-section\\.project_intro-th").fill("Unsaved business recovery text");
   fixture.account.capabilities!.tabs.knowledge = { view: false, edit: false, approve: false };
   fixture.account.capabilities!.tabs.projects = { view: true };
   await refreshAuthority(page);

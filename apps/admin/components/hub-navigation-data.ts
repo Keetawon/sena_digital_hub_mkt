@@ -36,8 +36,12 @@ export const hubServices: HubService[] = [
   { key: "content", label: hubGroups.content, icon: "M4 3h16v18H4zM8 7h8M8 11h8M8 15h5", groups: [
     { key: "content-work", items: [
       { key: "home", label: "หน้าแรก", icon: "m3 10 9-7 9 7v11H3zM9 21v-8h6v8", targets: [{ section: "projects", href: "/home" }, { section: "brands", href: "/home" }, { section: "faq", href: "/home" }, { section: "promotions", href: "/home" }, { section: "releases", href: "/home" }] },
-      { key: "website", label: "ข้อมูลเว็บไซต์", targets: [{ section: "projects", href: "/website" }, { section: "brands", href: "/website?view=brands" }, { section: "faq", href: "/website?intent=faq" }] },
+      { key: "km-businesses", label: "KM องค์กรและธุรกิจอื่น", icon: "M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5M9 11h.01M15 11h.01", targets: [{ section: "faq", href: "/website?view=businesses" }] },
+      { key: "km-brands", label: "KM แบรนด์", icon: "M4 21V6l8-3v18M12 9h8v12M2 21h20M7 8v2M7 13v2M16 12v2M16 17v2", targets: [{ section: "brands", href: "/website?view=brands" }] },
+      { key: "km-groups", label: "KM กลุ่มโครงการ", icon: "M12 3 2 8l10 5 10-5-10-5zM2 13l10 5 10-5M2 18l10 5 10-5", targets: [{ section: "projects", href: "/website?view=groups" }, { section: "faq", href: "/website?view=groups" }] },
+      { key: "km-projects", label: "KM โครงการ", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z", targets: [{ section: "projects", href: "/website?view=projects" }, { section: "faq", href: "/website?intent=faq" }] },
       { key: "promotions", label: "โปรโมชั่น", targets: [{ section: "promotions", href: "/promotions" }] },
+      { key: "events", label: "อีเวนต์เครือ", icon: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", targets: [{ section: "promotions", href: "/events" }, { section: "projects", href: "/events" }, { section: "faq", href: "/events" }] },
       { key: "articles", label: "บทความ", targets: [{ section: "articles", href: "/articles" }] },
       { key: "publishing", icon: "M4 10v10h16V10M12 15V3M7 8l5-5 5 5", label: "เผยแพร่", targets: [{ section: "faq", href: "/publish" }, { section: "releases", href: "/publish" }] },
     ] },
@@ -61,7 +65,15 @@ export function hubCurrentMenuKey(section: HubSection, location = "/") {
   const url = new URL(location, "https://hub.invalid");
   if (url.pathname === "/publish" || url.pathname === "/releases" || url.pathname === "/faq" && url.searchParams.get("tab") === "publication") return "publishing";
   if (url.pathname === "/home") return "home";
-  if (url.pathname === "/website" || url.pathname.startsWith("/website/")) return "website";
+  if (url.pathname === "/events") return "events";
+  if (url.pathname === "/website") {
+    const view = url.searchParams.get("view");
+    return view === "brands" ? "km-brands" : view === "groups" ? "km-groups" : view === "businesses" ? "km-businesses" : "km-projects";
+  }
+  if (url.pathname.startsWith("/website/brand/")) return "km-brands";
+  if (url.pathname.startsWith("/website/project_group/")) return "km-groups";
+  if (/^\/website\/(?:corporate|business|programme)\//.test(url.pathname)) return "km-businesses";
+  if (url.pathname.startsWith("/website/")) return "km-projects";
   if (url.pathname === "/settings/activity") return "activity";
   if (url.pathname === "/settings") {
     const selected = url.searchParams.get("section");
@@ -71,12 +83,12 @@ export function hubCurrentMenuKey(section: HubSection, location = "/") {
   if (url.pathname === "/media" && url.searchParams.get("tab") === "rules") return url.hash === "#requirements" ? "media-rules" : "media-tags";
   if (section === "faq") {
     const tab = url.searchParams.get("tab");
-    return tab === "bank" ? "question-bank" : tab === "glossary" ? "glossary" : tab === "publication" ? "publishing" : "website";
+    return tab === "bank" ? "question-bank" : tab === "glossary" ? "glossary" : tab === "publication" ? "publishing" : "km-projects";
   }
   if (section === "knowledge") return "legacy-evidence";
   if (section === "releases") return "publishing";
-  if (section === "brands") return "website";
-  if (section === "projects") return url.pathname === "/" && !url.search ? "home" : "website";
+  if (section === "brands") return "km-brands";
+  if (section === "projects") return url.pathname === "/" && !url.search ? "home" : url.searchParams.get("view") === "groups" ? "km-groups" : "km-projects";
   return section;
 }
 
@@ -88,7 +100,7 @@ export function hubPermissionTab(section: HubSection) {
   const page = hubPages.find(page => page.id === section);
   return page && "permissionTab" in page ? page.permissionTab : section;
 }
-export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/publish", "/website", "/settings", "/settings/activity", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
+export const hubRoutes = [...new Set(hubPages.map(p => p.href.split("?")[0])), "/home", "/events", "/publish", "/website", "/settings", "/settings/activity", "/content", "/content/fields", "/media", "/ads/registry/new", "/ads/registry/inbox", "/account/request"];
 function entityPagePath(path: string) {
   const match = /^\/website\/(?:corporate|business|brand|project|programme|project_group|unit_type)\/([^/]+)$/.exec(path);
   if (!match) return false;

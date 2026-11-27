@@ -1,7 +1,8 @@
 import { writingAllowsApi } from './writing-aid-routes';
 import { contentScopeAllowsApi } from './content-scope-routes';
-import { businessAllowsApi } from './business-api-routes';
+import { businessAllowsApi, scopeContentAllowsApi } from './business-api-routes';
 import { workflowAllowsApi } from './content-workflow-routes';
+import { eventAllowsApi } from './event-routes';
 import type { LocalRole } from "./local-session";
 import { workspaceAllowsApi } from './workspace-api-routes';
 import { amenityAllowsApi } from './amenity-routes';
@@ -42,9 +43,11 @@ export const deferredH1Sections = new Set(["finance", "actuals", "documents", "a
 export const h1Unavailable = "ยังไม่เปิดใช้งานใน H1 · รอเปิดใน H2 ขึ้นไป";
 
 export function h1AllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/events(?:\/|$)/.test(path)) return eventAllowsApi(path, method);
   if (/^v1\/admin\/content\/writing-aid(?:\/|$)/.test(path)) return writingAllowsApi(path, method);
   if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsApi(path, method);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
+  if (/^v1\/admin\/content\/scopes(?:\/|$)/.test(path)) return scopeContentAllowsApi(path, method);
   if (/^v1\/admin\/promotions\/resolve(?:\/|$)/.test(path)) return path === "v1/admin/promotions/resolve" && method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
   if (/^v1\/admin\/content\/(?:workspace|activity)(?:\/|$)/.test(path) || /^v1\/admin\/projects\/[^/]+\/content\/website\/[^/]+\/decision(?:\/|$)/.test(path)) return workspaceAllowsApi(path, method);
@@ -60,6 +63,10 @@ export function h1AllowsApi(path: string, method: string) {
   if (/^v1\/admin\/permissions\/(?:preview|apply)$/.test(path)) return method === "POST";
   if (/^v1\/admin\/permissions\/notices\/[a-z_]+\/ack$/.test(path)) return method === "POST";
   if (/^v1\/admin\/accounts\/[0-9a-f-]{36}\/permissions$/.test(path)) return method === "POST";
+  if (path === "v1/me/profile") return method === "PATCH";
+  if (path === "v1/me/avatar") return method === "GET" || method === "POST";
+  if (path === "v1/me/avatar/remove") return method === "POST";
+  if (/^v1\/accounts\/[0-9a-f-]{36}\/avatar$/.test(path)) return method === "GET";
   if (path === "v1/me/invite-accept") return method === "POST";
   if (/^v1\/admin\/account-invites(?:\/[0-9a-f-]{36}\/decision)?$/.test(path)) return method === "POST" || method === "GET" && path === "v1/admin/account-invites";
   if (/^v1\/admin\/brands\/bulk-(?:preview|create)$/.test(path)) return false;

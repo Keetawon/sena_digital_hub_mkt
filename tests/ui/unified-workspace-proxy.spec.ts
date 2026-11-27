@@ -45,18 +45,21 @@ test('contextual Promotions transport preserves the exact local and H1 boundary'
   expect(h1AllowsApi(resolve, 'POST')).toBe(true);
   for (const method of ['GET', 'PUT', 'PATCH', 'DELETE']) expect(contentAllowsApi(resolve, method)).toBe(false);
   expect(contentAllowsQuery(resolve, 'POST', new URLSearchParams('unexpected=1'))).toBe(false);
-  for (const kind of ['project', 'brand']) for (const suffix of ['promotions', 'promotions/suggestions']) {
-    const path = `${root}/${kind}/example/${suffix}`;
-    expect(contentAllowsApi(path, 'GET')).toBe(true);
-    expect(h1AllowsApi(path, 'GET')).toBe(true);
-    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) expect(contentAllowsApi(path, method)).toBe(false);
-    const query = suffix.endsWith('suggestions') ? `item=${id}&source=website&limit=50&offset=0` : 'filter=ending_soon&limit=50&offset=0';
-    expect(contentAllowsQuery(path, 'GET', new URLSearchParams(query))).toBe(true);
-    for (const invalid of ['limit=101', 'offset=-1', 'source=secret', 'phase=a&phase=b', 'item=no', 'unknown=1'])
-      expect(contentAllowsQuery(path, 'GET', new URLSearchParams(invalid)), `${path}?${invalid}`).toBe(false);
-    expect(contentAllowsQuery(path, 'GET', new URLSearchParams('phase=0001'))).toBe(kind === 'project');
+  for (const kind of ['project', 'brand', 'project_group', 'corporate']) {
+    const suffixes = kind === 'project' || kind === 'brand' ? ['promotions', 'promotions/suggestions'] : ['promotions'];
+    for (const suffix of suffixes) {
+      const path = `${root}/${kind}/example/${suffix}`;
+      expect(contentAllowsApi(path, 'GET')).toBe(true);
+      expect(h1AllowsApi(path, 'GET')).toBe(true);
+      for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) expect(contentAllowsApi(path, method)).toBe(false);
+      const query = suffix.endsWith('suggestions') ? `item=${id}&source=website&limit=50&offset=0` : 'filter=ending_soon&limit=50&offset=0';
+      expect(contentAllowsQuery(path, 'GET', new URLSearchParams(query))).toBe(true);
+      for (const invalid of ['limit=101', 'offset=-1', 'source=secret', 'phase=a&phase=b', 'item=no', 'unknown=1'])
+        expect(contentAllowsQuery(path, 'GET', new URLSearchParams(invalid)), `${path}?${invalid}`).toBe(false);
+      expect(contentAllowsQuery(path, 'GET', new URLSearchParams('phase=0001'))).toBe(kind === 'project');
+    }
   }
-  for (const path of [`${root}/corporate/sena/promotions`, `${root}/project/example/promotions/extra`, `${resolve}/extra`]) {
+  for (const path of [`${root}/programme/LIVNEX/promotions`, `${root}/business/solar/promotions`, `${root}/corporate/sena/promotions/suggestions`, `${root}/project_group/00031/promotions/suggestions`, `${root}/project/example/promotions/extra`, `${resolve}/extra`]) {
     expect(contentAllowsApi(path, 'GET')).toBe(false);
     expect(contentAllowsApi(path, 'POST')).toBe(false);
     expect(h1AllowsApi(path, 'GET'), path).toBe(false);

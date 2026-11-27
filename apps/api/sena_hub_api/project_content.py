@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Literal
 from uuid import UUID
 
@@ -55,6 +56,22 @@ class Domain(Input):
 class TranslationReview(Revision):
     th_version: int = Field(ge=1)
     english: str = Field(min_length=1, max_length=12000, pattern=r'\S')
+
+
+ALLOWED_SCOPE_TYPES = frozenset({'corporate', 'project_group', 'programme'})
+SCOPE_ID_RE = re.compile(r'^[^\x00-\x1f/\\]{1,200}$')
+SECTION_KEY_RE = re.compile(r'^[a-z][a-z0-9_.]{1,100}$')
+
+SECTION_PROJECTION_SQL = """coalesce((
+    select jsonb_agg(jsonb_build_object(
+        'id', s.id, 'section_key', s.section_key, 'revision', s.revision, 'state', s.state, 'version', to_jsonb(v),
+        'history', (select coalesce(jsonb_agg(to_jsonb(h) order by version_no desc), '[]') from
+            (select * from hub.content_section_versions where section_id = s.id order by version_no desc limit 50) h)
+    ) order by s.section_key)
+    from hub.content_sections s
+    join lateral (select * from hub.content_section_versions where section_id = s.id order by version_no desc limit 1) v on true
+    where s.scope_type = $1 and s.scope_id = $2
+), '[]')"""
 
 
 def register_project_content_routes(app, authentication, database):
@@ -144,7 +161,19 @@ def register_project_content_routes(app, authentication, database):
 
     @app.get('/v1/admin/brands/{public_id}/content')
     async def brand_content(public_id: str, request: Request, actor: Actor = Depends(staff)):
-        return await read(request, actor, "select jsonb_build_object('contacts',hub.content_contacts('brand',$1),'translations',hub.content_translation_list('brands',$1))", public_id)
+        return await read(
+            request,
+            actor,
+            f"select jsonb_build_object('contacts',hub.content_contacts($1,$2),'sections',{SECTION_PROJECTION_SQL},'translations',hub.content_translation_list('brands',$2))",
+            'brand',
+            public_id,
+        )
+
+    @app.put('/v1/admin/brands/{public_id}/sections/{section_key}')
+    async def brand_section(public_id: str, section_key: str, body: Draft, request: Request, actor: Actor = Depends(staff)):
+        if not SECTION_KEY_RE.fullmatch(section_key):
+            raise failure(422, 'invalid_section_key', 'รหัสหัวข้อเนื้อหาไม่ถูกต้อง')
+        return await read(request, actor, "select hub.save_content_section('brand',$1,$2,$3,$4)", public_id, section_key, body.expected_revision, body.changes)
 
     @app.post('/v1/admin/brands/{public_id}/contacts')
     async def brand_contact_create(public_id: str, body: Draft, request: Request, actor: Actor = Depends(staff)):
@@ -153,6 +182,38 @@ def register_project_content_routes(app, authentication, database):
     @app.put('/v1/admin/brands/{public_id}/contacts/{contact_id}')
     async def brand_contact_save(public_id: str, contact_id: UUID, body: Draft, request: Request, actor: Actor = Depends(staff)):
         return await read(request, actor, "select hub.save_content_contact('brand',$1,$2,$3,$4)", public_id, contact_id, body.expected_revision, body.changes)
+
+    @app.get('/v1/admin/content/scopes/{scope_type}/{scope_id}/content')
+    async def scope_content(scope_type: str, scope_id: str, request: Request, actor: Actor = Depends(staff)):
+        if actor.role not in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'}:
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์เข้าถึงข้อมูลส่วนนี้')
+        if scope_type not in ALLOWED_SCOPE_TYPES or not SCOPE_ID_RE.fullmatch(scope_id):
+            raise failure(422, 'invalid_scope', 'ขอบเขตเนื้อหาไม่ถูกต้อง')
+        return await read(
+            request,
+            actor,
+            f"""select jsonb_build_object(
+                'scope_type', $1::text,
+                'scope_id', $2::text,
+                'contacts', hub.content_contacts($1, $2),
+                'sections', {SECTION_PROJECTION_SQL},
+                'translations', coalesce((
+                    select jsonb_agg(t) from jsonb_array_elements(hub.content_translation_list('knowledge', $2)) t
+                    where t->>'owner_type' = 'section'
+                      and exists(select 1 from hub.content_sections s where s.scope_type = $1 and s.scope_id = $2 and s.id::text = t->>'owner_key')
+                ), '[]')
+            )""",
+            scope_type,
+            scope_id,
+        )
+
+    @app.put('/v1/admin/content/scopes/{scope_type}/{scope_id}/sections/{section_key}')
+    async def scope_section(scope_type: str, scope_id: str, section_key: str, body: Draft, request: Request, actor: Actor = Depends(staff)):
+        if actor.role not in {'viewer', 'editor', 'publisher', 'admin', 'online_staff'}:
+            raise failure(403, 'content_permission', 'ไม่มีสิทธิ์เข้าถึงข้อมูลส่วนนี้')
+        if scope_type not in ALLOWED_SCOPE_TYPES or not SCOPE_ID_RE.fullmatch(scope_id) or not SECTION_KEY_RE.fullmatch(section_key):
+            raise failure(422, 'invalid_scope', 'ขอบเขตหรือรหัสหัวข้อเนื้อหาไม่ถูกต้อง')
+        return await read(request, actor, 'select hub.save_content_section($1,$2,$3,$4,$5)', scope_type, scope_id, section_key, body.expected_revision, body.changes)
 
     @app.get('/v1/admin/faq/corporate-contacts')
     async def corporate_contacts(request: Request, actor: Actor = Depends(staff)):

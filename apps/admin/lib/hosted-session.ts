@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { getLocalRole, getRoleToken, localApiOrigin } from "./local-session";
 import { hostedConfig, isHostedMode, accountRole } from "./hosted-config";
 import { HubApiUnavailable, readHubAccount } from "./hub-account";
+import { verifyHostedAccessToken } from "./hosted-token-cache";
 
 export const getHostedIdentity = cache(async () => {
   const config = hostedConfig();
@@ -19,9 +20,8 @@ export const getHostedIdentity = cache(async () => {
   const { data: { session } } = await client.auth.getSession();
   if (!session) return null;
   // Verify the exact bearer we forward; the cached cookie's user/role is untrusted.
-  const { data: { user }, error } = await client.auth.getUser(session.access_token);
-  if (error && (!error.status || error.status >= 500)) throw new HubApiUnavailable();
-  if (error || !user) return null;
+  const user = await verifyHostedAccessToken(client, session.access_token, Boolean(config.simulation));
+  if (!user) return null;
   return { token: session.access_token };
 });
 

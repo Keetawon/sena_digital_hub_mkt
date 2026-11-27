@@ -473,6 +473,36 @@
       "name": "202611190094_home_missing_fact.sql",
       "canonical_sha256": "dec0f4ba977d1ab67fb58cc9494675b3970ed3a28962d15fa73d03abcafd5327",
       "executed_sha256": "dec0f4ba977d1ab67fb58cc9494675b3970ed3a28962d15fa73d03abcafd5327"
+    },
+    {
+      "name": "202611250095_account_self_profile.sql",
+      "canonical_sha256": "45fe4e68d4c14dacb566e23fac821fed0db4f24ebaa3b583535b34c775c8ef20",
+      "executed_sha256": "45fe4e68d4c14dacb566e23fac821fed0db4f24ebaa3b583535b34c775c8ef20"
+    },
+    {
+      "name": "202611250096_phase_a_speed_and_links.sql",
+      "canonical_sha256": "8dfff8b04a83c284eb19ef67d1a3caa13d2115cb74e844601de28c16a72095ad",
+      "executed_sha256": "8dfff8b04a83c284eb19ef67d1a3caa13d2115cb74e844601de28c16a72095ad"
+    },
+    {
+      "name": "202611250097_multi_tier_promotions.sql",
+      "canonical_sha256": "819c9ecccfa4151eeeb54b4de05219c80829566a0f6970a747275b215b6f3128",
+      "executed_sha256": "819c9ecccfa4151eeeb54b4de05219c80829566a0f6970a747275b215b6f3128"
+    },
+    {
+      "name": "202611260098_km_dashboard_and_fast_workspace.sql",
+      "canonical_sha256": "1595e4cf864d529195256fd254a3706fbfbf870230323da47723713cb8196c93",
+      "executed_sha256": "1595e4cf864d529195256fd254a3706fbfbf870230323da47723713cb8196c93"
+    },
+    {
+      "name": "202611270099_sub_businesses.sql",
+      "canonical_sha256": "3efdb9e433f4f981904c310caef9adbd8cbcc116db68832253edaec060f24f03",
+      "executed_sha256": "3efdb9e433f4f981904c310caef9adbd8cbcc116db68832253edaec060f24f03"
+    },
+    {
+      "name": "202611270100_event_hub.sql",
+      "canonical_sha256": "532d1ff62da83406fb01baaac5172e34d92c0c4bb2819e90961949a728b657b5",
+      "executed_sha256": "532d1ff62da83406fb01baaac5172e34d92c0c4bb2819e90961949a728b657b5"
     }
   ]
 }

@@ -167,7 +167,7 @@ test(`admin registers a brand, editors prepare logos and publisher versions stay
     expect((await (await page.request.get(publicPath)).json()).data).toEqual(first.data);
     await page.goto('/?view=brands');
     await page.locator('#brand-search').fill(data.sourceId);
-    const changed = page.locator('.brand-table-row').filter({ has: page.getByRole('link', { name: `${data.name} ฉบับใหม่`, exact: true }) });
+    const changed = page.locator('.km-brand-card, .brand-table-row').filter({ has: page.getByRole('link', { name: `${data.name} ฉบับใหม่`, exact: true }) });
     await expect(changed.getByText(/เผยแพร่แล้ว · มีการแก้ไขรอเผยแพร่/)).toBeVisible();
     await changed.click();
     await role(page, 'publisher');
@@ -270,7 +270,7 @@ test('brand requests, exact project association, viewer permissions and mobile l
     await expect(requestRow.getByText('รอตรวจสอบ', { exact: true })).toBeVisible();
     await role(page, 'admin');
     await expect.poll(() => page.locator('#brand-requests').evaluate(element => {
-      const grid = document.querySelector('.brand-completeness-table');
+      const grid = document.querySelector('.km-brand-grid, .brand-completeness-table');
       return !!grid && !!(element.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING);
     })).toBe(true);
     await expect(page.locator('#brand-requests .count')).not.toHaveText('0');

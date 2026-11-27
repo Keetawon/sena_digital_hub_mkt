@@ -102,7 +102,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 
   });
 
   test(`brand review queue has overlapping counts and publisher menu badge at ${viewport.width}x${viewport.height}`, async ({ page }) => {
-    await page.setViewportSize(viewport); const data = await fixture(page); await page.goto('/?view=brands');
+    await page.setViewportSize(viewport); const data = await fixture(page); await page.goto('/?view=brands&blayout=table');
     await refreshSyntheticAuthority(page);
     const filters: [string, number, string[]][] = [
       ['ทั้งหมด', 6, ['ยังขาดข้อมูล', 'เผยแพร่แล้วมีชื่อใหม่', 'รอเผยแพร่ครั้งแรก', 'ฉบับร่างตรงกับที่เผยแพร่', 'แบรนด์หยุดแสดง', 'แบรนด์ถอนการเผยแพร่']],

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { persona, readData, workflowText, mockWorkflowReads } from './content-workflow-fixtures';
 import { fitsWorkspace, workspaceProjection, workspaceHref, workspaceText as text } from './unified-workspace-helpers';
 import { contentScopeText } from '../../apps/admin/lib/content-scope-text';
+import { promotionTiers } from '../../apps/admin/components/promotion-types';
 
 const api = '/api/hub/v1/admin';
 const projectId = '61000000-0000-4000-8000-000000000031';
@@ -16,6 +17,148 @@ const scope = { scope_hash: 'a'.repeat(64), count: 2, items: [
   { id: '61000000-0000-4000-8000-000000000034', public_id: 'prj_neighbour', label: { th: 'Synthetic neighbour' } },
 ] };
 type Write = { path: string; method: string; body: Record<string, any> };
+
+for (const [tier, label] of Object.entries(promotionTiers)) {
+  test(`unified editor creates and edits ${tier} with multiple benefits and live preview`, async ({ page }) => {
+    const data = await fixture(page);
+    await page.goto('/promotions?promotion=new');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('radio', { name: new RegExp(label.replace('/', '\\/')) }).check();
+    if (tier === 'project') await dialog.locator('#promotion-project').selectOption(projectId);
+    if (tier === 'brand') await dialog.locator('#promotion-brand').selectOption(brandId);
+    if (tier === 'project_group') await dialog.locator('#promotion-project-group').selectOption('00031');
+    if (tier === 'corporate') await dialog.locator('#promotion-programme').selectOption('livnex');
+    if (tier === 'campaign') await dialog.getByLabel('ทุกโครงการที่เปิดใช้งาน', { exact: true }).check();
+    await dialog.getByLabel('รหัสโปรโมชัน', { exact: true }).fill(`TIER-${tier.toUpperCase()}`);
+    await dialog.getByLabel('ชื่อโปรโมชัน (ภาษาไทย)', { exact: true }).fill(`ข้อเสนอ ${label}`);
+    await dialog.getByLabel('เริ่มใช้สิทธิ์', { exact: true }).fill('2026-11-01T09:00');
+    await dialog.getByLabel('สิ้นสุดสิทธิ์ (ไม่รวมเวลานี้)', { exact: true }).fill('2026-12-31T23:59');
+    await dialog.getByLabel('คำโปรยไฮไลต์บนการ์ด', { exact: true }).fill('จ่าย 0 บาท*');
+    await dialog.locator('#promotion-benefit_type').selectOption('discount_amount');
+    await dialog.getByLabel('มูลค่าสิทธิประโยชน์', { exact: true }).fill('120,000.50');
+    await dialog.locator('#promotion-benefit_unit').selectOption('THB');
+    await dialog.getByRole('button', { name: 'ฟรีค่าโอน', exact: true }).click();
+    const preview = dialog.getByRole('complementary', { name: 'ตัวอย่างการ์ดบนเว็บไซต์' });
+    await expect(preview).toContainText('120,000.5'); await expect(preview).toContainText('ฟรีค่าโอน');
+    await expect(preview).toContainText('จ่าย 0 บาท*'); await expect(preview).toContainText(label);
+    await dialog.getByRole('button', { name: 'บันทึกร่างโปรโมชัน', exact: true }).click();
+    await expect.poll(() => data.writes.filter(write => write.path === 'promotions').length).toBe(1);
+    const created = data.writes.find(write => write.path === 'promotions')!.body;
+    expect(created.promotion_tier).toBe(tier); expect(created.benefit_items).toHaveLength(2);
+    expect(created.benefit_value).toBe('120000.50');
+    await expect(dialog.locator('#promotion-owner')).toBeDisabled();
+    await dialog.getByLabel('ชื่อโปรโมชัน (ภาษาไทย)', { exact: true }).fill(`แก้ไข ${label}`);
+    await dialog.getByRole('button', { name: 'บันทึกร่างโปรโมชัน', exact: true }).click();
+    await expect.poll(() => data.writes.filter(write => write.method === 'PATCH').length).toBe(1);
+    expect(data.writes.find(write => write.method === 'PATCH')!.body).not.toHaveProperty('promotion_tier');
+  });
+}
+
+for (const theme of ['light', 'dark'] as const) for (const width of [1280, 390]) {
+  test(`unified promotion editor and preview fit ${theme} at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+    await fixture(page); await page.goto('/promotions?promotion=new');
+    await expect(page.getByRole('complementary', { name: 'ตัวอย่างการ์ดบนเว็บไซต์' })).toBeVisible();
+    await page.getByRole('button', { name: '+ เพิ่มรายการสิทธิประโยชน์', exact: true }).click();
+    await fitsWorkspace(page);
+    expect(await page.getByRole('dialog').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await page.getByRole('dialog').evaluate(node => { node.scrollTop = 0; });
+    await page.screenshot({ path: `artifacts/unified-workspace/w3.2/five-tier-editor-${theme}-${width}.png` });
+    const preview = page.getByRole('complementary', { name: 'ตัวอย่างการ์ดบนเว็บไซต์' });
+    await preview.scrollIntoViewIfNeeded();
+    await expect(preview).toBeInViewport();
+    await preview.screenshot({ path: `artifacts/unified-workspace/w3.2/five-tier-preview-${theme}-${width}.png` });
+  });
+}
+
+test('declining navigation from a dirty promotion retains its URL and copy', async ({ page }) => {
+  await fixture(page);
+  await page.goto(`/promotions?promotion=${promotionId}`);
+  const dialog = page.getByRole('dialog');
+  const title = dialog.getByLabel('ชื่อโปรโมชัน (ภาษาไทย)', { exact: true });
+  await title.fill('ร่างที่ยังไม่บันทึก');
+  const before = page.url();
+  for (const selector of ['a[href^="/publish?"]', 'a[href^="/media?"]']) {
+    page.once('dialog', confirm => confirm.dismiss());
+    await dialog.locator(selector).first().click();
+    await expect(page).toHaveURL(before);
+    await expect(title).toHaveValue('ร่างที่ยังไม่บันทึก');
+  }
+});
+
+test('contextual promotion cards show all five inheritance badges and benefit packages', async ({ page }) => {
+  const data = await fixture(page);
+  const template = data.items[0];
+  data.items.splice(0, data.items.length, ...Object.keys(promotionTiers).map((tier, index) => ({ ...template,
+    id: index === 0 ? promotionId : `61000000-0000-4000-8000-00000000005${index}`,
+    promotion_tier: tier, applies_via: tier, highlight_badge: { th: 'ไฮไลต์เฉพาะรายการ' },
+    benefit_items: [{ benefit_type: 'gift', benefit_value: '5000', benefit_unit: 'THB', label: { th: 'บัตรกำนัล' } }],
+  })));
+  await page.goto(`/website/project/${data.ref}?tab=promotions`);
+  for (const label of Object.values(promotionTiers)) await expect(page.locator('.contextual-promotions .promo-badge').filter({ hasText: label }).first()).toBeVisible();
+  await expect(page.locator('.contextual-promotions')).toContainText('บัตรกำนัล · 5,000 บาท');
+  await expect(page.getByRole('button', { name: text.promotion_exclude_project, exact: true })).toHaveCount(4);
+});
+
+test('tier switches clear hidden scope selections and empty translations keep the drawer open', async ({ page }) => {
+  await fixture(page); await page.goto('/promotions?promotion=new');
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('#promotion-owner').selectOption('corporate');
+  await dialog.locator('#promotion-programme').selectOption('livnex');
+  await dialog.locator('#promotion-owner').selectOption('campaign');
+  await expect(dialog.getByLabel('ทุกโครงการที่เปิดใช้งาน', { exact: true })).toBeVisible();
+  await dialog.getByLabel('ทุกโครงการที่เปิดใช้งาน', { exact: true }).check();
+  await dialog.locator('#promotion-owner').selectOption('project');
+  await expect(dialog.getByRole('group', { name: 'แบบที่อยู่อาศัย', exact: true })).toBeVisible();
+  const drawer = dialog.locator('details.promo-subdrawer');
+  await drawer.locator('summary').click();
+  await dialog.locator('#promotion-title-en').fill('Draft translation');
+  await dialog.locator('#promotion-title-en').fill('');
+  await expect(drawer).toHaveAttribute('open', '');
+});
+
+test('global create after a contextual edit does not lock an empty owner', async ({ page }) => {
+  const data = await fixture(page, 'brand');
+  await page.goto(`/website/brand/${data.ref}?tab=promotions`);
+  await page.locator(`[data-workspace-item="${promotionId}"]`).getByRole('link', { name: text.promotion_open_editor, exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'สร้างโปรโมชัน', exact: true }).click();
+  await expect(page.locator('#promotion-owner')).toBeEnabled();
+  await expect(page.locator('#promotion-project')).toBeEnabled();
+});
+
+test('server status filtering preserves paused rows and resets pagination', async ({ page }) => {
+  const data = await fixture(page);
+  Object.assign(data.row, { published_version_id: null, versions: [], ends_at: '2030-12-01T00:00:00Z', status_group: 'paused' });
+  const queries: URLSearchParams[] = [];
+  await page.route(`**${api}/promotions?**`, route => {
+    queries.push(new URL(route.request().url()).searchParams);
+    return route.fulfill({ json: { data: { items: [data.row], total: 1, tier_counts: { all: 51, brand: 51 }, status_counts: { all: 51, live: 0, draft: 50, paused: 1 } } } });
+  });
+  await page.goto('/promotions?offset=50');
+  await page.getByRole('button', { name: /งดแสดง \/ หมดอายุ/ }).click();
+  await expect.poll(() => queries.at(-1)?.get('status')).toBe('paused');
+  expect(queries.at(-1)?.get('offset')).toBe('0');
+  await expect(page.locator('.promo-table')).toContainText('Synthetic shared offer');
+  await expect(page.locator('.promo-kpis').getByRole('button', { name: /ทั้งหมด/ })).toContainText('51');
+});
+
+test('changing a project clears unit targets from the previous owner', async ({ page }) => {
+  const data = await fixture(page);
+  const neighbour = { id: scope.items[1].id, public_project_id: scope.items[1].public_id, public_name: scope.items[1].label };
+  await page.route(`**${api}/projects?summary=1`, route => route.fulfill({ json: { data: [project, neighbour] } }));
+  await page.route(`**${api}/promotions/references`, route => route.fulfill({ json: { data: { projects: scope.items, brands: [],
+    commercial_types: [{ id: assetId, project_id: project.public_project_id, label: { th: 'แบบบ้านโครงการแรก' } }],
+  } } }));
+  await page.goto('/promotions?promotion=new');
+  await page.locator('#promotion-project').selectOption(projectId);
+  await page.getByRole('checkbox', { name: 'แบบบ้านโครงการแรก', exact: true }).check();
+  await page.locator('#promotion-project').selectOption(neighbour.id);
+  await expect.poll(() => data.writes.filter(write => write.path === 'promotions/resolve').at(-1)?.body.project_id).toBe(neighbour.id);
+  expect(data.writes.filter(write => write.path === 'promotions/resolve').at(-1)?.body.targets).toEqual([]);
+  await expect(page.getByRole('checkbox', { name: 'แบบบ้านโครงการแรก', exact: true })).toHaveCount(0);
+});
 
 async function fixture(page: Page, kind: 'project' | 'brand' = 'project', role = 'editor', promotionsView = true) {
   await persona(page, role);
@@ -68,12 +211,13 @@ async function fixture(page: Page, kind: 'project' | 'brand' = 'project', role =
     if (path === `content/workspace/${kind}/${ref}/promotions/suggestions`) return json({ items: [suggestion], total: 1 });
     if (path === `assets/${assetId}/thumbnail`) return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="96"><rect width="144" height="96" fill="#08786e"/><circle cx="72" cy="48" r="24" fill="#ffffff"/></svg>' });
     if (path === 'projects') return json([project]);
-    if (path === 'promotions/references') return json({ projects: scope.items, brands: [{ id: brandId, public_id: brand.public_brand_id, label: brand.public_name }], commercial_types: [] });
+    if (path === 'promotions/references') return json({ projects: scope.items, brands: [{ id: brandId, public_id: brand.public_brand_id, label: brand.public_name }], commercial_types: [], project_groups: [{ id: "00031", label: { th: "กลุ่มสาทร" }, member_project_count: 2, phase_count: 2 }], programmes: [{ id: "livnex", label: { th: "LivNex เช่าออมบ้าน" } }] });
     if (path === 'content/fields') return json({ items: [] });
     if (!/^promotions(?:\/|$)/.test(path)) return route.fallback();
     if (request.method() === 'GET') return json(path === 'promotions' ? { items: [row], total: 1 } : row);
     const body = request.postDataJSON(); writes.push({ path, method: request.method(), body });
     if (path === 'promotions/resolve') return json(body.excluded_project_ids?.includes(projectId) ? { scope_hash: 'b'.repeat(64), count: 1, items: scope.items.slice(1) } : scope);
+    if (path === 'promotions' && request.method() === 'POST') { Object.assign(row, body, { id: promotionId, draft_revision: 1 }); return json(row); }
     if (request.method() === 'PATCH') {
       Object.assign(row, body, { draft_revision: row.draft_revision + 1, scope: { scope_hash: 'b'.repeat(64), count: 1, items: scope.items.slice(1) } });
       return json(row);
@@ -81,7 +225,7 @@ async function fixture(page: Page, kind: 'project' | 'brand' = 'project', role =
     if (path.endsWith('/review')) { row.reviews.push({ ...body, review_revision: body.expected_revision, reviewed_at: '2026-11-06T00:00:00Z', reviewed_by: 'synthetic-reviewer', resolved_project_ids: row.scope.items.map((item: { public_id: string }) => item.public_id) }); return json(row); }
     throw new Error(`Unexpected promotion mutation ${request.method()} ${path}`);
   });
-  return { ref, projection, priceTarget, context, row, writes, listingQueries, suggestion, frozenPublication };
+  return { ref, projection, priceTarget, context, row, items, writes, listingQueries, suggestion, frozenPublication };
 }
 
 for (const kind of ['project', 'brand'] as const) {
@@ -145,45 +289,22 @@ for (const theme of ['light', 'dark'] as const) for (const width of [1280, 390])
   });
 }
 
-test('partial promotion references use the saved resolver and preserve hidden ownership in transport', async ({ page }) => {
+test('partial promotion references remain redacted and cannot be edited across hidden scope', async ({ page }) => {
   const data = await fixture(page);
   const visibleScope = { ...scope, items: scope.items.slice(0, 1), applicability_complete: false };
   Object.assign(data.row, { project_id: null, public_project_id: null, owning_brand_id: null, public_owning_brand_id: null,
-    applies_via: { scope_level: 'brand' }, applicability_complete: false, scope: visibleScope,
+    applies_via: { scope_level: 'brand' }, applicability_complete: false, scope: visibleScope, can_edit: false,
     targets: [{ type: 'project', id: projectId }], excluded_project_ids: [], reviews: [], published: null });
-  await page.route(`**${api}/promotions/**`, async route => {
-    const request = route.request(), path = new URL(request.url()).pathname.slice(api.length + 1);
-    const json = (data: unknown) => route.fulfill({ json: { data } });
-    if (path === 'promotions/references') return json({ projects: visibleScope.items, brands: [], commercial_types: [] });
-    if (path === 'promotions/resolve') {
-      const body = request.postDataJSON(); data.writes.push({ path, method: request.method(), body });
-      expect(body).toEqual({ promotion_id: promotionId, expected_revision: 4, targets: data.row.targets, excluded_project_ids: [] });
-      return json(visibleScope);
-    }
-    if (path === `promotions/${promotionId}` && request.method() === 'PATCH') {
-      const body = request.postDataJSON(); data.writes.push({ path, method: request.method(), body });
-      expect(body).toMatchObject({ expected_revision: 4, audience: 'general', targets: data.row.targets, excluded_project_ids: [] });
-      expect(body).not.toHaveProperty('project_id'); expect(body).not.toHaveProperty('owning_brand_id');
-      expect(JSON.stringify(body)).not.toContain(brandId); expect(JSON.stringify(body)).not.toContain(scope.items[1].id);
-      Object.assign(data.row, { audience: body.audience, draft_revision: 5 });
-      return json(data.row);
-    }
-    return route.fallback();
-  });
+  await page.route(`**${api}/promotions/references`, route => route.fulfill({ json: { data: { projects: visibleScope.items, brands: [], commercial_types: [] } } }));
   await page.goto(`/promotions?promotion=${promotionId}&project_id=${projectId}`);
   const dialog = page.getByRole('dialog');
-  const fields = dialog.locator('.registry-panel').filter({ has: page.getByRole('heading', { name: `${text.promotion_resolved_projects} (2)`, exact: true }) });
-  await expect(fields).toContainText(contentScopeText.scope_references_partial);
-  await expect(fields).toContainText(`${text.promotion_owner}: ${text.brand}`);
+  await expect(dialog).toContainText(contentScopeText.scope_references_partial);
+  await expect(dialog).toContainText('การแก้ไขโปรโมชันนี้ต้องมีสิทธิ์ครบทุกโครงการที่ร่วมรายการ');
   await expect(dialog).not.toContainText('Synthetic neighbour'); await expect(dialog).not.toContainText('Synthetic brand');
-  await fields.getByRole('button').first().click();
-  await expect.poll(() => data.writes.filter(write => write.path === 'promotions/resolve').length).toBe(1);
-  await fields.locator('#promotion-audience').selectOption('general');
-  await fields.locator('form .content-actions button').last().click();
-  await expect.poll(() => data.writes.filter(write => write.method === 'PATCH').length).toBe(1);
-  await expect(fields.locator('form')).toHaveCount(0);
-  await expect(fields).toContainText(contentScopeText.scope_references_partial);
-  expect(data.row.draft_revision).toBe(5);
+  await expect(dialog.locator('#promotion-title')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'แก้ไขขอบเขตและช่วงเวลา', exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'บันทึกร่างโปรโมชัน', exact: true })).toHaveCount(0);
+  expect(data.writes).toEqual([]);
   await fitsWorkspace(page);
 });
 
@@ -206,16 +327,11 @@ test('legacy suggestion copies only text into the contextual brand editor', asyn
 test('project exclusion saves a new draft, retains frozen publication and requires explicit scope review', async ({ page }) => {
   const data = await fixture(page);
   await page.goto(`/website/project/${data.ref}?tab=promotions`);
-  const link = page.locator(`[data-workspace-item="${promotionId}"]`).getByRole('link', { name: text.promotion_exclude_project, exact: true });
-  expect(new URL((await link.getAttribute('href'))!, 'http://127.0.0.1:3000').searchParams.get('exclude_project')).toBe(projectId);
-  await link.click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText(text.promotion_shared_edit.replace('{count}', '2'));
-  const exclusions = dialog.locator('fieldset.content-checks').filter({ has: page.locator('legend').filter({ hasText: text.promotion_excluded_projects }) });
-  await expect(exclusions.getByRole('checkbox', { name: 'Synthetic project', exact: true })).toBeChecked();
-  await expect(dialog).toContainText(text.promotion_scope_pending);
-  await dialog.locator('form').filter({ has: page.locator('#promotion-audience') }).locator('button[type="submit"], button:not([type])').last().click();
+  const active = page.locator(`[data-workspace-item="${promotionId}"]`);
+  await active.getByRole('button', { name: text.promotion_exclude_project, exact: true }).click();
   await expect.poll(() => data.writes.filter(write => write.method === 'PATCH').length).toBe(1);
+  await active.getByRole('link', { name: text.promotion_open_editor, exact: true }).click();
+  const dialog = page.getByRole('dialog');
   expect(data.writes.find(write => write.method === 'PATCH')!.body).toMatchObject({ expected_revision: 4, excluded_project_ids: [projectId] });
   expect(data.row.draft_revision).toBe(5); expect(data.row.reviews[0].review_revision).toBe(4);
   expect(data.row.published_version_id).toBe(versionId); expect(data.row.versions).toHaveLength(1);
@@ -257,4 +373,26 @@ test('failed contextual suggestion fetch exposes an error and never opens an emp
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('Synthetic suggestion unavailable');
   await expect(page.locator('#promotion-title')).toHaveCount(0);
   expect(data.writes).toEqual([]);
+});
+
+test('promotions workspace shows Thai owner names, KPI status filters, search, and comma-safe benefit input', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const data = await fixture(page, 'project', 'editor');
+  Object.assign(data.row, { benefit_type: 'discount_amount', benefit_value: '150000', benefit_unit: 'THB', publication_available: true });
+  await page.goto('/promotions');
+  await expect(page.locator('body')).not.toContainText('Q40');
+  const table = page.locator('.promo-table');
+  await expect(table).toContainText('แบรนด์: Synthetic brand');
+  await expect(table).toContainText('ส่วนลดเป็นจำนวนเงิน · 150,000 บาท');
+  await page.getByRole('button', { name: /ฉบับร่าง \/ รอตรวจ/ }).click();
+  await expect(page.getByText('ไม่พบโปรโมชันตามตัวกรอง')).toBeVisible();
+  await page.getByRole('button', { name: 'ล้างตัวกรอง', exact: true }).click();
+  await expect(table).toContainText('Synthetic shared offer');
+  await page.getByLabel('ค้นหาโปรโมชัน', { exact: true }).fill('W32-OFFER');
+  await expect(table).toContainText('Synthetic shared offer');
+  await page.getByRole('button', { name: 'Synthetic shared offer', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('มูลค่าสิทธิประโยชน์', { exact: true }).fill('250,000.50');
+  await expect(dialog.getByLabel('มูลค่าสิทธิประโยชน์', { exact: true })).toHaveValue('250000.50');
+  await fitsWorkspace(page);
 });

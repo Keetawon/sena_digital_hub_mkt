@@ -146,3 +146,28 @@ for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as 
   await expectAssistantClearance(page, page.locator('.workspace-home-card').last());
   await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-home-enabled-${width}-${colorScheme}.png` });
 });
+
+test('home paginates tasks, projects, buds and brands independently at 6 items per page', async ({ page }) => {
+  await enter(page);
+  await page.route('**/api/hub/v1/admin/content/home?*', route => route.fulfill({ json: { data: {
+    ...home,
+    project_total: 8,
+    projects: Array.from({ length: 8 }, (_, idx) => ({
+      ...home.projects[0],
+      ref: `PROJECT-${idx + 1}`,
+      name: { th: `โครงการทดสอบ ${idx + 1}` },
+    })),
+    task_total: 7,
+    tasks: Array.from({ length: 7 }, (_, idx) => ({
+      ...home.tasks[0],
+      id: `returned:section:${idx + 1}`,
+      label: { th: `งานทดสอบที่ ${idx + 1}` },
+    })),
+  } } }));
+  await page.goto('/home');
+  await expect(page.locator('.workspace-project-grid > article')).toHaveCount(6);
+  await expect(page.locator('.workspace-task-list > li')).toHaveCount(6);
+  await page.locator('[data-section-pager="projects"]').getByRole('button', { name: new RegExp(copy.next) }).click();
+  await expect(page.locator('.workspace-project-grid > article')).toHaveCount(2);
+  await expect(page.locator('.workspace-task-list > li')).toHaveCount(6);
+});

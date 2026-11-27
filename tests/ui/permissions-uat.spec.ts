@@ -93,7 +93,8 @@ test('Somchai has exactly four tabs with the custom grid, and hidden management 
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
   // Services remain explicit even with one permitted item; empty services stay hidden.
   await menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true }).click();
-  for (const label of ['หน้าแรก', 'ข้อมูลเว็บไซต์', 'โปรโมชั่น', 'งบและค่าใช้จ่าย']) await expect(menu.getByRole('link', { name: label, exact: true })).toBeVisible();
+  for (const label of ['หน้าแรก', 'KM แบรนด์', 'KM กลุ่มโครงการ', 'KM โครงการ', 'โปรโมชั่น', 'งบและค่าใช้จ่าย']) await expect(menu.getByRole('link', { name: label, exact: true })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'KM องค์กรและธุรกิจอื่น', exact: true })).toHaveCount(0);
   for (const href of ['/ads/registry', '/ads/archive', '/ads/actuals', '/knowledge', '/releases', '/questions', '/admin/accounts']) await expect(menu.locator(`a[href="${href}"]`)).toHaveCount(0);
   await page.screenshot({ path: `${shots}/somchai-custom-tabs.png`, fullPage: true });
   for (const route of ['projects', 'brands/completeness.csv', 'ads/memos']) expect((await page.request.get(`${api}/${route}`)).status()).toBe(200);

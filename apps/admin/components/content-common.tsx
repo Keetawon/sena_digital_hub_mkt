@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useHubPermissions } from "./accounts";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { request } from "./hub-request";
@@ -43,33 +43,143 @@ function surfaceLabel(surface: string) {
   return `เว็บไซต์ · ${sectionLabel(surface.split(".").at(-1) ?? "")}`;
 }
 
+const fieldCatalogCache = new Map<string, { value: FieldCatalog; expiresAt: number }>();
+if (typeof window !== "undefined") {
+  const clear = () => fieldCatalogCache.clear();
+  window.addEventListener("hub-accounts-changed", clear);
+  window.addEventListener("hub-content-access-invalidated", clear);
+}
+
 export function useFieldCatalog() {
   const permissions = useHubPermissions();
   const key = capabilityKey(permissions.account);
-  const [catalog, setCatalog] = useState<FieldCatalog | null>(null);
+  const hit = fieldCatalogCache.get(key);
+  const initial = hit && hit.expiresAt > Date.now() ? hit.value : null;
+  const [catalog, setCatalog] = useState<FieldCatalog | null>(initial);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   useEffect(() => {
+    if (revision === 0) {
+      const cached = fieldCatalogCache.get(key);
+      if (cached && cached.expiresAt > Date.now()) {
+        setCatalog(cached.value); setError("");
+        return;
+      }
+    }
     let active = true; setCatalog(null); setError("");
-    request<FieldCatalog>("v1/admin/content/fields").then(value => { if (active) setCatalog(value); })
-      .catch(error => { if (active) setError(errorMessage(error)); });
+    request<FieldCatalog>("v1/admin/content/fields").then(value => {
+      if (active) {
+        fieldCatalogCache.set(key, { value, expiresAt: Date.now() + 30_000 });
+        setCatalog(value);
+      }
+    }).catch(error => { if (active) setError(errorMessage(error)); });
     return () => { active = false; };
   }, [key, revision]);
-  return { catalog, error, reload: () => setRevision(value => value + 1) };
+  return { catalog, error, reload: () => { fieldCatalogCache.delete(key); setRevision(value => value + 1); } };
 }
 
 export function FieldInfo({ field }: { field?: ContentField }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const isOpen = pinned || hovered;
+
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current !== null) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
+  const adjustPosition = useCallback(() => {
+    const el = detailsRef.current;
+    if (!el || typeof window === "undefined") return;
+    const rect = el.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const panelWidth = panelRef.current?.offsetWidth || Math.min(336, Math.max(200, vw - 40));
+    let shift = 0;
+    if (rect.left + panelWidth > vw - 16) shift = (vw - 16) - (rect.left + panelWidth);
+    if (rect.left + shift < 16) shift = 16 - rect.left;
+    el.style.setProperty("--field-info-x", `${Math.round(shift)}px`);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (isOpen) adjustPosition();
+  }, [isOpen, adjustPosition]);
+
+  useEffect(() => () => cancelClose(), [cancelClose]);
+
+  useEffect(() => {
+    if (!pinned || typeof document === "undefined") return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!detailsRef.current?.contains(event.target as Node)) {
+        setPinned(false);
+        setHovered(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [pinned]);
+
   if (!field) return null;
   const required = field.required_for.all === "required";
-  return <details className="content-field-info"><summary aria-label={`การใช้งาน ${field.label.th ?? field.field_key}`}><span aria-hidden="true">i</span></summary>
-    <div><strong>{field.label.th}</strong><p>{field.help.th}</p>
-      <p>แสดงที่: {field.surfaces.map(surfaceLabel).join(" · ") || "ยังไม่ส่งออก"}</p>
-      <p>{field.default_ai_exposure === "internal" ? "ไม่ส่งไปเว็บไซต์หรือ AI" : field.default_ai_exposure === "web_only" ? "ไม่ส่งไปแชตบอต รายการ AI หรือข้อมูลสำหรับเครื่องมือค้นหา" : "ส่งต่อได้เฉพาะช่องทางที่ระบุ เมื่อผ่านการเผยแพร่"}</p>
-      <p>ผู้รับผิดชอบ: {field.owner_role === "Marketing" ? "การตลาด" : field.owner_role}{field.review_every_days ? ` · ทบทวนทุก ${field.review_every_days} วัน` : " · ทบทวนเมื่อข้อมูลเปลี่ยน"}</p>
-      <p>{required ? "จำเป็นก่อนเผยแพร่" : field.required_for.all === "recommended" ? "แนะนำให้มี" : "ข้อมูลเพิ่มเติม"}{field.locales_required.includes("en") ? " · ต้องตรวจภาษาอังกฤษ" : ""}</p>
-      {Object.entries(field.required_for).filter(([key]) => key !== "all").map(([key, value]) => <p key={key}>{{ condominium: "คอนโดมิเนียม", house: "บ้าน", townhome: "ทาวน์โฮม" }[key] ?? key}: {{ required: "จำเป็นก่อนเผยแพร่", recommended: "แนะนำให้มี", optional: "ข้อมูลเพิ่มเติม" }[value]}</p>)}
-    </div>
-  </details>;
+  return (
+    <details
+      ref={detailsRef}
+      className="content-field-info"
+      open={isOpen}
+      onPointerEnter={event => {
+        if (event.pointerType === "mouse") {
+          cancelClose();
+          adjustPosition();
+          setHovered(true);
+        }
+      }}
+      onPointerLeave={event => {
+        if (event.pointerType === "mouse") {
+          cancelClose();
+          closeTimer.current = setTimeout(() => setHovered(false), 100);
+        }
+      }}
+      onFocus={() => {
+        cancelClose();
+        adjustPosition();
+        setHovered(true);
+      }}
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) setHovered(false);
+      }}
+      onKeyDown={event => {
+        if (event.key === "Escape") {
+          cancelClose();
+          setPinned(false);
+          setHovered(false);
+        }
+      }}
+    >
+      <summary
+        aria-label={`การใช้งาน ${field.label.th ?? field.field_key}`}
+        onClick={event => {
+          event.preventDefault();
+          cancelClose();
+          adjustPosition();
+          setPinned(value => !value);
+        }}
+      >
+        <span aria-hidden="true">i</span>
+      </summary>
+      <div ref={panelRef}>
+        <strong>{field.label.th}</strong><p>{field.help.th}</p>
+        <p>แสดงที่: {field.surfaces.map(surfaceLabel).join(" · ") || "ยังไม่ส่งออก"}</p>
+        <p>{field.default_ai_exposure === "internal" ? "ไม่ส่งไปเว็บไซต์หรือ AI" : field.default_ai_exposure === "web_only" ? "ไม่ส่งไปแชตบอต รายการ AI หรือข้อมูลสำหรับเครื่องมือค้นหา" : "ส่งต่อได้เฉพาะช่องทางที่ระบุ เมื่อผ่านการเผยแพร่"}</p>
+        <p>ผู้รับผิดชอบ: {field.owner_role === "Marketing" ? "การตลาด" : field.owner_role}{field.review_every_days ? ` · ทบทวนทุก ${field.review_every_days} วัน` : " · ทบทวนเมื่อข้อมูลเปลี่ยน"}</p>
+        <p>{required ? "จำเป็นก่อนเผยแพร่" : field.required_for.all === "recommended" ? "แนะนำให้มี" : "ข้อมูลเพิ่มเติม"}{field.locales_required.includes("en") ? " · ต้องตรวจภาษาอังกฤษ" : ""}</p>
+        {Object.entries(field.required_for).filter(([key]) => key !== "all").map(([key, value]) => <p key={key}>{{ condominium: "คอนโดมิเนียม", house: "บ้าน", townhome: "ทาวน์โฮม" }[key] ?? key}: {{ required: "จำเป็นก่อนเผยแพร่", recommended: "แนะนำให้มี", optional: "ข้อมูลเพิ่มเติม" }[value]}</p>)}
+      </div>
+    </details>
+  );
 }
 
 export function ContentLabel({ htmlFor, field, children }: { htmlFor?: string; field?: ContentField; children?: ReactNode }) {
@@ -151,10 +261,11 @@ export function useWritingTranslations(path: string, revision: unknown, enabled:
 
 /** Kept beside the saved field, outside disabled ordinary form fieldsets. */
 export function WritingFields({ field, fields, translations, ownerType, ownerKey, value, savedValue, stamp, dirty, canEdit,
-  disabled, maxLength, onAccept, onActivityChange, language, contextTranslations }: {
+  disabled, maxLength, onAccept, onActivityChange, onSaveDraft, language, contextTranslations }: {
   field?: ContentField; fields: ContentField[]; translations: Translation[]; ownerType: string; ownerKey?: string;
   value: Locales; savedValue: Locales; stamp: WritingDraftStamp; dirty: boolean; canEdit: boolean; disabled?: boolean;
   maxLength?: number; language?: WritingLanguage; contextTranslations?: Translation[];
+  onSaveDraft?: () => void;
   onAccept: (acceptance: WritingAcceptance) => Promise<void>; onActivityChange: (active: boolean) => void;
 }) {
   const permissions = useHubPermissions(), authorityKey = capabilityKey(permissions.account);
@@ -187,7 +298,7 @@ export function WritingFields({ field, fields, translations, ownerType, ownerKey
     return <WritingAid key={locale} field={field} binding={binding} language={locale} value={frozen.value[locale] ?? ""}
       savedValue={frozen.savedValue[locale] ?? ""} draftStamp={frozen.stamp} formDirty={dirty} canEdit={canEdit} authorityKey={authorityKey}
       maxLength={Math.min(maxLength ?? field.validation.max_length ?? 12000, 12000)} context={context}
-      disabled={disabled || active.some(item => item !== locale)} onAccept={onAccept}
+      disabled={disabled || active.some(item => item !== locale)} onAccept={onAccept} onSaveDraft={onSaveDraft}
       onActivityChange={busy => setActive(values => values.includes(locale) === busy ? values : busy ? [...values, locale] : values.filter(item => item !== locale))} />;
   })}</div>;
 }

@@ -1,7 +1,8 @@
 import { writingAllowsApi, writingAllowsQuery } from './writing-aid-routes';
 import { contentScopeAllowsApi, contentScopeAllowsQuery } from './content-scope-routes';
-import { businessAllowsApi, businessAllowsQuery } from './business-api-routes';
+import { businessAllowsApi, businessAllowsQuery, scopeContentAllowsApi, scopeContentAllowsQuery } from './business-api-routes';
 import { workflowAllowsApi, workflowAllowsQuery } from './content-workflow-routes';
+import { eventAllowsApi, eventAllowsQuery } from './event-routes';
 // Exact private draft routes; source-specific authority is rechecked in SQL.
 import { workspaceAllowsApi, workspaceAllowsQuery } from './workspace-api-routes';
 import { amenityAllowsApi } from './amenity-routes';
@@ -12,14 +13,16 @@ const term = "[a-z0-9_.-]{1,150}";
 const routes: Record<string, RegExp> = {
   GET: new RegExp(`^v1/admin/(?:content/(?:fields|glossary|search|home)|(?:projects|brands)/${id}/content|faq(?:/(?:questions|references|corporate-contacts|${uuid}))?|faq-intake/clusters(?:/${uuid})?)$`),
   PATCH: new RegExp(`^v1/admin/content/fields/${key}$`),
-  PUT: new RegExp(`^v1/admin/(?:content/(?:email-domains/[a-z0-9][a-z0-9_.-]{0,149}|glossary/${term})|projects/${id}/(?:(?:facts|sections)/${key}|buildings/${id}|(?:selling-points|contacts)/${uuid})|brands/${id}/contacts/${uuid}|faq/(?:questions/${key}|corporate-contacts/${uuid}|${uuid}))$`),
+  PUT: new RegExp(`^v1/admin/(?:content/(?:email-domains/[a-z0-9][a-z0-9_.-]{0,149}|glossary/${term})|projects/${id}/(?:(?:facts|sections)/${key}|buildings/${id}|(?:selling-points|contacts)/${uuid})|brands/${id}/(?:sections/${key}|contacts/${uuid})|faq/(?:questions/${key}|corporate-contacts/${uuid}|${uuid}))$`),
   POST: new RegExp(`^v1/admin/(?:content/(?:translations/${uuid}/(?:review|retry)|glossary/${term}/approve)|projects/${id}/(?:sections/${key}/submit|selling-points|contacts)|brands/${id}/contacts|faq(?:/(?:questions/${key}/approve|corporate-contacts|${uuid}/submit))?|faq-intake/clusters/${uuid}/decision)$`),
 };
 
 export function contentAllowsApi(path: string, method: string) {
+  if (/^v1\/admin\/events(?:\/|$)/.test(path)) return eventAllowsApi(path, method);
   if (/^v1\/admin\/content\/writing-aid(?:\/|$)/.test(path)) return writingAllowsApi(path, method);
   if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsApi(path, method);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsApi(path, method);
+  if (/^v1\/admin\/content\/scopes(?:\/|$)/.test(path)) return scopeContentAllowsApi(path, method);
   if (path === "v1/admin/promotions/resolve") return method === "POST";
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsApi(path, method);
   if (workspaceAllowsApi(path, method) || amenityAllowsApi(path, method)) return true;
@@ -47,9 +50,11 @@ const intakeFilters: Record<string, RegExp> = {
 };
 
 export function contentAllowsQuery(path: string, method: string, query: URLSearchParams) {
+  if (/^v1\/admin\/events(?:\/|$)/.test(path)) return eventAllowsQuery(path, method, query);
   if (/^v1\/admin\/content\/writing-aid(?:\/|$)/.test(path)) return writingAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:accounts\/(?:content-scopes|bu-sync-runs|content-scope-settings)|content\/bu-notices)(?:\/|$)/.test(path)) return contentScopeAllowsQuery(path, method, query);
   if (/^v1\/admin\/content\/businesses(?:\/|$)/.test(path)) return businessAllowsQuery(path, method, query);
+  if (/^v1\/admin\/content\/scopes(?:\/|$)/.test(path)) return scopeContentAllowsQuery(path, method, query);
   if (/^v1\/admin\/(?:content-workflow|publication-queue)(?:\/|$)/.test(path)) return workflowAllowsQuery(path, method, query);
   if (workspaceAllowsApi(path, method)) return workspaceAllowsQuery(path, method, query);
   if (method === "GET") {

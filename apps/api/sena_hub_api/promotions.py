@@ -25,6 +25,11 @@ SourceId = Annotated[str, StringConstraints(strict=True, min_length=1, max_lengt
 Revision = Annotated[int, Field(strict=True, ge=1, le=2147483647)]
 BenefitType = Literal["discount_amount", "discount_pct", "free_transfer_fee", "free_common_fee", "furniture", "cashback", "rate_subsidy", "gift", "other"]
 BenefitUnit = Literal["THB", "percent", "months", "items"]
+PromotionTier = Literal["campaign", "corporate", "brand", "project_group", "project"]
+ShortLocalized = dict[Locale, Annotated[str, StringConstraints(strict=True, max_length=300, pattern=r"^[^\x00]*$")]]
+UnitNote = dict[Locale, Annotated[str, StringConstraints(strict=True, max_length=2000, pattern=r"^[^\x00]*$")]]
+CampaignSlug = Annotated[str, StringConstraints(strict=True, max_length=120, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+ProgrammeKey = Annotated[str, StringConstraints(strict=True, max_length=80, pattern=r"^[A-Za-z][A-Za-z0-9_-]*$")]
 
 
 def offset_timestamp(value):
@@ -41,39 +46,88 @@ class Input(BaseModel):
 
 
 class PromotionTarget(Input):
-    type: Literal["project", "brand", "commercial_type"]
-    id: UUID
+    type: Literal["project", "brand", "project_group", "commercial_type"]
+    id: UUID | SourceId
+
+    @model_validator(mode="after")
+    def typed_reference(self):
+        if self.type != "project_group":
+            try:
+                self.id = UUID(str(self.id))
+            except ValueError:
+                raise ValueError("รหัสโครงการ แบรนด์ หรือแบบที่อยู่อาศัยไม่ถูกต้อง") from None
+        else:
+            self.id = str(self.id)
+        return self
+
+
+class BenefitItem(Input):
+    benefit_type: BenefitType
+    benefit_value: Money | None = None
+    benefit_unit: BenefitUnit | None = None
+    label: ShortLocalized = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def percentage(self):
+        if self.benefit_type == "discount_pct" and self.benefit_value is not None and Decimal(self.benefit_value) > 100:
+            raise ValueError("ส่วนลดร้อยละต้องไม่เกิน 100")
+        return self
 
 
 class PromotionScope(Input):
+    promotion_tier: PromotionTier | None = None
     project_id: UUID | None = None
     owning_brand_id: UUID | None = None
+    owning_project_group_id: SourceId | None = None
+    programme_key: ProgrammeKey | None = None
+    all_active_projects: Annotated[bool, Field(strict=True)] = False
     targets: list[PromotionTarget] = Field(default_factory=list, max_length=100)
     excluded_project_ids: list[UUID] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
     def exact_owner(self):
-        if (self.project_id is None) == (self.owning_brand_id is None):
-            raise ValueError("Exactly one promotion owner is required")
+        tier = self.promotion_tier or ("brand" if self.owning_brand_id else "project")
+        object.__setattr__(self, "promotion_tier", tier)
+        owners = (self.project_id is not None, self.owning_brand_id is not None, self.owning_project_group_id is not None)
+        if owners != {"project": (True, False, False), "brand": (False, True, False),
+                      "project_group": (False, False, True), "corporate": (False, False, False),
+                      "campaign": (False, False, False)}[tier]:
+            raise ValueError("กรุณาระบุเจ้าของให้ตรงกับระดับโปรโมชัน")
+        if self.programme_key is not None and tier != "corporate":
+            raise ValueError("ระบุโปรแกรมได้เฉพาะโปรโมชันระดับองค์กร")
+        if self.all_active_projects and tier not in {"corporate", "campaign"}:
+            raise ValueError("เลือกทุกโครงการได้เฉพาะแคมเปญหรือโปรโมชันระดับองค์กร")
+        if self.all_active_projects and self.targets:
+            raise ValueError("เลือกทุกโครงการหรือระบุขอบเขตอย่างใดอย่างหนึ่ง")
         if len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
-            raise ValueError("Excluded projects must be distinct")
+            raise ValueError("โครงการที่ยกเว้นต้องไม่ซ้ำกัน")
         return self
 
 
 class SavedPromotionScope(Input):
     promotion_id: UUID
     expected_revision: Revision
+    programme_key: ProgrammeKey | None = None
+    all_active_projects: Annotated[bool | None, Field(strict=True)] = None
     targets: list[PromotionTarget] = Field(default_factory=list, max_length=100)
     excluded_project_ids: list[UUID] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")
     def distinct_exclusions(self):
+        if self.all_active_projects and self.targets:
+            raise ValueError("เลือกทุกโครงการหรือระบุขอบเขตอย่างใดอย่างหนึ่ง")
         if len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
-            raise ValueError("Excluded projects must be distinct")
+            raise ValueError("โครงการที่ยกเว้นต้องไม่ซ้ำกัน")
         return self
 
 
 class DraftFields(PromotionScope):
+    campaign_name: ShortLocalized = Field(default_factory=dict)
+    campaign_slug: CampaignSlug | None = None
+    ads_campaign_code: Annotated[str, StringConstraints(strict=True, max_length=200, pattern=r"^[^\x00]*$")] | None = None
+    highlight_badge: ShortLocalized = Field(default_factory=dict)
+    unit_scope_note: UnitNote = Field(default_factory=dict)
+    benefit_items: list[BenefitItem] = Field(default_factory=list, max_length=20)
     audience: Literal["general", "investor", "livnex"] = "general"
     booking_from: date | None = None
     booking_to: date | None = None
@@ -95,6 +149,9 @@ class DraftFields(PromotionScope):
 
     @model_validator(mode="after")
     def coherent(self):
+        if self.benefit_items:
+            primary = self.benefit_items[0]
+            self.benefit_type, self.benefit_value, self.benefit_unit = primary.benefit_type, primary.benefit_value, primary.benefit_unit
         if self.ends_at <= self.starts_at:
             raise ValueError("เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น")
         if self.benefit_type == "discount_pct" and self.benefit_value is not None and Decimal(self.benefit_value) > 100:
@@ -118,6 +175,14 @@ class CreatePromotion(DraftFields):
 
 class PatchPromotion(Input):
     expected_revision: Revision
+    programme_key: ProgrammeKey | None = None
+    all_active_projects: Annotated[bool | None, Field(strict=True)] = None
+    campaign_name: ShortLocalized | None = None
+    campaign_slug: CampaignSlug | None = None
+    ads_campaign_code: Annotated[str, StringConstraints(strict=True, max_length=200, pattern=r"^[^\x00]*$")] | None = None
+    highlight_badge: ShortLocalized | None = None
+    unit_scope_note: UnitNote | None = None
+    benefit_items: list[BenefitItem] | None = Field(default=None, max_length=20)
     audience: Literal["general", "investor", "livnex"] | None = None
     targets: list[PromotionTarget] | None = Field(default=None, max_length=100)
     excluded_project_ids: list[UUID] | None = Field(default=None, max_length=100)
@@ -142,9 +207,11 @@ class PatchPromotion(Input):
     @model_validator(mode="after")
     def explicit_change(self):
         changed = self.model_fields_set - {"expected_revision"}
+        if self.all_active_projects and self.targets:
+            raise ValueError("เลือกทุกโครงการหรือระบุขอบเขตอย่างใดอย่างหนึ่ง")
         if self.excluded_project_ids and len(set(self.excluded_project_ids)) != len(self.excluded_project_ids):
-            raise ValueError("Excluded projects must be distinct")
-        nullable = {"benefit_value", "benefit_unit", "source_offer_key", "booking_from", "booking_to", "transfer_from", "transfer_to"}
+            raise ValueError("โครงการที่ยกเว้นต้องไม่ซ้ำกัน")
+        nullable = {"benefit_value", "benefit_unit", "source_offer_key", "booking_from", "booking_to", "transfer_from", "transfer_to", "programme_key", "campaign_slug", "ads_campaign_code"}
         if not changed or any(getattr(self, key) is None for key in changed - nullable):
             raise ValueError("ระบุฟิลด์ที่ต้องการแก้ไข ข้อความว่างให้ใช้แผนที่ภาษาแทน null")
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
@@ -214,6 +281,11 @@ class RollbackRelease(Input):
 
 
 class PromotionFilters(Input):
+    status: Literal["all", "live", "draft", "paused"] | None = None
+    tier: PromotionTier | None = None
+    brand_id: UUID | None = None
+    project_group_id: SourceId | None = None
+    q: Annotated[str, StringConstraints(strict=True, max_length=200, pattern=r"^[^\x00]*$")] | None = None
     project_id: UUID | None = None
     limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0, le=100000)
@@ -254,11 +326,12 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
     @app.post(prefix + "/promotions/resolve")
     async def promotion_resolve(body: PromotionScope | SavedPromotionScope, request: Request, actor: Actor = Depends(admin)):
         query(request)
-        return await rpc(request, actor, "SELECT hub.promotion_resolve($1::jsonb)::text", body.model_dump(mode="json"))
+        optional = {"promotion_tier", "owning_project_group_id", "programme_key", "all_active_projects"} - body.model_fields_set
+        return await rpc(request, actor, "SELECT hub.promotion_resolve($1::jsonb)::text", body.model_dump(mode="json", exclude=optional))
 
     @app.get(prefix + "/promotions")
     async def promotion_list(request: Request, filters: Annotated[PromotionFilters, Query()], actor: Actor = Depends(admin)):
-        query(request, ("project_id", "limit", "offset"))
+        query(request, ("project_id", "tier", "brand_id", "project_group_id", "q", "status", "limit", "offset"))
         return await rpc(request, actor, "SELECT hub.promotion_read($1,$2::jsonb)::text", None, filters.model_dump(mode="json", exclude_none=True))
 
     @app.get(prefix + "/promotions/{promotion_id}")
@@ -268,8 +341,10 @@ def register_promotion_routes(app, admin, writer, publisher, consumer, database,
 
     async def command(request, actor, action, promotion_id, body):
         query(request)
+        # Omitted tiers identify legacy callers whose owner/target union is preserved.
+        inferred = {"promotion_tier"} if isinstance(body, CreatePromotion) and "promotion_tier" not in body.model_fields_set else set()
         return await rpc(request, actor, "SELECT hub.promotion_command($1,$2,$3::jsonb)::text", action, promotion_id,
-                         body.model_dump(mode="json", exclude_unset=isinstance(body, PatchPromotion)), mutation=True)
+                         body.model_dump(mode="json", exclude=inferred, exclude_unset=isinstance(body, PatchPromotion)), mutation=True)
 
     @app.post(prefix + "/promotions", status_code=201)
     async def promotion_create(body: CreatePromotion, request: Request, actor: Actor = Depends(writer)):

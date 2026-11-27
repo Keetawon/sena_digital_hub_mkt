@@ -19,7 +19,9 @@ export type CapabilityProjection = {
 };
 export type HubAccount = {
   id: string; status: string; role?: string; hub_role?: string | null; agency?: string | null;
-  agency_code?: string | null; display_name_th?: string; can_manage_users?: boolean;
+  agency_code?: string | null; email?: string; sign_in_method?: string; display_name_th?: string;
+  phone?: string; team?: string; position?: string | null; company_type?: string | null; company_name?: string | null;
+  has_avatar?: boolean; avatar_updated_at?: string | null; can_manage_users?: boolean;
   capabilities?: CapabilityProjection; pending_count?: number; updated_at?: string;
   content_scope?: { fingerprint: string; expires_at: string | null } | null;
 };
@@ -65,9 +67,20 @@ export function canOpenPage(account: HubAccount, path: string, query: URLSearchP
     return account.status === "ACTIVE" && (can(account.capabilities, "knowledge") || can(account.capabilities, "releases"));
   }
   if (path === "/home") return account.status === "ACTIVE" && canWorkspace(account.capabilities);
+  if (path === "/events") {
+    const internal = ["viewer", "editor", "publisher", "admin", "online_staff"].includes(account.hub_role ?? account.role ?? "");
+    return account.status === "ACTIVE" && internal && !account.agency_code && !account.agency
+      && (canWorkspace(account.capabilities) || can(account.capabilities, "registry") || can(account.capabilities, "finance"));
+  }
   if (path === "/website") {
     const view = query.get("view");
-    return account.status === "ACTIVE" && canWorkspace(account.capabilities) && (view === "brands" ? can(account.capabilities, "brands") : ["projects", "groups"].includes(view ?? "") ? can(account.capabilities, "projects") : true);
+    return account.status === "ACTIVE" && canWorkspace(account.capabilities) && (
+      view === "brands" ? can(account.capabilities, "brands")
+      : view === "projects" ? can(account.capabilities, "projects")
+      : view === "groups" ? (can(account.capabilities, "projects") || can(account.capabilities, "knowledge"))
+      : view === "businesses" ? can(account.capabilities, "knowledge")
+      : true
+    );
   }
   const actualAdmin = isContentAdmin(account);
   if (path === "/knowledge") return actualAdmin && can(account.capabilities, "knowledge");

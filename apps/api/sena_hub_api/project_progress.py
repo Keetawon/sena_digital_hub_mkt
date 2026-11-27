@@ -201,13 +201,41 @@ def select_progress(data, *, page=1, size=10, q='', status='all', rem_status='al
         if view == 'counts':
             return facets
     if view == 'groups':
+        import re
+
+        def _phase_rank(item):
+            label = f"{item.get('name') or ''} {item.get('name_th') or ''}".strip()
+            match = re.search(r'(?:เฟส|phase)\s*(\d+)', label, flags=re.IGNORECASE)
+            if match:
+                num = int(match.group(1))
+                return (0 if num == 1 else 1 + num, str(item.get('rem_project_id') or ''))
+            if re.search(r'\s1$', label):
+                return (0, str(item.get('rem_project_id') or ''))
+            tail = re.search(r'\s(\d+)$', label)
+            if tail and int(tail.group(1)) > 1:
+                return (1 + int(tail.group(1)), str(item.get('rem_project_id') or ''))
+            return (1, str(item.get('rem_project_id') or ''))
+
         groups = {}
-        for r in rows:
+        for r in sorted(rows, key=_phase_rank):
             state = r['group_status']; gid = r.get('marketing_project_group_id') if state == 'marketing_reference' else None
-            entry = groups.setdefault((state, gid), {'state': state, 'id': gid, 'name_th': r.get('marketing_group_name_th'), 'count': 0, 'published': 0, 'filling': 0, 'awaiting_publisher': 0, 'names': []})
+            entry = groups.setdefault((state, gid), {
+                'state': state, 'id': gid, 'name_th': r.get('marketing_group_name_th'),
+                'count': 0, 'published': 0, 'filling': 0, 'awaiting_publisher': 0, 'names': [],
+                'cover_image': None, 'brand_name': r.get('brand_name'), 'brand_logo': r.get('brand_logo'),
+                'group_km_count': r.get('group_km_count', 0),
+                'group_faq_count': r.get('group_faq_count', 0),
+                'group_promotion_count': r.get('group_promotion_count', 0),
+            })
             entry['count'] += 1
             for key in ('published', 'filling', 'awaiting_publisher'): entry[key] += int(r[key])
             if len(entry['names']) < 2: entry['names'].append(r['name'])
+            if entry['cover_image'] is None and (r.get('cover_image') or r.get('thumbnail')):
+                entry['cover_image'] = r.get('cover_image') or r.get('thumbnail')
+            if entry['brand_logo'] is None and r.get('brand_logo'):
+                entry['brand_logo'] = r.get('brand_logo')
+            if not entry['brand_name'] and r.get('brand_name'):
+                entry['brand_name'] = r.get('brand_name')
         for entry in groups.values():
             entry['brand_count'] = len({r.get('rem_brand_id') for r in data['rows'] if r['group_status'] == entry['state'] and (entry['state'] != 'marketing_reference' or r.get('marketing_project_group_id') == entry['id'])})
         rows = sorted(groups.values(), key=lambda r: (r['state'], r['id'] or ''))

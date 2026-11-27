@@ -290,16 +290,16 @@ test('brand form sends only ordinary authored fields and preserves its native id
 });
 
 for (const entry of [
-  { kind: 'section', section: 'narrative', card: '[data-workspace-field="section.concept"]', input: '#section-body-th', value: 'Authored section draft', change: { body: { th: 'Authored section draft', en: 'Reviewed English' }, source_ref: 'Synthetic evidence', ai_exposure: 'internal' } },
-  { kind: 'selling_point', section: 'narrative', card: `[data-workspace-item="${ids.point}"]`, input: '#point-title-th', value: 'Authored point draft', change: { title: { th: 'Authored point draft' }, ai_exposure: 'internal' } },
-  { kind: 'contact', section: 'contacts', card: `[data-workspace-item="${ids.contact}"]`, input: '#contact-value', value: '020000002', change: { value: '020000002', channel: 'phone', ai_exposure: 'internal' } },
-  { kind: 'fact', section: 'facts', card: '[data-workspace-field="project.land_area_sqwah"]', input: '#fact-land_area_sqwah', value: '150', change: { value_number: 150, as_of: '2026-11-04', ai_exposure: 'internal' } },
-  { kind: 'building', section: 'buildings', card: '[data-workspace-item="B-01"]', input: '#building-name-th', value: 'Authored building draft', change: { name: { th: 'Authored building draft' }, skip_floors: [], ai_exposure: 'internal' } },
+  { kind: 'section', section: 'narrative', card: '[data-workspace-field="section.concept"]', input: '#section-body-section\\.concept-th', inline: true, value: 'Authored section draft', change: { body: { th: 'Authored section draft', en: 'Reviewed English' }, source_ref: 'Synthetic evidence', ai_exposure: 'internal' } },
+  { kind: 'selling_point', section: 'narrative', card: `[data-workspace-item="${ids.point}"]`, input: '#point-title-th', inline: false, value: 'Authored point draft', change: { title: { th: 'Authored point draft' }, ai_exposure: 'internal' } },
+  { kind: 'contact', section: 'contacts', card: `[data-workspace-item="${ids.contact}"]`, input: '#contact-value', inline: false, value: '020000002', change: { value: '020000002', channel: 'phone', ai_exposure: 'internal' } },
+  { kind: 'fact', section: 'facts', card: '[data-workspace-field="project.land_area_sqwah"]', input: '#fact-land_area_sqwah', inline: false, value: '150', change: { value_number: 150, as_of: '2026-11-04', ai_exposure: 'internal' } },
+  { kind: 'building', section: 'buildings', card: '[data-workspace-item="B-01"]', input: '#building-name-th', inline: false, value: 'Authored building draft', change: { name: { th: 'Authored building draft' }, skip_floors: [], ai_exposure: 'internal' } },
 ] as const) test(`${entry.kind} actual editor uses saved identity, original revision and its normal fields`, async ({ page }) => {
   const data = await fixture(page);
   await data.visit(`/website/project/${publicId}?tab=data&section=${entry.section}`);
   const card = page.locator(entry.card);
-  await card.locator('button').first().click();
+  if (!entry.inline) await card.locator('button').first().click();
   await page.locator(entry.input).fill(entry.value);
   await expect(page.getByRole('button', { name: new RegExp('^' + text.submit_all) })).toBeDisabled();
   await approveDraft(page, entry.kind);
@@ -508,7 +508,7 @@ test('Approve without Edit can return the exact submitted section with a require
   const data = await fixture(page, ['view', 'approve']);
   data.snapshots.section = { ...data.snapshots.section, state: 'IN_REVIEW', can_approve: true, can_return: true, can_submit: false, can_edit: false, can_save_approve: false };
   await data.visit(`/website/project/${publicId}?tab=data&section=narrative`);
-  await expect(page.locator('#section-body-th')).toHaveCount(0);
+  await expect(page.locator('#section-body-section\\.concept-th')).toHaveCount(0);
   await controls(page, 'section').getByRole('button', { name: text.return, exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('button', { name: text.return, exact: true })).toBeDisabled();
@@ -529,11 +529,10 @@ test('new sections use the ordinary creation writer before any saved workflow id
     await route.fulfill({ json: { data: created } });
   });
   await data.visit(`/website/project/${publicId}?tab=data&section=narrative`);
-  await page.locator('[data-workspace-field="section.concept"] button').first().click();
-  await page.locator('#section-body-th').fill('First ordinary section draft');
+  await page.locator('#section-body-section\\.concept-th').fill('First ordinary section draft');
   await expect(controls(page, 'section')).toHaveCount(0);
   expect(data.reads.filter(kind => kind === 'section')).toHaveLength(0);
-  await page.locator('form:has(#section-body-th) button:not([type="button"])').click();
+  await page.locator('[data-workspace-field="section.concept"] button[type="submit"]').click();
   await expect(controls(page, 'section')).toBeVisible();
   expect(saves).toEqual([{ expected_revision: 0, changes: { body: { th: 'First ordinary section draft' }, source_ref: null, ai_exposure: 'internal' } }]);
   expect(data.commands).toHaveLength(0);

@@ -187,7 +187,7 @@ test("refreshing the project notice leaves an actual unsaved project form and it
   await page.route("**/api/hub/v1/admin/content/bu-notices?*", route => { noticeReads++; return route.fulfill({ json: { data: { items: [handover(project.public_project_id)], has_more: false } } }); });
   page.on("request", request => { if (request.url().includes(`/projects/${project.public_project_id}`)) sourceReads.push(request.url()); if (request.url().includes("/api/hub/") && request.method() !== "GET") writes.push(request.url()); });
   await page.goto(`/website/project/${project.public_project_id}?tab=data&section=identity`);
-  const input = page.locator("input#public_name"); await expect(input).toBeEditable(); await input.fill("Keep this typed project name");
+  const input = page.locator("#public_name"); await expect(input).toBeEditable(); await input.fill("Keep this typed project name");
   await expect(notices(page).locator("li")).toHaveCount(1); const before = sourceReads.length, previousNotices = noticeReads;
   await notices(page).getByRole("button", { name: T.refresh, exact: true }).click(); await expect.poll(() => noticeReads).toBe(previousNotices + 1); await expect(notices(page).locator("li")).toHaveCount(1);
   await expect(input).toHaveValue("Keep this typed project name"); expect(sourceReads).toHaveLength(before); expect(writes).toEqual([]);

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 import json
 from threading import Event
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import asyncpg
 from fastapi.testclient import TestClient
@@ -22,6 +22,31 @@ PREFIX = "/v1/admin/assistant"
 TOKENS = {role: "assistant-test-" + role + "x" * 40 for role in DEMO_ROLES}
 PROJECT = "prj_assistant_synthetic"
 STAMP = "2026-10-01T00:00:00+00:00"
+
+
+@pytest.mark.parametrize("synthetic", [True, False])
+def test_promotion_reader_uses_exact_published_project_scope(monkeypatch, synthetic):
+    project, promotion, version = [str(uuid4()) for _ in range(3)]
+    calls = []
+
+    async def query(self, statement, *args, **kwargs):
+        calls.append((statement, args))
+        if "assistant_project_reference" in statement:
+            return project
+        return {"items": [{"id": promotion, "publication_available": True, "published": {
+            "id": version, "payload": {"code": "FROZEN", "benefit_type": "cash_discount",
+                "benefit_value": "100000", "benefit_unit": "THB", "starts_at": STAMP,
+                "ends_at": "2099-12-31T00:00:00+00:00", "synthetic": synthetic}}}]}
+
+    monkeypatch.setattr(ToolReader, "query", query)
+    reader = ToolReader(None, Actor(ALL_DEMO_ACTORS["viewer"], "viewer"), None)
+    result = asyncio.run(reader.get_promotions(
+        TOOL_INPUTS["get_promotions"].model_validate({"project_id": PROJECT}), Evidence("get_promotions")))
+    assert calls[1][1] == ({"published_project_id": project, "limit": 10},)
+    assert result["sources"][0]["version"] == version
+    assert result["sources"][0]["synthetic"] is synthetic
+    benefit = next(fact for fact in result["facts"] if fact["field"] == "benefit_value")
+    assert benefit["value"] == "100000" and benefit["synthetic"] is synthetic
 
 
 def headers(role="editor"):
@@ -275,7 +300,8 @@ def test_model_cannot_omit_promotion_terms_or_validity(boundary, monkeypatch):
     client, store = boundary
     promotion_id, version = str(uuid4()), str(uuid4())
     evidence = Evidence("get_promotions")
-    source = evidence.source("internal_content", "promotion", promotion_id, version, "PUBLISHED", valid_until="2099-12-31T17:00:00+00:00")
+    source = evidence.source("internal_content", "promotion", promotion_id, version, "PUBLISHED",
+                             scope={"project_id": PROJECT}, valid_until="2099-12-31T17:00:00+00:00")
     for field, label, value, kind in (("benefit_value", "มูลค่า", "12000.01", "number"),
         ("legal_terms.th", "เงื่อนไข", "เงื่อนไขสมมติที่ต้องแสดง", "text"),
         ("disclaimer.th", "ข้อความกำกับ", "เป็นข้อมูลทดสอบเท่านั้น", "text"),
@@ -284,8 +310,16 @@ def test_model_cannot_omit_promotion_terms_or_validity(boundary, monkeypatch):
         evidence.fact(source, field, label, value, kind)
     async def reader(self, name, args): return deepcopy(evidence.result)
     original_fetch = store.fetchval
+    project_id = str(uuid4())
+    eligible = True
     async def fetch(sql, *args):
-        if "hub.promotion_read" in sql: return json.dumps({"publication_available": True, "published_version_id": version})
+        if "assistant_project_reference" in sql:
+            assert args == (PROJECT,)
+            return UUID(project_id)
+        if "hub.promotion_read" in sql:
+            assert args == ({"published_project_id": project_id, "published_promotion_id": promotion_id, "limit": 1},)
+            return json.dumps({"items": [{"id": promotion_id, "publication_available": True,
+                "published": {"id": version}}] if eligible else []})
         return await original_fetch(sql, *args)
     async def run(**kwargs):
         result = await kwargs["invoke_tool"]("get_promotions", {"project_id": PROJECT})
@@ -297,6 +331,14 @@ def test_model_cannot_omit_promotion_terms_or_validity(boundary, monkeypatch):
     text = next(value["text"] for name, value in output if name == "answer_delta")
     assert "12,000.01" in text and "เงื่อนไขสมมติที่ต้องแสดง" in text and "เป็นข้อมูลทดสอบเท่านั้น" in text
     assert "เริ่มใช้" in text and "สิ้นสุด" in text and "กรุงเทพฯ" in text
+    cite = next(value for name, value in output if name == "citation")
+    citation_url = cite["href"].removeprefix("/api/hub")
+    assert client.get(citation_url, headers=headers()).status_code == 200
+    eligible = False
+    assert client.get(citation_url, headers=headers()).status_code == 409
+    unavailable = events(client.post(PREFIX + "/runs", headers=headers(), json={"message": "x"}))
+    assert not any(name in {"answer_delta", "done"} for name, _ in unavailable)
+    eligible = True
     source["valid_until"] = "2000-01-01T00:00:00+00:00"
     expired = events(client.post(PREFIX + "/runs", headers=headers(), json={"message": "x"}))
     assert not any(name in {"answer_delta", "done"} for name, _ in expired)

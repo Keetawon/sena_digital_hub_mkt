@@ -154,7 +154,7 @@ test('publisher approves an attached project file while content is incomplete, w
 test('project table has a sticky header, pagination and no mobile document overflow', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await fixture(page, 'viewer');
-  await page.goto('/website?view=projects');
+  await page.goto('/website?view=projects&playout=table');
   await expect(page.locator('.project-dashboard tbody tr')).toHaveCount(10);
   const header = page.locator('.project-progress-table th').first();
   expect(await header.evaluate(element => getComputedStyle(element).position)).toBe('sticky');

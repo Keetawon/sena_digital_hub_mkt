@@ -2,6 +2,7 @@ import { uploadText } from "../../apps/admin/lib/upload-text";
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { workspaceText } from '../../apps/admin/lib/unified-workspace';
+import { workspaceCopy } from '../../apps/admin/lib/workspace-copy';
 
 // Opt-in only: this suite never targets the actual hosted project or normal local DB.
 test.describe('H1 disposable managed-permission simulation', () => {
@@ -198,8 +199,8 @@ test.describe('H1 disposable managed-permission simulation', () => {
   test('login rejects a control-character external return target', async ({ page }) => {
     await login(page, 'editor', '/\t/attacker.example');
     expect(new URL(page.url()).origin).toBe(origin);
-    await expect(page).toHaveURL(`${origin}/website`);
-    await expect(page.getByRole('heading', { name: workspaceText.website, exact: true })).toBeVisible();
+    await expect(page).toHaveURL(`${origin}/home`);
+    await expect(page.getByRole('heading', { name: workspaceCopy.greeting, exact: true })).toBeVisible();
   });
 
   test('R2 Knowledge originals are private, thumbnails are checked, and preview processing stays off', async ({page}) => {

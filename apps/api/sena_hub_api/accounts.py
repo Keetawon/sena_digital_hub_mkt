@@ -1,7 +1,16 @@
+import asyncio
+import hashlib
+import io
+import os
+import re
+import tempfile
+from pathlib import Path
 from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Depends, Request, HTTPException
+from fastapi.responses import Response
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict, Field, AwareDatetime, StrictBool, field_validator, model_validator
 
 from .auth import Actor, failure
@@ -21,6 +30,7 @@ ACCESS_FIELD_MESSAGES = {
 
 ACCOUNT_ERRORS = {
     'account_self_decision': (403, 'ไม่สามารถตัดสินใจหรือเปลี่ยนสิทธิ์ของบัญชีตนเองได้'),
+    'account_company_locked': (403, 'บัญชีเอเจนซีไม่สามารถเปลี่ยนประเภทหรือชื่อบริษัทด้วยตนเองได้'),
     'account_last_admin': (403, 'ต้องเหลือผู้ดูแลระบบที่ใช้งานอยู่ อย่างน้อยหนึ่งคน'),
     'account_agency_invalid': (422, 'กรุณาเลือกรหัสเอเจนซีที่ถูกต้องและยังใช้งานอยู่'),
     'account_reject_reason': (422, 'กรุณาระบุเหตุผลที่ปฏิเสธ'),
@@ -66,6 +76,128 @@ class AccessRequest(AccountProfile):
 
 class InviteAcceptance(AccountProfile):
     invite_id: UUID
+
+
+class SelfProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    display_name_th: str = Field(min_length=1, max_length=200, pattern='[ก-๙]')
+    phone: str = Field(pattern=r'^\+?[0-9 ()-]{8,30}$')
+    team: str = Field(min_length=1, max_length=200)
+    company_type: Literal['SENA', 'SENA_SUBSIDIARY', 'AGENCY', 'CONTRACTOR']
+    company_name: str | None = Field(default=None, max_length=200, validate_default=True)
+    position: str = Field(min_length=1, max_length=100)
+
+    @field_validator('company_name')
+    @classmethod
+    def company_required(cls, value, info):
+        if info.data.get('company_type') not in (None, 'SENA') and not value:
+            raise ValueError('Company name required')
+        return value
+
+
+AVATAR_MAX_BYTES = 2 * 1024 * 1024
+AVATAR_FORMATS = {'JPEG', 'PNG', 'WEBP'}
+AVATAR_MIME_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
+AVATAR_KEY_RE = re.compile(r'^avatars/[0-9a-f-]{36}/[0-9a-f]{64}\.webp$')
+
+
+def _local_avatar_path(key: str) -> Path:
+    from .assets import STORAGE_ROOT
+    if not AVATAR_KEY_RE.fullmatch(key):
+        raise failure(404, 'file_not_found', 'ไม่พบรูปโปรไฟล์ที่ระบุ')
+    root = STORAGE_ROOT.resolve()
+    target = (root / key).resolve()
+    if root not in target.parents:
+        raise failure(404, 'file_not_found', 'ไม่พบรูปโปรไฟล์ที่ระบุ')
+    return target
+
+
+def _write_local_avatar(key: str, content: bytes) -> None:
+    path = _local_avatar_path(key)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.is_file():
+        return
+    temp = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix='.avatar-', delete=False) as handle:
+            temp = Path(handle.name)
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp, path)
+    finally:
+        if temp is not None:
+            temp.unlink(missing_ok=True)
+
+
+def _read_local_avatar(key: str, checksum: str, size: int) -> bytes:
+    path = _local_avatar_path(key)
+    if not path.is_file():
+        raise failure(404, 'file_not_found', 'ไม่พบรูปโปรไฟล์')
+    data = path.read_bytes()
+    if len(data) != size or hashlib.sha256(data).hexdigest() != checksum:
+        raise failure(503, 'file_unavailable', 'ไฟล์รูปโปรไฟล์ไม่ตรงกับข้อมูลอ้างอิง')
+    return data
+
+
+def _delete_local_avatar(key: str) -> None:
+    try:
+        path = _local_avatar_path(key)
+        path.unlink(missing_ok=True)
+    except (OSError, HTTPException):
+        pass
+
+
+def _normalize_avatar_webp(raw: bytes) -> bytes:
+    if not raw or len(raw) > AVATAR_MAX_BYTES:
+        raise failure(422, 'invalid_file', 'ไฟล์รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MiB')
+    head = raw[:512].lstrip().lower()
+    if b'<svg' in head or head.startswith(b'<?xml'):
+        raise failure(422, 'unsupported_file', 'รองรับเฉพาะไฟล์ภาพ PNG, JPEG หรือ WebP (ไม่รองรับ SVG)')
+    from .upload_optimization import _private_decoding
+    with _private_decoding():
+        try:
+            with Image.open(io.BytesIO(raw)) as img:
+                if img.format not in AVATAR_FORMATS:
+                    raise failure(422, 'unsupported_file', 'รองรับเฉพาะไฟล์ภาพ PNG, JPEG หรือ WebP')
+                if img.width * img.height > 40_000_000:
+                    raise failure(422, 'invalid_file', 'ขนาดความละเอียดภาพสูงเกินกำหนด')
+                oriented = ImageOps.exif_transpose(img)
+                mode = 'RGBA' if oriented.mode in ('RGBA', 'LA') or (oriented.mode == 'P' and 'transparency' in oriented.info) else 'RGB'
+                converted = oriented.convert(mode)
+                fitted = ImageOps.fit(converted, (256, 256), method=Image.Resampling.LANCZOS)
+                buf = io.BytesIO()
+                fitted.save(buf, format='WEBP', quality=84, method=4)
+                output = buf.getvalue()
+        except HTTPException:
+            raise
+        except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError, TypeError):
+            raise failure(422, 'invalid_file', 'ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาเลือกไฟล์ PNG, JPEG หรือ WebP ที่สมบูรณ์') from None
+    if not output or len(output) > AVATAR_MAX_BYTES:
+        raise failure(422, 'invalid_file', 'ไฟล์รูปโปรไฟล์หลังแปลงมีขนาดเกินกำหนด')
+    return output
+
+
+async def _read_avatar_upload_bytes(request: Request) -> bytes:
+    content_type = (request.headers.get('content-type') or '').split(';', 1)[0].strip().lower()
+    if content_type in AVATAR_MIME_TYPES:
+        data = await request.body()
+        if len(data) > AVATAR_MAX_BYTES:
+            raise failure(413, 'file_too_large', 'ไฟล์รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MiB')
+        return data
+    if content_type == 'multipart/form-data':
+        form = await request.form()
+        file = form.get('file')
+        if file is None or not hasattr(file, 'read'):
+            raise failure(422, 'invalid_file', 'กรุณาเลือกไฟล์รูปโปรไฟล์')
+        file_type = (getattr(file, 'content_type', '') or '').split(';', 1)[0].strip().lower()
+        if file_type and file_type not in AVATAR_MIME_TYPES:
+            raise failure(415, 'unsupported_file', 'รองรับเฉพาะไฟล์ภาพ PNG, JPEG หรือ WebP')
+        data = await file.read(AVATAR_MAX_BYTES + 1)
+        if len(data) > AVATAR_MAX_BYTES:
+            raise failure(413, 'file_too_large', 'ไฟล์รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MiB')
+        return data
+    raise failure(415, 'unsupported_file', 'รองรับเฉพาะไฟล์ภาพ PNG, JPEG หรือ WebP')
 
 
 class TemplateRef(BaseModel):
@@ -175,8 +307,11 @@ class PermissionNoticeAck(BaseModel):
 def register_account_routes(app, authentication, database):
     @app.get('/v1/me')
     async def me(request: Request, actor: Actor = Depends(authentication)):
-        async with database(request, actor) as db:
-            scope = await db.fetchval('select hub.content_scope_identity()')
+        if hasattr(request.state, 'content_scope'):
+            scope = request.state.content_scope
+        else:
+            async with database(request, actor) as db:
+                scope = await db.fetchval('select hub.content_scope_identity()')
         return {'data': {**request.state.account, 'content_scope': scope}}
 
     @app.post('/v1/me/access-request')
@@ -190,10 +325,90 @@ def register_account_routes(app, authentication, database):
         async with database(request, actor) as db:
             return {'data': await db.fetchval('select hub.accept_account_invite($1::jsonb)', body.model_dump(mode='json'))}
 
-    @app.get('/v1/accounts/display-names')
-    async def names(request: Request, actor: Actor = Depends(authentication)):
+    async def human_actor(actor: Actor = Depends(authentication)) -> Actor:
+        if actor.role not in ('admin', 'editor', 'publisher', 'viewer', 'online_staff', 'agency'):
+            raise failure(403, 'forbidden', 'บัญชีผู้บริโภคบริการไม่สามารถจัดการโปรไฟล์บุคคลได้')
+        return actor
+
+    async def staff_actor(actor: Actor = Depends(authentication)) -> Actor:
         if actor.role not in ('admin', 'editor', 'publisher', 'viewer', 'online_staff'):
             raise failure(403, 'forbidden', 'เฉพาะทีมงาน')
+        return actor
+
+    @app.patch('/v1/me/profile')
+    async def update_own_profile(body: SelfProfileUpdate, request: Request, actor: Actor = Depends(human_actor)):
+        async with database(request, actor) as db:
+            updated = await db.fetchval('select hub.update_own_profile($1::jsonb)', body.model_dump(mode='json'))
+            scope = await db.fetchval('select hub.content_scope_identity()')
+        return {'data': {**updated, 'role': actor.role, 'agency': actor.agency_code, 'content_scope': scope}}
+
+    @app.post('/v1/me/avatar')
+    async def upload_own_avatar(request: Request, actor: Actor = Depends(human_actor)):
+        raw = await _read_avatar_upload_bytes(request)
+        webp = await asyncio.to_thread(_normalize_avatar_webp, raw)
+        checksum = hashlib.sha256(webp).hexdigest()
+        key = f'avatars/{actor.id}/{checksum}.webp'
+        storage = getattr(request.app.state, 'hosted_assets', None)
+        if storage is not None:
+            await asyncio.to_thread(storage.install_avatar, webp, key, checksum, len(webp))
+        else:
+            await asyncio.to_thread(_write_local_avatar, key, webp)
+        async with database(request, actor) as db:
+            res = await db.fetchval('select hub.set_own_avatar($1,$2,$3,$4)', key, checksum, 'image/webp', len(webp))
+        prev = res.get('previous_object_key')
+        if prev and prev != key:
+            if storage is not None:
+                await asyncio.to_thread(storage.delete_avatar, prev)
+            else:
+                await asyncio.to_thread(_delete_local_avatar, prev)
+        return {'data': {'has_avatar': True, 'avatar_updated_at': res.get('avatar_updated_at')}}
+
+    async def _remove_avatar(request: Request, actor: Actor):
+        async with database(request, actor) as db:
+            res = await db.fetchval('select hub.clear_own_avatar()')
+        prev = res.get('previous_object_key')
+        if prev:
+            storage = getattr(request.app.state, 'hosted_assets', None)
+            if storage is not None:
+                await asyncio.to_thread(storage.delete_avatar, prev)
+            else:
+                await asyncio.to_thread(_delete_local_avatar, prev)
+        return {'data': {'has_avatar': False, 'avatar_updated_at': None}}
+
+    @app.delete('/v1/me/avatar')
+    async def delete_own_avatar(request: Request, actor: Actor = Depends(human_actor)):
+        return await _remove_avatar(request, actor)
+
+    @app.post('/v1/me/avatar/remove')
+    async def remove_own_avatar(request: Request, actor: Actor = Depends(human_actor)):
+        return await _remove_avatar(request, actor)
+
+    async def _serve_avatar(target_id: UUID, request: Request, actor: Actor):
+        async with database(request, actor) as db:
+            meta = await db.fetchval('select hub.read_avatar_metadata($1)', target_id)
+        if not meta:
+            raise failure(404, 'file_not_found', 'ยังไม่มีรูปโปรไฟล์')
+        storage = getattr(request.app.state, 'hosted_assets', None)
+        if storage is not None:
+            content = await asyncio.to_thread(storage.read_avatar, meta['object_key'], meta['sha256'], meta['size_bytes'])
+        else:
+            content = await asyncio.to_thread(_read_local_avatar, meta['object_key'], meta['sha256'], meta['size_bytes'])
+        return Response(
+            content=content,
+            media_type='image/webp',
+            headers={'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'},
+        )
+
+    @app.get('/v1/me/avatar')
+    async def get_own_avatar(request: Request, actor: Actor = Depends(human_actor)):
+        return await _serve_avatar(actor.id, request, actor)
+
+    @app.get('/v1/accounts/{account_id}/avatar')
+    async def get_account_avatar(account_id: UUID, request: Request, actor: Actor = Depends(staff_actor)):
+        return await _serve_avatar(account_id, request, actor)
+
+    @app.get('/v1/accounts/display-names')
+    async def names(request: Request, actor: Actor = Depends(staff_actor)):
         async with database(request, actor) as db:
             return {'data': [dict(row) for row in await db.fetch('select * from hub.account_display_names()')]}
 

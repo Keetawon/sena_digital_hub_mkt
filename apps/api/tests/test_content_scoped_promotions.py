@@ -14,7 +14,7 @@ from test_real_promotions import command, draft, english
 from test_website_content import project_fixture
 
 
-def test_shared_promotion_partial_editor_preserves_hidden_targets_and_exclusions(permission_accounts):
+def test_shared_promotion_partial_editor_can_read_but_cannot_mutate_hidden_scope(permission_accounts):
     _, ids = permission_accounts
     async def check():
         async with scope_database() as db:
@@ -51,13 +51,13 @@ def test_shared_promotion_partial_editor_preserves_hidden_targets_and_exclusions
             resolved = await call(db, ids['editor'], 'select hub.promotion_resolve($1)', proposal)
             assert resolved['scope_hash'] == original_hash and resolved['count'] == 3
             assert resolved['items'] == visible['scope']['items'] and resolved['applicability_complete'] is False
-            changed = await command(db, ids['editor'], 'update', visible,
-                                    audience='investor', targets=visible['targets'], excluded_project_ids=[])
-            stored = await db.fetchrow('select project_id,targets,excluded_project_ids from hub.public_promotions where id=$1', promotion)
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await command(db, ids['editor'], 'update', visible,
+                              audience='investor', targets=visible['targets'], excluded_project_ids=[])
+            stored = await db.fetchrow('select project_id,targets,excluded_project_ids,draft_revision from hub.public_promotions where id=$1', promotion)
             assert stored['project_id'] == b['id'] and stored['targets'] == targets and stored['excluded_project_ids'] == [d['id']]
-            assert changed['draft_revision'] == visible['draft_revision'] + 1
-            with pytest.raises(asyncpg.SerializationError):
-                await call(db, ids['editor'], 'select hub.promotion_resolve($1)', proposal)
+            assert stored['draft_revision'] == visible['draft_revision']
+            assert (await call(db, ids['editor'], 'select hub.promotion_resolve($1)', proposal))['scope_hash'] == original_hash
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['editor'], 'select hub.promotion_resolve($1)', {'project_id': str(b['id'])})
             assert await call(db, ids['editor'], 'select hub.promotion_resolve($1)', {'project_id': str(a['id'])})
@@ -65,13 +65,13 @@ def test_shared_promotion_partial_editor_preserves_hidden_targets_and_exclusions
             before = await db.fetchval('select to_jsonb(p) from hub.public_promotions p where id=$1', promotion)
             audit_before = await db.fetchval('select count(*) from audit.change_log')
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
-                await command(db, ids['editor'], 'update', changed, targets=[], excluded_project_ids=[str(a['id'])])
+                await command(db, ids['editor'], 'update', visible, targets=[], excluded_project_ids=[str(a['id'])])
             assert await db.fetchval('select to_jsonb(p) from hub.public_promotions p where id=$1', promotion) == before
             assert await db.fetchval('select count(*) from audit.change_log') == audit_before
     asyncio.run(check())
 
 
-def test_brand_owned_promotion_uses_any_editor_scope_and_all_reviewer_scope(permission_accounts):
+def test_brand_owned_promotion_requires_all_editor_and_reviewer_scope(permission_accounts):
     from test_content_workflow import inventory_brand_fixture
     _, ids = permission_accounts
     async def check():
@@ -85,10 +85,18 @@ def test_brand_owned_promotion_uses_any_editor_scope_and_all_reviewer_scope(perm
             await selected(db, ids['editor'], 'brands', 'view', [a['rem_project_id']])
             body = draft(a['id'], owning_brand_id=str(brand['id']))
             body['project_id'] = None
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await command(db, ids['editor'], 'create', **body)
+            for level in ('view', 'edit'):
+                await selected(db, ids['editor'], 'promotions', level, [a['rem_project_id'], b['rem_project_id']])
+            await selected(db, ids['editor'], 'projects', 'view', [a['rem_project_id'], b['rem_project_id']])
+            await selected(db, ids['editor'], 'brands', 'view', [a['rem_project_id'], b['rem_project_id']])
             row = await command(db, ids['editor'], 'create', **body)
             assert row['project_id'] is None and row['owning_brand_id'] == str(brand['id'])
-            assert row['scope']['count'] == 2 and row['scope']['items'][0]['id'] == str(a['id'])
-            assert row['applicability_complete'] is False
+            assert row['scope']['count'] == 2 and row.get('applicability_complete', True) is True
+            assert {item['id'] for item in row['scope']['items']} == {str(a['id']), str(b['id'])}
+            for level in ('view', 'edit'):
+                await selected(db, ids['editor'], 'promotions', level, [a['rem_project_id']])
             for level in ('view', 'approve'):
                 await selected(db, ids['publisher'], 'promotions', level, [a['rem_project_id']])
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
@@ -160,9 +168,32 @@ def test_old_promotion_version_scope_stays_frozen_after_a_later_draft_moves(perm
             assert await call(db, ids['viewer'], 'select count(*) from hub.promotion_versions where id=$1', version) == 1
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 await call(db, ids['viewer'], 'select hub.promotion_read($1)', promotion)
+            live_a = await call(db, ids['viewer'], 'select hub.promotion_read(null,$1)',
+                                {'published_project_id': str(a['id']), 'limit': 50})
+            live_row = next(item for item in live_a['items'] if item['id'] == row['id'])
+            assert live_row['published']['id'] == str(version)
+            assert live_row['publication_available'] is True
+            assert 'target_project_ids' not in live_row['published']['payload']
+            assert 'editors' not in live_row['published']['payload']
+            run = await call(db, ids['viewer'], 'select internal.assistant_run_create($1)',
+                             {'mode': 'SYNTHETIC', 'config_version': 'multi-tier-regression'})
+            receipt = await call(db, ids['viewer'], 'select internal.assistant_tool_record($1,$2)', UUID(run['id']),
+                                 {'tool_name': 'get_promotions', 'outcome': 'SUCCESS', 'duration_ms': 1, 'sources': [{
+                                     'namespace': 'internal_content', 'entity_type': 'promotion', 'entity_id': str(promotion),
+                                     'version': str(version), 'scope': {'project_id': a['public_project_id']}}]})
+            citation_id = UUID(receipt['citations'][0]['id'])
+            citation = await call(db, ids['viewer'], 'select internal.assistant_citation_read($1,$2)', UUID(run['id']), citation_id)
+            assert citation['scope'] == {'project_id': a['public_project_id']}
+            history = await call(db, ids['viewer'], 'select internal.assistant_run_read($1)', UUID(run['id']))
+            assert history['citations'][0]['id'] == str(citation_id)
             await selected(db, ids['viewer'], 'promotions', 'view', [b['rem_project_id']])
             await selected(db, ids['viewer'], 'projects', 'view', [b['rem_project_id']])
             assert await call(db, ids['viewer'], 'select count(*) from hub.promotion_versions where id=$1', version) == 0
             current = await call(db, ids['viewer'], 'select hub.promotion_read($1)', promotion)
             assert current['id'] == row['id'] and current['versions'] == []
+            live_b = await call(db, ids['viewer'], 'select hub.promotion_read(null,$1)',
+                                {'published_project_id': str(b['id']), 'limit': 50})
+            assert row['id'] not in [item['id'] for item in live_b['items']]
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await call(db, ids['viewer'], 'select internal.assistant_citation_read($1,$2)', UUID(run['id']), citation_id)
     asyncio.run(check())

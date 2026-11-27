@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type ReactNode } from "react";
+import Link from "next/link";
 import "./hub-navigation.css";
 
 import { hubPages, hubServices, hubUtilities, hubPermissionTab, type HubMenuItem } from "./hub-navigation-data";
@@ -13,14 +14,14 @@ function NavIcon({ path }: { path: string }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={path} /></svg>;
 }
 
-function NavLink({ item, current, count }: { item: Item; current: string; count?: number | null }) {
+function NavLink({ item, current, count, onNavigate }: { item: Item; current: string; count?: number | null; onNavigate?: () => void }) {
   const countDescription = item.key === "accounts" ? "บัญชีรออนุมัติ" : typeof count === "number" ? `รอเผยแพร่ ${count} แบรนด์` : "ยังยืนยันจำนวนรอเผยแพร่ไม่ได้ เปิดรายการแบรนด์เพื่อตรวจสอบ";
-  const separateQueue = item.key === "website" && count !== undefined;
-  const link = <a className={`nav-link${item.key === current ? " active" : ""}`} href={item.href} aria-label={item.label} title={item.label} aria-description={!separateQueue && count !== undefined ? countDescription : undefined} aria-current={item.key === current ? "page" : undefined}>
+  const separateQueue = item.key === "km-brands" && count !== undefined;
+  const link = <Link prefetch={false} className={`nav-link${item.key === current ? " active" : ""}`} href={item.href} aria-label={item.label} title={item.label} aria-description={!separateQueue && count !== undefined ? countDescription : undefined} aria-current={item.key === current ? "page" : undefined} onClick={onNavigate}>
     <NavIcon path={item.icon} /><span className="hub-nav-label">{item.label}</span><span className="hub-nav-tooltip" role="tooltip">{item.label}</span>
     {!separateQueue && count !== undefined && <span className="hub-nav-count" aria-label={countDescription} title={countDescription}>{count ?? "…"}</span>}
-  </a>;
-  return separateQueue ? <div className="hub-nav-link-row">{link}<a className="hub-brand-count-link" href="/website?view=brands" aria-label={countDescription} title={countDescription}><span className="hub-nav-count">{count ?? "…"}</span><span className="hub-nav-tooltip" role="tooltip">{countDescription}</span></a></div> : link;
+  </Link>;
+  return separateQueue ? <div className="hub-nav-link-row">{link}<Link prefetch={false} className="hub-brand-count-link" href="/website?view=brands" aria-label={countDescription} title={countDescription} onClick={onNavigate}><span className="hub-nav-count">{count ?? "…"}</span><span className="hub-nav-tooltip" role="tooltip">{countDescription}</span></Link></div> : link;
 }
 
 function Disclosure({ name, label, icon, current, service = false, children }: { name: string; label: string; icon?: string; current: boolean; service?: boolean; children: ReactNode }) {
@@ -44,7 +45,7 @@ function Disclosure({ name, label, icon, current, service = false, children }: {
   </section>;
 }
 
-export function HubNavigation({ current, location }: { current: string; location: string }) {
+export function HubNavigation({ current, location, onNavigate }: { current: string; location: string; onNavigate?: () => void }) {
   const accounts = useHubPermissions();
   const { pendingCount } = useBrandReviews();
   const query = new URL(location, "https://hub.invalid").searchParams;
@@ -61,8 +62,8 @@ export function HubNavigation({ current, location }: { current: string; location
     if (item.projectContext && query.get("project")) href.searchParams.set("project", query.get("project")!);
     return { key: item.key, href: href.pathname + href.search + href.hash, label: item.label ?? tab?.label_th ?? page.label, icon: item.icon ?? page.icon };
   }
-  const count = (item: Item) => item.key === "website" && accounts.can("brands", "approve") ? pendingCount : item.key === "accounts" ? accounts.pending ?? null : undefined;
-  const links = (items: Item[]) => items.map(item => <NavLink key={item.key} item={item} current={current} count={count(item)} />);
+  const count = (item: Item) => item.key === "km-brands" && accounts.can("brands", "approve") ? pendingCount : item.key === "accounts" ? accounts.pending ?? null : undefined;
+  const links = (items: Item[]) => items.map(item => <NavLink key={item.key} item={item} current={current} count={count(item)} onNavigate={onNavigate} />);
   const services = hubServices.map(service => ({ ...service, groups: service.groups.map(group => ({ ...group, items: group.items.map(resolve).filter((item): item is Item => item !== null) })).filter(group => group.items.length) })).filter(service => service.groups.length);
   const utilities = hubUtilities.map(resolve).filter((item): item is Item => item !== null);
   return <nav className="hub-navigation" aria-label="เมนูหลัก">

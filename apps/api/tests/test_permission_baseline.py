@@ -43,7 +43,8 @@ CONTEXTUAL_PROMOTIONS = json.loads((ROOT / 'tests/permissions/contextual-promoti
 BUSINESS = json.loads((ROOT / 'tests/permissions/business-content-routes.json').read_text(encoding='utf-8'))
 SCOPES = json.loads((ROOT / 'tests/permissions/content-scope-routes.json').read_text(encoding='utf-8'))
 WRITING = json.loads((ROOT / 'tests/permissions/content-writing-routes.json').read_text(encoding='utf-8'))
-ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes'] + WORKFLOW['routes'] + BUSINESS['routes'] + CONTEXTUAL_PROMOTIONS['routes'] + SCOPES['routes'] + WRITING['routes']
+EVENTS = json.loads((ROOT / 'tests/permissions/event-routes.json').read_text(encoding='utf-8'))
+ROUTES += WORKSPACE['routes'] + ENTITY_WORKSPACE['routes'] + WORKFLOW['routes'] + BUSINESS['routes'] + CONTEXTUAL_PROMOTIONS['routes'] + SCOPES['routes'] + WRITING['routes'] + EVENTS['routes']
 STATES = ('ACTIVE', 'PENDING', 'REJECTED', 'SUSPENDED')
 INLINE_READS = {'/v1/me', '/v1/accounts/display-names', '/v1/capabilities', '/v1/admin/questions'}
 
@@ -127,7 +128,8 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     assert len(BUSINESS['routes']) == 5
     assert len(SCOPES['routes']) == 6
     assert len(WRITING['routes']) == 2
-    assert len(PROJECT_CONTENT['routes']) == 32
+    assert len(EVENTS['routes']) == 11
+    assert len(PROJECT_CONTENT['routes']) == 35
     assert len(MEDIA['routes']) == 18  # H5e adds the projects/view AI-state read.
     assert len(COMMERCIAL['routes']) == 6
     assert len(CONTEXTUAL_PROMOTIONS['routes']) == 3
@@ -137,7 +139,7 @@ def test_every_concrete_route_has_a_reviewed_permission_mapping(baseline_client)
     assert len(ARTICLES['routes']) == 8
     assert len(WEB['routes']) == 14
     assert len(AMENITIES['routes']) == 11
-    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes']) + len(WORKFLOW['routes']) + len(BUSINESS['routes']) + len(SCOPES['routes']) + len(WRITING['routes']) + len(CONTEXTUAL_PROMOTIONS['routes'])
+    assert len(expected) == len(ROUTES) == 200 + len(FOUNDATION['routes']) + len(SHARED['routes']) + len(ACCOUNTS_UI['routes']) + len(PROJECT_CONTENT['routes']) + len(MEDIA['routes']) + len(UNITS['routes']) + len(FAQ_INTAKE['routes']) + len(COMMERCIAL['routes']) + len(FAQ_COVERAGE['routes']) + len(AMENITIES['routes']) + len(ARTICLES['routes']) + len(WEB['routes']) + len(WORKSPACE['routes']) + len(ENTITY_WORKSPACE['routes']) + len(WORKFLOW['routes']) + len(BUSINESS['routes']) + len(SCOPES['routes']) + len(WRITING['routes']) + len(CONTEXTUAL_PROMOTIONS['routes']) + len(EVENTS['routes'])
     assert actual == expected, {'unmapped': sorted(actual - expected), 'removed': sorted(expected - actual)}
     assert all(r['tab'] and r['level'] in {'view', 'edit', 'approve', 'admin', 'other', 'edit/approve'} for r in ROUTES)
 

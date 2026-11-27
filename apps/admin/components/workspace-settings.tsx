@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useHubPermissions } from "./accounts";
 import { capabilityKey, isContentAdmin } from "@/lib/hub-permissions";
 import { request } from "./hub-request";
@@ -41,9 +42,9 @@ export function WorkspaceSettings() {
   ];
   const selected = choices.find(item => item.key === location.params.get("section"))?.key ?? choices[0]?.key;
   return <section className="unified-workspace"><h1>{text.settings}</h1><nav className="content-tabs" aria-label={text.settings}>
-    {choices.map(item => <a className="button secondary" aria-current={item.key === selected ? "page" : undefined} key={item.key} href={`/settings?section=${item.key}${item.key === "media-tags" ? "#tags" : item.key === "media-rules" ? "#requirements" : ""}`}>{item.label}</a>)}
-    {admin && permissions.can("knowledge") && <a className="button secondary" href="/knowledge">{text.evidence}</a>}
-    {admin && <a className="button secondary" href="/settings/activity">{text.activity}</a>}
+    {choices.map(item => <Link prefetch={false} className="button secondary" aria-current={item.key === selected ? "page" : undefined} key={item.key} href={`/settings?section=${item.key}${item.key === "media-tags" ? "#tags" : item.key === "media-rules" ? "#requirements" : ""}`}>{item.label}</Link>)}
+    {admin && permissions.can("knowledge") && <Link prefetch={false} className="button secondary" href="/knowledge">{text.evidence}</Link>}
+    {admin && <Link prefetch={false} className="button secondary" href="/settings/activity">{text.activity}</Link>}
   </nav>
     {selected === "bank" && <FaqWorkspace embedded initialSection="bank" onEditingChange={setDirty} />}
     {selected === "glossary" && <FaqWorkspace embedded initialSection="glossary" onEditingChange={setDirty} />}

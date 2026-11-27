@@ -244,7 +244,7 @@ test('all temporary legacy aliases retain exact context and separate REM/public 
 
 test('website hierarchy keeps programmes separate and ambiguous phases individually addressable', async ({ page }) => {
   await persona(page, 'editor');
-  const item = (kind: 'corporate' | 'project' | 'programme', ref: string, children = false) => ({ key: kind + ':' + ref, kind, ref, name: { th: ref }, target: { level: kind, id: ref, tab: 'overview' }, parent: null, has_children: children, visible_phase_count: 1, grouping: { state: 'unconfirmed', group_ref: null, review_href: kind === 'project' ? '/faq?tab=publication' : null } });
+  const item = (kind: 'corporate' | 'project' | 'programme', ref: string, children = false) => ({ key: kind + ':' + ref, kind, ref, name: { th: ref }, target: { level: kind, id: ref, tab: 'overview' }, parent: null, has_children: children, visible_phase_count: 1, grouping: { state: 'unconfirmed', group_ref: null, review_href: kind === 'project' ? `/website/project/${ref}?tab=data` : null } });
   const queries: string[] = [], writes: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/hub/') && request.method() !== 'GET') writes.push(request.url()); });
   await page.route('**/content/workspace/tree?**', route => {
@@ -255,8 +255,10 @@ test('website hierarchy keeps programmes separate and ambiguous phases individua
   await expect(page.locator('.workspace-programmes').getByRole('link', { name: 'LIVNEX', exact: true })).toHaveAttribute('href', '/website/programme/LIVNEX?tab=overview');
   await expect(page.locator('.workspace-tree').getByRole('link', { name: 'LIVNEX', exact: true })).toHaveCount(0);
   await page.locator('.workspace-tree > li > details > summary').click();
-  for (const ref of ['exact-phase-A', 'exact-phase-B']) await expect(page.getByRole('link', { name: ref, exact: true })).toHaveAttribute('href', `/website/project/${ref}?tab=overview`);
-  await expect(page.locator('.workspace-tree a[href="/faq?tab=publication"]')).toHaveCount(2);
+  for (const ref of ['exact-phase-A', 'exact-phase-B']) {
+    await expect(page.getByRole('link', { name: ref, exact: true })).toHaveAttribute('href', `/website/project/${ref}?tab=overview`);
+    await expect(page.locator(`.workspace-tree a[href="/website/project/${ref}?tab=data"]`)).toHaveText('แก้ไขข้อมูล');
+  }
   expect(queries.some(query => query.includes('parent_kind=corporate') && query.includes('parent_ref=sena'))).toBe(true);
   expect(writes).toEqual([]); await fitsWorkspace(page);
   await page.screenshot({ path: 'artifacts/unified-workspace/w3/hierarchy.png', fullPage: true });
@@ -436,7 +438,7 @@ for (const width of [1280, 390]) for (const colorScheme of ['light', 'dark'] as 
   await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
   const project = await projectFixture(page);
   await page.goto(`/website/project/${project.public_project_id}?tab=data&section=identity`);
-  await expect(page.locator('.workspace-persistent-editor input#public_name')).toBeVisible();
+  await expect(page.locator('.workspace-persistent-editor #public_name')).toBeVisible();
   await expectAssistantClearance(page, page.locator('.workspace-persistent-editor'));
   await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-project-enabled-${width}-${colorScheme}.png` });
 });

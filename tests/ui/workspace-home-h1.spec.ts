@@ -44,8 +44,8 @@ test.describe('workspace home in disposable H1', () => {
       await result.click();
       await expect(page).toHaveURL(url => url.pathname === `/website/project/${encodeURIComponent(publicId!)}` && url.searchParams.get('tab') === 'data' && url.searchParams.get('section') === 'identity');
       await expect(page.locator('#workspace-tab-data')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('.workspace-persistent-editor input#public_name')).toBeVisible();
-      await expect(page.locator('.workspace-persistent-editor input#public_name')).not.toBeEditable();
+      await expect(page.locator('.workspace-persistent-editor #public_name')).toBeVisible();
+      await expect(page.locator('.workspace-persistent-editor #public_name')).not.toBeEditable();
       await expectAssistantClearance(page, page.locator('.workspace-persistent-editor'), true);
       await page.screenshot({ path: `artifacts/unified-workspace/polish-p1/after/clearance-project-disabled-${width}-${colorScheme}.png` });
       expect(assistantRequests).toEqual([]);

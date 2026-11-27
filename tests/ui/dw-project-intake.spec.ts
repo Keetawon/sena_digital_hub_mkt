@@ -52,7 +52,7 @@ test('default scope, raw status counts, exceptions and live closed attention are
 
 test('source picker disables missing-brand selection and explains Gold conflict without repairing IDs', async ({page}) => {
   const writes = await setup(page, 'editor');
-  await page.locator('.project-dashboard tbody tr').first().getByRole('button', {name: 'เริ่มกรอก'}).click();
+  await page.locator('.project-dashboard .project-summary-row').first().getByRole('button', {name: 'เริ่มกรอก'}).click();
   const picker = page.locator('#source-picker');
   await expect(picker.locator('#source-brand-P0')).toBeDisabled();
   await expect(picker).toContainText('ต้นทางไม่มีแบรนด์ จึงยังผูกแบรนด์ไม่ได้');

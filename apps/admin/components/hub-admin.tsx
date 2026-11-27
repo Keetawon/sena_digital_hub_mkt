@@ -374,7 +374,8 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
 
   function field(name: keyof Draft, multiline = false, help?: string) {
     const coordinate = name === "latitude" || name === "longitude";
-    const common = { id: name, name, "data-workspace-field": `project.${name}`, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty || Boolean(workflowActive) || mediaEditing, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(previous => previous ? { ...previous, [name]: event.target.value } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
+    const singleLineExpand = name === "public_name" || name === "public_name_en" || name === "meta_title" || name === "meta_title_en";
+    const common = { id: name, name, "data-workspace-field": `project.${name}`, form: "project-details-form", value: draft![name], disabled: !canEdit || saving || relatedDirty || Boolean(workflowActive) || mediaEditing, onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { const next = singleLineExpand ? event.target.value.replace(/[\r\n]+/g, " ") : event.target.value; setDraft(previous => previous ? { ...previous, [name]: next } : previous); setFieldErrors(previous => ({ ...previous, [name]: undefined })); setNotice(""); },
       onBlur: () => { if (coordinate) setFieldErrors(previous => ({ ...previous, [name]: coordinateError(name, draft![name]) })); },
       onPaste: (event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (!coordinate) return;
@@ -386,7 +387,7 @@ export function ProjectDetail({ projectId, role, onDirtyChange, embeddedTab, onR
         setNotice("");
       },
       "aria-invalid": Boolean(fieldErrors[name]), "aria-describedby": [help ? `${name}-help` : "", fieldErrors[name] ? `${name}-error` : ""].filter(Boolean).join(" ") || undefined };
-    return <div className="form-field"><ContentLabel htmlFor={name} field={contentCatalog?.items.find(field => field.field_key === `project.${name.replace(/_en$/, "")}`)}>{labels[name]}</ContentLabel>{multiline ? <textarea {...common} rows={name === "website_content" ? 16 : name === "ad_disclaimer" ? 4 : 3} maxLength={name === "website_content" ? 200000 : name.startsWith("meta_description") ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
+    return <div className="form-field"><ContentLabel htmlFor={name} field={contentCatalog?.items.find(field => field.field_key === `project.${name.replace(/_en$/, "")}`)}>{labels[name]}</ContentLabel>{multiline || singleLineExpand ? <textarea {...common} rows={singleLineExpand ? 1 : name === "website_content" ? 16 : name === "ad_disclaimer" ? 4 : 3} maxLength={singleLineExpand ? (name.startsWith("public_name") ? 250 : 300) : name === "website_content" ? 200000 : name.startsWith("meta_description") ? 1000 : 5000} /> : <input {...common} type="text" inputMode={name === "latitude" || name === "longitude" ? "decimal" : undefined} maxLength={name.startsWith("public_name") ? 250 : 300} />}{help && <p className="field-help" id={`${name}-help`}>{help}</p>}{fieldErrors[name] && <p className="field-error" id={`${name}-error`}>{fieldErrors[name]}</p>}</div>;
   }
 
   function sourceField(name: string, label: string) {

@@ -4,6 +4,7 @@ import { canOpenPage } from "@/lib/hub-permissions";
 import { workspaceLanding } from "./hub-navigation-data";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { roleLabels, localPersonas } from "@/lib/roles";
 import type { LocalRole } from "@/lib/local-session";
 import { isHubStaff, isContentStaff } from "@/lib/staff";
@@ -72,7 +73,7 @@ export function AdsRegistry({ initialRole, localMode, screen }: { initialRole: L
     } catch (err) { setError(message(err)); setSwitching(false); }
   }
   return <HubShell publisher={enabled && initialRole === "publisher"} section="registry" staff={enabled && isHubStaff(initialRole)} residential={enabled && isContentStaff(initialRole)} registry finance={permissions.can("registry", "edit")} roleLabel={initialRole ? roleLabels[initialRole] : "ยังไม่ได้เลือกบัญชี"} toolbar={localMode && <div className="local-banner" role="note"><p className="local-note"><strong>พื้นที่ทดสอบในเครื่อง</strong></p><label className="role-picker">บัญชีทดสอบ<select aria-label="เลือกบัญชีทดสอบ" value={initialRole ?? ""} disabled={switching} onChange={event => void changeRole(event.target.value)}><option value="" disabled>เลือกบัญชี</option>{localPersonas.map(key => <option key={key} value={key}>{roleLabels[key]}</option>)}</select></label></div>}>
-    <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><a href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</a><a href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</a>{permissions.can("registry", "edit") && !hosted && <a href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</a>}</nav>
+    <nav className="registry-subnav" aria-label="เมนูทะเบียนแคมเปญ"><Link prefetch={false} href="/ads/registry" aria-current={screen === "list" ? "page" : undefined}>รายการชื่อแคมเปญ</Link><Link prefetch={false} href="/ads/registry/inbox" aria-current={screen === "inbox" ? "page" : undefined}>ส่งคืนรหัสแคมเปญ</Link>{permissions.can("registry", "edit") && !hosted && <Link prefetch={false} href="/ads/registry/new" aria-current={screen === "new" ? "page" : undefined}>ลงทะเบียนแคมเปญ</Link>}</nav>
     <h1 id="registry-title" tabIndex={-1}>{screen === "new" ? "ลงทะเบียนแคมเปญ" : screen === "inbox" ? "ส่งคืนรหัสแคมเปญ" : "ทะเบียนแคมเปญ"}</h1>
     <p className="text-muted">{screen === "inbox" ? "ส่งรหัสบัญชีและแคมเปญจากแพลตฟอร์มให้ตรงกับชื่อที่ได้รับ" : "ชื่อกลางสำหรับเปิดแคมเปญและเชื่อมรหัสบนแพลตฟอร์ม"}</p>
     {!settings?.sena_h_approved && <aside className="registry-banner" aria-label="สถานะการอนุมัติรูปแบบชื่อ"><strong>รออนุมัติรูปแบบชื่อ</strong><p>{settings?.test_mode ? "ข้อมูลทดสอบ ห้ามใช้เปิดแคมเปญจริง" : "ยังไม่เปิดการออกชื่อสำหรับใช้งานจริง"}</p></aside>}

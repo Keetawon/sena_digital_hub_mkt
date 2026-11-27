@@ -51,7 +51,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
   // Asset bytes use a bearer-authenticated direct API request, outside Vercel limits.
   if (hosted && (method === "POST" && path === "v1/admin/assets" || method === "GET" && /\/assets\/[^/]+\/file$/.test(path))) return error("กรุณาใช้ช่องทางรับส่งไฟล์ส่วนตัวของ TEST H1", 400);
   const permissionManagement = method === "POST" && (/^v1\/admin\/permissions\/(?:preview|apply)$/.test(path) || /^v1\/admin\/permissions\/notices\/[a-z_]{1,40}\/ack$/.test(path));
-  const accountPath = permissionManagement || method === "GET" && ["v1/me", "v1/accounts/display-names", "v1/admin/accounts", "v1/admin/account-invites", "v1/admin/permissions/catalog"].includes(path) || ["POST", "PATCH"].includes(method) && path === "v1/me/access-request" || method === "POST" && ["v1/me/invite-accept", "v1/admin/account-invites"].includes(path) || method === "POST" && /^v1\/admin\/(?:accounts|account-invites)\/[0-9a-f-]{36}\/decision$/.test(path) || method === "POST" && /^v1\/admin\/accounts\/[0-9a-f-]{36}\/permissions$/.test(path);
+  const accountPath = permissionManagement || method === "GET" && ["v1/me", "v1/me/avatar", "v1/accounts/display-names", "v1/admin/accounts", "v1/admin/account-invites", "v1/admin/permissions/catalog"].includes(path) || method === "GET" && /^v1\/accounts\/[0-9a-f-]{36}\/avatar$/.test(path) || method === "PATCH" && path === "v1/me/profile" || ["POST", "PATCH"].includes(method) && path === "v1/me/access-request" || method === "POST" && ["v1/me/avatar", "v1/me/avatar/remove", "v1/me/invite-accept", "v1/admin/account-invites"].includes(path) || method === "POST" && /^v1\/admin\/(?:accounts|account-invites)\/[0-9a-f-]{36}\/decision$/.test(path) || method === "POST" && /^v1\/admin\/accounts\/[0-9a-f-]{36}\/permissions$/.test(path);
   const questionsRead = method === "GET" && path === "v1/admin/questions";
   const projectContent = contentAllowsApi(path, method);
   const knowledgeRead = method === "GET" && new RegExp(`^v1/admin/knowledge/(?:projects(?:/${id})?|candidates/${financeId}/file)$`).test(path);
@@ -92,7 +92,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
   const operationsFilters = path === "v1/admin/ads/actuals" ? ["month", "agency", "scope", "bud", "limit", "offset"] : path === "v1/admin/ads/document-tracking" ? ["month", "agency", "owner", "status", "overdue", "limit", "offset"] : path === "v1/admin/ads/findings" ? ["month", "agency", "owner", "control_code", "state", "condition", "limit", "offset"] : /^v1\/admin\/ads\/(?:actuals|document-tracking)\//.test(path) ? ["month"] : [];
   const validOperationsQuery = operationsRead && [...query.keys()].every(key => operationsFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200)
     && (!query.has("limit") || /^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!)) && (!query.has("offset") || /^\d{1,8}$/.test(query.get("offset")!));
-  const contentFilters = path === "v1/admin/promotions" ? ["project_id", "limit", "offset"] : path === "v1/admin/releases/candidates" ? ["demo_mode"] : [];
+  const contentFilters = path === "v1/admin/promotions" ? ["project_id", "tier", "brand_id", "project_group_id", "q", "status", "limit", "offset"] : path === "v1/admin/releases/candidates" ? ["demo_mode"] : [];
   const validContentQuery = contentRead && [...query.keys()].every(key => contentFilters.includes(key) && query.getAll(key).length === 1 && (query.get(key)?.length ?? 0) <= 200)
     && (!query.has("project_id") || new RegExp(`^${financeId}$`).test(query.get("project_id")!))
     && (!query.has("limit") || /^(?:[1-9][0-9]?|100)$/.test(query.get("limit")!))
@@ -107,7 +107,11 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     && (!query.has("download") || /^(?:true|false)$/.test(query.get("download")!));
   const validKnowledgeThumbnail = method === "GET" && new RegExp(`^v1/admin/knowledge/candidates/${financeId}/file$`).test(path)
     && [...query.keys()].length === 1 && query.getAll("thumbnail").length === 1 && query.get("thumbnail") === "1";
-  if (request.nextUrl.search && !contentAllowsQuery(path, method, query) && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !validKnowledgeThumbnail && !(method === "GET" && path === "v1/projects"
+  const avatarRead = method === "GET" && (path === "v1/me/avatar" || /^v1\/accounts\/[0-9a-f-]{36}\/avatar$/.test(path));
+  const validAvatarQuery = avatarRead && [...query.keys()].length === 1 && query.getAll("v").length === 1 && /^[A-Za-z0-9._:-]{1,64}$/.test(query.get("v") ?? "");
+  const validProjectSummaryQuery = method === "GET" && path === "v1/admin/projects"
+    && [...query.keys()].length === 1 && query.getAll("summary").length === 1 && /^(?:1|true)$/.test(query.get("summary") ?? "");
+  if (request.nextUrl.search && !contentAllowsQuery(path, method, query) && !progressQuery && !validBrandQuery && !validAdsQuery && !validFinanceQuery && !validOperationsQuery && !validContentQuery && !validArchiveQuery && !validKnowledgeThumbnail && !validAvatarQuery && !validProjectSummaryQuery && !(method === "GET" && path === "v1/projects"
     && [...query.keys()].length === 1 && query.has("brand_id")
     && new RegExp(`^${id}$`).test(query.get("brand_id") ?? ""))) {
     return error("ไม่รองรับตัวกรองนี้", 404);
@@ -139,6 +143,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     } catch (failure) { if (failure instanceof HubApiUnavailable) return error(unavailableMessage, 503); throw failure; }
   }
   const upload = method === "POST" && path === "v1/admin/assets";
+  const avatarUpload = method === "POST" && path === "v1/me/avatar";
   let body: string | ArrayBuffer | undefined;
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
   const evidence = method === "GET" && new RegExp(`^v1/admin/assets/${id}$`).test(path);
@@ -151,6 +156,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     } catch { return error(uploadText.context_invalid, 422); }
     if (upload && !uploadLimit) return error(uploadText.unsupported, 415);
   }
+  if (avatarUpload) uploadLimit = 2 * 1024 * 1024;
   if (archiveFile && request.headers.has("range")) {
     const range = request.headers.get("range")!;
     if (!/^bytes=(?:\d{1,12}-\d{0,12}|-\d{1,12})$/.test(range)) return error("ไม่รองรับช่วงข้อมูลไฟล์นี้", 416);
@@ -168,7 +174,8 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     return key;
   }
   if (method !== "GET") {
-    const limit = upload ? uploadLimit : assistantWrite ? 20_000 : 100_000;
+    const avatarTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+    const limit = upload || avatarUpload ? uploadLimit : assistantWrite ? 20_000 : 100_000;
     const length = request.headers.get("content-length");
     if (length && !/^\d+$/.test(length)) return error(uploadText.context_invalid, 400);
     if (length && Number(length) > limit) return error("ข้อมูลมีขนาดเกินกำหนด", 413);
@@ -179,6 +186,10 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
       if (!filename || filename.length > 2400) return error("กรุณาระบุชื่อไฟล์ที่ถูกต้อง", 422);
       headers["Content-Type"] = type;
       headers["X-Filename"] = filename;
+    } else if (avatarUpload) {
+      const type = (request.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();
+      if (!avatarTypes.has(type)) return error("รองรับเฉพาะ PNG, JPEG หรือ WebP", 415);
+      headers["Content-Type"] = type;
     } else headers["Content-Type"] = "application/json";
     if (upload) {
       // Only an authenticated, current caller with valid headers may take the
@@ -195,26 +206,29 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     const chunks: Uint8Array[] = [];
     const reader = request.body?.getReader();
     let size = 0;
-    if (!reader) return error("ไม่พบข้อมูลที่ส่งมา", 400);
-    const bodyAbort = upload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : null;
-    const cancelBody = () => { void reader.cancel().catch(() => {}); };
+    if (!reader && path !== "v1/me/avatar/remove") return error("ไม่พบข้อมูลที่ส่งมา", 400);
+    const bodyAbort = upload || avatarUpload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : null;
+    const cancelBody = () => { void reader?.cancel().catch(() => {}); };
     bodyAbort?.addEventListener("abort", cancelBody, { once: true });
     if (bodyAbort?.aborted) cancelBody();
     try {
-      while (true) {
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        size += chunk.value.byteLength;
-        if (size > limit) { await reader.cancel(); return error("ข้อมูลมีขนาดเกินกำหนด", 413); }
-        chunks.push(chunk.value);
+      if (reader) {
+        while (true) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          size += chunk.value.byteLength;
+          if (size > limit) { await reader.cancel(); return error("ข้อมูลมีขนาดเกินกำหนด", 413); }
+          chunks.push(chunk.value);
+        }
       }
     } catch { return error("รับข้อมูลไม่ครบ กรุณาลองส่งอีกครั้ง", 400); }
-    finally { bodyAbort?.removeEventListener("abort", cancelBody); reader.releaseLock(); }
+    finally { bodyAbort?.removeEventListener("abort", cancelBody); reader?.releaseLock(); }
     if (bodyAbort?.aborted) return error(uploadText.invalid_file, 400);
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-    if (upload) body = bytes.buffer;
+    if (upload || avatarUpload) body = bytes.buffer;
+    else if (size === 0 && path === "v1/me/avatar/remove") body = "{}";
     else {
       body = new TextDecoder().decode(bytes);
       try { JSON.parse(body); } catch { return error("รูปแบบข้อมูลไม่ถูกต้อง", 400); }
@@ -230,7 +244,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     const upstream = await fetch(new URL(`${path}${request.nextUrl.search}`, `${base.origin}/`), {
       method, body, cache: "no-store", redirect: "error",
       headers,
-      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : upload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(path === "v1/me" ? 10_000 : 15_000),
+      signal: streamAbort ? AbortSignal.any([request.signal, streamAbort.signal]) : upload ? AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(path === "v1/me" ? 10_000 : 20_000),
     });
     if (hosted && (upstream.status === 401 || path === "v1/me" && upstream.status >= 500)) {
       releaseStream(); await upstream.body?.cancel().catch(() => {});
@@ -299,8 +313,13 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
       if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/png") return error("รูปแบบหน้าหลักฐานไม่ถูกต้อง กรุณาเปิดไฟล์ต้นฉบับ", 502);
       return new NextResponse(upstream.body, { status: upstream.status, headers: { "Content-Type": "image/png", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Content-Security-Policy": "default-src 'none'; sandbox; frame-ancestors 'none'" } });
     }
+    if (upstream.ok && avatarRead) {
+      if (upstream.headers.get("Content-Type")?.split(";")[0] !== "image/webp") return error("รูปแบบรูปโปรไฟล์ไม่ถูกต้อง", 502);
+      return new NextResponse(upstream.body, { status: upstream.status, headers: { "Content-Type": "image/webp", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+    }
     if ((upstream.ok || archiveFile && upstream.status === 416) && method === "GET" && (path.endsWith("/file") || path.endsWith("/thumbnail"))) {
-      const downloadHeaders = new Headers({ "Cache-Control": archiveFile ? "private, no-store" : "no-store", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": archiveFile ? "default-src 'none'; sandbox; frame-ancestors 'self'" : "default-src 'none'; sandbox; frame-ancestors 'none'", "X-Frame-Options": archiveFile ? "SAMEORIGIN" : "DENY" });
+      const cachePolicy = !archiveFile && path.endsWith("/thumbnail") ? "private, max-age=300" : archiveFile ? "private, no-store" : "no-store";
+      const downloadHeaders = new Headers({ "Cache-Control": cachePolicy, "X-Content-Type-Options": "nosniff", "Content-Security-Policy": archiveFile ? "default-src 'none'; sandbox; frame-ancestors 'self'" : "default-src 'none'; sandbox; frame-ancestors 'none'", "X-Frame-Options": archiveFile ? "SAMEORIGIN" : "DENY" });
       for (const name of ["Content-Type", "Content-Disposition", "Content-Length", ...(archiveFile ? ["Content-Range", "Accept-Ranges"] : [])]) {
         const value = upstream.headers.get(name);
         if (value) downloadHeaders.set(name, value);
@@ -315,6 +334,7 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
   } catch (failure) {
     releaseStream(); streamAbort?.abort();
     if (privateContent && (failure instanceof ContentAuthorityChanged || failure instanceof HubApiUnavailable)) return NextResponse.json({ error: { code: "content_authority_changed", message: failure instanceof ContentAuthorityChanged ? failure.message : unavailableMessage, invalidate_access: true } }, { status: failure instanceof ContentAuthorityChanged ? failure.status : 503, headers: { "Cache-Control": "private, no-store" } });
+    if (!hosted && failure instanceof DOMException && failure.name === "TimeoutError") return error("คำขอใช้เวลาประมวลผลนานเกินกำหนด กรุณาลองอีกครั้ง", 504);
     return error(hosted ? unavailableMessage : "เชื่อมต่อบริการข้อมูลไม่ได้ กรุณาตรวจสอบว่าเปิดบริการ API แล้ว และลองอีกครั้ง", hosted ? 503 : 502);
   }
 }

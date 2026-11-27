@@ -101,13 +101,13 @@ def register_content_workspace_routes(app, authentication, database):
             raise HTTPException(422)
 
     @app.get('/v1/admin/content/workspace/{kind}/{ref}/promotions')
-    async def promotions(kind: Literal['project', 'brand'], ref: Reference, request: Request, response: Response,
+    async def promotions(kind: Literal['project', 'brand', 'project_group', 'corporate'], ref: Reference, request: Request, response: Response,
                          phase: Reference | None = None,
                          filter: Literal['all', 'active', 'in_review', 'draft', 'expired', 'ending_soon', 'banner_missing'] = 'all',
                          limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0, le=100000),
                          item: UUID | None = None, actor: Actor = Depends(staff)):
         promotion_query(request, ('phase', 'filter', 'limit', 'offset', 'item'))
-        if kind == 'brand' and phase is not None:
+        if kind != 'project' and phase is not None:
             raise HTTPException(422)
         return await call(request, response, actor, 'select hub.workspace_promotions($1,$2,$3,$4,$5,$6,$7)',
                           kind, ref, phase, filter, limit, offset, item)

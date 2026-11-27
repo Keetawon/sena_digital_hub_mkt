@@ -27,7 +27,7 @@ async function fixture(page:Page,role='publisher',extraCount=0) {
 
 for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
   test(`brand pages retain selection and reset after filtering at ${viewport.width}x${viewport.height}`,async({page})=>{
-    await page.setViewportSize(viewport);const f=await fixture(page,'publisher',20);await page.goto('/?view=brands');
+    await page.setViewportSize(viewport);const f=await fixture(page,'publisher',20);await page.goto('/?view=brands&blayout=table');
     await refreshSyntheticAuthority(page);
     const top=page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านบน',exact:true});
     const bottom=page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านล่าง',exact:true});
@@ -88,7 +88,7 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
   });
 
   test(`completeness reasons, checks, filter and exact ready-only queue handoff at ${viewport.width}x${viewport.height}`,async({page})=>{
-    await page.setViewportSize(viewport);const f=await fixture(page);await page.goto('/?view=brands');
+    await page.setViewportSize(viewport);const f=await fixture(page);await page.goto('/?view=brands&blayout=table');
     await refreshSyntheticAuthority(page);
     await expect(page.getByRole('button',{name:'ทั้งหมด 4',exact:true})).toBeVisible();
     await expect(page.locator('.brand-table-row td[data-label="ชื่อแบรนด์"]')).toHaveCount(4);
@@ -128,7 +128,7 @@ for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
 
 for(const viewport of [{width:1366,height:768},{width:844,height:390}]) {
   test(`brand headers stay visible inside the scrolling table at ${viewport.width}x${viewport.height}`,async({page})=>{
-    await page.setViewportSize(viewport);await page.emulateMedia({reducedMotion:'reduce'});await fixture(page,'publisher',20);await page.goto('/?view=brands');
+    await page.setViewportSize(viewport);await page.emulateMedia({reducedMotion:'reduce'});await fixture(page,'publisher',20);await page.goto('/?view=brands&blayout=table');
     await refreshSyntheticAuthority(page);
     const table=page.getByRole('region',{name:'ตารางความครบถ้วนของแบรนด์',exact:true});
     await expect(page.locator('.brand-table-row')).toHaveCount(10);
@@ -154,7 +154,7 @@ test('viewer can page through brands without publication controls',async({page})
   await refreshSyntheticAuthority(page);
   await page.getByRole('navigation',{name:'หน้ารายการแบรนด์ด้านบน',exact:true}).getByRole('button',{name:'หน้าถัดไป',exact:true}).click();
   await expect(page.locator('#brand-page-range')).toContainText('แสดง 11–20 จาก 24 รายการ');
-  await expect(page.locator('.brand-table-row').getByRole('checkbox')).toHaveCount(0);
+  await expect(page.locator('.km-brand-card').getByRole('checkbox')).toHaveCount(0);
   await expect(page.locator('.brand-dashboard-actions').getByRole('button',{name:new RegExp(`^${workflowText.queue} \\(`)})).toHaveCount(0);
   expect(f.writes).toEqual([]);
 });
@@ -165,7 +165,7 @@ test('brand last editor displays account names and keeps legacy identities hones
   f.a.updated_by='00000000-0000-0000-0000-000000000005';
   f.b.updated_by='28000000-0000-4000-8000-000000000099';
   await page.goto('/?view=brands');
-  const cells=page.locator('.brand-table-row td[data-label="ปรับปรุงล่าสุด / โดย"]');
+  await page.getByRole('button',{name:'ตารางจัดการ',exact:true}).click();const cells=page.locator('.brand-table-row td[data-label="ปรับปรุงล่าสุด / โดย"]');
   await expect(cells.nth(0)).toContainText('ยังไม่สร้าง');
   await expect(cells.nth(1)).toContainText('สมชาย แก้ไข');
   await expect(cells.nth(2)).toContainText('ผู้ดูแล ตัวอย่าง');

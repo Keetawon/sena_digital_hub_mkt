@@ -1,4 +1,6 @@
-export async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+const inflightGets = new Map<string, Promise<unknown>>();
+
+async function performRequest<T>(path: string, method = "GET", body?: unknown): Promise<T> {
   const response = await fetch(`/api/hub/${path}`, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
   const json = await response.json().catch(() => null);
   if (json?.error?.invalidate_access === true && typeof window !== "undefined") window.dispatchEvent(new Event("hub-content-access-invalidated"));
@@ -10,4 +12,15 @@ export async function request<T>(path: string, method = "GET", body?: unknown): 
     throw error;
   }
   return json.data;
+}
+
+export function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+  if (method !== "GET" || body !== undefined) return performRequest<T>(path, method, body);
+  const existing = inflightGets.get(path);
+  if (existing) return existing as Promise<T>;
+  const pending = performRequest<T>(path, method).finally(() => {
+    if (inflightGets.get(path) === pending) inflightGets.delete(path);
+  });
+  inflightGets.set(path, pending);
+  return pending;
 }

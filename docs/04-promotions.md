@@ -172,3 +172,15 @@ GET /v1/campaigns/{code}
 **ทำตาม REQUIREMENTS.md และแผนส่งมอบ:** โปรโมชั่นที่เกี่ยวกับ 7 โครงการ SENA ใช้ `COMPANY | BRAND | PROJECT_GROUP | PROJECT | MODEL | UNIT`, include/exclude, campaign grouping, approval, ตั้งเวลาเริ่ม–จบ, auto-expire, artwork, API + webhook purge โดยไม่มี `BUSINESS` ใน Phase 1
 
 **ยังไม่ทำ:** โปรโมชั่น standalone ของ Solar/EV/LivNex และ BU อื่นที่ไม่ใช่ residential, คำนวณราคาสุทธิหลังหักโปรฯ (ต้องต่อ pricing engine), โปรฯ เฉพาะบุคคล/โค้ดส่วนลดรายคน (แตะ PDPA), A/B test, การจองสิทธิ์โปรฯ
+## 8. Five-tier promotion implementation (25 November 2026)
+
+This section supersedes the historical tier names and residential-only promotion scope described above.
+
+Migration `202611250097_multi_tier_promotions.sql` extends the existing promotion workflow with campaign, corporate/programme, brand, project-group and project tiers. Owners and tiers are immutable; programme participation, targets and project exclusions belong to the reviewed draft scope. Approved programme membership is resolved from `hub.project_programmes`; project groups use the REM group reference already used by content scopes.
+
+`benefit_items` supports up to 20 localized benefits. The first item supplies the existing primary benefit fields, preserving existing public and assistant consumers. Campaign names/slugs, informational ad campaign references, highlight badges and unit eligibility notes travel with frozen publication snapshots.
+
+Scope reads may remain redacted, but promotion mutations require permission over every project in both the existing and proposed scope. The DATA/LEGAL review separation, exact revision and scope digest, publication authority and immutable version rules remain in place. Source-confirmation approval proposed in document 55 is a separate future change.
+
+The admin workspace provides tier/status filters and one draft editor containing identity, scope, exclusions, benefits, dates and localized copy alongside a website-card preview. Inherited exclusions create a new draft revision; they do not change the live snapshot. Existing translation review and media rights workflows remain authoritative.
+

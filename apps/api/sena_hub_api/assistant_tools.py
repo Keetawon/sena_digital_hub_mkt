@@ -11,7 +11,7 @@ import asyncpg
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from . import naming
-from .auth import Actor, failure
+from .auth import failure
 from .finance import Month
 
 CONTENT_ROLES = frozenset({"editor", "publisher", "viewer", "admin"})
@@ -432,13 +432,13 @@ class ToolReader:
             return e.unavailable("ยังไม่รองรับการยืนยันสถานะโปรโมชั่นย้อนหลัง")
         project = await self.query("SELECT internal.assistant_project_reference($1)", p.project_id)
         if not project: return e.unavailable()
-        rows = await self.query("SELECT hub.promotion_read(null,$1::jsonb)::text", {"project_id": str(project), "limit": 10})
+        rows = await self.query("SELECT hub.promotion_read(null,$1::jsonb)::text", {"published_project_id": str(project), "limit": 10})
         for row in rows.get("items", []):
             published = row.get("published")
             if not row.get("publication_available") or not published: continue
             data = published["payload"]
             source = e.source("internal_content", "promotion", row["id"], published["id"], "PUBLISHED",
-                as_of=now, scope={"project_id": p.project_id}, valid_until=data["ends_at"])
+                as_of=now, scope={"project_id": p.project_id}, valid_until=data["ends_at"], synthetic=bool(data.get("synthetic")))
             source["demo_fields"] = demo_fields(data)
             for field, label, kind in (("code", "รหัสโปรโมชั่น", "identifier"), ("benefit_type", "ประเภทสิทธิประโยชน์", "status"),
                 ("benefit_value", "มูลค่าสิทธิประโยชน์", "number"), ("starts_at", "เริ่มใช้", "date"), ("ends_at", "สิ้นสุด", "date")):

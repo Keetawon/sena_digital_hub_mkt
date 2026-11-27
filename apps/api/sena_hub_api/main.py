@@ -39,6 +39,7 @@ from .business_content import register_business_content_routes
 from .content_scopes import register_content_scope_routes
 from .bu_membership import register_bu_membership_routes
 from .writing_aid import register_writing_aid_routes
+from .events import register_event_routes
 from .content_asset_delivery import staff_asset_response
 from .ads import register_ads_routes
 from .finance import register_finance_routes
@@ -247,7 +248,7 @@ async def database(request: Request, actor: Actor, *, audit_only: bool = False):
     # Every app request uses the base role; SQL resolves table-backed authority.
     # Machine integrations outside this API keep their separate fixed principals.
     category = route_class(request.method, getattr(request.scope.get("route"), "path", None))
-    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation", "content_workspace", "content_workflow", "business_content", "content_writing"}:
+    if not audit_only and category not in {"capability", "own_account", "accounts", "internal", "assistant", "public", "content_registry", "content_translation", "content_workspace", "content_workflow", "business_content", "content_writing", "event_hub"}:
         raise failure(403, "unmapped_permission", "ไม่รองรับสิทธิ์สำหรับคำขอนี้")
     async with request.app.state.pool.acquire() as connection:
         async with connection.transaction():
@@ -283,7 +284,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         broker = None
         try:
             app.state.pool = await asyncpg.create_pool(
-                settings.database_url, min_size=1, max_size=5,
+                settings.database_url, min_size=2, max_size=12,
                 command_timeout=15, init=initialize_connection,
             )
         except Exception:
@@ -342,7 +343,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "ฟิลด์นี้ไม่อนุญาตให้แก้ไข" if issue["type"] == "extra_forbidden" else "รูปแบบหรือค่าของข้อมูลไม่ถูกต้อง"
             ),
         } for issue in error.errors()]
-        if request.url.path in ('/v1/me/access-request', '/v1/me/invite-accept'):
+        if request.url.path in ('/v1/me/access-request', '/v1/me/invite-accept', '/v1/me/profile'):
             from .accounts import ACCESS_FIELD_MESSAGES
             for detail in details:
                 detail['message'] = ACCESS_FIELD_MESSAGES.get(detail['field'].split('.')[0], detail['message'])
@@ -369,11 +370,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             logging.getLogger("sena_hub_api").error(
                 "Database request failed: sqlstate=%s type=%s", error.sqlstate, type(error).__name__,
             )
-            if (error.sqlstate or "").startswith(("08", "53", "57P")):
+            if error.sqlstate == "57014":
+                status, code, message = 504, "query_timeout", "คำขอใช้เวลาประมวลผลนานเกินกำหนด กรุณาลองอีกครั้ง"
+            elif (error.sqlstate or "").startswith(("08", "53", "57P")):
                 status, code, message = 503, "database_unavailable", "ระบบข้อมูลไม่พร้อมใช้งาน กรุณาลองใหม่"
             else:
                 status, code, message = 500, "server_error", "ระบบไม่สามารถดำเนินการได้ กรุณาลองใหม่"
         return JSONResponse({"error": {"code": code, "message": message}}, status)
+
+    @app.exception_handler(TimeoutError)
+    async def database_timeout_error(request, error):
+        logging.getLogger("sena_hub_api").error("Database command timed out: %s", request.url.path)
+        return JSONResponse({"error": {"code": "query_timeout", "message": "คำขอใช้เวลาประมวลผลนานเกินกำหนด กรุณาลองอีกครั้ง"}}, 504)
 
     @app.exception_handler(Exception)
     async def unexpected_error(request, error):
@@ -569,8 +577,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                          "remark": "ยังไม่เปิดใช้ใน H1 รอความพร้อมระยะ H2 ขึ้นไป" if hosted_assets else None}}
 
     @app.get("/v1/admin/projects")
-    async def projects(request: Request, actor: Actor = Depends(admin)):
+    async def projects(request: Request, actor: Actor = Depends(admin), summary: bool = Query(False)):
         async with database(request, actor) as connection:
+            if summary:
+                return {"data": await connection.fetchval("SELECT hub.list_project_summaries()")}
             rows = await connection.fetch("SELECT hub.project_detail(public_project_id) AS detail FROM hub.projects WHERE deleted_at IS NULL ORDER BY public_project_id LIMIT 100")
             return {"data": [row["detail"] for row in rows if row["detail"] is not None]}
 
@@ -978,6 +988,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_content_scope_routes(app, authentication, database)
     register_bu_membership_routes(app, authentication, database)
     register_writing_aid_routes(app, authentication, database)
+    register_event_routes(app, authentication, database)
     register_ads_routes(app, authentication, database, settings)
     register_question_routes(app, authentication, database)
     register_knowledge_routes(app, authentication, database, settings)

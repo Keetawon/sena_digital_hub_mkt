@@ -72,7 +72,7 @@ def test_health_only_and_no_openapi(client):
     ("53300", 503, "database_unavailable", None),
     ("57P01", 503, "database_unavailable", None),
     ("57P05", 503, "database_unavailable", None),
-    ("57014", 500, "server_error", None),
+    ("57014", 504, "query_timeout", "คำขอใช้เวลาประมวลผลนานเกินกำหนด กรุณาลองอีกครั้ง"),
     ("42601", 500, "server_error", None),
     ("XX000", 500, "server_error", None),
     (None, 500, "server_error", None),

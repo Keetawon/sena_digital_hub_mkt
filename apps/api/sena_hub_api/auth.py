@@ -222,10 +222,20 @@ class Authentication:
     async def load_account(self, request: Request, claims: dict) -> dict:
         metadata = claims.get("app_metadata") if isinstance(claims.get("app_metadata"), dict) else {}
         display = claims.get("user_metadata") if isinstance(claims.get("user_metadata"), dict) else {}
+        include_scope = request.url.path == "/v1/me" and request.method == "GET"
         async with request.app.state.pool.acquire() as connection:
             async with connection.transaction():
                 await connection.execute("SET LOCAL ROLE hub_app")
-                await connection.execute("SELECT set_config('app.actor_id', $1, true)", claims["sub"])
-                account = await connection.fetchval("SELECT hub.account_identity($1,$2,$3)", claims["email"],
-                    str(metadata.get("provider", "email")), str(display.get("full_name", "")))
-        return account
+                row = await connection.fetchrow(
+                    "WITH ctx AS MATERIALIZED (SELECT set_config('app.actor_id', $1, true)), "
+                    "acc AS MATERIALIZED (SELECT hub.account_identity($2, $3, $4) AS account FROM ctx) "
+                    "SELECT acc.account, CASE WHEN $5::boolean THEN hub.content_scope_identity() END AS scope FROM acc",
+                    claims["sub"],
+                    claims["email"],
+                    str(metadata.get("provider", "email")),
+                    str(display.get("full_name", "")),
+                    include_scope,
+                )
+        if include_scope:
+            request.state.content_scope = row["scope"]
+        return row["account"]

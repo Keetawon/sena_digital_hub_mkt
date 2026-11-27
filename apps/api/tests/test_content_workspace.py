@@ -851,3 +851,33 @@ def test_readiness_keeps_public_type_and_exact_media_slot_context(permission_acc
 def test_workspace_direct_routes_require_authentication(permission_accounts, path):
     client, _ = permission_accounts
     assert client.get(path).status_code == 401
+
+
+def test_project_summaries_and_tree_edit_href(permission_accounts):
+    client, ids = permission_accounts
+
+    async def setup():
+        return (await setup_project(ids['editor']))[0]
+
+    p = run(setup())
+    full_res = client.get('/v1/admin/projects', headers=h('viewer'))
+    assert full_res.status_code == 200
+    summary_res = client.get('/v1/admin/projects', params={'summary': '1'}, headers=h('viewer'))
+    assert summary_res.status_code == 200
+    summaries = summary_res.json()['data']
+    matched = next((row for row in summaries if row['public_project_id'] == p['public_project_id']), None)
+    assert matched is not None
+    assert set(matched.keys()) >= {'id', 'public_project_id', 'rem_project_id', 'public_name', 'source_name', 'brand_id'}
+    assert 'publication_preview' not in matched
+
+    assert client.get('/v1/admin/projects', params={'summary': '1'}).status_code == 401
+
+    tree_res = client.get('/v1/admin/content/workspace/tree', params={'q': p['public_project_id']}, headers=h('editor'))
+    assert tree_res.status_code == 200
+    node = next(row for row in tree_res.json()['data']['items'] if row['kind'] == 'project' and row['ref'] == p['public_project_id'])
+    assert node['grouping']['review_href'] == f"/website/project/{p['public_project_id']}?tab=data"
+
+    page_res = client.get(f"/v1/admin/content/workspace/project/{p['public_project_id']}", headers=h('editor'))
+    assert page_res.status_code == 200
+    assert page_res.json()['data']['entity']['grouping']['review_href'] is None
+

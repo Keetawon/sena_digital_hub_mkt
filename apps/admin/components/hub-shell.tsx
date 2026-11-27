@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { QuestionProvider } from "./pending-question";
 import { HubAssistant } from "./hub-assistant";
@@ -8,6 +9,7 @@ import { HubNavigation } from "./hub-navigation";
 import { hubGroups, hubPages, hubPermissionTab, hubCurrentMenuKey, hubMenuItem, workspaceLanding, type HubSection } from "./hub-navigation-data";
 import { BrandReviewProvider } from "./brand-review";
 import { SignOut, useHostedSession } from "./hosted-session";
+import { AccountMenu } from "./account-menu";
 import { deferredH1Sections, h1Unavailable } from "@/lib/hosted-config";
 import { canWorkspace, canOpenPage, capabilityKey } from "@/lib/hub-permissions";
 import { accountManagementKey, useHubPermissions } from "./accounts";
@@ -49,7 +51,8 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const menuId = useId();
   useEffect(() => {
     const update = () => setHash(window.location.hash);
-    update(); window.addEventListener("hashchange", update);
+    update();
+    window.addEventListener("hashchange", update);
     return () => window.removeEventListener("hashchange", update);
   }, [pathname, searchParams]);
   useEffect(() => {
@@ -65,6 +68,42 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
     if (!overlay && wasOverlay.current) sidebarToggle.current?.focus();
     wasOverlay.current = overlay;
   }, [narrow, menuOpen, overlay]);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const fitTextarea = (el: HTMLTextAreaElement) => {
+      if (el.dataset.noAutogrow === "true") return;
+      el.style.height = "auto";
+      const next = Math.max(el.scrollHeight + 2, 44);
+      el.style.height = `${next}px`;
+    };
+    const fitAll = () => {
+      document.querySelectorAll<HTMLTextAreaElement>("textarea").forEach(fitTextarea);
+    };
+    let raf = 0;
+    const scheduleFit = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        fitAll();
+      });
+    };
+    const onInputOrFocus = (event: Event) => {
+      if (event.target instanceof HTMLTextAreaElement) fitTextarea(event.target);
+    };
+    fitAll();
+    document.addEventListener("input", onInputOrFocus);
+    document.addEventListener("focusin", onInputOrFocus);
+    window.addEventListener("resize", scheduleFit);
+    const observer = new MutationObserver(scheduleFit);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["open", "hidden", "aria-expanded"] });
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      document.removeEventListener("input", onInputOrFocus);
+      document.removeEventListener("focusin", onInputOrFocus);
+      window.removeEventListener("resize", scheduleFit);
+      observer.disconnect();
+    };
+  }, [location]);
   function closeMenu() { drawer.current?.close(); setMenuOpen(false); setOverlay(false); }
   function toggleSidebar() {
     if (medium) { setOverlay(!overlay); return; }
@@ -82,12 +121,12 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
   const sidebar = <>
     {narrow && <button className="hub-menu-close" type="button" onClick={closeMenu}>ปิดเมนู <span aria-hidden="true">×</span></button>}
     <div className="hub-brand-header">
-      <a className="hub-brand-logo" href={landing} aria-label={landingLabel}><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></a>
+      <Link prefetch={false} className="hub-brand-logo" href={landing} aria-label={landingLabel} onClick={closeMenu}><img className="hub-logo-full" src="/brand/sena-development-logo.png" width="1001" height="645" alt="SENA Development" /><img className="hub-logo-mark" src="/brand/sena-development-mark.png" width="1001" height="506" alt="" /></Link>
       {!narrow && <button ref={sidebarToggle} type="button" className="hub-sidebar-toggle" aria-label={rail ? "ขยายเมนู" : "ย่อเมนู"} title={rail ? "ขยายเมนู" : "ย่อเมนู"} aria-expanded={!rail} aria-controls={menuId} onClick={toggleSidebar}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={rail ? "m9 5 7 7-7 7" : "m15 5-7 7 7 7"} /></svg><span className="hub-nav-tooltip" role="tooltip">{rail ? "ขยายเมนู" : "ย่อเมนู"}</span></button>}
     </div>
-    <HubNavigation current={currentMenu} location={location} />
+    <HubNavigation current={currentMenu} location={location} onNavigate={closeMenu} />
   </>;
-  return <QuestionProvider enabled={permissions.can("questions")}><BrandReviewProvider key={permissions.account?.id ?? roleLabel} enabled={permissions.can("brands") && (section === "brands" || permissions.can("brands", "approve"))}><div className="app-shell" data-staff={staff} data-sidebar-collapsed={collapsed}>
+  return <QuestionProvider enabled={permissions.can("questions")}><BrandReviewProvider key={permissions.account?.id ?? roleLabel} enabled={permissions.can("brands") && (section === "brands" || permissions.can("brands", "approve"))} defer={section !== "brands"}><div className="app-shell" data-staff={staff} data-sidebar-collapsed={collapsed}>
     <a className="skip-link" href="#main-content">ข้ามไปยังเนื้อหา</a>
     {narrow || overlay ? <dialog ref={drawer} id={menuId} className={`sidebar ${narrow ? "hub-mobile-drawer" : "hub-sidebar-overlay"}`} aria-label="เมนูพื้นที่ทำงาน" onClose={closeMenu} onCancel={closeMenu} onClick={event => {
       if (event.target !== event.currentTarget) return;
@@ -97,7 +136,7 @@ export function HubShell({ section, roleLabel, toolbar, children, registry = fal
     {staff && !hosted && <HubAssistant key={permissions.account?.id} navigationTarget={null} onNavigationOpen={() => null} />}
     {staff && hosted && <button className="button secondary workspace-assistant-disabled" type="button" disabled aria-label={`${workspaceCopy.ask} · ${workspaceCopy.assistant_disabled}`} title={workspaceCopy.assistant_disabled}>{workspaceCopy.assistant_disabled}</button>}
     <div className="main-shell">
-      <header className="topbar"><div className="hub-topbar-navigation"><button ref={menuButton} className="button secondary hub-menu-toggle" type="button" aria-label="เปิดเมนู" aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId} onClick={() => setMenuOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg><span>เมนู</span></button><div className="breadcrumb">{page?.group && <><span>{hubGroups[page.group]}</span><span aria-hidden="true">/</span></>}<span>{page?.label}</span></div></div>{staff && canWorkspace(permissions.capabilities) && <WorkspaceSearch key={capabilityKey(permissions.account)} hosted={hosted} />}<div className="topbar-right"><span className="locale-tag">ไทย</span><span className="avatar" aria-hidden="true">{roleLabel.charAt(0)}</span><span>{roleLabel}</span></div></header>
+      <header className="topbar"><div className="hub-topbar-navigation"><button ref={menuButton} className="button secondary hub-menu-toggle" type="button" aria-label="เปิดเมนู" aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId} onClick={() => setMenuOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg><span>เมนู</span></button><div className="breadcrumb">{page?.group && <><span>{hubGroups[page.group]}</span><span aria-hidden="true">/</span></>}<span>{page?.label}</span></div></div>{staff && canWorkspace(permissions.capabilities) && <WorkspaceSearch key={capabilityKey(permissions.account)} hosted={hosted} />}<div className="topbar-right"><AccountMenu roleLabel={roleLabel} /></div></header>
       {hostedConfig && <div className="hosted-h1-note" role="note"><strong>{hostedConfig.label} · {hostedConfig.simulation ? "ข้อมูลสมมติ" : "ตรวจแหล่งข้อมูลและสถานะก่อนใช้งาน"}</strong><span> · ปิดการออกชื่อแคมเปญ</span> <SignOut /></div>}
       {toolbar}
       <main id="main-content" className={registry ? "registry-shell" : undefined} tabIndex={-1}>{!permissions.ready ? <p role="status">กำลังตรวจสิทธิ์การใช้งาน…</p> : permissions.error && !permissions.account ? <p role="alert">{permissions.error}</p> : permissions.signedOut || permissions.account && !allowed ? <section className="registry-panel"><h1>ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p>เลือกหน้าที่ได้รับสิทธิ์จากเมนู หรือขอให้ผู้ดูแลปรับสิทธิ์ให้บัญชีนี้</p>{permissions.account?.status !== "ACTIVE" && <a href="/account/request">ตรวจสถานะบัญชี</a>}</section> : hosted && deferredH1Sections.has(section) ? <section className="registry-panel hosted-unavailable"><h1>{page?.label}</h1><p role="note">{h1Unavailable}</p><p>พื้นที่นี้ยังไม่เชื่อมข้อมูลหรือเริ่มงานเบื้องหลังใน TEST H1</p><a className="button secondary" href="/ads/registry">กลับไปทะเบียนแคมเปญ</a></section> : <Fragment key={section === "accounts" ? accountManagementKey(permissions.account) : capabilityKey(permissions.account)}>{children}</Fragment>}</main>

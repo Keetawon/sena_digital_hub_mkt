@@ -1,0 +1,104 @@
+{
+  "phase": "SENA Event Hub v1",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/v1/admin/events/references",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/events/alerts",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/events",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events",
+      "tab": "event_hub",
+      "level": "edit",
+      "entry_roles": ["editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/admin/events/{event_id}",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/admin/events/{event_id}",
+      "tab": "event_hub",
+      "level": "edit",
+      "entry_roles": ["editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events/{event_id}/attachments",
+      "tab": "event_hub",
+      "level": "edit",
+      "entry_roles": ["editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events/attachments/{attachment_id}/remove",
+      "tab": "event_hub",
+      "level": "edit",
+      "entry_roles": ["editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events/{event_id}/join",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events/participants/{participant_id}/decision",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/admin/events/alerts/{ack_id}/acknowledge",
+      "tab": "event_hub",
+      "level": "view",
+      "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"],
+      "conditional_h1": false,
+      "source": "apps/api/sena_hub_api/events.py"
+    }
+  ]
+}

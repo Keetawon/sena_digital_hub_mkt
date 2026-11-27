@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { workspaceCopy as copy } from "@/lib/workspace-copy";
 import { capabilityKey, canWorkspace, contentScopeExpired } from "@/lib/hub-permissions";
 import { useHubPermissions } from "./accounts";
@@ -68,7 +69,7 @@ export function WorkspaceSearch({ hosted = false, home = false }: { hosted?: boo
       {error && <p role="alert">{copy.load_error} <button type="button" className="button secondary" onClick={() => setRetry(value => value + 1)}>{copy.retry}</button></p>}
       {!loading && !error && !visibleItems.length && <p role="status">{copy.empty}</p>}
       <ul ref={results} role="listbox" id={`${id}-results`} aria-label={copy.search}>
-        {visibleItems.map((item, index) => <li key={`${item.kind}:${item.ref}`} role="presentation"><a id={`${id}-option-${index}`} role="option" aria-selected={active === index} data-index={index} href={item.href} onMouseEnter={() => setActive(index)}><span>{workspaceLabel(item.label)}</span>{item.code && <small>{item.code}</small>}</a></li>)}
+        {visibleItems.map((item, index) => <li key={`${item.kind}:${item.ref}`} role="presentation"><Link prefetch={false} id={`${id}-option-${index}`} role="option" aria-selected={active === index} data-index={index} href={item.href} onMouseEnter={() => setActive(index)} onClick={() => setOpen(false)}><span>{workspaceLabel(item.label)}</span>{item.code && <small>{item.code}</small>}</Link></li>)}
         <li role="presentation"><button id={`${id}-option-${visibleItems.length}`} role="option" aria-selected={active === visibleItems.length} aria-disabled={hosted} data-index={visibleItems.length} type="button" onMouseEnter={() => setActive(visibleItems.length)} onClick={() => {
           if (hosted) return;
           setOpen(false); openWorkspaceAssistant(query, undefined, input.current ?? undefined);

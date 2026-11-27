@@ -3,6 +3,12 @@
   "routes": [
     {"method": "POST", "path": "/v1/admin/permissions/preview", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
     {"method": "POST", "path": "/v1/admin/permissions/apply", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
-    {"method": "POST", "path": "/v1/admin/permissions/notices/{tab}/ack", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"}
+    {"method": "POST", "path": "/v1/admin/permissions/notices/{tab}/ack", "tab": "accounts", "level": "admin", "entry_roles": ["admin"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "PATCH", "path": "/v1/me/profile", "tab": "accounts", "level": "other", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff", "agency"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "GET", "path": "/v1/me/avatar", "tab": "accounts", "level": "view", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff", "agency"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "POST", "path": "/v1/me/avatar", "tab": "accounts", "level": "other", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff", "agency"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "DELETE", "path": "/v1/me/avatar", "tab": "accounts", "level": "other", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff", "agency"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "POST", "path": "/v1/me/avatar/remove", "tab": "accounts", "level": "other", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff", "agency"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"},
+    {"method": "GET", "path": "/v1/accounts/{account_id}/avatar", "tab": "accounts", "level": "view", "entry_roles": ["viewer", "editor", "publisher", "admin", "online_staff"], "conditional_h1": false, "source": "apps/api/sena_hub_api/accounts.py"}
   ]
 }

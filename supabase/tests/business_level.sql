@@ -1,8 +1,11 @@
 -- W5 is additive: read-only catalog, closed helpers and unchanged source authority.
 begin;
 do $$ declare name text;begin
- assert (select count(*)=1 from hub.businesses);
+ assert (select count(*)=4 from hub.businesses);
  assert (select label->>'en'='Residential' and length(label->>'th')>0 from hub.businesses where code='residential');
+ assert (select label->>'en'='SENA Solar Energy' and label->>'th'='เสนา โซลาร์ เอนเนอร์ยี่' from hub.businesses where code='solar');
+ assert (select label->>'en'='SenX' and label->>'th'='เซ็น เอกซ์' from hub.businesses where code='senx');
+ assert (select label->>'en'='Ngernsod Jaidee' and label->>'th'='เงินสดใจดี' from hub.businesses where code='ngernsod_jaidee');
  assert not exists(select 1 from hub.brands b where b.deleted_at is null and not exists(select 1 from hub.brand_business m where m.brand_id=b.id and m.business_code='residential'));
  foreach name in array array['hub.businesses','hub.brand_business'] loop
   assert (select relrowsecurity and relforcerowsecurity from pg_class where oid=name::regclass),name;
@@ -33,11 +36,16 @@ select set_config('test.business_audit_count',(select count(*)::text from audit.
 set local role hub_app;
 select set_config('app.actor_id','00000000-0000-0000-0000-000000000003',true);
 do $$ declare value jsonb;begin
- value:=hub.business_references();assert jsonb_array_length(value->'items')=1;
+ value:=hub.business_references();assert jsonb_array_length(value->'items')=4;
  assert value#>>'{items,0,code}'='residential';assert not(value#>'{items,0}' ? 'brands');
+ assert value#>>'{items,1,code}'='solar' and value#>>'{items,2,code}'='senx' and value#>>'{items,3,code}'='ngernsod_jaidee';
  value:=hub.workspace_page('business','residential');assert value#>>'{entity,kind}'='business';
  assert value->'phases'='[]'::jsonb;assert value#>'{overview,readiness,required}'='[]'::jsonb;
+ assert hub.workspace_page('business','solar')#>>'{entity,name,th}'='เสนา โซลาร์ เอนเนอร์ยี่';
+ assert hub.workspace_page('business','senx')#>>'{entity,name,th}'='เซ็น เอกซ์';
+ assert hub.workspace_page('business','ngernsod_jaidee')#>>'{entity,name,th}'='เงินสดใจดี';
  assert hub.workspace_faq('business','residential')->'items' is not null;
+ assert jsonb_array_length(hub.workspace_faq('business','solar')->'items')=0;
  assert hub.content_history('business','residential')->'items' is not null;
  assert hub.content_workflow_items('business','residential')->>'next_cursor' is null;
  assert exists(select 1 from jsonb_array_elements(hub.workspace_search('Residential',30)->'items') x where x->>'kind'='business' and x->>'ref'='residential');

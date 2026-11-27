@@ -153,6 +153,27 @@ Every section shows its state chip («ร่าง», «รออนุมัต
 «ส่งอนุมัติ» button. The page header has «ส่งอนุมัติทั้งหมดที่แก้». A Manager
 also sees «แก้และอนุมัติ» (N1).
 
+To make editing smooth across all four KM levels without losing deep-link or
+keyboard tab contracts, each entity page renders:
+
+1. A parent KM Hub breadcrumb returning directly to the owning card hub
+   (`KM องค์กรและธุรกิจอื่น`, `KM แบรนด์`, `KM กลุ่มโครงการ`, `KM โครงการ`),
+   scope/readiness badges, and numbered outer tabs (`1 ภาพรวม` → `2 ข้อมูล` → …)
+   with a bottom next-step bar on authoring tabs.
+2. Guided step groups inside «ข้อมูล»:
+   - Corporate / Business: `เนื้อหา KM` → `ช่องทางติดต่อ` → `ภาษาอังกฤษ`.
+   - Programme / Project group: `เนื้อหา KM` → `ภาษาอังกฤษ` (with collapsible
+     member-phase chips above).
+   - Brand: `ข้อมูลหลักและโลโก้` (with live draft card preview) →
+     `เนื้อหา KM แบรนด์` → `ช่องทางติดต่อแบรนด์` → `ภาษาอังกฤษ`.
+   - Project: 5 step groups organizing all 12 sections (`ตัวตนและพิกัดโครงการ`,
+     `เรื่องเล่าและข้อมูลจำเพาะ`, `ส่วนกลาง คุณสมบัติ และทำเล`,
+     `ติดต่อ กฎหมาย และการลงทุน`, `ตรวจทานภาษาอังกฤษ`) plus section guidance and
+     previous/next section controls.
+3. Quick status filters on «FAQ» (`ทั้งหมด`, `ยังไม่มีคำตอบ`,
+   `รอข้อเท็จจริง / ตรวจ`, `สืบทอดแล้ว`, `ตอบเฉพาะหน้านี้`) and a two-mode media
+   header + readiness summary on «รูปและวิดีโอ».
+
 ### 4.3 Readiness deep links
 
 Every missing or expiring item on «ภาพรวม», «หน้าแรก» and the FAQ coverage opens
@@ -215,13 +236,37 @@ The owner authorizes this change. When a user accepts a website suggestion ("use
 - Show the exposure on every section and item as a small chip. When an item marked internal is submitted, approved or added to a publication, show a clear non-blocking notice that it will not appear on the website or in AI answers, with a link to change it.
 - Record the decision verbatim in docs/47 section 4.5 ("Owner decision 5 Nov 2026") and add the exposure rule to the docs/36 permission card for W3.1. Tests: default applied per field, internal stays internal, no broadening, notice shown, existing rows unchanged.
 
-### 4.6 Home «หน้าแรก»
+### 4.6 Home «หน้าแรก» and Macro-to-Micro KM Visual Card Hubs (26 November 2026)
 
-- Greeting and the search box (section 8.2).
-- «งานของฉัน»: returned to me, waiting for my approval (Manager), waiting to
-  publish (Online), expiring soon, facts missing that hide answers, review due,
-  questions the AI could not answer. Each opens the exact field.
-- Readiness by BUD and by brand, filtered to the account's scope.
+- Root `/` redirects staff accounts with workspace access directly to `/home`
+  (`workspaceLanding`), making «หน้าแรก» the personal pending-work command center.
+- Both the sidebar («ข้อมูลเว็บไซต์และ AI») and the KM top switcher bar order
+  KM levels strictly from Macro to Micro:
+  1. «หน้าแรก» (`/home`)
+  2. «KM องค์กรและธุรกิจอื่น» (`/website?view=businesses`)
+  3. «KM แบรนด์» (`/website?view=brands`)
+  4. «KM กลุ่มโครงการ» (`/website?view=groups`)
+  5. «KM โครงการ» (`/website?view=projects`)
+- «หน้าแรก» (`/home`):
+  - Greeting, scope responsibility badge («ดูแลทุกโครงการ» vs «ดูแลเฉพาะโครงการที่ได้รับมอบหมาย»
+    from `hub.account_content_scope`), global search box and assistant task pills.
+  - Five clickable KPI filter cards summarizing `task_counts` and `scope_summary`:
+    returned items, awaiting approval/publication, expiring/review due, missing
+    FAQ facts / unanswered AI gaps, and projects missing required fields.
+  - «งานของฉัน» actionable task inbox where every row links directly to the exact
+    field, question, version or asset binding.
+  - Assigned projects visual grid with 16:9 cover image (`entity_assets` hero/thumbnail
+    or `asset_links` exterior/facility/interior/gallery fallback, then `brand_logo`),
+    1-click tabs (`แก้ไข KM`, `แบบบ้าน`, `FAQ`, `โปรโมชัน`) and expandable required-field
+    readiness deep-links, followed by BUD and Brand readiness summaries.
+- All four KM hubs default to a unified **Visual Card Grid** (zero scale/translate
+  animations per owner motion rule), while «KM แบรนด์» (`?blayout=table`) and
+  «KM โครงการ» (`?playout=table`) retain a 1-click «ตารางจัดการ» view switcher for
+  bulk selection, sticky-header auditing and CSV export.
+- `programme` and `project_group` entity pages include the «ข้อมูล» (`data`) tab
+  when the caller has `knowledge.view`, backed by Migration `0098` query
+  optimizations across `hub.workspace_page`, `hub.content_history`,
+  `hub.workspace_promotion_rows`, `hub.workspace_content_tasks` and `hub.progress_rows`.
 
 ### 4.7 Promotions in context — owner decision, 5 November 2026 (W3.2)
 

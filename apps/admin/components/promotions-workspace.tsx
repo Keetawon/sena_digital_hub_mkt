@@ -1,22 +1,26 @@
 "use client";
+import { PromotionEditor as PromotionDraft } from "./promotion-editor";
+import { benefitText, promotionTextFields, promotionTiers, tierOf, type PromotionTier, type PromotionReferences } from "./promotion-types";
 import { PromotionCommercialFields, type CommercialPromotion } from "./promotion-commercial-fields";
-import { useHubPermissions } from "./accounts";
+import { useHubPermissions, ActorName } from "./accounts";
 import { workspaceApi, workspaceHref, workspaceName, workspaceText as text } from "@/lib/unified-workspace";
 import type { PromotionSuggestion } from "./contextual-promotions";
 import { capabilityKey } from "@/lib/hub-permissions";
 import { workflowText } from "@/lib/content-workflow";
-import { ActorName } from "./accounts";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LocalRole } from "@/lib/local-session";
 import { request } from "./hub-request";
-import { PendingQuestion } from "./pending-question";
 import { DemoFields } from "./demo-fields";
 import { LoadingRows, RegistryRowSummary, DetailDialog, StatusText } from "./registry-motion";
-import { bangkokISO, dateTime, ErrorSummary, Field, localBangkok, Ready, thai, useContentLocation, type Localized, type Readiness } from "./content-operations-shared";
+import { dateTime, ErrorSummary, Field, Ready, thai, useContentLocation, type Localized, type Readiness } from "./content-operations-shared";
+import "./promotions-workspace.css";
 
 type Review = { review_type: "DATA" | "LEGAL"; review_revision: number; decision: "APPROVED" | "REVOKED"; evidence: string; reviewed_at: string; reviewed_by: string; resolved_project_ids?: string[] | null };
-type Promotion = CommercialPromotion & {
+export type Promotion = CommercialPromotion & {
+  can_edit?: boolean;
+  scope_target_types?: string[];
+  status_group?: "live" | "draft" | "paused";
   id: string; project_id: string | null; public_project_id: string | null; owning_brand_id?: string | null; public_owning_brand_id?: string | null; code: string;
   title: Localized; summary: Localized; conditions_public: Localized; legal_terms: Localized; disclaimer: Localized;
   benefit_type: string; benefit_value: string | null; benefit_unit: string | null; stackable: boolean; priority: number;
@@ -25,76 +29,55 @@ type Promotion = CommercialPromotion & {
   published: { id: string; version_no: number; payload: Promotion; published_at: string } | null;
   versions: { id: string; version_no: number; published_at: string }[];
 };
-type Brand = { id: string; public_id: string; label: Localized };
-type SuggestionInput = { kind: "project" | "brand"; ref: string; phase: string | null; candidate_id: string; source: "website" | "km"; text: PromotionSuggestion["text"] };
-type Project = { id: string; public_project_id: string; public_name?: Localized; source_name?: string };
+export type Brand = { id: string; public_id?: string; label: Localized };
+export type SuggestionInput = { kind: "project" | "brand"; ref: string; phase: string | null; candidate_id: string; source: "website" | "km"; text: PromotionSuggestion["text"] };
+export type Project = { id: string; public_project_id: string; public_name?: Localized; source_name?: string };
+type StatusFilter = "all" | "live" | "draft" | "paused";
+
 const base = "v1/admin/promotions";
-const benefits: Record<string, string> = { discount_amount: "ส่วนลดเป็นจำนวนเงิน", discount_pct: "ส่วนลดเป็นเปอร์เซ็นต์", free_transfer_fee: "ฟรีค่าธรรมเนียมโอน", free_common_fee: "ฟรีค่าส่วนกลาง", furniture: "เฟอร์นิเจอร์", cashback: "เงินคืน", rate_subsidy: "สนับสนุนดอกเบี้ย", gift: "ของแถม", other: "สิทธิประโยชน์อื่น" };
-const units: Record<string, string> = { THB: "บาท", percent: "เปอร์เซ็นต์", months: "เดือน", items: "รายการ" };
-const textFields = { title: "ชื่อโปรโมชัน", summary: "รายละเอียดโดยย่อ", conditions_public: "เงื่อนไขสำหรับลูกค้า", legal_terms: "ข้อกำหนดทางกฎหมาย", disclaimer: "ข้อความสงวนสิทธิ์" } as const;
 const typeLabel = (value: string) => value === "DATA" ? "ข้อมูล" : "ข้อกฎหมาย";
 const publicationLabel = (row: Promotion) => !row.published_version_id ? "ร่างยังไม่เผยแพร่" : row.publication_available === true ? "เผยแพร่และแสดงได้" : row.publication_available === false ? "มีฉบับเผยแพร่ · งดแสดงขณะนี้" : "มีฉบับเผยแพร่ · ยังไม่ได้ตรวจสิทธิ์แสดง";
 
-function promotionOwner(row: Promotion) {
-  if (row.public_project_id) return row.public_project_id;
-  if (row.public_owning_brand_id) return `${text.brand}: ${row.public_owning_brand_id}`;
-  return row.applies_via?.scope_level === "brand" || row.owning_brand_id ? text.brand : text.project;
+function statusTone(row: Promotion): "live" | "draft" | "paused" {
+  if (row.status_group) return row.status_group;
+  if (!row.published_version_id) return row.versions?.length || new Date(row.ends_at).getTime() <= Date.now() ? "paused" : "draft";
+  if (row.publication_available === false) return "paused";
+  return "live";
 }
 
-function PromotionText({ promotion }: { promotion: Promotion }) {
-  return <><DemoFields fields={promotion.demo_fields} /><dl className="registry-detail-list"><dt>รหัสโปรโมชัน</dt><dd>{promotion.code}</dd><dt>{text.promotion_owner}</dt><dd>{promotionOwner(promotion)}</dd><dt>ช่วงเวลาไทย</dt><dd>{dateTime(promotion.starts_at)} ถึงก่อน {dateTime(promotion.ends_at)} <small>(Asia/Bangkok)</small></dd><dt>สิทธิประโยชน์</dt><dd>{benefits[promotion.benefit_type] ?? "ยังไม่ระบุ"}{promotion.benefit_value != null ? ` · ${promotion.benefit_value} ${units[promotion.benefit_unit ?? ""] ?? ""}` : ""}</dd><dt>ใช้ร่วมกับโปรโมชันอื่น</dt><dd>{promotion.stackable ? "ใช้ร่วมกันได้ตามเงื่อนไข" : "ใช้ร่วมกันไม่ได้"}</dd><dt>ลำดับความสำคัญ</dt><dd>{promotion.priority}</dd></dl>{Object.entries(textFields).map(([key, label]) => <section key={key}><h4>{label}</h4><p className="content-copy">{thai(promotion[key as keyof typeof textFields])}</p></section>)}</>;
+function projectLabel(item: Project) {
+  return thai(item.public_name) === "ยังไม่ระบุ" ? item.source_name || "ยังไม่ระบุชื่อโครงการ" : thai(item.public_name);
 }
 
-function PromotionDraft({ promotion, projects, brands, defaultProject, defaultBrand = "", suggestion, onSaved, onDirty, disabled = false }: { disabled?: boolean; promotion?: Promotion; projects: Project[]; brands: Brand[]; defaultProject: string; defaultBrand?: string; suggestion?: SuggestionInput | null; onSaved: (row: Promotion) => void; onDirty: (value: boolean) => void }) {
-  const [owner, setOwner] = useState(promotion?.applies_via?.scope_level === "brand" || promotion?.owning_brand_id || !promotion && defaultBrand ? "brand" : "project");
-  const [brandId, setBrandId] = useState(promotion?.owning_brand_id ?? defaultBrand);
-  const [scope, setScope] = useState<CommercialPromotion["scope"]>(promotion?.scope);
-  const [scopeError, setScopeError] = useState("");
-  const [english, setEnglish] = useState<Record<string, string>>(() => Object.fromEntries(Object.keys(textFields).map(key => [key, promotion?.[key as keyof typeof textFields]?.en ?? ""])));
-  const [synthetic, setSynthetic] = useState(promotion?.synthetic ?? false);
-  const [value, setValue] = useState(() => ({ project_id: promotion ? promotion.project_id ?? "" : defaultProject, code: promotion?.code ?? "", title: promotion?.title?.th ?? suggestion?.text.title ?? "", summary: promotion?.summary?.th ?? suggestion?.text.summary ?? "", conditions_public: promotion?.conditions_public?.th ?? suggestion?.text.conditions_public ?? "", legal_terms: promotion?.legal_terms?.th ?? "", disclaimer: promotion?.disclaimer?.th ?? "", benefit_type: promotion?.benefit_type ?? "other", benefit_value: promotion?.benefit_value ?? "", benefit_unit: promotion?.benefit_unit ?? "", stackable: promotion?.stackable ?? false, priority: String(promotion?.priority ?? 0), starts_at: localBangkok(promotion?.starts_at), ends_at: localBangkok(promotion?.ends_at), source_offer_key: promotion?.source_offer_key ?? "" }));
-  const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [invalid, setInvalid] = useState<{ id: string; label: string }[]>([]);
-  useEffect(() => {
-    if (promotion) return;
-    let active = true; setScope(undefined); setScopeError("");
-    if (!(owner === "brand" ? brandId : value.project_id)) return;
-    request<NonNullable<CommercialPromotion["scope"]>>(`${base}/resolve`, "POST", {
-      project_id: owner === "project" ? value.project_id : null, owning_brand_id: owner === "brand" ? brandId : null,
-    }).then(result => { if (active) setScope(result); }).catch(error => { if (active) setScopeError(error.message); });
-    return () => { active = false; };
-  }, [promotion, owner, brandId, value.project_id]);
-  function update(key: keyof typeof value, next: string | boolean) { setValue(previous => ({ ...previous, [key]: next })); onDirty(true); }
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const fields = Array.from(event.currentTarget.elements).filter((field): field is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement => field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement);
-    const errors = fields.filter(field => !field.validity.valid).map(field => ({ id: field.id, label: field.labels?.[0]?.textContent ?? "ตรวจสอบช่องข้อมูล" }));
-    if (value.starts_at && value.ends_at && value.starts_at >= value.ends_at) errors.push({ id: "promotion-ends_at", label: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น" });
-    setInvalid(errors); if (errors.length) { setError("กรุณาตรวจสอบข้อมูลก่อนบันทึก"); return; }
-    setBusy(true); setError("");
-    const payload = { ...(promotion ? { expected_revision: promotion.draft_revision } : { project_id: owner === "project" ? value.project_id : null, owning_brand_id: owner === "brand" ? brandId : null, code: value.code, synthetic, ...(suggestion ? { suggestion: { kind: suggestion.kind, ref: suggestion.ref, phase: suggestion.phase, candidate_id: suggestion.candidate_id, source: suggestion.source } } : {}) }), ...Object.fromEntries(Object.keys(textFields).map(key => [key, { ...(promotion?.[key as keyof typeof textFields] ?? {}), th: value[key as keyof typeof textFields], en: english[key] }])), benefit_type: value.benefit_type, benefit_value: value.benefit_value || null, benefit_unit: value.benefit_unit || null, stackable: value.stackable, priority: Number(value.priority), starts_at: promotion && value.starts_at === localBangkok(promotion.starts_at) ? promotion.starts_at : bangkokISO(value.starts_at), ends_at: promotion && value.ends_at === localBangkok(promotion.ends_at) ? promotion.ends_at : bangkokISO(value.ends_at), source_offer_key: value.source_offer_key || null };
-    try { const row = await request<Promotion>(promotion ? `${base}/${promotion.id}` : base, promotion ? "PATCH" : "POST", payload); onDirty(false); onSaved(row); }
-    catch (err) { setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง"); }
-    finally { setBusy(false); }
+function resolveOwnerDisplay(row: Promotion, projects: Project[], brands: Brand[], references: PromotionReferences = {}): { title: string; subtitle: string } {
+  const tier = tierOf(row);
+  if (tier === "campaign") return { title: row.campaign_name?.th || "แคมเปญกลาง", subtitle: `ร่วมรายการ ${row.scope?.count ?? 0} โครงการ` };
+  if (tier === "corporate") return { title: row.programme_key ? workspaceName(references.programmes?.find(p => (p.id ?? p.key)?.toLowerCase() === row.programme_key?.toLowerCase())?.label) : "เสนาดีเวลลอปเม้นท์", subtitle: `ร่วมรายการ ${row.scope?.count ?? 0} โครงการ` };
+  if (tier === "project_group") return { title: workspaceName(references.project_groups?.find(g => g.id === row.owning_project_group_id)?.label) || "กลุ่มโครงการ", subtitle: `ร่วมรายการ ${row.scope?.count ?? 0} โครงการ` };
+  const matchedProject = projects.find(p => (row.project_id && p.id === row.project_id) || (row.public_project_id && p.public_project_id === row.public_project_id));
+  if (matchedProject) {
+    return { title: projectLabel(matchedProject), subtitle: `เฉพาะโครงการ · ร่างรุ่น ${row.draft_revision}` };
   }
-  const bad = (key: string) => invalid.some(field => field.id === `promotion-${key}`) || undefined;
-  return <form className="content-form registry-panel" noValidate onSubmit={submit}><h3>{promotion ? `แก้ไขร่าง · รุ่น ${promotion.draft_revision}` : "สร้างร่างโปรโมชัน"}</h3><p>บันทึกร่างที่ยังกรอกไม่ครบได้ ก่อนเผยแพร่ต้องกรอกข้อความทุกช่องและตรวจข้อมูลกับข้อกฎหมายของรุ่นปัจจุบัน</p><ErrorSummary message={error} fields={invalid} /><fieldset disabled={busy || disabled}><div className="content-grid">
-    {!promotion && <label className="content-input"><input type="checkbox" checked={synthetic} onChange={event => { setSynthetic(event.target.checked); onDirty(true); }} />ใช้ข้อมูลสังเคราะห์สำหรับทดสอบ (ไม่เลือกสำหรับโปรโมชันจริง)</label>}
-    <Field id="promotion-owner" label={text.promotion_owner}><select id="promotion-owner" className="registry-input" value={owner} disabled={Boolean(promotion || suggestion)} onChange={event => { setOwner(event.target.value); onDirty(true); }}><option value="project">{text.promotion_owner_project}</option><option value="brand">{text.promotion_owner_brand}</option></select></Field>
-    {owner === "brand" ? <Field id="promotion-brand" label={text.brand}><select id="promotion-brand" className="registry-input" value={brandId} required disabled={Boolean(promotion || suggestion)} onChange={event => { setBrandId(event.target.value); onDirty(true); }}><option value="">{text.brand}</option>{brands.map(brand => <option key={brand.id} value={brand.id}>{workspaceName(brand.label)}</option>)}</select></Field> : <><Field id="promotion-project" label="โครงการ"><select id="promotion-project" className="registry-input" value={value.project_id} required disabled={Boolean(promotion || suggestion)} onChange={event => update("project_id", event.target.value)}><option value="">เลือกโครงการ</option>{projects.map(row => <option key={row.id} value={row.id}>{thai(row.public_name) === "ยังไม่ระบุ" ? row.source_name ?? row.public_project_id : thai(row.public_name)} · {row.public_project_id}</option>)}</select></Field></>}
-    <div className="content-input"><strong>{text.promotion_resolved_projects}</strong>{scopeError && <p role="alert">{scopeError}</p>}{scope ? <ul>{scope.items.map(item => <li key={item.id}>{workspaceName(item.label)} · {item.public_id}</li>)}</ul> : <p>{text.promotion_scope_refresh}</p>}</div>
-    {suggestion && <p className="notice">{text.promotion_suggestion_source} · {text.promotion_confirm_numbers}</p>}
-    <Field id="promotion-code" label="รหัสโปรโมชัน" hint="กำหนดครั้งเดียวเมื่อสร้างร่าง"><input id="promotion-code" className="registry-input" value={value.code} required disabled={Boolean(promotion)} maxLength={80} pattern="[A-Z0-9][A-Z0-9_-]{0,79}" aria-invalid={bad("code")} onChange={event => update("code", event.target.value)} /></Field>
-    {Object.entries(textFields).map(([key, label]) => <Field key={key} id={`promotion-${key}`} label={`${label} (ภาษาไทย)`}>{key === "title" ? <input id={`promotion-${key}`} className="registry-input" value={value[key]} required aria-invalid={bad(key)} onChange={event => update(key, event.target.value)} /> : <textarea id={`promotion-${key}`} className="registry-input" value={value[key as keyof typeof textFields]} aria-invalid={bad(key)} onChange={event => update(key as keyof typeof textFields, event.target.value)} />}</Field>)}
-    {Object.entries(textFields).map(([key, label]) => <Field key={`en-${key}`} id={`promotion-${key}-en`} label={`${label} (ภาษาอังกฤษ)`}><textarea id={`promotion-${key}-en`} lang="en" className="registry-input" value={english[key]} maxLength={20000} onChange={event => { setEnglish(previous => ({ ...previous, [key]: event.target.value })); onDirty(true); }} /></Field>)}
-    <Field id="promotion-benefit_type" label="ประเภทสิทธิประโยชน์"><select id="promotion-benefit_type" className="registry-input" value={value.benefit_type} onChange={event => update("benefit_type", event.target.value)}>{Object.entries(benefits).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
-    <Field id="promotion-benefit_value" label="มูลค่าสิทธิประโยชน์" hint="ไม่บังคับ · ทศนิยมไม่เกิน 2 ตำแหน่ง"><input id="promotion-benefit_value" className="registry-input" value={value.benefit_value} inputMode="decimal" pattern="(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,2})?" aria-invalid={bad("benefit_value")} onChange={event => update("benefit_value", event.target.value)} /></Field>
-    <Field id="promotion-benefit_unit" label="หน่วยสิทธิประโยชน์"><select id="promotion-benefit_unit" className="registry-input" value={value.benefit_unit} onChange={event => update("benefit_unit", event.target.value)}><option value="">ไม่ระบุ</option>{Object.entries(units).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
-    <Field id="promotion-priority" label="ลำดับความสำคัญ"><input id="promotion-priority" className="registry-input" value={value.priority} required inputMode="numeric" pattern="[0-9]+" aria-invalid={bad("priority")} onChange={event => update("priority", event.target.value)} /></Field>
-    {(["starts_at", "ends_at"] as const).map(key => <Field key={key} id={`promotion-${key}`} label={key === "starts_at" ? "เริ่มใช้สิทธิ์" : "สิ้นสุดสิทธิ์ (ไม่รวมเวลานี้)"} hint="เวลาประเทศไทย · Asia/Bangkok"><input id={`promotion-${key}`} className="registry-input" type="datetime-local" value={value[key]} required aria-describedby={`promotion-${key}-hint`} aria-invalid={bad(key)} onChange={event => update(key, event.target.value)} /></Field>)}
-    <Field id="promotion-source_offer_key" label="รหัสข้อเสนอจากต้นทาง" hint="ไม่บังคับ · อ้างอิงข้อมูลเดิม ไม่แก้ไขระบบต้นทาง"><input id="promotion-source_offer_key" className="registry-input" value={value.source_offer_key} onChange={event => update("source_offer_key", event.target.value)} /></Field>
-    <label className="registry-check"><input type="checkbox" checked={value.stackable} onChange={event => update("stackable", event.target.checked)} />ใช้ร่วมกับโปรโมชันอื่นได้ตามเงื่อนไข</label>
-  </div><div className="content-actions"><button className="registry-button primary" disabled={busy} aria-busy={busy}>{busy ? "กำลังบันทึก…" : "บันทึกร่างโปรโมชัน"}</button></div></fieldset></form>;
+  const matchedBrand = brands.find(b => (row.owning_brand_id && b.id === row.owning_brand_id) || (row.public_owning_brand_id && b.public_id === row.public_owning_brand_id));
+  if (matchedBrand) {
+    return { title: `${text.brand}: ${workspaceName(matchedBrand.label)}`, subtitle: `โปรโมชันระดับแบรนด์ · ร่างรุ่น ${row.draft_revision}` };
+  }
+  if (row.public_project_id) return { title: "โครงการเจ้าของโปรโมชัน", subtitle: `เฉพาะโครงการ · ร่างรุ่น ${row.draft_revision}` };
+  if (row.public_owning_brand_id) return { title: text.brand, subtitle: `โปรโมชันระดับแบรนด์ · ร่างรุ่น ${row.draft_revision}` };
+  const isBrand = row.applies_via?.scope_level === "brand" || Boolean(row.owning_brand_id);
+  return { title: isBrand ? text.brand : text.project, subtitle: `ร่างรุ่น ${row.draft_revision}` };
 }
+
+function currentLaneApproved(row: Promotion, lane: "DATA" | "LEGAL") {
+  const matching = (row.reviews ?? []).filter(r => r.review_type === lane && r.review_revision === row.draft_revision);
+  return matching.at(-1)?.decision === "APPROVED";
+}
+
+function PromotionText({ promotion, projects, brands, references }: { promotion: Promotion; projects: Project[]; brands: Brand[]; references: PromotionReferences }) {
+  const owner = resolveOwnerDisplay(promotion, projects, brands, references);
+  return <><DemoFields fields={promotion.demo_fields} /><span className="promo-badge">{promotionTiers[tierOf(promotion)]}</span>{promotion.highlight_badge?.th && <strong className="promo-highlight">{promotion.highlight_badge.th}</strong>}<dl className="registry-detail-list"><div><dt>รหัสโปรโมชัน</dt><dd><code>{promotion.code}</code></dd></div><div><dt>{text.promotion_owner}</dt><dd>{owner.title}</dd></div><div><dt>ช่วงเวลาใช้สิทธิ์</dt><dd>{dateTime(promotion.starts_at)} ถึงก่อน {dateTime(promotion.ends_at)}</dd></div><div><dt>สิทธิประโยชน์</dt><dd>{promotion.benefit_items?.length ? <ul>{promotion.benefit_items.map((item, index) => <li key={index}>{benefitText(item)}</li>)}</ul> : benefitText(promotion)}</dd></div><div><dt>ใช้ร่วมกับโปรโมชันอื่น</dt><dd>{promotion.stackable ? "ใช้ร่วมกันได้ตามเงื่อนไข" : "ใช้ร่วมกันไม่ได้"}</dd></div><div><dt>ลำดับการแสดงผล</dt><dd>{promotion.priority}</dd></div></dl>{Object.entries(promotionTextFields).map(([key, label]) => <section key={key}><h4>{label}</h4><p className="content-copy">{thai(promotion[key as keyof typeof promotionTextFields])}</p></section>)}</>;
+}
+
 
 function PublisherActions({ row, onSaved, onDirty }: { row: Promotion; onSaved: (value: Promotion) => void; onDirty: (value: boolean) => void }) {
   const [reviewType, setReviewType] = useState<"DATA" | "LEGAL">("DATA"); const [decision, setDecision] = useState("APPROVED");
@@ -106,17 +89,17 @@ function PublisherActions({ row, onSaved, onDirty }: { row: Promotion; onSaved: 
     try { const result = await request<Promotion>(`${base}/${row.id}/review`, "POST", { expected_revision: row.draft_revision, review_type: reviewType, decision, evidence, change_reason: reason, ...(decision === "APPROVED" ? { expected_scope_hash: row.scope?.scope_hash } : {}), ...(decision === "REVOKED" ? { review_revision: Number(revision) } : {}) }); onSaved(result); setEvidence(""); setReason(""); }
     catch (err) { setError(err instanceof Error ? err.message : "ดำเนินการไม่สำเร็จ"); } finally { setBusy(false); }
   }
-  return <section className="registry-panel"><h3>การตรวจและเผยแพร่โดยผู้เผยแพร่</h3><p>{row.synthetic === false ? "ยืนยันหลักฐาน DATA และ LEGAL ของรุ่นนี้ ผู้แก้ไขฉบับนี้อนุมัติเองไม่ได้" : "หลักฐานตัวอย่างใช้สาธิตเท่านั้น ไม่ใช่การอนุมัติจากฝ่ายกฎหมายจริง"}</p><ErrorSummary message={error} /><fieldset className="content-form" disabled={busy} onChange={() => onDirty(true)}><div className="content-grid">
+  return <section className="registry-panel promo-section-card"><h3>การตรวจและอนุมัติโดยผู้เผยแพร่</h3><p className="content-muted">{row.synthetic === false ? "ยืนยันหลักฐานข้อมูลและข้อกฎหมายของรุ่นนี้ (ผู้แก้ไขฉบับนี้อนุมัติเองไม่ได้)" : "หลักฐานตัวอย่างใช้สาธิตเท่านั้น ไม่ใช่การอนุมัติจากฝ่ายกฎหมายจริง"}</p><ErrorSummary message={error} /><fieldset className="content-form" disabled={busy} onChange={() => onDirty(true)}><div className="content-grid">
     <Field id="review-type" label="หัวข้อการตรวจ"><select id="review-type" className="registry-input" value={reviewType} onChange={event => setReviewType(event.target.value as "DATA" | "LEGAL")}><option value="DATA">ข้อมูล</option><option value="LEGAL">ข้อกฎหมาย</option></select></Field>
     <Field id="review-decision" label="ผลการตรวจ"><select id="review-decision" className="registry-input" value={decision} onChange={event => setDecision(event.target.value)}><option value="APPROVED">ตรวจผ่านสำหรับรุ่นปัจจุบัน</option><option value="REVOKED">ถอนผลการตรวจ</option></select></Field>
     {decision === "REVOKED" && <Field id="review-revision" label="รุ่นร่างที่จะถอนผลการตรวจ"><input id="review-revision" className="registry-input" inputMode="numeric" value={revision} onChange={event => setRevision(event.target.value)} /></Field>}
     <Field id="review-evidence" label="หลักฐานการตรวจ"><textarea id="review-evidence" className="registry-input" value={evidence} onChange={event => setEvidence(event.target.value)} /></Field>
     <Field id="promotion-reason" label="เหตุผลการดำเนินการ"><textarea id="promotion-reason" className="registry-input" value={reason} onChange={event => setReason(event.target.value)} /></Field>
-  </div><div className="content-actions"><button className="registry-button" onClick={() => void act()} disabled={busy}>{decision === "REVOKED" ? "ถอนผลการตรวจ" : "บันทึกผลการตรวจ"}</button></div>
+  </div><div className="content-actions"><button type="button" className="registry-button primary" onClick={() => void act()} disabled={busy}>{decision === "REVOKED" ? "ถอนผลการตรวจ" : "บันทึกผลการตรวจ"}</button></div>
 </fieldset></section>;
 }
 
-export function PromotionsWorkspace({ role }: { role: LocalRole }) {
+export function PromotionsWorkspace({ role: _role }: { role: LocalRole }) {
   const permissions = useHubPermissions();
   const canRead = permissions.can("promotions") && permissions.can("projects");
   const canEdit = permissions.can("promotions", "edit"), authority = capabilityKey(permissions.account);
@@ -127,9 +110,22 @@ export function PromotionsWorkspace({ role }: { role: LocalRole }) {
   const defaultBrand = params.get("owning_brand_id") ?? "", suggestionId = params.get("suggestion");
   const contextKind = params.get("context_kind"), contextRef = params.get("context_ref"), contextPhase = params.get("context_phase");
   const suggestionSource = params.get("suggestion_source");
+  const [searchText, setSearchText] = useState(params.get("q") ?? "");
+  const [debouncedQuery, setDebouncedQuery] = useState(() => (params.get("q") ?? "").trim());
+  useEffect(() => {
+    const trimmed = searchText.trim();
+    if (!trimmed) { setDebouncedQuery(""); return; }
+    const timer = setTimeout(() => setDebouncedQuery(trimmed), 180);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+  const tier = (params.get("tier") ?? "") as PromotionTier | "";
+  const brandFilter = params.get("brand_id") ?? "", groupFilter = params.get("project_group_id") ?? "";
+  const [references, setReferences] = useState<PromotionReferences>({});
+  const [tierCounts, setTierCounts] = useState<Record<string, number> | null>(null), [statusCounts, setStatusCounts] = useState<Record<string, number> | null>(null);
+  const statusFilter = (params.get("status") ?? "all") as StatusFilter;
   const [brands, setBrands] = useState<Brand[]>([]), [suggestion, setSuggestion] = useState<SuggestionInput | null>(null);
   const [suggestionError, setSuggestionError] = useState(""), [referenceError, setReferenceError] = useState("");
-  useEffect(() => { let active = true; setBrands([]); setReferenceError(""); if (!canRead) return; request<{ brands: Brand[] }>(`${base}/references`).then(result => { if (active) setBrands(result.brands ?? []); }).catch(error => { if (active) setReferenceError(error.message); }); return () => { active = false; }; }, [authority, canRead]);
+  useEffect(() => { let active = true; setBrands([]); setReferenceError(""); if (!canRead) return; request<PromotionReferences>(`${base}/references`).then(result => { if (active) { setReferences(result); setBrands(result.brands ?? []); } }).catch(error => { if (active) setReferenceError(error.message); }); return () => { active = false; }; }, [authority, canRead]);
   useEffect(() => {
     let active = true; setSuggestion(null); setSuggestionError("");
     if (!canRead || !suggestionId || selected !== "new") return;
@@ -142,26 +138,185 @@ export function PromotionsWorkspace({ role }: { role: LocalRole }) {
     return () => { active = false; };
   }, [suggestionId, selected, contextKind, contextRef, contextPhase, suggestionSource, authority, canRead]);
   const [projects, setProjects] = useState<Project[]>([]); const [rows, setRows] = useState<Promotion[]>([]); const [total, setTotal] = useState(0); const [row, setRow] = useState<Promotion | null>(null);
-  const [loading, setLoading] = useState(true); const [detailLoading, setDetailLoading] = useState(false); const [error, setError] = useState(""); const [detailError, setDetailError] = useState(""); const [message, setMessage] = useState(""); const [refresh, setRefresh] = useState(0);
-  useEffect(() => { let active = true; setProjects([]); if (!canRead) return; request<{ items: Project[] } | Project[]>("v1/admin/projects").then(result => { if (active) setProjects(Array.isArray(result) ? result : result.items); }).catch(() => { if (active) setError("โหลดรายชื่อโครงการไม่สำเร็จ กรุณาลองใหม่"); }); return () => { active = false; }; }, [refresh, authority, canRead]);
-  useEffect(() => { let active = true; setLoading(true); setRows([]); setError(""); if (!canRead) return; const q = new URLSearchParams({ limit: "50", offset: String(offset) }); if (project) q.set("project_id", project); request<{ items: Promotion[]; total: number }>(`${base}?${q}`).then(result => { if (active) { setRows(result.items); setTotal(result.total); } }).catch(err => { if (active) setError(err.message); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [project, offset, refresh, authority, canRead]);
+  const [loading, setLoading] = useState(true); const [initialLoading, setInitialLoading] = useState(true); const [detailLoading, setDetailLoading] = useState(false); const [error, setError] = useState(""); const [detailError, setDetailError] = useState(""); const [message, setMessage] = useState(""); const [refresh, setRefresh] = useState(0);
+  useEffect(() => { let active = true; setProjects([]); if (!canRead) return; request<{ items: Project[] } | Project[]>("v1/admin/projects?summary=1").then(result => { if (active) setProjects(Array.isArray(result) ? result : result.items); }).catch(() => { if (active) setError("โหลดรายชื่อโครงการไม่สำเร็จ กรุณาลองใหม่"); }); return () => { active = false; }; }, [refresh, authority, canRead]);
+  useEffect(() => { let active = true; setLoading(true); setError(""); if (!canRead) { setLoading(false); setInitialLoading(false); return; } const q = new URLSearchParams({ limit: "50", offset: String(offset) }); if (project) q.set("project_id", project); if (tier) q.set("tier", tier); if (statusFilter !== "all") q.set("status", statusFilter); if (brandFilter) q.set("brand_id", brandFilter); if (groupFilter) q.set("project_group_id", groupFilter); if (debouncedQuery) q.set("q", debouncedQuery); request<{ items: Promotion[]; total: number; tier_counts?: Record<string, number>; status_counts?: Record<string, number> }>(`${base}?${q}`).then(result => { if (active) { setRows(result.items); setTotal(result.total); setTierCounts(result.tier_counts ?? null); setStatusCounts(result.status_counts ?? null); } }).catch(err => { if (active) setError(err.message); }).finally(() => { if (active) { setLoading(false); setInitialLoading(false); } }); return () => { active = false; }; }, [project, tier, statusFilter, brandFilter, groupFilter, debouncedQuery, offset, refresh, authority, canRead]);
   useEffect(() => { let active = true; setRow(null); setDetailError(""); clearDirty(); if (!canRead || !selected || selected === "new") return; setDetailLoading(true); request<Promotion>(`${base}/${selected}`).then(result => { if (active) setRow(result); }).catch(err => { if (active) setDetailError(err.message); }).finally(() => { if (active) setDetailLoading(false); }); return () => { active = false; }; }, [selected, authority, canRead]);
+
+  const counts = useMemo(() => {
+    const summary = { all: rows.length, live: 0, draft: 0, paused: 0 };
+    if (statusCounts) return { ...summary, ...statusCounts };
+    for (const item of rows) summary[statusTone(item)] += 1;
+    return summary;
+  }, [rows, statusCounts]);
+
+  const visibleRows = useMemo(() => {
+    const q = searchText.trim().toLocaleLowerCase("th");
+    return rows.filter(item => {
+      if (tier && tierOf(item) !== tier) return false;
+      if (!statusCounts && statusFilter !== "all" && statusTone(item) !== statusFilter) return false;
+      if (statusCounts || !q) return true;
+      const owner = resolveOwnerDisplay(item, projects, brands, references);
+      const haystack = `${thai(item.title)} ${item.code} ${owner.title}`.toLocaleLowerCase("th");
+      return haystack.includes(q);
+    });
+  }, [rows, tier, statusFilter, searchText, projects, brands, references, statusCounts]);
+
   function saved(value: Promotion) { setRow(value); clearDirty(); setMessage("บันทึกข้อมูลแล้ว"); if (selected === "new") navigate({ promotion: value.id, suggestion: null, suggestion_source: null, exclude_project: null }, true); else if (params.has("exclude_project")) navigate({ exclude_project: null }, true); setRefresh(previous => previous + 1); }
   function close() { if (navigate({ promotion: null })) { clearDirty(); setRow(null); } }
   if (!canRead) return <p className="notice">{text.promotion_access_denied}</p>;
-  return <><div className="content-workspace">{contextRef && (contextKind === "project" || contextKind === "brand") && <p><a href={workspaceHref({ level: contextKind, id: contextRef, phase: contextPhase, tab: "promotions" })}>{text.promotion_context_return}</a></p>}<div className="content-header"><div><h1 id="registry-title" tabIndex={-1}>โปรโมชันโครงการ</h1><p>ร่าง เงื่อนไข และช่วงเวลาที่ลูกค้าใช้สิทธิ์ได้</p></div>{canEdit && <button className="registry-button primary" onClick={() => navigate({ promotion: "new" })}>สร้างโปรโมชัน</button>}</div><PendingQuestion id="Q40" /><div role="status" aria-live="polite"><StatusText message={message} /></div><ErrorSummary message={error} />
-    <label>กรองตามโครงการ<select className="registry-input" value={project} onChange={event => navigate({ project_id: event.target.value, offset: null, promotion: null })}><option value="">ทุกโครงการ</option>{projects.map(item => <option key={item.id} value={item.id}>{thai(item.public_name) === "ยังไม่ระบุ" ? item.source_name ?? item.public_project_id : thai(item.public_name)} · {item.public_project_id}</option>)}</select></label>
-    {loading ? <><p role="status">กำลังโหลดโปรโมชัน…</p><LoadingRows /></> : <section className="registry-panel"><p>{total} รายการ</p>{rows.length ? <table className="registry-table"><thead><tr><th>โปรโมชัน</th><th>โครงการและร่าง</th><th>ช่วงเวลาไทย</th><th>สถานะเผยแพร่</th></tr></thead><tbody>{rows.map(item => <tr key={item.id}><td data-label="โปรโมชัน"><RegistryRowSummary id={`promotion-${item.id}`}><button onClick={() => navigate({ promotion: item.id })}>{thai(item.title)}</button><div><code>{item.code}</code></div><DemoFields fields={item.demo_fields} /></RegistryRowSummary></td><td data-label="โครงการและร่าง">{promotionOwner(item)}<p>ร่างรุ่น {item.draft_revision}</p></td><td data-label="ช่วงเวลาไทย">{dateTime(item.starts_at)}<br />ถึงก่อน {dateTime(item.ends_at)}</td><td data-label="สถานะเผยแพร่">{publicationLabel(item)}</td></tr>)}</tbody></table> : <p>ไม่พบโปรโมชันตามตัวกรอง</p>}<div className="content-actions"><button className="registry-button" disabled={offset === 0} onClick={() => navigate({ offset: String(Math.max(0, offset - 50)), promotion: null })}>หน้าก่อน</button><button className="registry-button" disabled={offset + 50 >= total} onClick={() => navigate({ offset: String(offset + 50), promotion: null })}>หน้าถัดไป</button><button className="registry-button" onClick={() => setRefresh(value => value + 1)}>โหลดรายการใหม่</button></div></section>}
-    {selected && <DetailDialog key={selected} dialogId={`promotion-${selected}`} title={selected === "new" ? "สร้างโปรโมชัน" : row ? thai(row.title) : "รายละเอียดโปรโมชัน"} onClose={close}>{detailLoading && <p role="status">กำลังโหลดรายละเอียด…</p>}<ErrorSummary message={detailError || referenceError || suggestionError} />{selected === "new" ? !canEdit ? <p>{text.promotion_read_only}</p> : suggestionId && !suggestion ? suggestionError ? null : <p role="status">{text.loading}</p> : <PromotionDraft key={suggestion?.candidate_id ?? "new"} projects={projects} brands={brands} defaultProject={project} defaultBrand={defaultBrand} suggestion={suggestion} onSaved={saved} onDirty={setDraftDirty} /> : row && <>
-      {contextRef && (row.owning_brand_id || (row.scope?.count ?? 0) > 1) && <p className="notice">{text.promotion_shared_edit.replace("{count}", String(row.scope?.count ?? 0))}</p>}
-      <DemoFields fields={row.demo_fields} /><p>ร่างรุ่น {row.draft_revision} · แก้ไขล่าสุด {dateTime(row.updated_at)}</p><Ready value={row.readiness} />
-      {canEdit ? <PromotionDraft key={`${row.id}-${row.draft_revision}`} promotion={row} projects={projects} brands={brands} defaultProject={project} disabled={commercialDirty} onSaved={saved} onDirty={setDraftDirty} /> : <PromotionText promotion={row} />}{dirty && <p role="status">มีการแก้ไขที่ยังไม่บันทึก</p>}
-      <PromotionCommercialFields key={`commercial-${row.id}-${row.draft_revision}`} row={row} excludeProject={params.get("exclude_project")} disabled={draftDirty} onSaved={saved} onDirty={setCommercialDirty} />
-      <section className="content-review"><h3>ผลการตรวจแยกตามรุ่นร่าง</h3>{row.reviews?.length ? row.reviews.map((review, index) => <details key={index}><summary>{typeLabel(review.review_type)} · รุ่น {review.review_revision} · {review.decision === "APPROVED" ? "ตรวจผ่าน" : "ถอนผลการตรวจ"}{review.review_revision !== row.draft_revision ? " · ไม่ใช่ผลตรวจของร่างปัจจุบัน" : ""}</summary><p className="content-copy">{review.evidence}</p>{review.resolved_project_ids && <p>{text.promotion_resolved_projects}: {review.resolved_project_ids.join(", ")}</p>}<p>{dateTime(review.reviewed_at)} · <ActorName id={review.reviewed_by} /></p></details>) : <p>ยังไม่มีผลการตรวจ</p>}</section>
-      {permissions.can("promotions", "approve") && <PublisherActions key={`${row.id}-${row.draft_revision}`} row={row} onSaved={saved} onDirty={setReviewDirty} />}
-      <p><a className="button secondary" href={`/publish?source=promotion&id=${encodeURIComponent(row.id)}`}>{workflowText.queue}</a></p>
-      <section className="registry-panel"><h3>ฉบับเผยแพร่ที่แยกจากร่าง</h3><p>{publicationLabel(row)}</p>{row.published ? <><p>ฉบับ {row.published.version_no} · เผยแพร่เมื่อ {dateTime(row.published.published_at)}</p><p>สถานะตามช่วงเวลา: {Date.now() < new Date(row.published.payload.starts_at).getTime() ? "ยังไม่เริ่มใช้สิทธิ์" : Date.now() >= new Date(row.published.payload.ends_at).getTime() ? "หมดอายุแล้ว" : "อยู่ในช่วงใช้สิทธิ์"} · การให้สิทธิ์จริงยังต้องผ่านการตรวจโครงการ ต้นทาง และผลการตรวจจากเซิร์ฟเวอร์ทุกครั้ง</p><PromotionText promotion={row.published.payload} /></> : <p>ยังไม่มีฉบับเผยแพร่</p>}</section>
-      <section className="content-history"><h3>ประวัติฉบับเผยแพร่</h3>{row.versions?.length ? <ul>{row.versions.map(version => <li key={version.id}>ฉบับ {version.version_no} · {dateTime(version.published_at)} · <code>{version.id}</code></li>)}</ul> : <p>ยังไม่มีประวัติ</p>}</section>
-    </>}</DetailDialog>}
-  </div></>;
+  return <div className="content-workspace promo-workspace">
+    {contextRef && (contextKind === "project" || contextKind === "brand" || contextKind === "project_group" || contextKind === "corporate") && <p className="promo-back-row"><a className="button secondary" href={workspaceHref({ level: contextKind, id: contextRef, phase: contextPhase, tab: "promotions" })}>{text.promotion_context_return}</a></p>}
+    <header className="promo-hero">
+      <div>
+        <h1 id="registry-title" tabIndex={-1}>โปรโมชัน</h1>
+        <p>จัดการข้อเสนอ สิทธิประโยชน์ ขอบเขตโครงการ และการตรวจข้อกฎหมายก่อนเผยแพร่ขึ้นเว็บไซต์และผู้ช่วย AI</p>
+      </div>
+      {canEdit && <button type="button" className="registry-button primary" onClick={() => navigate({ promotion: "new", context_kind: null, context_ref: null, context_phase: null, owning_brand_id: null, owning_project_group_id: null, suggestion: null, suggestion_source: null })}>สร้างโปรโมชัน</button>}
+    </header>
+
+    <div role="status" aria-live="polite"><StatusText message={message} /></div>
+    <ErrorSummary message={error} />
+
+    <nav className="promo-tier-tabs" aria-label="กรองระดับโปรโมชัน">{[["", "ทั้งหมด"], ...Object.entries(promotionTiers)].map(([key, label]) => <button key={key} type="button" className="promo-pill" aria-pressed={tier === key} onClick={() => navigate({ tier: key || null, offset: null, brand_id: null, project_group_id: null, project_id: null })}>{label} ({tierCounts?.[key || "all"] ?? (key ? rows.filter(row => tierOf(row) === key).length : total)})</button>)}</nav>
+    <section className="promo-kpis" aria-label="สรุปสถานะโปรโมชัน">
+      {([
+        ["all", "ทั้งหมด", counts.all],
+        ["live", "เผยแพร่และแสดงได้", counts.live],
+        ["draft", "ฉบับร่าง / รอตรวจ", counts.draft],
+        ["paused", "งดแสดง / หมดอายุ", counts.paused],
+      ] as const).map(([key, label, count]) => <button key={key} type="button" className="promo-kpi-btn" aria-pressed={statusFilter === key} onClick={() => navigate({ status: key === "all" ? null : key, offset: null })}>
+        <span className="promo-kpi-label">{label}</span>
+        <span className="promo-kpi-value">{loading ? "…" : count}</span>
+      </button>)}
+    </section>
+
+    <div className="promo-toolbar">
+      <div className="promo-toolbar-field">
+        <label htmlFor="promo-search-input">ค้นหาโปรโมชัน</label>
+        <input id="promo-search-input" type="search" className="registry-input" placeholder="ค้นหาจากชื่อโปรโมชันหรือรหัส" value={searchText} onChange={event => { setSearchText(event.target.value); if (offset) navigate({ offset: null }); }} />
+      </div>
+      <div className="promo-toolbar-field">
+        {tier === "brand" ? <><label htmlFor="promo-brand-filter">กรองตามแบรนด์</label><select id="promo-brand-filter" className="registry-input" value={brandFilter} onChange={event => navigate({ brand_id: event.target.value, offset: null })}><option value="">ทุกแบรนด์</option>{brands.map(item => <option key={item.id} value={item.id}>{workspaceName(item.label)}</option>)}</select></> : tier === "project_group" ? <><label htmlFor="promo-group-filter">กรองตามกลุ่มโครงการ</label><select id="promo-group-filter" className="registry-input" value={groupFilter} onChange={event => navigate({ project_group_id: event.target.value, offset: null })}><option value="">ทุกกลุ่มโครงการ</option>{references.project_groups?.map(item => <option key={item.id} value={item.id}>{workspaceName(item.label)}</option>)}</select></> : <><label htmlFor="promo-project-filter">กรองตามโครงการ</label><select id="promo-project-filter" className="registry-input" value={project} onChange={event => navigate({ project_id: event.target.value, offset: null, promotion: null })}><option value="">ทุกโครงการ</option>{projects.map(item => <option key={item.id} value={item.id}>{projectLabel(item)}</option>)}</select></>}
+
+      </div>
+      <div className="content-actions" style={{ marginTop: 0 }}>
+        {(searchText || statusFilter !== "all" || project || tier || brandFilter || groupFilter) && <button type="button" className="button secondary" onClick={() => { setSearchText(""); navigate({ project_id: null, status: null, tier: null, brand_id: null, project_group_id: null, q: null, offset: null, promotion: null }); }}>ล้างตัวกรอง</button>}
+        <button type="button" className="registry-button" onClick={() => setRefresh(value => value + 1)}>โหลดรายการใหม่</button>
+      </div>
+    </div>
+
+    {initialLoading ? <><p role="status">กำลังโหลดโปรโมชัน…</p><LoadingRows /></> : <section className="registry-panel promo-table-panel">
+      <div className="promo-table-meta">
+        <span>แสดง {visibleRows.length} จากทั้งหมด {total} รายการ</span>
+        {statusFilter !== "all" && <span>กรองเฉพาะสถานะที่เลือก</span>}
+      </div>
+      {visibleRows.length ? <table className="registry-table promo-table">
+        <thead>
+          <tr>
+            <th>โปรโมชันและสิทธิประโยชน์</th>
+            <th>โครงการ / แบรนด์</th>
+            <th>ระยะเวลาใช้สิทธิ์</th>
+            <th>สถานะเผยแพร่และการตรวจ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visibleRows.map(item => {
+            const owner = resolveOwnerDisplay(item, projects, brands, references);
+            const dataOk = currentLaneApproved(item, "DATA");
+            const legalOk = currentLaneApproved(item, "LEGAL");
+            return <tr key={item.id}>
+              <td data-label="โปรโมชันและสิทธิประโยชน์">
+                <RegistryRowSummary id={`promotion-${item.id}`}>
+                  <button type="button" className="promo-title-btn" onClick={() => navigate({ promotion: item.id })}>{thai(item.title)}</button>
+                  <div className="promo-row-sub">
+                    <code className="promo-code-chip">{item.code}</code>
+                    <span className="promo-badge">{promotionTiers[tierOf(item)]}</span>{item.highlight_badge?.th && <strong className="promo-highlight">{item.highlight_badge.th}</strong>}{item.benefit_items?.length ? item.benefit_items.map((benefit, index) => <span key={index} className="promo-benefit-chip">{benefitText(benefit)}</span>) : <span className="promo-benefit-chip">{benefitText(item)}</span>}
+                  </div>
+                  <DemoFields fields={item.demo_fields} />
+                </RegistryRowSummary>
+              </td>
+              <td data-label="โครงการ / แบรนด์">
+                <div className="promo-owner-name">{owner.title}</div>
+                <p className="promo-owner-meta">{owner.subtitle}</p>
+              </td>
+              <td data-label="ระยะเวลาใช้สิทธิ์" className="promo-window-cell">
+                <span>{dateTime(item.starts_at)}</span>
+                <span className="promo-window-sub">ถึงก่อน {dateTime(item.ends_at)}</span>
+                {item.booking_from && <span className="promo-window-sub">จอง: {dateTime(item.booking_from)} – {item.booking_to && dateTime(item.booking_to)}</span>}
+                {item.transfer_from && <span className="promo-window-sub">โอน: {dateTime(item.transfer_from)} – {item.transfer_to && dateTime(item.transfer_to)}</span>}
+              </td>
+              <td data-label="สถานะเผยแพร่และการตรวจ">
+                <span className="promo-badge" data-tone={statusTone(item)}>{publicationLabel(item)}</span>
+                <div className="promo-lane-pills">
+                  <span className="promo-lane-pill" data-approved={dataOk}>ข้อมูล: {dataOk ? "ผ่านแล้ว" : "รอตรวจ"}</span>
+                  <span className="promo-lane-pill" data-approved={legalOk}>ข้อกฎหมาย: {legalOk ? "ผ่านแล้ว" : "รอตรวจ"}</span>
+                </div>
+              </td>
+            </tr>;
+          })}
+        </tbody>
+      </table> : <p style={{ padding: "24px 20px", margin: 0 }}>ไม่พบโปรโมชันตามตัวกรอง</p>}
+      <div className="content-actions promo-pagination">
+        <div>
+          <button type="button" className="registry-button" disabled={offset === 0} onClick={() => navigate({ offset: String(Math.max(0, offset - 50)), promotion: null })}>หน้าก่อน</button>
+          <button type="button" className="registry-button" disabled={offset + 50 >= total} onClick={() => navigate({ offset: String(offset + 50), promotion: null })} style={{ marginLeft: 8 }}>หน้าถัดไป</button>
+        </div>
+        <span className="content-muted">หน้า {Math.floor(offset / 50) + 1}</span>
+      </div>
+    </section>}
+
+    {selected && <DetailDialog key={selected} dialogId={`promotion-${selected}`} title={selected === "new" ? "สร้างโปรโมชัน" : row ? thai(row.title) : "รายละเอียดโปรโมชัน"} onClose={close}>
+      <div className="promo-modal-body">
+        {detailLoading && <p role="status">กำลังโหลดรายละเอียด…</p>}
+        <ErrorSummary message={detailError || referenceError || suggestionError} />
+        {selected === "new" ? !canEdit ? <p>{text.promotion_read_only}</p> : suggestionId && !suggestion ? suggestionError ? null : <p role="status">{text.loading}</p> : <PromotionDraft key={suggestion?.candidate_id ?? "new"} projects={projects} brands={brands} references={references} defaultProject={project} defaultBrand={defaultBrand} defaultGroup={params.get("owning_project_group_id") ?? ""} defaultTier={contextKind === "corporate" || contextKind === "project_group" ? contextKind : tier || undefined} contextLocked={Boolean(contextKind)} suggestion={suggestion} onSaved={saved} onDirty={setDraftDirty} /> : row && <>
+          <div className="promo-Progress-bar">
+            <div className="promo-steps">
+              <span className="promo-step" data-done="true">1. ร่างรุ่น {row.draft_revision} · แก้ไขล่าสุด {dateTime(row.updated_at)}</span>
+              <span className="promo-step" data-done={currentLaneApproved(row, "DATA") && currentLaneApproved(row, "LEGAL")}>
+                2. ตรวจข้อมูล ({currentLaneApproved(row, "DATA") ? "ผ่าน" : "รอ"}) · กฎหมาย ({currentLaneApproved(row, "LEGAL") ? "ผ่าน" : "รอ"})
+              </span>
+              <span className="promo-step" data-done={Boolean(row.published_version_id && row.publication_available)}>
+                3. {publicationLabel(row)}
+              </span>
+            </div>
+            <a className="button secondary" href={`/publish?source=promotion&id=${encodeURIComponent(row.id)}`}>{workflowText.queue}</a>
+          </div>
+          {contextRef && (row.owning_brand_id || (row.scope?.count ?? 0) > 1) && <p className="notice">{text.promotion_shared_edit.replace("{count}", String(row.scope?.count ?? 0))}</p>}
+          <DemoFields fields={row.demo_fields} />
+          <Ready value={row.readiness} />
+          {dirty && <p role="status" className="promo-lock-hint">มีการแก้ไขที่ยังไม่บันทึก</p>}
+          {canEdit && row.can_edit === false && <p className="notice">ดูข้อมูลได้บางโครงการเท่านั้น การแก้ไขโปรโมชันนี้ต้องมีสิทธิ์ครบทุกโครงการที่ร่วมรายการ</p>}
+          {canEdit && row.can_edit !== false ? <PromotionDraft key={`${row.id}-${row.draft_revision}`} promotion={row} projects={projects} brands={brands} references={references} defaultProject={project} excludeProject={params.get("exclude_project")} disabled={commercialDirty} onSaved={saved} onDirty={setDraftDirty} /> : <section className="registry-panel promo-section-card"><h3>รายละเอียดโปรโมชันฉบับร่าง</h3><PromotionText promotion={row} projects={projects} brands={brands} references={references} /></section>}
+          <PromotionCommercialFields key={`commercial-${row.id}-${row.draft_revision}`} row={row} initialReferences={references} integrated={canEdit && row.can_edit !== false} disabled={draftDirty || row.can_edit === false} onSaved={saved} onDirty={setCommercialDirty} />
+          <section className="registry-panel promo-section-card content-review" style={{ marginTop: 0 }}>
+            <h3>ผลการตรวจแยกตามรุ่นร่าง</h3>
+            {row.reviews?.length ? row.reviews.map((review, index) => <details key={index}>
+              <summary>{typeLabel(review.review_type)} · รุ่น {review.review_revision} · {review.decision === "APPROVED" ? "ตรวจผ่าน" : "ถอนผลการตรวจ"}{review.review_revision !== row.draft_revision ? " · ไม่ใช่ผลตรวจของร่างปัจจุบัน" : ""}</summary>
+              <p className="content-copy">{review.evidence}</p>
+              {review.resolved_project_ids && <p>{text.promotion_resolved_projects}: {review.resolved_project_ids.map(id => { const project = projects.find(project => project.public_project_id === id); return project ? projectLabel(project) : workspaceName(row.scope?.items.find(project => project.public_id === id)?.label) || "โครงการในขอบเขตที่ตรวจแล้ว"; }).join(", ")}</p>}
+              <p className="content-muted">{dateTime(review.reviewed_at)} · <ActorName id={review.reviewed_by} /></p>
+            </details>) : <p className="content-muted">ยังไม่มีผลการตรวจสำหรับโปรโมชันนี้</p>}
+          </section>
+          {permissions.can("promotions", "approve") && <PublisherActions key={`${row.id}-${row.draft_revision}`} row={row} onSaved={saved} onDirty={setReviewDirty} />}
+          <details className="promo-subdrawer" open={Boolean(row.published)}>
+            <summary>ฉบับเผยแพร่ปัจจุบันและประวัติ ({row.versions?.length ?? 0} ฉบับ)</summary>
+            <div>
+              <p><strong>สถานะเผยแพร่:</strong> {publicationLabel(row)}</p>
+              {row.published ? <>
+                <p>ฉบับ {row.published.version_no} · เผยแพร่เมื่อ {dateTime(row.published.published_at)}</p>
+                <p className="content-muted">สถานะตามช่วงเวลา: {Date.now() < new Date(row.published.payload.starts_at).getTime() ? "ยังไม่เริ่มใช้สิทธิ์" : Date.now() >= new Date(row.published.payload.ends_at).getTime() ? "หมดอายุแล้ว" : "อยู่ในช่วงใช้สิทธิ์"} · การให้สิทธิ์จริงตรวจโครงการ ต้นทาง และผลการตรวจจากเซิร์ฟเวอร์ทุกครั้ง</p>
+                <PromotionText promotion={row.published.payload} projects={projects} brands={brands} references={references} />
+              </> : <p className="content-muted">ยังไม่มีฉบับเผยแพร่</p>}
+              <div className="content-history">
+                <h4>ประวัติฉบับเผยแพร่</h4>
+                {row.versions?.length ? <ul>{row.versions.map(version => <li key={version.id}>ฉบับ {version.version_no} · {dateTime(version.published_at)}</li>)}</ul> : <p className="content-muted">ยังไม่มีประวัติ</p>}
+              </div>
+            </div>
+          </details>
+        </>}
+      </div>
+    </DetailDialog>}
+  </div>;
 }

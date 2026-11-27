@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getHubAccount } from "@/lib/hosted-session";
-import { canWorkspace } from "@/lib/hub-permissions";
 import { workspaceLanding } from "@/components/hub-navigation-data";
 import { legacyWorkspaceHref, queryParameters } from "@/lib/unified-workspace";
 
@@ -10,10 +9,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const query = queryParameters(await searchParams);
   if (!query.size) {
     const account = await getHubAccount();
-    if (account && !canWorkspace(account.capabilities)) {
+    if (account) {
       const destination = workspaceLanding(account.capabilities);
       if (destination !== "/") redirect(destination);
     }
+    redirect("/home");
   }
-  redirect(legacyWorkspaceHref("/", query) ?? "/website");
+  redirect(legacyWorkspaceHref("/", query) ?? "/home");
 }

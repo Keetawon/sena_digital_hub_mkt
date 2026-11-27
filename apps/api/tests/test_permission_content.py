@@ -164,6 +164,9 @@ def test_content_sd_mutation_entries_deny_without_capabilities(permission_accoun
                 and p.proname ~ '^(create_|patch_|update_|review_|publish_|withdraw_|rollback_|bind_|unbind_|add_|prefill_|assign_|save_|confirm_|resolve_|register_)'""")
             assert len(entries) >= 30
             for entry in entries:
+                if entry['proname'] == 'update_own_profile' and account == 'viewer':
+                    # Active human accounts may edit their own profile row via /v1/me/profile.
+                    continue
                 args = ','.join('null::' + t for t in entry['types'])
                 with pytest.raises((asyncpg.InsufficientPrivilegeError, asyncpg.NoDataFoundError)):
                     await call(db, ids[account], f"select hub.{entry['proname']}({args})")

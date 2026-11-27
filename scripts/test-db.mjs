@@ -26,6 +26,26 @@ try {
   console.log('PASS: account RLS, decisions, append-only audit and retention');
   await connection.query(await readFile(new URL('../supabase/tests/account_invitations.sql', import.meta.url), 'utf8'));
   console.log('PASS: invitation grants, confirmation proof, normalized email, lifetime and one-use acceptance');
+  await connection.query(await readFile(new URL('../supabase/tests/test_account_self_profile.sql', import.meta.url), 'utf8'));
+  console.log('PASS: account self-profile update, agency lock, private avatar metadata and purge cleanup');
+  await connection.query(await readFile(new URL('../supabase/tests/test_phase_a_speed_and_links.sql', import.meta.url), 'utf8'));
+  console.log('PASS: Phase A project summaries, direct edit action links and optimized workspace/readiness/history projections');
+  await connection.query(await readFile(new URL('../supabase/tests/km_dashboard_and_fast_workspace.sql', import.meta.url), 'utf8'));
+  console.log('PASS: KM dashboard task/scope summaries, cover-image fallbacks, programme/group data tabs and fast history/task queries');
+  await connection.query(await readFile(new URL('../supabase/tests/event_hub.sql', import.meta.url), 'utf8'));
+  console.log('PASS: Event Hub FORCE RLS, 2-tier R2 attachment visibility, co-join workflow and critical change read-receipts');
+  // Reuse the existing real publication fixture inside the same rollback as the
+  // five-tier test. Snapshot inserts still pass every publication trigger.
+  const promotionPublicationFixture = (await readFile(new URL('../supabase/tests/residential_demo.sql', import.meta.url), 'utf8')).split('-- Every new table')[0];
+  const secondPromotionPublicationFixture = promotionPublicationFixture.replace('begin;', '')
+    .replaceAll('SQL-RESIDENTIAL-21', 'SQL-RESIDENTIAL-21-B')
+    .replaceAll('sql-residential', 'sql-residential-b')
+    .replaceAll('SYNTHETIC:SQL:000021', 'SYNTHETIC:SQL:000021B');
+  const multiTierPromotions = await readFile(new URL('../supabase/tests/test_multi_tier_promotions.sql', import.meta.url), 'utf8');
+  await connection.query(promotionPublicationFixture
+    + "select set_config('test.multi_other_published_project',current_setting('test.residential_project'),true);"
+    + secondPromotionPublicationFixture + multiTierPromotions.replace('begin;', ''));
+  console.log('PASS: five promotion tiers, packages, immutable ownership, programme/group scope, exclusions, scope authorization and frozen snapshots');
   connection.on('notice', (notice) => console.log(notice.message));
   await connection.query(await readFile(new URL('../supabase/tests/knowledge_review.sql', import.meta.url), 'utf8'));
   console.log('PASS: knowledge immutable evidence, role isolation, phase review, stale writes and rights flags');

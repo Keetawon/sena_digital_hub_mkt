@@ -19,7 +19,7 @@ FOUNDATION_TABLES = {'hub.permission_catalog', 'hub.permission_template', 'hub.a
 FOUNDATION_FUNCTIONS = {'hub.permission_actor', 'hub.validate_permission_row', 'hub.permission_rows',
     'hub.copy_account_template', 'hub.can', 'hub.can_special', 'hub.can_agency_registry',
     'hub.permission_projection', 'hub.permission_catalog_read', 'hub.save_account_permissions'}
-ACCOUNT_UI_TABLES = {'hub.permission_notice_ack'}
+ACCOUNT_UI_TABLES = {'hub.permission_notice_ack', 'hub.user_account_avatar'}
 WEBSITE_TABLES = {'hub.website_asset_suggestions', 'staging.website_content_receipts'}
 MEDIA_WORKER_TABLES = {'hub.media_ai_settings', 'hub.media_worker_status'}
 WEBSITE_FUNCTIONS = {'hub.' + name for name in ('website_source_valid', 'website_media_agreement',
@@ -28,7 +28,8 @@ WEBSITE_FUNCTIONS = {'hub.' + name for name in ('website_source_valid', 'website
 ACCOUNT_UI_FUNCTIONS = {'hub.' + name for name in (
     'normalise_permission_tabs', 'account_access', 'permission_catalog_digest', 'resolve_account_access',
     'write_account_access', 'configure_account_access', 'approve_account_access', 'permission_batch_preview',
-    'preview_account_permissions', 'apply_account_permissions', 'ack_permission_notice')}
+    'preview_account_permissions', 'apply_account_permissions', 'ack_permission_notice',
+    'update_own_profile', 'set_own_avatar', 'clear_own_avatar', 'read_avatar_metadata')}
 CONTENT_TABLES = {'hub.' + name for name in (
     'projects', 'model_types', 'entity_assets', 'entity_versions', 'commercial_types', 'commercial_type_sources',
     'commercial_type_assets', 'facility_taxonomy', 'project_facilities', 'project_progress_cache', 'project_progress_dirty',
@@ -57,7 +58,7 @@ PROJECT_CONTENT_FUNCTIONS = {'hub.' + name for name in (
     'content_translation_list', 'review_content_translation', 'retry_content_translation', 'glossary_read', 'save_glossary', 'approve_glossary',
     'translation_requester_allowed', 'claim_translation', 'finish_translation', 'translation_complete',
     'project_content_readiness', 'project_content', 'faq_references', 'submit_faq', 'submit_content_section',
-    'review_knowledge_candidate_before_versions')}
+    'review_knowledge_candidate_before_versions', 'project_required_missing_summary', 'list_project_summaries')}
 WORKSPACE_FUNCTIONS = {
     'hub.workspace_item_context',
     'hub.content_activity', 'hub.content_history', 'hub.content_history_event',
@@ -106,6 +107,7 @@ WORKFLOW_FUNCTIONS = {
     'hub.content_workflow_material',
     'hub.content_workflow_payload',
     'hub.content_workflow_read',
+    'hub.content_workflow_read_core',
     'hub.content_workflow_review',
     'hub.content_workflow_save_approve',
     'hub.content_workflow_source',
@@ -191,6 +193,17 @@ UPLOAD_INVENTORY = json.loads((Path(__file__).resolve().parents[3] / 'tests/perm
 UPLOAD_TABLES = set(UPLOAD_INVENTORY['tables'])
 UPLOAD_FUNCTIONS = {row['name'] for row in UPLOAD_INVENTORY['functions']}
 
+EVENT_TABLES = {'hub.' + name for name in (
+    'event_sequence', 'events', 'event_attachments', 'event_participants', 'event_revisions', 'event_acknowledgements')}
+EVENT_FUNCTIONS = {'hub.' + name for name in (
+    'event_staff_allowed', 'event_require_staff', 'event_can_manage', 'event_can_read_finance',
+    'event_next_code', 'event_live_status', 'event_record_critical_change',
+    'can_read_asset_before_events', 'can_upload_asset_before_events',
+    'event_references', 'event_list', 'event_read', 'event_save',
+    'event_attachment_add', 'event_attachment_remove',
+    'event_join_save', 'event_join_decide',
+    'event_ack_alerts', 'event_acknowledge')}
+
 # Phase 4 FAQ intake: owner-only tables, read and written only through guarded definers.
 FAQ_COVERAGE_FUNCTIONS = {'hub.' + name for name in ('faq_project_form', 'faq_rule_projects', 'faq_applicability_preview', 'faq_fact_keys', 'faq_fact_slot', 'faq_clean_text', 'faq_lint', 'faq_sync_gap', 'compose_project_faq', 'faq_composition', 'faq_coverage', 'faq_gaps', 'faq_gap_update')}
 FAQ_INTAKE_TABLES = {'staging.faq_clusters', 'hub.faq_intake_decisions'}
@@ -224,6 +237,8 @@ COMMERCIAL_FUNCTIONS = {'hub.' + name for name in (
     'promotion_banner_changed', 'track_promotion_translation', 'promotion_owner_guard',
     'promotion_scope_projects', 'validate_promotion_scope', 'promotion_scope_snapshot',
     'promotion_scope_access', 'promotion_scope_visible', 'promotion_resolve',
+    'promotion_benefit_items_valid', 'promotion_benefit_sync', 'promotion_require_scope', 'promotion_filter_matches',
+    'promotion_require_project_ids', 'promotion_frozen_scope_guard',
     'workspace_promotion_rows', 'workspace_promotions', 'workspace_promotion_suggestions')}
 UNIT_TABLES = {'hub.' + name for name in ('commercial_type_versions', 'project_prices', 'project_price_versions')}
 UNIT_FUNCTIONS = {'hub.' + name for name in (
@@ -268,7 +283,8 @@ ASSISTANT_TABLES = {'internal.' + name for name in ('assistant_run', 'assistant_
 ASSISTANT_POLICIES = {'assistant_run_owner', 'assistant_tool_owner', 'assistant_citation_owner',
     'assistant_proposal_owner', 'assistant_application_owner', 'assistant_event_owner'}
 ASSISTANT_FUNCTIONS = {'internal.' + name for name in ('assistant_require_actor', 'assistant_can_source',
-    'assistant_access', 'assistant_content_version', 'assistant_project_reference', 'assistant_campaign_codes', 'assistant_marketing_lines')}
+    'assistant_access', 'assistant_content_version', 'assistant_project_reference', 'assistant_campaign_codes',
+    'assistant_marketing_lines', 'assistant_scoped_promotion_source')}
 SHARED_TABLES = {'audit.change_log', 'hub.asset_roles', 'hub.user_account', 'hub.user_account_event', 'hub.account_invite'}
 SHARED_TABLES |= {'staging.' + name for name in ('ads_scope_import', 'dw_project_groups', 'dw_projects', 'intake_batches',
     'project_group_evidence', 'project_intake_evidence', 'project_intake_receipts', 'rem_brands', 'rem_companies', 'rem_models', 'rem_projects')}
@@ -316,9 +332,15 @@ def test_live_catalog_matches_reviewed_local_baseline():
                     additions |= WRITING_TABLES if name == 'relations' else WRITING_FUNCTIONS
 
                     additions |= UPLOAD_TABLES if name == 'relations' else UPLOAD_FUNCTIONS
+                    additions |= EVENT_TABLES if name == 'relations' else EVENT_FUNCTIONS
                     assert {r['name'] for r in actual} - {r['name'] for r in BASELINE[name]} == additions
                     actual = [r for r in actual if r['name'] not in additions]
                 if name == 'policies':
+                    events = [r for r in actual if r['schema'] + '.' + r['table'] in EVENT_TABLES]
+                    assert len(events) == len(EVENT_TABLES) == 6
+                    assert all(r['name'] == 'event_owner' and r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
+                        and r['qual'] == r['with_check'] == 'true' for r in events)
+                    actual = [r for r in actual if r not in events]
                     writing = [r for r in actual if r['schema'] + '.' + r['table'] in WRITING_TABLES]
                     assert len(writing) == len(WRITING_TABLES) == 2
                     assert all(r['name'] == 'writing_owner' and r['roles'] == ['postgres'] and r['cmd'] == 'ALL'
@@ -424,7 +446,7 @@ def test_live_catalog_matches_reviewed_local_baseline():
                         and r['qual'] == r['with_check'] == 'true' for r in intake)
                     actual = [r for r in actual if r not in intake]
                     account_ui = [r for r in actual if r['schema'] + '.' + r['table'] in ACCOUNT_UI_TABLES]
-                    assert len(account_ui) == 1 and all(r['name'] == 'permission_notice_owner' and r['roles'] == ['postgres']
+                    assert len(account_ui) == 2 and all(r['name'] in ('permission_notice_owner', 'avatar_owner') and r['roles'] == ['postgres']
                         and r['qual'] == r['with_check'] == 'true' for r in account_ui)
                     actual = [r for r in actual if r not in account_ui]
                     added = [r for r in actual if r['schema'] + '.' + r['table'] in FOUNDATION_TABLES]
@@ -567,7 +589,7 @@ async def assert_reviewed_database_boundary(db):
     classified = (FOUNDATION_TABLES | ACCOUNT_UI_TABLES | CONTENT_TABLES | PUBLICATION_TABLES | REGISTRY_TABLES |
                   OPERATIONS_TABLES | ASSISTANT_TABLES | SHARED_TABLES | TECHNICAL_TABLES | PROJECT_CONTENT_TABLES | MEDIA_TABLES | UNIT_TABLES | FAQ_INTAKE_TABLES | COMMERCIAL_TABLES | AMENITY_TABLES | ARTICLE_TABLES | WEB_TABLES)
     classified |= WEBSITE_TABLES | MEDIA_WORKER_TABLES | WORKFLOW_TABLES
-    classified |= BUSINESS_TABLES | SCOPE_TABLES | WRITING_TABLES | UPLOAD_TABLES
+    classified |= BUSINESS_TABLES | SCOPE_TABLES | WRITING_TABLES | UPLOAD_TABLES | EVENT_TABLES
     assert set(tables) == classified, {'unclassified': set(tables) - classified, 'missing': classified - set(tables)}
     assert all(r['rls'] and r['force_rls'] for r in tables.values())
     policies = await db.fetch(POLICIES_SQL, SCHEMAS)
@@ -591,6 +613,7 @@ async def assert_reviewed_database_boundary(db):
     assert all(not tables[name]['grants'] for name in WRITING_TABLES), 'Writing state is accessible only through exact guarded commands'
 
     assert all(not tables[name]['grants'] for name in UPLOAD_TABLES), 'Upload provenance and file evidence are owner-only storage'
+    assert all(not tables[name]['grants'] for name in EVENT_TABLES), 'Event Hub tables are owner-only storage'
     guarded = {r['schema'] + '.' + r['table'] for r in policies if any(
         token in (r['qual'] or '') for token in ('hub.can(', 'hub.can_read_asset(', 'hub.require_registry(', 'hub.registry_agency(', 'hub.section_visible(', 'hub.media_target('))}
     # Registry children inherit the parent's RLS through EXISTS; the
@@ -630,6 +653,36 @@ def test_workflow_function_inventory_has_only_nine_runtime_entry_points():
                 assert row['execute_roles'] == (['hub_app'] if row['name'] in WORKFLOW_APP_FUNCTIONS else []), row['name']
                 if row['name'] in WORKFLOW_APP_FUNCTIONS:
                     assert row['security_definer'], row['name']
+        finally:
+            await db.close()
+    asyncio.run(check())
+
+
+def test_multi_tier_promotion_helpers_have_no_runtime_execute_grants():
+    from test_permission_baseline import disposable_operator
+    signatures = (
+        'hub.promotion_benefit_items_valid(jsonb)', 'hub.promotion_benefit_sync()',
+        'hub.promotion_scope_projects(jsonb)', 'hub.validate_promotion_scope(jsonb)',
+        'hub.promotion_require_scope(jsonb,text)',
+        'hub.promotion_require_project_ids(text[],text)', 'hub.promotion_frozen_scope_guard()',
+        'hub.promotion_filter_matches(hub.public_promotions,jsonb)',
+        'internal.assistant_scoped_promotion_source(text,text,text,text)',
+    )
+
+    async def check():
+        db = await disposable_operator()
+        try:
+            for signature in signatures:
+                function = await db.fetchrow(
+                    "select p.oid,p.proconfig from pg_proc p where p.oid=$1::regprocedure", signature)
+                assert function is not None, signature
+                assert function['proconfig'] == ['search_path=pg_catalog, pg_temp'], signature
+                for role in ROLES + ['hub_app']:
+                    assert not await db.fetchval(
+                        "select has_function_privilege($1,$2::oid,'execute')", role, function['oid']), (signature, role)
+                assert not await db.fetchval(
+                    "select exists(select 1 from pg_proc p, lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a "
+                    "where p.oid=$1 and a.grantee=0 and a.privilege_type='EXECUTE')", function['oid']), signature
         finally:
             await db.close()
     asyncio.run(check())

@@ -7,7 +7,6 @@ import { workspaceApi, workspaceHref, workspaceName, workspaceQuestionLabel, wor
 import { ContentWorkflow } from "./content-workflow";
 import { ExposureChip } from "./content-exposure";
 import { request } from "./hub-request";
-import { WritingFields } from "./content-common";
 import { WritingAidError, writingTopics, type WritingAcceptance } from "@/lib/writing-aid";
 import { useContentLocation } from "./content-operations-shared";
 import { ContentContacts, type Contact } from "./content-contacts";
@@ -17,7 +16,7 @@ import { FaqCoverage } from "./faq-coverage";
 import { WebPublication } from "./web-publication";
 import { FaqApplicability, type FaqRule } from "./faq-applicability";
 import { stateLabel } from "./content-narrative";
-import { BilingualInput, ExposureInput, TranslationReviewPanel, useFieldCatalog, contentDate, errorMessage, type Exposure, type Locales, type Translation } from "./content-common";
+import { BilingualInput, ExposureInput, TranslationReviewPanel, WritingFields, useFieldCatalog, contentDate, errorMessage, type Exposure, type Locales, type Translation } from "./content-common";
 
 type Reference = { id: string; name: string; project_id?: string };
 type References = { businesses?: Reference[]; projects: Reference[]; brands: Reference[]; groups: Reference[]; unit_types: Reference[] };
@@ -54,11 +53,21 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
   useEffect(() => { onEditingChange?.(editing || dirty || pending || workflowBusy); return () => onEditingChange?.(false); }, [editing, dirty, pending, workflowBusy, onEditingChange]);
   const queryTab = location.params.get(tabKeyQuery) as keyof typeof tabs, tab = initialSection ?? (clusterId ? "intake" : queryTab in tabs ? queryTab : "drafts");
   const selected = location.params.get("faq");
+  const needReferences = !embedded || tab === "intake" || Boolean(selected);
+  const needContacts = tab === "contacts";
   const draftBank = selected === "new" ? bank : null;
   const reload = useCallback(async () => {
-    const [faqs, questions, refs, channels] = await Promise.all([embedded ? Promise.resolve({ items: [] as Faq[] }) : request<{ items: Faq[] }>("v1/admin/faq"), request<QuestionBank>("v1/admin/faq/questions"), request<References>("v1/admin/faq/references"), request<Contact[]>("v1/admin/faq/corporate-contacts")]);
-    setItems(faqs.items); setBank(questions); setReferences(refs); setContacts(channels);
-  }, [embedded]);
+    const [faqs, questions, refs, channels] = await Promise.all([
+      embedded ? Promise.resolve({ items: [] as Faq[] }) : request<{ items: Faq[] }>("v1/admin/faq"),
+      request<QuestionBank>("v1/admin/faq/questions"),
+      needReferences ? request<References>("v1/admin/faq/references") : Promise.resolve(null),
+      needContacts ? request<Contact[]>("v1/admin/faq/corporate-contacts") : Promise.resolve(null),
+    ]);
+    setItems(faqs.items);
+    setBank(questions);
+    if (refs) setReferences(refs);
+    if (channels) setContacts(channels);
+  }, [embedded, needReferences, needContacts]);
   const changed = useCallback(async () => { await reload(); onWorkflowChanged?.(); }, [reload, onWorkflowChanged]);
   const reloadCurrent = useCallback(async () => {
     if (selected && selected !== "new") setCurrent(await request<Faq>(`v1/admin/faq/${selected}`));
@@ -107,11 +116,11 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
   const preview = draft ?? current?.version;
   return <div className={`content-workspace${embedded ? " entity-embedded-faq" : ""}`}><header className="content-header"><h1>คลัง FAQ เว็บไซต์</h1><p>เตรียมคำตอบจากคำถามมาตรฐาน พร้อมที่มาและขอบเขตโครงการ</p><p className="content-state">{tab === "publication" ? "ตรวจหน้าเว็บก่อนเผยแพร่ โดยผู้อนุมัติคนละคน" : "ฉบับร่างภายใน Hub · ยังไม่เผยแพร่บนเว็บไซต์"}</p>{!canEdit && tab !== "publication" && <p>สิทธิ์ดูข้อมูลเท่านั้น</p>}</header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}{draft ? " ข้อความที่กรอกยังอยู่" : ""}</p>}{notice && <p className="notice success" role="status">{notice}</p>}
-    {loading || !catalog || !bank || !references ? !error && !catalogError && <p role="status">กำลังโหลดคลัง FAQ…</p> : <>
+    {loading || !catalog || !bank || (needReferences && !references) ? !error && !catalogError && <p role="status">กำลังโหลดคลัง FAQ…</p> : <>
       {!embedded && tab !== "publication" && <nav className="content-tabs" aria-label="ส่วนคลัง FAQ">{Object.entries(tabs).map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={pending || workflowBusy || (editing || dirty) && tab !== key} onClick={() => location.navigate({ [tabKeyQuery]: key, faq: null })}>{label}</button>)}</nav>}
       {tab === "coverage" && <FaqCoverage onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id })} />}
       {tab === "publication" && <WebPublication onEditingChange={setEditing} />}
-      {tab === "intake" && <>{embedded && <button className="button secondary" disabled={editing} onClick={() => location.navigate({ cluster: null, faq_section: null })}>{workspaceText.backFaq}</button>}<FaqIntake fixedScope={scope} initialCluster={clusterId ?? undefined} bank={bank} references={references} onChanged={changed} onEditingChange={setEditing} onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id, cluster: null })} /></>}
+      {tab === "intake" && references && <>{embedded && <button className="button secondary" disabled={editing} onClick={() => location.navigate({ cluster: null, faq_section: null })}>{workspaceText.backFaq}</button>}<FaqIntake fixedScope={scope} initialCluster={clusterId ?? undefined} bank={bank} references={references} onChanged={changed} onEditingChange={setEditing} onOpenFaq={id => location.navigate({ [tabKeyQuery]: "drafts", faq: id, cluster: null })} /></>}
       {tab === "bank" && <FaqBank bank={bank} fields={catalog.items} onChanged={changed} onEditingChange={setEditing} />}
       {tab === "glossary" && <FaqGlossary onChanged={changed} onEditingChange={setEditing} />}
       {tab === "contacts" && <ContentContacts items={contacts} catalog={catalog} apiBase="v1/admin/faq/corporate-contacts" canEdit={canEdit} onChanged={changed} onEditingChange={setEditing} />}
@@ -127,11 +136,15 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
             {([['question', 'คำถาม', 1000], ['alt_questions', 'คำถามอื่น (หนึ่งคำถามต่อบรรทัด)', 4000], ['short_answer', 'คำตอบสั้น', 300], ['detail', 'รายละเอียดคำตอบ', 12000]] as const).map(([key, label, maxLength]) => <BilingualInput key={key} id={`faq-${key}`} label={label} field={catalog.items.find(field => field.field_key === `faq.${key}`)} value={draft[key]} onChange={value => setDraft({ ...draft, [key]: value })} maxLength={maxLength} rows={key === "detail" ? 5 : 3} />)}
             <p className="field-help">คำตอบสั้นไม่เกิน 300 ตัวอักษร เริ่มตอบตรงคำถามและระบุชื่อโครงการหรือแบรนด์</p><p>ประเภทคำตอบ: {kindLabels[draft.answer_kind]} (ตามคำถามมาตรฐาน)</p>
             <fieldset className="content-checks"><legend>ช่องข้อเท็จจริงที่ใช้</legend>{catalog.items.filter(field => field.status === "active" && (field.section === "facts" || field.field_key === "price.amount")).map(field => <label key={field.field_key}><input type="checkbox" checked={draft.fact_keys.includes(field.field_key)} onChange={event => setDraft({ ...draft, fact_keys: event.target.checked ? [...draft.fact_keys, field.field_key] : draft.fact_keys.filter(key => key !== field.field_key) })} /><span>{field.label.th} <code>{`{${field.field_key.split('.').at(-1)}}`}</code></span></label>)}</fieldset>
-            {["corporate", "business", "brand", "programme", "project_group"].includes(draft.scope_type) && <FaqApplicability rule={draft.applicability_rule} scope={draft.scope_type} reference={draft.scope_id} brands={references.brands} groups={references.groups} disabled={!canEdit || frozen || pending || workflowBusy || !permissions.can("projects", "view")} onChange={applicability_rule => setDraft({ ...draft, applicability_rule, applies_to_project_ids: [] })} onResolve={applies_to_project_ids => setDraft(value => value ? { ...value, applies_to_project_ids } : value)} />}
-            <label className="content-input">เฟส REM ที่คำตอบนี้ใช้<select multiple size={6} disabled={draft.scope_type === "project" || Object.keys(draft.applicability_rule).length > 0} value={draft.applies_to_project_ids} onChange={event => setDraft({ ...draft, applies_to_project_ids: Array.from(event.target.selectedOptions, option => option.value) })}>{references.projects.map(item => <option key={item.id} value={item.id}>{item.name} · {item.id}</option>)}</select><span className="field-help">เลือกเฟสที่เกี่ยวข้องโดยตรง สำหรับคำตอบระดับองค์กรสามารถเว้นว่างได้ เมื่อใช้เงื่อนไข รายการนี้มาจากผลตรวจเงื่อนไข</span></label>
+            {(["corporate", "brand", "programme", "project_group"].includes(draft.scope_type) || (draft.scope_type === "business" && draft.scope_id === "residential")) && references && <FaqApplicability rule={draft.applicability_rule} scope={draft.scope_type} reference={draft.scope_id} brands={references.brands} groups={references.groups} disabled={!canEdit || frozen || pending || workflowBusy || !permissions.can("projects", "view")} onChange={applicability_rule => setDraft({ ...draft, applicability_rule, applies_to_project_ids: [] })} onResolve={applies_to_project_ids => setDraft(value => value ? { ...value, applies_to_project_ids } : value)} />}
+            {draft.scope_type === "business" && draft.scope_id && draft.scope_id !== "residential" ? (
+              <p className="field-help">คำตอบนี้ใช้เฉพาะระดับหน่วยธุรกิจ ({scope?.name ?? draft.scope_id}) โดยไม่ต้องผูกกับรหัสโครงการหรือเฟสที่อยู่อาศัย</p>
+            ) : (
+              <label className="content-input">เฟส REM ที่คำตอบนี้ใช้<select multiple size={6} disabled={draft.scope_type === "project" || Object.keys(draft.applicability_rule).length > 0} value={draft.applies_to_project_ids} onChange={event => setDraft({ ...draft, applies_to_project_ids: Array.from(event.target.selectedOptions, option => option.value) })}>{(references?.projects ?? []).map(item => <option key={item.id} value={item.id}>{item.name} · {item.id}</option>)}</select><span className="field-help">เลือกเฟสที่เกี่ยวข้องโดยตรง สำหรับคำตอบระดับองค์กรสามารถเว้นว่างได้ เมื่อใช้เงื่อนไข รายการนี้มาจากผลตรวจเงื่อนไข</span></label>
+            )}
             <div className="content-two-columns"><label className="content-input">กำหนดตรวจคำตอบ<input type="date" value={draft.review_due} onChange={event => setDraft({ ...draft, review_due: event.target.value })} /></label><label className="content-input">วันที่สิ้นสุดคำตอบ<input type="date" value={draft.effective_to} onChange={event => setDraft({ ...draft, effective_to: event.target.value })} /></label></div>
-            <label className="content-input">แหล่งอ้างอิงใหม่<input maxLength={1000} value={draft.source_ref} onChange={event => setDraft({ ...draft, source_ref: event.target.value })} /></label><label className="content-input">ลิงก์แหล่งอ้างอิง<input type="url" placeholder="https://" maxLength={2000} value={draft.source_url} onChange={event => setDraft({ ...draft, source_url: event.target.value })} /></label><ExposureInput value={draft.ai_exposure} onChange={ai_exposure => setDraft({ ...draft, ai_exposure })} />
-          </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setDraft(null); setDirty(false); if (!current) location.navigate({ faq: null }, true); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || frozen || !draft.question_key || !draft.question.th?.trim() || !draft.short_answer.th?.trim()}>บันทึกคำตอบ</button></div></form> : current ? <><h3>{current.version.question.th}</h3><p className="content-preserve">{current.version.short_answer.th}</p><p className="content-preserve">{current.version.detail.th}</p><p>{kindLabels[current.version.answer_kind]} · {scopeLabels[current.scope_type]} {scopeOptions(current.scope_type).find(ref => ref.id === current.scope_id)?.name ?? current.scope_id}</p><p>เฟสที่ใช้: {current.version.applies_to_project_ids.join(", ") || (current.scope_type === "corporate" ? "ระดับองค์กร" : businessWorkspaceText.noApplicablePhases)}</p>{canEdit && <div className="content-actions"><button className="button secondary" disabled={pending || workflowBusy || frozen} onClick={edit}>แก้ไขเป็นฉบับใหม่</button></div>}</> : <p role="status">กำลังโหลดคำตอบ…</p>)}
+            <label className="content-input">แหล่งอ้างอิงใหม่<textarea rows={2} maxLength={1000} value={draft.source_ref} onChange={event => setDraft({ ...draft, source_ref: event.target.value.replace(/[\r\n]+/g, " ") })} /></label><label className="content-input">ลิงก์แหล่งอ้างอิง<input type="url" placeholder="https://" maxLength={2000} value={draft.source_url} onChange={event => setDraft({ ...draft, source_url: event.target.value })} /></label><ExposureInput value={draft.ai_exposure} onChange={ai_exposure => setDraft({ ...draft, ai_exposure })} />
+          </fieldset><div className="content-actions"><button type="button" className="button secondary" disabled={pending} onClick={() => { setDraft(null); setDirty(false); if (!current) location.navigate({ faq: null }, true); }}>ยกเลิก</button><button className="button primary" disabled={pending || !canEdit || frozen || !draft.question_key || !draft.question.th?.trim() || !draft.short_answer.th?.trim()}>บันทึกคำตอบ</button></div></form> : current ? <><h3>{current.version.question.th}</h3><p className="content-preserve">{current.version.short_answer.th}</p><p className="content-preserve">{current.version.detail.th}</p><p>{kindLabels[current.version.answer_kind]} · {scopeLabels[current.scope_type]} {scopeOptions(current.scope_type).find(ref => ref.id === current.scope_id)?.name ?? current.scope_id}</p><p>เฟสที่ใช้: {current.version.applies_to_project_ids.join(", ") || (current.scope_type === "corporate" ? "ระดับองค์กร" : current.scope_type === "business" && current.scope_id !== "residential" ? "ระดับหน่วยธุรกิจ (ไม่ผูกโครงการบ้าน)" : businessWorkspaceText.noApplicablePhases)}</p>{canEdit && <div className="content-actions"><button className="button secondary" disabled={pending || workflowBusy || frozen} onClick={edit}>แก้ไขเป็นฉบับใหม่</button></div>}</> : <p role="status">กำลังโหลดคำตอบ…</p>)}
           {current && editTab === "answer" && writingTopics.has(bank?.items.find(item => item.question_key === current.question_key)?.topic ?? "") && current.version.answer_kind === "text" && !current.version.fact_keys.length && (["question", "alt_questions", "short_answer", "detail"] as const).map(key => <WritingFields key={key}
             field={catalog.items.find(field => field.field_key === `faq.${key}`)} fields={catalog.items} translations={current.translations} ownerType="faq" ownerKey={current.id}
             value={draft?.[key] ?? locales(current.version[key])} savedValue={locales(current.version[key])} stamp={{ revision: draft ? draftRevision : current.revision }} dirty={dirty}
@@ -141,7 +154,7 @@ export function FaqWorkspace({ embedded = false, scope, entity, initialSection, 
           {editTab === "english" && current && <TranslationReviewPanel items={current.translations} fields={catalog.items} canEdit={canEdit && !frozen && !pending && !workflowBusy} onChanged={reloadCurrent} onEditingChange={setEditing} />}
           {editTab === "sources" && current && <div><h3>แหล่งข้อมูลประกอบคำตอบ</h3>{current.sources.length ? current.sources.map(source => <article className="content-card" key={source.id}><p>{source.source_ref}</p><p>{source.source_url}</p><p>{contentDate(source.decided_at)}</p></article>) : <p>ยังไม่มีแหล่งอ้างอิงแนบกับคำตอบนี้</p>}</div>}
           {editTab === "preview" && preview && <section aria-label="ตัวอย่าง FAQ บนเว็บไซต์"><label className="content-input">ภาษาตัวอย่าง<select value={previewLocale} onChange={event => setPreviewLocale(event.target.value as "th" | "en")}><option value="th">ไทย</option><option value="en">อังกฤษ</option></select></label><p className="field-help">ตัวอย่างข้อความสำหรับตรวจร่าง ช่องข้อเท็จจริงจะแสดงเป็นเครื่องหมายแทนค่าจนกว่าจะเชื่อมการเผยแพร่</p><article className="content-card" lang={previewLocale}><h3>{preview.question[previewLocale] || "ยังไม่มีคำถามในภาษานี้"}</h3><p className="content-preserve">{preview.short_answer[previewLocale] || "ยังไม่มีคำตอบในภาษานี้"}</p><p className="content-preserve">{preview.detail[previewLocale]}</p></article></section>}
-          {editTab === "history" && current && <div><h3>ประวัติคำตอบ</h3>{current.history.map(version => <details className="content-card" key={version.version_no}><summary>ฉบับ {version.version_no} · {stateLabel(version.state)} · {contentDate(version.created_at)}</summary><p>{version.editors?.map(id => <span key={id}><ActorName id={id} /> </span>)}{version.approved_by && <> · <ActorName id={version.approved_by} /></>}</p><h3>{version.question.th}</h3><p className="content-preserve">{version.short_answer.th}</p><p className="content-preserve">{version.detail.th}</p><p lang="en">{version.question.en}</p><p lang="en">{version.short_answer.en}</p><p>เฟสที่ใช้: {version.applies_to_project_ids.join(", ") || (current.scope_type === "corporate" ? "ระดับองค์กร" : businessWorkspaceText.noApplicablePhases)}</p></details>)}</div>}
+          {editTab === "history" && current && <div><h3>ประวัติคำตอบ</h3>{current.history.map(version => <details className="content-card" key={version.version_no}><summary>ฉบับ {version.version_no} · {stateLabel(version.state)} · {contentDate(version.created_at)}</summary><p>{version.editors?.map(id => <span key={id}><ActorName id={id} /> </span>)}{version.approved_by && <> · <ActorName id={version.approved_by} /></>}</p><h3>{version.question.th}</h3><p className="content-preserve">{version.short_answer.th}</p><p className="content-preserve">{version.detail.th}</p><p lang="en">{version.question.en}</p><p lang="en">{version.short_answer.en}</p><p>เฟสที่ใช้: {version.applies_to_project_ids.join(", ") || (current.scope_type === "corporate" ? "ระดับองค์กร" : current.scope_type === "business" && current.scope_id !== "residential" ? "ระดับหน่วยธุรกิจ (ไม่ผูกโครงการบ้าน)" : businessWorkspaceText.noApplicablePhases)}</p></details>)}</div>}
         </>}
       </section>}
     </>}
@@ -166,6 +179,7 @@ function EntityFaqQuestions({ scope, entity, bank, questionKey, onOpen, onCreate
   const permissions = useHubPermissions(), authority = capabilityKey(permissions.account);
   const { catalog } = useFieldCatalog();
   const [data, setData] = useState<ScopeQuestions | null>(null), [search, setSearch] = useState(""), [term, setTerm] = useState("");
+  const [faqFilter, setFaqFilter] = useState<"all" | "missing" | "attention" | "inherited" | "own">("all");
   const [error, setError] = useState(""), [pending, setPending] = useState(false), [retry, setRetry] = useState(0);
   const [selectedQuestion, setSelectedQuestion] = useState<ScopeQuestion | null>(null), [selectedPending, setSelectedPending] = useState(false), [selectedError, setSelectedError] = useState("");
   const [selectedReadKey, setSelectedReadKey] = useState("");
@@ -204,16 +218,37 @@ function EntityFaqQuestions({ scope, entity, bank, questionKey, onOpen, onCreate
     catch (e) { if (generation === pageGeneration.current) setError(errorMessage(e)); } finally { if (generation === pageGeneration.current) setPending(false); }
   }
   const shownItems = [...(data?.items ?? []), ...(selectedQuestion && !data?.items.some(item => item.question_key === selectedQuestion.question_key) ? [selectedQuestion] : [])];
+  const missingCount = shownItems.filter(item => item.display_state === "missing").length;
+  const attentionCount = shownItems.filter(item => ["waiting_for_fact", "hold", "legacy_suggestion"].includes(item.display_state)).length;
+  const inheritedCount = shownItems.filter(item => item.display_state === "inherited" && !item.own_answer).length;
+  const ownCount = shownItems.filter(item => Boolean(item.own_answer)).length;
+  const filteredItems = shownItems.filter(item => {
+    if (questionKey && item.question_key === questionKey) return true;
+    if (faqFilter === "missing") return item.display_state === "missing";
+    if (faqFilter === "attention") return ["waiting_for_fact", "hold", "legacy_suggestion"].includes(item.display_state);
+    if (faqFilter === "inherited") return item.display_state === "inherited" && !item.own_answer;
+    if (faqFilter === "own") return Boolean(item.own_answer);
+    return true;
+  });
   const pendingQuestion = questionKey && selectedReadKey === selectedIdentity && data && !pending && !selectedPending && !error && !selectedError && !shownItems.some(item => item.question_key === questionKey)
     ? bank.items.find(item => item.question_key === questionKey && item.status === "proposed") : undefined;
   return <div className="workspace-faq">
     <p className="content-state">{scopeLabels[scope.type]} · {scope.name ?? scope.id}{scope.type === "project" && scope.name && <> · {scope.id}</>}</p>
     <form className="workspace-search" onSubmit={event => { event.preventDefault(); setTerm(search.trim()); }}><label>{workspaceText.searchFaq}<input type="search" value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label><button className="button secondary">{workspaceText.search}</button></form>
+    {shownItems.length > 0 && (
+      <div className="workspace-faq-filter-bar" role="group" aria-label="กรองคำถามตามสถานะ">
+        <button type="button" aria-pressed={faqFilter === "all"} onClick={() => setFaqFilter("all")}>ทั้งหมด ({shownItems.length})</button>
+        <button type="button" aria-pressed={faqFilter === "missing"} onClick={() => setFaqFilter("missing")}>ยังไม่มีคำตอบ ({missingCount})</button>
+        {attentionCount > 0 && <button type="button" aria-pressed={faqFilter === "attention"} onClick={() => setFaqFilter("attention")}>รอข้อเท็จจริง / ตรวจ ({attentionCount})</button>}
+        {inheritedCount > 0 && <button type="button" aria-pressed={faqFilter === "inherited"} onClick={() => setFaqFilter("inherited")}>สืบทอดแล้ว ({inheritedCount})</button>}
+        {ownCount > 0 && <button type="button" aria-pressed={faqFilter === "own"} onClick={() => setFaqFilter("own")}>ตอบเฉพาะหน้านี้ ({ownCount})</button>}
+      </div>
+    )}
     {error && <p className="notice error" role="alert">{error} <button className="button secondary" onClick={() => setRetry(value => value + 1)}>{workspaceText.retry}</button></p>}
     {selectedError && <p className="notice error" role="alert">{selectedError} <button className="button secondary" onClick={() => setRetry(value => value + 1)}>{workspaceText.retry}</button></p>}
     {selectedPending && <p role="status">{workspaceText.loading}</p>}
     {pending && !data && <p role="status">{workspaceText.loading}</p>}
-    {shownItems.map(item => <article className="workspace-faq-card" id={`question-${item.question_key}`} data-workspace-question={item.question_key} tabIndex={-1} key={item.question_key}>
+    {filteredItems.map(item => <article className={`workspace-faq-card ${item.own_answer ? "is-own" : item.display_state === "inherited" ? "is-inherited" : item.display_state === "missing" ? "is-missing" : ""}`} id={`question-${item.question_key}`} data-workspace-question={item.question_key} tabIndex={-1} key={item.question_key}>
       <h3>{workspaceQuestionLabel(item.label, entity.projectName)}</h3><p className="workspace-faq-states">{item.is_core && <span>{workspaceText.required}</span>}<span>{item.display_state === "handoff" ? kindLabels.handoff : scopeQuestionStates[item.display_state] ?? stateLabel(item.content_state ?? item.own_answer?.state ?? "DRAFT")}</span></p>
       {item.effective_answer && <><ExposureChip exposure={item.effective_answer.ai_exposure} /><p className="content-preserve">{workspaceName(item.effective_answer.short_answer)}</p>
         {item.display_state === "inherited" && <p className="content-state">{workspaceText.inheritedFrom}{scopeLabels[item.effective_answer.source.scope_type]} · {workspaceName(item.effective_answer.source.name)}</p>}
@@ -232,7 +267,20 @@ function EntityFaqQuestions({ scope, entity, bank, questionKey, onOpen, onCreate
       <p>{workspaceText.faq_question_pending_explanation}</p>
       <a className="button secondary" href="/settings?section=bank">{workspaceText.bank}</a>
     </article>}
-    {data && !shownItems.length && !selectedPending && !pendingQuestion && <p>{term.trim() ? workspaceText.empty : workspaceText.faq_empty}</p>}
+    {data && shownItems.length > 0 && !filteredItems.length && !pendingQuestion && <p>{workspaceText.empty}</p>}
+    {data && !shownItems.length && !selectedPending && !pendingQuestion && (
+      scope.type === "business" && scope.id !== "residential" && !term.trim() ? (
+        <div className="content-card">
+          <h3>ยังไม่มีคำถาม FAQ เฉพาะสำหรับธุรกิจนี้</h3>
+          <p className="field-help">คำถามของหน่วยธุรกิจนี้แยกจากคำถามรายโครงการบ้าน สามารถเสนอและอนุมัติคำถามมาตรฐานระดับหน่วยธุรกิจที่คลังคำถามมาตรฐาน แล้วกดปุ่ม &ldquo;เพิ่มคำตอบ FAQ&rdquo; ด้านบนได้ทันทีโดยไม่ต้องผูกโครงการบ้าน</p>
+          <div className="content-actions">
+            <a className="button secondary" href="/settings?section=bank">{workspaceText.bank}</a>
+          </div>
+        </div>
+      ) : (
+        <p>{term.trim() ? workspaceText.empty : workspaceText.faq_empty}</p>
+      )
+    )}
     {data?.next_cursor && <button className="button secondary" disabled={pending} onClick={() => void more()}>{workspaceText.more}</button>}
     {Boolean(data?.unmatched_clusters?.length) && <section aria-label={workspaceText.suggestions} className="workspace-unmatched-clusters"><h2>{workspaceText.suggestions}</h2>
       {data!.unmatched_clusters!.map(cluster => <article className="content-card" key={cluster.id} data-workspace-cluster={cluster.id}>

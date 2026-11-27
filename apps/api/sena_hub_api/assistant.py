@@ -211,11 +211,17 @@ def register_assistant_routes(app, authentication, database, settings):
             return {"source_href": f"/?{kind}={quote(identity, safe='')}&{reference}",
                     "metadata": {"visibility": current[2], "version": version, "environment": "local-test", "synthetic": False, "as_of": current[3]}}
         if kind == "promotion":
-            row = await reader.query("SELECT hub.promotion_read($1)::text", UUID(identity))
             if version.startswith("draft:"):
+                row = await reader.query("SELECT hub.promotion_read($1)::text", UUID(identity))
                 valid = version == "draft:" + str(row["draft_revision"])
             else:
-                valid = row.get("publication_available") and str(row.get("published_version_id")) == version
+                project_ref = source.get("scope", {}).get("project_id")
+                project = await reader.query("SELECT internal.assistant_project_reference($1)", project_ref) if project_ref else None
+                rows = await reader.query("SELECT hub.promotion_read(null,$1::jsonb)::text", {
+                    "published_project_id": str(project), "published_promotion_id": identity, "limit": 1,
+                }) if project else {"items": []}
+                valid = any(row["id"] == identity and row.get("publication_available")
+                            and str((row.get("published") or {}).get("id")) == version for row in rows["items"])
             if not valid: raise failure(409, "assistant_source_changed", "โปรโมชั่นหรือรุ่นข้อมูลเปลี่ยนแล้ว")
             return {"source_href": "/promotions?promotion=" + quote(identity, safe=""), "metadata": {"version": version, "environment": "local-test"}}
         if kind == "campaign":
@@ -339,7 +345,7 @@ def register_assistant_routes(app, authentication, database, settings):
                 outcome = "NO_ANSWER"
                 return {"tool": name, "status": "UNAVAILABLE", "sources": [], "facts": [], "pending_question_ids": []}
             finally:
-                projection = [{key: source[key] for key in ("namespace", "entity_type", "entity_id", "version", "page") if key in source} for source in (result or {}).get("sources", [])] if outcome == "SUCCESS" else []
+                projection = [{key: source[key] for key in ("namespace", "entity_type", "entity_id", "version", "page") + (("scope",) if source["entity_type"] == "promotion" else ()) if key in source} for source in (result or {}).get("sources", [])] if outcome == "SUCCESS" else []
                 receipt = await rpc(request, actor, "SELECT internal.assistant_tool_record($1,$2::jsonb)::text", run_id,
                     {"tool_name": name, "outcome": outcome, "duration_ms": int((time.monotonic() - tick) * 1000), "sources": projection,
                      "requires_finance": finance_filters(name, TOOL_INPUTS[name].model_validate(arguments)) if outcome == "SUCCESS" else False})

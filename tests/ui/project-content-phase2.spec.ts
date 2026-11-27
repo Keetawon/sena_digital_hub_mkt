@@ -38,7 +38,10 @@ for (const width of [1280, 390]) {
     const units = current.facts.find((row: { fact_key: string }) => row.fact_key === 'project.unit_total');
     expect(units.value_number).toBe(100);
     expect((await page.request.put(`${base}/facts/project.unit_total`, { headers, data: { expected_revision: units.revision - 1, changes: { value_number: 99, as_of: '2026-10-21', unit_count_choice: 'marketing' } } })).status()).toBe(409);
-    await page.getByLabel('การใช้งาน จำนวนยูนิตทั้งหมด').first().click();
+    const unitInfoTrigger = page.getByLabel('การใช้งาน จำนวนยูนิตทั้งหมด').first();
+    await unitInfoTrigger.hover();
+    await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'จำนวนยูนิตทั้งหมด', exact: true }) }).getByText(/ผู้รับผิดชอบ: การตลาด/)).toBeVisible();
+    await unitInfoTrigger.click();
     await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'จำนวนยูนิตทั้งหมด', exact: true }) }).getByText(/ผู้รับผิดชอบ: การตลาด/)).toBeVisible();
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/facts-${width}.png`, fullPage: true });
 
@@ -55,9 +58,8 @@ for (const width of [1280, 390]) {
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase2/buildings-${width}.png`, fullPage: true });
 
     await page.getByRole('button', { name: 'เนื้อหาและจุดขาย', exact: true }).click();
-    await page.getByRole('button', { name: /^(เพิ่ม|แก้ไข) แนะนำโครงการ$/ }).click();
-    await page.locator('#section-body-th').fill(`โครงการสมมติ ${width} เพื่อการอยู่อาศัย`);
-    await page.locator('#section-body-en').fill(`Synthetic project ${width} for living`);
+    await page.locator('#section-body-section\\.project_intro-th').fill(`โครงการสมมติ ${width} เพื่อการอยู่อาศัย`);
+    await page.locator('#section-body-section\\.project_intro-en').fill(`Synthetic project ${width} for living`);
     await page.getByRole('button', { name: 'บันทึกเนื้อหา', exact: true }).click();
     await expect(page.getByText('บันทึกฉบับแล้ว ยังไม่มีการเผยแพร่ขึ้นเว็บไซต์', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'เพิ่มจุดขาย', exact: true }).click();

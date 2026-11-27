@@ -1,8 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useHubPermissions } from "./accounts";
+import { capabilityKey } from "@/lib/hub-permissions";
 import { request } from "./hub-request";
 import "./questions.css";
+
+const questionCache = new Map<string, { items: PendingQuestionData[]; expiresAt: number }>();
+if (typeof window !== "undefined") {
+  const clear = () => questionCache.clear();
+  window.addEventListener("hub-accounts-changed", clear);
+  window.addEventListener("hub-content-access-invalidated", clear);
+}
 
 export const questionGroups = { note: "พี่โน้ต", finance: "ฝ่ายการเงิน", dpo: "เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล", media: "ทีมมีเดีย", marketing: "ทีมการตลาด", it: "ทีมไอที" } as const;
 export type PendingQuestionData = {
@@ -14,21 +23,37 @@ type QuestionState = { questions: PendingQuestionData[]; loading: boolean; error
 const QuestionContext = createContext<QuestionState | null>(null);
 
 export function QuestionProvider({ enabled, children }: { enabled: boolean; children: ReactNode }) {
-  const [questions, setQuestions] = useState<PendingQuestionData[]>([]);
-  const [loading, setLoading] = useState(enabled);
+  const permissions = useHubPermissions();
+  const authority = capabilityKey(permissions.account);
+  const hit = enabled ? questionCache.get(authority) : undefined;
+  const initial = hit && hit.expiresAt > Date.now() ? hit.items : null;
+  const [questions, setQuestions] = useState<PendingQuestionData[]>(initial ?? []);
+  const [loading, setLoading] = useState(enabled && !initial);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const retry = useCallback(() => setAttempt(value => value + 1), []);
+  const retry = useCallback(() => { questionCache.delete(authority); setAttempt(value => value + 1); }, [authority]);
   useEffect(() => {
     if (!enabled) { setQuestions([]); setLoading(false); setError(""); return; }
+    if (attempt === 0) {
+      const cached = questionCache.get(authority);
+      if (cached && cached.expiresAt > Date.now()) {
+        setQuestions(cached.items); setLoading(false); setError("");
+        return;
+      }
+    }
     let active = true;
     setLoading(true); setError(""); setQuestions([]);
     request<{ questions: PendingQuestionData[] }>("v1/admin/questions")
-      .then(result => { if (active) setQuestions(result.questions.filter(question => question.status === "PENDING")); })
+      .then(result => {
+        if (!active) return;
+        const pending = result.questions.filter(question => question.status === "PENDING");
+        questionCache.set(authority, { items: pending, expiresAt: Date.now() + 30_000 });
+        setQuestions(pending);
+      })
       .catch(() => { if (active) setError("โหลดรายการคำถามไม่สำเร็จ กรุณาลองอีกครั้ง"); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [enabled, attempt]);
+  }, [enabled, authority, attempt]);
   // Keep data scoped to this mounted staff shell, never in a cross-user global cache.
   return <QuestionContext.Provider value={{ questions: enabled ? questions : [], loading: enabled && loading, error: enabled ? error : "", retry }}>{children}</QuestionContext.Provider>;
 }

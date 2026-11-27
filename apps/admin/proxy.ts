@@ -4,6 +4,7 @@ import { hostedConfig, isHostedMode } from "./lib/hosted-config";
 import { canOpenPage } from "./lib/hub-permissions";
 import { cookieName, getRoleToken, isLocalMode, localApiOrigin, localPersonas, type LocalRole } from "./lib/local-session";
 import { readHubAccount, unavailablePage } from "./lib/hub-account";
+import { verifyHostedAccessToken } from "./lib/hosted-token-cache";
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -38,14 +39,22 @@ export async function proxy(request: NextRequest) {
       values.forEach(({ name, value, options }) => response.cookies.set(name, value, { ...options, secure: !config.simulation, sameSite: "lax" }));
     },
   } });
-  const { data: { user } } = await client.auth.getUser();
+  const { data: { session } } = await client.auth.getSession();
+  let user = null;
+  try {
+    user = session?.access_token ? await verifyHostedAccessToken(client, session.access_token, Boolean(config.simulation)) : null;
+  } catch {
+    const page = unavailablePage();
+    const unavailable = new NextResponse(page.body, { status: 503, headers: page.headers });
+    response.cookies.getAll().forEach(cookie => unavailable.cookies.set(cookie));
+    return unavailable;
+  }
   const publicPage = ["/login", "/auth/callback"].includes(path) || config.password && ["/signup", "/signup/verify", "/login/forgot"].includes(path);
   let destination: URL | null = null;
   if (!user && !publicPage && !path.startsWith("/api/")) {
     destination = new URL("/login", config.adminOrigin);
     destination.searchParams.set("next", path + request.nextUrl.search);
   } else if (user && !publicPage && path !== "/account/request" && !path.startsWith("/api/")) {
-    const { data: { session } } = await client.auth.getSession();
     try {
       const { status, account } = await readHubAccount(config.apiOrigin, session?.access_token || "");
       if (status === 401) {

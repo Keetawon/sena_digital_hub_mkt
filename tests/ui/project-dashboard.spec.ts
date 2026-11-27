@@ -5,7 +5,7 @@ import { projectGroupReviewText as review } from '../../apps/admin/lib/project-g
 
 test('public website source remark is visible in the approval/source column', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
-  await setup(page, 'editor', { firstRow: { website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] } });
+  await setup(page, 'editor', { firstRow: { website_sources: [{ url: 'https://www.sena.co.th/project/synthetic', fetched_at: '2026-10-15T00:00:00Z' }] }, tableLayout: true });
   const table = page.getByRole('region', { name: 'ตารางความคืบหน้าโครงการ', exact: true });
   await expect(table.getByRole('columnheader', { name: 'อนุมัติโดย / แหล่งข้อมูล', exact: true })).toBeVisible();
   await expect(table.getByText('ดึงจากเว็บไซต์สาธารณะ SENA', { exact: true })).toBeVisible();
@@ -23,7 +23,7 @@ const row = (id: string, extra: Record<string, unknown> = {}) => ({ public_proje
   amenities: { collected: 0, total: 6 }, waiting_on: ['editor'], updated_at: '2026-10-03T00:00:00Z',
   age_days: 10, first_seen_at: '2026-09-23T00:00:00Z', age_basis: 'mirror_import', ...extra });
 
-async function setup(page: Page, role = 'editor', options: { firstRow?: Record<string, unknown>; extraRows?: number } = {}) {
+async function setup(page: Page, role = 'editor', options: { firstRow?: Record<string, unknown>; extraRows?: number; tableLayout?: boolean } = {}) {
   const rows = [row('A', options.firstRow), row('B', { published: true, needs_attention: true, attention: [{ field: 'brand', message: 'แบรนด์ที่เผยแพร่ถูกถอนการเผยแพร่แล้ว' }] }),
     row('C', { public_project_id: null, filling: false, new_from_rem: true, age_days: null, age_basis: 'unknown' }),
     ...Array.from({ length: options.extraRows ?? 0 }, (_, index) => row(`EXTRA-${index}`))];
@@ -48,7 +48,7 @@ async function setup(page: Page, role = 'editor', options: { firstRow?: Record<s
         readiness: { ready: false, percent: 0, missing: [gap] }, source: { rem_project_id: 'A', project_name_rem: 'โครงการ A' }, models: [], assets: [] } : [];
     await route.fulfill({ json: { data } });
   });
-  await page.goto('/website?view=projects');
+  await page.goto(`/website?view=projects${options.tableLayout ? '&playout=table' : ''}`);
   await expect(page.getByRole('heading', { name: 'ความคืบหน้าโครงการ' })).toBeVisible();
   return writes;
 }
@@ -115,7 +115,7 @@ test('actual local viewer dashboard matches the authenticated progress response'
   page.on('request', request => { if (new URL(request.url()).pathname === '/api/hub/v1/admin/projects/progress') reads.push(request.url()); });
   await page.goto('/website?view=projects');
   const dashboard = page.locator('.project-dashboard');
-  await expect(dashboard.locator('tbody tr')).toHaveCount(Math.min(10, data.rows.filter((row: { source_review?: { default_scope: boolean } }) => row.source_review?.default_scope !== false).length));
+  await expect(dashboard.locator('.project-summary-row')).toHaveCount(Math.min(10, data.rows.filter((row: { source_review?: { default_scope: boolean } }) => row.source_review?.default_scope !== false).length));
   await expect(dashboard.getByRole('button', { name: `ทั้งหมด ${(await (await page.request.get('/api/hub/v1/admin/projects/progress?view=counts')).json()).data.counts.all}`, exact: true })).toBeVisible();
   await expect(dashboard.getByRole('button', { name: 'เริ่มกรอก', exact: true })).toHaveCount(0);
   expect(reads).toHaveLength(1);
@@ -126,7 +126,7 @@ test('actual local viewer dashboard matches the authenticated progress response'
 for (const width of [1440, 844]) {
   test(`compact dashboard keeps identity and header pinned at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    const writes = await setup(page, 'publisher', { extraRows: 7 });
+    const writes = await setup(page, 'publisher', { extraRows: 7, tableLayout: true });
     const scroll = page.getByRole('region', { name: 'ตารางความคืบหน้าโครงการ', exact: true });
     await expect(scroll.locator('.project-summary-row')).toHaveCount(10);
     await scroll.scrollIntoViewIfNeeded();

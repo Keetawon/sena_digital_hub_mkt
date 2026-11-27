@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ActorName, useHubPermissions } from "./accounts";
 import { canSpecial, capabilityKey } from "@/lib/hub-permissions";
 import { request } from "./hub-request";
@@ -20,7 +21,7 @@ import "./content-workflow.css";
 const selectionLimit = 100;
 function ItemLink({ item, fallback, linkText }: { item: PublicationDescriptor; fallback: string; linkText?: string }) {
   const href = publicationHref(item), label = publicationLabel(item, fallback);
-  return href ? <a href={href}>{linkText ?? label}</a> : <span>{label}</span>;
+  return href ? <Link prefetch={false} href={href}>{linkText ?? label}</Link> : <span>{label}</span>;
 }
 function ItemResults({ items, mayReturn, pending, onReturn, onExposureChanged, onExposureEditing }: { onExposureChanged: () => void; onExposureEditing: (value: boolean) => void; items: PublicationItem[]; mayReturn: boolean; pending: boolean; onReturn: (item: PublicationItem) => void }) {
   return <ul className="workflow-results">{items.map(item => <li key={item.item_key} data-publication-item={item.item_key}>

@@ -24,9 +24,9 @@ function route(path: string, method: string) {
   if (!kinds.has(parts[0]) || !fullMatch(reference, parts[1] ?? "")) return null;
   if (parts.length === 2) return "page";
   if (parts.length === 3 && ["faq", "preview", "history"].includes(parts[2])) return parts[2];
-  if (["project", "brand"].includes(parts[0]) && parts[2] === "promotions") {
+  if (["project", "brand", "project_group", "corporate"].includes(parts[0]) && parts[2] === "promotions") {
     if (parts.length === 3) return "promotions";
-    if (parts.length === 4 && parts[3] === "suggestions") return "promotion_suggestions";
+    if (parts.length === 4 && parts[3] === "suggestions" && ["project", "brand"].includes(parts[0])) return "promotion_suggestions";
   }
   if (parts.length === 4 && parts[2] === "history" && validCursor(parts[3])) return "event";
   return null;
@@ -57,7 +57,7 @@ export function workspaceAllowsQuery(path: string, method: string, query: URLSea
   if (selected === "tree" && query.has("parent_kind") !== query.has("parent_ref")) return false;
   if (selected === "resolve" && query.has("faq") === query.has("cluster")) return false;
   if (selected === "faq" && query.has("question_key") && (query.has("q") || query.has("after"))) return false;
-  if (["promotions", "promotion_suggestions"].includes(selected) && path.startsWith(`${base}/brand/`) && query.has("phase")) return false;
+  if (["promotions", "promotion_suggestions"].includes(selected) && !path.startsWith(`${base}/project/`) && query.has("phase")) return false;
   for (const key of ["date_from", "date_to"]) if (query.has(key) && !Number.isFinite(Date.parse(query.get(key)!))) return false;
   if (query.has("date_from") && query.has("date_to") && Date.parse(query.get("date_from")!) > Date.parse(query.get("date_to")!)) return false;
   return true;

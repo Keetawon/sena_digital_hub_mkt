@@ -51,12 +51,22 @@ test('shared Hub menu connects projects, brands and every registry screen', asyn
   await activeSection(page, 'หน้าแรก');
   await expect(page.locator('.hub-brand-logo:visible')).toHaveAttribute('href', '/home');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
-  await menu.getByRole('link', { name: 'ข้อมูลเว็บไซต์', exact: true }).click();
-  await expect(page).toHaveURL(/\/website$/);
+  for (const label of ['KM แบรนด์', 'KM กลุ่มโครงการ', 'KM โครงการ', 'KM องค์กรและธุรกิจอื่น']) {
+    await expect(menu.getByRole('link', { name: label, exact: true })).toBeVisible();
+  }
+  await menu.getByRole('link', { name: 'KM โครงการ', exact: true }).click();
+  await expect(page).toHaveURL(/\/website\?view=projects$/);
   await expect(menu.locator('.hub-brand-count-link')).toHaveCount(0);
+  await activeSection(page, 'KM โครงการ');
   await page.locator('.unified-workspace > nav.content-tabs').locator('a[href="/website?view=brands"]').click();
   await expect(page).toHaveURL(/\/website\?view=brands$/);
-  await activeSection(page, 'ข้อมูลเว็บไซต์');
+  await activeSection(page, 'KM แบรนด์');
+  await menu.getByRole('link', { name: 'KM กลุ่มโครงการ', exact: true }).click();
+  await expect(page).toHaveURL(/\/website\?view=groups$/);
+  await activeSection(page, 'KM กลุ่มโครงการ');
+  await menu.getByRole('link', { name: 'KM องค์กรและธุรกิจอื่น', exact: true }).click();
+  await expect(page).toHaveURL(/\/website\?view=businesses$/);
+  await activeSection(page, 'KM องค์กรและธุรกิจอื่น');
   await reveal(page, 'งานโฆษณาและงบ');
   await menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
@@ -102,14 +112,21 @@ test('shared navigation stays keyboard accessible at 390px with large Thai text 
   });
   await enter(page, 'admin');
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก', exact: true });
-  for (const name of ['หน้าแรก', 'ข้อมูลเว็บไซต์', 'ทะเบียนแคมเปญ']) {
+  const expectedPaths: Record<string, RegExp> = {
+    'หน้าแรก': /\/home$/,
+    'KM แบรนด์': /\/website\?view=brands$/,
+    'KM กลุ่มโครงการ': /\/website\?view=groups$/,
+    'KM โครงการ': /\/website\?view=projects$/,
+    'KM องค์กรและธุรกิจอื่น': /\/website\?view=businesses$/,
+    'ทะเบียนแคมเปญ': /\/ads\/registry$/,
+  };
+  for (const name of Object.keys(expectedPaths)) {
     await reveal(page, name === 'ทะเบียนแคมเปญ' ? 'งานโฆษณาและงบ' : 'ข้อมูลเว็บไซต์และ AI');
     const link = menu.getByRole('link', { name, exact: true });
     await link.focus();
     await expect(link).toBeFocused();
-    // These are native anchor navigations, including the current-page link.
-    // Wait for its new document before reopening the responsive drawer.
-    await Promise.all([page.waitForEvent('domcontentloaded'), page.keyboard.press('Enter')]);
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(expectedPaths[name]);
     await activeSection(page, name);
     const layout = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth, viewport: innerWidth, path: location.pathname,
@@ -166,7 +183,7 @@ test('sidebar groups toggle independently, persist even when the current page is
   await expect(content).toHaveAttribute('aria-expanded', 'true'); await expect(ads).toHaveAttribute('aria-expanded', 'false'); await ads.click(); await content.click(); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await expect(content).toHaveAttribute('aria-expanded', 'false');
   const contentId = await content.getAttribute('aria-controls'); await expect(page.locator(`[id="${contentId}"]`)).toHaveAttribute('inert', ''); await expect(menu.getByRole('link', { name: 'หน้าแรก', exact: true })).not.toBeVisible();
   await page.goto('/questions'); await openMenu(page); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(ads).toHaveAttribute('aria-expanded', 'true'); await page.goto('/?view=brands'); await openMenu(page); await expect(content).toHaveAttribute('aria-expanded', 'false'); await expect(content).toHaveAttribute('data-current', 'true'); await expect(content).toHaveAttribute('aria-description', 'มีหน้าที่กำลังใช้งานอยู่ในกลุ่มนี้');
-  await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลเว็บไซต์และ AI/ข้อมูลเว็บไซต์');
+  await expect(page.locator('.breadcrumb')).toHaveText('ข้อมูลเว็บไซต์และ AI/KM แบรนด์');
   const paths = await menu.locator('a.nav-link svg path').evaluateAll(elements => elements.map(element => element.getAttribute('d'))); expect(new Set(paths).size).toBe(paths.length);
 });
 
@@ -181,7 +198,7 @@ test('agency keeps direct registry access and never receives financial, publicat
   await expect(menu.getByRole('button', { name: 'งานโฆษณาและงบ', exact: true })).toHaveAttribute('aria-expanded', 'true'); await expect(menu.getByRole('link', { name: 'ทะเบียนแคมเปญ', exact: true })).toBeVisible();
   for (const name of ['งบและค่าใช้จ่าย', 'ผลใช้จ่ายรายเดือน', 'ติดตามเอกสาร', 'คลังเอกสาร', 'รายการที่ต้องตรวจสอบ', 'โปรโมชั่น', 'เผยแพร่', 'คำถามที่รอคำตอบ']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
   await expect(menu.getByRole('button', { name: 'ข้อมูลเว็บไซต์และ AI', exact: true })).toHaveCount(0);
-  for (const name of ['หน้าแรก', 'ข้อมูลเว็บไซต์']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
+  for (const name of ['หน้าแรก', 'KM แบรนด์', 'KM กลุ่มโครงการ', 'KM โครงการ', 'KM องค์กรและธุรกิจอื่น']) await expect(menu.getByRole('link', { name, exact: true })).toHaveCount(0);
   const logo = page.locator('.hub-brand-logo:visible');
   await expect(logo).toHaveAttribute('href', '/ads/registry');
   await expect(logo).toHaveAccessibleName('ทะเบียนแคมเปญ');

@@ -82,7 +82,8 @@ for (const width of [1280, 390]) {
     await expect(page.getByText('บันทึกร่างแล้ว ตรวจภาษาอังกฤษก่อนส่งตรวจ', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'ผู้ลงทุน', exact: true }).click();
     await expect(page.getByText(/ประมาณการ ไม่รับประกัน/).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'เพิ่ม ข้อมูลสำหรับผู้ลงทุน', exact: true })).toBeVisible();
+    await expect(page.locator('#section-body-section\\.investor_intro-th')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'ย่อ ข้อมูลสำหรับผู้ลงทุน', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'แก้ไข ประมาณการผลตอบแทนค่าเช่า', exact: true })).toBeVisible();
     await fits(page); await page.screenshot({ path: `artifacts/project-content-phase9/investor-${width}.png`, fullPage: true });
   });
@@ -98,7 +99,7 @@ for (const width of [1280, 390]) {
     await page.goto(`/promotions?promotion=${row.id}`);
     await expect(page.getByText(/โปรโมชันจริง · ตรวจ DATA และ LEGAL/)).toBeVisible();
     await page.getByRole('button', { name: 'แก้ไขขอบเขตและช่วงเวลา', exact: true }).click();
-    await expect(page.locator('#promotion-title')).toBeDisabled();
+    await expect(page.locator('#promotion-title')).toBeEnabled(); // One form keeps copy and scope editable together.
     await page.getByLabel('กลุ่มเป้าหมาย', { exact: true }).selectOption('livnex');
     await page.getByRole('button', { name: 'ยกเลิก', exact: true }).click();
     await page.getByRole('button', { name: 'แก้ไขขอบเขตและช่วงเวลา', exact: true }).click();

@@ -150,7 +150,8 @@ export function useAccountDirectory() { return useContext(Directory); }
 export function useHubPermissions() {
   const directory = useAccountDirectory();
   return { ...directory, can: (tab: string, level: "view" | "edit" | "approve" = "view") => can(directory.capabilities, tab, level),
-    special: (action: string) => canSpecial(directory.capabilities, action) };
+    special: (action: string) => canSpecial(directory.capabilities, action),
+    refreshAccount: () => { if (typeof window !== "undefined") window.dispatchEvent(new Event("hub-accounts-changed")); } };
 }
 
 // Account management follows its own manager/Admin authority. A temporary

@@ -18,6 +18,7 @@ export type WritingAidProps = {
   draftStamp: WritingDraftStamp; formDirty: boolean; canEdit: boolean; authorityKey: string;
   maxLength?: number; context?: readonly WritingContext[]; disabled?: boolean;
   onActivityChange?: (active: boolean) => void;
+  onSaveDraft?: () => void;
   onAccept: (acceptance: WritingAcceptance) => Promise<void>;
 };
 function message(code: WritingBlock): string {
@@ -162,6 +163,9 @@ export function WritingAid(props: WritingAidProps) {
     {busy && <p role="status">{busy === "request" ? text.writing_processing : text.loading}</p>}
     {running && !busy && <p role="status">{text.writing_processing}</p>}
     {description && <p id={`${id}-status`} className="writing-aid-message" role={denied || readError ? "alert" : "status"}>{description}</p>}
+    {blocked === "dirty" && props.onSaveDraft && <div className="writing-aid-actions">
+      <button type="button" className="writing-aid-button" disabled={props.disabled || pending} onClick={props.onSaveDraft}>บันทึกฉบับร่างก่อนใช้ผู้ช่วยเขียน</button>
+    </div>}
     {(readError || issue || saveFailed || running || unresolved || block === "stale") && <div className="writing-aid-actions">
       <button type="button" className="writing-aid-button" disabled={pending} onClick={() => void refresh()}>{text.refresh}</button>
       {issue === "ambiguous" && <button type="button" className="writing-aid-button" disabled={pending} onClick={reject}>{text.writing_reject}</button>}

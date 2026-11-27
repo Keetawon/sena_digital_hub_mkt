@@ -21,6 +21,8 @@ from .hosted_assets import HostedAssets
 
 BUCKET = "r2-test-content"  # Logical DB alias, never the operator's physical bucket.
 KNOWLEDGE_MAX_BYTES = 50 * 1024 * 1024
+AVATAR_MAX_BYTES = 2 * 1024 * 1024
+AVATAR_KEY_RE = re.compile(r"avatars/[0-9a-f-]{36}/[0-9a-f]{64}\.webp")
 
 
 class R2Assets:
@@ -156,3 +158,22 @@ class R2Assets:
         # Originals may be held/unsafe; force attachment delivery in the API.
         return self._install(self._knowledge_key(evidence), content, evidence.get("sha256"),
                              evidence.get("bytes"), "application/octet-stream", KNOWLEDGE_MAX_BYTES)
+
+    @staticmethod
+    def _avatar_key(key):
+        if not isinstance(key, str) or not AVATAR_KEY_RE.fullmatch(key):
+            raise failure(404, "file_not_found", "ไม่พบไฟล์รูปโปรไฟล์ที่ได้รับอนุญาต")
+        return key
+
+    def install_avatar(self, content, key, checksum, size):
+        return self._install(self._avatar_key(key), content, checksum, size, "image/webp", AVATAR_MAX_BYTES)
+
+    def read_avatar(self, key, checksum, size):
+        return self._read(self._avatar_key(key), checksum, size, AVATAR_MAX_BYTES)
+
+    def delete_avatar(self, key):
+        checked = self._avatar_key(key)
+        try:
+            self._client.delete_object(Bucket=self._bucket, Key=checked)
+        except (BotoCoreError, ClientError, OSError, ValueError):
+            pass

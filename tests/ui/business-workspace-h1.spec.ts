@@ -34,7 +34,7 @@ test.describe("H1 fixed business workspace", () => {
     const catalog = await page.request.get("/api/hub/v1/admin/content/businesses"); expect(catalog.ok()).toBe(true);
     expect(catalog.headers()["cache-control"]).toContain("no-store");
     const businesses = (await catalog.json()).data.items;
-    expect(businesses.map((item: { code: string }) => item.code)).toEqual(["residential"]);
+    expect(businesses.map((item: { code: string }) => item.code)).toEqual(["residential", "solar", "senx", "ngernsod_jaidee"]);
     expect(Object.keys(businesses[0]).sort()).toEqual(["code", "label"]);
     await expect(page.locator(".workspace-heading h1")).toHaveText(businesses[0].label.th);
     const children = await page.request.get("/api/hub/v1/admin/content/workspace/tree?parent_kind=corporate&parent_ref=sena&limit=50"); expect(children.ok()).toBe(true);

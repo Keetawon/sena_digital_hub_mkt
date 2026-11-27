@@ -11,6 +11,8 @@ from .assets import FORMATS, MAX_BYTES, stored_byte_limit
 from .auth import Settings, failure
 
 BUCKET = "hub-test-assets"
+AVATAR_MAX_BYTES = 2 * 1024 * 1024
+AVATAR_KEY_RE = re.compile(r"avatars/[0-9a-f-]{36}/[0-9a-f]{64}\.webp")
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -92,3 +94,41 @@ class HostedAssets:
         if self.read(metadata, check_bucket=False) != content:
             raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่ตรงกับไฟล์ที่ตรวจสอบแล้ว")
         return status in {200, 201}
+
+    @staticmethod
+    def _avatar_key(key):
+        if not isinstance(key, str) or not AVATAR_KEY_RE.fullmatch(key):
+            raise failure(404, "file_not_found", "ไม่พบไฟล์รูปโปรไฟล์ที่ได้รับอนุญาต")
+        return key
+
+    def install_avatar(self, content, key, checksum, size):
+        checked = self._avatar_key(key)
+        if type(size) is not int or not 0 < size <= AVATAR_MAX_BYTES or len(content) != size or hashlib.sha256(content).hexdigest() != checksum:
+            raise failure(422, "invalid_file", "ไฟล์รูปโปรไฟล์ไม่ถูกต้อง")
+        self.require_private_bucket()
+        status, _ = self.request("POST", f"object/{BUCKET}/{checked}", content, "image/webp", limit=16384)
+        if status not in {200, 201, 400, 409}:
+            raise failure(503, "storage_unavailable", "ไม่สามารถจัดเก็บไฟล์ส่วนตัวได้ กรุณาลองใหม่")
+        if self.read_avatar(checked, checksum, size, check_bucket=False) != content:
+            raise failure(503, "file_unavailable", "ไฟล์ที่จัดเก็บไม่ตรงกับไฟล์ที่ตรวจสอบแล้ว")
+        return status in {200, 201}
+
+    def read_avatar(self, key, checksum, size, *, check_bucket=True):
+        checked = self._avatar_key(key)
+        if not isinstance(checksum, str) or not re.fullmatch(r"[0-9a-f]{64}", checksum) or type(size) is not int or not 0 < size <= AVATAR_MAX_BYTES:
+            raise failure(404, "file_not_found", "ไม่พบไฟล์รูปโปรไฟล์")
+        if check_bucket:
+            self.require_private_bucket()
+        status, content = self.request("GET", f"object/authenticated/{BUCKET}/{checked}", limit=AVATAR_MAX_BYTES)
+        if status == 404:
+            raise failure(404, "file_not_found", "ไม่พบไฟล์รูปโปรไฟล์")
+        if status != 200 or len(content) != size or hashlib.sha256(content).hexdigest() != checksum:
+            raise failure(503, "file_unavailable", "ไฟล์รูปโปรไฟล์ไม่สมบูรณ์")
+        return content
+
+    def delete_avatar(self, key):
+        checked = self._avatar_key(key)
+        try:
+            self.request("DELETE", f"object/{BUCKET}/{checked}", limit=16384)
+        except Exception:
+            pass

@@ -1,0 +1,564 @@
+{
+  "generated_at": "2026-11-27T11:00:00+07:00",
+  "schema_version": "hub.sub_businesses.v1",
+  "crawl_coverage": {
+    "total_pages_crawled": 119,
+    "blocked_pages": 0,
+    "sources": [
+      { "code": "solar", "url": "https://senasolarenergy.com/", "pages_crawled": 51 },
+      { "code": "senx", "url": "https://www.senxgroup.com/", "pages_crawled": 46 },
+      { "code": "ngernsod_jaidee", "url": "https://ngernsodjaidee.com/", "pages_crawled": 22 }
+    ]
+  },
+  "businesses": [
+    {
+      "code": "solar",
+      "label": {
+        "th": "เสนา โซลาร์ เอนเนอร์ยี่",
+        "en": "SENA Solar Energy"
+      },
+      "legal_entity": {
+        "th": "บริษัท เสนา โซลาร์ เอนเนอร์ยี่ จำกัด",
+        "en": "SENA Solar Energy Co., Ltd."
+      },
+      "official_website": "https://senasolarenergy.com/",
+      "sections": {
+        "section.business_overview": {
+          "th": "บริษัท เสนา โซลาร์ เอนเนอร์ยี่ จำกัด (SENA Solar Energy) เป็นหน่วยธุรกิจพลังงานแสงอาทิตย์ครบวงจรในเครือ บมจ. เสนาดีเวลลอปเม้นท์ ภายใต้แนวคิด \"EXPERTISE BEYOND SOLAR — ติดโซลาร์อย่างเข้าใจบ้าน เข้าใจพลังงาน และเข้าใจการเงิน\" ผสานประสบการณ์พัฒนาและดูแลที่อยู่อาศัยกว่า 45 ปี เข้ากับความเชี่ยวชาญด้านพลังงานแสงอาทิตย์กว่า 17 ปี ปัจจุบันติดตั้งโซลาร์เซลล์ให้บ้านพักอาศัยแล้วกว่า 1,500 หลังคาเรือน พัฒนาและร่วมลงทุนโรงไฟฟ้าพลังงานแสงอาทิตย์ (Solar Farm) 6 โครงการ กำลังการผลิตรวม 46.5 MWp (จ.นครปฐม และ จ.สระบุรี) รวมถึงได้รับความไว้วางใจจากองค์กรและภาคอุตสาหกรรมชั้นนำ อาทิ กฟผ. ทับสะแก (5 MWp), HomePro และ Mega Home (รวมกว่า 6 MWp), Paradise Place (592 kWp), Little Walk กรุงเทพกรีฑา (416.02 kWp), TSTE เฟส 1–2 (~1.71 MWp), Mercedes-Benz (224 kWp) และคลังสินค้า SENA สุขุมวิท 50 (750 kWp) มุ่งสนับสนุนเป้าหมาย Carbon Neutrality 2050 และ Net Zero 2065 ของประเทศไทย",
+          "en": "SENA Solar Energy Co., Ltd. is the full-service solar energy business unit of SENA Development PCL, operating under the concept \"EXPERTISE BEYOND SOLAR — Understanding Homes, Energy, and Finance.\" Combining over 45 years of residential development expertise with 17+ years of solar engineering experience, SENA Solar Energy has installed solar rooftops across more than 1,500 homes, co-developed 6 utility-scale Solar Farms totaling 46.5 MWp, and delivered commercial and industrial rooftop projects for leading organizations including EGAT Thap Sakae (5 MWp), HomePro & Mega Home (6+ MWp), Paradise Place, Little Walk Krungthep Kreetha, TSTE, and Mercedes-Benz."
+        },
+        "section.business_services": {
+          "th": "ให้บริการพลังงานแสงอาทิตย์แบบครบวงจร (One-Stop Fast Track Service) ครอบคลุม 3 กลุ่มหลัก:\n1. โซลาร์รูฟท็อปสำหรับบ้านพักอาศัย โฮมออฟฟิศ และ SME (Solar Roof Residential & SME): ทั้งแบบ On-Grid (ไม่มีแบตเตอรี่) และแบบ Hybrid พร้อมแบตเตอรี่สำรองไฟ รวมถึงแพ็กเกจอัปเกรดเพิ่มกำลังผลิต (Scale Up Package) สำหรับลูกบ้านโครงการเสนา\n2. โซลาร์รูฟท็อปสำหรับธุรกิจ โรงงาน คลังสินค้า และอาคารพาณิชย์ (Commercial & Industrial Solar): รองรับทั้งรูปแบบลงทุนเอง (EPC) พร้อมที่ปรึกษาขอรับสิทธิประโยชน์ BOI ลดหย่อนภาษีเงินได้นิติบุคคลสูงสุด 50% ของเงินลงทุน (กรณี > 1 MWp) และการขึ้นทะเบียนคาร์บอนเครดิต ตลอดจนรูปแบบสัญญาซื้อขายไฟฟ้าเอกชน (Private PPA) ที่องค์กรไม่ต้องใช้เงินลงทุนเริ่มต้น\n3. บริการวิศวกรรมและงานขออนุญาตครบ 7 ขั้นตอน: สำรวจและวิเคราะห์บิลค่าไฟตามหลัก Best-Fit Solution, ให้คำปรึกษาการเงินและสินเชื่อ, ออกแบบทางวิศวกรรมสำหรับหลังคาทุกทรง (หน้าจั่ว ปั้นหยา เพิงหมาแหงน และดาดฟ้าทรงแบน) โดยไม่กระทบโครงสร้างและป้องกันรั่วซึม, ดำเนินการยื่นขออนุญาตภาครัฐครบวงจร (อ.1 / ใบแจ้งเพื่อทราบ กกพ. / ขนานไฟ กฟน. MEA และ กฟภ. PEA / รง.4), ติดตั้งมาตรฐาน มอก., ระบบ Monitoring ติดตามการผลิตไฟเรียลไทม์ผ่านแอปพลิเคชัน และบริการดูแลบำรุงรักษา O&M",
+          "en": "End-to-end Fast Track solar solutions across three core segments: (1) Residential & SME Solar Rooftop (On-Grid and Hybrid Battery systems, plus SENA Resident Scale-Up upgrades), (2) Commercial & Industrial Solar Rooftop via turnkey EPC (with BOI tax-incentive and carbon-credit advisory) or zero-CAPEX Private PPA, and (3) Seven-stage engineering & regulatory execution covering load-profile sizing, financial advisory, leak-free structural roof design (gable, hip, shed, flat slab), full permitting (Building Control, ERC exemption, MEA/PEA grid parallel connection, Factory License Ror.Ngor.4), TIS-compliant installation, real-time app monitoring, and preventive O&M."
+        },
+        "section.business_packages": {
+          "th": "แพ็กเกจโซลาร์รูฟท็อปสำหรับที่พักอาศัยและ SME (ราคาอ้างอิงหน้าเว็บไซต์ บริษัทสงวนสิทธิ์ปรับเปลี่ยนตามแคมเปญ):\n• ระบบ On-Grid (ไม่มีแบตเตอรี่ — เหมาะกับบ้านที่ใช้ไฟกลางวันสูงตั้งแต่ 50% ขึ้นไป):\n  - ขนาด 3 kWp (1 เฟส / Plan S): เริ่มต้น 114,000 บาท | ผ่อนเริ่มต้น 1,300 บาท/เดือน* | ประหยัดค่าไฟเฉลี่ย ~1,800 บาท/เดือน (~21,600 บาท/ปี)\n  - ขนาด 5 kWp (1 เฟส / Plan M ยอดนิยม): เริ่มต้น 142,000 บาท | ผ่อนเริ่มต้น 1,600 บาท/เดือน* | ประหยัดค่าไฟเฉลี่ย ~3,000 บาท/เดือน (~36,000 บาท/ปี, คืนทุนประมาณ 3.94 ปี)\n  - ขนาด 10 kWp (1 เฟส / Plan L): เริ่มต้น 229,000 บาท | ผ่อนเริ่มต้น 2,600 บาท/เดือน* | ประหยัดค่าไฟเฉลี่ย ~6,000 บาท/เดือน (~72,000 บาท/ปี)\n  - ขนาด 10 kWp (3 เฟส): เริ่มต้น 238,000 บาท\n  - ขนาด 20 kWp (3 เฟส): เริ่มต้น 434,000 บาท\n• ระบบพร้อมแบตเตอรี่สำรองไฟ (อาทิ แบตเตอรี่ ZTT 9.6 kWh — เหมาะกับบ้านที่ใช้ไฟช่วงค่ำหรือสำรองไฟ):\n  - ขนาด 5 kWp 1 เฟส + แบตเตอรี่: ราคา 280,000 บาท (ผ่อนเริ่มต้น 3,100 บาท/เดือน*)\n  - ขนาด 7 kWp 1 เฟส + แบตเตอรี่: ราคาปกติ 306,000 บาท / โปรโมชัน 273,000 บาท* (ผ่อนเริ่มต้น 3,2xx–3,400 บาท/เดือน*)\n  - ขนาด 7 kWp 3 เฟส + แบตเตอรี่: ราคาปกติ 331,000 บาท / โปรโมชัน 300,000 บาท* (ผ่อนเริ่มต้น 3,5xx–3,700 บาท/เดือน*)\n  - ขนาด 10 kWp 1 เฟส + แบตเตอรี่: ราคาปกติ 393,000 บาท / โปรโมชัน 355,000 บาท* (ผ่อนเริ่มต้น 4,2xx–4,400 บาท/เดือน*)\n  - ขนาด 10 kWp 3 เฟส + แบตเตอรี่: ราคาปกติ 407,000 บาท / โปรโมชัน 371,000 บาท* (ผ่อนเริ่มต้น 4,4xx–4,500 บาท/เดือน*)\n• โซลูชันทางการเงิน (ไม่ต้องใช้เงินก้อน):\n  1) สินเชื่อ GSB Solar For Life (ธนาคารออมสิน): ไม่ใช้หลักประกันสูงสุด 500,000 บาท หรือมีหลักประกันสูงสุด 1,000,000 บาท ผ่อนสูงสุด 7 ปี ดอกเบี้ยปีที่ 1–2 = 3.50%, ปีที่ 3–5 = 5.00%, ปีที่ 6+ = MRR (6.045%)\n  2) สินเชื่อเช่าซื้อโซลาร์ ICBC (Thai) Leasing: ผ่อน 48–84 เดือน ดาวน์ 10%–25% ดอกเบี้ยที่แท้จริง 4.29%–5.69% ต่อปี (ชุดติดตั้ง 120,000–2,000,000 บาท) หรือ 6.99%–7.99% ต่อปี (ต่ำกว่า 120,000 บาท) แถมฟรีประกันอัคคีภัยชุดโซลาร์ 3 ปีแรก\n  3) Home Equity Loan ร่วมกับ \"เงินสดใจดี\" เปลี่ยนมูลค่าบ้านคงเหลือเป็นวงเงินติดโซลาร์\n  4) ผ่อนบัตรเครดิต 0% นานสูงสุด 10 เดือน",
+          "en": "Residential solar packages (subject to campaign terms): On-Grid without battery — 3 kWp 1P from THB 114,000 (installment from THB 1,300/mo*, ~THB 1,800/mo bill savings), 5 kWp 1P from THB 142,000 (from THB 1,600/mo*, ~THB 3,000/mo savings, ~3.94-yr payback), 10 kWp 1P from THB 229,000 (~THB 6,000/mo savings), 10 kWp 3P THB 238,000, and 20 kWp 3P THB 434,000. Hybrid Battery packages (e.g., 9.6 kWh battery) — 5 kWp 1P THB 280,000, 7 kWp 1P THB 306,000 (promo THB 273,000*), 7 kWp 3P THB 331,000 (promo THB 300,000*), 10 kWp 1P THB 393,000 (promo THB 355,000*), and 10 kWp 3P THB 407,000 (promo THB 371,000*). Financing options include GSB Solar For Life (up to THB 500k clean / THB 1M secured, 7 years, 3.50% yrs 1–2), ICBC Thai Leasing (48–84 months with 3-year fire insurance), Home Equity Loan via Ngernsod Jaidee, and 0% credit card installments up to 10 months."
+        },
+        "section.business_process": {
+          "th": "ขั้นตอนรับบริการแบบ Fast Track และการขออนุญาตภาครัฐ:\n1. ประเมินเบื้องต้น: ส่งภาพถ่ายหลังคา พิกัดบ้าน และบิลค่าไฟย้อนหลัง (หรือคำนวณเบื้องต้นผ่าน Solar Calculator บนเว็บไซต์) เพื่อให้วิศวกรประเมินขนาดติดตั้งและจุดคุ้มทุนฟรี\n2. สำรวจหน้างานและวางแผนการเงิน: วิศวกรตรวจสอบโครงสร้างหลังคา ระบบไฟ 1 เฟส/3 เฟส และทีมที่ปรึกษาสินเชื่อช่วยจัดเตรียมเอกสารยื่นกู้ธนาคารพันธมิตรฟรีค่าบริการ\n3. ยื่นขออนุญาตหน่วยงานภาครัฐแทนลูกค้าครบทุกขั้นตอน:\n   - ใบแจ้งเพื่อทราบ / ใบอนุญาตดัดแปลงอาคาร (อ.1) ประมาณ 45 วัน (กรณีพื้นที่แผงไม่เกิน 160 ตร.ม. ใช้ใบแจ้งเพื่อทราบ)\n   - ใบรับแจ้งยกเว้นไม่ต้องขอรับใบอนุญาตผลิตไฟฟ้าต่อ กกพ. ประมาณ 30 วัน\n   - ยื่นขอขนานไฟกับการไฟฟ้านครหลวง (MEA) หรือการไฟฟ้าส่วนภูมิภาค (PEA) ประมาณ 60 วัน\n   - กรณีโรงงานขนาดใหญ่ (> 1,000 kWp) ยื่นใบอนุญาต รง.4 ประมาณ 45 วัน\n4. ติดตั้ง ทดสอบระบบขนานไฟ และส่งมอบแอปพลิเคชัน Monitoring พร้อมคู่มือรับประกัน",
+          "en": "Fast Track customer journey: (1) Free engineering sizing via electricity bill, roof photo, and location coordinates (or online Solar Calculator), (2) On-site structural/electrical inspection and complimentary green-loan application support, (3) Full regulatory permitting handled on the customer's behalf (local building notification/A.1 ~45 days, ERC exemption ~30 days, MEA/PEA grid parallel connection ~60 days, and Ror.Ngor.4 ~45 days where >1,000 kWp), and (4) TIS-compliant installation, commissioning, and mobile monitoring handover."
+        },
+        "section.business_warranty": {
+          "th": "มาตรฐานอุปกรณ์ การรับประกัน และบริการหลังการขาย (Developer-Standard Lifetime Care):\n• มาตรฐานอุปกรณ์ระดับโลก Tier 1 และมาตรฐาน มอก. อาทิ แผงโซลาร์เซลล์ Jinko Solar และอินเวอร์เตอร์ Huawei มาตรฐานเดียวกับโซลาร์ฟาร์มและอาคารพาณิชย์ขนาดใหญ่\n• รับประกันงานติดตั้งและโครงสร้างยึดแผง 2 ปีเต็ม โดยทีมวิศวกรและช่างผู้เชี่ยวชาญ หมดกังวลปัญหาช่างทิ้งงานหรือหลังคารั่วซึม\n• บริการบำรุงรักษาเชิงป้องกัน (O&M): ตรวจเช็กระบบไฟฟ้าและโครงสร้าง 7 รายการหลัก พร้อมสิทธิพิเศษล้างแผงโซลาร์และตรวจเช็กระบบฟรีสูงสุด 4 ครั้ง ภายใน 2 ปี\n• รับประกันตัวเครื่องอินเวอร์เตอร์ (Inverter Warranty) 10 ปี\n• รับประกันตัวแผงโซลาร์เซลล์ (Product Warranty) 10–12 ปี และรับประกันประสิทธิภาพการผลิตไฟฟ้าของแผง (Linear Performance Warranty) สูงสุด 25 ปี",
+          "en": "Tier-1 equipment & Developer-Standard Lifetime Care: Tier-1 solar modules (e.g., Jinko Solar) and inverters (e.g., Huawei) certified to TIS standards; 2-year installation and mounting workmanship warranty backed by preventive O&M inspections and up to 4 scheduled panel cleanings within 2 years; 10-year inverter warranty; 10–12-year solar panel product warranty and up to 25-year linear power performance warranty."
+        }
+      },
+      "contacts": [
+        {
+          "channel": "phone",
+          "value": "02-541-4642",
+          "url": "tel:025414642",
+          "label": { "th": "สำนักงานใหญ่ เสนา โซลาร์ เอนเนอร์ยี่ (20 คู่สาย)", "en": "SENA Solar Energy Office (20 Lines)" },
+          "is_primary": true,
+          "sort": 1
+        },
+        {
+          "channel": "phone",
+          "value": "085-059-4442",
+          "url": "tel:0850594442",
+          "label": { "th": "สายตรงที่ปรึกษาโซลาร์", "en": "Solar Consultant Direct Line" },
+          "is_primary": false,
+          "sort": 2
+        },
+        {
+          "channel": "phone",
+          "value": "099-115-1888",
+          "url": "tel:0991151888",
+          "label": { "th": "ฝ่ายขายและนัดสำรวจหน้างาน", "en": "Sales & Site Survey" },
+          "is_primary": false,
+          "sort": 3
+        },
+        {
+          "channel": "email",
+          "value": "sales@senasolarenergy.com",
+          "url": "mailto:sales@senasolarenergy.com",
+          "label": { "th": "อีเมลฝ่ายขายและบริการโซลาร์", "en": "Solar Sales & Service Email" },
+          "shared_mailbox_confirmed": true,
+          "is_primary": false,
+          "sort": 4
+        },
+        {
+          "channel": "line_oa",
+          "value": "@senasolarenergy",
+          "url": "https://line.me/ti/p/%40senasolarenergy",
+          "label": { "th": "LINE Official @senasolarenergy", "en": "LINE Official @senasolarenergy" },
+          "is_primary": false,
+          "sort": 5
+        },
+        {
+          "channel": "website",
+          "value": "https://senasolarenergy.com/",
+          "url": "https://senasolarenergy.com/",
+          "label": { "th": "เว็บไซต์ทางการ SENA Solar Energy", "en": "SENA Solar Energy Official Website" },
+          "is_primary": false,
+          "sort": 6
+        },
+        {
+          "channel": "facebook",
+          "value": "senasolarenergy",
+          "url": "https://www.facebook.com/senasolarenergy",
+          "label": { "th": "Facebook SENA Solar Energy", "en": "Facebook SENA Solar Energy" },
+          "is_primary": false,
+          "sort": 7
+        },
+        {
+          "channel": "youtube",
+          "value": "@senasolarenergy",
+          "url": "https://www.youtube.com/@senasolarenergy",
+          "label": { "th": "YouTube SENA Solar Energy", "en": "YouTube SENA Solar Energy" },
+          "is_primary": false,
+          "sort": 8
+        }
+      ],
+      "faqs": [
+        {
+          "question_key": "solar_why_sena_solar",
+          "topic": "identity",
+          "question": {
+            "th": "ทำไมถึงควรติดตั้งโซลาร์เซลล์กับ SENA Solar Energy แตกต่างจากบริษัทอื่นอย่างไร?",
+            "en": "Why install solar rooftops with SENA Solar Energy and how does it differ from other providers?"
+          },
+          "short_answer": {
+            "th": "ติดโซลาร์อย่างเข้าใจบ้านจากประสบการณ์พัฒนาที่อยู่อาศัยกว่า 45 ปี และเชี่ยวชาญโซลาร์กว่า 17 ปี ติดตั้งแล้วกว่า 1,500 หลัง ดูแลครบแบบ Fast Track ทั้งโครงสร้างหลังคา การขออนุญาต สินเชื่อ และบริการหลังการขายตลอดอายุการใช้งาน",
+            "en": "Backed by 45+ years of homebuilding expertise and 17+ years in solar across 1,500+ homes, delivering Fast Track engineering, permitting, green financing, and developer-standard lifetime care."
+          },
+          "detail": {
+            "th": "SENA Solar Energy มีรากฐานจากผู้พัฒนาอสังหาริมทรัพย์ จึงเข้าใจโครงสร้างหลังคา ระบบไฟฟ้าในบ้าน และพฤติกรรมการอยู่อาศัยอย่างลึกซึ้ง ดูแลครบตั้งแต่วิเคราะห์บิลค่าไฟ ออกแบบไม่ให้กระทบโครงสร้างหรือเกิดปัญหารั่วซึม ดำเนินการขออนุญาตขนานไฟ ยื่นสินเชื่อกับธนาคารพันธมิตร และดูแลบำรุงรักษา O&M อย่างต่อเนื่องโดยองค์กรขนาดใหญ่",
+            "en": "Originating from SENA Development PCL, our engineers design leak-free mounting for every roof type, size systems accurately from actual load profiles, handle all grid permits and green-loan paperwork, and provide ongoing O&M support."
+          },
+          "source_url": "https://senasolarenergy.com/"
+        },
+        {
+          "question_key": "solar_financing_no_lump_sum",
+          "topic": "pricing",
+          "question": {
+            "th": "ติดตั้งโซลาร์เซลล์กับ SENA Solar Energy ต้องใช้เงินก้อนไหม มีบริการผ่อนชำระหรือสินเชื่อหรือไม่?",
+            "en": "Do I need a lump-sum payment to install solar, or are financing and installment plans available?"
+          },
+          "short_answer": {
+            "th": "ไม่จำเป็นต้องใช้เงินก้อน ผ่อนเริ่มต้นประมาณ 1,300 บาท/เดือน* ผ่านสินเชื่อรักษ์โลก GSB Solar For Life, ลีสซิ่งไอซีบีซี (ไทย), Home Equity ร่วมกับเงินสดใจดี หรือผ่อนบัตรเครดิต 0% นานสูงสุด 10 เดือน",
+            "en": "No lump sum is required. Installments start from around THB 1,300/month* via GSB Solar For Life, ICBC (Thai) Leasing, Home Equity Loan with Ngernsod Jaidee, or 0% credit card plans up to 10 months."
+          },
+          "detail": {
+            "th": "ทีมที่ปรึกษาสินเชื่อดูแลเอกสารและยื่นกู้ให้ฟรีค่าบริการ อาทิ สินเชื่อ GSB Solar For Life วงเงินกู้เปล่าสูงสุด 500,000 บาท (มีหลักประกันสูงสุด 1,000,000 บาท) ผ่อนสูงสุด 7 ปี ดอกเบี้ยปีที่ 1–2 เริ่มต้น 3.50% ต่อปี ช่วยให้นำค่าไฟที่ประหยัดได้แต่ละเดือนมาช่วยผ่อนชำระค่างวดได้อย่างคุ้มค่า",
+            "en": "Complimentary loan advisory supports applications for GSB Solar For Life (up to THB 500k unsecured / THB 1M secured, up to 7 years, 3.50% p.a. in years 1–2), ICBC Thai Leasing (48–84 months with 3-year fire insurance), or Home Equity financing."
+          },
+          "source_url": "https://senasolarenergy.com/financial-solution/"
+        },
+        {
+          "question_key": "solar_best_fit_payback",
+          "topic": "design",
+          "question": {
+            "th": "บ้านแบบไหนหรือธุรกิจอะไรที่ติดโซลาร์เซลล์แล้วคุ้มทุนไวที่สุด?",
+            "en": "Which households or businesses achieve the fastest solar payback?"
+          },
+          "short_answer": {
+            "th": "บ้านหรือธุรกิจที่ใช้ไฟฟ้าในช่วงเวลากลางวันสูง หรือมีค่าไฟเฉลี่ยตั้งแต่ 3,000–5,000 บาท/เดือนขึ้นไป เช่น บ้านที่ชาร์จรถ EV ครอบครัวที่มีผู้สูงอายุ/เด็กเล็กอยู่บ้านกลางวัน โฮมออฟฟิศ และ SME โดยระยะคืนทุนเฉลี่ยระบบ On-Grid อยู่ที่ประมาณ 4 ปี",
+            "en": "Homes and SMEs with high daytime electricity usage or monthly bills from THB 3,000–5,000+ (EV charging, daytime AC, home offices, clinics, shops), achieving typical On-Grid payback in roughly 4 years."
+          },
+          "detail": {
+            "th": "วิศวกรใช้หลัก Best-Fit Solution วิเคราะห์สัดส่วนการใช้ไฟกลางวันและกลางคืนจากบิลค่าไฟจริง เพื่อแนะนำขนาด kWp ที่พอดี ไม่ยัดเยียดสเปกเกินความจำเป็น ส่วนบ้านที่ใช้ไฟช่วงกลางวันน้อยกว่า 50% สามารถเลือกระบบพร้อมแบตเตอรี่สำรองไฟไว้ใช้ช่วงค่ำได้",
+            "en": "Engineers apply Best-Fit sizing from real electricity bills so systems are never oversized; households with <50% daytime load can opt for hybrid battery storage to shift solar power into evening hours."
+          },
+          "source_url": "https://senasolarenergy.com/solar-calculate/"
+        },
+        {
+          "question_key": "solar_equipment_and_warranty",
+          "topic": "warranty",
+          "question": {
+            "th": "อุปกรณ์แผงโซลาร์เซลล์ อินเวอร์เตอร์ และการรับประกันหลังการขาย (O&M) มีมาตรฐานอย่างไร?",
+            "en": "What equipment standards, warranties, and O&M after-sales services are included?"
+          },
+          "short_answer": {
+            "th": "ใช้อุปกรณ์เกรดพรีเมียม Tier 1 มาตรฐาน มอก. (เช่น แผง Jinko Solar และอินเวอร์เตอร์ Huawei) รับประกันงานติดตั้ง 2 ปีเต็ม รับประกันอินเวอร์เตอร์ 10 ปี และรับประกันประสิทธิภาพแผงโซลาร์สูงสุด 25 ปี พร้อมบริการ O&M ตรวจเช็กและล้างแผงตามรอบ",
+            "en": "Tier-1 TIS-certified components (e.g., Jinko Solar panels, Huawei inverters) with a 2-year installation warranty, 10-year inverter warranty, up to 25-year panel performance warranty, and scheduled O&M inspections and panel cleaning."
+          },
+          "detail": {
+            "th": "ดูแลแบบ Lifetime Care โดยทีมช่างมาตรฐานบริษัทมหาชน หมดกังวลเรื่องช่างทิ้งงาน มีแอปพลิเคชันดูผลผลิตไฟฟ้าเรียลไทม์ ตรวจเช็กระบบความปลอดภัย 7 รายการ และสิทธิพิเศษโปรโมชันล้างแผงพร้อมตรวจเช็กระบบฟรีสูงสุด 4 ครั้งภายใน 2 ปี",
+            "en": "Includes real-time app monitoring, 7-point safety and performance inspections, and promotional O&M upgrades covering up to 4 complimentary panel washings and system checks over 2 years."
+          },
+          "source_url": "https://senasolarenergy.com/"
+        },
+        {
+          "question_key": "solar_permits_and_commercial",
+          "topic": "process",
+          "question": {
+            "th": "การขออนุญาตขนานไฟกับการไฟฟ้า และบริการติดโซลาร์สำหรับโรงงานหรือธุรกิจ (EPC / Private PPA) SENA Solar ดูแลให้หรือไม่?",
+            "en": "Does SENA Solar handle grid-connection permits and offer C&I EPC or Private PPA solutions?"
+          },
+          "short_answer": {
+            "th": "ดูแลยื่นขอใบอนุญาตภาครัฐและการไฟฟ้า (MEA/PEA/กกพ./อ.1/รง.4) ให้ครบทุกขั้นตอน และสำหรับภาคธุรกิจ/โรงงานมีบริการทั้งแบบลงทุนเอง (EPC พร้อมที่ปรึกษาภาษี BOI) และแบบ Private PPA ซื้อไฟราคาส่วนลดโดยไม่ต้องใช้เงินลงทุนเริ่มต้น",
+            "en": "Yes — SENA Solar handles all building, ERC, MEA/PEA grid-parallel, and Ror.Ngor.4 permits end-to-end, and provides both turnkey EPC (with BOI tax-incentive advisory) and zero-CAPEX Private PPA for C&I clients."
+          },
+          "detail": {
+            "th": "ระยะเวลาดำเนินการขออนุญาตโดยประมาณ: ใบแจ้งเพื่อทราบ/อ.1 ประมาณ 45 วัน (พื้นที่แผงไม่เกิน 160 ตร.ม. ใช้ใบแจ้งเพื่อทราบ), ใบรับแจ้งยกเว้น กกพ. ประมาณ 30 วัน, ขนานไฟ กฟน./กฟภ. ประมาณ 60 วัน และ รง.4 (กรณี > 1,000 kWp) ประมาณ 45 วัน",
+            "en": "Typical regulatory lead times: local building notice/A.1 ~45 days (exempt notice up to 160 sq.m.), ERC exemption ~30 days, MEA/PEA parallel connection ~60 days, and Factory License Ror.Ngor.4 ~45 days for systems >1,000 kWp."
+          },
+          "source_url": "https://senasolarenergy.com/services/"
+        }
+      ]
+    },
+    {
+      "code": "senx",
+      "label": {
+        "th": "เซ็น เอกซ์",
+        "en": "SenX"
+      },
+      "legal_entity": {
+        "th": "บริษัท เซ็น เอกซ์ จำกัด (มหาชน)",
+        "en": "Sen X Public Company Limited (SET: SENX)"
+      },
+      "official_website": "https://www.senxgroup.com/",
+      "sections": {
+        "section.business_overview": {
+          "th": "บริษัท เซ็น เอกซ์ จำกัด (มหาชน) (SET: SENX) เป็นบริษัทจดทะเบียนในตลาดหลักทรัพย์แห่งประเทศไทยในเครือ บมจ. เสนาดีเวลลอปเม้นท์ ดำเนินธุรกิจภายใต้แนวคิด \"TOTAL PROPERTY MANAGEMENT AND PROPERTY SERVICE SOLUTIONS\" และ \"LIFE SIMPLIFIER\" มุ่งยกระดับมาตรฐานการบริหารจัดการอสังหาริมทรัพย์และบริการด้านการอยู่อาศัยครบวงจร พร้อมผสานเทคโนโลยี Smart Living ร่วมกับพันธมิตรระดับโลกอย่าง NEC Thailand และดำเนินงานตามหลักธรรมาภิบาลความยั่งยืน (สมาชิกแนวร่วมต่อต้านคอร์รัปชันภาคเอกชนไทย CAC และได้รับรางวัล Sustainability Disclosure Acknowledgement จากสถาบันไทยพัฒน์)",
+          "en": "Sen X Public Company Limited (SET: SENX) is a SET-listed subsidiary of SENA Development PCL delivering \"TOTAL PROPERTY MANAGEMENT AND PROPERTY SERVICE SOLUTIONS\" as a \"LIFE SIMPLIFIER.\" Partnering with global technology leaders such as NEC Thailand, SenX integrates Smart Living PropTech across residential, hospitality, and commercial assets while upholding CAC anti-corruption and Thaipat sustainability disclosure standards."
+        },
+        "section.business_services": {
+          "th": "ขับเคลื่อนบริการผ่าน 4 แกนธุรกิจหลัก และกลุ่มพัฒนาโครงการคาร์บอนต่ำ:\n1. บริหารจัดการอสังหาริมทรัพย์และอาคารครบวงจร (SenX Property & Facility Management):\n   - Residential Management: บริหารนิติบุคคลอาคารชุดและหมู่บ้านจัดสรร\n   - Premium Residential Management (Elite Services): บริหารโครงการระดับลักชัวรีด้วยบริการ Concierge มาตรฐานโรงแรม\n   - Hospitality Management (Senstay): บริหารโรงแรมและเซอร์วิสอพาร์ตเมนต์\n   - Commercial, Industrial & Logistic Management: บริหารอาคารสำนักงาน ศูนย์การค้า โครงการ Mixed-Use โรงงาน และคลังสินค้า\n2. บริการตัวแทนซื้อ-ขาย-เช่า และบริหารสินทรัพย์ (SenX Property Service):\n   - Brokerage & International Sales: ตัวแทนซื้อ-ขาย-ปล่อยเช่าอสังหาริมทรัพย์สำหรับลูกค้าชาวไทยและต่างชาติ\n   - Sole Agent & Project Consultancy: บริหารงานขายและการตลาดโครงการอสังหาริมทรัพย์ครบวงจรโดยทีมงานประสบการณ์กว่า 20 ปี\n   - Owner Representative & Tenancy Management (RentNex): บริหารห้องชุดลงทุน เซอร์วิสอพาร์ตเมนต์ และดูแลผู้เช่าครบวงจร\n3. ธุรกิจค้าปลีกและตกแต่งบ้าน (SEN X Retail — Smartify Home): คัดสรรเฟอร์นิเจอร์ ผ้าม่าน เครื่องนอน ของตกแต่งบ้านโดยอินทีเรียดีไซเนอร์ พร้อมบริการจัดส่งและติดตั้ง\n4. โซลูชันดิจิทัลเพื่อการอยู่อาศัย (Digital Solutions): แอปพลิเคชัน SEN Prop (บริหารนิติบุคคลและบริการลูกบ้าน) และแอปพลิเคชัน Smartify Home (แจ้งซ่อม บริการดูแลบ้าน และอีคอมเมิร์ซ)\n5. SenX Development: พัฒนาโครงการที่อยู่อาศัยและอาคารพาณิชย์แนวคิด Zero Energy House (ZEH) และ Sena Low Carbon",
+          "en": "Operates across four core service pillars plus sustainable development: (1) SenX Property & Facility Management (Residential juristic management, Elite Services luxury concierge, Senstay hospitality, and Commercial/Industrial/Logistics FM), (2) SenX Property Service (Thai & international brokerage, Sole Agent project sales, Owner Representative services, and RentNex tenancy management), (3) SEN X Retail (Smartify Home designer-curated furniture & decor packages), and (4) Digital Solutions (SEN Prop juristic app & Smartify Home service/e-commerce app), alongside SenX Development (Zero Energy House & Low Carbon properties)."
+        },
+        "section.business_packages": {
+          "th": "รูปแบบการให้บริการปรับแต่งตามกลุ่มลูกค้า (B2B และ B2C):\n• สำหรับเจ้าของโครงการและคณะกรรมการนิติบุคคล (B2B): สัญญาบริหารนิติบุคคลอาคารชุด/หมู่บ้านจัดสรร งานวิศวกรรมอาคาร ระบบรักษาความปลอดภัย การบริหารงบการเงินนิติบุคคล และบริการ Sole Agent บริหารงานขายโครงการ\n• สำหรับนักลงทุนและเจ้าของห้องชุด (Owner & Investor): บริการฝากขาย-ฝากเช่า ตัวแทนดูแลทรัพย์สิน (Owner Representative) และการบริหารผู้เช่าในระบบ RentNex\n• สำหรับผู้อยู่อาศัยทั่วไป (B2C): แพ็กเกจตกแต่งห้องและบ้านพร้อมอยู่ผ่าน Smartify Home และบริการช่างดูแลซ่อมบำรุงรายครั้ง/รายแพ็กเกจผ่านแอปพลิเคชัน",
+          "en": "Tailored B2B and B2C service models: juristic & facility management contracts and Sole Agent project marketing for developers and juristic boards; brokerage, Owner Representative, and RentNex tenancy management for property owners and investors; and Smartify Home turnkey furnishing and on-demand home maintenance via mobile app for residents."
+        },
+        "section.business_process": {
+          "th": "ขั้นตอนการติดต่อรับบริการ SenX:\n1. แจ้งความประสงค์ผ่าน SenX Call Center โทร. 1173 (จันทร์–ศุกร์ 09:00–18:00 น.) เว็บไซต์ senxgroup.com หรืออีเมล info@senxgroup.com โดยระบุประเภทบริการ (บริหารนิติบุคคล/อาคาร, ฝากซื้อ-ขาย-เช่า, บริหารงานขายโครงการ หรือบริการตกแต่งบ้าน Smartify Home)\n2. สำหรับนิติบุคคลและอาคารธุรกิจ: ทีมผู้เชี่ยวชาญเข้าสำรวจพื้นที่และระบบวิศวกรรมอาคาร จัดทำแผนบริหารจัดการและใบเสนอราคาตามขอบเขตงาน\n3. สำหรับเจ้าของห้องชุดและผู้ซื้อ-ผู้เช่า: ที่ปรึกษาอสังหาริมทรัพย์ประเมินราคาตลาด ทำการตลาดหลายช่องทาง พาชมทรัพย์ และดูแลสัญญาจนเสร็จสิ้นวันโอนหรือส่งมอบห้อง",
+          "en": "Service onboarding: (1) Contact SenX Call Center 1173 (Mon–Fri 09:00–18:00), senxgroup.com, or info@senxgroup.com specifying the required service, (2) For juristic/commercial properties, our FM engineering team conducts a site audit and prepares a customized management proposal, and (3) For property buyers, sellers, and landlords, licensed consultants handle valuation, multi-channel marketing, viewings, and contract execution."
+        },
+        "section.business_warranty": {
+          "th": "มาตรฐานคุณภาพและการกำกับดูแลกิจการ:\n• ดำเนินงานด้วยมาตรฐานบริษัทมหาชนจดทะเบียนในตลาดหลักทรัพย์ฯ (SET: SENX) โปร่งใส ตรวจสอบได้ และยึดมั่นนโยบายต่อต้านการทุจริตคอร์รัปชัน (CAC)\n• ยกระดับงานบริการด้วยระบบดิจิทัล SEN Prop และ Smartify Home ติดตามสถานะงานแจ้งซ่อม งานบริการลูกบ้าน และรายงานบริหารอาคารได้อย่างเป็นระบบ\n• ทีมงานบริหารทรัพยากรอาคาร วิศวกรรม และที่ปรึกษาการขายมืออาชีพที่มีประสบการณ์ในธุรกิจอสังหาริมทรัพย์กว่า 20 ปี",
+          "en": "Public-company governance & service assurance: SET-listed transparency (SENX), certified CAC anti-corruption compliance, SLA-tracked digital operations via SEN Prop and Smartify Home apps, and professional FM engineers and property consultants with over 20 years of industry experience."
+        }
+      },
+      "contacts": [
+        {
+          "channel": "phone",
+          "value": "1173",
+          "url": "tel:1173",
+          "label": { "th": "SenX Call Center 1173 (จ.–ศ. 09:00–18:00 น.)", "en": "SenX Call Center 1173 (Mon–Fri 09:00–18:00)" },
+          "is_primary": true,
+          "sort": 1
+        },
+        {
+          "channel": "phone",
+          "value": "02-897-8888",
+          "url": "tel:028978888",
+          "label": { "th": "สำนักงานใหญ่ บมจ. เซ็น เอกซ์ (เสนาเฟสท์ เจริญนคร)", "en": "SenX Head Office (SENA Fest Charoennakhon)" },
+          "is_primary": false,
+          "sort": 2
+        },
+        {
+          "channel": "email",
+          "value": "info@senxgroup.com",
+          "url": "mailto:info@senxgroup.com",
+          "label": { "th": "อีเมลติดต่อกลาง SenX", "en": "SenX General Inquiries Email" },
+          "shared_mailbox_confirmed": true,
+          "is_primary": false,
+          "sort": 3
+        },
+        {
+          "channel": "email",
+          "value": "ir@senxgroup.com",
+          "url": "mailto:ir@senxgroup.com",
+          "label": { "th": "อีเมลนักลงทุนสัมพันธ์ (Investor Relations)", "en": "Investor Relations Email" },
+          "shared_mailbox_confirmed": true,
+          "is_primary": false,
+          "sort": 4
+        },
+        {
+          "channel": "website",
+          "value": "https://www.senxgroup.com/",
+          "url": "https://www.senxgroup.com/",
+          "label": { "th": "เว็บไซต์ทางการ บมจ. เซ็น เอกซ์", "en": "SenX Official Website" },
+          "is_primary": false,
+          "sort": 5
+        },
+        {
+          "channel": "facebook",
+          "value": "senxpcl",
+          "url": "https://www.facebook.com/senxpcl",
+          "label": { "th": "Facebook SenX PCL", "en": "Facebook SenX PCL" },
+          "is_primary": false,
+          "sort": 6
+        },
+        {
+          "channel": "instagram",
+          "value": "senxgroup",
+          "url": "https://www.instagram.com/senxgroup/",
+          "label": { "th": "Instagram @senxgroup", "en": "Instagram @senxgroup" },
+          "is_primary": false,
+          "sort": 7
+        }
+      ],
+      "faqs": [
+        {
+          "question_key": "senx_core_services",
+          "topic": "identity",
+          "question": {
+            "th": "บริษัท เซ็น เอกซ์ จำกัด (มหาชน) (SenX) ให้บริการด้านใดบ้าง?",
+            "en": "What services does Sen X Public Company Limited (SenX) provide?"
+          },
+          "short_answer": {
+            "th": "ให้บริการบริหารจัดการอสังหาริมทรัพย์และบริการที่อยู่อาศัยครบวงจร 4 ด้านหลัก ได้แก่ บริหารนิติบุคคลและอาคาร (Property & Facility Management), ตัวแทนซื้อ-ขาย-เช่าและ Sole Agent, สินค้าตกแต่งบ้าน Smartify Home และแอปพลิเคชัน SEN Prop / Smartify Home",
+            "en": "SenX provides integrated property solutions across four pillars: Property & Facility Management, Brokerage & Sole Agent services, Smartify Home retail furnishing, and PropTech digital apps (SEN Prop & Smartify Home)."
+          },
+          "detail": {
+            "th": "ครอบคลุมตั้งแต่นิติบุคคลคอนโดและหมู่บ้าน บริการระดับลักชัวรี Elite Services โรงแรมและเซอร์วิสอพาร์ตเมนต์ Senstay อาคารสำนักงาน ศูนย์การค้า คลังสินค้า ไปจนถึงการดูแลผู้เช่าในระบบ RentNex และการพัฒนาโครงการแนวคิด Zero Energy House",
+            "en": "Covers condo/housing juristic management, Elite Services luxury concierge, Senstay hospitality, commercial/industrial facility management, RentNex tenancy management, and Zero Energy House developments."
+          },
+          "source_url": "https://www.senxgroup.com/"
+        },
+        {
+          "question_key": "senx_property_facility_management",
+          "topic": "services",
+          "question": {
+            "th": "โครงการหรืออาคารนอกเครือเสนา สามารถใช้บริการบริหารนิติบุคคลและอาคารของ SenX ได้หรือไม่?",
+            "en": "Can non-SENA residential projects or commercial buildings hire SenX for property and facility management?"
+          },
+          "short_answer": {
+            "th": "ใช้บริการได้ทั้งโครงการในเครือและนอกเครือเสนา ครอบคลุมคอนโดมิเนียม หมู่บ้านจัดสรร โครงการลักชัวรี โรงแรม อาคารสำนักงาน ศูนย์การค้า โรงงาน และคลังสินค้าโลจิสติกส์",
+            "en": "Yes. SenX manages both SENA and external assets including condominiums, housing estates, luxury residences, hotels, office buildings, shopping centers, factories, and warehouses."
+          },
+          "detail": {
+            "th": "คณะกรรมการนิติบุคคลหรือเจ้าของอาคารสามารถติดต่อ SenX Call Center 1173 หรือ info@senxgroup.com เพื่อให้ทีมผู้เชี่ยวชาญเข้าสำรวจอาคารและนำเสนอแผนบริหารจัดการนิติบุคคล งานวิศวกรรม และระบบ SEN Prop Application",
+            "en": "Juristic committees and building owners can contact Call Center 1173 or info@senxgroup.com for an on-site engineering assessment and tailored management proposal."
+          },
+          "source_url": "https://senxgroup.com/service/property-services/"
+        },
+        {
+          "question_key": "senx_brokerage_and_rentnex",
+          "topic": "services",
+          "question": {
+            "th": "ต้องการฝากขาย ฝากปล่อยเช่า หรือให้ช่วยดูแลผู้เช่าห้องชุดกับ SenX ต้องทำอย่างไร?",
+            "en": "How can property owners list units for sale/rent or use SenX tenancy management?"
+          },
+          "short_answer": {
+            "th": "ติดต่อทีม SenX Property Service โทร. 1173 โดยมีบริการตัวแทนซื้อ-ขาย-เช่าทั้งลูกค้าไทยและต่างชาติ บริการตัวแทนเจ้าของทรัพย์สิน (Owner Representative) และบริการบริหารผู้เช่า RentNex ครบวงจร",
+            "en": "Contact SenX Property Service at 1173 for Thai and international brokerage, Owner Representative asset care, and end-to-end RentNex tenancy management."
+          },
+          "detail": {
+            "th": "ทีมที่ปรึกษามืออาชีพดูแลตั้งแต่ประเมินราคาตลาด ถ่ายภาพและทำการตลาด คัดกรองผู้เช่า/ผู้ซื้อ จัดทำสัญญา ส่งมอบห้อง และดูแลระหว่างสัญญาเช่า",
+            "en": "Consultants handle market pricing, multi-channel listing, tenant/buyer screening, lease/sale contracts, unit handover, and ongoing tenancy support."
+          },
+          "source_url": "https://senxgroup.com/service/property-services/"
+        },
+        {
+          "question_key": "senx_digital_apps_and_smartify",
+          "topic": "services",
+          "question": {
+            "th": "แอปพลิเคชัน SEN Prop และ Smartify Home ของ SenX ต่างกันอย่างไร?",
+            "en": "What is the difference between SenX's SEN Prop and Smartify Home applications?"
+          },
+          "short_answer": {
+            "th": "SEN Prop ใช้สำหรับการบริหารนิติบุคคลและการอยู่อาศัยในโครงการ (ชำระค่าส่วนกลาง รับพัสดุ จองส่วนกลาง ประกาศนิติฯ) ส่วน Smartify Home เน้นบริการดูแลซ่อมบำรุงภายในบ้านและการช้อปสินค้าเฟอร์นิเจอร์/ของแต่งบ้านพร้อมติดตั้ง",
+            "en": "SEN Prop handles juristic & community living (common fees, parcels, facility booking, announcements), while Smartify Home focuses on in-unit home services, repairs, and designer-curated furniture & decor e-commerce."
+          },
+          "detail": {
+            "th": "ทั้งสองแพลตฟอร์มพัฒนาขึ้นภายใต้แนวคิด Life Simplifier เพื่อเชื่อมโยงการดูแลโครงการส่วนกลางและการดูแลภายในที่พักอาศัยให้สะดวกครบจบในระบบดิจิทัลเดียว",
+            "en": "Together under the Life Simplifier concept, both apps connect community-level juristic administration with convenient in-home maintenance and furnishing."
+          },
+          "source_url": "https://senxgroup.com/service/digital/"
+        }
+      ]
+    },
+    {
+      "code": "ngernsod_jaidee",
+      "label": {
+        "th": "เงินสดใจดี",
+        "en": "Ngernsod Jaidee"
+      },
+      "legal_entity": {
+        "th": "บริษัท เงินสดใจดี จำกัด",
+        "en": "Ngernsod Jaidee Co., Ltd."
+      },
+      "official_website": "https://ngernsodjaidee.com/",
+      "sections": {
+        "section.business_overview": {
+          "th": "บริษัท เงินสดใจดี จำกัด (Ngernsod Jaidee) เป็นผู้ให้บริการสินเชื่อ Non-Bank ภายใต้การกำกับของธนาคารแห่งประเทศไทย (ธปท.) ในเครือ บมจ. เสนาดีเวลลอปเม้นท์ และเข้าเป็นสมาชิกบริษัท ข้อมูลเครดิตแห่งชาติ จำกัด (เครดิตบูโร) ตั้งแต่วันที่ 25 ธันวาคม 2566 ดำเนินงานภายใต้แนวคิด \"THE LENDING HAND WHO UNDERSTANDS — เงินสดใจดี เราเข้าใจทุกปัญหาของคนมีเครดิต พร้อมปลดล็อคทุกข้อจำกัด ให้ทุกโอกาสทางการเงินเป็นไปได้\" ทำหน้าที่เป็นพี่เลี้ยงและผู้ช่วยวิเคราะห์สุขภาพทางการเงินเพื่อให้ผู้ที่ต้องการซื้อที่อยู่อาศัยสามารถเข้าถึงโอกาสการมีบ้านในเครือเสนาได้อย่างมั่นใจและถูกกฎหมาย",
+          "en": "Ngernsod Jaidee Co., Ltd. is a Bank of Thailand-regulated Non-Bank financial provider in SENA Group and a member of the National Credit Bureau (NCB) since 25 December 2023. Guided by \"THE LENDING HAND WHO UNDERSTANDS,\" Ngernsod Jaidee provides personalized credit health analysis and flexible financing pathways so homebuyers can overcome traditional mortgage barriers and own a SENA home."
+        },
+        "section.business_services": {
+          "th": "บริการด้านสินเชื่อและที่ปรึกษาทางการเงินครบวงจร:\n1. สินเชื่อเช่าซื้อที่อยู่อาศัย / สินเชื่อบ้าน: ทางเลือก \"ซื้อเหมือนเช่า\" สำหรับผู้ต้องการมีบ้านและคอนโดมิเนียมในเครือเสนาที่ยังติดข้อจำกัดในการยื่นกู้ธนาคารพาณิชย์ (ทำงานสอดประสานกับโปรแกรมเช่าออมบ้าน LivNex)\n2. บริการวิเคราะห์สถานะทางการเงินและเตรียมความพร้อมก่อนยื่นกู้ (Financial Health Check & Jaidee Analysis): วิเคราะห์รายได้ ภาระหนี้คงเหลือ ภาระผ่อนต่อเดือน และประวัติเครดิตบูโร เพื่อวางแผนสร้างวินัยและปรับสุขภาพทางการเงินรายบุคคล\n3. สินเชื่อบ้านกู้เอง / Home Equity Loan: เปลี่ยนมูลค่าบ้านปลอดภาระหรือส่วนต่างมูลค่าบ้านคงเหลือให้เป็นวงเงินเสริมสภาพคล่อง หรือวงเงินติดตั้งโซลาร์เซลล์ร่วมกับ SENA Solar Energy\n4. สินเชื่อรถยนต์ (Auto Loan)\n5. สินเชื่อส่วนบุคคล (Personal Loan)",
+          "en": "Core financial & advisory offerings: (1) Residential Hire-Purchase & Housing Loans enabling rent-like homeownership for SENA properties alongside LivNex, (2) Personalized Financial Health Check & Jaidee Analysis (evaluating income, DSR, debt balances, and credit bureau readiness), (3) Home Equity Loans (including green home-equity financing with SENA Solar Energy), (4) Auto Loans, and (5) Personal Loans."
+        },
+        "section.business_packages": {
+          "th": "เกณฑ์คุณสมบัติเบื้องต้นและเงื่อนไขการพิจารณา:\n• เป็นบุคคลธรรมดา อายุ 20 ปีขึ้นไป ที่ต้องการซื้อที่อยู่อาศัยหรือขอรับบริการสินเชื่อ\n• เป็นผู้มีรายได้ประจำ ผู้ประกอบอาชีพอิสระ หรือเจ้าของธุรกิจส่วนตัว ที่มีอายุงานหรืออายุกิจการตั้งแต่ 1 ปีขึ้นไป\n• มีรายได้ตั้งแต่ 15,000 บาทต่อเดือนขึ้นไป\n• ทางเลือกกู้ร่วม: กรณีผู้ขอกู้ไม่เข้าเกณฑ์ข้อใดข้อหนึ่ง สามารถยื่นกู้ร่วมกับผู้กู้ร่วมที่มีคุณสมบัติครบตามเงื่อนไขที่บริษัทกำหนดได้\n• ทั้งนี้ บริษัทฯ พิจารณาอนุมัติวงเงิน เงื่อนไข และเอกสารประกอบเพิ่มเติมเป็นรายกรณีตามความเหมาะสมและศักยภาพการชำระคืนอย่างรับผิดชอบ",
+          "en": "Baseline borrower eligibility: individual applicants aged 20+ years; salaried employees, freelancers, or business owners with at least 1 year of work or business tenure; minimum monthly income of THB 15,000. Applicants who do not meet an individual criterion may apply jointly with a qualified co-borrower, subject to case-by-case credit assessment."
+        },
+        "section.business_process": {
+          "th": "เอกสารที่ใช้ในการขอสินเชื่อและขั้นตอนรับคำปรึกษา:\n1. ลงทะเบียนประเมินสุขภาพทางการเงินเบื้องต้นผ่านหน้าเว็บ Financial Health Check / แบบฟอร์มสมัครสินเชื่อ หรือติดต่อที่ปรึกษา โทร. 02-541-4642 ต่อ 10102 และ LINE @ngernsodjaidee\n2. เตรียมเอกสาร 3 หมวดหลัก:\n   - เอกสารส่วนบุคคล (ผู้กู้ และคู่สมรส/ผู้ค้ำประกัน): สำเนาบัตรประชาชน/บัตรข้าราชการ, สำเนาทะเบียนบ้าน, ทะเบียนสมรส/ใบหย่า/ใบเปลี่ยนชื่อ-สกุล (ถ้ามี)\n   - เอกสารแสดงรายได้:\n     • พนักงานประจำ/บุคคลธรรมดา: ใบรับรองเงินเดือนและสลิปเงินเดือน, Statement บัญชีส่วนตัวย้อนหลัง 6 เดือนขึ้นไป, 50 ทวิ / ภ.ง.ด. 90/91/94, ผลตรวจเครดิตบูโรพร้อมคะแนนเครดิต, ใบอนุญาตประกอบวิชาชีพ (ถ้ามี)\n     • เจ้าของกิจการ: หนังสือรับรองนิติบุคคล/ทะเบียนการค้า, บัญชีผู้ถือหุ้น, บริคณห์สนธิ, งบการเงิน 1 ปีย้อนหลัง (ถ้ามี), ภ.พ.30 ย้อนหลัง 6 เดือน (ถ้ามี), Statement บัญชีบริษัทย้อนหลัง 6 เดือนขึ้นไป, บิลซื้อขาย และภาพถ่ายกิจการ\n   - เอกสารหลักประกัน: สำเนาโฉนดที่ดิน/หนังสือกรรมสิทธิ์ห้องชุด, ใบสรุปค่าใช้จ่ายวันโอน, สัญญาจะซื้อจะขายและหลักฐานชำระเงินดาวน์ (ถ้ามี)\n3. ทีมผู้เชี่ยวชาญวิเคราะห์ผล (Jaidee Analysis) แนะนำทางเลือกสินเชื่อที่เหมาะสมและแจ้งผลการพิจารณา",
+          "en": "Application documents & steps: (1) Submit an online Financial Health Check or contact advisors at 02-541-4642 ext. 10102 / LINE @ngernsodjaidee, (2) Prepare Personal ID/house registration documents, Income documents (payslips, 6+ months bank statements, tax filings 50 Tawi / PND 90/91/94, Credit Bureau report with score; plus corporate registration, PP.30, and business statements for business owners), and Collateral documents (title deed/condo deed, sale agreement), and (3) Receive tailored Jaidee Analysis and credit structuring."
+        },
+        "section.business_warranty": {
+          "th": "มาตรฐานความปลอดภัยทางกฎหมายและการคุ้มครองผู้บริโภค:\n• อยู่ภายใต้การกำกับดูแลของธนาคารแห่งประเทศไทย (ธปท.) และเป็นสมาชิกบริษัท ข้อมูลเครดิตแห่งชาติ จำกัด (เครดิตบูโร) มาตรฐานโปร่งใส ตรวจสอบได้ ช่วยสร้างประวัติเครดิตทางการเงินที่ดีเพื่อต่อยอดสู่สินเชื่อธนาคารพาณิชย์ในอนาคต\n• ประกาศเตือนภัยมิจฉาชีพ: บริษัท เงินสดใจดี จำกัด ไม่มีนโยบายทักแชทชักชวนลงทุนออนไลน์ หรือเรียกเก็บเงินค่าธรรมเนียมล่วงหน้าโอนเข้าบัญชีบุคคลธรรมดาผ่าน Social Media โปรดติดต่อผ่านช่องทางทางการของบริษัทเท่านั้น",
+          "en": "Regulatory & anti-fraud assurance: Operated under Bank of Thailand supervision and National Credit Bureau membership (since 25 Dec 2023), helping customers build formal credit histories safely. Official anti-scam notice: Ngernsod Jaidee never solicits online investment schemes or requests upfront fee transfers to personal accounts via social media."
+        }
+      },
+      "contacts": [
+        {
+          "channel": "call_center_ext",
+          "value": "02-541-4642 (10102)",
+          "url": "tel:02-541-4642",
+          "label": { "th": "ฝ่ายปรึกษาสินเชื่อเงินสดใจดี (ต่อ 10102)", "en": "Ngernsod Jaidee Loan Advisory (Ext. 10102)" },
+          "is_primary": true,
+          "sort": 1
+        },
+        {
+          "channel": "phone",
+          "value": "091-557-1119",
+          "url": "tel:091-557-1119",
+          "label": { "th": "สายตรงที่ปรึกษาสินเชื่อ", "en": "Direct Loan Consultant Line" },
+          "is_primary": false,
+          "sort": 2
+        },
+        {
+          "channel": "call_center_ext",
+          "value": "02-541-4642 (10217)",
+          "url": "tel:02-541-4642",
+          "label": { "th": "ฝ่ายบริการลูกค้าสัมพันธ์ (ต่อ 10217)", "en": "Customer Service (Ext. 10217)" },
+          "is_primary": false,
+          "sort": 3
+        },
+        {
+          "channel": "phone",
+          "value": "081-671-7880",
+          "url": "tel:0816717880",
+          "label": { "th": "สายตรงบริการลูกค้าสัมพันธ์", "en": "Customer Relations Mobile" },
+          "is_primary": false,
+          "sort": 4
+        },
+        {
+          "channel": "line_oa",
+          "value": "@ngernsodjaidee",
+          "url": "https://lin.ee/tLKBvR3",
+          "label": { "th": "LINE Official @ngernsodjaidee (ปรึกษาสินเชื่อ)", "en": "LINE Official @ngernsodjaidee (Advisory)" },
+          "is_primary": false,
+          "sort": 5
+        },
+        {
+          "channel": "line_oa",
+          "value": "@powercash",
+          "url": "https://line.me/ti/p/%40powercash",
+          "label": { "th": "LINE Official @powercash (บริการลูกค้าสัมพันธ์)", "en": "LINE Official @powercash (Customer Service)" },
+          "is_primary": false,
+          "sort": 6
+        },
+        {
+          "channel": "email",
+          "value": "customer_service@ngernsodjaidee.com",
+          "url": "mailto:customer_service@ngernsodjaidee.com",
+          "label": { "th": "อีเมลบริการลูกค้าสัมพันธ์", "en": "Customer Service Email" },
+          "shared_mailbox_confirmed": true,
+          "is_primary": false,
+          "sort": 7
+        },
+        {
+          "channel": "email",
+          "value": "info@moneyjaidee.com",
+          "url": "mailto:info@moneyjaidee.com",
+          "label": { "th": "อีเมลปรึกษาข้อมูลสินเชื่อ", "en": "Loan Inquiry Email" },
+          "shared_mailbox_confirmed": true,
+          "is_primary": false,
+          "sort": 8
+        },
+        {
+          "channel": "website",
+          "value": "https://ngernsodjaidee.com/",
+          "url": "https://ngernsodjaidee.com/",
+          "label": { "th": "เว็บไซต์ทางการ เงินสดใจดี", "en": "Ngernsod Jaidee Official Website" },
+          "is_primary": false,
+          "sort": 9
+        }
+      ],
+      "faqs": [
+        {
+          "question_key": "ngernsod_what_is_and_regulation",
+          "topic": "identity",
+          "question": {
+            "th": "บริษัท เงินสดใจดี จำกัด คือใคร น่าเชื่อถือและถูกกฎหมายหรือไม่?",
+            "en": "Who is Ngernsod Jaidee Co., Ltd. and how is it regulated?"
+          },
+          "short_answer": {
+            "th": "เป็นผู้ให้บริการสินเชื่อ Non-Bank ในเครือ บมจ. เสนาดีเวลลอปเม้นท์ อยู่ภายใต้การกำกับดูแลของธนาคารแห่งประเทศไทย (ธปท.) และเป็นสมาชิกบริษัท ข้อมูลเครดิตแห่งชาติ จำกัด (เครดิตบูโร) ตั้งแต่วันที่ 25 ธันวาคม 2566",
+            "en": "Ngernsod Jaidee Co., Ltd. is a SENA Group Non-Bank financial provider regulated under the Bank of Thailand and a member of the National Credit Bureau since 25 December 2023."
+          },
+          "detail": {
+            "th": "ก่อตั้งขึ้นเพื่อช่วยวิเคราะห์สุขภาพทางการเงินและสร้างทางเลือกสินเชื่อให้ผู้ที่ต้องการซื้อที่อยู่อาศัยในเครือเสนาแต่ติดข้อจำกัดในการกู้ธนาคารพาณิชย์ ตลอดจนให้บริการสินเชื่อเช่าซื้อ สินเชื่อบ้านกู้เอง สินเชื่อรถยนต์ และสินเชื่อส่วนบุคคลอย่างโปร่งใสตามมาตรฐาน ธปท.",
+            "en": "Established to help homebuyers overcome mortgage rejection through financial health coaching, residential hire-purchase, home equity, auto, and personal loans under Bank of Thailand standards."
+          },
+          "source_url": "https://ngernsodjaidee.com/"
+        },
+        {
+          "question_key": "ngernsod_eligibility_and_freelance",
+          "topic": "eligibility",
+          "question": {
+            "th": "ผู้ขอสินเชื่อกับเงินสดใจดีต้องมีคุณสมบัติอย่างไร อาชีพอิสระหรือกู้ธนาคารไม่ผ่านสามารถปรึกษาได้ไหม?",
+            "en": "What are the borrower eligibility requirements, and can freelancers or rejected mortgage applicants apply?"
+          },
+          "short_answer": {
+            "th": "ปรึกษาได้ ทั้งพนักงานประจำ อาชีพอิสระ และเจ้าของธุรกิจส่วนตัว ที่มีอายุ 20 ปีขึ้นไป อายุงานหรืออายุกิจการตั้งแต่ 1 ปีขึ้นไป และรายได้ตั้งแต่ 15,000 บาท/เดือนขึ้นไป หากไม่เข้าเกณฑ์บางข้อสามารถยื่นกู้ร่วมได้",
+            "en": "Yes. Salaried workers, freelancers, and business owners aged 20+ with ≥1 year tenure and monthly income ≥THB 15,000 can apply; co-borrowing with a qualified co-applicant is also supported."
+          },
+          "detail": {
+            "th": "ทีมผู้เชี่ยวชาญจะช่วยตรวจวิเคราะห์สถานะทางการเงิน (Financial Health Check) ทั้งรายได้ ภาระหนี้ผ่อนต่อเดือน และเครดิตบูโร เพื่อแนะนำทางเลือกที่เหมาะสม เช่น สินเชื่อเช่าซื้อที่อยู่อาศัย หรือวางแผนเตรียมความพร้อมร่วมกับโปรแกรม LivNex",
+            "en": "Advisors perform a personalized Financial Health Check on income, debt-service obligations, and credit score to match applicants with hire-purchase or LivNex credit-building pathways."
+          },
+          "source_url": "https://ngernsodjaidee.com/register-detail/"
+        },
+        {
+          "question_key": "ngernsod_required_documents",
+          "topic": "process",
+          "question": {
+            "th": "การยื่นขอสินเชื่อกับเงินสดใจดีต้องเตรียมเอกสารอะไรบ้าง?",
+            "en": "What documents are required when applying for a loan with Ngernsod Jaidee?"
+          },
+          "short_answer": {
+            "th": "ใช้เอกสาร 3 ส่วน ได้แก่ 1) บัตรประชาชนและทะเบียนบ้าน 2) เอกสารรายได้ เช่น สลิปเงินเดือน/หนังสือรับรองบริษัท Statement ย้อนหลัง 6 เดือนขึ้นไป เอกสารภาษี และผลตรวจเครดิตบูโรพร้อมคะแนนเครดิต และ 3) เอกสารหลักประกัน/สัญญาจะซื้อจะขาย",
+            "en": "Three document groups are required: (1) ID card & house registration, (2) Income proof including payslips or business registration, 6+ months bank statements, tax filings, and Credit Bureau report with score, and (3) Collateral deed / sale agreement."
+          },
+          "detail": {
+            "th": "กรณีประกอบวิชาชีพเฉพาะ (แพทย์ วิศวกร สถาปนิก ทนายความ) สามารถแนบใบอนุญาตประกอบวิชาชีพ และกรณีเจ้าของกิจการแนบ ภ.พ.30 ย้อนหลัง 6 เดือน บิลซื้อขาย และภาพถ่ายกิจการเพื่อประกอบการพิจารณาได้",
+            "en": "Licensed professionals may attach their professional license, while business owners may include 6 months of PP.30 VAT filings, trade invoices, and business photos."
+          },
+          "source_url": "https://ngernsodjaidee.com/register-detail/"
+        },
+        {
+          "question_key": "ngernsod_home_equity_solar",
+          "topic": "services",
+          "question": {
+            "th": "สินเชื่อบ้านแลกเงิน (Home Equity) เพื่อติดโซลาร์เซลล์ร่วมกับ SENA Solar Energy คืออะไร?",
+            "en": "How does the Home Equity loan with Ngernsod Jaidee for SENA Solar Energy installations work?"
+          },
+          "short_answer": {
+            "th": "เป็นการนำมูลค่าบ้านที่ปลอดภาระแล้ว หรือส่วนต่างระหว่างราคาบ้านกับหนี้คงเหลือ (Home Equity) มาวางแผนเป็นวงเงินติดตั้งโซลาร์รูฟท็อปร่วมกับ SENA Solar Energy โดยไม่ต้องควักเงินก้อน",
+            "en": "It converts unencumbered home value—or the positive gap between property value and remaining mortgage balance—into financing for a SENA Solar Energy rooftop system without upfront lump-sum cash."
+          },
+          "detail": {
+            "th": "ช่วยให้เจ้าของบ้านเปลี่ยนมูลค่าทรัพย์สินที่อยู่นิ่งให้กลายเป็นระบบผลิตไฟฟ้าพลังงานสะอาดที่ช่วยลดค่าไฟรายเดือนได้ทันที",
+            "en": "Homeowners unlock idle property equity to fund clean-energy generation that lowers monthly electricity bills immediately."
+          },
+          "source_url": "https://senasolarenergy.com/financial-solution/"
+        },
+        {
+          "question_key": "ngernsod_anti_scam_channels",
+          "topic": "security",
+          "question": {
+            "th": "จะตรวจสอบและติดต่อบริษัท เงินสดใจดี จำกัด ช่องทางจริงอย่างไร เพื่อป้องกันมิจฉาชีพแอบอ้าง?",
+            "en": "How can customers verify official Ngernsod Jaidee channels and avoid impersonation scams?"
+          },
+          "short_answer": {
+            "th": "เงินสดใจดีไม่มีนโยบายชักชวนลงทุนหรือให้โอนเงินล่วงหน้าเข้าบัญชีบุคคลผ่าน Social Media ติดต่อช่องทางทางการได้ที่เว็บ ngernsodjaidee.com โทร. 02-541-4642 ต่อ 10102 / 10217 หรือ LINE @ngernsodjaidee และ @powercash เท่านั้น",
+            "en": "Ngernsod Jaidee never solicits investments or upfront transfers to personal accounts on social media. Verify only via ngernsodjaidee.com, 02-541-4642 ext. 10102/10217, or LINE @ngernsodjaidee and @powercash."
+          },
+          "detail": {
+            "th": "หากพบเพจปลอมหรือบุคคลแอบอ้างชื่อบริษัท เงินสดใจดี จำกัด เพื่อหลอกให้โอนเงิน สามารถสอบถามยืนยันกับฝ่ายบริการลูกค้าสัมพันธ์ โทร. 02-541-4642 ต่อ 10217 หรือ 081-671-7880 และอีเมล customer_service@ngernsodjaidee.com",
+            "en": "Report or verify any suspicious social media messages directly with Customer Relations at 02-541-4642 ext. 10217, 081-671-7880, or customer_service@ngernsodjaidee.com."
+          },
+          "source_url": "https://ngernsodjaidee.com/"
+        }
+      ]
+    }
+  ]
+}

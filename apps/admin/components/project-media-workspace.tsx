@@ -70,6 +70,17 @@ export function ProjectMediaWorkspace({ projectId, embedded = false, onEditingCh
   return <MediaCatalog.Provider value={catalog?.items ?? []}><MediaAiContext.Provider value={{ base, budget, jobs, refresh: reload }}><div className={`content-workspace media-workspace${embedded ? " entity-embedded-media" : ""}`}><header className="content-header"><a href={`/?project=${encodeURIComponent(projectId)}#assets`}>กลับไปข้อมูลโครงการและตรวจสิทธิ์ภาพ</a><h1>ภาพ คลิป และทัวร์ 360</h1><p>{data?.project.name.th ?? projectId}</p><p className="content-state">ข้อมูลร่างภายใน Hub · การยืนยันข้อมูลภาพแยกจากการอนุมัติสิทธิ์</p></header>
     {(error || catalogError) && <p className="notice error" role="alert">{error || catalogError}</p>}
     {!projectId ? <><p>เลือกโครงการจากหน้ารวมก่อนจัดการสื่อ</p>{canView && <WebsiteMediaProjects />}</> : !canView ? <p>บัญชีนี้ไม่มีสิทธิ์ดูสื่อโครงการ</p> : !data ? <p role="status">กำลังโหลดสื่อ…</p> : <>
+      <div className="km-section-guide" aria-label="สรุปสถานะคลังสื่อโครงการ">
+        <div>
+          <strong>ความครบตามเกณฑ์ภาพแนะนำ {data.checklist.recommended_score}% · ภาพจำเป็นที่ยังขาด {data.checklist.required_missing} รายการ</strong>
+          <p>ไฟล์ในคลัง {data.assets.length} ไฟล์ · ผูกบริบทแล้ว {data.links.length} จุด · คลิปและทัวร์ 360° {data.clips.length} รายการ</p>
+        </div>
+        <div className="km-stat-chips">
+          <span className={`km-status-badge ${data.checklist.required_missing === 0 ? "is-ready" : "is-warning"}`}>
+            {data.checklist.required_missing === 0 ? "ภาพบังคับครบ ✓" : `ขาดภาพบังคับ ${data.checklist.required_missing}`}
+          </span>
+        </div>
+      </div>
       <nav className="content-tabs" aria-label="ส่วนสื่อ">{Object.entries(tabs).filter(([key]) => !embedded || key !== "rules").map(([key, label]) => <button key={key} aria-current={tab === key ? "page" : undefined} disabled={busy || workflowBusy || dirty && tab !== key} onClick={() => { if (location.navigate({ [tabKeyQuery]: key })) setEditingAsset(null); }}>{embedded && key === "website" ? workspaceText.legacyMedia : label}</button>)}</nav>
       {tab === "checklist" && <MediaPanel title="รายการภาพที่ยังขาด"><p>ความครบตามเป้าหมายแนะนำ {data.checklist.recommended_score}% · ยังขาดภาพจำเป็น {data.checklist.required_missing} รายการ</p><p>ภาพหลักและภาพย่อเท่านั้นที่เป็นเงื่อนไขเผยแพร่ ภาพอื่นเป็นเป้าหมายเก็บข้อมูล</p>
         {data.checklist.unknown_coverage.map(item => <p className="inline-warning" key={item.key}>ยังนับชั้นของ {item.label.th ?? item.key} ไม่ได้ กรุณาตรวจข้อมูลอาคารหรือแบบที่อยู่อาศัย</p>)}
